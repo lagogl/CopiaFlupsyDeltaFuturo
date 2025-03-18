@@ -91,7 +91,12 @@ export default function FlupsyVisualizer() {
             {/* FLUPSY Visualization */}
             <div className="border rounded-lg p-4 relative">
               <div className="flex justify-between items-center mb-2">
-                <div>Vista lato elica ({selectedFlupsy.name})</div>
+                <div className="flex items-center gap-2">
+                  <div>Vista lato elica ({selectedFlupsy.name})</div>
+                  <a href="/flupsy-view" className="text-xs text-blue-600 hover:underline">
+                    Vista dettagliata
+                  </a>
+                </div>
                 <Badge variant="outline" className="absolute right-2 top-2">
                   Cestelli: {filteredBaskets.length}
                 </Badge>
