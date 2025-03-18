@@ -2,11 +2,13 @@ import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { 
-  Eye, Copy, Download, Plus, Filter, Upload, Pencil, Search, Waves
+  Eye, Copy, Download, Plus, Filter, Upload, Pencil, Search, Waves,
+  Trash2, AlertTriangle
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
+import { toast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,6 +20,9 @@ export default function Baskets() {
   const [stateFilter, setStateFilter] = useState('all');
   const [flupsyFilter, setFlupsyFilter] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedBasket, setSelectedBasket] = useState<any>(null);
   const [location] = useLocation();
   
   // Extract flupsyId from URL if present
@@ -45,6 +50,59 @@ export default function Baskets() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       setIsCreateDialogOpen(false);
+      toast({
+        title: "Operazione completata",
+        description: "La cesta è stata creata con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante la creazione della cesta",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update mutation
+  const updateBasketMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('PATCH', `/api/baskets/${data.id}`, data.basket),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      setIsEditDialogOpen(false);
+      setSelectedBasket(null);
+      toast({
+        title: "Operazione completata",
+        description: "La cesta è stata aggiornata con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante l'aggiornamento della cesta",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Delete mutation
+  const deleteBasketMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/baskets/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      setIsDeleteDialogOpen(false);
+      setSelectedBasket(null);
+      toast({
+        title: "Operazione completata",
+        description: "La cesta è stata eliminata con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante l'eliminazione della cesta",
+        variant: "destructive",
+      });
     }
   });
 
@@ -220,12 +278,26 @@ export default function Baskets() {
                           <Button variant="ghost" size="icon">
                             <Eye className="h-5 w-5 text-primary" />
                           </Button>
-                          <Button variant="ghost" size="icon">
-                            <Copy className="h-5 w-5 text-gray-600" />
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => {
+                              setSelectedBasket(basket);
+                              setIsEditDialogOpen(true);
+                            }}
+                          >
+                            <Pencil className="h-5 w-5 text-gray-600" />
                           </Button>
                           {basket.state === 'available' ? (
-                            <Button variant="ghost" size="icon">
-                              <Plus className="h-5 w-5 text-accent-dark" />
+                            <Button 
+                              variant="ghost" 
+                              size="icon"
+                              onClick={() => {
+                                setSelectedBasket(basket);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-5 w-5 text-destructive" />
                             </Button>
                           ) : (
                             <Button variant="ghost" size="icon">
@@ -253,6 +325,76 @@ export default function Baskets() {
             onSubmit={(data) => createBasketMutation.mutate(data)} 
             isLoading={createBasketMutation.isPending}
           />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Basket Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Modifica Cesta</DialogTitle>
+          </DialogHeader>
+          {selectedBasket && (
+            <BasketForm 
+              onSubmit={(data) => updateBasketMutation.mutate({ id: selectedBasket.id, basket: data })}
+              isLoading={updateBasketMutation.isPending}
+              defaultValues={{
+                physicalNumber: selectedBasket.physicalNumber,
+                flupsyId: selectedBasket.flupsyId,
+                row: selectedBasket.row || undefined,
+                position: selectedBasket.position || undefined
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Basket Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Elimina Cesta</DialogTitle>
+            <DialogDescription className="text-destructive-foreground/80">
+              Sei sicuro di voler eliminare questa cesta? Questa azione non può essere annullata.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBasket && (
+            <div className="p-4 my-4 border rounded-lg bg-muted/50">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Numero cesta</p>
+                  <p className="font-medium">#{selectedBasket.physicalNumber}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Unità FLUPSY</p>
+                  <p className="font-medium">
+                    {flupsys?.find((f: any) => f.id === selectedBasket.flupsyId)?.name || `#${selectedBasket.flupsyId}`}
+                  </p>
+                </div>
+                {selectedBasket.row && selectedBasket.position && (
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-muted-foreground">Posizione</p>
+                    <p className="font-medium">Fila {selectedBasket.row}, Posizione {selectedBasket.position}</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Annulla
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedBasket && deleteBasketMutation.mutate(selectedBasket.id)}
+              disabled={deleteBasketMutation.isPending}
+            >
+              {deleteBasketMutation.isPending ? "Eliminazione in corso..." : "Elimina"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
