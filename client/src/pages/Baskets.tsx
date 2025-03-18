@@ -1,7 +1,8 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
+import { useLocation } from 'wouter';
 import { 
-  Eye, Copy, Download, Plus, Filter, Upload, Pencil, Search
+  Eye, Copy, Download, Plus, Filter, Upload, Pencil, Search, Waves
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
@@ -15,12 +16,27 @@ import NFCReader from '@/components/NFCReader';
 export default function Baskets() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState('all');
-  const [sizeFilter, setSizeFilter] = useState('all');
+  const [flupsyFilter, setFlupsyFilter] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [location] = useLocation();
+  
+  // Extract flupsyId from URL if present
+  useEffect(() => {
+    const params = new URLSearchParams(location.split('?')[1]);
+    const flupsyIdParam = params.get('flupsyId');
+    if (flupsyIdParam) {
+      setFlupsyFilter(flupsyIdParam);
+    }
+  }, [location]);
   
   // Query baskets
   const { data: baskets, isLoading } = useQuery({
     queryKey: ['/api/baskets'],
+  });
+  
+  // Query FLUPSY units for filter
+  const { data: flupsys } = useQuery({
+    queryKey: ['/api/flupsys'],
   });
 
   // Create mutation
@@ -44,7 +60,11 @@ export default function Baskets() {
       (stateFilter === 'active' && basket.state === 'active') ||
       (stateFilter === 'available' && basket.state === 'available');
     
-    return matchesSearch && matchesState;
+    // Filter by FLUPSY
+    const matchesFlupsy = flupsyFilter === 'all' || 
+      String(basket.flupsyId) === flupsyFilter;
+    
+    return matchesSearch && matchesState && matchesFlupsy;
   }) || [];
 
   return (
@@ -84,7 +104,7 @@ export default function Baskets() {
               </div>
             </div>
           </div>
-          <div className="flex space-x-4">
+          <div className="flex flex-wrap gap-4">
             <Select value={stateFilter} onValueChange={setStateFilter}>
               <SelectTrigger className="w-[180px]">
                 <SelectValue placeholder="Stato cesta" />
@@ -95,17 +115,22 @@ export default function Baskets() {
                 <SelectItem value="available">Disponibili</SelectItem>
               </SelectContent>
             </Select>
-            <Select value={sizeFilter} onValueChange={setSizeFilter}>
+            <Select value={flupsyFilter} onValueChange={setFlupsyFilter}>
               <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Taglia" />
+                <div className="flex items-center">
+                  <Waves className="h-4 w-4 mr-2 text-muted-foreground" />
+                  <SelectValue placeholder="Unità FLUPSY" />
+                </div>
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="all">Tutte le taglie</SelectItem>
-                <SelectItem value="T0">T0</SelectItem>
-                <SelectItem value="T1">T1</SelectItem>
-                <SelectItem value="M1">M1</SelectItem>
-                <SelectItem value="M2">M2</SelectItem>
-                <SelectItem value="M3">M3</SelectItem>
+                <SelectItem value="all">Tutte le unità</SelectItem>
+                {flupsys && flupsys.length > 0 ? (
+                  flupsys.map((flupsy: any) => (
+                    <SelectItem key={flupsy.id} value={String(flupsy.id)}>
+                      {flupsy.name}
+                    </SelectItem>
+                  ))
+                ) : null}
               </SelectContent>
             </Select>
           </div>
