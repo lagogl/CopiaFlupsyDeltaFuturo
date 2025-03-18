@@ -133,6 +133,27 @@ export class DbStorage implements IStorage {
   async getCyclesByBasket(basketId: number): Promise<Cycle[]> {
     return await db.select().from(cycles).where(eq(cycles.basketId, basketId));
   }
+  
+  async getCyclesByFlupsy(flupsyId: number): Promise<Cycle[]> {
+    // Prima otteniamo tutti i cestelli associati a questo FLUPSY
+    const flupsyBaskets = await this.getBasketsByFlupsy(flupsyId);
+    
+    if (flupsyBaskets.length === 0) {
+      return [];
+    }
+    
+    // Estraiamo gli ID dei cestelli
+    const basketIds = flupsyBaskets.map(basket => basket.id);
+    
+    // Recuperiamo tutti i cicli collegati a questi cestelli
+    const allCycles: Cycle[] = [];
+    for (const basketId of basketIds) {
+      const basketCycles = await this.getCyclesByBasket(basketId);
+      allCycles.push(...basketCycles);
+    }
+    
+    return allCycles;
+  }
 
   async createCycle(cycle: InsertCycle): Promise<Cycle> {
     // Convert any dates to string format

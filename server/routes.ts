@@ -2,6 +2,7 @@ import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import { 
+  insertFlupsySchema,
   insertBasketSchema, 
   operationSchema, 
   insertOperationSchema, 
@@ -758,6 +759,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching cycle comparison:", error);
       res.status(500).json({ message: "Failed to fetch cycle comparison" });
+    }
+  });
+
+  // === FLUPSY routes ===
+  app.get("/api/flupsys", async (req, res) => {
+    try {
+      const flupsys = await storage.getFlupsys();
+      res.json(flupsys);
+    } catch (error) {
+      console.error("Error fetching FLUPSY units:", error);
+      res.status(500).json({ message: "Failed to fetch FLUPSY units" });
+    }
+  });
+
+  app.get("/api/flupsys/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid FLUPSY ID" });
+      }
+
+      const flupsy = await storage.getFlupsy(id);
+      if (!flupsy) {
+        return res.status(404).json({ message: "FLUPSY not found" });
+      }
+
+      res.json(flupsy);
+    } catch (error) {
+      console.error("Error fetching FLUPSY:", error);
+      res.status(500).json({ message: "Failed to fetch FLUPSY" });
+    }
+  });
+
+  app.post("/api/flupsys", async (req, res) => {
+    try {
+      const parsedData = insertFlupsySchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+
+      // Check if a FLUPSY with the same name already exists
+      const existingFlupsy = await storage.getFlupsyByName(parsedData.data.name);
+      if (existingFlupsy) {
+        return res.status(400).json({ message: "A FLUPSY with this name already exists" });
+      }
+
+      const newFlupsy = await storage.createFlupsy(parsedData.data);
+      res.status(201).json(newFlupsy);
+    } catch (error) {
+      console.error("Error creating FLUPSY:", error);
+      res.status(500).json({ message: "Failed to create FLUPSY" });
+    }
+  });
+
+  app.get("/api/flupsys/:id/baskets", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid FLUPSY ID" });
+      }
+
+      // Check if the FLUPSY exists
+      const flupsy = await storage.getFlupsy(id);
+      if (!flupsy) {
+        return res.status(404).json({ message: "FLUPSY not found" });
+      }
+
+      const baskets = await storage.getBasketsByFlupsy(id);
+      res.json(baskets);
+    } catch (error) {
+      console.error("Error fetching baskets for FLUPSY:", error);
+      res.status(500).json({ message: "Failed to fetch baskets for FLUPSY" });
+    }
+  });
+
+  app.get("/api/flupsys/:id/cycles", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid FLUPSY ID" });
+      }
+
+      // Check if the FLUPSY exists
+      const flupsy = await storage.getFlupsy(id);
+      if (!flupsy) {
+        return res.status(404).json({ message: "FLUPSY not found" });
+      }
+
+      const cycles = await storage.getCyclesByFlupsy(id);
+      
+      // Fetch baskets for each cycle
+      const cyclesWithDetails = await Promise.all(
+        cycles.map(async (cycle) => {
+          const basket = await storage.getBasket(cycle.basketId);
+          return { ...cycle, basket };
+        })
+      );
+      
+      res.json(cyclesWithDetails);
+    } catch (error) {
+      console.error("Error fetching cycles for FLUPSY:", error);
+      res.status(500).json({ message: "Failed to fetch cycles for FLUPSY" });
     }
   });
 
