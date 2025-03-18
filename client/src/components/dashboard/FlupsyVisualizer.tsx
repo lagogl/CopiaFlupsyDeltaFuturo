@@ -4,7 +4,6 @@ import { useQuery } from '@tanstack/react-query';
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { FormControl, FormItem, FormLabel } from "@/components/ui/form";
 import { useIsMobile } from '@/hooks/use-mobile';
 
 export default function FlupsyVisualizer() {
@@ -62,18 +61,16 @@ export default function FlupsyVisualizer() {
         </CardDescription>
         
         <div className="pt-2">
-          <FormItem className="space-y-1">
-            <FormLabel>Seleziona unità FLUPSY:</FormLabel>
+          <div className="space-y-1">
+            <div className="text-sm font-medium">Seleziona unità FLUPSY:</div>
             <Select 
               disabled={isLoadingFlupsys} 
               value={selectedFlupsyId?.toString() || ""}
               onValueChange={(value) => setSelectedFlupsyId(Number(value))}
             >
-              <FormControl>
-                <SelectTrigger className="w-full">
-                  <SelectValue placeholder="Seleziona unità FLUPSY" />
-                </SelectTrigger>
-              </FormControl>
+              <SelectTrigger className="w-full">
+                <SelectValue placeholder="Seleziona unità FLUPSY" />
+              </SelectTrigger>
               <SelectContent>
                 {flupsys && flupsys.map((flupsy: any) => (
                   <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
@@ -82,7 +79,7 @@ export default function FlupsyVisualizer() {
                 ))}
               </SelectContent>
             </Select>
-          </FormItem>
+          </div>
         </div>
       </CardHeader>
       
