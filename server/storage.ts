@@ -1,4 +1,5 @@
 import { 
+  Flupsy, InsertFlupsy,
   Basket, InsertBasket, 
   Operation, InsertOperation, 
   Cycle, InsertCycle, 
@@ -9,8 +10,16 @@ import {
 } from "@shared/schema";
 
 export interface IStorage {
+  // FLUPSY methods
+  getFlupsys(): Promise<Flupsy[]>;
+  getFlupsy(id: number): Promise<Flupsy | undefined>;
+  getFlupsyByName(name: string): Promise<Flupsy | undefined>;
+  createFlupsy(flupsy: InsertFlupsy): Promise<Flupsy>;
+  updateFlupsy(id: number, flupsy: Partial<Flupsy>): Promise<Flupsy | undefined>;
+  
   // Basket methods
   getBaskets(): Promise<Basket[]>;
+  getBasketsByFlupsy(flupsyId: number): Promise<Basket[]>;
   getBasket(id: number): Promise<Basket | undefined>;
   getBasketByPhysicalNumber(physicalNumber: number): Promise<Basket | undefined>;
   createBasket(basket: InsertBasket): Promise<Basket>;
@@ -30,6 +39,7 @@ export interface IStorage {
   getActiveCycles(): Promise<Cycle[]>;
   getCycle(id: number): Promise<Cycle | undefined>;
   getCyclesByBasket(basketId: number): Promise<Cycle[]>;
+  getCyclesByFlupsy(flupsyId: number): Promise<Cycle[]>;
   createCycle(cycle: InsertCycle): Promise<Cycle>;
   closeCycle(id: number, endDate: Date): Promise<Cycle | undefined>;
   
@@ -56,6 +66,7 @@ export interface IStorage {
 }
 
 export class MemStorage implements IStorage {
+  private flupsys: Map<number, Flupsy>;
   private baskets: Map<number, Basket>;
   private operations: Map<number, Operation>;
   private cycles: Map<number, Cycle>;
@@ -63,6 +74,7 @@ export class MemStorage implements IStorage {
   private sgrs: Map<number, Sgr>;
   private lots: Map<number, Lot>;
   
+  private flupsyId: number;
   private basketId: number;
   private operationId: number;
   private cycleId: number;
@@ -71,6 +83,7 @@ export class MemStorage implements IStorage {
   private lotId: number;
   
   constructor() {
+    this.flupsys = new Map();
     this.baskets = new Map();
     this.operations = new Map();
     this.cycles = new Map();
@@ -78,6 +91,7 @@ export class MemStorage implements IStorage {
     this.sgrs = new Map();
     this.lots = new Map();
     
+    this.flupsyId = 1;
     this.basketId = 1;
     this.operationId = 1;
     this.cycleId = 1;
@@ -90,6 +104,12 @@ export class MemStorage implements IStorage {
   }
   
   private initializeDefaultData() {
+    // Initialize default FLUPSY units
+    const defaultFlupsys: InsertFlupsy[] = [
+      { name: 'FLUPSY 1', location: 'Baia Nord', description: 'Unità principale', active: true },
+      { name: 'FLUPSY 2', location: 'Baia Sud', description: 'Unità secondaria', active: true }
+    ];
+
     // Initialize default sizes
     const defaultSizes: InsertSize[] = [
       { code: 'T0', name: 'Tiny 0', sizeMm: 0.5, minAnimalsPerKg: 8000, maxAnimalsPerKg: 12000, notes: 'Smallest size' },
@@ -115,11 +135,58 @@ export class MemStorage implements IStorage {
       { month: 'Dicembre', percentage: 0.6 }
     ];
     
+    defaultFlupsys.forEach(flupsy => this.createFlupsy(flupsy));
     defaultSizes.forEach(size => this.createSize(size));
     defaultSgrs.forEach(sgr => this.createSgr(sgr));
   }
   
+  // FLUPSY methods
+  async getFlupsys(): Promise<Flupsy[]> {
+    return Array.from(this.flupsys.values());
+  }
+  
+  async getFlupsy(id: number): Promise<Flupsy | undefined> {
+    return this.flupsys.get(id);
+  }
+  
+  async getFlupsyByName(name: string): Promise<Flupsy | undefined> {
+    return Array.from(this.flupsys.values()).find(flupsy => flupsy.name === name);
+  }
+  
+  async createFlupsy(flupsy: InsertFlupsy): Promise<Flupsy> {
+    const id = this.flupsyId++;
+    const newFlupsy: Flupsy = { ...flupsy, id };
+    this.flupsys.set(id, newFlupsy);
+    return newFlupsy;
+  }
+  
+  async updateFlupsy(id: number, flupsy: Partial<Flupsy>): Promise<Flupsy | undefined> {
+    const currentFlupsy = this.flupsys.get(id);
+    if (!currentFlupsy) return undefined;
+    
+    const updatedFlupsy = { ...currentFlupsy, ...flupsy };
+    this.flupsys.set(id, updatedFlupsy);
+    return updatedFlupsy;
+  }
+  
   // Basket methods
+  async getBasketsByFlupsy(flupsyId: number): Promise<Basket[]> {
+    return Array.from(this.baskets.values()).filter(basket => basket.flupsyId === flupsyId);
+  }
+  
+  async getCyclesByFlupsy(flupsyId: number): Promise<Cycle[]> {
+    // Get all baskets for this FLUPSY
+    const baskets = await this.getBasketsByFlupsy(flupsyId);
+    
+    // Get cycles for each basket and flatten the array
+    const cycles: Cycle[] = [];
+    for (const basket of baskets) {
+      const basketCycles = await this.getCyclesByBasket(basket.id);
+      cycles.push(...basketCycles);
+    }
+    
+    return cycles;
+  }
   async getBaskets(): Promise<Basket[]> {
     return Array.from(this.baskets.values());
   }

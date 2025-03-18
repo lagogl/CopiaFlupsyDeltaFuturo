@@ -1,6 +1,7 @@
 import { and, eq, isNull } from 'drizzle-orm';
 import { db } from './db';
 import { 
+  Flupsy, InsertFlupsy, flupsys,
   Basket, Cycle, InsertBasket, InsertCycle, InsertLot, InsertOperation, 
   InsertSgr, InsertSize, Lot, Operation, Size, Sgr, baskets, cycles, lots,
   operations, sgr, sizes 
@@ -8,6 +9,34 @@ import {
 import { IStorage } from './storage';
 
 export class DbStorage implements IStorage {
+  // FLUPSY
+  async getFlupsys(): Promise<Flupsy[]> {
+    return await db.select().from(flupsys);
+  }
+  
+  async getFlupsy(id: number): Promise<Flupsy | undefined> {
+    const results = await db.select().from(flupsys).where(eq(flupsys.id, id));
+    return results[0];
+  }
+  
+  async getFlupsyByName(name: string): Promise<Flupsy | undefined> {
+    const results = await db.select().from(flupsys).where(eq(flupsys.name, name));
+    return results[0];
+  }
+  
+  async createFlupsy(flupsy: InsertFlupsy): Promise<Flupsy> {
+    const results = await db.insert(flupsys).values(flupsy).returning();
+    return results[0];
+  }
+  
+  async updateFlupsy(id: number, flupsyUpdate: Partial<Flupsy>): Promise<Flupsy | undefined> {
+    const results = await db.update(flupsys)
+      .set(flupsyUpdate)
+      .where(eq(flupsys.id, id))
+      .returning();
+    return results[0];
+  }
+  
   // BASKETS
   async getBaskets(): Promise<Basket[]> {
     return await db.select().from(baskets);
@@ -21,6 +50,10 @@ export class DbStorage implements IStorage {
   async getBasketByPhysicalNumber(physicalNumber: number): Promise<Basket | undefined> {
     const results = await db.select().from(baskets).where(eq(baskets.physicalNumber, physicalNumber));
     return results[0];
+  }
+  
+  async getBasketsByFlupsy(flupsyId: number): Promise<Basket[]> {
+    return await db.select().from(baskets).where(eq(baskets.flupsyId, flupsyId));
   }
 
   async createBasket(basket: InsertBasket): Promise<Basket> {

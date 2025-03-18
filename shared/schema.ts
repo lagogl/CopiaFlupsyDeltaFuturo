@@ -2,10 +2,20 @@ import { pgTable, text, serial, integer, boolean, timestamp, real, date } from "
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// FLUPSY (Floating Upweller System)
+export const flupsys = pgTable("flupsys", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // nome identificativo del FLUPSY
+  location: text("location"), // posizione/località del FLUPSY
+  description: text("description"), // descrizione opzionale
+  active: boolean("active").notNull().default(true), // se il FLUPSY è attualmente attivo
+});
+
 // Baskets (Ceste)
 export const baskets = pgTable("baskets", {
   id: serial("id").primaryKey(),
   physicalNumber: integer("physical_number").notNull(), // numero fisico della cesta
+  flupsyId: integer("flupsy_id").notNull(), // reference to the FLUPSY this basket belongs to
   state: text("state").notNull().default("available"), // available, active
   currentCycleId: integer("current_cycle_id"), // reference to the current active cycle, null when not in a cycle
   nfcData: text("nfc_data"), // data to be stored in NFC tag
@@ -80,6 +90,10 @@ export const lots = pgTable("lots", {
 });
 
 // Insert schemas
+export const insertFlupsySchema = createInsertSchema(flupsys).omit({
+  id: true
+});
+
 export const insertBasketSchema = createInsertSchema(baskets).omit({ 
   id: true, 
   currentCycleId: true,
@@ -111,6 +125,9 @@ export const insertLotSchema = createInsertSchema(lots).omit({
 });
 
 // Types
+export type Flupsy = typeof flupsys.$inferSelect;
+export type InsertFlupsy = z.infer<typeof insertFlupsySchema>;
+
 export type Basket = typeof baskets.$inferSelect;
 export type InsertBasket = z.infer<typeof insertBasketSchema>;
 
