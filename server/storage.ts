@@ -24,6 +24,7 @@ export interface IStorage {
   getBasketByPhysicalNumber(physicalNumber: number): Promise<Basket | undefined>;
   createBasket(basket: InsertBasket): Promise<Basket>;
   updateBasket(id: number, basket: Partial<Basket>): Promise<Basket | undefined>;
+  deleteBasket(id: number): Promise<boolean>;
   
   // Operation methods
   getOperations(): Promise<Operation[]>;
@@ -213,6 +214,15 @@ export class MemStorage implements IStorage {
     const updatedBasket = { ...currentBasket, ...basket };
     this.baskets.set(id, updatedBasket);
     return updatedBasket;
+  }
+  
+  async deleteBasket(id: number): Promise<boolean> {
+    const exists = this.baskets.has(id);
+    if (exists) {
+      this.baskets.delete(id);
+      return true;
+    }
+    return false;
   }
   
   // Operation methods

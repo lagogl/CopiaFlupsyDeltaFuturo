@@ -68,6 +68,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to create basket" });
     }
   });
+  
+  app.delete("/api/baskets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid basket ID" });
+      }
+
+      // Verify the basket exists
+      const basket = await storage.getBasket(id);
+      if (!basket) {
+        return res.status(404).json({ message: "Basket not found" });
+      }
+      
+      // Check if basket has an active cycle
+      if (basket.currentCycleId !== null) {
+        return res.status(400).json({ 
+          message: "Cannot delete a basket with an active cycle. Close the cycle first." 
+        });
+      }
+
+      // Delete the basket
+      const result = await storage.deleteBasket(id);
+      if (result) {
+        res.status(200).json({ message: "Basket deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete basket" });
+      }
+    } catch (error) {
+      console.error("Error deleting basket:", error);
+      res.status(500).json({ message: "Failed to delete basket" });
+    }
+  });
 
   // === Operation routes ===
   app.get("/api/operations", async (req, res) => {

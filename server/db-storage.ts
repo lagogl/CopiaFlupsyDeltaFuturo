@@ -68,6 +68,11 @@ export class DbStorage implements IStorage {
       .returning();
     return results[0];
   }
+  
+  async deleteBasket(id: number): Promise<boolean> {
+    const results = await db.delete(baskets).where(eq(baskets.id, id)).returning();
+    return results.length > 0;
+  }
 
   // OPERATIONS
   async getOperations(): Promise<Operation[]> {
