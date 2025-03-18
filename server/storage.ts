@@ -1,0 +1,399 @@
+import { 
+  Basket, InsertBasket, 
+  Operation, InsertOperation, 
+  Cycle, InsertCycle, 
+  Size, InsertSize, 
+  Sgr, InsertSgr, 
+  Lot, InsertLot, 
+  operationTypes
+} from "@shared/schema";
+
+export interface IStorage {
+  // Basket methods
+  getBaskets(): Promise<Basket[]>;
+  getBasket(id: number): Promise<Basket | undefined>;
+  getBasketByPhysicalNumber(physicalNumber: number): Promise<Basket | undefined>;
+  createBasket(basket: InsertBasket): Promise<Basket>;
+  updateBasket(id: number, basket: Partial<Basket>): Promise<Basket | undefined>;
+  
+  // Operation methods
+  getOperations(): Promise<Operation[]>;
+  getOperation(id: number): Promise<Operation | undefined>;
+  getOperationsByBasket(basketId: number): Promise<Operation[]>;
+  getOperationsByCycle(cycleId: number): Promise<Operation[]>;
+  getOperationsByDate(date: Date): Promise<Operation[]>;
+  createOperation(operation: InsertOperation): Promise<Operation>;
+  updateOperation(id: number, operation: Partial<Operation>): Promise<Operation | undefined>;
+  
+  // Cycle methods
+  getCycles(): Promise<Cycle[]>;
+  getActiveCycles(): Promise<Cycle[]>;
+  getCycle(id: number): Promise<Cycle | undefined>;
+  getCyclesByBasket(basketId: number): Promise<Cycle[]>;
+  createCycle(cycle: InsertCycle): Promise<Cycle>;
+  closeCycle(id: number, endDate: Date): Promise<Cycle | undefined>;
+  
+  // Size methods
+  getSizes(): Promise<Size[]>;
+  getSize(id: number): Promise<Size | undefined>;
+  getSizeByCode(code: string): Promise<Size | undefined>;
+  createSize(size: InsertSize): Promise<Size>;
+  updateSize(id: number, size: Partial<Size>): Promise<Size | undefined>;
+  
+  // SGR methods
+  getSgrs(): Promise<Sgr[]>;
+  getSgr(id: number): Promise<Sgr | undefined>;
+  getSgrByMonth(month: string): Promise<Sgr | undefined>;
+  createSgr(sgr: InsertSgr): Promise<Sgr>;
+  updateSgr(id: number, sgr: Partial<Sgr>): Promise<Sgr | undefined>;
+  
+  // Lot methods
+  getLots(): Promise<Lot[]>;
+  getActiveLots(): Promise<Lot[]>;
+  getLot(id: number): Promise<Lot | undefined>;
+  createLot(lot: InsertLot): Promise<Lot>;
+  updateLot(id: number, lot: Partial<Lot>): Promise<Lot | undefined>;
+}
+
+export class MemStorage implements IStorage {
+  private baskets: Map<number, Basket>;
+  private operations: Map<number, Operation>;
+  private cycles: Map<number, Cycle>;
+  private sizes: Map<number, Size>;
+  private sgrs: Map<number, Sgr>;
+  private lots: Map<number, Lot>;
+  
+  private basketId: number;
+  private operationId: number;
+  private cycleId: number;
+  private sizeId: number;
+  private sgrId: number;
+  private lotId: number;
+  
+  constructor() {
+    this.baskets = new Map();
+    this.operations = new Map();
+    this.cycles = new Map();
+    this.sizes = new Map();
+    this.sgrs = new Map();
+    this.lots = new Map();
+    
+    this.basketId = 1;
+    this.operationId = 1;
+    this.cycleId = 1;
+    this.sizeId = 1;
+    this.sgrId = 1;
+    this.lotId = 1;
+    
+    // Initialize with some default sizes
+    this.initializeDefaultData();
+  }
+  
+  private initializeDefaultData() {
+    // Initialize default sizes
+    const defaultSizes: InsertSize[] = [
+      { code: 'T0', name: 'Tiny 0', sizeMm: 0.5, minAnimalsPerKg: 8000, maxAnimalsPerKg: 12000, notes: 'Smallest size' },
+      { code: 'T1', name: 'Tiny 1', sizeMm: 1.0, minAnimalsPerKg: 5000, maxAnimalsPerKg: 8000, notes: 'Very small' },
+      { code: 'M1', name: 'Medium 1', sizeMm: 2.0, minAnimalsPerKg: 3000, maxAnimalsPerKg: 5000, notes: 'Small-medium' },
+      { code: 'M2', name: 'Medium 2', sizeMm: 3.0, minAnimalsPerKg: 2000, maxAnimalsPerKg: 3000, notes: 'Medium' },
+      { code: 'M3', name: 'Medium 3', sizeMm: 4.0, minAnimalsPerKg: 1500, maxAnimalsPerKg: 2000, notes: 'Medium-large' }
+    ];
+    
+    // Initialize default SGR values
+    const defaultSgrs: InsertSgr[] = [
+      { month: 'Gennaio', percentage: 0.7 },
+      { month: 'Febbraio', percentage: 0.7 },
+      { month: 'Marzo', percentage: 0.6 },
+      { month: 'Aprile', percentage: 0.6 },
+      { month: 'Maggio', percentage: 0.5 },
+      { month: 'Giugno', percentage: 0.5 },
+      { month: 'Luglio', percentage: 0.5 },
+      { month: 'Agosto', percentage: 0.5 },
+      { month: 'Settembre', percentage: 0.6 },
+      { month: 'Ottobre', percentage: 0.6 },
+      { month: 'Novembre', percentage: 0.5 },
+      { month: 'Dicembre', percentage: 0.6 }
+    ];
+    
+    defaultSizes.forEach(size => this.createSize(size));
+    defaultSgrs.forEach(sgr => this.createSgr(sgr));
+  }
+  
+  // Basket methods
+  async getBaskets(): Promise<Basket[]> {
+    return Array.from(this.baskets.values());
+  }
+  
+  async getBasket(id: number): Promise<Basket | undefined> {
+    return this.baskets.get(id);
+  }
+  
+  async getBasketByPhysicalNumber(physicalNumber: number): Promise<Basket | undefined> {
+    return Array.from(this.baskets.values()).find(basket => basket.physicalNumber === physicalNumber);
+  }
+  
+  async createBasket(basket: InsertBasket): Promise<Basket> {
+    const id = this.basketId++;
+    const newBasket: Basket = { ...basket, id, currentCycleId: null, nfcData: null, state: "available" };
+    this.baskets.set(id, newBasket);
+    return newBasket;
+  }
+  
+  async updateBasket(id: number, basket: Partial<Basket>): Promise<Basket | undefined> {
+    const currentBasket = this.baskets.get(id);
+    if (!currentBasket) return undefined;
+    
+    const updatedBasket = { ...currentBasket, ...basket };
+    this.baskets.set(id, updatedBasket);
+    return updatedBasket;
+  }
+  
+  // Operation methods
+  async getOperations(): Promise<Operation[]> {
+    return Array.from(this.operations.values());
+  }
+  
+  async getOperation(id: number): Promise<Operation | undefined> {
+    return this.operations.get(id);
+  }
+  
+  async getOperationsByBasket(basketId: number): Promise<Operation[]> {
+    return Array.from(this.operations.values())
+      .filter(operation => operation.basketId === basketId)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+  
+  async getOperationsByCycle(cycleId: number): Promise<Operation[]> {
+    return Array.from(this.operations.values())
+      .filter(operation => operation.cycleId === cycleId)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+  }
+  
+  async getOperationsByDate(date: Date): Promise<Operation[]> {
+    const targetDate = new Date(date);
+    targetDate.setHours(0, 0, 0, 0);
+    
+    return Array.from(this.operations.values()).filter(operation => {
+      const opDate = new Date(operation.date);
+      opDate.setHours(0, 0, 0, 0);
+      return opDate.getTime() === targetDate.getTime();
+    });
+  }
+  
+  async createOperation(operation: InsertOperation): Promise<Operation> {
+    // Calculate average weight if animals per kg is provided
+    let averageWeight = null;
+    if (operation.animalsPerKg && operation.animalsPerKg > 0) {
+      averageWeight = 1000000 / operation.animalsPerKg;
+    }
+    
+    const id = this.operationId++;
+    const newOperation: Operation = { 
+      ...operation, 
+      id,
+      averageWeight
+    };
+    
+    this.operations.set(id, newOperation);
+    
+    // If this is a cycle closing operation, update the cycle
+    if (operation.type === 'vendita' || operation.type === 'selezione-vendita') {
+      await this.closeCycle(operation.cycleId, new Date(operation.date));
+      
+      // Also update the basket state
+      const cycle = await this.getCycle(operation.cycleId);
+      if (cycle) {
+        await this.updateBasket(cycle.basketId, { 
+          state: "available",
+          currentCycleId: null,
+          nfcData: null
+        });
+      }
+    }
+    
+    // Update NFC data
+    const cycle = await this.getCycle(operation.cycleId);
+    if (cycle) {
+      const basket = await this.getBasket(cycle.basketId);
+      if (basket) {
+        const nfcData = JSON.stringify({
+          cycleId: operation.cycleId,
+          lastOperation: {
+            id: newOperation.id,
+            date: operation.date,
+            type: operation.type
+          }
+        });
+        await this.updateBasket(basket.id, { nfcData });
+      }
+    }
+    
+    return newOperation;
+  }
+  
+  async updateOperation(id: number, operation: Partial<Operation>): Promise<Operation | undefined> {
+    const currentOperation = this.operations.get(id);
+    if (!currentOperation) return undefined;
+    
+    // Recalculate average weight if animals per kg is updated
+    let averageWeight = currentOperation.averageWeight;
+    if (operation.animalsPerKg && operation.animalsPerKg > 0) {
+      averageWeight = 1000000 / operation.animalsPerKg;
+    }
+    
+    const updatedOperation = { 
+      ...currentOperation, 
+      ...operation,
+      averageWeight
+    };
+    
+    this.operations.set(id, updatedOperation);
+    return updatedOperation;
+  }
+  
+  // Cycle methods
+  async getCycles(): Promise<Cycle[]> {
+    return Array.from(this.cycles.values());
+  }
+  
+  async getActiveCycles(): Promise<Cycle[]> {
+    return Array.from(this.cycles.values()).filter(cycle => cycle.state === 'active');
+  }
+  
+  async getCycle(id: number): Promise<Cycle | undefined> {
+    return this.cycles.get(id);
+  }
+  
+  async getCyclesByBasket(basketId: number): Promise<Cycle[]> {
+    return Array.from(this.cycles.values())
+      .filter(cycle => cycle.basketId === basketId)
+      .sort((a, b) => new Date(b.startDate).getTime() - new Date(a.startDate).getTime());
+  }
+  
+  async createCycle(cycle: InsertCycle): Promise<Cycle> {
+    const id = this.cycleId++;
+    const newCycle: Cycle = { 
+      ...cycle, 
+      id,
+      endDate: null,
+      state: 'active'
+    };
+    
+    this.cycles.set(id, newCycle);
+    
+    // Update the basket to reference this cycle
+    await this.updateBasket(cycle.basketId, { 
+      state: 'active',
+      currentCycleId: id
+    });
+    
+    return newCycle;
+  }
+  
+  async closeCycle(id: number, endDate: Date): Promise<Cycle | undefined> {
+    const currentCycle = this.cycles.get(id);
+    if (!currentCycle) return undefined;
+    
+    const updatedCycle = { 
+      ...currentCycle, 
+      endDate,
+      state: 'closed'
+    };
+    
+    this.cycles.set(id, updatedCycle);
+    return updatedCycle;
+  }
+  
+  // Size methods
+  async getSizes(): Promise<Size[]> {
+    return Array.from(this.sizes.values());
+  }
+  
+  async getSize(id: number): Promise<Size | undefined> {
+    return this.sizes.get(id);
+  }
+  
+  async getSizeByCode(code: string): Promise<Size | undefined> {
+    return Array.from(this.sizes.values()).find(size => size.code === code);
+  }
+  
+  async createSize(size: InsertSize): Promise<Size> {
+    const id = this.sizeId++;
+    const newSize: Size = { ...size, id };
+    this.sizes.set(id, newSize);
+    return newSize;
+  }
+  
+  async updateSize(id: number, size: Partial<Size>): Promise<Size | undefined> {
+    const currentSize = this.sizes.get(id);
+    if (!currentSize) return undefined;
+    
+    const updatedSize = { ...currentSize, ...size };
+    this.sizes.set(id, updatedSize);
+    return updatedSize;
+  }
+  
+  // SGR methods
+  async getSgrs(): Promise<Sgr[]> {
+    return Array.from(this.sgrs.values());
+  }
+  
+  async getSgr(id: number): Promise<Sgr | undefined> {
+    return this.sgrs.get(id);
+  }
+  
+  async getSgrByMonth(month: string): Promise<Sgr | undefined> {
+    return Array.from(this.sgrs.values()).find(sgr => sgr.month.toLowerCase() === month.toLowerCase());
+  }
+  
+  async createSgr(sgr: InsertSgr): Promise<Sgr> {
+    const id = this.sgrId++;
+    const newSgr: Sgr = { ...sgr, id };
+    this.sgrs.set(id, newSgr);
+    return newSgr;
+  }
+  
+  async updateSgr(id: number, sgr: Partial<Sgr>): Promise<Sgr | undefined> {
+    const currentSgr = this.sgrs.get(id);
+    if (!currentSgr) return undefined;
+    
+    const updatedSgr = { ...currentSgr, ...sgr };
+    this.sgrs.set(id, updatedSgr);
+    return updatedSgr;
+  }
+  
+  // Lot methods
+  async getLots(): Promise<Lot[]> {
+    return Array.from(this.lots.values());
+  }
+  
+  async getActiveLots(): Promise<Lot[]> {
+    return Array.from(this.lots.values()).filter(lot => lot.state === 'active');
+  }
+  
+  async getLot(id: number): Promise<Lot | undefined> {
+    return this.lots.get(id);
+  }
+  
+  async createLot(lot: InsertLot): Promise<Lot> {
+    const id = this.lotId++;
+    const newLot: Lot = { 
+      ...lot, 
+      id,
+      state: 'active'
+    };
+    this.lots.set(id, newLot);
+    return newLot;
+  }
+  
+  async updateLot(id: number, lot: Partial<Lot>): Promise<Lot | undefined> {
+    const currentLot = this.lots.get(id);
+    if (!currentLot) return undefined;
+    
+    const updatedLot = { ...currentLot, ...lot };
+    this.lots.set(id, updatedLot);
+    return updatedLot;
+  }
+}
+
+export const storage = new MemStorage();

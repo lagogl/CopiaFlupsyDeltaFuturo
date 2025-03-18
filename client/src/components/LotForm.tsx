@@ -1,0 +1,191 @@
+import { zodResolver } from "@hookform/resolvers/zod";
+import { useForm } from "react-hook-form";
+import { z } from "zod";
+import { useQuery } from "@tanstack/react-query";
+import { Button } from "@/components/ui/button";
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form";
+import { Input } from "@/components/ui/input";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Textarea } from "@/components/ui/textarea";
+import { lotSchema } from "@shared/schema";
+
+// Use the lot schema from shared schema
+const formSchema = lotSchema;
+
+type FormValues = z.infer<typeof formSchema>;
+
+interface LotFormProps {
+  onSubmit: (values: FormValues) => void;
+  defaultValues?: Partial<FormValues>;
+  isLoading?: boolean;
+}
+
+export default function LotForm({ 
+  onSubmit, 
+  defaultValues = {
+    arrivalDate: new Date().toISOString().split('T')[0],
+  },
+  isLoading = false
+}: LotFormProps) {
+  // Fetch sizes for dropdown
+  const { data: sizes } = useQuery({
+    queryKey: ['/api/sizes'],
+  });
+
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
+    defaultValues,
+  });
+
+  return (
+    <Form {...form}>
+      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="arrivalDate"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Data Arrivo</FormLabel>
+                <FormControl>
+                  <Input type="date" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="supplier"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fornitore</FormLabel>
+                <FormControl>
+                  <Input placeholder="Nome fornitore" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="quality"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Qualità</FormLabel>
+                <FormControl>
+                  <Input placeholder="Qualità del lotto" {...field} />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="sizeId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Taglia</FormLabel>
+                <Select 
+                  onValueChange={(value) => field.onChange(value ? Number(value) : null)}
+                  value={field.value?.toString() || ""}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona taglia" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="">Nessuna taglia</SelectItem>
+                    {sizes?.map((size) => (
+                      <SelectItem key={size.id} value={size.id.toString()}>
+                        {size.code} - {size.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="animalCount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Numero Animali</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    placeholder="Numero di animali"
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+
+          <FormField
+            control={form.control}
+            name="weight"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Peso (g)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number" 
+                    step="0.01"
+                    placeholder="Peso in grammi"
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
+
+        <FormField
+          control={form.control}
+          name="notes"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Note</FormLabel>
+              <FormControl>
+                <Textarea 
+                  placeholder="Inserisci note aggiuntive" 
+                  rows={3}
+                  {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <div className="flex justify-end space-x-2">
+          <Button variant="outline" type="button" onClick={() => form.reset()}>
+            Annulla
+          </Button>
+          <Button type="submit" disabled={isLoading}>
+            {isLoading ? "Salvataggio..." : "Crea Lotto"}
+          </Button>
+        </div>
+      </form>
+    </Form>
+  );
+}
