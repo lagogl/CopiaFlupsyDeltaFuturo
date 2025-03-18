@@ -1,0 +1,121 @@
+Okay, I need to help the user by summarizing their requirements for an app that manages Flupsy units. Let me start by breaking down the key points they mentioned.
+
+First, they have Flupsy units, each made up of Baskets (Ceste). Each basket has a physical number and a unique cycle number. The cycle starts with "Prima Attivazione" and ends with "Selezione per vendita" or "Vendita". Each day, only one operation can be recorded per basket, and the cycle must end properly before reusing the physical basket with the same numbering.
+
+They mentioned operations like Pulizia, Vagliatura, Trattamento, Misura, etc., each with specific fields: date, type (causale), number of animals, size, total weight, average weight, SGR, notes, etc. The SGR table has monthly growth rates, and the system must calculate average animal weight in milligrams using the number per kg.
+
+The NFC tags on baskets store current cycle data, so the app needs to track active cycles. Also, growth statistics come from 'Misura' operations, which collect total weight, animal count, and number per kg. The size table links size codes to mm, min/max animals per kg, and notes.
+
+Lotto management is also important. Each lot has arrival date, supplier, quality, notes, animal numbers, weight, size, etc. The journal must automatically track lots and allow tracing their history. The app should also compare cycles and baskets through tables and graphs.
+
+Wait, the user wants to ensure that once a cycle is closed (with Vendita/Selezione), the physical basket can start a new cycle with the same number. So the system must track cycles separately from the physical basket numbers. Also, the SGR is a monthly percentage for daily growth, so the calculation needs to be clear.
+
+I need to structure the tables first. The main entities are Baskets (with physical and cycle numbers), Operations (linked to baskets and cycles), Cycles (tracking start and end operations), Sizes, SGR, Lots, and the Journal entries.
+
+The Journal entries (Operations) must have constraints: only one per day per basket, first must be Prima Attivazione, last must be Vendita/Selezione. The SGR table needs monthly entries with the percentage. The Size table links sizes to their parameters.
+
+For the NFC, each basket's current cycle data should be accessible via the tag. The app must update this when a new operation is logged.
+
+The statistics part requires aggregating 'Misura' operations to show growth over time. Comparisons between cycles and baskets would involve querying the Operations table grouped by cycle or basket, maybe using the cycle's start/end dates.
+
+Lotto tracking needs to link each lot to its operations. When a lot is used, the system should automatically log it in the journal, and allow tracing back through the operations. The lots table should have all the necessary fields, and each operation can have a lot associated.
+
+I need to make sure that when closing a cycle, the system prevents further operations unless a new cycle is started. Also, the average weight calculation is 1,000,000 divided by animals per kg, so that formula must be implemented in the app when 'Misura' operations are recorded.
+
+The user also wants tables and graphs for comparison. The backend should provide APIs to fetch data for these, maybe by cycle ID, basket number, or time ranges.
+
+Potential issues to consider: ensuring data integrity with constraints (like only one operation per day), handling cycle closure properly, and efficient querying for historical data and statistics.
+
+I think that's the core. Now, I'll structure this into a clear summary for the developer, listing entities, tables, constraints, and key functionalities.
+
+Riepilogo per lo sviluppo dell'app di gestione FLUPSY
+
+Entità principali
+Cesta (Basket)
+Attributi :
+numero_fisico (identificativo fisico della cesta).
+numero_ciclo_produttivo (progressivo univoco per ogni ciclo).
+stato_ciclo (aperto/chiuso).
+NFC (memorizza dati del ciclo attivo: numero_ciclo, ultima operazione, ecc.).
+Operazione (Journal Entry)
+Attributi :
+data (obbligatorio, unica per cesta al giorno).
+tipologia_causale (es: "Prima attivazione", "Pulizia", "Vendita", ...).
+numero_animali, taglia (FK a Tabella Taglie), peso_totale, peso_medio (calcolato automaticamente).
+SGR (FK a Tabella SGR), note, altri campi.
+Vincoli :
+La prima operazione deve essere "Prima attivazione".
+L'ultima operazione deve essere "Vendita" o "Selezione per vendita", dopo di che il ciclo è chiuso.
+Solo una operazione al giorno per cesta.
+Ciclo Produttivo
+Attributi :
+id_ciclo (collegato a numero_ciclo_produttivo della Cesta).
+data_inizio (data "Prima attivazione").
+data_fine (data "Vendita/Selezione").
+cesta_fisica (FK a Cesta).
+Taglie
+Tabella :
+codice_taglia, nome, misura_mm, min_animali_per_kg, max_animali_per_kg, note.
+SGR (Indici di Crescita)
+Tabella :
+mese (es: "Gennaio"), percentuale_crescita_giornaliera (es: 0.5%).
+Lotto
+Attributi :
+id_lotto, data_arrivo, fornitore, qualità, note, numero_animali, peso, taglia (FK a Taglie), altri dati.
+Funzionalità principali
+Gestione Operazioni
+Registrazione di operazioni con controllo automatico dei vincoli (es: prima operazione, unica operazione al giorno).
+Calcolo automatico del peso_medio come 1000000 / (numero_animali_per_kg) (da impostare in operazioni "Misura").
+Chiusura del ciclo quando viene registrata "Vendita/Selezione".
+Tracciamento Lotto
+Collegamento automatico dei lotti alle operazioni (es: registrazione di un lotto nella "Prima attivazione").
+Ricerca retroattiva della storia di un lotto (operazioni, movimenti, ecc.).
+Statistiche e Grafici
+Dati di Crescita :
+Aggregazione delle operazioni "Misura" per ciclo per calcolare trend di peso, numero di animali, taglia.
+Confronti :
+Tabelle/grafici per confrontare cicli tra loro o ceste diverse (es: crescita media, durata ciclo, SGR applicato).
+Gestione NFC
+Scansione dell'NFC per recuperare il ciclo attivo di una cesta e visualizzare i dati correnti (es: ultima operazione, stato, SGR attuale).
+Sistema di Calcolo SGR
+Il modulo SGR fornisce percentuali mensili; il sistema applica il valore corrispondente al mese dell'operazione per calcoli di crescita.
+Tabelle Database
+Ceste
+id, numero_fisico, stato_ciclo, numero_ciclo_attuale, NFC_data.
+Operazioni
+id, cesta_id, data, tipologia_causale, numero_animali, taglia_id, peso_totale, SGR_id, lotto_id, note.
+Cicli_Produttivi
+id, cesta_id, data_inizio, data_fine, stato.
+Taglie
+id, codice, nome, misura_mm, min_animali_per_kg, max_animali_per_kg, note.
+SGR
+id, mese, percentuale.
+Lotti
+id, data_arrivo, fornitore, qualità, note, numero_animali, peso, taglia_id.
+Vincoli e Logica
+Chiusura Ciclo :
+Dopo "Vendita/Selezione", il ciclo è chiuso e non accettano nuove operazioni.
+La cesta fisica può essere riutilizzata con un nuovo numero_ciclo_produttivo.
+Automaticità :
+Il sistema imposta il SGR corrispondente al mese dell'operazione.
+Il lotto_id è ereditato automaticamente dalle operazioni se impostato inizialmente.
+Validazione :
+Controllo che "Prima attivazione" sia la prima operazione di un ciclo.
+Controllo che "Vendita/Selezione" sia l'ultima operazione.
+Interfaccia Utente (UI)
+Dashboard :
+Visualizzazione dei cicli attivi, statistiche di crescita, grafici confrontativi.
+Registrazione Operazioni :
+Form con campi obbligatori (data, causale, numero_animali, ecc.), con validazioni automatiche.
+Dettagli Cesta/Ciclo :
+Cronologia delle operazioni, dati SGR applicati, tracciamento del lotto.
+Gestione Taglie e SGR :
+Amministrazione delle tabelle statiche (taglie, SGR mensili).
+Note Tecniche
+Calcolo Peso Medio :
+peso_medio = 1000000 / numero_animali_per_kg (espresso in milligrammi).
+NFC :
+I dati dell'NFC devono essere sincronizzati con il database dopo ogni operazione.
+API :
+Implementare endpoint per recuperare dati di statistica (es: crescita media per ciclo, confronto tra ceste).
+Questo riepilogo fornisce le linee guida per lo sviluppo dell'app, garantendo tracciabilità dei cicli, registrazione operativa, e analisi statistiche.
