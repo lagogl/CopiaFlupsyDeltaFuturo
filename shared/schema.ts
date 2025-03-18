@@ -19,6 +19,8 @@ export const baskets = pgTable("baskets", {
   state: text("state").notNull().default("available"), // available, active
   currentCycleId: integer("current_cycle_id"), // reference to the current active cycle, null when not in a cycle
   nfcData: text("nfc_data"), // data to be stored in NFC tag
+  row: text("row"), // fila in cui si trova la cesta (DX o SX)
+  position: integer("position"), // posizione numerica nella fila (1, 2, 3, ecc.)
 });
 
 // Operation Types (Tipologie operazioni)

@@ -31,6 +31,8 @@ const basketFormSchema = z.object({
   flupsyId: z.coerce.number()
     .int()
     .positive("Devi selezionare un'unità FLUPSY valida"),
+  row: z.string().optional(),
+  position: z.coerce.number().int().positive().optional(),
 });
 
 type BasketFormValues = z.infer<typeof basketFormSchema>;
@@ -121,6 +123,58 @@ export default function BasketForm({
             </FormItem>
           )}
         />
+        
+        <div className="grid grid-cols-2 gap-4">
+          <FormField
+            control={form.control}
+            name="row"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Fila</FormLabel>
+                <Select 
+                  onValueChange={field.onChange}
+                  defaultValue={field.value || ""}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona fila" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    <SelectItem value="DX">Destra (DX)</SelectItem>
+                    <SelectItem value="SX">Sinistra (SX)</SelectItem>
+                  </SelectContent>
+                </Select>
+                <FormDescription>
+                  La destra è riferita alla vista verso l'elica
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          <FormField
+            control={form.control}
+            name="position"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Posizione</FormLabel>
+                <FormControl>
+                  <Input
+                    type="number"
+                    placeholder="Inserisci la posizione nella fila..."
+                    {...field}
+                    onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+                  />
+                </FormControl>
+                <FormDescription>
+                  Numero progressivo della posizione nella fila
+                </FormDescription>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+        </div>
 
         <div className="flex justify-end space-x-2">
           <Button variant="outline" type="button" onClick={() => form.reset()}>

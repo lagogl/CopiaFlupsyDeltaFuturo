@@ -122,7 +122,7 @@ export default function OperationForm({
                   <SelectContent>
                     {baskets?.filter(b => b.state === 'active').map((basket) => (
                       <SelectItem key={basket.id} value={basket.id.toString()}>
-                        Cesta #{basket.physicalNumber}
+                        Cesta #{basket.physicalNumber}{basket.row && basket.position ? ` - Fila ${basket.row} Pos. ${basket.position}` : ''}
                       </SelectItem>
                     ))}
                   </SelectContent>
