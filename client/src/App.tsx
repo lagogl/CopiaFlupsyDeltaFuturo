@@ -13,11 +13,13 @@ import Statistics from "@/pages/Statistics";
 import Sizes from "@/pages/Sizes";
 import Sgr from "@/pages/Sgr";
 import Settings from "@/pages/Settings";
+import Flupsys from "@/pages/Flupsys";
 
 function Router() {
   return (
     <Switch>
       <Route path="/" component={Dashboard}/>
+      <Route path="/flupsys" component={Flupsys}/>
       <Route path="/baskets" component={Baskets}/>
       <Route path="/operations" component={Operations}/>
       <Route path="/cycles" component={Cycles}/>
