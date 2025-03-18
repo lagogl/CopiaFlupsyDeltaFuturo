@@ -1,12 +1,13 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format } from 'date-fns';
-import { Eye, Search, Filter, Pencil, Plus } from 'lucide-react';
+import { Eye, Search, Filter, Pencil, Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import OperationForm from '@/components/OperationForm';
 
@@ -15,10 +16,18 @@ export default function Operations() {
   const [typeFilter, setTypeFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedOperation, setSelectedOperation] = useState<any>(null);
   
   // Query operations
   const { data: operations, isLoading } = useQuery({
     queryKey: ['/api/operations'],
+  });
+  
+  // Query baskets for reference
+  const { data: baskets } = useQuery({
+    queryKey: ['/api/baskets'],
   });
 
   // Create mutation
@@ -27,6 +36,59 @@ export default function Operations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       setIsCreateDialogOpen(false);
+      toast({
+        title: "Operazione completata",
+        description: "L'operazione è stata registrata con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante la registrazione dell'operazione",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Update mutation
+  const updateOperationMutation = useMutation({
+    mutationFn: (data: any) => apiRequest('PATCH', `/api/operations/${data.id}`, data.operation),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      setIsEditDialogOpen(false);
+      setSelectedOperation(null);
+      toast({
+        title: "Operazione completata",
+        description: "L'operazione è stata aggiornata con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante l'aggiornamento dell'operazione",
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Delete mutation
+  const deleteOperationMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/operations/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      setIsDeleteDialogOpen(false);
+      setSelectedOperation(null);
+      toast({
+        title: "Operazione completata",
+        description: "L'operazione è stata eliminata con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante l'eliminazione dell'operazione",
+        variant: "destructive",
+      });
     }
   });
 
@@ -232,8 +294,25 @@ export default function Operations() {
                         <Button variant="ghost" size="icon">
                           <Eye className="h-5 w-5 text-primary" />
                         </Button>
-                        <Button variant="ghost" size="icon">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedOperation(op);
+                            setIsEditDialogOpen(true);
+                          }}
+                        >
                           <Pencil className="h-5 w-5 text-gray-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
+                            setSelectedOperation(op);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-5 w-5 text-destructive" />
                         </Button>
                       </div>
                     </td>
@@ -255,6 +334,91 @@ export default function Operations() {
             onSubmit={(data) => createOperationMutation.mutate(data)} 
             isLoading={createOperationMutation.isPending}
           />
+        </DialogContent>
+      </Dialog>
+      
+      {/* Edit Operation Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Modifica Operazione</DialogTitle>
+          </DialogHeader>
+          {selectedOperation && (
+            <OperationForm 
+              onSubmit={(data) => updateOperationMutation.mutate({ id: selectedOperation.id, operation: data })}
+              isLoading={updateOperationMutation.isPending}
+              defaultValues={{
+                type: selectedOperation.type,
+                date: new Date(selectedOperation.date),
+                basketId: selectedOperation.basketId,
+                cycleId: selectedOperation.cycleId,
+                sizeId: selectedOperation.sizeId,
+                sgrId: selectedOperation.sgrId,
+                lotId: selectedOperation.lotId,
+                animalCount: selectedOperation.animalCount,
+                totalWeight: selectedOperation.totalWeight,
+                animalsPerKg: selectedOperation.animalsPerKg,
+                notes: selectedOperation.notes || ''
+              }}
+            />
+          )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Delete Operation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Elimina Operazione</DialogTitle>
+            <DialogDescription className="text-destructive-foreground/80">
+              Sei sicuro di voler eliminare questa operazione? Questa azione non può essere annullata.
+            </DialogDescription>
+          </DialogHeader>
+          {selectedOperation && (
+            <div className="p-4 my-4 border rounded-lg bg-muted/50">
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Data</p>
+                  <p className="font-medium">{format(new Date(selectedOperation.date), 'dd/MM/yyyy')}</p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Tipologia</p>
+                  <p className="font-medium">
+                    {selectedOperation.type
+                      .split('-')
+                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                      .join(' ')
+                    }
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Cesta</p>
+                  <p className="font-medium">
+                    #{baskets?.find((b: any) => b.id === selectedOperation.basketId)?.physicalNumber || selectedOperation.basketId}
+                  </p>
+                </div>
+                <div>
+                  <p className="text-sm font-medium text-muted-foreground">Ciclo</p>
+                  <p className="font-medium">#{selectedOperation.cycleId}</p>
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter className="gap-2 sm:gap-0">
+            <Button
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+            >
+              Annulla
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => selectedOperation && deleteOperationMutation.mutate(selectedOperation.id)}
+              disabled={deleteOperationMutation.isPending}
+            >
+              {deleteOperationMutation.isPending ? "Eliminazione in corso..." : "Elimina"}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
