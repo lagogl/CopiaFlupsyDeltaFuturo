@@ -211,8 +211,8 @@ export default function OperationForm({
               <FormItem>
                 <FormLabel>Taglia</FormLabel>
                 <Select 
-                  onValueChange={(value) => field.onChange(value ? Number(value) : null)}
-                  value={field.value?.toString() || ""}
+                  onValueChange={(value) => field.onChange(value && value !== "none" ? Number(value) : null)}
+                  value={field.value?.toString() || "none"}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -321,8 +321,8 @@ export default function OperationForm({
               <FormItem>
                 <FormLabel>SGR</FormLabel>
                 <Select 
-                  onValueChange={(value) => field.onChange(value ? Number(value) : null)}
-                  value={field.value?.toString() || ""}
+                  onValueChange={(value) => field.onChange(value && value !== "none" ? Number(value) : null)}
+                  value={field.value?.toString() || "none"}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -350,8 +350,8 @@ export default function OperationForm({
               <FormItem>
                 <FormLabel>Lotto</FormLabel>
                 <Select 
-                  onValueChange={(value) => field.onChange(value ? Number(value) : null)}
-                  value={field.value?.toString() || ""}
+                  onValueChange={(value) => field.onChange(value && value !== "none" ? Number(value) : null)}
+                  value={field.value?.toString() || "none"}
                 >
                   <FormControl>
                     <SelectTrigger>
