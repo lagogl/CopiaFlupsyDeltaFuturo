@@ -83,8 +83,8 @@ export default function BasketExistsCheck({
   
   return (
     <Alert 
-      variant={warningOnly ? "warning" : "destructive"} 
-      className="mt-2 mb-4"
+      variant={warningOnly ? "default" : "destructive"} 
+      className={`mt-2 mb-4 ${warningOnly ? "border-amber-400" : ""}`} 
     >
       {warningOnly ? 
         <AlertTriangle className="h-4 w-4" /> : 

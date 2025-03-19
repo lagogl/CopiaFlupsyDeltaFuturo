@@ -67,6 +67,14 @@ export default function BasketForm({
   // Fetch next available basket number for selected FLUPSY
   const { data: nextBasketNumber, isLoading: isNextNumberLoading } = useQuery<{nextNumber: number}>({
     queryKey: ['/api/baskets/next-number', selectedFlupsyId],
+    queryFn: async () => {
+      if (!selectedFlupsyId) return { nextNumber: 1 };
+      const response = await fetch(`/api/baskets/next-number/${selectedFlupsyId}`);
+      if (!response.ok) {
+        throw new Error('Errore nel recupero del prossimo numero di cesta disponibile');
+      }
+      return await response.json();
+    },
     enabled: !!selectedFlupsyId, // Only run this query if a FLUPSY is selected
   });
 
