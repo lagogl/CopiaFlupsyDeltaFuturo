@@ -181,6 +181,14 @@ export default function OperationForm({
   
   // Determine if a new cycle needs to be created
   const needsNewCycle = selectedBasket?.state === 'available' && watchBasketId;
+  
+  // Auto-select cycle when basket is selected and there's only one active cycle
+  useEffect(() => {
+    if (watchBasketId && filteredCycles && filteredCycles.length === 1 && !watchCycleId && watchType !== 'prima-attivazione') {
+      // Automatically select the only available cycle
+      form.setValue('cycleId', filteredCycles[0].id);
+    }
+  }, [watchBasketId, filteredCycles, watchCycleId, watchType, form]);
 
   // Get operation type options based on basket state
   const allOperationTypes = [
@@ -224,11 +232,25 @@ export default function OperationForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {baskets?.filter(b => b.state === 'available').map((basket) => (
-                      <SelectItem key={basket.id} value={basket.id.toString()}>
-                        Cesta #{basket.physicalNumber}{basket.row && basket.position ? ` - Fila ${basket.row} Pos. ${basket.position}` : ''}
-                      </SelectItem>
-                    ))}
+                    {baskets?.map((basket) => {
+                      // Mostra le informazioni sul ciclo per le ceste attive
+                      const cycleInfo = basket.state === 'active' && basket.cycleCode ? 
+                        ` (${basket.cycleCode})` : '';
+                      
+                      // Informazioni sulla posizione
+                      const positionInfo = basket.row && basket.position ? 
+                        ` - Fila ${basket.row} Pos. ${basket.position}` : '';
+                        
+                      // Stato visualizzato solo per ceste disponibili
+                      const stateInfo = basket.state === 'available' ? 
+                        ' - Disponibile' : '';
+                        
+                      return (
+                        <SelectItem key={basket.id} value={basket.id.toString()}>
+                          Cesta #{basket.physicalNumber}{positionInfo}{cycleInfo}{stateInfo}
+                        </SelectItem>
+                      );
+                    })}
                   </SelectContent>
                 </Select>
                 <FormMessage />
@@ -250,7 +272,19 @@ export default function OperationForm({
             )}
           />
 
-{watchType !== 'prima-attivazione' && (
+{watchType === 'prima-attivazione' ? (
+            <div className="col-span-1 md:col-span-2 rounded-md border border-blue-100 bg-blue-50 p-3 text-sm text-blue-600">
+              <div className="flex items-center">
+                <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+                <span className="font-medium">Un nuovo ciclo verrà creato automaticamente.</span>
+              </div>
+              <div className="mt-1 ml-7">
+                Operazione di Prima Attivazione genera un ciclo con codice automatico nel formato basket#-flupsy#-YYMM.
+              </div>
+            </div>
+          ) : (
             <FormField
               control={form.control}
               name="cycleId"
