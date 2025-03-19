@@ -214,9 +214,19 @@ export default function OperationForm({
       : allOperationTypes) // All operations for active baskets
     : allOperationTypes;
 
+  // Aggiungi una funzione per gestire l'invio del form con log degli errori
+  const handleFormSubmit = (values: FormValues) => {
+    // Log di debug
+    console.log('Form values:', values);
+    console.log('Form errors:', form.formState.errors);
+    
+    // Chiama la funzione onSubmit passata come prop
+    onSubmit(values);
+  };
+  
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
