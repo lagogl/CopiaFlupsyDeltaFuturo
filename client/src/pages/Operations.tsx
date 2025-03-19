@@ -368,7 +368,7 @@ export default function Operations() {
                       {op.totalWeight ? op.totalWeight.toLocaleString() : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {op.averageWeight ? Math.round(op.averageWeight) : '-'}
+                      {op.animalsPerKg && op.animalsPerKg > 0 ? Math.round(1000000 / op.animalsPerKg) : '-'}
                     </td>
                     <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                       <div className="flex space-x-2">
