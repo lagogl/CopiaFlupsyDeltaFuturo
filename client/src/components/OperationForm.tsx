@@ -70,14 +70,30 @@ export default function OperationForm({
 
   const watchAnimalsPerKg = form.watch('animalsPerKg');
   
-  // Calculate average weight when animals per kg changes
+  // Calculate average weight and set size when animals per kg changes
   useEffect(() => {
     if (watchAnimalsPerKg && watchAnimalsPerKg > 0) {
+      // Calculate average weight
       form.setValue('averageWeight', 1000000 / watchAnimalsPerKg);
+      
+      // Auto-select size based on animals per kg
+      if (sizes && sizes.length > 0) {
+        const matchingSize = sizes.find(
+          size => 
+            size.minAnimalsPerKg <= watchAnimalsPerKg && 
+            size.maxAnimalsPerKg >= watchAnimalsPerKg
+        );
+        
+        if (matchingSize) {
+          form.setValue('sizeId', matchingSize.id);
+        } else {
+          form.setValue('sizeId', null);
+        }
+      }
     } else {
       form.setValue('averageWeight', null);
     }
-  }, [watchAnimalsPerKg]);
+  }, [watchAnimalsPerKg, sizes]);
 
   // Filter cycles based on selected basket
   const watchBasketId = form.watch('basketId');
@@ -210,24 +226,27 @@ export default function OperationForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Taglia</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(value && value !== "none" ? Number(value) : null)}
-                  value={field.value?.toString() || "none"}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona taglia" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">Nessuna taglia</SelectItem>
-                    {sizes?.map((size) => (
-                      <SelectItem key={size.id} value={size.id.toString()}>
-                        {size.code} - {size.name}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <div className="relative">
+                    <Input
+                      value={field.value ? 
+                        sizes?.find(s => s.id === field.value)?.code || "Nessuna taglia" : 
+                        "Calcolato automaticamente"
+                      }
+                      readOnly
+                      className="bg-gray-100"
+                    />
+                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-sm text-gray-500">
+                      {field.value ? 
+                        sizes?.find(s => s.id === field.value)?.name : 
+                        "Basato su animali per kg"
+                      }
+                    </div>
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  La taglia viene selezionata automaticamente in base al numero di animali per kg
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
