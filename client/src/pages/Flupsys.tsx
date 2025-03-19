@@ -181,7 +181,7 @@ export default function Flupsys() {
                 </div>
                 <CardDescription>
                   {flupsy.location && (
-                    <div className="text-sm text-muted-foreground mt-1">
+                    <div className="text-sm bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-md mt-2 font-medium text-blue-700 dark:text-blue-300">
                       Posizione: {flupsy.location}
                     </div>
                   )}
@@ -189,9 +189,9 @@ export default function Flupsys() {
               </CardHeader>
               <CardContent>
                 {flupsy.description && (
-                  <p className="text-sm text-muted-foreground">
+                  <div className="text-sm bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-md border-l-2 border-amber-300 dark:border-amber-500 mt-1">
                     {flupsy.description}
-                  </p>
+                  </div>
                 )}
                 <Separator className="my-4" />
                 <div className="grid grid-cols-2 gap-2 text-sm">
