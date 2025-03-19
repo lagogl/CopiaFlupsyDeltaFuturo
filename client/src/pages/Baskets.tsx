@@ -343,6 +343,7 @@ export default function Baskets() {
             <BasketForm 
               onSubmit={(data) => updateBasketMutation.mutate({ id: selectedBasket.id, basket: data })}
               isLoading={updateBasketMutation.isPending}
+              basketId={selectedBasket.id}
               defaultValues={{
                 physicalNumber: selectedBasket.physicalNumber,
                 flupsyId: selectedBasket.flupsyId,

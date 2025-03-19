@@ -91,6 +91,18 @@ export const lots = pgTable("lots", {
   state: text("state").notNull().default("active"), // active, exhausted
 });
 
+// Position History (Cronologia delle posizioni delle ceste)
+export const basketPositionHistory = pgTable("basket_position_history", {
+  id: serial("id").primaryKey(),
+  basketId: integer("basket_id").notNull(), // reference to the basket
+  flupsyId: integer("flupsy_id").notNull(), // reference to the FLUPSY
+  row: text("row").notNull(), // fila (DX o SX)
+  position: integer("position").notNull(), // posizione numerica
+  startDate: date("start_date").notNull(), // data inizio in questa posizione
+  endDate: date("end_date"), // data fine in questa posizione (null se è la posizione attuale)
+  operationId: integer("operation_id"), // operazione che ha causato il cambio di posizione
+});
+
 // Insert schemas
 export const insertFlupsySchema = createInsertSchema(flupsys).omit({
   id: true

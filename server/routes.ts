@@ -70,6 +70,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Errore durante la verifica dell'esistenza della cesta" });
     }
   });
+  
+  app.get("/api/baskets/check-position", async (req, res) => {
+    try {
+      const flupsyId = parseInt(req.query.flupsyId as string);
+      const row = req.query.row as string;
+      const position = parseInt(req.query.position as string);
+      const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : undefined;
+      
+      if (isNaN(flupsyId) || !row || isNaN(position)) {
+        return res.status(400).json({ 
+          message: "flupsyId, row e position sono richiesti e devono essere validi" 
+        });
+      }
+      
+      // Verifica se il FLUPSY esiste
+      const flupsy = await storage.getFlupsy(flupsyId);
+      if (!flupsy) {
+        return res.status(404).json({ message: "FLUPSY non trovato" });
+      }
+      
+      // Ottieni tutte le ceste per questo FLUPSY
+      const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
+      
+      // Verifica se esiste già una cesta nella stessa posizione
+      // Escludiamo il basket con basketId (se fornito), utile durante la modifica
+      const existingBasket = flupsyBaskets.find(basket => 
+        basket.row === row && 
+        basket.position === position && 
+        (!basketId || basket.id !== basketId) // Ignora la cesta stessa durante la modifica
+      );
+      
+      if (existingBasket) {
+        const flupsyName = flupsy.name;
+        
+        return res.json({
+          positionTaken: true,
+          basket: existingBasket,
+          message: `La posizione ${row}-${position} in ${flupsyName} è già occupata dalla cesta #${existingBasket.physicalNumber}`
+        });
+      }
+      
+      res.json({ positionTaken: false });
+    } catch (error) {
+      console.error("Error checking basket position:", error);
+      res.status(500).json({ message: "Errore durante la verifica della posizione della cesta" });
+    }
+  });
 
   app.get("/api/baskets/next-number/:flupsyId", async (req, res) => {
     try {

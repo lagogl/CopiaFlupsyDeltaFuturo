@@ -23,6 +23,7 @@ import {
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
 import BasketExistsCheck from "./BasketExistsCheck";
+import BasketPositionCheck from "./BasketPositionCheck";
 
 // Create a schema for basket validation
 const basketFormSchema = z.object({
@@ -34,8 +35,12 @@ const basketFormSchema = z.object({
   flupsyId: z.coerce.number()
     .int()
     .positive("Devi selezionare un'unità FLUPSY valida"),
-  row: z.string().optional(),
-  position: z.coerce.number().int().positive().optional(),
+  row: z.string()
+    .min(1, "Seleziona la fila (DX o SX)"),
+  position: z.coerce.number()
+    .int()
+    .positive("La posizione deve essere un numero positivo")
+    .min(1, "La posizione deve essere almeno 1"),
 });
 
 type BasketFormValues = z.infer<typeof basketFormSchema>;
@@ -44,20 +49,25 @@ interface BasketFormProps {
   onSubmit: (values: BasketFormValues) => void;
   defaultValues?: Partial<BasketFormValues>;
   isLoading?: boolean;
+  basketId?: number | null;
 }
 
 export default function BasketForm({ 
   onSubmit, 
   defaultValues = { },
-  isLoading = false
+  isLoading = false,
+  basketId = null
 }: BasketFormProps) {
   const form = useForm<BasketFormValues>({
     resolver: zodResolver(basketFormSchema),
     defaultValues,
   });
   
-  const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(null);
-  const [isBasketValid, setIsBasketValid] = useState(true);
+  const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(
+    defaultValues.flupsyId || null
+  );
+  const [isBasketNumberValid, setIsBasketNumberValid] = useState(true);
+  const [isPositionValid, setIsPositionValid] = useState(true);
 
   // Fetch FLUPSY units
   const { data: flupsys = [], isLoading: isFlupsysLoading } = useQuery<any[]>({
@@ -75,7 +85,7 @@ export default function BasketForm({
       }
       return await response.json();
     },
-    enabled: !!selectedFlupsyId, // Only run this query if a FLUPSY is selected
+    enabled: !!selectedFlupsyId && !basketId, // Only run this query if a FLUPSY is selected and we're not editing
   });
 
   // Set flupsyId default value from the first available FLUPSY
@@ -89,19 +99,27 @@ export default function BasketForm({
   
   // Set the next available basket number when it's fetched
   useEffect(() => {
-    if (nextBasketNumber && nextBasketNumber.nextNumber) {
+    if (nextBasketNumber && nextBasketNumber.nextNumber && !basketId) {
       form.setValue('physicalNumber', nextBasketNumber.nextNumber);
     }
-  }, [nextBasketNumber, form]);
+  }, [nextBasketNumber, form, basketId]);
 
-  // Define custom submit handler to prevent submission if there's a validation error
+  // Define custom submit handler to prevent submission if there are validation errors
   const handleSubmit = (e: React.FormEvent) => {
-    if (!isBasketValid) {
+    if (!isBasketNumberValid || !isPositionValid) {
       e.preventDefault();
+      toast({
+        title: "Errore di validazione",
+        description: "Correggi gli errori prima di salvare",
+        variant: "destructive"
+      });
       return;
     }
     form.handleSubmit(onSubmit)(e);
   };
+
+  // Check if form is valid to enable/disable submit button
+  const isFormValid = isBasketNumberValid && isPositionValid;
 
   return (
     <Form {...form}>
@@ -110,7 +128,16 @@ export default function BasketForm({
         <BasketExistsCheck 
           flupsyId={form.watch('flupsyId')} 
           basketNumber={form.watch('physicalNumber')}
-          onValidationChange={setIsBasketValid}
+          onValidationChange={setIsBasketNumberValid}
+        />
+        
+        {/* Aggiungiamo la validazione della posizione se sono compilati tutti i campi necessari */}
+        <BasketPositionCheck
+          flupsyId={form.watch('flupsyId')}
+          row={form.watch('row')}
+          position={form.watch('position')}
+          basketId={basketId}
+          onValidationChange={setIsPositionValid}
         />
       
         <FormField
@@ -124,7 +151,7 @@ export default function BasketForm({
                   type="number"
                   placeholder="Inserisci il numero della cesta..."
                   {...field}
-                  className={!isBasketValid ? "border-destructive focus-visible:ring-destructive" : ""}
+                  className={!isBasketNumberValid ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
               </FormControl>
               <FormMessage />
@@ -215,6 +242,7 @@ export default function BasketForm({
                     placeholder="Inserisci la posizione nella fila..."
                     {...field}
                     onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
+                    className={!isPositionValid ? "border-amber-400 focus-visible:ring-amber-400" : ""}
                   />
                 </FormControl>
                 <FormDescription>
@@ -232,7 +260,7 @@ export default function BasketForm({
           </Button>
           <Button 
             type="submit" 
-            disabled={isLoading || isFlupsysLoading || !isBasketValid}
+            disabled={isLoading || isFlupsysLoading || !isFormValid}
           >
             {isLoading ? "Salvataggio..." : "Salva"}
           </Button>
