@@ -301,7 +301,7 @@ export default function OperationForm({
               <FormItem>
                 <FormLabel>Taglia</FormLabel>
                 <FormControl>
-                  <div className="relative">
+                  <div>
                     <Input
                       value={field.value ? 
                         sizes?.find(s => s.id === field.value)?.code || "Nessuna taglia" : 
@@ -310,7 +310,7 @@ export default function OperationForm({
                       readOnly
                       className="bg-gray-100"
                     />
-                    <div className="absolute inset-y-0 right-0 flex items-center pr-3 pointer-events-none text-sm text-gray-500">
+                    <div className="text-xs text-muted-foreground mt-1 ml-1">
                       {field.value ? 
                         sizes?.find(s => s.id === field.value)?.name : 
                         "Basato su animali per kg"
