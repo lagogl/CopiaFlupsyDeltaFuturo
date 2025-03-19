@@ -303,9 +303,44 @@ export default function OperationForm({
     }
   };
   
+  // Una funzione di submit esterna al gestire il caso in cui manchino i dati o ci siano errori di validazione
+  const onSubmitForm = async (e: React.FormEvent) => {
+    e.preventDefault();
+    
+    console.log("FORM SUBMIT MANUALE ATTIVATO");
+    
+    // Ottieni i valori dal form
+    const values = form.getValues();
+    console.log("Valori form:", values);
+    
+    // Verifica che ci siano almeno i campi obbligatori
+    if (!values.basketId || !values.type || !values.date) {
+      console.error("Mancano campi obbligatori", { basketId: values.basketId, type: values.type, date: values.date });
+      alert("Compila tutti i campi obbligatori: Cesta, Tipo operazione e Data");
+      return;
+    }
+    
+    // Assicurati che date sia un oggetto Date
+    const formattedValues = {
+      ...values,
+      date: values.date instanceof Date ? values.date : new Date(values.date),
+      animalCount: values.animalCount ? Number(values.animalCount) : null,
+      animalsPerKg: values.animalsPerKg ? Number(values.animalsPerKg) : null,
+      totalWeight: values.totalWeight ? Number(values.totalWeight) : null,
+    };
+    
+    console.log("Valori formattati:", formattedValues);
+    
+    // Chiamata diretta alla funzione di submit
+    if (onSubmit) {
+      console.log("Chiamata onSubmit con:", formattedValues);
+      onSubmit(formattedValues);
+    }
+  };
+  
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+      <form onSubmit={onSubmitForm} className="space-y-6">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
           <FormField
             control={form.control}
@@ -754,7 +789,12 @@ export default function OperationForm({
           <Button variant="outline" type="button" onClick={() => form.reset()}>
             Annulla
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button 
+            type="button" 
+            disabled={isLoading}
+            onClick={onSubmitForm}
+            className="bg-primary hover:bg-primary/90 text-white font-medium"
+          >
             {isLoading ? "Salvataggio..." : "Salva Operazione"}
           </Button>
         </div>

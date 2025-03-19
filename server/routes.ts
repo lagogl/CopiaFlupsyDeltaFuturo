@@ -484,49 +484,88 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/operations", async (req, res) => {
     try {
-      const parsedData = operationSchema.safeParse(req.body);
-      if (!parsedData.success) {
-        const errorMessage = fromZodError(parsedData.error).message;
-        return res.status(400).json({ message: errorMessage });
-      }
+      console.log("POST /api/operations - Request Body:", req.body);
 
-      const { basketId, cycleId, date, type } = parsedData.data;
+      // Prima verifica se si tratta di un'operazione prima-attivazione che non richiede un cycleId
+      if (req.body.type === 'prima-attivazione') {
+        // Per prima-attivazione utilizziamo un validator senza controllo su cycleId
+        const primaAttivSchema = insertOperationSchema.extend({
+          date: z.coerce.date(),
+          animalsPerKg: z.coerce.number().optional().nullable(),
+          totalWeight: z.coerce.number().optional().nullable(),
+          animalCount: z.coerce.number().optional().nullable(),
+        }).safeParse(req.body);
 
-      // Check if the basket exists
-      const basket = await storage.getBasket(basketId);
-      if (!basket) {
-        return res.status(404).json({ message: "Basket not found" });
-      }
+        if (!primaAttivSchema.success) {
+          const errorMessage = fromZodError(primaAttivSchema.error).message;
+          console.error("Validation error for prima-attivazione:", errorMessage);
+          return res.status(400).json({ message: errorMessage });
+        }
 
-      // Check if the cycle exists
-      const cycle = await storage.getCycle(cycleId);
-      if (!cycle) {
-        return res.status(404).json({ message: "Cycle not found" });
-      }
+        const { basketId, date } = primaAttivSchema.data;
+        console.log("Validazione prima-attivazione completata per cesta:", basketId);
 
-      // Check if the cycle is active
-      if (cycle.state !== 'active') {
-        return res.status(400).json({ message: "Cannot add operation to closed cycle" });
-      }
+        // Check if the basket exists
+        const basket = await storage.getBasket(basketId);
+        if (!basket) {
+          return res.status(404).json({ message: "Cestello non trovato" });
+        }
 
-      // Check if the cycle belongs to the specified basket
-      if (cycle.basketId !== basketId) {
-        return res.status(400).json({ message: "The specified cycle does not belong to the basket" });
-      }
+        // Verifica che il cestello sia disponibile
+        if (basket.state !== 'available') {
+          return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
+        }
 
-      // Format date to YYYY-MM-DD for comparison
-      const formattedDate = format(new Date(date), 'yyyy-MM-dd');
+        const operation = await storage.createOperation(primaAttivSchema.data);
+        return res.status(201).json(operation);
+      } else {
+        // Per le altre operazioni utilizziamo il validator completo
+        const parsedData = operationSchema.safeParse(req.body);
+        if (!parsedData.success) {
+          const errorMessage = fromZodError(parsedData.error).message;
+          console.error("Validation error for standard operation:", errorMessage);
+          return res.status(400).json({ message: errorMessage });
+        }
 
-      // Check if there's already an operation for this basket on the given date
-      const existingOperations = await storage.getOperationsByBasket(basketId);
-      const operationOnSameDate = existingOperations.find(op => 
-        format(new Date(op.date), 'yyyy-MM-dd') === formattedDate
-      );
+        const { basketId, cycleId, date, type } = parsedData.data;
+        console.log("Validazione operazione standard completata:", { basketId, cycleId, type });
 
-      if (operationOnSameDate) {
-        return res.status(400).json({ 
-          message: `There's already an operation for this basket on ${formattedDate}` 
-        });
+        // Check if the basket exists
+        const basket = await storage.getBasket(basketId);
+        if (!basket) {
+          return res.status(404).json({ message: "Cestello non trovato" });
+        }
+
+        // Check if the cycle exists
+        const cycle = await storage.getCycle(cycleId);
+        if (!cycle) {
+          return res.status(404).json({ message: "Ciclo non trovato" });
+        }
+
+        // Check if the cycle is active
+        if (cycle.state !== 'active') {
+          return res.status(400).json({ message: "Non è possibile aggiungere operazioni a un ciclo chiuso" });
+        }
+
+        // Check if the cycle belongs to the specified basket
+        if (cycle.basketId !== basketId) {
+          return res.status(400).json({ message: "Il ciclo specificato non appartiene a questo cestello" });
+        }
+
+        // Format date to YYYY-MM-DD for comparison
+        const formattedDate = format(new Date(date), 'yyyy-MM-dd');
+
+        // Check if there's already an operation for this basket on the given date
+        const existingOperations = await storage.getOperationsByBasket(basketId);
+        const operationOnSameDate = existingOperations.find(op => 
+          format(new Date(op.date), 'yyyy-MM-dd') === formattedDate
+        );
+
+        if (operationOnSameDate) {
+          return res.status(400).json({ 
+            message: `Esiste già un'operazione per questo cestello in data ${formattedDate}` 
+          });
+        }
       }
 
       // If it's a "prima-attivazione" operation, check if it's the first operation in the cycle
