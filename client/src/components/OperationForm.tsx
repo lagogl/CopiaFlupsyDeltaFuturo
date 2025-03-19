@@ -120,7 +120,7 @@ export default function OperationForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {baskets?.filter(b => b.state === 'active').map((basket) => (
+                    {baskets?.filter(b => b.state === 'available').map((basket) => (
                       <SelectItem key={basket.id} value={basket.id.toString()}>
                         Cesta #{basket.physicalNumber}{basket.row && basket.position ? ` - Fila ${basket.row} Pos. ${basket.position}` : ''}
                       </SelectItem>
