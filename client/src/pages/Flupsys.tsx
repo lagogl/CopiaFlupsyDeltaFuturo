@@ -181,16 +181,16 @@ export default function Flupsys() {
                 </div>
                 <CardDescription>
                   {flupsy.location && (
-                    <div className="text-sm bg-blue-100 dark:bg-blue-900/30 px-2 py-1 rounded-md mt-2 font-medium text-blue-700 dark:text-blue-300">
-                      Posizione: {flupsy.location}
+                    <div className="text-sm mt-2">
+                      <span className="font-semibold text-blue-600 dark:text-blue-400">Posizione:</span> {flupsy.location}
                     </div>
                   )}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 {flupsy.description && (
-                  <div className="text-sm bg-amber-50 dark:bg-amber-900/20 px-3 py-2 rounded-md border-l-2 border-amber-300 dark:border-amber-500 mt-1">
-                    {flupsy.description}
+                  <div className="text-sm mt-1">
+                    <span className="font-semibold text-amber-600 dark:text-amber-400">Descrizione:</span> {flupsy.description}
                   </div>
                 )}
                 <Separator className="my-4" />
