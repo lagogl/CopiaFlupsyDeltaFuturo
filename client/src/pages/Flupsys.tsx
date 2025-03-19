@@ -179,13 +179,13 @@ export default function Flupsys() {
                     {flupsy.active ? "Attivo" : "Inattivo"}
                   </Badge>
                 </div>
-                <CardDescription>
+                <div className="mt-2">
                   {flupsy.location && (
-                    <div className="text-sm mt-2">
+                    <div className="text-sm">
                       <span className="font-semibold text-blue-600 dark:text-blue-400">Posizione:</span> {flupsy.location}
                     </div>
                   )}
-                </CardDescription>
+                </div>
               </CardHeader>
               <CardContent>
                 {flupsy.description && (
