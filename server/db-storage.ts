@@ -104,7 +104,15 @@ export class DbStorage implements IStorage {
       operation.date = operation.date.toISOString().split('T')[0];
     }
     
-    const results = await db.insert(operations).values(operation).returning();
+    // Calcola automaticamente averageWeight se animalsPerKg è presente
+    const operationData = { ...operation };
+    if (operationData.animalsPerKg && operationData.animalsPerKg > 0) {
+      // Formula: 1,000,000 mg diviso per animalsPerKg = peso medio in milligrammi
+      const averageWeight = 1000000 / operationData.animalsPerKg;
+      operationData.averageWeight = averageWeight;
+    }
+    
+    const results = await db.insert(operations).values(operationData).returning();
     return results[0];
   }
 
@@ -114,8 +122,16 @@ export class DbStorage implements IStorage {
       operationUpdate.date = operationUpdate.date.toISOString().split('T')[0];
     }
     
+    // Calcola automaticamente averageWeight se animalsPerKg è stato aggiornato
+    const updateData = { ...operationUpdate };
+    if (updateData.animalsPerKg && updateData.animalsPerKg > 0) {
+      // Formula: 1,000,000 mg diviso per animalsPerKg = peso medio in milligrammi
+      const averageWeight = 1000000 / updateData.animalsPerKg;
+      updateData.averageWeight = averageWeight;
+    }
+    
     const results = await db.update(operations)
-      .set(operationUpdate)
+      .set(updateData)
       .where(eq(operations.id, id))
       .returning();
     return results[0];
