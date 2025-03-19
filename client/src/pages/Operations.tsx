@@ -407,7 +407,7 @@ export default function Operations() {
 
       {/* Create Operation Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto" aria-describedby="operation-form-description">
+        <DialogContent className="sm:max-w-[850px] max-h-[95vh] overflow-y-auto" aria-describedby="operation-form-description">
           <DialogHeader>
             <DialogTitle>Registra Nuova Operazione</DialogTitle>
             <DialogDescription id="operation-form-description">
@@ -417,7 +417,18 @@ export default function Operations() {
           <OperationForm 
             onSubmit={(data) => {
               console.log('Dialog - Submitting operation data:', data);
-              createOperationMutation.mutate(data);
+              
+              // Assicurati che i campi numerici siano effettivamente numeri
+              const formattedData = {
+                ...data,
+                animalCount: data.animalCount ? Number(data.animalCount) : null,
+                animalsPerKg: data.animalsPerKg ? Number(data.animalsPerKg) : null,
+                totalWeight: data.totalWeight ? Number(data.totalWeight) : null,
+                date: data.date instanceof Date ? data.date : new Date(data.date),
+              };
+              
+              console.log('Formatted operation data:', formattedData);
+              createOperationMutation.mutate(formattedData);
             }} 
             isLoading={createOperationMutation.isPending}
           />
@@ -426,13 +437,27 @@ export default function Operations() {
       
       {/* Edit Operation Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[850px] max-h-[95vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifica Operazione</DialogTitle>
           </DialogHeader>
           {selectedOperation && (
             <OperationForm 
-              onSubmit={(data) => updateOperationMutation.mutate({ id: selectedOperation.id, operation: data })}
+              onSubmit={(data) => {
+                console.log('Edit dialog - Submitting operation data:', data);
+                
+                // Assicurati che i campi numerici siano effettivamente numeri
+                const formattedData = {
+                  ...data,
+                  animalCount: data.animalCount ? Number(data.animalCount) : null,
+                  animalsPerKg: data.animalsPerKg ? Number(data.animalsPerKg) : null,
+                  totalWeight: data.totalWeight ? Number(data.totalWeight) : null,
+                  date: data.date instanceof Date ? data.date : new Date(data.date),
+                };
+                
+                console.log('Formatted operation data:', formattedData);
+                updateOperationMutation.mutate({ id: selectedOperation.id, operation: formattedData });
+              }}
               isLoading={updateOperationMutation.isPending}
               defaultValues={{
                 type: selectedOperation.type,

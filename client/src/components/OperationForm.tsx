@@ -228,6 +228,43 @@ export default function OperationForm({
     console.log('Form isSubmitting:', form.formState.isSubmitting);
     console.log('Form isSubmitted:', form.formState.isSubmitted);
     console.log('Default values:', defaultValues);
+    
+    // Convalida i valori prima di inviarli
+    if (!values.basketId) {
+      console.error('Manca il cestello');
+      return;
+    }
+    
+    if (!values.type) {
+      console.error('Manca il tipo di operazione');
+      return;
+    }
+    
+    if (!values.date) {
+      console.error('Manca la data');
+      return;
+    }
+    
+    // Assicurati che i campi numerici siano effettivamente numeri
+    if (values.animalCount) {
+      values.animalCount = Number(values.animalCount);
+    }
+    
+    if (values.animalsPerKg) {
+      values.animalsPerKg = Number(values.animalsPerKg);
+    }
+    
+    if (values.totalWeight) {
+      values.totalWeight = Number(values.totalWeight);
+    }
+    
+    // Calcola automaticamente il peso totale se non è stato specificato
+    if (values.animalCount && values.animalsPerKg && !values.totalWeight) {
+      const averageWeight = 1000000 / values.animalsPerKg; // mg
+      values.totalWeight = (values.animalCount * averageWeight) / 1000; // g
+    }
+    
+    console.log('Submitting final values:', values);
     console.log('isLoading prop:', isLoading);
     
     try {
