@@ -97,8 +97,8 @@ export default function LotForm({
               <FormItem>
                 <FormLabel>Taglia</FormLabel>
                 <Select 
-                  onValueChange={(value) => field.onChange(value ? Number(value) : null)}
-                  value={field.value?.toString() || ""}
+                  onValueChange={(value) => field.onChange(value === "null" ? null : Number(value))}
+                  value={field.value?.toString() || "null"}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -106,7 +106,7 @@ export default function LotForm({
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="">Nessuna taglia</SelectItem>
+                    <SelectItem value="null">Nessuna taglia</SelectItem>
                     {sizes?.map((size) => (
                       <SelectItem key={size.id} value={size.id.toString()}>
                         {size.code} - {size.name}
