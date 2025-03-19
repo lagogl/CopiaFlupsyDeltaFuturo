@@ -262,6 +262,9 @@ export default function Baskets() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         #{basket.physicalNumber}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
+                        {basket.cycleCode ? basket.cycleCode : '-'}
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-primary">
                         {basket.currentCycleId ? `#${basket.currentCycleId}` : '-'}
                       </td>
@@ -421,6 +424,13 @@ export default function Baskets() {
                       </div>
                     )}
                     
+                    {selectedBasket.cycleCode && (
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground">Codice Ciclo</p>
+                        <p className="font-medium text-primary">{selectedBasket.cycleCode}</p>
+                      </div>
+                    )}
+
                     {selectedBasket.currentCycleId && (
                       <div className="col-span-2">
                         <p className="text-sm font-medium text-muted-foreground">Ciclo Attivo</p>
@@ -495,6 +505,13 @@ export default function Baskets() {
                       <p className="font-medium">Fila {selectedBasket.row}, Posizione {selectedBasket.position}</p>
                     </div>
                   )}
+                  {selectedBasket.cycleCode && (
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium text-muted-foreground">Codice Ciclo</p>
+                      <p className="font-medium">{selectedBasket.cycleCode}</p>
+                    </div>
+                  )}
+                  
                   <div className="col-span-2">
                     <p className="text-sm font-medium text-muted-foreground">Stato</p>
                     <p className="font-medium flex items-center">
