@@ -16,6 +16,7 @@ export const baskets = pgTable("baskets", {
   id: serial("id").primaryKey(),
   physicalNumber: integer("physical_number").notNull(), // numero fisico della cesta
   flupsyId: integer("flupsy_id").notNull(), // reference to the FLUPSY this basket belongs to
+  cycleCode: text("cycle_code"), // codice identificativo del ciclo (formato: numeroCesta-numeroFlupsy-YYMM)
   state: text("state").notNull().default("available"), // available, active
   currentCycleId: integer("current_cycle_id"), // reference to the current active cycle, null when not in a cycle
   nfcData: text("nfc_data"), // data to be stored in NFC tag

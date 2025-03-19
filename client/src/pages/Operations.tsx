@@ -54,10 +54,18 @@ export default function Operations() {
           startDate: newOperation.date
         });
         
-        // Aggiornare lo stato della cesta a active
+        // Genera il cycleCode (formato: numeroCesta-numeroFlupsy-YYMM)
+        const date = new Date(newOperation.date);
+        const year = date.getFullYear().toString().slice(2); // Ultime due cifre dell'anno (YY)
+        const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Mese (MM) con zero padding
+        
+        const cycleCode = `${basket?.physicalNumber}-${basket?.flupsyId}-${year}${month}`;
+        
+        // Aggiornare lo stato della cesta a active e assegnare cycleCode
         await apiRequest('PATCH', `/api/baskets/${newOperation.basketId}`, {
           state: 'active',
-          currentCycleId: newCycle.id
+          currentCycleId: newCycle.id,
+          cycleCode: cycleCode
         });
         
         // Aggiungi l'ID del ciclo all'operazione
@@ -81,10 +89,11 @@ export default function Operations() {
           });
         }
         
-        // Aggiorna lo stato della cesta a disponibile
+        // Aggiorna lo stato della cesta a disponibile e rimuovi il cycleCode
         await apiRequest('PATCH', `/api/baskets/${newOperation.basketId}`, {
           state: 'available',
-          currentCycleId: null
+          currentCycleId: null,
+          cycleCode: null
         });
         
         // Invalida le query per cicli e ceste
