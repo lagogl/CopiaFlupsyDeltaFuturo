@@ -320,13 +320,18 @@ export default function OperationForm({
       return;
     }
     
-    // Assicurati che date sia un oggetto Date
+    // Assicurati che date sia un oggetto Date e tutti i valori siano formattati correttamente
     const formattedValues = {
       ...values,
       date: values.date instanceof Date ? values.date : new Date(values.date),
       animalCount: values.animalCount ? Number(values.animalCount) : null,
       animalsPerKg: values.animalsPerKg ? Number(values.animalsPerKg) : null,
       totalWeight: values.totalWeight ? Number(values.totalWeight) : null,
+      sgrId: values.sgrId ? Number(values.sgrId) : null,
+      sizeId: values.sizeId ? Number(values.sizeId) : null,
+      lotId: values.lotId ? Number(values.lotId) : null,
+      // Per prima-attivazione, assicuriamoci che cycleId non sia richiesto
+      cycleId: values.type === 'prima-attivazione' ? null : (values.cycleId ? Number(values.cycleId) : null)
     };
     
     console.log("Valori formattati:", formattedValues);

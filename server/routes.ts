@@ -488,12 +488,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Prima verifica se si tratta di un'operazione prima-attivazione che non richiede un cycleId
       if (req.body.type === 'prima-attivazione') {
+        console.log("Elaborazione prima-attivazione");
+        
         // Per prima-attivazione utilizziamo un validator senza controllo su cycleId
-        const primaAttivSchema = insertOperationSchema.extend({
+        const primaAttivSchema = z.object({
           date: z.coerce.date(),
-          animalsPerKg: z.coerce.number().optional().nullable(),
-          totalWeight: z.coerce.number().optional().nullable(),
-          animalCount: z.coerce.number().optional().nullable(),
+          type: z.literal('prima-attivazione'),
+          basketId: z.number(),
+          sizeId: z.number().nullable().optional(),
+          sgrId: z.number().nullable().optional(),
+          lotId: z.number().nullable().optional(),
+          animalCount: z.number().nullable().optional(),
+          totalWeight: z.number().nullable().optional(),
+          animalsPerKg: z.number().nullable().optional(),
+          notes: z.string().nullable().optional()
         }).safeParse(req.body);
 
         if (!primaAttivSchema.success) {
@@ -515,8 +523,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (basket.state !== 'available') {
           return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
         }
-
-        const operation = await storage.createOperation(primaAttivSchema.data);
+        
+        // Crea un nuovo ciclo per questa cesta
+        console.log("Creazione nuovo ciclo per prima-attivazione");
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const year = date.getFullYear().toString().substring(2);
+        const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`;
+        
+        const newCycle = await storage.createCycle({
+          basketId: basketId,
+          startDate: date,
+        });
+        
+        console.log("Ciclo creato:", newCycle);
+        
+        // Aggiorna lo stato del cestello
+        await storage.updateBasket(basketId, {
+          state: 'active',
+          currentCycleId: newCycle.id,
+          cycleCode: cycleCode
+        });
+        
+        // Crea l'operazione con il ciclo appena creato
+        const operationData = {
+          ...primaAttivSchema.data,
+          cycleId: newCycle.id
+        };
+        
+        console.log("Creazione operazione con dati:", operationData);
+        
+        const operation = await storage.createOperation(operationData);
         return res.status(201).json(operation);
       } else {
         // Per le altre operazioni utilizziamo il validator completo
@@ -568,6 +604,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
+      // Regole per le operazioni standard
+      const { basketId, cycleId, date, type } = parsedData.data;
+        
       // If it's a "prima-attivazione" operation, check if it's the first operation in the cycle
       if (type === 'prima-attivazione') {
         const cycleOperations = await storage.getOperationsByCycle(cycleId);
@@ -580,6 +619,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // If it's a cycle-closing operation (vendita or selezione-vendita), check if the cycle is already closed
       if (type === 'vendita' || type === 'selezione-vendita') {
+        const cycle = await storage.getCycle(cycleId);
         if (cycle.state === 'closed') {
           return res.status(400).json({ message: "Cannot add closing operation to an already closed cycle" });
         }
