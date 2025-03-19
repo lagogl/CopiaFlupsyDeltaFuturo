@@ -563,7 +563,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: errorMessage });
         }
 
-        const { basketId, cycleId, date, type } = parsedData.data;
+        const opData = parsedData.data;
+        const { basketId, cycleId, date, type } = opData;
         console.log("Validazione operazione standard completata:", { basketId, cycleId, type });
 
         // Check if the basket exists
@@ -602,32 +603,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
             message: `Esiste già un'operazione per questo cestello in data ${formattedDate}` 
           });
         }
-      }
-
-      // Regole per le operazioni standard
-      const { basketId, cycleId, date, type } = parsedData.data;
-        
-      // If it's a "prima-attivazione" operation, check if it's the first operation in the cycle
-      if (type === 'prima-attivazione') {
-        const cycleOperations = await storage.getOperationsByCycle(cycleId);
-        if (cycleOperations.length > 0) {
-          return res.status(400).json({ 
-            message: "Prima attivazione must be the first operation in a cycle" 
-          });
+        // Se siamo arrivati qui, questa è un'operazione standard
+        // Regole per le operazioni standard
+          
+        // If it's a "prima-attivazione" operation, check if it's the first operation in the cycle
+        if (type === 'prima-attivazione') {
+          const cycleOperations = await storage.getOperationsByCycle(cycleId);
+          if (cycleOperations.length > 0) {
+            return res.status(400).json({ 
+              message: "Prima attivazione deve essere la prima operazione in un ciclo" 
+            });
+          }
         }
-      }
 
-      // If it's a cycle-closing operation (vendita or selezione-vendita), check if the cycle is already closed
-      if (type === 'vendita' || type === 'selezione-vendita') {
-        const cycle = await storage.getCycle(cycleId);
-        if (cycle.state === 'closed') {
-          return res.status(400).json({ message: "Cannot add closing operation to an already closed cycle" });
+        // If it's a cycle-closing operation (vendita or selezione-vendita), check if the cycle is already closed
+        if (type === 'vendita' || type === 'selezione-vendita') {
+          const cycle = await storage.getCycle(cycleId);
+          if (cycle.state === 'closed') {
+            return res.status(400).json({ message: "Non è possibile aggiungere un'operazione di chiusura a un ciclo già chiuso" });
+          }
         }
-      }
 
-      // Create the operation
-      const newOperation = await storage.createOperation(parsedData.data);
-      res.status(201).json(newOperation);
+        // Create the operation
+        const newOperation = await storage.createOperation(parsedData.data);
+        res.status(201).json(newOperation);
+      }
     } catch (error) {
       console.error("Error creating operation:", error);
       res.status(500).json({ message: "Failed to create operation" });
