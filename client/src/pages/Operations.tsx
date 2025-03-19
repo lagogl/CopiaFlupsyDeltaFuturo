@@ -407,12 +407,18 @@ export default function Operations() {
 
       {/* Create Operation Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
+        <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto" aria-describedby="operation-form-description">
           <DialogHeader>
             <DialogTitle>Registra Nuova Operazione</DialogTitle>
+            <DialogDescription id="operation-form-description">
+              Compila il modulo per registrare una nuova operazione
+            </DialogDescription>
           </DialogHeader>
           <OperationForm 
-            onSubmit={(data) => createOperationMutation.mutate(data)} 
+            onSubmit={(data) => {
+              console.log('Dialog - Submitting operation data:', data);
+              createOperationMutation.mutate(data);
+            }} 
             isLoading={createOperationMutation.isPending}
           />
         </DialogContent>

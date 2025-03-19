@@ -461,10 +461,24 @@ export default function OperationForm({
                 <FormLabel>Numero Animali</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
+                    type="text" 
                     placeholder="Inserisci numero animali"
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                    value={field.value === null || field.value === undefined 
+                      ? '' 
+                      : field.value.toLocaleString('it-IT')}
+                    onChange={(e) => {
+                      // Rimuove tutti i separatori non numerici e li sostituisce con un formato valido
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      if (value === '') {
+                        field.onChange(null);
+                      } else {
+                        const numValue = parseInt(value, 10);
+                        field.onChange(isNaN(numValue) ? null : numValue);
+                      }
+                    }}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
                   />
                 </FormControl>
                 <FormMessage />
@@ -504,10 +518,24 @@ export default function OperationForm({
                 <FormLabel>Animali per Kg</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
+                    type="text" 
                     placeholder="Inserisci animali per kg"
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                    value={field.value === null || field.value === undefined 
+                      ? '' 
+                      : field.value.toLocaleString('it-IT')}
+                    onChange={(e) => {
+                      // Rimuove tutti i separatori non numerici e li sostituisce con un formato valido
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      if (value === '') {
+                        field.onChange(null);
+                      } else {
+                        const numValue = parseInt(value, 10);
+                        field.onChange(isNaN(numValue) ? null : numValue);
+                      }
+                    }}
+                    onBlur={field.onBlur}
+                    name={field.name}
+                    ref={field.ref}
                   />
                 </FormControl>
                 <FormMessage />
@@ -538,88 +566,104 @@ export default function OperationForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="sgrId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>SGR</FormLabel>
-                <FormControl>
-                  <div className="relative">
-                    <Select 
-                      onValueChange={(value) => field.onChange(value && value !== "none" ? Number(value) : null)}
-                      value={field.value?.toString() || "none"}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleziona SGR" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="none">Nessun SGR</SelectItem>
-                        {sgrs?.map((sgr) => (
-                          <SelectItem key={sgr.id} value={sgr.id.toString()}>
-                            {sgr.month} - {sgr.percentage}%
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    {watchAnimalsPerKg && basketOperations && basketOperations.length > 0 && (
-                      <div className="mt-2 text-sm text-muted-foreground">
-                        {(() => {
-                          // Find previous operation
-                          const sortedOperations = [...basketOperations].sort((a, b) => 
-                            new Date(b.date).getTime() - new Date(a.date).getTime()
+          {/* SGR viene determinato automaticamente, mostriamo solo le informazioni sulla crescita */}
+          <div className="col-span-2 mb-2">
+            <h3 className="text-base font-semibold mb-1">Informazioni SGR</h3>
+            {watchAnimalsPerKg && basketOperations && basketOperations.length > 0 ? (
+              <div className="p-3 rounded-md border bg-muted/20">
+                {(() => {
+                  // Find previous operation
+                  const sortedOperations = [...basketOperations].sort((a, b) => 
+                    new Date(b.date).getTime() - new Date(a.date).getTime()
+                  );
+                  
+                  const previousOperation = sortedOperations.find(op => 
+                    op.animalsPerKg !== null && op.animalsPerKg > 0
+                  );
+                  
+                  if (previousOperation && previousOperation.animalsPerKg) {
+                    const prevAnimalsPerKg = previousOperation.animalsPerKg;
+                    const currentAnimalsPerKg = watchAnimalsPerKg;
+                    
+                    if (prevAnimalsPerKg > currentAnimalsPerKg) {
+                      const prevWeight = 1000000 / prevAnimalsPerKg; // mg
+                      const currentWeight = 1000000 / currentAnimalsPerKg; // mg
+                      const weightGain = ((currentWeight - prevWeight) / prevWeight) * 100;
+                      
+                      // Calcolo automatico del SGR basato sul mese
+                      const currentMonth = new Date().getMonth();
+                      const monthNames = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 
+                                      'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+                      
+                      // Trova SGR per il mese corrente
+                      if (sgrs && sgrs.length > 0) {
+                        const matchingSgr = sgrs.find(sgr => sgr.month === monthNames[currentMonth]);
+                        if (matchingSgr) {
+                          // Imposta il valore del SGR automaticamente
+                          form.setValue('sgrId', matchingSgr.id);
+                          
+                          return (
+                            <div>
+                              <div className="flex items-center mb-2">
+                                <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5 text-green-600" viewBox="0 0 20 20" fill="currentColor">
+                                  <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                                </svg>
+                                <span className="font-medium">SGR selezionato automaticamente: <span className="text-primary font-bold">{matchingSgr.month} - {matchingSgr.percentage}%</span></span>
+                              </div>
+                              <div className="text-green-600 font-medium pl-6">
+                                Crescita rispetto all'ultima operazione: +{weightGain.toFixed(1)}%
+                              </div>
+                            </div>
                           );
-                          
-                          const previousOperation = sortedOperations.find(op => 
-                            op.animalsPerKg !== null && op.animalsPerKg > 0
-                          );
-                          
-                          if (previousOperation && previousOperation.animalsPerKg) {
-                            const prevAnimalsPerKg = previousOperation.animalsPerKg;
-                            const currentAnimalsPerKg = watchAnimalsPerKg;
-                            
-                            if (prevAnimalsPerKg > currentAnimalsPerKg) {
-                              const prevWeight = 1000000 / prevAnimalsPerKg; // mg
-                              const currentWeight = 1000000 / currentAnimalsPerKg; // mg
-                              const weightGain = ((currentWeight - prevWeight) / prevWeight) * 100;
-                              
-                              return (
-                                <>
-                                  Crescita rispetto all'operazione precedente: 
-                                  <span className="font-medium text-green-600"> 
-                                    +{weightGain.toFixed(1)}%
-                                  </span>
-                                </>
-                              );
-                            } else if (prevAnimalsPerKg < currentAnimalsPerKg) {
-                              return (
-                                <span className="text-amber-600">
-                                  Attenzione: Il numero di animali per kg è aumentato rispetto all'operazione precedente,
-                                  indicando una possibile diminuzione del peso medio.
-                                </span>
-                              );
-                            } else {
-                              return (
-                                <span className="text-blue-600">
-                                  Nessuna variazione di dimensione rispetto all'operazione precedente.
-                                </span>
-                              );
-                            }
-                          }
-                          
-                          return "Nessuna operazione precedente per questo cestello/ciclo.";
-                        })()}
-                      </div>
-                    )}
-                  </div>
-                </FormControl>
-                <FormDescription>
-                  SGR calcolato automaticamente in base alla crescita e al mese corrente
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
+                        }
+                      }
+                      
+                      return (
+                        <div className="text-green-600">
+                          Crescita rispetto all'operazione precedente: +{weightGain.toFixed(1)}%
+                        </div>
+                      );
+                    } else if (prevAnimalsPerKg < currentAnimalsPerKg) {
+                      return (
+                        <div className="text-amber-600 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                          </svg>
+                          Attenzione: Il numero di animali per kg è aumentato rispetto all'operazione precedente,
+                          indicando una possibile diminuzione del peso medio.
+                        </div>
+                      );
+                    } else {
+                      return (
+                        <div className="text-blue-600 flex items-center">
+                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1 8a1 1 0 01-1-1v-3a1 1 0 112 0v3a1 1 0 01-1 1z" clipRule="evenodd" />
+                          </svg>
+                          Nessuna variazione di dimensione rispetto all'operazione precedente.
+                        </div>
+                      );
+                    }
+                  }
+                  
+                  return (
+                    <div className="text-muted-foreground flex items-center">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1 8a1 1 0 01-1-1v-3a1 1 0 112 0v3a1 1 0 01-1 1z" clipRule="evenodd" />
+                      </svg>
+                      Nessuna operazione precedente per questo cestello/ciclo.
+                    </div>
+                  );
+                })()}
+              </div>
+            ) : (
+              <div className="text-muted-foreground pl-1">
+                L'SGR verrà calcolato automaticamente quando inserisci il numero di animali per kg.
+              </div>
             )}
-          />
+          </div>
+          
+          {/* Campo SGR nascosto */}
+          <input type="hidden" {...form.register('sgrId')} />
 
           <FormField
             control={form.control}
