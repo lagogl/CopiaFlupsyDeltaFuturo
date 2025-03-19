@@ -33,16 +33,23 @@ export default function Operations() {
   // Create mutation
   const createOperationMutation = useMutation({
     mutationFn: async (newOperation: any) => {
+      // Debug
+      console.log('=============== CREATE OPERATION MUTATION ===============');
+      console.log('Received operation data:', newOperation);
+      
       // Recupera informazioni sulla cesta
       const basket = baskets?.find(b => b.id === newOperation.basketId);
+      console.log('Found basket:', basket);
       
       // Determina se l'operazione è di prima attivazione o di vendita/selezione
       const isPrimaAttivazione = newOperation.type === 'prima-attivazione';
       const isVendita = newOperation.type === 'vendita' || newOperation.type === 'selezione-vendita';
+      console.log('Operation type checks:', { isPrimaAttivazione, isVendita });
       
       // Determina lo stato della cesta
       const isBasketAvailable = basket?.state === 'available';
       const isBasketActive = basket?.state === 'active';
+      console.log('Basket state checks:', { isBasketAvailable, isBasketActive });
       
       let createdOperation;
       

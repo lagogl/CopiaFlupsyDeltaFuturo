@@ -216,21 +216,49 @@ export default function OperationForm({
       : allOperationTypes) // All operations for active baskets
     : allOperationTypes;
 
-  // Aggiungi una funzione per gestire l'invio del form con log degli errori
+  // Aggiungi una funzione per gestire l'invio del form con log dettagliati per debug
   const handleFormSubmit = (values: FormValues) => {
-    // Log di debug
+    // Log di debug estesi
+    console.log('================== FORM DEBUG ==================');
     console.log('Form values:', values);
     console.log('Form errors:', form.formState.errors);
+    console.log('Form state:', form.formState);
+    console.log('Form isDirty:', form.formState.isDirty);
+    console.log('Form isValid:', form.formState.isValid);
+    console.log('Form isSubmitting:', form.formState.isSubmitting);
+    console.log('Form isSubmitted:', form.formState.isSubmitted);
+    console.log('Default values:', defaultValues);
+    console.log('isLoading prop:', isLoading);
     
     try {
       // Converti il campo date da stringa a Date se necessario
       if (typeof values.date === 'string') {
+        console.log('Converting date from string to Date object');
         values = {
           ...values,
           date: new Date(values.date)
         };
+        console.log('Converted values:', values);
       }
       
+      // Verifica se tutti i campi required sono presenti
+      const requiredFields = ['basketId', 'date', 'type'];
+      const missingFields = requiredFields.filter(field => !values[field as keyof FormValues]);
+      
+      if (missingFields.length > 0) {
+        console.error(`Campi obbligatori mancanti: ${missingFields.join(', ')}`);
+      } else {
+        console.log('Tutti i campi obbligatori sono presenti');
+        
+        // Verifica se cycleId è richiesto in base al tipo di operazione
+        if (values.type !== 'prima-attivazione' && !values.cycleId) {
+          console.error('Campo cycleId mancante per operazione diversa da prima-attivazione');
+        } else {
+          console.log('Validazione cycleId passata');
+        }
+      }
+      
+      console.log('Chiamata onSubmit con i valori finali:', values);
       // Chiama la funzione onSubmit passata come prop
       onSubmit(values);
     } catch (error) {
