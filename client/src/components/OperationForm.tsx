@@ -20,6 +20,8 @@ import { operationSchema } from "@shared/schema";
 
 // Extend operation schema to include validation
 const formSchema = operationSchema.extend({
+  // Override della data per assicurarci che funzioni correttamente con il form
+  date: z.coerce.date(),
   animalsPerKg: z.coerce.number().optional().nullable(),
   totalWeight: z.coerce.number().optional().nullable(),
   animalCount: z.coerce.number().optional().nullable(),
@@ -56,7 +58,7 @@ interface OperationFormProps {
 export default function OperationForm({ 
   onSubmit, 
   defaultValues = {
-    date: new Date().toISOString().split('T')[0],
+    date: new Date(),
     type: 'misura',
   },
   isLoading = false
@@ -220,8 +222,20 @@ export default function OperationForm({
     console.log('Form values:', values);
     console.log('Form errors:', form.formState.errors);
     
-    // Chiama la funzione onSubmit passata come prop
-    onSubmit(values);
+    try {
+      // Converti il campo date da stringa a Date se necessario
+      if (typeof values.date === 'string') {
+        values = {
+          ...values,
+          date: new Date(values.date)
+        };
+      }
+      
+      // Chiama la funzione onSubmit passata come prop
+      onSubmit(values);
+    } catch (error) {
+      console.error('Errore durante il submit del form:', error);
+    }
   };
   
   return (
@@ -277,15 +291,34 @@ export default function OperationForm({
           <FormField
             control={form.control}
             name="date"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Data Operazione</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
+            render={({ field }) => {
+              // Converti la data in formato stringa per l'input
+              const dateValue = field.value instanceof Date 
+                ? field.value.toISOString().split('T')[0] 
+                : typeof field.value === 'string' 
+                  ? field.value 
+                  : '';
+              
+              return (
+                <FormItem>
+                  <FormLabel>Data Operazione</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="date" 
+                      value={dateValue}
+                      onChange={(e) => {
+                        // Passa il valore dell'input direttamente (sarà convertito da z.coerce.date())
+                        field.onChange(e.target.value);
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
           />
 
 {watchType === 'prima-attivazione' ? (
