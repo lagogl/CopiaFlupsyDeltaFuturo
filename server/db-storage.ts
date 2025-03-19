@@ -1,10 +1,10 @@
-import { and, eq, isNull } from 'drizzle-orm';
+import { and, eq, isNull, desc } from 'drizzle-orm';
 import { db } from './db';
 import { 
   Flupsy, InsertFlupsy, flupsys,
   Basket, Cycle, InsertBasket, InsertCycle, InsertLot, InsertOperation, 
   InsertSgr, InsertSize, Lot, Operation, Size, Sgr, baskets, cycles, lots,
-  operations, sgr, sizes 
+  operations, sgr, sizes, basketPositionHistory, BasketPositionHistory, InsertBasketPositionHistory
 } from '../shared/schema';
 import { IStorage } from './storage';
 
@@ -280,6 +280,57 @@ export class DbStorage implements IStorage {
     const results = await db.update(lots)
       .set(lotUpdate)
       .where(eq(lots.id, id))
+      .returning();
+    return results[0];
+  }
+  
+  // BASKET POSITION HISTORY
+  async getBasketPositionHistory(basketId: number): Promise<BasketPositionHistory[]> {
+    return await db.select()
+      .from(basketPositionHistory)
+      .where(eq(basketPositionHistory.basketId, basketId))
+      .orderBy(desc(basketPositionHistory.startDate));
+  }
+
+  async getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined> {
+    const results = await db.select()
+      .from(basketPositionHistory)
+      .where(and(
+        eq(basketPositionHistory.basketId, basketId),
+        isNull(basketPositionHistory.endDate)
+      ));
+    return results[0];
+  }
+
+  async createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory> {
+    // Convert any dates to string format
+    if (positionHistory.startDate && typeof positionHistory.startDate === 'object' && 'toISOString' in positionHistory.startDate) {
+      positionHistory.startDate = positionHistory.startDate.toISOString().split('T')[0];
+    }
+    
+    const results = await db.insert(basketPositionHistory).values({
+      ...positionHistory,
+      endDate: null
+    }).returning();
+    return results[0];
+  }
+
+  async closeBasketPositionHistory(basketId: number, endDate: Date): Promise<BasketPositionHistory | undefined> {
+    // Convert date to string format
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    // Get the current active position
+    const currentPosition = await this.getCurrentBasketPosition(basketId);
+    if (!currentPosition) {
+      return undefined;
+    }
+    
+    // Close the position
+    const results = await db.update(basketPositionHistory)
+      .set({
+        endDate: endDateStr
+      })
+      .where(eq(basketPositionHistory.id, currentPosition.id))
       .returning();
     return results[0];
   }

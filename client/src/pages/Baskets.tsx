@@ -365,6 +365,104 @@ export default function Baskets() {
         </DialogContent>
       </Dialog>
       
+      {/* View Basket Details Dialog */}
+      <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+        <DialogContent className="sm:max-w-[700px]">
+          <DialogHeader>
+            <DialogTitle>Dettagli Cesta</DialogTitle>
+            <DialogDescription>
+              Informazioni dettagliate e cronologia della cesta
+            </DialogDescription>
+          </DialogHeader>
+          {selectedBasket && (
+            <Tabs defaultValue="info">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="info" className="flex items-center gap-1">
+                  <Info className="h-4 w-4" />
+                  <span>Informazioni</span>
+                </TabsTrigger>
+                <TabsTrigger value="positions" className="flex items-center gap-1">
+                  <History className="h-4 w-4" />
+                  <span>Cronologia Posizioni</span>
+                </TabsTrigger>
+              </TabsList>
+              
+              <TabsContent value="info" className="mt-4">
+                <div className="rounded-lg bg-card border">
+                  <div className="p-4 border-b bg-muted/30">
+                    <h3 className="text-lg font-semibold flex items-center">
+                      Cesta #{selectedBasket.physicalNumber}
+                      <Badge className="ml-2" variant={selectedBasket.state === 'active' ? 'default' : 'secondary'}>
+                        {selectedBasket.state === 'active' ? 'Ciclo attivo' : 'Disponibile'}
+                      </Badge>
+                    </h3>
+                  </div>
+                  
+                  <div className="p-4 grid grid-cols-2 gap-4">
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">Unità FLUPSY</p>
+                      <p className="font-medium">
+                        {flupsys?.find((f: any) => f.id === selectedBasket.flupsyId)?.name || `#${selectedBasket.flupsyId}`}
+                      </p>
+                    </div>
+                    
+                    <div>
+                      <p className="text-sm font-medium text-muted-foreground">ID Sistema</p>
+                      <p className="font-medium">#{selectedBasket.id}</p>
+                    </div>
+                    
+                    {selectedBasket.row && selectedBasket.position && (
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground">Posizione Attuale</p>
+                        <p className="font-medium text-primary">Fila {selectedBasket.row}, Posizione {selectedBasket.position}</p>
+                      </div>
+                    )}
+                    
+                    {selectedBasket.currentCycleId && (
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground">Ciclo Attivo</p>
+                        <p className="font-medium text-primary">#{selectedBasket.currentCycleId}</p>
+                      </div>
+                    )}
+                    
+                    {selectedBasket.nfcData && (
+                      <div className="col-span-2 border-t pt-3 mt-2">
+                        <p className="text-sm font-medium text-muted-foreground">Dati NFC</p>
+                        <p className="font-mono text-xs p-2 bg-muted rounded-md mt-1 overflow-x-auto">
+                          {selectedBasket.nfcData}
+                        </p>
+                      </div>
+                    )}
+                  </div>
+                </div>
+              </TabsContent>
+              
+              <TabsContent value="positions" className="mt-4 space-y-4">
+                <div className="bg-muted/20 p-4 rounded-lg border">
+                  <h3 className="text-sm font-semibold mb-2 flex items-center">
+                    <MapPin className="h-4 w-4 mr-1" />
+                    Cronologia degli spostamenti
+                  </h3>
+                  
+                  <p className="text-sm text-muted-foreground mb-4">
+                    Questa sezione mostra tutti i movimenti e cambi di posizione della cesta nel corso del tempo.
+                    Le posizioni sono ordinate cronologicamente dalla più recente alla più vecchia.
+                  </p>
+                  
+                  <BasketPositionHistory basketId={selectedBasket.id} />
+                </div>
+              </TabsContent>
+            </Tabs>
+          )}
+          
+          <DialogFooter>
+            <Button onClick={() => setIsViewDialogOpen(false)}>
+              Chiudi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Delete Basket Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px]">
