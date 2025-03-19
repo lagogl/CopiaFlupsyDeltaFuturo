@@ -28,6 +28,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.get("/api/baskets/check-exists", async (req, res) => {
+    try {
+      const flupsyId = parseInt(req.query.flupsyId as string);
+      const physicalNumber = parseInt(req.query.physicalNumber as string);
+      
+      if (isNaN(flupsyId) || isNaN(physicalNumber)) {
+        return res.status(400).json({ 
+          message: "flupsyId e physicalNumber sono richiesti e devono essere numeri validi" 
+        });
+      }
+      
+      // Verifica se il FLUPSY esiste
+      const flupsy = await storage.getFlupsy(flupsyId);
+      if (!flupsy) {
+        return res.status(404).json({ message: "FLUPSY non trovato" });
+      }
+      
+      // Ottieni tutte le ceste per questo FLUPSY
+      const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
+      
+      // Verifica se esiste già una cesta con lo stesso numero fisico
+      const existingBasket = flupsyBaskets.find(basket => basket.physicalNumber === physicalNumber);
+      
+      if (existingBasket) {
+        // Include il nome del FLUPSY per un messaggio di errore migliore
+        const flupsyName = flupsy.name;
+        const basketState = existingBasket.state;
+        
+        return res.json({
+          exists: true,
+          basket: existingBasket,
+          message: `Esiste già una cesta con il numero ${physicalNumber} in ${flupsyName} (Stato: ${basketState})`,
+          state: basketState
+        });
+      }
+      
+      res.json({ exists: false });
+    } catch (error) {
+      console.error("Error checking basket existence:", error);
+      res.status(500).json({ message: "Errore durante la verifica dell'esistenza della cesta" });
+    }
+  });
+
   app.get("/api/baskets/next-number/:flupsyId", async (req, res) => {
     try {
       const flupsyId = parseInt(req.params.flupsyId);

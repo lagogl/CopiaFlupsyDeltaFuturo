@@ -1,5 +1,5 @@
 import { useEffect, useState } from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, AlertTriangle } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import { useQuery } from "@tanstack/react-query";
 
@@ -15,48 +15,82 @@ export default function BasketExistsCheck({
   onValidationChange 
 }: BasketExistsCheckProps) {
   const [error, setError] = useState<string | null>(null);
+  const [warningOnly, setWarningOnly] = useState<boolean>(false);
   
-  // Fetch all baskets for validation
-  const { data: baskets = [] } = useQuery<any[]>({
-    queryKey: ['/api/baskets'],
-  });
-  
-  // Fetch FLUPSY info for error messages
-  const { data: flupsys = [] } = useQuery<any[]>({
-    queryKey: ['/api/flupsys'],
+  // Query per verificare l'esistenza della cesta
+  const basketExistsQuery = useQuery<any>({
+    queryKey: ['/api/baskets/check-exists', flupsyId, basketNumber],
+    queryFn: async () => {
+      if (!flupsyId || !basketNumber) return { exists: false };
+      
+      const response = await fetch(`/api/baskets/check-exists?flupsyId=${flupsyId}&physicalNumber=${basketNumber}`);
+      if (!response.ok) {
+        throw new Error("Errore nella verifica dell'esistenza della cesta");
+      }
+      return response.json();
+    },
+    enabled: !!flupsyId && !!basketNumber, // Eseguire solo quando abbiamo flupsyId e basketNumber
   });
   
   useEffect(() => {
-    // Skip validation if no FLUPSY selected or no basket number
+    // Salt la validazione se non c'è FLUPSY selezionato o numero cesta
     if (!flupsyId || !basketNumber) {
       setError(null);
+      setWarningOnly(false);
       onValidationChange(true);
       return;
     }
     
-    // Check if basket with same number exists in same FLUPSY
-    const existingBasket = baskets.find(basket => 
-      basket.flupsyId === flupsyId && 
-      basket.physicalNumber === basketNumber
-    );
-    
-    if (existingBasket) {
-      const flupsyName = flupsys.find(f => f.id === flupsyId)?.name || `FLUPSY #${flupsyId}`;
-      const errorMessage = `Esiste già una cesta con il numero ${basketNumber} in ${flupsyName}`;
-      setError(errorMessage);
-      onValidationChange(false);
-    } else {
-      setError(null);
-      onValidationChange(true);
+    // Se stiamo caricando, non fare nulla
+    if (basketExistsQuery.isLoading) {
+      return;
     }
-  }, [flupsyId, basketNumber, baskets, flupsys, onValidationChange]);
+    
+    // Se c'è stato un errore nella query, mostra l'errore ma consenti comunque il salvataggio
+    if (basketExistsQuery.isError) {
+      setError("Errore durante la verifica dell'esistenza della cesta. Controllare manualmente.");
+      setWarningOnly(true);
+      onValidationChange(true);
+      return;
+    }
+    
+    // Se la query è andata a buon fine, verifica il risultato
+    if (basketExistsQuery.data) {
+      if (basketExistsQuery.data.exists) {
+        // La cesta esiste, verifica lo stato
+        const basketState = basketExistsQuery.data.state;
+        setError(basketExistsQuery.data.message);
+        
+        // Se la cesta è "disponibile", possiamo mostrare un avviso ma consentire comunque il salvataggio
+        // in tutti gli altri casi, blocchiamo il salvataggio
+        if (basketState === "available") {
+          setWarningOnly(true);
+          onValidationChange(true);
+        } else {
+          setWarningOnly(false);
+          onValidationChange(false);
+        }
+      } else {
+        // La cesta non esiste, tutto ok
+        setError(null);
+        setWarningOnly(false);
+        onValidationChange(true);
+      }
+    }
+  }, [flupsyId, basketNumber, basketExistsQuery.data, basketExistsQuery.isLoading, basketExistsQuery.isError, onValidationChange]);
   
   if (!error) return null;
   
   return (
-    <Alert variant="destructive" className="mt-2 mb-4">
-      <AlertCircle className="h-4 w-4" />
-      <AlertTitle>Errore</AlertTitle>
+    <Alert 
+      variant={warningOnly ? "warning" : "destructive"} 
+      className="mt-2 mb-4"
+    >
+      {warningOnly ? 
+        <AlertTriangle className="h-4 w-4" /> : 
+        <AlertCircle className="h-4 w-4" />
+      }
+      <AlertTitle>{warningOnly ? "Attenzione" : "Errore"}</AlertTitle>
       <AlertDescription>{error}</AlertDescription>
     </Alert>
   );
