@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { 
   Eye, Copy, Download, Plus, Filter, Upload, Pencil, Search, Waves,
-  Trash2, AlertTriangle
+  Trash2, AlertTriangle, History, MapPin, Info
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
@@ -12,8 +12,10 @@ import { toast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BasketForm from '@/components/BasketForm';
 import NFCReader from '@/components/NFCReader';
+import BasketPositionHistory from '@/components/BasketPositionHistory';
 
 export default function Baskets() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -22,6 +24,7 @@ export default function Baskets() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedBasket, setSelectedBasket] = useState<any>(null);
   const [location] = useLocation();
   
@@ -275,7 +278,14 @@ export default function Baskets() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="icon">
+                          <Button 
+                            variant="ghost" 
+                            size="icon"
+                            onClick={() => {
+                              setSelectedBasket(basket);
+                              setIsViewDialogOpen(true);
+                            }}
+                          >
                             <Eye className="h-5 w-5 text-primary" />
                           </Button>
                           <Button
