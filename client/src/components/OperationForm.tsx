@@ -24,19 +24,25 @@ const formSchema = operationSchema.extend({
   totalWeight: z.coerce.number().optional().nullable(),
   animalCount: z.coerce.number().optional().nullable(),
   notes: z.string().optional(),
-  cycleId: z.number().nullable().optional().refine(
-    (val, ctx) => {
-      // Se il tipo è prima-attivazione, il ciclo è opzionale
-      if (ctx.path && ctx.path.length > 0 && ctx.data && ctx.data.type === 'prima-attivazione') {
-        return true;
-      }
-      // Altrimenti è richiesto
-      return val !== null && val !== undefined;
-    },
-    {
-      message: "Seleziona un ciclo",
+  // Il campo cycleId è condizionalmente richiesto a seconda del tipo di operazione
+  cycleId: z.number().nullable().optional().superRefine((val, ctx) => {
+    // Otteniamo il tipo di operazione dalle data dell'oggetto ctx
+    // @ts-ignore - Ignoriamo l'errore TS perché sappiamo che data esiste e contiene type
+    const operationType = ctx.data?.type;
+    
+    // Se l'operazione è di tipo 'prima-attivazione', il ciclo non è richiesto
+    if (operationType === 'prima-attivazione') {
+      return; // Nessun errore, il campo può essere nullo o undefined
     }
-  ),
+    
+    // Per tutti gli altri tipi di operazione, verifichiamo che ci sia un ciclo selezionato
+    if (val === null || val === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Seleziona un ciclo",
+      });
+    }
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;

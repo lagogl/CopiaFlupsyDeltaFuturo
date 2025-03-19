@@ -339,8 +339,37 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
   // Determine the class based on basket state
   const getCardClass = () => {
     if (!basket) return 'bg-gray-50 border-dashed';
-    if (basket.state === 'active') return 'bg-green-50 border-green-300';
-    return 'bg-gray-100';
+    
+    // Stato "active" - cestello con ciclo attivo
+    if (basket.state === 'active') {
+      // Se è un cestello attivo, controlliamo quando è stata fatta l'ultima operazione
+      if (latestOperation) {
+        const daysSinceLastOperation = Math.floor((new Date().getTime() - new Date(latestOperation.date).getTime()) / (1000 * 60 * 60 * 24));
+        
+        // Operazione effettuata negli ultimi 7 giorni - verde brillante
+        if (daysSinceLastOperation <= 7) {
+          return 'bg-green-100 border-green-400 shadow-sm';
+        }
+        // Operazione effettuata tra 8 e 14 giorni fa - verde chiaro
+        else if (daysSinceLastOperation <= 14) {
+          return 'bg-green-50 border-green-300';
+        }
+        // Operazione effettuata tra 15 e 30 giorni fa - giallo chiaro (attenzione)
+        else if (daysSinceLastOperation <= 30) {
+          return 'bg-amber-50 border-amber-300';
+        }
+        // Operazione effettuata più di 30 giorni fa - rosso chiaro (critico)
+        else {
+          return 'bg-red-50 border-red-300';
+        }
+      }
+      
+      // Se non ci sono operazioni ma il cestello è attivo, verde base
+      return 'bg-green-50 border-green-300';
+    }
+    
+    // Stato "available" - cestello disponibile
+    return 'bg-slate-100 border-slate-200';
   };
   
   // Render different content based on view mode
