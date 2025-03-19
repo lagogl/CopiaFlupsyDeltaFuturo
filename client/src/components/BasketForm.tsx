@@ -22,8 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
-import { AlertCircle } from "lucide-react";
-import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
+import BasketExistsCheck from "./BasketExistsCheck";
 
 // Create a schema for basket validation
 const basketFormSchema = z.object({
@@ -58,17 +57,11 @@ export default function BasketForm({
   });
   
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(null);
-  const [validationError, setValidationError] = useState<string | null>(null);
-  const [checkingBasket, setCheckingBasket] = useState(false);
+  const [isBasketValid, setIsBasketValid] = useState(true);
 
   // Fetch FLUPSY units
   const { data: flupsys = [], isLoading: isFlupsysLoading } = useQuery<any[]>({
     queryKey: ['/api/flupsys'],
-  });
-  
-  // Fetch all baskets to check for duplicates
-  const { data: allBaskets = [] } = useQuery<any[]>({
-    queryKey: ['/api/baskets'],
   });
   
   // Fetch next available basket number for selected FLUPSY
@@ -90,48 +83,12 @@ export default function BasketForm({
   useEffect(() => {
     if (nextBasketNumber && nextBasketNumber.nextNumber) {
       form.setValue('physicalNumber', nextBasketNumber.nextNumber);
-      // Reset validation error when we get a new valid number
-      setValidationError(null);
     }
   }, [nextBasketNumber, form]);
-  
-  // Check for duplicate basket numbers whenever flupsyId or physicalNumber changes
-  useEffect(() => {
-    const validateBasketNumber = async () => {
-      setCheckingBasket(true);
-      try {
-        const flupsyId = form.getValues('flupsyId');
-        const physicalNumber = form.getValues('physicalNumber');
-        
-        // Skip validation if no FLUPSY is selected or no valid basket number
-        if (!flupsyId || !physicalNumber) {
-          setValidationError(null);
-          return;
-        }
-        
-        // Check client-side first using the fetched baskets
-        const existingBasket = allBaskets.find(basket => 
-          basket.flupsyId === flupsyId && 
-          basket.physicalNumber === physicalNumber
-        );
-        
-        if (existingBasket) {
-          const flupsyName = flupsys.find(f => f.id === flupsyId)?.name || `FLUPSY #${flupsyId}`;
-          setValidationError(`Esiste già una cesta con il numero ${physicalNumber} in ${flupsyName}`);
-        } else {
-          setValidationError(null);
-        }
-      } finally {
-        setCheckingBasket(false);
-      }
-    };
-    
-    validateBasketNumber();
-  }, [form.watch('flupsyId'), form.watch('physicalNumber'), allBaskets, flupsys]);
 
   // Define custom submit handler to prevent submission if there's a validation error
   const handleSubmit = (e: React.FormEvent) => {
-    if (validationError) {
+    if (!isBasketValid) {
       e.preventDefault();
       return;
     }
@@ -141,13 +98,12 @@ export default function BasketForm({
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit} className="space-y-6">
-        {validationError && (
-          <Alert variant="destructive" className="mb-4">
-            <AlertCircle className="h-4 w-4" />
-            <AlertTitle>Errore</AlertTitle>
-            <AlertDescription>{validationError}</AlertDescription>
-          </Alert>
-        )}
+      
+        <BasketExistsCheck 
+          flupsyId={form.watch('flupsyId')} 
+          basketNumber={form.watch('physicalNumber')}
+          onValidationChange={setIsBasketValid}
+        />
       
         <FormField
           control={form.control}
@@ -160,7 +116,7 @@ export default function BasketForm({
                   type="number"
                   placeholder="Inserisci il numero della cesta..."
                   {...field}
-                  className={validationError ? "border-destructive focus-visible:ring-destructive" : ""}
+                  className={!isBasketValid ? "border-destructive focus-visible:ring-destructive" : ""}
                 />
               </FormControl>
               <FormMessage />
@@ -268,11 +224,9 @@ export default function BasketForm({
           </Button>
           <Button 
             type="submit" 
-            disabled={isLoading || isFlupsysLoading || checkingBasket || !!validationError}
+            disabled={isLoading || isFlupsysLoading || !isBasketValid}
           >
-            {isLoading ? "Salvataggio..." : 
-             checkingBasket ? "Verificando..." : 
-             "Salva"}
+            {isLoading ? "Salvataggio..." : "Salva"}
           </Button>
         </div>
       </form>
