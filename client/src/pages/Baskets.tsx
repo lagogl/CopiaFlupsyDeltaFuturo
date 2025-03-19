@@ -300,9 +300,14 @@ export default function Baskets() {
                               <Trash2 className="h-5 w-5 text-destructive" />
                             </Button>
                           ) : (
-                            <Button variant="ghost" size="icon">
-                              <Download className="h-5 w-5 text-secondary" />
-                            </Button>
+                            <div className="relative group">
+                              <Button variant="ghost" size="icon" disabled>
+                                <Trash2 className="h-5 w-5 text-muted-foreground" />
+                              </Button>
+                              <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+                                Non puoi eliminare una cesta con un ciclo attivo
+                              </div>
+                            </div>
                           )}
                         </div>
                       </td>
@@ -355,30 +360,54 @@ export default function Baskets() {
           <DialogHeader>
             <DialogTitle>Elimina Cesta</DialogTitle>
             <DialogDescription className="text-destructive-foreground/80">
-              Sei sicuro di voler eliminare questa cesta? Questa azione non può essere annullata.
+              Stai per eliminare questa cesta. Questa azione non può essere annullata.
             </DialogDescription>
           </DialogHeader>
           {selectedBasket && (
-            <div className="p-4 my-4 border rounded-lg bg-muted/50">
-              <div className="grid grid-cols-2 gap-3">
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Numero cesta</p>
-                  <p className="font-medium">#{selectedBasket.physicalNumber}</p>
-                </div>
-                <div>
-                  <p className="text-sm font-medium text-muted-foreground">Unità FLUPSY</p>
-                  <p className="font-medium">
-                    {flupsys?.find((f: any) => f.id === selectedBasket.flupsyId)?.name || `#${selectedBasket.flupsyId}`}
-                  </p>
-                </div>
-                {selectedBasket.row && selectedBasket.position && (
-                  <div className="col-span-2">
-                    <p className="text-sm font-medium text-muted-foreground">Posizione</p>
-                    <p className="font-medium">Fila {selectedBasket.row}, Posizione {selectedBasket.position}</p>
+            <>
+              <div className="p-4 my-4 border rounded-lg bg-muted/50">
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Numero cesta</p>
+                    <p className="font-medium">#{selectedBasket.physicalNumber}</p>
                   </div>
-                )}
+                  <div>
+                    <p className="text-sm font-medium text-muted-foreground">Unità FLUPSY</p>
+                    <p className="font-medium">
+                      {flupsys?.find((f: any) => f.id === selectedBasket.flupsyId)?.name || `#${selectedBasket.flupsyId}`}
+                    </p>
+                  </div>
+                  {selectedBasket.row && selectedBasket.position && (
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium text-muted-foreground">Posizione</p>
+                      <p className="font-medium">Fila {selectedBasket.row}, Posizione {selectedBasket.position}</p>
+                    </div>
+                  )}
+                  <div className="col-span-2">
+                    <p className="text-sm font-medium text-muted-foreground">Stato</p>
+                    <p className="font-medium flex items-center">
+                      {selectedBasket.state === 'available' ? (
+                        <><span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-2"></span> Disponibile</>
+                      ) : (
+                        <><span className="inline-block h-2 w-2 rounded-full bg-blue-500 mr-2"></span> In uso (ciclo attivo)</>
+                      )}
+                    </p>
+                  </div>
+                </div>
               </div>
-            </div>
+              
+              <div className="flex items-start space-x-2 p-4 rounded-md bg-amber-50 text-amber-900 border border-amber-200 mb-4">
+                <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
+                <div className="text-sm">
+                  <p className="font-medium">Importante:</p>
+                  <ul className="list-disc pl-5 mt-1 space-y-1">
+                    <li>Il numero di cesta sarà nuovamente disponibile per future ceste.</li>
+                    <li>Non è possibile eliminare ceste con cicli attivi.</li>
+                    <li>Le operazioni storiche rimarranno nel sistema.</li>
+                  </ul>
+                </div>
+              </div>
+            </>
           )}
           <DialogFooter className="gap-2 sm:gap-0">
             <Button
@@ -390,7 +419,7 @@ export default function Baskets() {
             <Button
               variant="destructive"
               onClick={() => selectedBasket && deleteBasketMutation.mutate(selectedBasket.id)}
-              disabled={deleteBasketMutation.isPending}
+              disabled={deleteBasketMutation.isPending || (selectedBasket && selectedBasket.state !== 'available')}
             >
               {deleteBasketMutation.isPending ? "Eliminazione in corso..." : "Elimina"}
             </Button>
