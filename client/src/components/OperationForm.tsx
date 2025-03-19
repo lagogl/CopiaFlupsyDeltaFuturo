@@ -69,6 +69,16 @@ export default function OperationForm({
   });
 
   const watchAnimalsPerKg = form.watch('animalsPerKg');
+  const watchAnimalCount = form.watch('animalCount');
+  const watchAverageWeight = form.watch('averageWeight');
+  const watchBasketId = form.watch('basketId');
+  const watchCycleId = form.watch('cycleId');
+  
+  // Fetch operations for the selected basket and cycle
+  const { data: basketOperations } = useQuery({
+    queryKey: ['/api/operations', watchBasketId, watchCycleId],
+    enabled: !!watchBasketId && !!watchCycleId,
+  });
   
   // Calculate average weight and set size when animals per kg changes
   useEffect(() => {
@@ -94,9 +104,60 @@ export default function OperationForm({
       form.setValue('averageWeight', null);
     }
   }, [watchAnimalsPerKg, sizes]);
+  
+  // Calculate total weight when animalCount or averageWeight changes
+  useEffect(() => {
+    if (watchAnimalCount && watchAverageWeight) {
+      const totalWeight = (watchAnimalCount * watchAverageWeight) / 1000; // Convert from mg to g
+      form.setValue('totalWeight', totalWeight);
+    } else {
+      form.setValue('totalWeight', null);
+    }
+  }, [watchAnimalCount, watchAverageWeight, form]);
+  
+  // Calculate SGR when basket and cycle are selected
+  useEffect(() => {
+    if (!watchBasketId || !watchCycleId || !basketOperations || basketOperations.length < 1) {
+      return;
+    }
+    
+    // Sort operations by date (descending)
+    const sortedOperations = [...basketOperations].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    // Find the latest operation with animalsPerKg value
+    const previousOperation = sortedOperations.find(op => 
+      op.animalsPerKg !== null && op.totalWeight !== null && op.animalCount !== null
+    );
+    
+    if (previousOperation && previousOperation.animalsPerKg && watchAnimalsPerKg) {
+      // Calculate weight gain percentage
+      const prevAnimalsPerKg = previousOperation.animalsPerKg;
+      const currentAnimalsPerKg = watchAnimalsPerKg;
+      
+      if (prevAnimalsPerKg > currentAnimalsPerKg) { // Animal weight has increased
+        const prevWeight = 1000000 / prevAnimalsPerKg; // mg
+        const currentWeight = 1000000 / currentAnimalsPerKg; // mg
+        const weightGain = ((currentWeight - prevWeight) / prevWeight) * 100;
+        
+        // Get current month
+        const currentMonth = new Date().getMonth();
+        const monthNames = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 
+                          'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+        
+        // Find SGR for current month
+        if (sgrs && sgrs.length > 0) {
+          const matchingSgr = sgrs.find(sgr => sgr.month === monthNames[currentMonth]);
+          if (matchingSgr) {
+            form.setValue('sgrId', matchingSgr.id);
+          }
+        }
+      }
+    }
+  }, [watchBasketId, watchCycleId, basketOperations, watchAnimalsPerKg, sgrs]);
 
   // Filter cycles based on selected basket
-  const watchBasketId = form.watch('basketId');
   const filteredCycles = cycles?.filter(cycle => 
     cycle.basketId === Number(watchBasketId) && cycle.state === 'active'
   ) || [];
@@ -281,11 +342,15 @@ export default function OperationForm({
                   <Input 
                     type="number" 
                     step="0.01"
-                    placeholder="Inserisci peso in grammi"
-                    {...field}
-                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                    placeholder="Calcolato automaticamente"
+                    value={field.value ? Number(field.value).toFixed(2) : ''}
+                    readOnly
+                    className="bg-gray-100"
                   />
                 </FormControl>
+                <FormDescription>
+                  Calcolato automaticamente: (Numero animali × Peso medio) ÷ 1000
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
