@@ -32,7 +32,72 @@ export default function Operations() {
 
   // Create mutation
   const createOperationMutation = useMutation({
-    mutationFn: (newOperation: any) => apiRequest('POST', '/api/operations', newOperation),
+    mutationFn: async (newOperation: any) => {
+      // Recupera informazioni sulla cesta
+      const basket = baskets?.find(b => b.id === newOperation.basketId);
+      
+      // Determina se l'operazione è di prima attivazione o di vendita/selezione
+      const isPrimaAttivazione = newOperation.type === 'prima-attivazione';
+      const isVendita = newOperation.type === 'vendita' || newOperation.type === 'selezione-vendita';
+      
+      // Determina lo stato della cesta
+      const isBasketAvailable = basket?.state === 'available';
+      const isBasketActive = basket?.state === 'active';
+      
+      let createdOperation;
+      
+      // 1. Se la cesta è disponibile e l'operazione è di prima attivazione
+      if (isBasketAvailable && isPrimaAttivazione) {
+        // Creare un nuovo ciclo
+        const newCycle = await apiRequest('POST', '/api/cycles', {
+          basketId: newOperation.basketId,
+          startDate: newOperation.date
+        });
+        
+        // Aggiornare lo stato della cesta a active
+        await apiRequest('PATCH', `/api/baskets/${newOperation.basketId}`, {
+          state: 'active',
+          currentCycleId: newCycle.id
+        });
+        
+        // Aggiungi l'ID del ciclo all'operazione
+        newOperation.cycleId = newCycle.id;
+        createdOperation = await apiRequest('POST', '/api/operations', newOperation);
+        
+        // Invalida le query per cicli e ceste
+        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      }
+      // 2. Se la cesta è attiva e l'operazione è di vendita
+      else if (isBasketActive && isVendita) {
+        // Creare l'operazione
+        createdOperation = await apiRequest('POST', '/api/operations', newOperation);
+        
+        // Chiudi il ciclo
+        if (basket?.currentCycleId) {
+          await apiRequest('PATCH', `/api/cycles/${basket.currentCycleId}`, {
+            endDate: newOperation.date,
+            state: 'closed'
+          });
+        }
+        
+        // Aggiorna lo stato della cesta a disponibile
+        await apiRequest('PATCH', `/api/baskets/${newOperation.basketId}`, {
+          state: 'available',
+          currentCycleId: null
+        });
+        
+        // Invalida le query per cicli e ceste
+        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      }
+      // 3. Operazioni normali
+      else {
+        createdOperation = await apiRequest('POST', '/api/operations', newOperation);
+      }
+      
+      return createdOperation;
+    },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       setIsCreateDialogOpen(false);

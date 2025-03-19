@@ -161,9 +161,15 @@ export default function OperationForm({
   const filteredCycles = cycles?.filter(cycle => 
     cycle.basketId === Number(watchBasketId) && cycle.state === 'active'
   ) || [];
+  
+  // Selected basket data
+  const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
+  
+  // Determine if a new cycle needs to be created
+  const needsNewCycle = selectedBasket?.state === 'available' && watchBasketId;
 
-  // Get operation type options
-  const operationTypes = [
+  // Get operation type options based on basket state
+  const allOperationTypes = [
     { value: 'prima-attivazione', label: 'Prima Attivazione' },
     { value: 'pulizia', label: 'Pulizia' },
     { value: 'vagliatura', label: 'Vagliatura' },
@@ -172,6 +178,13 @@ export default function OperationForm({
     { value: 'vendita', label: 'Vendita' },
     { value: 'selezione-vendita', label: 'Selezione per Vendita' },
   ];
+  
+  // Filter operation types based on basket state
+  const operationTypes = selectedBasket 
+    ? (selectedBasket.state === 'available' 
+      ? allOperationTypes.filter(op => op.value === 'prima-attivazione') // Only 'Prima Attivazione' for available baskets
+      : allOperationTypes) // All operations for active baskets
+    : allOperationTypes;
 
   return (
     <Form {...form}>
