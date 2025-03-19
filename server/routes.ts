@@ -27,6 +27,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch baskets" });
     }
   });
+  
+  app.get("/api/baskets/next-number/:flupsyId", async (req, res) => {
+    try {
+      const flupsyId = parseInt(req.params.flupsyId);
+      if (isNaN(flupsyId)) {
+        return res.status(400).json({ message: "ID FLUPSY non valido" });
+      }
+      
+      // Verifica se il FLUPSY esiste
+      const flupsy = await storage.getFlupsy(flupsyId);
+      if (!flupsy) {
+        return res.status(404).json({ message: "FLUPSY non trovato" });
+      }
+      
+      // Ottieni tutte le ceste per questo FLUPSY
+      const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
+      
+      // Se abbiamo già 20 ceste, restituisci un errore
+      if (flupsyBaskets.length >= 20) {
+        return res.status(400).json({ 
+          message: "Limite massimo di 20 ceste per FLUPSY raggiunto" 
+        });
+      }
+      
+      // Trova il prossimo numero disponibile
+      const usedNumbers = flupsyBaskets.map(basket => basket.physicalNumber);
+      let nextNumber = 1;
+      
+      while (usedNumbers.includes(nextNumber) && nextNumber <= 20) {
+        nextNumber++;
+      }
+      
+      res.json({ nextNumber });
+    } catch (error) {
+      console.error("Error getting next basket number:", error);
+      res.status(500).json({ message: "Errore nel calcolo del prossimo numero di cesta" });
+    }
+  });
 
   app.get("/api/baskets/:id", async (req, res) => {
     try {
@@ -55,10 +93,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: errorMessage });
       }
 
-      // Check if a basket with the same physical number already exists
-      const existingBasket = await storage.getBasketByPhysicalNumber(parsedData.data.physicalNumber);
-      if (existingBasket) {
-        return res.status(400).json({ message: "A basket with this physical number already exists" });
+      const { flupsyId, physicalNumber } = parsedData.data;
+
+      // Get all baskets for this FLUPSY
+      const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
+      
+      // Check if we already have 20 baskets for this FLUPSY
+      if (flupsyBaskets.length >= 20) {
+        return res.status(400).json({ 
+          message: "Limite massimo di 20 ceste per FLUPSY raggiunto. Impossibile aggiungere ulteriori ceste." 
+        });
+      }
+
+      // Check if a basket with the same physical number already exists in this FLUPSY
+      const basketWithSameNumber = flupsyBaskets.find(b => b.physicalNumber === physicalNumber);
+      if (basketWithSameNumber) {
+        return res.status(400).json({ 
+          message: `Esiste già una cesta con il numero ${physicalNumber} in questa unità FLUPSY` 
+        });
       }
 
       const newBasket = await storage.createBasket(parsedData.data);

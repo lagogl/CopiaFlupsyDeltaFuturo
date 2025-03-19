@@ -1,5 +1,5 @@
 import { zodResolver } from "@hookform/resolvers/zod";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 import { useQuery } from "@tanstack/react-query";
@@ -21,13 +21,15 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
+import { toast } from "@/hooks/use-toast";
 
 // Create a schema for basket validation
 const basketFormSchema = z.object({
   physicalNumber: z.coerce.number()
     .int()
     .positive("Il numero della cesta deve essere positivo")
-    .min(1, "Il numero della cesta deve essere maggiore di 0"),
+    .min(1, "Il numero della cesta deve essere maggiore di 0")
+    .max(20, "Il numero della cesta non può superare 20"),
   flupsyId: z.coerce.number()
     .int()
     .positive("Devi selezionare un'unità FLUPSY valida"),
@@ -45,25 +47,42 @@ interface BasketFormProps {
 
 export default function BasketForm({ 
   onSubmit, 
-  defaultValues = { physicalNumber: 1 },
+  defaultValues = { },
   isLoading = false
 }: BasketFormProps) {
   const form = useForm<BasketFormValues>({
     resolver: zodResolver(basketFormSchema),
     defaultValues,
   });
+  
+  const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(null);
 
   // Fetch FLUPSY units
-  const { data: flupsys, isLoading: isFlupsysLoading } = useQuery({
+  const { data: flupsys = [], isLoading: isFlupsysLoading } = useQuery<any[]>({
     queryKey: ['/api/flupsys'],
+  });
+  
+  // Fetch next available basket number for selected FLUPSY
+  const { data: nextBasketNumber, isLoading: isNextNumberLoading } = useQuery<{nextNumber: number}>({
+    queryKey: ['/api/baskets/next-number', selectedFlupsyId],
+    enabled: !!selectedFlupsyId, // Only run this query if a FLUPSY is selected
   });
 
   // Set flupsyId default value from the first available FLUPSY
   useEffect(() => {
     if (flupsys && flupsys.length > 0 && !form.getValues('flupsyId')) {
-      form.setValue('flupsyId', flupsys[0].id);
+      const firstFlupsyId = flupsys[0].id;
+      form.setValue('flupsyId', firstFlupsyId);
+      setSelectedFlupsyId(firstFlupsyId);
     }
   }, [flupsys, form]);
+  
+  // Set the next available basket number when it's fetched
+  useEffect(() => {
+    if (nextBasketNumber && nextBasketNumber.nextNumber) {
+      form.setValue('physicalNumber', nextBasketNumber.nextNumber);
+    }
+  }, [nextBasketNumber, form]);
 
   return (
     <Form {...form}>
@@ -94,7 +113,11 @@ export default function BasketForm({
               <FormLabel>Unità FLUPSY</FormLabel>
               <Select 
                 disabled={isFlupsysLoading} 
-                onValueChange={(value) => field.onChange(Number(value))}
+                onValueChange={(value) => {
+                  const numValue = Number(value);
+                  field.onChange(numValue);
+                  setSelectedFlupsyId(numValue);
+                }}
                 defaultValue={field.value?.toString() || ""}
               >
                 <FormControl>
