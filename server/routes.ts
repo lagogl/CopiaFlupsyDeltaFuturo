@@ -203,7 +203,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Create the basket
       const newBasket = await storage.createBasket(parsedData.data);
+      
+      // If basket has position data, record it in the position history
+      if (parsedData.data.row && parsedData.data.position) {
+        await storage.createBasketPositionHistory({
+          basketId: newBasket.id,
+          flupsyId: newBasket.flupsyId,
+          row: parsedData.data.row,
+          position: parsedData.data.position,
+          startDate: new Date(),
+          operationId: null
+        });
+      }
+      
       res.status(201).json(newBasket);
     } catch (error) {
       console.error("Error creating basket:", error);
@@ -211,6 +225,82 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  app.patch("/api/baskets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid basket ID" });
+      }
+
+      // Verify the basket exists
+      const basket = await storage.getBasket(id);
+      if (!basket) {
+        return res.status(404).json({ message: "Basket not found" });
+      }
+      
+      // Parse and validate the update data
+      const updateSchema = z.object({
+        physicalNumber: z.number().optional(),
+        flupsyId: z.number().optional(),
+        row: z.string().nullable().optional(),
+        position: z.number().nullable().optional(),
+        state: z.string().optional(),
+        nfcData: z.string().nullable().optional(),
+        currentCycleId: z.number().nullable().optional()
+      });
+
+      const parsedData = updateSchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+      
+      // If position data is changing, verify no duplicates
+      if ((parsedData.data.row !== undefined && parsedData.data.row !== basket.row) || 
+          (parsedData.data.position !== undefined && parsedData.data.position !== basket.position)) {
+        
+        // Only check if both row and position are provided
+        if (parsedData.data.row && parsedData.data.position) {
+          // Get the FLUPSY ID (either from update or from existing basket)
+          const flupsyId = parsedData.data.flupsyId || basket.flupsyId;
+          
+          // Get all baskets for this FLUPSY
+          const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
+          
+          // Check if there's already a different basket at this position
+          const basketAtPosition = flupsyBaskets.find(b => 
+            b.id !== id && 
+            b.row === parsedData.data.row && 
+            b.position === parsedData.data.position
+          );
+          
+          if (basketAtPosition) {
+            return res.status(400).json({ 
+              message: `Esiste già una cesta (numero ${basketAtPosition.physicalNumber}) in questa posizione` 
+            });
+          }
+          
+          // Create a new position history entry
+          await storage.createBasketPositionHistory({
+            basketId: id,
+            flupsyId: flupsyId,
+            row: parsedData.data.row,
+            position: parsedData.data.position,
+            startDate: new Date(),
+            operationId: null
+          });
+        }
+      }
+      
+      // Update the basket
+      const updatedBasket = await storage.updateBasket(id, parsedData.data);
+      res.json(updatedBasket);
+    } catch (error) {
+      console.error("Error updating basket:", error);
+      res.status(500).json({ message: "Failed to update basket" });
+    }
+  });
+
   app.delete("/api/baskets/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -241,6 +331,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting basket:", error);
       res.status(500).json({ message: "Failed to delete basket" });
+    }
+  });
+  
+  // Basket position history endpoints
+  app.get("/api/baskets/:id/positions", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid basket ID" });
+      }
+
+      // Verify the basket exists
+      const basket = await storage.getBasket(id);
+      if (!basket) {
+        return res.status(404).json({ message: "Basket not found" });
+      }
+      
+      // Get position history
+      const positionHistory = await storage.getBasketPositionHistory(id);
+      
+      res.json(positionHistory);
+    } catch (error) {
+      console.error("Error fetching basket position history:", error);
+      res.status(500).json({ message: "Failed to fetch basket position history" });
+    }
+  });
+  
+  app.get("/api/baskets/:id/current-position", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid basket ID" });
+      }
+
+      // Verify the basket exists
+      const basket = await storage.getBasket(id);
+      if (!basket) {
+        return res.status(404).json({ message: "Basket not found" });
+      }
+      
+      // Get current position
+      const currentPosition = await storage.getCurrentBasketPosition(id);
+      
+      res.json(currentPosition || { message: "Basket has no position history" });
+    } catch (error) {
+      console.error("Error fetching current basket position:", error);
+      res.status(500).json({ message: "Failed to fetch current basket position" });
     }
   });
 
