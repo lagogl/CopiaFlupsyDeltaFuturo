@@ -5,7 +5,8 @@ import {
   Cycle, InsertCycle, 
   Size, InsertSize, 
   Sgr, InsertSgr, 
-  Lot, InsertLot, 
+  Lot, InsertLot,
+  BasketPositionHistory, InsertBasketPositionHistory,
   operationTypes
 } from "@shared/schema";
 
@@ -64,6 +65,12 @@ export interface IStorage {
   getLot(id: number): Promise<Lot | undefined>;
   createLot(lot: InsertLot): Promise<Lot>;
   updateLot(id: number, lot: Partial<Lot>): Promise<Lot | undefined>;
+  
+  // Basket position history methods
+  getBasketPositionHistory(basketId: number): Promise<BasketPositionHistory[]>;
+  getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined>;
+  createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory>;
+  closeBasketPositionHistory(basketId: number, endDate: Date): Promise<BasketPositionHistory | undefined>;
 }
 
 export class MemStorage implements IStorage {
@@ -74,6 +81,7 @@ export class MemStorage implements IStorage {
   private sizes: Map<number, Size>;
   private sgrs: Map<number, Sgr>;
   private lots: Map<number, Lot>;
+  private basketPositions: Map<number, BasketPositionHistory>;
   
   private flupsyId: number;
   private basketId: number;
@@ -82,6 +90,7 @@ export class MemStorage implements IStorage {
   private sizeId: number;
   private sgrId: number;
   private lotId: number;
+  private positionHistoryId: number;
   
   constructor() {
     this.flupsys = new Map();
@@ -91,6 +100,7 @@ export class MemStorage implements IStorage {
     this.sizes = new Map();
     this.sgrs = new Map();
     this.lots = new Map();
+    this.basketPositions = new Map();
     
     this.flupsyId = 1;
     this.basketId = 1;
@@ -99,6 +109,7 @@ export class MemStorage implements IStorage {
     this.sizeId = 1;
     this.sgrId = 1;
     this.lotId = 1;
+    this.positionHistoryId = 1;
     
     // Initialize with some default sizes
     this.initializeDefaultData();
@@ -470,6 +481,57 @@ export class MemStorage implements IStorage {
     const updatedLot = { ...currentLot, ...lot };
     this.lots.set(id, updatedLot);
     return updatedLot;
+  }
+  
+  // Basket position history methods
+  async getBasketPositionHistory(basketId: number): Promise<BasketPositionHistory[]> {
+    return Array.from(this.basketPositions.values())
+      .filter(position => position.basketId === basketId)
+      .sort((a, b) => new Date(a.startDate).getTime() - new Date(b.startDate).getTime());
+  }
+  
+  async getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined> {
+    // Find position history entries for this basket with no end date (current position)
+    return Array.from(this.basketPositions.values())
+      .find(position => position.basketId === basketId && position.endDate === null);
+  }
+  
+  async createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory> {
+    // Close any current position for this basket
+    await this.closeBasketPositionHistory(positionHistory.basketId, new Date(positionHistory.startDate));
+    
+    // Create the new position history entry
+    const id = this.positionHistoryId++;
+    const newPositionHistory: BasketPositionHistory = { 
+      ...positionHistory, 
+      id,
+      endDate: null
+    };
+    
+    this.basketPositions.set(id, newPositionHistory);
+    
+    // Also update the basket with the new position
+    await this.updateBasket(positionHistory.basketId, {
+      row: positionHistory.row,
+      position: positionHistory.position
+    });
+    
+    return newPositionHistory;
+  }
+  
+  async closeBasketPositionHistory(basketId: number, endDate: Date): Promise<BasketPositionHistory | undefined> {
+    // Find the current position (with no end date)
+    const currentPosition = await this.getCurrentBasketPosition(basketId);
+    if (!currentPosition) return undefined;
+    
+    // Update with end date
+    const updatedPosition = { 
+      ...currentPosition, 
+      endDate
+    };
+    
+    this.basketPositions.set(currentPosition.id, updatedPosition);
+    return updatedPosition;
   }
 }
 

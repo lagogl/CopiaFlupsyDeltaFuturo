@@ -138,6 +138,11 @@ export const insertLotSchema = createInsertSchema(lots).omit({
   state: true 
 });
 
+export const insertBasketPositionHistorySchema = createInsertSchema(basketPositionHistory).omit({
+  id: true,
+  endDate: true
+});
+
 // Types
 export type Flupsy = typeof flupsys.$inferSelect;
 export type InsertFlupsy = z.infer<typeof insertFlupsySchema>;
@@ -161,6 +166,9 @@ export type InsertSgr = z.infer<typeof insertSgrSchema>;
 export type Lot = typeof lots.$inferSelect;
 export type InsertLot = z.infer<typeof insertLotSchema>;
 
+export type BasketPositionHistory = typeof basketPositionHistory.$inferSelect;
+export type InsertBasketPositionHistory = z.infer<typeof insertBasketPositionHistorySchema>;
+
 // Extended schemas for validation
 export const operationSchema = insertOperationSchema.extend({
   date: z.coerce.date()
@@ -172,4 +180,8 @@ export const cycleSchema = insertCycleSchema.extend({
 
 export const lotSchema = insertLotSchema.extend({
   arrivalDate: z.coerce.date()
+});
+
+export const basketPositionHistorySchema = insertBasketPositionHistorySchema.extend({
+  startDate: z.coerce.date()
 });
