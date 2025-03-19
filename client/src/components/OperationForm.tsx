@@ -404,24 +404,78 @@ export default function OperationForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>SGR</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(value && value !== "none" ? Number(value) : null)}
-                  value={field.value?.toString() || "none"}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona SGR" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    <SelectItem value="none">Nessun SGR</SelectItem>
-                    {sgrs?.map((sgr) => (
-                      <SelectItem key={sgr.id} value={sgr.id.toString()}>
-                        {sgr.month} - {sgr.percentage}%
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                <FormControl>
+                  <div className="relative">
+                    <Select 
+                      onValueChange={(value) => field.onChange(value && value !== "none" ? Number(value) : null)}
+                      value={field.value?.toString() || "none"}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona SGR" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="none">Nessun SGR</SelectItem>
+                        {sgrs?.map((sgr) => (
+                          <SelectItem key={sgr.id} value={sgr.id.toString()}>
+                            {sgr.month} - {sgr.percentage}%
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    {watchAnimalsPerKg && basketOperations && basketOperations.length > 0 && (
+                      <div className="mt-2 text-sm text-muted-foreground">
+                        {(() => {
+                          // Find previous operation
+                          const sortedOperations = [...basketOperations].sort((a, b) => 
+                            new Date(b.date).getTime() - new Date(a.date).getTime()
+                          );
+                          
+                          const previousOperation = sortedOperations.find(op => 
+                            op.animalsPerKg !== null && op.animalsPerKg > 0
+                          );
+                          
+                          if (previousOperation && previousOperation.animalsPerKg) {
+                            const prevAnimalsPerKg = previousOperation.animalsPerKg;
+                            const currentAnimalsPerKg = watchAnimalsPerKg;
+                            
+                            if (prevAnimalsPerKg > currentAnimalsPerKg) {
+                              const prevWeight = 1000000 / prevAnimalsPerKg; // mg
+                              const currentWeight = 1000000 / currentAnimalsPerKg; // mg
+                              const weightGain = ((currentWeight - prevWeight) / prevWeight) * 100;
+                              
+                              return (
+                                <>
+                                  Crescita rispetto all'operazione precedente: 
+                                  <span className="font-medium text-green-600"> 
+                                    +{weightGain.toFixed(1)}%
+                                  </span>
+                                </>
+                              );
+                            } else if (prevAnimalsPerKg < currentAnimalsPerKg) {
+                              return (
+                                <span className="text-amber-600">
+                                  Attenzione: Il numero di animali per kg è aumentato rispetto all'operazione precedente,
+                                  indicando una possibile diminuzione del peso medio.
+                                </span>
+                              );
+                            } else {
+                              return (
+                                <span className="text-blue-600">
+                                  Nessuna variazione di dimensione rispetto all'operazione precedente.
+                                </span>
+                              );
+                            }
+                          }
+                          
+                          return "Nessuna operazione precedente per questo cestello/ciclo.";
+                        })()}
+                      </div>
+                    )}
+                  </div>
+                </FormControl>
+                <FormDescription>
+                  SGR calcolato automaticamente in base alla crescita e al mese corrente
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
