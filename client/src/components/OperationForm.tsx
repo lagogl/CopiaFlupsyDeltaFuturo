@@ -24,6 +24,19 @@ const formSchema = operationSchema.extend({
   totalWeight: z.coerce.number().optional().nullable(),
   animalCount: z.coerce.number().optional().nullable(),
   notes: z.string().optional(),
+  cycleId: z.number().nullable().optional().refine(
+    (val, ctx) => {
+      // Se il tipo è prima-attivazione, il ciclo è opzionale
+      if (ctx.path && ctx.path.length > 0 && ctx.data && ctx.data.type === 'prima-attivazione') {
+        return true;
+      }
+      // Altrimenti è richiesto
+      return val !== null && val !== undefined;
+    },
+    {
+      message: "Seleziona un ciclo",
+    }
+  ),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -73,6 +86,7 @@ export default function OperationForm({
   const watchAverageWeight = form.watch('averageWeight');
   const watchBasketId = form.watch('basketId');
   const watchCycleId = form.watch('cycleId');
+  const watchType = form.watch('type');
   
   // Fetch operations for the selected basket and cycle
   const { data: basketOperations } = useQuery({
@@ -236,38 +250,40 @@ export default function OperationForm({
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="cycleId"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Ciclo</FormLabel>
-                <Select 
-                  onValueChange={(value) => field.onChange(Number(value))}
-                  value={field.value?.toString()}
-                  disabled={!watchBasketId || filteredCycles.length === 0}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona un ciclo" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {filteredCycles.map((cycle) => (
-                      <SelectItem key={cycle.id} value={cycle.id.toString()}>
-                        Ciclo #{cycle.id}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
-                <FormDescription>
-                  {!watchBasketId ? "Seleziona prima una cesta" : 
-                    filteredCycles.length === 0 ? "Nessun ciclo attivo per questa cesta" : ""}
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+{watchType !== 'prima-attivazione' && (
+            <FormField
+              control={form.control}
+              name="cycleId"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Ciclo</FormLabel>
+                  <Select 
+                    onValueChange={(value) => field.onChange(Number(value))}
+                    value={field.value?.toString()}
+                    disabled={!watchBasketId || filteredCycles.length === 0}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona un ciclo" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {filteredCycles.map((cycle) => (
+                        <SelectItem key={cycle.id} value={cycle.id.toString()}>
+                          Ciclo #{cycle.id}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormDescription>
+                    {!watchBasketId ? "Seleziona prima una cesta" : 
+                      filteredCycles.length === 0 ? "Nessun ciclo attivo per questa cesta" : ""}
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          )}
 
           <FormField
             control={form.control}
