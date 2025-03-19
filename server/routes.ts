@@ -280,6 +280,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
           }
           
+          // Close the current position if exists
+          const currentPosition = await storage.getCurrentBasketPosition(id);
+          if (currentPosition) {
+            await storage.closeBasketPositionHistory(id, new Date());
+          }
+          
           // Create a new position history entry
           await storage.createBasketPositionHistory({
             basketId: id,
