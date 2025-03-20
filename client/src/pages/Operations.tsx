@@ -1,7 +1,7 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { format } from 'date-fns';
-import { Eye, Search, Filter, Pencil, Plus, Trash2, AlertTriangle } from 'lucide-react';
+import { format, addDays } from 'date-fns';
+import { Eye, Search, Filter, Pencil, Plus, Trash2, AlertTriangle, Copy } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
