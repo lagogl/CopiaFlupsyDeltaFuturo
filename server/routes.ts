@@ -605,9 +605,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
 
         if (operationOnSameDate) {
-          return res.status(400).json({ 
-            message: `Esiste già un'operazione per questo cestello in data ${formattedDate}` 
-          });
+          // Include the existing operation type in the error message
+          const existingType = operationOnSameDate.type;
+          const existingTypeLabel = existingType
+            .split('-')
+            .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+            .join(' ');
+          
+          // Provide a more informative error message
+          let message = `Esiste già un'operazione "${existingTypeLabel}" per questo cestello in data ${formattedDate}`;
+          
+          // Suggest what to do based on the type
+          if (existingType === 'prima-attivazione' && type === 'prima-attivazione') {
+            message += `. Un cestello può avere una sola operazione di Prima Attivazione, e questa avviene all'inizio del ciclo.`;
+          } else {
+            message += `. Non è possibile registrare più di un'operazione al giorno per lo stesso cestello.`;
+          }
+          
+          return res.status(400).json({ message });
         }
         // Se siamo arrivati qui, questa è un'operazione standard
         // Regole per le operazioni standard
