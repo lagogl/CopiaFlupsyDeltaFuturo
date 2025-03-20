@@ -9,10 +9,10 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { useToast } from "@/hooks/use-toast";
-import { getOperationTypeLabel, getOperationTypeColor, getSizeColor } from "@/lib/utils";
+import { getOperationTypeLabel, getOperationTypeColor, getSizeColor, getTargetSizeForWeight, getSizeFromAnimalsPerKg, getBasketColorBySize, TARGET_SIZES } from "@/lib/utils";
 import { format } from "date-fns";
 import { ArrowLeft, Filter, Calendar, ListFilter, Grid3X3, PanelLeft, Plus, Eye, EditIcon, RotateCw, AlertCircle, Clipboard, Scale, XSquare } from "lucide-react";
-import { Link } from "wouter";
+import { Link, useLocation } from "wouter";
 
 type ViewMode = 'compact' | 'detailed' | 'positions';
 
@@ -333,6 +333,7 @@ interface BasketPositionCardProps {
 
 function BasketPositionCard({ position, basket, operations = [], cycle, viewMode }: BasketPositionCardProps) {
   const { toast } = useToast();
+  const [, navigate] = useLocation();
   
   // Sort operations by date (newest first)
   const sortedOperations = [...operations].sort((a, b) => 
@@ -402,7 +403,7 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
     if (!basket) return;
     
     // Naviga alla pagina di dettaglio del cestello o altre azioni
-    window.location.href = `/baskets/${basket.id}`;
+    navigate(`/baskets/${basket.id}`);
   };
   
   const handleRightClick = (e: React.MouseEvent) => {
@@ -578,32 +579,32 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
   // Funzioni per le operazioni di menu contestuale
   const handleViewBasket = () => {
     if (!basket) return;
-    window.location.href = `/baskets/${basket.id}`;
+    navigate(`/baskets/${basket.id}`);
   };
 
   const handleAddOperation = () => {
     if (!basket) return;
-    window.location.href = `/operations/new?basketId=${basket.id}`;
+    navigate(`/operations/new?basketId=${basket.id}`);
   };
 
   const handleEditBasket = () => {
     if (!basket) return;
-    window.location.href = `/baskets/edit/${basket.id}`;
+    navigate(`/baskets/edit/${basket.id}`);
   };
 
   const handleActivateBasket = () => {
     if (!basket) return;
-    window.location.href = `/operations/new?basketId=${basket.id}&type=prima-attivazione`;
+    navigate(`/operations/new?basketId=${basket.id}&type=prima-attivazione`);
   };
 
   const handleViewCycle = () => {
     if (!cycle) return;
-    window.location.href = `/cycles/${cycle.id}`;
+    navigate(`/cycles/${cycle.id}`);
   };
   
   const handleMeasureOperation = () => {
     if (!basket) return;
-    window.location.href = `/operations/new?basketId=${basket.id}&type=misura`;
+    navigate(`/operations/new?basketId=${basket.id}&type=misura`);
   };
   
   const handleCopyInfo = () => {
