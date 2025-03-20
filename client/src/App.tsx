@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import Baskets from "@/pages/Baskets";
 import Operations from "@/pages/Operations";
 import Cycles from "@/pages/Cycles";
+import CycleDetail from "@/pages/CycleDetail";
 import Lots from "@/pages/Lots";
 import Statistics from "@/pages/Statistics";
 import Sizes from "@/pages/Sizes";
@@ -25,6 +26,7 @@ function Router() {
       <Route path="/baskets" component={Baskets}/>
       <Route path="/operations" component={Operations}/>
       <Route path="/cycles" component={Cycles}/>
+      <Route path="/cycles/:id" component={CycleDetail}/>
       <Route path="/lots" component={Lots}/>
       <Route path="/statistics" component={Statistics}/>
       <Route path="/sizes" component={Sizes}/>
