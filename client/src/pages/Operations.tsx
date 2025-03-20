@@ -357,6 +357,29 @@ export default function Operations() {
                           variant="ghost"
                           size="icon"
                           onClick={() => {
+                            // Duplica l'operazione
+                            const nextDay = addDays(new Date(op.date), 1);
+                            
+                            // Se l'operazione era "prima-attivazione", cambiala in "misura"
+                            const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
+                            
+                            const duplicatedOp = {
+                              ...op,
+                              type: operationType,
+                              date: nextDay,
+                              id: undefined // Rimuovi l'ID per creare una nuova operazione
+                            };
+                            
+                            setSelectedOperation(duplicatedOp);
+                            setIsCreateDialogOpen(true);
+                          }}
+                        >
+                          <Copy className="h-5 w-5 text-indigo-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={() => {
                             setSelectedOperation(op);
                             setIsDeleteDialogOpen(true);
                           }}
@@ -374,12 +397,22 @@ export default function Operations() {
       </div>
 
       {/* Create Operation Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
+      <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
+        // Quando si chiude il dialog, resetta l'operazione selezionata
+        if (!open) {
+          setSelectedOperation(null);
+        }
+        setIsCreateDialogOpen(open);
+      }}>
         <DialogContent className="sm:max-w-[850px] max-h-[95vh] overflow-y-auto" aria-describedby="operation-form-description">
           <DialogHeader>
-            <DialogTitle>Registra Nuova Operazione</DialogTitle>
+            <DialogTitle>
+              {selectedOperation ? "Duplica Operazione" : "Registra Nuova Operazione"}
+            </DialogTitle>
             <DialogDescription id="operation-form-description">
-              Compila il modulo per registrare una nuova operazione
+              {selectedOperation 
+                ? "Modifica i dati dell'operazione duplicata prima di registrarla" 
+                : "Compila il modulo per registrare una nuova operazione"}
             </DialogDescription>
           </DialogHeader>
           <OperationForm 
@@ -399,6 +432,19 @@ export default function Operations() {
               createOperationMutation.mutate(formattedData);
             }} 
             isLoading={createOperationMutation.isPending}
+            defaultValues={selectedOperation ? {
+              type: selectedOperation.type,
+              date: selectedOperation.date instanceof Date ? selectedOperation.date : new Date(selectedOperation.date),
+              basketId: selectedOperation.basketId,
+              cycleId: selectedOperation.cycleId,
+              sizeId: selectedOperation.sizeId,
+              sgrId: selectedOperation.sgrId,
+              lotId: selectedOperation.lotId,
+              animalCount: selectedOperation.animalCount,
+              totalWeight: selectedOperation.totalWeight,
+              animalsPerKg: selectedOperation.animalsPerKg,
+              notes: selectedOperation.notes || ''
+            } : undefined}
           />
         </DialogContent>
       </Dialog>
