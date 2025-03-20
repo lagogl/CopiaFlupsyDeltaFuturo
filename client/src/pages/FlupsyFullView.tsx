@@ -6,9 +6,13 @@ import { Card } from "@/components/ui/card";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Separator } from "@/components/ui/separator";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { getOperationTypeLabel, getOperationTypeColor } from "@/lib/utils";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuLabel, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { useToast } from "@/hooks/use-toast";
+import { getOperationTypeLabel, getOperationTypeColor, getSizeColor } from "@/lib/utils";
 import { format } from "date-fns";
-import { ArrowLeft, Filter, Calendar, ListFilter, Grid3X3, PanelLeft } from "lucide-react";
+import { ArrowLeft, Filter, Calendar, ListFilter, Grid3X3, PanelLeft, Plus, Eye, EditIcon, RotateCw, AlertCircle, Clipboard, Scale, XSquare } from "lucide-react";
+import { Link } from "wouter";
 
 type ViewMode = 'compact' | 'detailed' | 'positions';
 
@@ -328,6 +332,8 @@ interface BasketPositionCardProps {
 }
 
 function BasketPositionCard({ position, basket, operations = [], cycle, viewMode }: BasketPositionCardProps) {
+  const { toast } = useToast();
+  
   // Sort operations by date (newest first)
   const sortedOperations = [...operations].sort((a, b) => 
     new Date(b.date).getTime() - new Date(a.date).getTime()
@@ -336,40 +342,121 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
   // Get the latest operation
   const latestOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
   
-  // Determine the class based on basket state
+  // Calcola il peso medio attuale, se disponibile
+  const averageWeight = latestOperation?.animalsPerKg ? 1000000 / latestOperation.animalsPerKg : null;
+  
+  // Determina la taglia target in base al peso
+  const targetSize = averageWeight ? getTargetSizeForWeight(averageWeight) : null;
+  
+  // Determine the class based on basket state and target size
   const getCardClass = () => {
     if (!basket) return 'bg-gray-50 border-dashed';
     
-    // Stato "active" - cestello con ciclo attivo
-    if (basket.state === 'active') {
-      // Se è un cestello attivo, controlliamo quando è stata fatta l'ultima operazione
-      if (latestOperation) {
+    // Per cestelli disponibili (non attivi)
+    if (basket.state !== 'active') {
+      return 'bg-slate-100 border-slate-200';
+    }
+    
+    // Per cestelli attivi
+    if (latestOperation) {
+      // Controlla prima se abbiamo un peso medio calcolabile
+      if (latestOperation.animalsPerKg && averageWeight) {
+        // Usa la taglia target per il colore della cesta
+        if (targetSize) {
+          return `${targetSize.color} shadow-sm`;
+        }
+        
+        // Se non troviamo una taglia target, usiamo il colore in base ai giorni
         const daysSinceLastOperation = Math.floor((new Date().getTime() - new Date(latestOperation.date).getTime()) / (1000 * 60 * 60 * 24));
         
-        // Operazione effettuata negli ultimi 7 giorni - verde brillante
         if (daysSinceLastOperation <= 7) {
           return 'bg-green-100 border-green-400 shadow-sm';
-        }
-        // Operazione effettuata tra 8 e 14 giorni fa - verde chiaro
-        else if (daysSinceLastOperation <= 14) {
+        } else if (daysSinceLastOperation <= 14) {
           return 'bg-green-50 border-green-300';
-        }
-        // Operazione effettuata tra 15 e 30 giorni fa - giallo chiaro (attenzione)
-        else if (daysSinceLastOperation <= 30) {
+        } else if (daysSinceLastOperation <= 30) {
           return 'bg-amber-50 border-amber-300';
+        } else {
+          return 'bg-red-50 border-red-300';
         }
-        // Operazione effettuata più di 30 giorni fa - rosso chiaro (critico)
-        else {
+      } else {
+        // Nessun dato di animalsPerKg, usiamo solo i giorni
+        const daysSinceLastOperation = Math.floor((new Date().getTime() - new Date(latestOperation.date).getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (daysSinceLastOperation <= 7) {
+          return 'bg-green-100 border-green-400 shadow-sm';
+        } else if (daysSinceLastOperation <= 14) {
+          return 'bg-green-50 border-green-300';
+        } else if (daysSinceLastOperation <= 30) {
+          return 'bg-amber-50 border-amber-300';
+        } else {
           return 'bg-red-50 border-red-300';
         }
       }
-      
-      // Se non ci sono operazioni ma il cestello è attivo, verde base
-      return 'bg-green-50 border-green-300';
     }
     
-    // Stato "available" - cestello disponibile
-    return 'bg-slate-100 border-slate-200';
+    // Se non ci sono operazioni ma il cestello è attivo, verde base
+    return 'bg-green-50 border-green-300';
+  };
+  
+  const handleLeftClick = () => {
+    if (!basket) return;
+    
+    // Naviga alla pagina di dettaglio del cestello o altre azioni
+    window.location.href = `/baskets/${basket.id}`;
+  };
+  
+  const handleRightClick = (e: React.MouseEvent) => {
+    e.preventDefault();
+    // Il menu contestuale è gestito dal componente DropdownMenu
+  };
+  
+  // Render tooltip content
+  const renderTooltipContent = () => {
+    if (!basket) return <div>Posizione vuota</div>;
+    
+    return (
+      <div className="w-60 p-2">
+        <div className="font-bold text-lg mb-1">Cestello #{basket.physicalNumber}</div>
+        <div className="text-sm mb-2">
+          <span className="text-muted-foreground">Stato: </span>
+          <span className="font-medium">{basket.state === 'active' ? 'Attivo' : 'Disponibile'}</span>
+        </div>
+        
+        {cycle && (
+          <div className="text-sm mb-2">
+            <span className="text-muted-foreground">Ciclo: </span>
+            <span className="font-medium">#{cycle.id}</span>
+            <div className="text-xs text-muted-foreground">
+              Inizio: {format(new Date(cycle.startDate), 'dd/MM/yyyy')}
+            </div>
+          </div>
+        )}
+        
+        {latestOperation && (
+          <>
+            <div className="text-sm mb-1">
+              <span className="text-muted-foreground">Ultima operazione: </span>
+              <span className="font-medium">{getOperationTypeLabel(latestOperation.type)}</span>
+              <div className="text-xs text-muted-foreground">
+                {format(new Date(latestOperation.date), 'dd/MM/yyyy')}
+              </div>
+            </div>
+            
+            {latestOperation.animalsPerKg && (
+              <div className="text-sm">
+                <span className="text-muted-foreground">Peso medio: </span>
+                <span className="font-medium">{Math.round(1000000 / latestOperation.animalsPerKg)} mg</span>
+                {targetSize && (
+                  <div className="text-xs font-medium mt-1">
+                    Taglia target: <span className="font-bold">{targetSize.code}</span> ({targetSize.name})
+                  </div>
+                )}
+              </div>
+            )}
+          </>
+        )}
+      </div>
+    );
   };
   
   // Render different content based on view mode
@@ -381,7 +468,7 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
           {basket && (
             <div>
               <div className="text-sm font-semibold mt-1">#{basket.physicalNumber}</div>
-              {basket.state === 'active' && <Badge variant="success" className="mt-1">Attivo</Badge>}
+              {basket.state === 'active' && <Badge className="mt-1 bg-green-100 text-green-800 hover:bg-green-200">Attivo</Badge>}
             </div>
           )}
         </>
@@ -407,6 +494,11 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
                   </Badge>
                 </div>
               )}
+              {targetSize && (
+                <div className="text-xs font-medium mt-1 px-1 bg-slate-100 rounded">
+                  {targetSize.code}
+                </div>
+              )}
             </div>
           )}
         </>
@@ -420,7 +512,7 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
           <div className="mt-1">
             <div className="flex justify-between items-center">
               <div className="font-bold">#{basket.physicalNumber}</div>
-              <Badge variant={basket.state === 'active' ? 'success' : 'secondary'}>
+              <Badge className={basket.state === 'active' ? 'bg-green-100 text-green-800 hover:bg-green-200' : 'bg-slate-100 text-slate-800 hover:bg-slate-200'}>
                 {basket.state === 'active' ? 'Attivo' : 'Disponibile'}
               </Badge>
             </div>
@@ -483,9 +575,140 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
     );
   };
   
+  // Funzioni per le operazioni di menu contestuale
+  const handleViewBasket = () => {
+    if (!basket) return;
+    window.location.href = `/baskets/${basket.id}`;
+  };
+
+  const handleAddOperation = () => {
+    if (!basket) return;
+    window.location.href = `/operations/new?basketId=${basket.id}`;
+  };
+
+  const handleEditBasket = () => {
+    if (!basket) return;
+    window.location.href = `/baskets/edit/${basket.id}`;
+  };
+
+  const handleActivateBasket = () => {
+    if (!basket) return;
+    window.location.href = `/operations/new?basketId=${basket.id}&type=prima-attivazione`;
+  };
+
+  const handleViewCycle = () => {
+    if (!cycle) return;
+    window.location.href = `/cycles/${cycle.id}`;
+  };
+  
+  const handleMeasureOperation = () => {
+    if (!basket) return;
+    window.location.href = `/operations/new?basketId=${basket.id}&type=misura`;
+  };
+  
+  const handleCopyInfo = () => {
+    if (!basket) return;
+    
+    let infoText = `Cestello #${basket.physicalNumber}\n`;
+    infoText += `Stato: ${basket.state === 'active' ? 'Attivo' : 'Disponibile'}\n`;
+    
+    if (cycle) {
+      infoText += `Ciclo #${cycle.id}\n`;
+      infoText += `Inizio: ${format(new Date(cycle.startDate), 'dd/MM/yyyy')}\n`;
+    }
+    
+    if (latestOperation) {
+      infoText += `Ultima operazione: ${getOperationTypeLabel(latestOperation.type)}\n`;
+      infoText += `Data: ${format(new Date(latestOperation.date), 'dd/MM/yyyy')}\n`;
+      
+      if (latestOperation.animalsPerKg) {
+        infoText += `Animali/kg: ${latestOperation.animalsPerKg}\n`;
+        infoText += `Peso medio: ${Math.round(1000000 / latestOperation.animalsPerKg)} mg\n`;
+      }
+    }
+    
+    navigator.clipboard.writeText(infoText)
+      .then(() => {
+        toast({
+          title: "Informazioni copiate",
+          description: "I dettagli del cestello sono stati copiati negli appunti.",
+        });
+      })
+      .catch(() => {
+        toast({
+          title: "Errore",
+          description: "Impossibile copiare le informazioni. Riprova.",
+          variant: "destructive",
+        });
+      });
+  };
+  
   return (
-    <Card className={`p-3 ${getCardClass()}`}>
-      {renderContent()}
-    </Card>
+    <TooltipProvider>
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild onContextMenu={handleRightClick}>
+          <div onClick={basket ? handleLeftClick : undefined}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Card className={`p-3 ${getCardClass()} cursor-pointer hover:shadow-md transition-shadow`}>
+                  {renderContent()}
+                </Card>
+              </TooltipTrigger>
+              <TooltipContent side="top" align="center" className="z-50">
+                {renderTooltipContent()}
+              </TooltipContent>
+            </Tooltip>
+          </div>
+        </DropdownMenuTrigger>
+        
+        {basket && (
+          <DropdownMenuContent className="w-56">
+            <DropdownMenuLabel>Cestello #{basket.physicalNumber}</DropdownMenuLabel>
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem onClick={handleViewBasket}>
+              <Eye className="mr-2 h-4 w-4" />
+              <span>Visualizza dettagli</span>
+            </DropdownMenuItem>
+            
+            <DropdownMenuItem onClick={handleEditBasket}>
+              <EditIcon className="mr-2 h-4 w-4" />
+              <span>Modifica cestello</span>
+            </DropdownMenuItem>
+            
+            {basket.state === 'active' ? (
+              <>
+                <DropdownMenuItem onClick={handleAddOperation}>
+                  <Plus className="mr-2 h-4 w-4" />
+                  <span>Nuova operazione</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={handleMeasureOperation}>
+                  <Scale className="mr-2 h-4 w-4" />
+                  <span>Registra misura</span>
+                </DropdownMenuItem>
+                
+                <DropdownMenuItem onClick={handleViewCycle}>
+                  <RotateCw className="mr-2 h-4 w-4" />
+                  <span>Visualizza ciclo</span>
+                </DropdownMenuItem>
+              </>
+            ) : (
+              <DropdownMenuItem onClick={handleActivateBasket}>
+                <Plus className="mr-2 h-4 w-4" />
+                <span>Prima attivazione</span>
+              </DropdownMenuItem>
+            )}
+            
+            <DropdownMenuSeparator />
+            
+            <DropdownMenuItem onClick={handleCopyInfo}>
+              <Clipboard className="mr-2 h-4 w-4" />
+              <span>Copia informazioni</span>
+            </DropdownMenuItem>
+          </DropdownMenuContent>
+        )}
+      </DropdownMenu>
+    </TooltipProvider>
   );
 }
