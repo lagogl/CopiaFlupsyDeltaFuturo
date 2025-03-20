@@ -533,9 +533,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`;
         console.log("Generato cycleCode:", cycleCode);
         
+        const formattedDate = format(date, 'yyyy-MM-dd');
         const newCycle = await storage.createCycle({
           basketId: basketId,
-          startDate: date.toString(),
+          startDate: formattedDate,
         });
         
         console.log("Ciclo creato:", newCycle);
@@ -548,11 +549,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Crea l'operazione con il ciclo appena creato
-        // Assicuriamoci che la data sia una stringa
+        // Formatta la data nel formato corretto per il database
         const operationData = {
           ...primaAttivSchema.data,
           cycleId: newCycle.id,
-          date: primaAttivSchema.data.date.toString()
+          date: format(primaAttivSchema.data.date, 'yyyy-MM-dd')
         };
         
         console.log("Creazione operazione con dati:", operationData);
@@ -631,12 +632,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Create the operation first
           const operationData = {
             ...parsedData.data,
-            date: parsedData.data.date.toString()
+            date: format(parsedData.data.date, 'yyyy-MM-dd')
           };
           const newOperation = await storage.createOperation(operationData);
           
           // Then close the cycle
-          await storage.closeCycle(cycleId, date.toString());
+          await storage.closeCycle(cycleId, format(date, 'yyyy-MM-dd'));
           
           // Update the basket state
           await storage.updateBasket(basketId, {
@@ -648,10 +649,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(201).json(newOperation);
         }
 
-        // Create the operation - Converti date in stringa se necessario
+        // Create the operation - Formatta la data nel formato corretto per il database
         const operationData = {
           ...parsedData.data,
-          date: parsedData.data.date.toString()
+          date: format(parsedData.data.date, 'yyyy-MM-dd')
         };
         const newOperation = await storage.createOperation(operationData);
         res.status(201).json(newOperation);

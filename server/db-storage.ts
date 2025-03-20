@@ -190,9 +190,11 @@ export class DbStorage implements IStorage {
     return results[0];
   }
 
-  async closeCycle(id: number, endDate: Date): Promise<Cycle | undefined> {
-    // Convert date to string format
-    const endDateStr = endDate.toISOString().split('T')[0];
+  async closeCycle(id: number, endDate: string | Date): Promise<Cycle | undefined> {
+    // Convert date to string format if it's a Date object
+    const endDateStr = typeof endDate === 'string' 
+      ? endDate 
+      : endDate.toISOString().split('T')[0];
     
     const results = await db.update(cycles)
       .set({

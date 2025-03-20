@@ -43,7 +43,7 @@ export interface IStorage {
   getCyclesByBasket(basketId: number): Promise<Cycle[]>;
   getCyclesByFlupsy(flupsyId: number): Promise<Cycle[]>;
   createCycle(cycle: InsertCycle): Promise<Cycle>;
-  closeCycle(id: number, endDate: Date): Promise<Cycle | undefined>;
+  closeCycle(id: number, endDate: string | Date): Promise<Cycle | undefined>;
   
   // Size methods
   getSizes(): Promise<Size[]>;
