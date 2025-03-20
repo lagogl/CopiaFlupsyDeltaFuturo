@@ -157,28 +157,30 @@ export default function Operations() {
   }) || [];
 
   const getOperationTypeBadge = (type: string) => {
-    let bgColor = 'bg-primary-light/10 text-primary';
+    let bgColor = 'bg-blue-100 text-blue-800';
     
     switch (type) {
       case 'prima-attivazione':
-        bgColor = 'bg-secondary/10 text-secondary';
+        bgColor = 'bg-purple-100 text-purple-800';
         break;
       case 'pulizia':
-        bgColor = 'bg-info/10 text-info';
+        bgColor = 'bg-cyan-100 text-cyan-800';
         break;
       case 'vagliatura':
-        bgColor = 'bg-primary-light/10 text-primary-light';
+        bgColor = 'bg-indigo-100 text-indigo-800';
         break;
       case 'trattamento':
-        bgColor = 'bg-warning/10 text-warning';
+        bgColor = 'bg-amber-100 text-amber-800';
         break;
       case 'misura':
-        bgColor = 'bg-primary-light/10 text-primary';
+        bgColor = 'bg-blue-100 text-blue-800';
         break;
       case 'vendita':
       case 'selezione-vendita':
-        bgColor = 'bg-success/10 text-success';
+        bgColor = 'bg-green-100 text-green-800';
         break;
+      default:
+        bgColor = 'bg-gray-100 text-gray-800';
     }
     
     // Format operation type for display
