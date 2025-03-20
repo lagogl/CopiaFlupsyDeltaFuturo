@@ -436,10 +436,10 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
         {latestOperation && (
           <>
             <div className="text-sm mb-1">
-              <span className="text-muted-foreground">Ultima operazione: </span>
+              <span className="text-muted-foreground">Ultima op.: </span>
               <span className="font-medium">{getOperationTypeLabel(latestOperation.type)}</span>
               <div className="text-xs text-muted-foreground">
-                {format(new Date(latestOperation.date), 'dd/MM/yyyy')}
+                Data: {format(new Date(latestOperation.date), 'dd/MM/yyyy')}
               </div>
             </div>
             
