@@ -535,7 +535,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const newCycle = await storage.createCycle({
           basketId: basketId,
-          startDate: date,
+          startDate: date.toString(),
         });
         
         console.log("Ciclo creato:", newCycle);
@@ -621,12 +621,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // If it's a cycle-closing operation (vendita or selezione-vendita), check if the cycle is already closed
+        // If it's a cycle-closing operation (vendita or selezione-vendita), handle cycle closure
         if (type === 'vendita' || type === 'selezione-vendita') {
           const closingCycle = await storage.getCycle(cycleId);
           if (closingCycle && closingCycle.state === 'closed') {
             return res.status(400).json({ message: "Non è possibile aggiungere un'operazione di chiusura a un ciclo già chiuso" });
           }
+          
+          // Create the operation first
+          const operationData = {
+            ...parsedData.data,
+            date: parsedData.data.date.toString()
+          };
+          const newOperation = await storage.createOperation(operationData);
+          
+          // Then close the cycle
+          await storage.closeCycle(cycleId, date.toString());
+          
+          // Update the basket state
+          await storage.updateBasket(basketId, {
+            state: 'available',
+            currentCycleId: null,
+            cycleCode: null
+          });
+          
+          return res.status(201).json(newOperation);
         }
 
         // Create the operation - Converti date in stringa se necessario

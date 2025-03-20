@@ -55,28 +55,8 @@ export default function Operations() {
       
       // 1. Se la cesta è disponibile e l'operazione è di prima attivazione
       if (isBasketAvailable && isPrimaAttivazione) {
-        // Creare un nuovo ciclo
-        const newCycle = await apiRequest('POST', '/api/cycles', {
-          basketId: newOperation.basketId,
-          startDate: newOperation.date
-        });
-        
-        // Genera il cycleCode (formato: numeroCesta-numeroFlupsy-YYMM)
-        const date = new Date(newOperation.date);
-        const year = date.getFullYear().toString().slice(2); // Ultime due cifre dell'anno (YY)
-        const month = (date.getMonth() + 1).toString().padStart(2, '0'); // Mese (MM) con zero padding
-        
-        const cycleCode = `${basket?.physicalNumber}-${basket?.flupsyId}-${year}${month}`;
-        
-        // Aggiornare lo stato della cesta a active e assegnare cycleCode
-        await apiRequest('PATCH', `/api/baskets/${newOperation.basketId}`, {
-          state: 'active',
-          currentCycleId: newCycle.id,
-          cycleCode: cycleCode
-        });
-        
-        // Aggiungi l'ID del ciclo all'operazione
-        newOperation.cycleId = newCycle.id;
+        // Crea direttamente l'operazione di prima attivazione
+        // Il backend si occuperà di creare il ciclo e aggiornare lo stato della cesta
         createdOperation = await apiRequest('POST', '/api/operations', newOperation);
         
         // Invalida le query per cicli e ceste
@@ -85,23 +65,9 @@ export default function Operations() {
       }
       // 2. Se la cesta è attiva e l'operazione è di vendita
       else if (isBasketActive && isVendita) {
-        // Creare l'operazione
+        // Crea direttamente l'operazione di vendita
+        // Il backend si occuperà di chiudere il ciclo e aggiornare lo stato della cesta
         createdOperation = await apiRequest('POST', '/api/operations', newOperation);
-        
-        // Chiudi il ciclo
-        if (basket?.currentCycleId) {
-          await apiRequest('PATCH', `/api/cycles/${basket.currentCycleId}`, {
-            endDate: newOperation.date,
-            state: 'closed'
-          });
-        }
-        
-        // Aggiorna lo stato della cesta a disponibile e rimuovi il cycleCode
-        await apiRequest('PATCH', `/api/baskets/${newOperation.basketId}`, {
-          state: 'available',
-          currentCycleId: null,
-          cycleCode: null
-        });
         
         // Invalida le query per cicli e ceste
         queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
