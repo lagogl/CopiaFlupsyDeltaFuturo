@@ -623,8 +623,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // If it's a cycle-closing operation (vendita or selezione-vendita), check if the cycle is already closed
         if (type === 'vendita' || type === 'selezione-vendita') {
-          const cycle = await storage.getCycle(cycleId);
-          if (cycle.state === 'closed') {
+          const closingCycle = await storage.getCycle(cycleId);
+          if (closingCycle && closingCycle.state === 'closed') {
             return res.status(400).json({ message: "Non è possibile aggiungere un'operazione di chiusura a un ciclo già chiuso" });
           }
         }
@@ -1046,7 +1046,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      const newLot = await storage.createLot(parsedData.data);
+      // Converti la data di arrivo in stringa
+      const lotData = {
+        ...parsedData.data,
+        arrivalDate: parsedData.data.arrivalDate.toString()
+      };
+      const newLot = await storage.createLot(lotData);
       res.status(201).json(newLot);
     } catch (error) {
       console.error("Error creating lot:", error);
