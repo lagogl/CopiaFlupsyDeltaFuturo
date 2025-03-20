@@ -1,0 +1,64 @@
+Ecco la struttura del database completa e dettagliata per gestire le ceste nei flupsy, includendo la tracciabilità dei movimenti, la gestione dei cicli e il monitoraggio biometrico degli animali.
+
+📌 Struttura del Database
+1️⃣ Tabella Ceste (ceste)
+Memorizza l’elenco delle ceste e il loro stato attuale.
+
+id_cesta (INT, PK) → Numero progressivo della cesta (1-20)
+attiva (BOOLEAN) → Indica se la cesta è attualmente in uso
+ciclo_attuale (VARCHAR, FK) → ID del ciclo attuale della cesta (se attiva)
+2️⃣ Tabella Flupsy (flupsy)
+Identifica i flupsy disponibili.
+
+id_flupsy (INT, PK) → Identificativo univoco del flupsy
+nome (VARCHAR) → Nome del flupsy
+3️⃣ Tabella Cicli (cicli)
+Registra la storia dei cicli di ogni cesta.
+
+id_ciclo (VARCHAR, PK) → Identificativo del ciclo (Formato: cesta+flupsy+YYMM)
+id_cesta (FK) → Riferimento alla cesta
+id_flupsy (FK) → Riferimento al flupsy
+data_inizio (DATETIME) → Data di prima attivazione
+data_fine (DATETIME, NULL) → Data di chiusura del ciclo (NULL se ancora attivo)
+stato (ENUM: ‘ATTIVO’, ‘CHIUSO’) → Stato del ciclo
+4️⃣ Tabella Movimenti (movimenti)
+Registra tutti i movimenti delle ceste all’interno del ciclo.
+
+id_movimento (INT, PK, AUTO_INCREMENT)
+id_ciclo (FK) → Riferimento al ciclo attivo della cesta
+data_movimento (DATETIME) → Data e ora del movimento
+posizione (INT) → Numero di posizione occupata (1-10)
+linea (ENUM: ‘DESTRA’, ‘SINISTRA’) → Indica su quale fila si trova la cesta
+tipo_operazione (VARCHAR) → Es. ‘Prima attivazione’, ‘Spostamento’, ‘Vendita’, ‘Selezione per vendita’
+numero_animali (INT) → Numero totale di animali nella cesta al momento del movimento
+animali_per_kg (DECIMAL(10,2)) → Numero di animali per kg
+peso_medio_mg (DECIMAL(10,2), GENERATED) → Calcolato come (1000000 / animali_per_kg)
+5️⃣ Tabella Taglie (taglie)
+Definisce i range di riferimento per le taglie degli animali.
+
+id_taglia (INT, PK)
+descrizione (VARCHAR) → Nome della taglia (es. ‘Small’, ‘Medium’, ‘Large’)
+min_animali_per_kg (DECIMAL(10,2)) → Valore minimo per la taglia
+max_animali_per_kg (DECIMAL(10,2)) → Valore massimo per la taglia
+6️⃣ Tabella Storico Posizioni (storico_posizioni)
+Traccia l’intera storia delle posizioni della cesta.
+
+id_storico (INT, PK, AUTO_INCREMENT)
+id_cesta (FK) → Riferimento alla cesta
+id_ciclo (FK) → Riferimento al ciclo associato
+data_movimento (DATETIME) → Data e ora dello spostamento
+posizione (INT) → Numero di posizione
+linea (ENUM: ‘DESTRA’, ‘SINISTRA’)
+🔹 Funzionamento del Sistema
+✅ Attivazione di un nuovo ciclo
+Viene registrata un’operazione con causale ‘Prima attivazione’.
+Si genera un nuovo id_ciclo e si lega alla cesta.
+La cesta viene associata a una posizione iniziale (Destra/Sinistra).
+🔄 Movimenti della cesta
+Ogni spostamento viene registrato in movimenti con data, posizione e numero di animali.
+Il sistema calcola il peso medio e lo confronta con la tabella taglie.
+Viene aggiornata la tabella storico_posizioni.
+🔚 Chiusura del ciclo
+Quando viene registrato un movimento con causale ‘Vendita’ o ‘Selezione per vendita’, il ciclo viene chiuso.
+data_fine viene valorizzata e stato cambia a ‘CHIUSO’.
+La cesta è pronta per un nuovo ciclo in futuro.

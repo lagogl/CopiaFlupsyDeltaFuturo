@@ -526,9 +526,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Crea un nuovo ciclo per questa cesta
         console.log("Creazione nuovo ciclo per prima-attivazione");
+        
+        // Formatta il codice del ciclo secondo le specifiche: cesta+flupsy+YYMM
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear().toString().substring(2);
         const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`;
+        console.log("Generato cycleCode:", cycleCode);
         
         const newCycle = await storage.createCycle({
           basketId: basketId,
@@ -537,7 +540,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         console.log("Ciclo creato:", newCycle);
         
-        // Aggiorna lo stato del cestello
+        // Aggiorna lo stato del cestello e il codice ciclo
         await storage.updateBasket(basketId, {
           state: 'active',
           currentCycleId: newCycle.id,
@@ -762,8 +765,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
 
+      // Genera il cycleCode
+      const startDate = new Date(parsedData.data.startDate);
+      const month = String(startDate.getMonth() + 1).padStart(2, '0');
+      const year = startDate.getFullYear().toString().substring(2);
+      const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`;
+      console.log("Generato cycleCode per nuovo ciclo:", cycleCode);
+
       // Create the cycle
       const newCycle = await storage.createCycle(parsedData.data);
+      
+      // Aggiorna lo stato del cestello e imposta il cycleCode
+      await storage.updateBasket(basketId, {
+        state: 'active',
+        currentCycleId: newCycle.id,
+        cycleCode: cycleCode
+      });
       
       // Create prima-attivazione operation automatically
       const primaAttivazioneOperation = {
