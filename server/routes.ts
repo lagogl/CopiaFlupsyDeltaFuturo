@@ -749,122 +749,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/cycles", async (req, res) => {
-    try {
-      const parsedData = cycleSchema.safeParse(req.body);
-      if (!parsedData.success) {
-        const errorMessage = fromZodError(parsedData.error).message;
-        return res.status(400).json({ message: errorMessage });
-      }
-
-      const { basketId } = parsedData.data;
-
-      // Check if the basket exists
-      const basket = await storage.getBasket(basketId);
-      if (!basket) {
-        return res.status(404).json({ message: "Basket not found" });
-      }
-
-      // Check if the basket already has an active cycle
-      if (basket.currentCycleId !== null) {
-        return res.status(400).json({ 
-          message: "This basket already has an active cycle. Close the current cycle before starting a new one." 
-        });
-      }
-
-      // Genera il cycleCode
-      const startDate = new Date(parsedData.data.startDate);
-      const month = String(startDate.getMonth() + 1).padStart(2, '0');
-      const year = startDate.getFullYear().toString().substring(2);
-      const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`;
-      console.log("Generato cycleCode per nuovo ciclo:", cycleCode);
-
-      // Create the cycle with properly formatted date (ISO format YYYY-MM-DD)
-      // Assicuriamoci che la data sia un oggetto Date
-      const startDateObj = new Date(parsedData.data.startDate);
-      const formattedDate = startDateObj.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-      
-      // Crea il ciclo con la data formattata correttamente
-      const newCycle = await storage.createCycle({
-        ...parsedData.data,
-        startDate: formattedDate
-      });
-      
-      // Aggiorna lo stato del cestello e imposta il cycleCode
-      await storage.updateBasket(basketId, {
-        state: 'active',
-        currentCycleId: newCycle.id,
-        cycleCode: cycleCode
-      });
-      
-      // Create prima-attivazione operation automatically with properly formatted date
-      const primaAttivazioneOperation = {
-        date: formattedDate, // Usa la stessa data formattata usata per il ciclo
-        type: 'prima-attivazione' as typeof operationTypes[number],
-        basketId,
-        cycleId: newCycle.id,
-        animalCount: null,
-        totalWeight: null,
-        animalsPerKg: null,
-        sizeId: null,
-        sgrId: null,
-        lotId: null,
-        notes: "Automatic prima attivazione operation"
-      };
-      
-      await storage.createOperation(primaAttivazioneOperation);
-      
-      res.status(201).json(newCycle);
-    } catch (error) {
-      console.error("Error creating cycle:", error);
-      res.status(500).json({ message: "Failed to create cycle" });
-    }
+    // Disabilitata la creazione manuale dei cicli
+    return res.status(400).json({ 
+      message: "La creazione manuale dei cicli è stata disabilitata. I cicli vengono creati automaticamente tramite le operazioni di 'prima-attivazione'." 
+    });
   });
 
   app.post("/api/cycles/:id/close", async (req, res) => {
-    try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid cycle ID" });
-      }
-
-      const endDateSchema = z.object({
-        endDate: z.coerce.date()
-      });
-
-      const parsedData = endDateSchema.safeParse(req.body);
-      if (!parsedData.success) {
-        const errorMessage = fromZodError(parsedData.error).message;
-        return res.status(400).json({ message: errorMessage });
-      }
-
-      // Check if the cycle exists
-      const cycle = await storage.getCycle(id);
-      if (!cycle) {
-        return res.status(404).json({ message: "Cycle not found" });
-      }
-
-      // Check if the cycle is already closed
-      if (cycle.state === 'closed') {
-        return res.status(400).json({ message: "Cycle is already closed" });
-      }
-
-      // Close the cycle - il metodo si aspetta una Date, quindi passiamo l'oggetto Date
-      const updatedCycle = await storage.closeCycle(id, parsedData.data.endDate);
-      
-      // Also update the basket state
-      if (updatedCycle) {
-        await storage.updateBasket(updatedCycle.basketId, {
-          state: "available",
-          currentCycleId: null,
-          nfcData: null
-        });
-      }
-      
-      res.json(updatedCycle);
-    } catch (error) {
-      console.error("Error closing cycle:", error);
-      res.status(500).json({ message: "Failed to close cycle" });
-    }
+    // Disabilitata la chiusura manuale dei cicli
+    return res.status(400).json({ 
+      message: "La chiusura manuale dei cicli è stata disabilitata. I cicli vengono chiusi automaticamente tramite le operazioni di 'vendita' o 'selezione per vendita'." 
+    });
   });
 
   // === Size routes ===
