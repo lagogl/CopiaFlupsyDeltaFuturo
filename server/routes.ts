@@ -390,7 +390,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Operation routes ===
   app.get("/api/operations", async (req, res) => {
     try {
-      const operations = await storage.getOperations();
+      // Controlla se c'è un filtro per cycleId
+      const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : null;
+      
+      // Recupera le operazioni in base ai filtri
+      let operations;
+      if (cycleId) {
+        console.log(`Ricerca operazioni per ciclo ID: ${cycleId}`);
+        operations = await storage.getOperationsByCycle(cycleId);
+      } else {
+        operations = await storage.getOperations();
+      }
       
       // Fetch related entities
       const operationsWithDetails = await Promise.all(

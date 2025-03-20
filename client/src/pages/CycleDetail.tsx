@@ -26,7 +26,7 @@ export default function CycleDetail() {
   
   // Fetch operations for this cycle
   const { data: operations, isLoading: opsLoading } = useQuery({
-    queryKey: ['/api/operations/cycle', cycleId],
+    queryKey: ['/api/operations', cycleId],
     queryFn: cycleId ? () => fetch(`/api/operations?cycleId=${cycleId}`).then(res => res.json()) : undefined,
     enabled: !!cycleId
   });
