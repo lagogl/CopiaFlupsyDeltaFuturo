@@ -1,46 +1,37 @@
 import { useState } from 'react';
-import { useQuery, useMutation } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Eye, Search, Filter, Plus, Clock } from 'lucide-react';
+import { Eye, Search, Filter, InfoIcon } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
-import { apiRequest, queryClient } from '@/lib/queryClient';
-import CycleForm from '@/components/CycleForm';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+
+// Definizione dell'interfaccia Cycle per tipizzare i dati
+interface Cycle {
+  id: number;
+  basketId: number;
+  startDate: string;
+  endDate: string | null;
+  state: 'active' | 'closed';
+  basket?: {
+    physicalNumber: number;
+  };
+}
 
 export default function Cycles() {
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   
   // Query cycles with details
-  const { data: cycles, isLoading } = useQuery({
+  const { data: cycles = [], isLoading } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles'],
   });
 
-  // Create mutation
-  const createCycleMutation = useMutation({
-    mutationFn: (newCycle: any) => apiRequest('POST', '/api/cycles', newCycle),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
-      setIsCreateDialogOpen(false);
-    }
-  });
-
-  // Close cycle mutation
-  const closeCycleMutation = useMutation({
-    mutationFn: ({ id, endDate }: { id: number, endDate: Date }) => 
-      apiRequest('POST', `/api/cycles/${id}/close`, { endDate }),
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
-    }
-  });
-
   // Filter cycles
-  const filteredCycles = cycles?.filter(cycle => {
+  const filteredCycles = cycles.filter((cycle: Cycle) => {
     // Filter by search term
     const matchesSearch = searchTerm === '' || 
       `${cycle.id}`.includes(searchTerm) || 
@@ -52,16 +43,7 @@ export default function Cycles() {
       (statusFilter === 'closed' && cycle.state === 'closed');
     
     return matchesSearch && matchesStatus;
-  }) || [];
-
-  const handleCloseCycle = (cycleId: number) => {
-    if (confirm('Sei sicuro di voler chiudere questo ciclo? Questa azione non può essere annullata.')) {
-      closeCycleMutation.mutate({ 
-        id: cycleId, 
-        endDate: new Date() 
-      });
-    }
-  };
+  });
 
   return (
     <div>
@@ -72,10 +54,19 @@ export default function Cycles() {
             <Filter className="h-4 w-4 mr-1" />
             Filtra
           </Button>
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
-            <Plus className="h-4 w-4 mr-1" />
-            Nuovo Ciclo
-          </Button>
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button variant="outline" size="sm">
+                  <InfoIcon className="h-4 w-4 mr-1" />
+                  Info
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent className="max-w-sm">
+                <p>I cicli vengono creati e chiusi automaticamente tramite le operazioni di "prima-attivazione" e "vendita".</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
 
@@ -200,15 +191,6 @@ export default function Cycles() {
                           <Button variant="ghost" size="icon" title="Visualizza dettagli">
                             <Eye className="h-5 w-5 text-primary" />
                           </Button>
-                          {cycle.state === 'active' && (
-                            <Button 
-                              variant="ghost" 
-                              size="icon" 
-                              title="Chiudi ciclo"
-                              onClick={() => handleCloseCycle(cycle.id)}>
-                              <Clock className="h-5 w-5 text-warning" />
-                            </Button>
-                          )}
                         </div>
                       </td>
                     </tr>
@@ -219,19 +201,6 @@ export default function Cycles() {
           </table>
         </div>
       </div>
-
-      {/* Create Cycle Dialog */}
-      <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
-          <DialogHeader>
-            <DialogTitle>Crea Nuovo Ciclo</DialogTitle>
-          </DialogHeader>
-          <CycleForm 
-            onSubmit={(data) => createCycleMutation.mutate(data)} 
-            isLoading={createCycleMutation.isPending}
-          />
-        </DialogContent>
-      </Dialog>
     </div>
   );
 }
