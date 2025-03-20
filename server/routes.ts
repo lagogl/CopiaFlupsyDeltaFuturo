@@ -778,10 +778,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`;
       console.log("Generato cycleCode per nuovo ciclo:", cycleCode);
 
-      // Create the cycle
+      // Create the cycle with properly formatted date (ISO format YYYY-MM-DD)
+      // Assicuriamoci che la data sia un oggetto Date
+      const startDateObj = new Date(parsedData.data.startDate);
+      const formattedDate = startDateObj.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+      
+      // Crea il ciclo con la data formattata correttamente
       const newCycle = await storage.createCycle({
         ...parsedData.data,
-        startDate: parsedData.data.startDate.toString() // Converti in stringa per lo storage
+        startDate: formattedDate
       });
       
       // Aggiorna lo stato del cestello e imposta il cycleCode
@@ -791,9 +796,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         cycleCode: cycleCode
       });
       
-      // Create prima-attivazione operation automatically
+      // Create prima-attivazione operation automatically with properly formatted date
       const primaAttivazioneOperation = {
-        date: parsedData.data.startDate.toString(), // Converti in stringa per lo storage
+        date: formattedDate, // Usa la stessa data formattata usata per il ciclo
         type: 'prima-attivazione' as typeof operationTypes[number],
         basketId,
         cycleId: newCycle.id,
