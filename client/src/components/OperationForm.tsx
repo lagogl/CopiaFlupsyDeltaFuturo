@@ -139,7 +139,7 @@ export default function OperationForm({
   }, [watchAnimalCount, watchAverageWeight, form]);
   
   // Check for existing operations on the same date
-  const [operationDateError, setOperationDateError] = React.useState<string | null>(null);
+  const [operationDateError, setOperationDateError] = useState<string | null>(null);
   
   useEffect(() => {
     // Resetta l'errore quando cambia data o cestello
@@ -343,6 +343,13 @@ export default function OperationForm({
     e.preventDefault();
     
     console.log("FORM SUBMIT MANUALE ATTIVATO");
+    
+    // Verifica se c'è un errore di operazione sulla stessa data
+    if (operationDateError) {
+      console.error("Operazione non permessa sulla stessa data:", operationDateError);
+      alert(operationDateError);
+      return;
+    }
     
     // Ottieni i valori dal form
     const values = form.getValues();
