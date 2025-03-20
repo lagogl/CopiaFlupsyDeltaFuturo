@@ -548,9 +548,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
         
         // Crea l'operazione con il ciclo appena creato
+        // Assicuriamoci che la data sia una stringa
         const operationData = {
           ...primaAttivSchema.data,
-          cycleId: newCycle.id
+          cycleId: newCycle.id,
+          date: primaAttivSchema.data.date.toString()
         };
         
         console.log("Creazione operazione con dati:", operationData);
@@ -627,8 +629,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // Create the operation
-        const newOperation = await storage.createOperation(parsedData.data);
+        // Create the operation - Converti date in stringa se necessario
+        const operationData = {
+          ...parsedData.data,
+          date: parsedData.data.date.toString()
+        };
+        const newOperation = await storage.createOperation(operationData);
         res.status(201).json(newOperation);
       }
     } catch (error) {
@@ -773,7 +779,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Generato cycleCode per nuovo ciclo:", cycleCode);
 
       // Create the cycle
-      const newCycle = await storage.createCycle(parsedData.data);
+      const newCycle = await storage.createCycle({
+        ...parsedData.data,
+        startDate: parsedData.data.startDate.toString() // Converti in stringa per lo storage
+      });
       
       // Aggiorna lo stato del cestello e imposta il cycleCode
       await storage.updateBasket(basketId, {
@@ -784,7 +793,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Create prima-attivazione operation automatically
       const primaAttivazioneOperation = {
-        date: parsedData.data.startDate,
+        date: parsedData.data.startDate.toString(), // Converti in stringa per lo storage
         type: 'prima-attivazione' as typeof operationTypes[number],
         basketId,
         cycleId: newCycle.id,
@@ -834,7 +843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Cycle is already closed" });
       }
 
-      // Close the cycle
+      // Close the cycle - il metodo si aspetta una Date, quindi passiamo l'oggetto Date
       const updatedCycle = await storage.closeCycle(id, parsedData.data.endDate);
       
       // Also update the basket state
