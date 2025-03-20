@@ -1,4 +1,4 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -95,11 +95,12 @@ export default function OperationForm({
   const watchBasketId = form.watch('basketId');
   const watchCycleId = form.watch('cycleId');
   const watchType = form.watch('type');
+  const watchDate = form.watch('date');
   
-  // Fetch operations for the selected basket and cycle
+  // Fetch operations for the selected basket
   const { data: basketOperations } = useQuery({
-    queryKey: ['/api/operations', watchBasketId, watchCycleId],
-    enabled: !!watchBasketId && !!watchCycleId,
+    queryKey: ['/api/operations', watchBasketId],
+    enabled: !!watchBasketId,
   });
   
   // Calculate average weight and set size when animals per kg changes
@@ -136,6 +137,40 @@ export default function OperationForm({
       form.setValue('totalWeight', null);
     }
   }, [watchAnimalCount, watchAverageWeight, form]);
+  
+  // Check for existing operations on the same date
+  const [operationDateError, setOperationDateError] = React.useState<string | null>(null);
+  
+  useEffect(() => {
+    // Resetta l'errore quando cambia data o cestello
+    setOperationDateError(null);
+    
+    // Verifica solo se sia data che cestello sono selezionati
+    if (!watchBasketId || !watchDate || !basketOperations || basketOperations.length === 0) {
+      return;
+    }
+    
+    // Converti la data selezionata nel form a un formato YYYY-MM-DD per il confronto
+    const selectedDate = watchDate instanceof Date 
+      ? watchDate.toISOString().split('T')[0] 
+      : typeof watchDate === 'string' 
+        ? new Date(watchDate).toISOString().split('T')[0]
+        : '';
+    
+    if (!selectedDate) return;
+    
+    // Cerca operazioni esistenti nella stessa data
+    const operationOnSameDate = basketOperations.find(op => {
+      const opDate = new Date(op.date).toISOString().split('T')[0];
+      return opDate === selectedDate;
+    });
+    
+    if (operationOnSameDate) {
+      setOperationDateError("Non è possibile registrare più di un'operazione al giorno per lo stesso cestello.");
+    } else {
+      setOperationDateError(null);
+    }
+  }, [watchBasketId, watchDate, basketOperations]);
   
   // Calculate SGR when basket and cycle are selected
   useEffect(() => {
@@ -421,6 +456,11 @@ export default function OperationForm({
                     />
                   </FormControl>
                   <FormMessage />
+                  {operationDateError && (
+                    <div className="mt-2 text-sm font-medium text-red-600 dark:text-red-500">
+                      {operationDateError}
+                    </div>
+                  )}
                 </FormItem>
               );
             }}
@@ -796,7 +836,7 @@ export default function OperationForm({
           </Button>
           <Button 
             type="button" 
-            disabled={isLoading}
+            disabled={isLoading || !!operationDateError}
             onClick={onSubmitForm}
             className="bg-primary hover:bg-primary/90 text-white font-medium"
           >
