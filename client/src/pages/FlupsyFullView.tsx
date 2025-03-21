@@ -226,7 +226,7 @@ export default function FlupsyFullView() {
                 
                 {/* Propeller indicator */}
                 <div className="relative mt-8 mb-4">
-                  <div className="bg-gray-300 w-16 h-16 rounded-full absolute -left-8 -top-8 flex items-center justify-center">
+                  <div className="bg-blue-500 w-16 h-16 rounded-full absolute -left-8 -top-8 flex items-center justify-center text-white">
                     <span className="text-xs font-semibold">Elica</span>
                   </div>
                 </div>

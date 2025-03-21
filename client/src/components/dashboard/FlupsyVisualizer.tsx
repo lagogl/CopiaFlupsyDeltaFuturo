@@ -265,7 +265,7 @@ export default function FlupsyVisualizer() {
               <div className="relative pt-6">
                 {/* Propeller indicator positioned at the left side */}
                 <div className="relative mb-4">
-                  <div className="bg-gray-300 w-12 h-12 rounded-full absolute -left-6 -top-6 flex items-center justify-center">
+                  <div className="bg-blue-500 w-12 h-12 rounded-full absolute -left-6 -top-6 flex items-center justify-center text-white">
                     <span className="text-xs font-semibold">Elica</span>
                   </div>
                 </div>
