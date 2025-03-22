@@ -1563,14 +1563,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Ottieni le operazioni di tipo "Misura" per questo ciclo, ordinate per data
       const operations = await storage.getOperationsByCycle(cycleId);
-      const measureOperations = operations
+      
+      console.log(`DEBUG: Ciclo ID ${cycleId}, numero operazioni trovate: ${operations.length}`);
+      operations.forEach(op => {
+        console.log(`DEBUG: Operazione ID ${op.id}, tipo: ${op.type}, animalsPerKg: ${op.animalsPerKg}, date: ${op.date}`);
+      });
+      
+      // Se non ci sono operazioni di misura, includiamo anche 'prima-attivazione'
+      let measureOperations = operations
         .filter(op => op.type === "misura" && op.animalsPerKg !== null)
         .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+        
+      console.log(`DEBUG: Operazioni di misura trovate: ${measureOperations.length}`);
       
+      // Se non ci sono operazioni di misura, usiamo la prima attivazione
       if (measureOperations.length === 0) {
-        return res.status(400).json({ 
-          message: "Nessuna operazione di misura trovata per questo ciclo" 
-        });
+        // Proviamo a usare la prima attivazione se disponibile
+        const primaAttivazione = operations.find(op => op.type === "prima-attivazione" && op.animalsPerKg !== null);
+        
+        if (primaAttivazione) {
+          console.log(`DEBUG: Nessuna misura trovata, uso prima-attivazione ID ${primaAttivazione.id}`);
+          measureOperations = [primaAttivazione];
+        } else {
+          return res.status(400).json({ 
+            message: "Nessuna operazione di misura o di prima attivazione trovata con dati validi per questo ciclo" 
+          });
+        }
       }
       
       // Calcola SGR attuale in base alle misurazioni reali
