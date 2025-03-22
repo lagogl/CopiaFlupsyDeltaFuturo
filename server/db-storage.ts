@@ -136,6 +136,14 @@ export class DbStorage implements IStorage {
       .returning();
     return results[0];
   }
+  
+  async deleteOperation(id: number): Promise<boolean> {
+    const deletedCount = await db.delete(operations)
+      .where(eq(operations.id, id))
+      .returning({ id: operations.id });
+    
+    return deletedCount.length > 0;
+  }
 
   // CYCLES
   async getCycles(): Promise<Cycle[]> {
