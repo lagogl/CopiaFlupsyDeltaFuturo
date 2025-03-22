@@ -151,7 +151,7 @@ export default function OperationForm({
     }
     
     // Verifica se il cestello è disponibile (senza ciclo attivo) o attivo
-    const selectedBasket = selectedBasketState;
+    const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
     
     // Se il cestello è disponibile, non applicare la restrizione della data
     // (permettiamo più operazioni nello stesso giorno per cestelli disponibili)
@@ -179,7 +179,7 @@ export default function OperationForm({
     } else {
       setOperationDateError(null);
     }
-  }, [watchBasketId, watchDate, basketOperations, selectedBasketState]);
+  }, [watchBasketId, watchDate, basketOperations, baskets]);
   
   // Calculate SGR when basket and cycle are selected
   useEffect(() => {
