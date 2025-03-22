@@ -8,7 +8,9 @@ import {
   insertOperationSchema, 
   cycleSchema, 
   insertSizeSchema, 
-  insertSgrSchema, 
+  insertSgrSchema,
+  sgrGiornalieriSchema,
+  insertSgrGiornalieriSchema,
   lotSchema, 
   operationTypes
 } from "@shared/schema";
