@@ -127,10 +127,17 @@ export default function LotForm({
                 <FormLabel>Numero Animali</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
+                    type="text" 
                     placeholder="Numero di animali"
                     {...field}
-                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                    value={field.value !== null && field.value !== undefined 
+                      ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                      : ''}
+                    onChange={(e) => {
+                      // Rimuovi tutti i caratteri non numerici, eccetto il punto
+                      const numericValue = e.target.value.replace(/[^\d]/g, '');
+                      field.onChange(numericValue ? Number(numericValue) : null);
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -146,11 +153,24 @@ export default function LotForm({
                 <FormLabel>Peso (g)</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
-                    step="0.01"
+                    type="text" 
                     placeholder="Peso in grammi"
                     {...field}
-                    onChange={(e) => field.onChange(e.target.value ? Number(e.target.value) : null)}
+                    value={field.value !== null && field.value !== undefined 
+                      ? field.value.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                      : ''}
+                    onChange={(e) => {
+                      // Rimuovi tutti i caratteri non numerici eccetto la virgola
+                      let value = e.target.value.replace(/[^\d,]/g, '');
+                      // Assicurati che ci sia al massimo una virgola
+                      const commaCount = (value.match(/,/g) || []).length;
+                      if (commaCount > 1) {
+                        value = value.replace(/,/g, (match, index) => index === value.indexOf(',') ? ',' : '');
+                      }
+                      // Converti da formato europeo (con virgola) al formato numerico JavaScript
+                      const numericValue = value ? Number(value.replace(',', '.')) : null;
+                      field.onChange(numericValue);
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
