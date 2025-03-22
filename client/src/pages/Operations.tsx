@@ -470,6 +470,9 @@ export default function Operations() {
                       Ciclo
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Lotto
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Taglia
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -489,7 +492,7 @@ export default function Operations() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredOperations.length === 0 ? (
                     <tr>
-                      <td colSpan={9} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                      <td colSpan={10} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                         Nessuna operazione trovata
                       </td>
                     </tr>
@@ -507,6 +510,16 @@ export default function Operations() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           #{op.cycleId}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {op.lot ? (
+                            <div>
+                              <span className="font-medium text-indigo-600">{op.lot.name}</span>
+                              <span className="text-xs block text-gray-500">
+                                {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
+                              </span>
+                            </div>
+                          ) : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getSizeBadge(op.size)}
