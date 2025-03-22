@@ -288,8 +288,9 @@ export default function FlupsyVisualizerNew() {
     const latestOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
     if (!latestOperation?.animalsPerKg) return false;
     
-    const averageWeight = 1000000 / latestOperation.animalsPerKg;
-    return averageWeight >= 3000;
+    // Determina se è una taglia grande basandosi sul numero di animali per kg
+    // La taglia TP-3000 o superiore ha animalsPerKg <= 32000
+    return latestOperation.animalsPerKg <= 32000;
   };
   
   // Helper function to get the color class for a basket (backward compatibility)
