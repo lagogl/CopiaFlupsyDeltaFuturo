@@ -137,6 +137,23 @@ export default function FlupsyVisualizer() {
     return operations.filter(op => op.basketId === basketId);
   };
   
+  // Helper function to check if a basket has a large size (TP-3000 or higher)
+  const hasLargeSize = (basket: Basket | undefined): boolean => {
+    if (!basket || basket.state !== 'active') return false;
+    
+    const basketOperations = getOperationsForBasket(basket.id);
+    const sortedOperations = [...basketOperations].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    const latestOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
+    if (!latestOperation?.animalsPerKg) return false;
+    
+    // Determina se è una taglia grande basandosi sul numero di animali per kg
+    // La taglia TP-3000 o superiore ha animalsPerKg <= 32000
+    return latestOperation.animalsPerKg <= 32000;
+  };
+  
   // Helper function to get the color class for a basket
   const getBasketColorClass = (basket: Basket | undefined): string => {
     if (!basket) return 'bg-gray-50 border-dashed';
