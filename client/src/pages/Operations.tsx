@@ -161,22 +161,113 @@ export default function Operations() {
     }
   });
 
+  // Group operations by cycle
+  const operationsByCycle = useMemo(() => {
+    if (!operations || !cycles) return {};
+    
+    const grouped: { [key: string]: any[] } = {};
+    
+    operations.forEach((op: any) => {
+      const cycleId = op.cycleId.toString();
+      if (!grouped[cycleId]) {
+        grouped[cycleId] = [];
+      }
+      grouped[cycleId].push(op);
+    });
+    
+    // Sort operations in each cycle by date
+    Object.keys(grouped).forEach(cycleId => {
+      grouped[cycleId].sort((a: any, b: any) => {
+        return new Date(a.date).getTime() - new Date(b.date).getTime();
+      });
+    });
+    
+    return grouped;
+  }, [operations, cycles]);
+  
+  // Function to toggle cycle expansion
+  const toggleCycleExpansion = (cycleId: number) => {
+    if (expandedCycles.includes(cycleId)) {
+      setExpandedCycles(expandedCycles.filter(id => id !== cycleId));
+    } else {
+      setExpandedCycles([...expandedCycles, cycleId]);
+    }
+  };
+  
+  // Function to get cycle details
+  const getCycleDetails = (cycleId: number) => {
+    return cycles?.find((c: any) => c.id === cycleId);
+  };
+  
   // Filter operations
-  const filteredOperations = operations?.filter(op => {
-    // Filter by search term
-    const matchesSearch = searchTerm === '' || 
-      `${op.basketId}`.includes(searchTerm) || 
-      `${op.cycleId}`.includes(searchTerm);
+  const filteredOperations = useMemo(() => {
+    if (!operations) return [];
     
-    // Filter by operation type
-    const matchesType = typeFilter === 'all' || op.type === typeFilter;
+    return operations.filter((op: any) => {
+      // Filter by search term
+      const matchesSearch = searchTerm === '' || 
+        `${op.basketId}`.includes(searchTerm) || 
+        `${op.cycleId}`.includes(searchTerm) ||
+        (op.basket && `${op.basket.physicalNumber}`.includes(searchTerm));
+      
+      // Filter by operation type
+      const matchesType = typeFilter === 'all' || op.type === typeFilter;
+      
+      // Filter by date
+      const matchesDate = dateFilter === '' || 
+        format(new Date(op.date), 'yyyy-MM-dd') === dateFilter;
+      
+      // Filter by FLUPSY (baskets belong to a FLUPSY)
+      const matchesFlupsy = flupsyFilter === 'all' || 
+        (op.basket && op.basket.flupsyId.toString() === flupsyFilter);
+      
+      // Filter by cycle
+      const matchesCycle = cycleFilter === 'all' || 
+        op.cycleId.toString() === cycleFilter;
+      
+      return matchesSearch && matchesType && matchesDate && matchesFlupsy && matchesCycle;
+    });
+  }, [operations, searchTerm, typeFilter, dateFilter, flupsyFilter, cycleFilter]);
+  
+  // Get filtered cycles based on selected filters
+  const filteredCycleIds = useMemo(() => {
+    if (!cycles || !baskets) return [];
     
-    // Filter by date
-    const matchesDate = dateFilter === '' || 
-      format(new Date(op.date), 'yyyy-MM-dd') === dateFilter;
-    
-    return matchesSearch && matchesType && matchesDate;
-  }) || [];
+    return cycles
+      .filter((cycle: any) => {
+        // Only keep cycles that have operations that match the filter criteria
+        const cycleOps = operations?.filter((op: any) => op.cycleId === cycle.id) || [];
+        if (cycleOps.length === 0) return false;
+        
+        // Check if any operation matches the type filter
+        const matchesType = typeFilter === 'all' || 
+          cycleOps.some((op: any) => op.type === typeFilter);
+        
+        // Check if any operation matches the date filter
+        const matchesDate = dateFilter === '' || 
+          cycleOps.some((op: any) => format(new Date(op.date), 'yyyy-MM-dd') === dateFilter);
+        
+        // Get basket for this cycle
+        const basket = baskets.find((b: any) => b.id === cycle.basketId);
+        
+        // Check if the basket's FLUPSY matches the FLUPSY filter
+        const matchesFlupsy = flupsyFilter === 'all' || 
+          (basket && basket.flupsyId.toString() === flupsyFilter);
+        
+        // Check if the cycle matches the cycle filter
+        const matchesCycle = cycleFilter === 'all' || 
+          cycle.id.toString() === cycleFilter;
+        
+        // Check if any operation matches the search term
+        const matchesSearch = searchTerm === '' || 
+          `${cycle.id}`.includes(searchTerm) || 
+          (basket && `${basket.physicalNumber}`.includes(searchTerm)) ||
+          cycleOps.some((op: any) => `${op.basketId}`.includes(searchTerm));
+        
+        return matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesSearch;
+      })
+      .map((cycle: any) => cycle.id);
+  }, [cycles, baskets, operations, typeFilter, dateFilter, flupsyFilter, cycleFilter, searchTerm]);
 
   const getOperationTypeBadge = (type: string) => {
     let bgColor = 'bg-blue-100 text-blue-800';
@@ -243,180 +334,430 @@ export default function Operations() {
         </div>
       </div>
 
-      {/* Operations Filters */}
+      {/* View Mode Selector */}
       <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Cerca operazioni, ceste..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-              <div className="absolute left-3 top-2.5 text-gray-400">
-                <Search className="h-5 w-5" />
-              </div>
+        <div className="flex flex-col space-y-4">
+          {/* Mode Selection */}
+          <div className="flex justify-between items-center">
+            <div className="flex space-x-4">
+              <Button 
+                variant={viewMode === 'table' ? 'default' : 'outline'} 
+                onClick={() => setViewMode('table')}
+                className="w-32"
+              >
+                <Box className="mr-2 h-4 w-4" />
+                Tabella
+              </Button>
+              <Button 
+                variant={viewMode === 'cycles' ? 'default' : 'outline'} 
+                onClick={() => setViewMode('cycles')}
+                className="w-32"
+              >
+                <RotateCw className="mr-2 h-4 w-4" />
+                Per Ciclo
+              </Button>
+            </div>
+            
+            <div className="flex items-center">
+              <ArrowUp className="h-4 w-4 text-gray-400 mr-1" />
+              <span className="text-sm text-gray-500">Ascendente</span>
             </div>
           </div>
-          <div className="flex space-x-4">
-            <Select value={typeFilter} onValueChange={setTypeFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Tipologia" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutte le tipologie</SelectItem>
-                <SelectItem value="prima-attivazione">Prima Attivazione</SelectItem>
-                <SelectItem value="pulizia">Pulizia</SelectItem>
-                <SelectItem value="vagliatura">Vagliatura</SelectItem>
-                <SelectItem value="trattamento">Trattamento</SelectItem>
-                <SelectItem value="misura">Misura</SelectItem>
-                <SelectItem value="vendita">Vendita</SelectItem>
-                <SelectItem value="selezione-vendita">Selezione per Vendita</SelectItem>
-              </SelectContent>
-            </Select>
-            <Input 
-              type="date" 
-              value={dateFilter} 
-              onChange={(e) => setDateFilter(e.target.value)}
-            />
+          
+          {/* First row of filters */}
+          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+            <div className="flex-1">
+              <div className="relative">
+                <Input
+                  type="text"
+                  placeholder="Cerca operazioni, ceste..."
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                  className="pl-10"
+                />
+                <div className="absolute left-3 top-2.5 text-gray-400">
+                  <Search className="h-5 w-5" />
+                </div>
+              </div>
+            </div>
+            <div className="flex space-x-4">
+              <Select value={typeFilter} onValueChange={setTypeFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Tipologia" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutte le tipologie</SelectItem>
+                  <SelectItem value="prima-attivazione">Prima Attivazione</SelectItem>
+                  <SelectItem value="pulizia">Pulizia</SelectItem>
+                  <SelectItem value="vagliatura">Vagliatura</SelectItem>
+                  <SelectItem value="trattamento">Trattamento</SelectItem>
+                  <SelectItem value="misura">Misura</SelectItem>
+                  <SelectItem value="vendita">Vendita</SelectItem>
+                  <SelectItem value="selezione-vendita">Selezione per Vendita</SelectItem>
+                </SelectContent>
+              </Select>
+              <Input 
+                type="date" 
+                value={dateFilter} 
+                onChange={(e) => setDateFilter(e.target.value)}
+              />
+            </div>
+          </div>
+          
+          {/* Second row of filters */}
+          <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
+            <div className="flex-1 md:flex-none md:w-1/2">
+              <Select value={flupsyFilter} onValueChange={setFlupsyFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtra per FLUPSY" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti i FLUPSY</SelectItem>
+                  {flupsys?.map((flupsy: any) => (
+                    <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                      {flupsy.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            <div className="flex-1 md:flex-none md:w-1/2">
+              <Select value={cycleFilter} onValueChange={setCycleFilter}>
+                <SelectTrigger>
+                  <SelectValue placeholder="Filtra per Ciclo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti i Cicli</SelectItem>
+                  {cycles?.map((cycle: any) => {
+                    const basket = baskets?.find((b: any) => b.id === cycle.basketId);
+                    return (
+                      <SelectItem key={cycle.id} value={cycle.id.toString()}>
+                        Ciclo #{cycle.id} - Cesta #{basket?.physicalNumber || '?'}
+                      </SelectItem>
+                    );
+                  })}
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Operations Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
-              <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Data
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Tipologia
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Cesta
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ciclo
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Taglia
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  # Animali
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Peso (g)
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Peso Medio (mg)
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Azioni
-                </th>
-              </tr>
-            </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
-                    Caricamento operazioni...
-                  </td>
-                </tr>
-              ) : filteredOperations.length === 0 ? (
-                <tr>
-                  <td colSpan={9} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
-                    Nessuna operazione trovata
-                  </td>
-                </tr>
-              ) : (
-                filteredOperations.map((op) => (
-                  <tr key={op.id}>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {format(new Date(op.date), 'dd/MM/yyyy')}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getOperationTypeBadge(op.type)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      #{op.basket?.physicalNumber || op.basketId}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      #{op.cycleId}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      {getSizeBadge(op.size)}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {op.animalCount ? op.animalCount.toLocaleString() : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {op.totalWeight ? op.totalWeight.toLocaleString() : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                      {op.animalsPerKg && op.animalsPerKg > 0 ? Math.round(1000000 / op.animalsPerKg) : '-'}
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                      <div className="flex space-x-2">
-                        <Button variant="ghost" size="icon">
-                          <Eye className="h-5 w-5 text-primary" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setSelectedOperation(op);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-5 w-5 text-gray-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            // Duplica l'operazione
-                            const nextDay = addDays(new Date(op.date), 1);
-                            
-                            // Se l'operazione era "prima-attivazione", cambiala in "misura"
-                            const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
-                            
-                            const duplicatedOp = {
-                              ...op,
-                              type: operationType,
-                              date: nextDay,
-                              id: undefined // Rimuovi l'ID per creare una nuova operazione
-                            };
-                            
-                            setSelectedOperation(duplicatedOp);
-                            setIsCreateDialogOpen(true);
-                          }}
-                        >
-                          <Copy className="h-5 w-5 text-indigo-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          onClick={() => {
-                            setSelectedOperation(op);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-5 w-5 text-destructive" />
-                        </Button>
-                      </div>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
+      {/* View Mode Content (Table or Cycles) */}
+      {isLoadingOperations || isLoadingCycles || isLoadingBaskets ? (
+        <div className="bg-white rounded-lg shadow p-8 text-center">
+          <div className="animate-spin w-6 h-6 border-2 border-primary border-t-transparent rounded-full mx-auto mb-2"></div>
+          <p className="text-gray-500">Caricamento dati...</p>
         </div>
-      </div>
+      ) : (
+        viewMode === 'table' ? (
+          // Table View
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200">
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Data
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Tipologia
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Cesta
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Ciclo
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Taglia
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      # Animali
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Peso (g)
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Peso Medio (mg)
+                    </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Azioni
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {filteredOperations.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                        Nessuna operazione trovata
+                      </td>
+                    </tr>
+                  ) : (
+                    filteredOperations.map((op) => (
+                      <tr key={op.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {format(new Date(op.date), 'dd/MM/yyyy')}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getOperationTypeBadge(op.type)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          #{op.basket?.physicalNumber || op.basketId}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          #{op.cycleId}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {getSizeBadge(op.size)}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {op.animalCount ? op.animalCount.toLocaleString() : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {op.totalWeight ? op.totalWeight.toLocaleString() : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {op.animalsPerKg && op.animalsPerKg > 0 ? Math.round(1000000 / op.animalsPerKg) : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
+                            <Button variant="ghost" size="icon">
+                              <Eye className="h-5 w-5 text-primary" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedOperation(op);
+                                setIsEditDialogOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-5 w-5 text-gray-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                // Duplica l'operazione
+                                const nextDay = addDays(new Date(op.date), 1);
+                                
+                                // Se l'operazione era "prima-attivazione", cambiala in "misura"
+                                const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
+                                
+                                const duplicatedOp = {
+                                  ...op,
+                                  type: operationType,
+                                  date: nextDay,
+                                  id: undefined // Rimuovi l'ID per creare una nuova operazione
+                                };
+                                
+                                setSelectedOperation(duplicatedOp);
+                                setIsCreateDialogOpen(true);
+                              }}
+                            >
+                              <Copy className="h-5 w-5 text-indigo-600" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedOperation(op);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-5 w-5 text-destructive" />
+                            </Button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))
+                  )}
+                </tbody>
+              </table>
+            </div>
+          </div>
+        ) : (
+          // Cycles View
+          <div className="space-y-4">
+            {filteredCycleIds.length === 0 ? (
+              <div className="bg-white rounded-lg shadow p-8 text-center">
+                <p className="text-gray-500">Nessun ciclo trovato con i criteri selezionati</p>
+              </div>
+            ) : (
+              filteredCycleIds.map((cycleId) => {
+                const cycle = getCycleDetails(cycleId);
+                const basket = baskets?.find((b: any) => b.id === cycle?.basketId);
+                const cycleOps = operationsByCycle[cycleId.toString()] || [];
+                
+                return (
+                  <Collapsible 
+                    key={cycleId}
+                    open={expandedCycles.includes(cycleId)}
+                    onOpenChange={() => toggleCycleExpansion(cycleId)}
+                    className="bg-white rounded-lg shadow overflow-hidden"
+                  >
+                    <CollapsibleTrigger asChild>
+                      <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+                        <div className="flex items-center space-x-4">
+                          <div className="flex h-10 w-10 rounded-full bg-blue-100 text-blue-700 items-center justify-center">
+                            <RotateCw className="h-5 w-5" />
+                          </div>
+                          <div>
+                            <h3 className="text-lg font-semibold">Ciclo #{cycleId}</h3>
+                            <p className="text-sm text-gray-500">
+                              Cesta #{basket?.physicalNumber || '?'} • 
+                              {cycle?.state === 'active' ? (
+                                <span className="text-emerald-600"> Attivo</span>
+                              ) : (
+                                <span className="text-gray-500"> Chiuso</span>
+                              )} • 
+                              {cycle && 
+                                ` Inizio: ${format(new Date(cycle.startDate), 'dd/MM/yyyy')}`
+                              }
+                              {cycle && cycle.endDate && 
+                                ` • Fine: ${format(new Date(cycle.endDate), 'dd/MM/yyyy')}`
+                              }
+                            </p>
+                          </div>
+                        </div>
+                        <div className="flex items-center">
+                          <Badge className="mr-4">
+                            {cycleOps.length} operazioni
+                          </Badge>
+                          {expandedCycles.includes(cycleId) ? (
+                            <ArrowUp className="h-5 w-5 text-gray-500" />
+                          ) : (
+                            <ArrowDown className="h-5 w-5 text-gray-500" />
+                          )}
+                        </div>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <Separator />
+                      <div className="p-4 space-y-2">
+                        {cycleOps.map((op: any, index: number) => {
+                          // Find previous operation to calculate growth
+                          const prevOp = index > 0 ? cycleOps[index - 1] : null;
+                          const weightChange = prevOp && op.animalsPerKg && prevOp.animalsPerKg 
+                            ? Math.round((1000000 / op.animalsPerKg) - (1000000 / prevOp.animalsPerKg)) 
+                            : null;
+                          const daysDiff = prevOp 
+                            ? Math.round((new Date(op.date).getTime() - new Date(prevOp.date).getTime()) / (1000 * 60 * 60 * 24))
+                            : null;
+                            
+                          return (
+                            <Card key={op.id} className={`border-l-4 ${index === 0 ? 'border-l-purple-500' : op.type.includes('vendita') ? 'border-l-green-500' : 'border-l-blue-500'}`}>
+                              <CardHeader className="py-3 px-4">
+                                <div className="flex justify-between items-center">
+                                  <div className="flex items-center space-x-3">
+                                    <div>
+                                      <h4 className="text-base font-medium flex items-center">
+                                        {getOperationTypeBadge(op.type)}
+                                        <span className="ml-2 text-gray-600">
+                                          {format(new Date(op.date), 'dd/MM/yyyy')}
+                                        </span>
+                                      </h4>
+                                      {daysDiff && daysDiff > 0 && (
+                                        <p className="text-xs text-gray-500 mt-1">
+                                          {daysDiff} {daysDiff === 1 ? 'giorno' : 'giorni'} dall'ultima operazione
+                                        </p>
+                                      )}
+                                    </div>
+                                  </div>
+                                  <div className="flex space-x-2">
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => {
+                                        setSelectedOperation(op);
+                                        setIsEditDialogOpen(true);
+                                      }}
+                                    >
+                                      <Pencil className="h-4 w-4 text-gray-600" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      onClick={() => {
+                                        // Duplica l'operazione
+                                        const nextDay = addDays(new Date(op.date), 1);
+                                        const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
+                                        
+                                        const duplicatedOp = {
+                                          ...op,
+                                          type: operationType,
+                                          date: nextDay,
+                                          id: undefined
+                                        };
+                                        
+                                        setSelectedOperation(duplicatedOp);
+                                        setIsCreateDialogOpen(true);
+                                      }}
+                                    >
+                                      <Copy className="h-4 w-4 text-indigo-600" />
+                                    </Button>
+                                  </div>
+                                </div>
+                              </CardHeader>
+                              <CardContent className="py-2 px-4">
+                                <div className="grid grid-cols-2 md:grid-cols-4 gap-3 text-sm">
+                                  {op.animalsPerKg && (
+                                    <div>
+                                      <p className="text-gray-500">Taglia</p>
+                                      <div className="flex items-center">
+                                        {getSizeBadge(op.size)}
+                                        <span className="ml-2">{Math.round(1000000 / op.animalsPerKg)} mg</span>
+                                      </div>
+                                    </div>
+                                  )}
+                                  
+                                  {weightChange && (
+                                    <div>
+                                      <p className="text-gray-500">Crescita</p>
+                                      <p className={weightChange > 0 ? 'text-emerald-600' : weightChange < 0 ? 'text-red-500' : 'text-gray-600'}>
+                                        {weightChange > 0 ? '+' : ''}{weightChange} mg
+                                        {daysDiff && <span className="text-xs ml-1">
+                                          ({(weightChange / daysDiff).toFixed(1)} mg/g)
+                                        </span>}
+                                      </p>
+                                    </div>
+                                  )}
+                                  
+                                  {op.animalCount && (
+                                    <div>
+                                      <p className="text-gray-500">Animali</p>
+                                      <p>{op.animalCount.toLocaleString()}</p>
+                                    </div>
+                                  )}
+                                  
+                                  {op.totalWeight && (
+                                    <div>
+                                      <p className="text-gray-500">Peso totale</p>
+                                      <p>{op.totalWeight.toLocaleString()} g</p>
+                                    </div>
+                                  )}
+                                </div>
+                                
+                                {op.notes && (
+                                  <div className="mt-3 text-sm">
+                                    <p className="text-gray-500">Note</p>
+                                    <p>{op.notes}</p>
+                                  </div>
+                                )}
+                              </CardContent>
+                            </Card>
+                          );
+                        })}
+                      </div>
+                    </CollapsibleContent>
+                  </Collapsible>
+                );
+              })
+            )}
+          </div>
+        )
+      )}
 
       {/* Create Operation Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={(open) => {
