@@ -150,6 +150,15 @@ export default function OperationForm({
       return;
     }
     
+    // Verifica se il cestello è disponibile (senza ciclo attivo) o attivo
+    const selectedBasket = selectedBasketState;
+    
+    // Se il cestello è disponibile, non applicare la restrizione della data
+    // (permettiamo più operazioni nello stesso giorno per cestelli disponibili)
+    if (selectedBasket?.state === 'available') {
+      return;
+    }
+    
     // Converti la data selezionata nel form a un formato YYYY-MM-DD per il confronto
     const selectedDate = watchDate instanceof Date 
       ? watchDate.toISOString().split('T')[0] 
@@ -166,11 +175,11 @@ export default function OperationForm({
     });
     
     if (operationOnSameDate) {
-      setOperationDateError("Non è possibile registrare più di un'operazione al giorno per lo stesso cestello.");
+      setOperationDateError("Non è possibile registrare più di un'operazione al giorno per lo stesso cestello con ciclo attivo.");
     } else {
       setOperationDateError(null);
     }
-  }, [watchBasketId, watchDate, basketOperations]);
+  }, [watchBasketId, watchDate, basketOperations, selectedBasketState]);
   
   // Calculate SGR when basket and cycle are selected
   useEffect(() => {
