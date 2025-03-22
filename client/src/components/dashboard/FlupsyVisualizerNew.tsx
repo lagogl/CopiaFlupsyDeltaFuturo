@@ -143,6 +143,39 @@ export default function FlupsyVisualizerNew() {
     return operations.filter(op => op.basketId === basketId);
   };
   
+  // Function to get SGR data for a month
+  const getSgrForMonth = (date: Date) => {
+    if (!sgrData || sgrData.length === 0) return null;
+    
+    const month = format(date, 'MMMM', { locale: it }).toLowerCase();
+    return sgrData.find((sgr: any) => sgr.month.toLowerCase() === month);
+  };
+  
+  // Function to calculate theoretical growth based on SGR
+  const calculateTheoreticalGrowth = (date: Date, days: number) => {
+    const sgrInfo = getSgrForMonth(date);
+    if (!sgrInfo) return null;
+    
+    // La percentuale SGR è mensile, calcoliamo quella giornaliera
+    const dailyPercentage = sgrInfo.percentage / 30;
+    
+    // Calcola la percentuale di crescita teorica per il numero di giorni
+    const theoreticalGrowthPercent = dailyPercentage * days;
+    
+    return {
+      sgrMonth: sgrInfo.month,
+      sgrPercentage: sgrInfo.percentage,
+      sgrDailyPercentage: dailyPercentage,
+      theoreticalGrowthPercent
+    };
+  };
+  
+  // Function to calculate actual growth between two measurements
+  const calculateActualGrowth = (currentWeight: number, previousWeight: number): number => {
+    if (!currentWeight || !previousWeight || previousWeight === 0) return 0;
+    return ((currentWeight - previousWeight) / previousWeight) * 100;
+  };
+  
   // Helper function to get the color class for a basket
   const getBasketColorClass = (basket: Basket | undefined): string => {
     if (!basket) return 'bg-gray-50 border-dashed';
@@ -209,14 +242,63 @@ export default function FlupsyVisualizerNew() {
     // Get the latest operation
     const latestOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
     
-    // Calculate average weight if available
-    const averageWeight = latestOperation?.animalsPerKg ? Math.round(1000000 / latestOperation.animalsPerKg) : null;
+    // Calculate average weight if available for the latest operation
+    const currentAverageWeight = latestOperation?.animalsPerKg ? Math.round(1000000 / latestOperation.animalsPerKg) : null;
     
     // Determine target size based on weight
-    const targetSize = averageWeight ? getTargetSizeForWeight(averageWeight) : null;
+    const targetSize = currentAverageWeight ? getTargetSizeForWeight(currentAverageWeight) : null;
+    
+    // Get growth performance data
+    let growthPerformanceData = null;
+    
+    // We need at least 2 measurement operations to calculate growth
+    const measurementOperations = sortedOperations.filter(op => 
+      op.type === 'misura' && op.animalsPerKg !== null && op.animalsPerKg > 0
+    );
+    
+    if (measurementOperations.length >= 2) {
+      // Get the two most recent measurement operations
+      const currentMeasurement = measurementOperations[0];
+      const previousMeasurement = measurementOperations[1];
+      
+      // Calculate weights
+      const currentWeight = currentMeasurement.animalsPerKg ? Math.round(1000000 / currentMeasurement.animalsPerKg) : null;
+      const previousWeight = previousMeasurement.animalsPerKg ? Math.round(1000000 / previousMeasurement.animalsPerKg) : null;
+      
+      if (currentWeight && previousWeight) {
+        // Calculate days between measurements
+        const daysBetweenMeasurements = differenceInDays(
+          new Date(currentMeasurement.date),
+          new Date(previousMeasurement.date)
+        );
+        
+        if (daysBetweenMeasurements > 0) {
+          // Calculate actual growth percentage
+          const actualGrowthPercent = calculateActualGrowth(currentWeight, previousWeight);
+          
+          // Calculate theoretical growth based on SGR
+          const theoreticalGrowth = calculateTheoreticalGrowth(
+            new Date(previousMeasurement.date),
+            daysBetweenMeasurements
+          );
+          
+          if (theoreticalGrowth) {
+            growthPerformanceData = {
+              actualGrowthPercent,
+              targetGrowthPercent: theoreticalGrowth.theoreticalGrowthPercent,
+              daysBetweenMeasurements,
+              currentAverageWeight: currentWeight,
+              previousAverageWeight: previousWeight,
+              sgrMonth: theoreticalGrowth.sgrMonth,
+              sgrDailyPercentage: theoreticalGrowth.sgrDailyPercentage
+            };
+          }
+        }
+      }
+    }
     
     return (
-      <div className="w-60 p-2">
+      <div className="w-64 p-2">
         <div className="font-bold text-lg mb-1">Cestello #{basket.physicalNumber}</div>
         <div className="text-sm mb-2">
           <span className="text-muted-foreground">Stato: </span>
@@ -244,9 +326,9 @@ export default function FlupsyVisualizerNew() {
             </div>
             
             {latestOperation.animalsPerKg && (
-              <div className="text-sm">
+              <div className="text-sm mb-2">
                 <span className="text-muted-foreground">Peso medio: </span>
-                <span className="font-medium">{averageWeight} mg</span>
+                <span className="font-medium">{currentAverageWeight} mg</span>
                 {targetSize && (
                   <div className="text-xs font-medium mt-1">
                     Taglia target: <span className="font-bold">{targetSize.code}</span> ({targetSize.name})
@@ -255,6 +337,22 @@ export default function FlupsyVisualizerNew() {
               </div>
             )}
           </>
+        )}
+        
+        {/* Growth Performance Indicator */}
+        {growthPerformanceData && (
+          <div className="mt-2">
+            <div className="text-sm font-medium mb-1">Performance di crescita:</div>
+            <GrowthPerformanceIndicator
+              actualGrowthPercent={growthPerformanceData.actualGrowthPercent}
+              targetGrowthPercent={growthPerformanceData.targetGrowthPercent}
+              daysBetweenMeasurements={growthPerformanceData.daysBetweenMeasurements}
+              currentAverageWeight={growthPerformanceData.currentAverageWeight}
+              previousAverageWeight={growthPerformanceData.previousAverageWeight}
+              sgrMonth={growthPerformanceData.sgrMonth}
+              sgrDailyPercentage={growthPerformanceData.sgrDailyPercentage}
+            />
+          </div>
         )}
       </div>
     );
