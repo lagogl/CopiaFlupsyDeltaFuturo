@@ -50,6 +50,14 @@ export default function GrowthPredictionChart({
     worst: 30 // 30% peggiore del teorico
   }
 }: GrowthPredictionChartProps) {
+  // Formato per peso e date
+  const formatDate = (date: Date) => {
+    return new Intl.DateTimeFormat('it-IT', { 
+      day: '2-digit', 
+      month: '2-digit' 
+    }).format(date);
+  };
+  
   // Converti SGR mensile in giornaliero
   const dailySgrPercentage = theoreticalSgrMonthlyPercentage / 30;
   const dailySgr = dailySgrPercentage / 100;
@@ -89,14 +97,6 @@ export default function GrowthPredictionChart({
       ...(realWeight && { real: parseFloat(realWeight.toFixed(1)) })
     });
   }
-
-  // Formato per peso e date
-  const formatDate = (date: Date) => {
-    return new Intl.DateTimeFormat('it-IT', { 
-      day: '2-digit', 
-      month: '2-digit' 
-    }).format(date);
-  };
   
   // Configurazione dei target di peso
   const targetWeights = [

@@ -938,6 +938,170 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to create SGR" });
     }
   });
+  
+  app.patch("/api/sgr/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid SGR ID" });
+      }
+
+      // Verify the SGR exists
+      const sgr = await storage.getSgr(id);
+      if (!sgr) {
+        return res.status(404).json({ message: "SGR not found" });
+      }
+      
+      // Parse and validate the update data
+      const updateSchema = z.object({
+        percentage: z.number().optional(),
+        dailyPercentage: z.number().nullable().optional(),
+        calculatedFromReal: z.boolean().nullable().optional()
+      });
+
+      const parsedData = updateSchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+      
+      const updatedSgr = await storage.updateSgr(id, parsedData.data);
+      res.json(updatedSgr);
+    } catch (error) {
+      console.error("Error updating SGR:", error);
+      res.status(500).json({ message: "Failed to update SGR" });
+    }
+  });
+  
+  // === SGR Giornalieri routes ===
+  app.get("/api/sgr-giornalieri", async (req, res) => {
+    try {
+      const sgrGiornalieri = await storage.getSgrGiornalieri();
+      res.json(sgrGiornalieri);
+    } catch (error) {
+      console.error("Error fetching SGR giornalieri:", error);
+      res.status(500).json({ message: "Failed to fetch SGR giornalieri" });
+    }
+  });
+  
+  app.get("/api/sgr-giornalieri/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid SGR giornaliero ID" });
+      }
+
+      const sgrGiornaliero = await storage.getSgrGiornaliero(id);
+      if (!sgrGiornaliero) {
+        return res.status(404).json({ message: "SGR giornaliero not found" });
+      }
+
+      res.json(sgrGiornaliero);
+    } catch (error) {
+      console.error("Error fetching SGR giornaliero:", error);
+      res.status(500).json({ message: "Failed to fetch SGR giornaliero" });
+    }
+  });
+  
+  app.get("/api/sgr-giornalieri/range", async (req, res) => {
+    try {
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "Both startDate and endDate are required" });
+      }
+      
+      const sgrGiornalieri = await storage.getSgrGiornalieriByDateRange(
+        new Date(startDate), 
+        new Date(endDate)
+      );
+      
+      res.json(sgrGiornalieri);
+    } catch (error) {
+      console.error("Error fetching SGR giornalieri by date range:", error);
+      res.status(500).json({ message: "Failed to fetch SGR giornalieri by date range" });
+    }
+  });
+  
+  app.post("/api/sgr-giornalieri", async (req, res) => {
+    try {
+      const parsedData = sgrGiornalieriSchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+
+      const newSgrGiornaliero = await storage.createSgrGiornaliero(parsedData.data);
+      res.status(201).json(newSgrGiornaliero);
+    } catch (error) {
+      console.error("Error creating SGR giornaliero:", error);
+      res.status(500).json({ message: "Failed to create SGR giornaliero" });
+    }
+  });
+  
+  app.patch("/api/sgr-giornalieri/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid SGR giornaliero ID" });
+      }
+
+      // Verify the SGR giornaliero exists
+      const sgrGiornaliero = await storage.getSgrGiornaliero(id);
+      if (!sgrGiornaliero) {
+        return res.status(404).json({ message: "SGR giornaliero not found" });
+      }
+      
+      // Parse and validate the update data
+      const updateSchema = z.object({
+        recordDate: z.coerce.date().optional(),
+        temperature: z.number().nullable().optional(),
+        pH: z.number().nullable().optional(),
+        ammonia: z.number().nullable().optional(),
+        oxygen: z.number().nullable().optional(),
+        salinity: z.number().nullable().optional(),
+        notes: z.string().nullable().optional()
+      });
+
+      const parsedData = updateSchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+      
+      const updatedSgrGiornaliero = await storage.updateSgrGiornaliero(id, parsedData.data);
+      res.json(updatedSgrGiornaliero);
+    } catch (error) {
+      console.error("Error updating SGR giornaliero:", error);
+      res.status(500).json({ message: "Failed to update SGR giornaliero" });
+    }
+  });
+  
+  app.delete("/api/sgr-giornalieri/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid SGR giornaliero ID" });
+      }
+
+      // Verify the SGR giornaliero exists
+      const sgrGiornaliero = await storage.getSgrGiornaliero(id);
+      if (!sgrGiornaliero) {
+        return res.status(404).json({ message: "SGR giornaliero not found" });
+      }
+      
+      const result = await storage.deleteSgrGiornaliero(id);
+      if (result) {
+        res.status(200).json({ message: "SGR giornaliero deleted successfully" });
+      } else {
+        res.status(500).json({ message: "Failed to delete SGR giornaliero" });
+      }
+    } catch (error) {
+      console.error("Error deleting SGR giornaliero:", error);
+      res.status(500).json({ message: "Failed to delete SGR giornaliero" });
+    }
+  });
 
   // === Lot routes ===
   app.get("/api/lots", async (req, res) => {
