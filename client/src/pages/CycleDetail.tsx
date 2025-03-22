@@ -23,7 +23,7 @@ export default function CycleDetail() {
   const [bestVariation, setBestVariation] = useState(20); // default: +20%
   const [worstVariation, setWorstVariation] = useState(30); // default: -30%
   const [isLoadingPrediction, setIsLoadingPrediction] = useState(false);
-  const [growthPrediction, setGrowthPrediction] = useState(null);
+  const [growthPrediction, setGrowthPrediction] = useState<any>(null);
   
   // Fetch cycle details
   const { data: cycle, isLoading: cycleLoading } = useQuery({
@@ -128,17 +128,18 @@ export default function CycleDetail() {
     return 60;
   };
   
-  // Funzione per calcolare le previsioni di crescita
+  // Funzione per calcolare le previsioni di crescita utilizzando l'endpoint specifico per cicli
   const calculateGrowthPrediction = async () => {
-    if (!latestOperation?.animalsPerKg) return;
+    if (!cycleId) return;
     
     setIsLoadingPrediction(true);
     try {
-      const currentWeight = Math.round(1000000 / latestOperation.animalsPerKg);
+      // Utilizziamo l'endpoint specifico per cicli che calcolerà automaticamente i pesi
+      // e utilizzerà lo SGR reale o quello mensile appropriato
       const response = await apiRequest('GET', 
-        `/api/growth-prediction?currentWeight=${currentWeight}&sgrPercentage=${getCurrentMonthSgr()}&days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
+        `/api/cycles/${cycleId}/growth-prediction?days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
       );
-      setGrowthPrediction(response.data || {});
+      setGrowthPrediction(response || {});
     } catch (error) {
       console.error('Errore nel calcolo della previsione di crescita:', error);
     } finally {
@@ -411,7 +412,9 @@ export default function CycleDetail() {
               <div>
                 <CardTitle>Previsioni di Crescita</CardTitle>
                 <CardDescription>
-                  Proiezioni di crescita basate su SGR mensile del {getCurrentMonthSgr()}%
+                  {growthPrediction ? 
+                    `Proiezioni basate su SGR ${growthPrediction.sgrPercentage?.toFixed(2)}% (${growthPrediction.realSgr ? 'calcolata' : 'teorica'})` : 
+                    'Proiezioni di crescita basate su SGR mensile'}
                 </CardDescription>
               </div>
               {latestOperation?.animalsPerKg && (
@@ -429,7 +432,7 @@ export default function CycleDetail() {
                   ) : (
                     <>
                       <BarChart className="h-4 w-4 mr-2" />
-                      Genera Previsioni
+                      {growthPrediction ? 'Aggiorna Previsioni' : 'Genera Previsioni'}
                     </>
                   )}
                 </Button>
@@ -457,13 +460,14 @@ export default function CycleDetail() {
                   <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
                     <div className="lg:col-span-3">
                       <GrowthPredictionChart 
-                        currentWeight={Math.round(1000000 / latestOperation.animalsPerKg)}
-                        measurementDate={new Date(latestOperation.date)}
-                        theoreticalSgrMonthlyPercentage={getCurrentMonthSgr()}
-                        projectionDays={projectionDays}
+                        currentWeight={growthPrediction.currentWeight}
+                        measurementDate={new Date(growthPrediction.lastMeasurementDate || latestOperation.date)}
+                        theoreticalSgrMonthlyPercentage={growthPrediction.sgrPercentage}
+                        realSgrMonthlyPercentage={growthPrediction.realSgr}
+                        projectionDays={growthPrediction.days || projectionDays}
                         variationPercentages={{
-                          best: bestVariation,
-                          worst: worstVariation
+                          best: growthPrediction.bestVariation || bestVariation,
+                          worst: growthPrediction.worstVariation || worstVariation
                         }}
                       />
                     </div>
@@ -532,10 +536,10 @@ export default function CycleDetail() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-green-700">
-                          {Math.round(1000000 / latestOperation.animalsPerKg * (1 + (getCurrentMonthSgr() * (1 + bestVariation / 100) / 100) * projectionDays / 30))} mg
+                          {growthPrediction.summary?.finalBestWeight || "N/A"} mg
                         </div>
                         <p className="text-xs text-green-600 mt-1">
-                          In {projectionDays} giorni con SGR +{bestVariation}%
+                          In {growthPrediction.days || projectionDays} giorni con SGR +{growthPrediction.bestVariation || bestVariation}%
                         </p>
                       </CardContent>
                     </Card>
@@ -546,10 +550,10 @@ export default function CycleDetail() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold">
-                          {Math.round(1000000 / latestOperation.animalsPerKg * (1 + (getCurrentMonthSgr() / 100) * projectionDays / 30))} mg
+                          {growthPrediction.summary?.finalTheoreticalWeight || "N/A"} mg
                         </div>
                         <p className="text-xs text-muted-foreground mt-1">
-                          In {projectionDays} giorni con SGR standard
+                          In {growthPrediction.days || projectionDays} giorni con SGR {growthPrediction.sgrPercentage?.toFixed(1) || "standard"}%
                         </p>
                       </CardContent>
                     </Card>
@@ -560,10 +564,10 @@ export default function CycleDetail() {
                       </CardHeader>
                       <CardContent>
                         <div className="text-2xl font-bold text-red-700">
-                          {Math.round(1000000 / latestOperation.animalsPerKg * (1 + (getCurrentMonthSgr() * (1 - worstVariation / 100) / 100) * projectionDays / 30))} mg
+                          {growthPrediction.summary?.finalWorstWeight || "N/A"} mg
                         </div>
                         <p className="text-xs text-red-600 mt-1">
-                          In {projectionDays} giorni con SGR -{worstVariation}%
+                          In {growthPrediction.days || projectionDays} giorni con SGR -{growthPrediction.worstVariation || worstVariation}%
                         </p>
                       </CardContent>
                     </Card>
