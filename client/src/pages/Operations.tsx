@@ -516,10 +516,12 @@ export default function Operations() {
                             <div>
                               <span className="font-medium text-indigo-600">{op.lot.name}</span>
                               <span className="text-xs block text-gray-500">
-                                {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
+                                Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
                               </span>
                             </div>
-                          ) : '-'}
+                          ) : (
+                            <span className="text-gray-400 italic">Nessun lotto</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {getSizeBadge(op.size)}
@@ -751,17 +753,20 @@ export default function Operations() {
                                     </div>
                                   )}
                                   
-                                  {op.lot && (
-                                    <div>
-                                      <p className="text-gray-500">Lotto</p>
+                                  {/* Mostra sempre la sezione Lotto, con un placeholder se non esiste */}
+                                  <div>
+                                    <p className="text-gray-500">Lotto</p>
+                                    {op.lot ? (
                                       <p className="font-medium text-indigo-600">
                                         {op.lot.name}
                                         <span className="text-xs text-gray-500 block">
-                                          {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
+                                          Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
                                         </span>
                                       </p>
-                                    </div>
-                                  )}
+                                    ) : (
+                                      <p className="text-gray-400 italic">Nessun lotto</p>
+                                    )}
+                                  </div>
                                 </div>
                                 
                                 {op.notes && (
