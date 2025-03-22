@@ -144,12 +144,18 @@ export default function FlupsyVisualizer() {
   const sxRow = filteredBaskets.filter(b => b.row === 'SX');
   const noRowAssigned = filteredBaskets.filter(b => b.row === null || b.row === undefined);
   
-  // Helper function to get basket by position for a specific row
-  const getBasketByPosition = (row: 'DX' | 'SX', position: number): Basket | undefined => {
+  // Helper function to get baskets by position for a specific row
+  const getBasketsByPosition = (row: 'DX' | 'SX', position: number): Basket[] => {
     if (row === 'DX') {
-      return dxRow.find(b => b.position === position);
+      return dxRow.filter(b => b.position === position);
     }
-    return sxRow.find(b => b.position === position);
+    return sxRow.filter(b => b.position === position);
+  };
+  
+  // Helper function to get basket by position for a specific row (first one found)
+  const getBasketByPosition = (row: 'DX' | 'SX', position: number): Basket | undefined => {
+    const baskets = getBasketsByPosition(row, position);
+    return baskets.length > 0 ? baskets[0] : undefined;
   };
   
   // Helper function to get cycle for a basket
@@ -420,7 +426,8 @@ export default function FlupsyVisualizer() {
                     <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
                       {Array.from({ length: maxPositions }).map((_, i) => {
                         const position = i + 1;
-                        const basket = getBasketByPosition('DX', position);
+                        const baskets = getBasketsByPosition('DX', position);
+                        const basket = baskets.length > 0 ? baskets[0] : undefined;
                         
                         return (
                           <TooltipProvider key={`dx-${position}`}>
@@ -436,6 +443,11 @@ export default function FlupsyVisualizer() {
                                   {basket && (
                                     <div className="font-semibold mt-1">
                                       #{basket.physicalNumber}
+                                      {selectedTab === "all" && flupsys && (
+                                        <div className="text-[10px] text-gray-500 truncate">
+                                          {flupsys.find(f => f.id === basket.flupsyId)?.name || ""}
+                                        </div>
+                                      )}
                                       {basket.currentCycleId && (
                                         <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
                                           Ciclo {basket.currentCycleId}
@@ -443,10 +455,31 @@ export default function FlupsyVisualizer() {
                                       )}
                                     </div>
                                   )}
+                                  {baskets.length > 1 && selectedTab === "all" && (
+                                    <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+                                      +{baskets.length - 1}
+                                    </div>
+                                  )}
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent side="top" align="center" className="z-50">
-                                {renderTooltipContent(basket)}
+                                {baskets.length > 1 && selectedTab === "all" ? (
+                                  <div className="w-60 p-2">
+                                    <div className="font-bold text-sm mb-2">Posizione {position} - Più cestelli presenti</div>
+                                    <div className="space-y-2">
+                                      {baskets.map(b => (
+                                        <div key={b.id} className="text-xs p-1 border-b">
+                                          <div className="font-semibold">Cestello #{b.physicalNumber}</div>
+                                          <div className="text-gray-500">
+                                            {flupsys?.find(f => f.id === b.flupsyId)?.name || ""}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  renderTooltipContent(basket)
+                                )}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -465,7 +498,8 @@ export default function FlupsyVisualizer() {
                     <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
                       {Array.from({ length: maxPositions }).map((_, i) => {
                         const position = i + 1;
-                        const basket = getBasketByPosition('SX', position);
+                        const baskets = getBasketsByPosition('SX', position);
+                        const basket = baskets.length > 0 ? baskets[0] : undefined;
                         
                         return (
                           <TooltipProvider key={`sx-${position}`}>
@@ -481,6 +515,11 @@ export default function FlupsyVisualizer() {
                                   {basket && (
                                     <div className="font-semibold mt-1">
                                       #{basket.physicalNumber}
+                                      {selectedTab === "all" && flupsys && (
+                                        <div className="text-[10px] text-gray-500 truncate">
+                                          {flupsys.find(f => f.id === basket.flupsyId)?.name || ""}
+                                        </div>
+                                      )}
                                       {basket.currentCycleId && (
                                         <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
                                           Ciclo {basket.currentCycleId}
@@ -488,10 +527,31 @@ export default function FlupsyVisualizer() {
                                       )}
                                     </div>
                                   )}
+                                  {baskets.length > 1 && selectedTab === "all" && (
+                                    <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
+                                      +{baskets.length - 1}
+                                    </div>
+                                  )}
                                 </div>
                               </TooltipTrigger>
                               <TooltipContent side="top" align="center" className="z-50">
-                                {renderTooltipContent(basket)}
+                                {baskets.length > 1 && selectedTab === "all" ? (
+                                  <div className="w-60 p-2">
+                                    <div className="font-bold text-sm mb-2">Posizione {position} - Più cestelli presenti</div>
+                                    <div className="space-y-2">
+                                      {baskets.map(b => (
+                                        <div key={b.id} className="text-xs p-1 border-b">
+                                          <div className="font-semibold">Cestello #{b.physicalNumber}</div>
+                                          <div className="text-gray-500">
+                                            {flupsys?.find(f => f.id === b.flupsyId)?.name || ""}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                ) : (
+                                  renderTooltipContent(basket)
+                                )}
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
@@ -521,6 +581,11 @@ export default function FlupsyVisualizer() {
                             } cursor-pointer hover:shadow-md transition-shadow`}
                           >
                             <div>Cesta #{basket.physicalNumber}</div>
+                            {selectedTab === "all" && flupsys && (
+                              <div className="text-[10px] text-gray-500 truncate">
+                                {flupsys.find(f => f.id === basket.flupsyId)?.name || ""}
+                              </div>
+                            )}
                             <div className="mt-1 text-gray-500">
                               {basket.state === 'active' ? 'Attiva' : 'Disponibile'}
                             </div>
