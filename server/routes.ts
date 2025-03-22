@@ -1605,7 +1605,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Calcola il peso medio attuale
-      const currentWeight = Math.round(1000 / lastMeasurement.animalsPerKg); // Peso in mg
+      console.log(`DEBUG: Calcolo peso - animalsPerKg: ${lastMeasurement.animalsPerKg}`);
+      const currentWeight = lastMeasurement.animalsPerKg > 0 
+        ? Math.round(1000 / lastMeasurement.animalsPerKg) // Peso in mg
+        : 0;
+      console.log(`DEBUG: Peso calcolato: ${currentWeight} mg`);
       
       // Ottiene l'SGR mensile corretto per il periodo (prende quello del database o usa quello calcolato)
       let sgrPercentage;
