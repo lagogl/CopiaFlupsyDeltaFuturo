@@ -358,14 +358,24 @@ export default function OperationForm({
       
       if (missingFields.length > 0) {
         console.error(`Campi obbligatori mancanti: ${missingFields.join(', ')}`);
+        return;
       } else {
         console.log('Tutti i campi obbligatori sono presenti');
         
         // Verifica se cycleId è richiesto in base al tipo di operazione
         if (values.type !== 'prima-attivazione' && !values.cycleId) {
           console.error('Campo cycleId mancante per operazione diversa da prima-attivazione');
+          return;
         } else {
           console.log('Validazione cycleId passata');
+        }
+        
+        // Verifica se lotId è richiesto per Prima Attivazione
+        if (values.type === 'prima-attivazione' && !values.lotId) {
+          console.error('Campo lotId mancante per operazione di Prima Attivazione');
+          return;
+        } else {
+          console.log('Validazione lotId passata');
         }
       }
       
