@@ -98,8 +98,7 @@ export default function GrowthPerformanceIndicator({
               <Progress 
                 value={Math.min(performanceRatio * 100, 150)} 
                 max={150}
-                className="h-2 w-32" 
-                indicatorClassName={progressColor}
+                className={`h-2 w-32 ${progressColor}`} 
               />
               
               <TooltipProvider>
