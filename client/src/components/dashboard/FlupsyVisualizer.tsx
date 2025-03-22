@@ -3,10 +3,12 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { useQuery } from '@tanstack/react-query';
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Checkbox } from "@/components/ui/checkbox";
+import { Button } from "@/components/ui/button";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLocation } from 'wouter';
 import { format } from 'date-fns';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Tooltip, 
   TooltipContent, 
@@ -19,11 +21,14 @@ import {
   getSizeFromAnimalsPerKg,
   getBasketColorBySize
 } from '@/lib/utils';
+import { CheckSquare, Square, Filter, Eye } from 'lucide-react';
 
 export default function FlupsyVisualizer() {
   const isMobile = useIsMobile();
   const [, navigate] = useLocation();
-  const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(null);
+  const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>([]);
+  const [selectedTab, setSelectedTab] = useState<string>("all");
+  const [showFlupsySelector, setShowFlupsySelector] = useState<boolean>(false);
   
   // Fetch flupsys
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
@@ -45,16 +50,52 @@ export default function FlupsyVisualizer() {
     queryKey: ['/api/cycles'],
   });
   
-  // Select the first FLUPSY by default
-  if (flupsys && flupsys.length > 0 && !selectedFlupsyId) {
-    setSelectedFlupsyId(flupsys[0].id);
+  // Select all FLUPSYs by default
+  if (flupsys && flupsys.length > 0 && selectedFlupsyIds.length === 0) {
+    setSelectedFlupsyIds(flupsys.map((f: any) => f.id));
   }
   
-  // Get the selected FLUPSY
-  const selectedFlupsy = flupsys?.find((f: any) => f.id === selectedFlupsyId);
+  // Handle FLUPSY selection/deselection
+  const toggleFlupsySelection = (id: number) => {
+    if (selectedFlupsyIds.includes(id)) {
+      // If already selected, remove it
+      setSelectedFlupsyIds(selectedFlupsyIds.filter(fId => fId !== id));
+    } else {
+      // If not selected, add it
+      setSelectedFlupsyIds([...selectedFlupsyIds, id]);
+    }
+  };
   
-  // Filter baskets by selected FLUPSY
-  const filteredBaskets = baskets ? baskets.filter((b: any) => b.flupsyId === selectedFlupsyId) : [];
+  // Select all FLUPSYs
+  const selectAllFlupsys = () => {
+    if (!flupsys) return;
+    setSelectedFlupsyIds(flupsys.map((f: any) => f.id));
+  };
+  
+  // Deselect all FLUPSYs
+  const deselectAllFlupsys = () => {
+    setSelectedFlupsyIds([]);
+  };
+  
+  // Get the currently active FLUPSY based on the selected tab
+  const getActiveFlupsyId = (): number | null => {
+    if (selectedTab === "all") {
+      return null; // No specific FLUPSY is active in "all" view
+    }
+    
+    const selectedId = parseInt(selectedTab, 10);
+    return selectedFlupsyIds.includes(selectedId) ? selectedId : null;
+  };
+  
+  const activeFlupsyId = getActiveFlupsyId();
+  const selectedFlupsy = activeFlupsyId ? flupsys?.find((f: any) => f.id === activeFlupsyId) : null;
+  
+  // Filter baskets by selected FLUPSYs
+  const filteredBaskets = baskets ? 
+    (activeFlupsyId ? 
+      baskets.filter((b: any) => b.flupsyId === activeFlupsyId) : 
+      baskets.filter((b: any) => selectedFlupsyIds.includes(b.flupsyId))
+    ) : [];
   
   // Create a grid of baskets
   const maxPositions = Math.max(
@@ -221,38 +262,92 @@ export default function FlupsyVisualizer() {
         </CardDescription>
         
         <div className="pt-2">
-          <div className="space-y-1">
-            <div className="text-sm font-medium">Seleziona unità FLUPSY:</div>
-            <Select 
-              disabled={isLoadingFlupsys} 
-              value={selectedFlupsyId?.toString() || ""}
-              onValueChange={(value) => setSelectedFlupsyId(Number(value))}
+          <div className="flex items-center justify-between mb-4">
+            <div className="text-sm font-medium">Unità FLUPSY selezionate ({selectedFlupsyIds.length}):</div>
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => setShowFlupsySelector(!showFlupsySelector)}
+              className="flex items-center gap-1"
             >
-              <SelectTrigger className="w-full">
-                <SelectValue placeholder="Seleziona unità FLUPSY" />
-              </SelectTrigger>
-              <SelectContent>
-                {flupsys && flupsys.map((flupsy: any) => (
-                  <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
-                    {flupsy.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+              <Filter className="h-4 w-4" />
+              {showFlupsySelector ? 'Nascondi filtri' : 'Mostra filtri'}
+            </Button>
           </div>
+          
+          {showFlupsySelector && (
+            <div className="border rounded-md p-3 mb-4 bg-slate-50">
+              <div className="flex justify-between items-center mb-2">
+                <div className="text-sm font-medium">Seleziona FLUPSY da visualizzare:</div>
+                <div className="flex gap-2">
+                  <Button variant="ghost" size="sm" onClick={selectAllFlupsys} disabled={isLoadingFlupsys}>
+                    <CheckSquare className="h-4 w-4 mr-1" /> Seleziona tutti
+                  </Button>
+                  <Button variant="ghost" size="sm" onClick={deselectAllFlupsys} disabled={isLoadingFlupsys}>
+                    <Square className="h-4 w-4 mr-1" /> Deseleziona tutti
+                  </Button>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
+                {flupsys && flupsys.map((flupsy: any) => (
+                  <div 
+                    key={flupsy.id} 
+                    className={`
+                      flex items-center gap-2 p-2 rounded border 
+                      ${selectedFlupsyIds.includes(flupsy.id) ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}
+                      cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-colors
+                    `}
+                    onClick={() => toggleFlupsySelection(flupsy.id)}
+                  >
+                    <Checkbox 
+                      checked={selectedFlupsyIds.includes(flupsy.id)}
+                      onCheckedChange={() => toggleFlupsySelection(flupsy.id)}
+                      className="mr-1"
+                    />
+                    <div className="flex-1 text-sm">{flupsy.name}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+          
+          <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mb-4">
+            <TabsList className="w-full">
+              <TabsTrigger value="all" className="flex-1">
+                Tutti i FLUPSY ({selectedFlupsyIds.length})
+              </TabsTrigger>
+              
+              {flupsys && selectedFlupsyIds.map((flupsyId: number) => {
+                const flupsy = flupsys.find((f: any) => f.id === flupsyId);
+                if (!flupsy) return null;
+                
+                return (
+                  <TabsTrigger key={flupsyId} value={flupsyId.toString()} className="flex-1">
+                    {flupsy.name}
+                  </TabsTrigger>
+                );
+              })}
+            </TabsList>
+          </Tabs>
         </div>
       </CardHeader>
       
       <CardContent>
         {isLoadingBaskets || isLoadingFlupsys ? (
           <div className="text-center py-4">Caricamento...</div>
-        ) : selectedFlupsy ? (
+        ) : selectedFlupsyIds.length > 0 ? (
           <div className="space-y-8">
             {/* FLUPSY Visualization */}
             <div className="border rounded-lg p-4 relative">
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
-                  <div>Vista lato elica ({selectedFlupsy.name})</div>
+                  <div>
+                    {selectedTab === "all" 
+                      ? "Vista combinata di tutti i FLUPSY selezionati" 
+                      : `Vista lato elica (${selectedFlupsy?.name || ""})`
+                    }
+                  </div>
                   <a href="/flupsy-view" className="text-xs text-blue-600 hover:underline">
                     Vista dettagliata
                   </a>
