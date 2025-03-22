@@ -14,7 +14,7 @@ import {
   lotSchema, 
   operationTypes
 } from "@shared/schema";
-import { format } from "date-fns";
+import { format, addDays } from "date-fns";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 
@@ -1465,6 +1465,176 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching cycles for FLUPSY:", error);
       res.status(500).json({ message: "Failed to fetch cycles for FLUPSY" });
+    }
+  });
+
+  // Growth prediction endpoint - Generic version
+  app.get("/api/growth-prediction", async (req, res) => {
+    try {
+      const currentWeight = parseInt(req.query.currentWeight as string);
+      const sgrPercentage = parseFloat(req.query.sgrPercentage as string);
+      const days = parseInt(req.query.days as string) || 60; // Default 60 days
+      const bestVariation = parseFloat(req.query.bestVariation as string) || 20; // Default +20%
+      const worstVariation = parseFloat(req.query.worstVariation as string) || 30; // Default -30%
+
+      if (isNaN(currentWeight) || isNaN(sgrPercentage)) {
+        return res.status(400).json({ 
+          message: "currentWeight e sgrPercentage sono obbligatori e devono essere numeri validi" 
+        });
+      }
+
+      // Genera i dati di previsione
+      const today = new Date();
+      const dataPoints = [];
+      const dailySgr = sgrPercentage / 30; // SGR giornaliero (% mensile / 30)
+      
+      // Aggiunta del punto iniziale
+      dataPoints.push({
+        date: today,
+        weight: currentWeight,
+        theoretical: currentWeight,
+        best: currentWeight,
+        worst: currentWeight
+      });
+      
+      // Genera punti per ogni giorno nella proiezione
+      for (let i = 1; i <= days; i++) {
+        const date = addDays(today, i);
+        
+        // Calcolo pesi per i diversi scenari
+        const dailyGrowthFactor = dailySgr / 100;
+        const theoreticalWeight = currentWeight * Math.pow(1 + dailyGrowthFactor, i);
+        const bestWeight = currentWeight * Math.pow(1 + dailyGrowthFactor * (1 + bestVariation/100), i);
+        const worstWeight = currentWeight * Math.pow(1 + dailyGrowthFactor * (1 - worstVariation/100), i);
+        
+        dataPoints.push({
+          date: date,
+          weight: null, // Dato reale non disponibile per date future
+          theoretical: Math.round(theoreticalWeight),
+          best: Math.round(bestWeight),
+          worst: Math.round(worstWeight)
+        });
+      }
+      
+      // Calcolo pesi finali per report
+      const finalTheoreticalWeight = dataPoints[dataPoints.length - 1].theoretical;
+      const finalBestWeight = dataPoints[dataPoints.length - 1].best;
+      const finalWorstWeight = dataPoints[dataPoints.length - 1].worst;
+      
+      res.json({
+        currentWeight,
+        sgrPercentage,
+        days,
+        dailySgr,
+        data: dataPoints,
+        summary: {
+          initialWeight: currentWeight,
+          finalTheoreticalWeight,
+          finalBestWeight,
+          finalWorstWeight,
+          theoreticalGrowthPercent: ((finalTheoreticalWeight - currentWeight) / currentWeight) * 100,
+          bestGrowthPercent: ((finalBestWeight - currentWeight) / currentWeight) * 100,
+          worstGrowthPercent: ((finalWorstWeight - currentWeight) / currentWeight) * 100
+        }
+      });
+    } catch (error) {
+      console.error("Errore nel calcolo delle previsioni di crescita:", error);
+      res.status(500).json({ message: "Errore nel calcolo delle previsioni di crescita" });
+    }
+  });
+  
+  // Growth prediction endpoint for cycle - Uses actual cycle operations to calculate predictions
+  app.get("/api/cycles/:id/growth-prediction", async (req, res) => {
+    try {
+      const cycleId = parseInt(req.params.id);
+      if (isNaN(cycleId)) {
+        return res.status(400).json({ message: "ID ciclo non valido" });
+      }
+      
+      const days = parseInt(req.query.days as string) || 60; // Default 60 days
+      const bestVariation = parseFloat(req.query.bestVariation as string) || 20; // Default +20%
+      const worstVariation = parseFloat(req.query.worstVariation as string) || 30; // Default -30%
+      
+      // Recupera il ciclo
+      const cycle = await storage.getCycle(cycleId);
+      if (!cycle) {
+        return res.status(404).json({ message: "Ciclo non trovato" });
+      }
+      
+      // Ottieni le operazioni di tipo "Misura" per questo ciclo, ordinate per data
+      const operations = await storage.getOperationsByCycle(cycleId);
+      const measureOperations = operations
+        .filter(op => op.type === "misura" && op.animalsPerKg !== null)
+        .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      
+      if (measureOperations.length === 0) {
+        return res.status(400).json({ 
+          message: "Nessuna operazione di misura trovata per questo ciclo" 
+        });
+      }
+      
+      // Calcola SGR attuale in base alle misurazioni reali
+      const actualSgr = await storage.calculateActualSgr(measureOperations);
+      
+      // Ottieni l'ultima misurazione
+      const lastMeasurement = measureOperations[measureOperations.length - 1];
+      
+      // Se non c'è un animalsPerKg, non possiamo fare previsioni
+      if (!lastMeasurement.animalsPerKg) {
+        return res.status(400).json({ 
+          message: "L'ultima misurazione non ha un valore valido per animalsPerKg" 
+        });
+      }
+      
+      // Calcola il peso medio attuale
+      const currentWeight = Math.round(1000 / lastMeasurement.animalsPerKg); // Peso in mg
+      
+      // Ottiene l'SGR mensile corretto per il periodo (prende quello del database o usa quello calcolato)
+      let sgrPercentage;
+      const lastMeasurementDate = new Date(lastMeasurement.date);
+      const month = format(lastMeasurementDate, 'MMMM').toLowerCase();
+      
+      // Cerca l'SGR per il mese dalla tabella SGR
+      const monthSgr = await storage.getSgrByMonth(month);
+      
+      if (actualSgr !== null) {
+        // Usa SGR reale calcolato
+        sgrPercentage = actualSgr;
+      } else if (monthSgr) {
+        // Usa SGR teorico dal database
+        sgrPercentage = monthSgr.percentage;
+      } else {
+        // Usa un valore predefinito
+        sgrPercentage = 30; // 30% mensile
+      }
+      
+      // Ottieni dati previsionali usando il storage
+      const predictionData = await storage.calculateGrowthPrediction(
+        currentWeight,
+        lastMeasurementDate,
+        days,
+        sgrPercentage,
+        { best: bestVariation, worst: worstVariation }
+      );
+      
+      // Estendi con dati aggiuntivi
+      predictionData.cycleInfo = {
+        id: cycle.id,
+        startDate: cycle.startDate,
+        endDate: cycle.endDate,
+        state: cycle.state
+      };
+      
+      predictionData.measurements = measureOperations.map(op => ({
+        date: op.date,
+        animalsPerKg: op.animalsPerKg,
+        averageWeight: op.animalsPerKg ? Math.round(1000 / op.animalsPerKg) : null
+      }));
+      
+      res.json(predictionData);
+    } catch (error) {
+      console.error("Errore nel calcolo delle previsioni di crescita per il ciclo:", error);
+      res.status(500).json({ message: "Errore nel calcolo delle previsioni di crescita per il ciclo" });
     }
   });
 

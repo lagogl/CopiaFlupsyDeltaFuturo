@@ -114,6 +114,45 @@ export default function CycleDetail() {
     return format(new Date(dateString), 'dd MMMM yyyy', { locale: it });
   };
   
+  // Funzione per ottenere il valore SGR mensile corrente
+  const getCurrentMonthSgr = () => {
+    const today = new Date();
+    const monthNames = [
+      'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+      'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
+    ];
+    const currentMonthName = monthNames[today.getMonth()];
+    
+    // In un'applicazione reale, qui recupereremmo il valore SGR dal backend
+    // Per ora restituiamo un valore predefinito del 60%
+    return 60;
+  };
+  
+  // Funzione per calcolare le previsioni di crescita
+  const calculateGrowthPrediction = async () => {
+    if (!latestOperation?.animalsPerKg) return;
+    
+    setIsLoadingPrediction(true);
+    try {
+      const currentWeight = Math.round(1000000 / latestOperation.animalsPerKg);
+      const response = await apiRequest('GET', 
+        `/api/growth-prediction?currentWeight=${currentWeight}&sgrPercentage=${getCurrentMonthSgr()}&days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
+      );
+      setGrowthPrediction(response.data || {});
+    } catch (error) {
+      console.error('Errore nel calcolo della previsione di crescita:', error);
+    } finally {
+      setIsLoadingPrediction(false);
+    }
+  };
+
+  // Effetto per caricare automaticamente le previsioni di crescita all'apertura della scheda statistiche
+  useEffect(() => {
+    if (activeTab === 'stats' && latestOperation?.animalsPerKg && !growthPrediction && !isLoadingPrediction) {
+      calculateGrowthPrediction();
+    }
+  }, [activeTab, latestOperation, growthPrediction, isLoadingPrediction]);
+  
   return (
     <div className="container mx-auto px-4 py-8">
       {/* Header with navigation */}
@@ -368,17 +407,169 @@ export default function CycleDetail() {
         
         <TabsContent value="stats" className="mt-6">
           <Card>
-            <CardHeader>
-              <CardTitle>Statistiche del Ciclo</CardTitle>
-              <CardDescription>
-                Andamento della crescita e altre metriche
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[300px] flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <LineChart className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                <p>Le statistiche dettagliate saranno disponibili presto</p>
+            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
+              <div>
+                <CardTitle>Previsioni di Crescita</CardTitle>
+                <CardDescription>
+                  Proiezioni di crescita basate su SGR mensile del {getCurrentMonthSgr()}%
+                </CardDescription>
               </div>
+              {latestOperation?.animalsPerKg && (
+                <Button 
+                  variant="outline"
+                  size="sm"
+                  onClick={calculateGrowthPrediction}
+                  disabled={isLoadingPrediction}
+                >
+                  {isLoadingPrediction ? (
+                    <>
+                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                      Calcolo...
+                    </>
+                  ) : (
+                    <>
+                      <BarChart className="h-4 w-4 mr-2" />
+                      Genera Previsioni
+                    </>
+                  )}
+                </Button>
+              )}
+            </CardHeader>
+            <CardContent>
+              {!latestOperation?.animalsPerKg ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <Droplets className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p>Per generare previsioni di crescita, è necessario registrare almeno una misurazione del peso</p>
+                  <Button asChild className="mt-4">
+                    <Link href={`/operations?cycleId=${cycle.id}`}>
+                      <List className="mr-2 h-4 w-4" />
+                      Registra una Misurazione
+                    </Link>
+                  </Button>
+                </div>
+              ) : !growthPrediction ? (
+                <div className="text-center py-12 text-muted-foreground">
+                  <LineChart className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                  <p>Clicca su "Genera Previsioni" per visualizzare le proiezioni di crescita future</p>
+                </div>
+              ) : (
+                <div className="space-y-6">
+                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                    <div className="lg:col-span-3">
+                      <GrowthPredictionChart 
+                        currentWeight={Math.round(1000000 / latestOperation.animalsPerKg)}
+                        measurementDate={new Date(latestOperation.date)}
+                        theoreticalSgrMonthlyPercentage={getCurrentMonthSgr()}
+                        projectionDays={projectionDays}
+                        variationPercentages={{
+                          best: bestVariation,
+                          worst: worstVariation
+                        }}
+                      />
+                    </div>
+                    
+                    <div className="space-y-4">
+                      <div className="bg-white p-4 rounded-lg border">
+                        <h3 className="text-base font-medium mb-3">Parametri</h3>
+                        
+                        <div className="space-y-3">
+                          <div>
+                            <div className="text-sm text-muted-foreground mb-1">
+                              Giorni di proiezione
+                            </div>
+                            <Input
+                              type="number"
+                              min={7}
+                              max={365}
+                              value={projectionDays}
+                              onChange={(e) => setProjectionDays(Number(e.target.value))}
+                            />
+                          </div>
+                          
+                          <div>
+                            <div className="text-sm text-muted-foreground mb-1">
+                              Variazione positiva (%)
+                            </div>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={bestVariation}
+                              onChange={(e) => setBestVariation(Number(e.target.value))}
+                            />
+                          </div>
+                          
+                          <div>
+                            <div className="text-sm text-muted-foreground mb-1">
+                              Variazione negativa (%)
+                            </div>
+                            <Input
+                              type="number"
+                              min={0}
+                              max={100}
+                              value={worstVariation}
+                              onChange={(e) => setWorstVariation(Number(e.target.value))}
+                            />
+                          </div>
+                          
+                          <Button
+                            variant="outline"
+                            className="w-full"
+                            onClick={calculateGrowthPrediction}
+                            disabled={isLoadingPrediction}
+                          >
+                            {isLoadingPrediction ? "Aggiornamento..." : "Aggiorna"}
+                          </Button>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                    <Card className="bg-green-50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-green-700">Scenario Migliore</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-green-700">
+                          {Math.round(1000000 / latestOperation.animalsPerKg * (1 + (getCurrentMonthSgr() * (1 + bestVariation / 100) / 100) * projectionDays / 30))} mg
+                        </div>
+                        <p className="text-xs text-green-600 mt-1">
+                          In {projectionDays} giorni con SGR +{bestVariation}%
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card>
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-primary">Previsione Standard</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold">
+                          {Math.round(1000000 / latestOperation.animalsPerKg * (1 + (getCurrentMonthSgr() / 100) * projectionDays / 30))} mg
+                        </div>
+                        <p className="text-xs text-muted-foreground mt-1">
+                          In {projectionDays} giorni con SGR standard
+                        </p>
+                      </CardContent>
+                    </Card>
+                    
+                    <Card className="bg-red-50">
+                      <CardHeader className="pb-2">
+                        <CardTitle className="text-sm font-medium text-red-700">Scenario Peggiore</CardTitle>
+                      </CardHeader>
+                      <CardContent>
+                        <div className="text-2xl font-bold text-red-700">
+                          {Math.round(1000000 / latestOperation.animalsPerKg * (1 + (getCurrentMonthSgr() * (1 - worstVariation / 100) / 100) * projectionDays / 30))} mg
+                        </div>
+                        <p className="text-xs text-red-600 mt-1">
+                          In {projectionDays} giorni con SGR -{worstVariation}%
+                        </p>
+                      </CardContent>
+                    </Card>
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
         </TabsContent>
