@@ -207,7 +207,12 @@ export function getBasketBorderClass(animalsPerKg: number | null): string {
   
   // Se la taglia è TP-3000 o superiore (animalsPerKg <= 32000), bordo rosso più spesso
   if (animalsPerKg <= 32000) {
-    return 'border-red-500 border-2';
+    return 'border-red-600 border-[3px]';
+  }
+  
+  // Per taglie medie, bordo più spesso
+  if (animalsPerKg <= 80000) {
+    return 'border-2';
   }
   
   // Per taglie piccole, bordo normale

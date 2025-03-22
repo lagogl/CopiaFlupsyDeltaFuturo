@@ -4,7 +4,7 @@ import StatCard from '@/components/dashboard/StatCard';
 import RecentOperations from '@/components/dashboard/RecentOperations';
 import GrowthChart from '@/components/dashboard/GrowthChart';
 import ActiveCycles from '@/components/dashboard/ActiveCycles';
-import FlupsyVisualizer from '@/components/dashboard/FlupsyVisualizerBorderFix';
+import FlupsyVisualizer from '@/components/dashboard/FlupsyVisualizerEnhanced';
 
 export default function Dashboard() {
   // Query for active baskets and cycles
