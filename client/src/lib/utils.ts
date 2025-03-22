@@ -181,19 +181,34 @@ export function getBorderThicknessByWeight(weight: number | null): string {
 }
 
 /**
- * Ottiene il colore del bordo in base alla taglia (peso)
- * @param weight - Peso in mg
+ * Ottiene il colore del bordo in base al numero di animali per kg
+ * @param animalsPerKg - Numero di animali per kg
  * @returns Classe CSS per il colore del bordo
  */
-export function getBorderColorByWeight(weight: number | null): string {
-  if (!weight || weight <= 0) return 'border-slate-200';
+export function getBorderColorByAnimalsPerKg(animalsPerKg: number | null): string {
+  if (!animalsPerKg || animalsPerKg <= 0) return 'border-slate-200';
   
-  // Se la taglia è TP-3000 o superiore (peso > 3000 mg), bordo rosso
-  if (weight >= 3000) {
+  // Se la taglia è TP-3000 o superiore (animalsPerKg <= 32000), bordo rosso
+  if (animalsPerKg <= 32000) {
     return 'border-red-500';
   }
   
   return 'border-slate-200'; // Colore predefinito per taglie inferiori
+}
+
+/**
+ * Ottiene il colore del bordo in base alla taglia (peso)
+ * @param weight - Peso in mg
+ * @returns Classe CSS per il colore del bordo
+ * @deprecated Usa getBorderColorByAnimalsPerKg invece
+ */
+export function getBorderColorByWeight(weight: number | null): string {
+  if (!weight || weight <= 0) return 'border-slate-200';
+  
+  // Convertire il peso in animali per kg
+  const animalsPerKg = weight > 0 ? Math.round(1000000 / weight) : null;
+  
+  return getBorderColorByAnimalsPerKg(animalsPerKg);
 }
 
 /**

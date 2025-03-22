@@ -86,14 +86,15 @@ export default function FlupsyVisualizer() {
   const averageWeight = showOriginalData ? operationDetail.averageWeight : customWeight;
   const animalsPerKg = showOriginalData ? operationDetail.animalsPerKg : (customWeight ? Math.round(1000000 / customWeight) : null);
   
-  // Determine if border should be red (TP-3000 or higher)
-  const isLargeSize = averageWeight !== null && averageWeight >= 3000;
+  // Determine if basket has large animal size (TP-3000 or higher) based on animalsPerKg
+  const isLargeSize = animalsPerKg !== null && animalsPerKg <= 32000;
   
   // Get size properties
   const targetSize = getTargetSizeForWeight(averageWeight || 0);
   const sizeCode = targetSize?.code || null;
   const borderThickness = getBorderThicknessByWeight(averageWeight);
-  const borderColor = getBorderColorByWeight(averageWeight);
+  // Determina il colore del bordo in base al numero di animali per kg
+  const borderColor = animalsPerKg !== null && animalsPerKg <= 32000 ? 'border-red-500' : 'border-slate-200';
   const bgColor = getBasketColorBySize(sizeCode);
   
   return (
@@ -223,7 +224,7 @@ export default function FlupsyVisualizer() {
             </TooltipProvider>
             
             <div className="mt-6 text-sm text-center text-gray-500">
-              <p>Il cestello mostra bordo rosso quando il peso degli animali è ≥ 3000 mg.</p>
+              <p>Il cestello mostra bordo rosso quando il numero di animali per kg è ≤ 32000 (taglia ≥ TP-3000).</p>
               <p>Modifica il peso per testare diverse visualizzazioni.</p>
             </div>
           </div>
