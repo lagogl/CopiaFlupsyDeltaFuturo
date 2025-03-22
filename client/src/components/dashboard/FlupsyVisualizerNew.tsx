@@ -256,7 +256,27 @@ export default function FlupsyVisualizerNew() {
   // Event handler for basket click
   const handleBasketClick = (basket: Basket) => {
     if (!basket) return;
-    navigate(`/baskets/${basket.id}`);
+    
+    if (basket.state === 'active' && basket.currentCycleId) {
+      // Se il cestello è attivo, naviga alla pagina di dettaglio del ciclo corrente
+      navigate(`/cycles/${basket.currentCycleId}`);
+    } else {
+      // Se il cestello è disponibile, trova l'ultimo ciclo chiuso associato a questo cestello
+      const basketCycles = cycles?.filter(cycle => cycle.basketId === basket.id) || [];
+      const latestCycle = basketCycles.length > 0 
+        ? basketCycles.sort((a, b) => 
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+          )[0] 
+        : null;
+      
+      if (latestCycle) {
+        // Se esiste un ciclo chiuso, naviga a quel ciclo
+        navigate(`/cycles/${latestCycle.id}`);
+      } else {
+        // Se non ci sono cicli per questo cestello, mostra la lista dei cestelli
+        navigate('/baskets');
+      }
+    }
   };
 
   // Render a single FLUPSY view
