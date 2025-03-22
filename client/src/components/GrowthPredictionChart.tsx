@@ -58,18 +58,16 @@ export default function GrowthPredictionChart({
     }).format(date);
   };
   
-  // Converti SGR mensile in giornaliero, gestendo il caso in cui sia undefined
+  // Gestiamo il valore SGR (già percentuale giornaliera)
   const safeTheoreticalSgr = theoreticalSgrMonthlyPercentage || 0;
-  const dailySgrPercentage = safeTheoreticalSgr / 30;
-  const dailySgr = dailySgrPercentage / 100;
+  const dailySgr = safeTheoreticalSgr / 100; // Converti da percentuale a decimale
   
   // Calcola i valori giornalieri per scenari migliori/peggiori
   const bestDailySgr = dailySgr * (1 + variationPercentages.best / 100);
   const worstDailySgr = dailySgr * (1 - variationPercentages.worst / 100);
   
   // Calcola la SGR giornaliera reale se disponibile
-  const realDailySgrPercentage = realSgrMonthlyPercentage ? realSgrMonthlyPercentage / 30 : undefined;
-  const realDailySgr = realDailySgrPercentage ? realDailySgrPercentage / 100 : undefined;
+  const realDailySgr = realSgrMonthlyPercentage ? realSgrMonthlyPercentage / 100 : undefined;
 
   // Genera i dati per il grafico
   const data: any[] = [];
@@ -136,7 +134,7 @@ export default function GrowthPredictionChart({
       <CardHeader className="pb-2">
         <CardTitle>Previsione di crescita</CardTitle>
         <CardDescription>
-          Basata su SGR mensile del {theoreticalSgrMonthlyPercentage ? theoreticalSgrMonthlyPercentage.toFixed(1) : "0.0"}% 
+          Basata su SGR giornaliero del {theoreticalSgrMonthlyPercentage ? theoreticalSgrMonthlyPercentage.toFixed(1) : "0.0"}% 
           {realSgrMonthlyPercentage && ` (reale: ${realSgrMonthlyPercentage.toFixed(1)}%)`}
         </CardDescription>
       </CardHeader>

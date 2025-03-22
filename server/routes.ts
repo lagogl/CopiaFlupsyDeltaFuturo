@@ -1486,7 +1486,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Genera i dati di previsione
       const today = new Date();
       const dataPoints = [];
-      const dailySgr = sgrPercentage / 30; // SGR giornaliero (% mensile / 30)
+      const dailySgr = sgrPercentage; // SGR è già un valore giornaliero percentuale
       
       // Aggiunta del punto iniziale
       dataPoints.push({
@@ -1605,7 +1605,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sgrPercentage = monthSgr.percentage;
       } else {
         // Usa un valore predefinito
-        sgrPercentage = 30; // 30% mensile
+        sgrPercentage = 1; // 1% giornaliero
       }
       
       // Ottieni dati previsionali usando il storage

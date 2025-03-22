@@ -469,8 +469,8 @@ export class DbStorage implements IStorage {
     sgrPercentage: number,
     variationPercentages: {best: number, worst: number}
   ): Promise<any> {
-    // Convert SGR from percentage to decimal
-    const dailySgr = sgrPercentage / 30 / 100; // Convert monthly % to daily decimal
+    // Convert SGR from percentage to decimal (SGR è già un valore giornaliero percentuale)
+    const dailySgr = sgrPercentage / 100; // Convert % to decimal
     
     // Calculate best and worst case scenarios
     const bestDailySgr = dailySgr * (1 + variationPercentages.best / 100);
