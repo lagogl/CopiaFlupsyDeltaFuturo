@@ -1,10 +1,11 @@
-import { and, eq, isNull, desc } from 'drizzle-orm';
+import { and, eq, isNull, desc, gte, lte } from 'drizzle-orm';
 import { db } from './db';
 import { 
   Flupsy, InsertFlupsy, flupsys,
   Basket, Cycle, InsertBasket, InsertCycle, InsertLot, InsertOperation, 
   InsertSgr, InsertSize, Lot, Operation, Size, Sgr, baskets, cycles, lots,
-  operations, sgr, sizes, basketPositionHistory, BasketPositionHistory, InsertBasketPositionHistory
+  operations, sgr, sizes, basketPositionHistory, BasketPositionHistory, InsertBasketPositionHistory,
+  SgrGiornaliero, InsertSgrGiornaliero, sgrGiornalieri
 } from '../shared/schema';
 import { IStorage } from './storage';
 
@@ -359,5 +360,150 @@ export class DbStorage implements IStorage {
       .where(eq(basketPositionHistory.id, currentPosition.id))
       .returning();
     return results[0];
+  }
+  
+  // SGR Giornalieri methods
+  async getSgrGiornalieri(): Promise<SgrGiornaliero[]> {
+    return await db.select()
+      .from(sgrGiornalieri)
+      .orderBy(desc(sgrGiornalieri.recordDate));
+  }
+
+  async getSgrGiornaliero(id: number): Promise<SgrGiornaliero | undefined> {
+    const results = await db.select()
+      .from(sgrGiornalieri)
+      .where(eq(sgrGiornalieri.id, id));
+    return results[0];
+  }
+
+  async getSgrGiornalieriByDateRange(startDate: Date, endDate: Date): Promise<SgrGiornaliero[]> {
+    // Convert dates to string format for PostgreSQL compatibility
+    const startDateStr = startDate.toISOString().split('T')[0];
+    const endDateStr = endDate.toISOString().split('T')[0];
+    
+    // Using a different approach to avoid type issues with drizzle
+    // Get all records then filter by date
+    const allRecords = await db.select().from(sgrGiornalieri);
+    
+    // Filter the records in JavaScript
+    return allRecords
+      .filter(record => {
+        const recordDate = new Date(record.recordDate).getTime();
+        return recordDate >= new Date(startDateStr).getTime() && 
+               recordDate <= new Date(endDateStr).getTime();
+      })
+      .sort((a, b) => new Date(b.recordDate).getTime() - new Date(a.recordDate).getTime());
+  }
+
+  async createSgrGiornaliero(sgrGiornaliero: InsertSgrGiornaliero): Promise<SgrGiornaliero> {
+    // Convert date to string format if it's a Date object
+    if (sgrGiornaliero.recordDate && typeof sgrGiornaliero.recordDate === 'object' && 'toISOString' in sgrGiornaliero.recordDate) {
+      sgrGiornaliero.recordDate = sgrGiornaliero.recordDate.toISOString().split('T')[0];
+    }
+    
+    const results = await db.insert(sgrGiornalieri)
+      .values(sgrGiornaliero)
+      .returning();
+    return results[0];
+  }
+
+  async updateSgrGiornaliero(id: number, sgrGiornalieroUpdate: Partial<SgrGiornaliero>): Promise<SgrGiornaliero | undefined> {
+    // Convert date to string format if it's a Date object
+    if (sgrGiornalieroUpdate.recordDate && typeof sgrGiornalieroUpdate.recordDate === 'object' && 'toISOString' in sgrGiornalieroUpdate.recordDate) {
+      sgrGiornalieroUpdate.recordDate = sgrGiornalieroUpdate.recordDate.toISOString().split('T')[0];
+    }
+    
+    const results = await db.update(sgrGiornalieri)
+      .set(sgrGiornalieroUpdate)
+      .where(eq(sgrGiornalieri.id, id))
+      .returning();
+    return results[0];
+  }
+
+  async deleteSgrGiornaliero(id: number): Promise<boolean> {
+    const results = await db.delete(sgrGiornalieri)
+      .where(eq(sgrGiornalieri.id, id))
+      .returning({
+        id: sgrGiornalieri.id
+      });
+    return results.length > 0;
+  }
+  
+  // Growth calculations
+  async calculateActualSgr(operations: Operation[]): Promise<number | null> {
+    // Implementation for calculating the actual SGR based on operations
+    if (operations.length < 2) {
+      return null; // Need at least two measurements to calculate SGR
+    }
+    
+    // Sort operations by date, oldest first
+    operations.sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    // Get first and last measurement
+    const firstMeasurement = operations[0];
+    const lastMeasurement = operations[operations.length - 1];
+    
+    // Check if we have weight data
+    if (!firstMeasurement.averageWeight || !lastMeasurement.averageWeight) {
+      return null;
+    }
+    
+    // Calculate days between measurements
+    const daysDiff = (new Date(lastMeasurement.date).getTime() - new Date(firstMeasurement.date).getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (daysDiff <= 0) {
+      return null;
+    }
+    
+    // Calculate SGR using the formula: SGR = ((ln(Wt) - ln(W0)) / t) * 100
+    // Where Wt is the final weight, W0 is the initial weight, and t is time in days
+    const sgr = ((Math.log(lastMeasurement.averageWeight) - Math.log(firstMeasurement.averageWeight)) / daysDiff) * 100;
+    
+    return sgr;
+  }
+  
+  async calculateGrowthPrediction(
+    currentWeight: number, 
+    measurementDate: Date, 
+    days: number, 
+    sgrPercentage: number,
+    variationPercentages: {best: number, worst: number}
+  ): Promise<any> {
+    // Convert SGR from percentage to decimal
+    const dailySgr = sgrPercentage / 30 / 100; // Convert monthly % to daily decimal
+    
+    // Calculate best and worst case scenarios
+    const bestDailySgr = dailySgr * (1 + variationPercentages.best / 100);
+    const worstDailySgr = dailySgr * (1 - variationPercentages.worst / 100);
+    
+    // Calculate projected weights for each day
+    const projections = [];
+    
+    for (let day = 0; day <= days; day++) {
+      const date = new Date(measurementDate);
+      date.setDate(date.getDate() + day);
+      
+      // Calculate weights using the formula: W(t) = W(0) * e^(SGR * t)
+      const theoreticalWeight = currentWeight * Math.exp(dailySgr * day);
+      const bestWeight = currentWeight * Math.exp(bestDailySgr * day);
+      const worstWeight = currentWeight * Math.exp(worstDailySgr * day);
+      
+      projections.push({
+        day,
+        date: date.toISOString().split('T')[0],
+        theoretical: Math.round(theoreticalWeight),
+        best: Math.round(bestWeight),
+        worst: Math.round(worstWeight)
+      });
+    }
+    
+    return {
+      currentWeight,
+      measurementDate: measurementDate.toISOString().split('T')[0],
+      sgrPercentage,
+      days,
+      variationPercentages,
+      projections
+    };
   }
 }

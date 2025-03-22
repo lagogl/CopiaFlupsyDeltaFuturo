@@ -984,7 +984,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/sgr-giornalieri/:id", async (req, res) => {
+  // Route per recuperare un record specifico di SgrGiornaliero per ID
+  app.get("/api/sgr-giornalieri/by-id/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
@@ -1003,7 +1004,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/sgr-giornalieri/range", async (req, res) => {
+  // Route con parametro specifico "date-range"
+  app.get("/api/sgr-giornalieri/date-range", async (req, res) => {
     try {
       const startDate = req.query.startDate as string;
       const endDate = req.query.endDate as string;
