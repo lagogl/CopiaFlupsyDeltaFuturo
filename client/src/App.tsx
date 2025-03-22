@@ -18,6 +18,7 @@ import Sgr from "@/pages/Sgr";
 import Settings from "@/pages/Settings";
 import Flupsys from "@/pages/Flupsys";
 import FlupsyFullView from "@/pages/FlupsyFullView";
+import TestView from "@/pages/TestView";
 
 function Router() {
   return (
@@ -36,6 +37,7 @@ function Router() {
       <Route path="/sizes" component={Sizes}/>
       <Route path="/sgr" component={Sgr}/>
       <Route path="/settings" component={Settings}/>
+      <Route path="/test" component={TestView}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

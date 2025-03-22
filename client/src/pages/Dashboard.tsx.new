@@ -1,0 +1,124 @@
+import ActiveCycles from "@/components/dashboard/ActiveCycles";
+import FlupsyVisualizerNew from "@/components/dashboard/FlupsyVisualizerNew";
+import GrowthChart from "@/components/dashboard/GrowthChart";
+import RecentOperations from "@/components/dashboard/RecentOperations";
+import StatCard from "@/components/dashboard/StatCard";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { useQuery } from "@tanstack/react-query";
+import { FileSpreadsheet, Fish, ListCheck, ListPlus } from "lucide-react";
+
+export default function Dashboard() {
+  const { data: activeCycles, isLoading: isLoadingActiveCycles } = useQuery<any[]>({
+    queryKey: ['/api/cycles/active'],
+  });
+  
+  const { data: operationsData } = useQuery<any[]>({
+    queryKey: ['/api/operations'],
+  });
+  
+  const { data: cyclesComparisonData } = useQuery<any[]>({
+    queryKey: ['/api/statistics/cycles/comparison'],
+  });
+  
+  // Get recent operations (last 10)
+  const recentOperations = operationsData 
+    ? [...operationsData]
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 10)
+    : [];
+  
+  return (
+    <div className="space-y-6">
+      {/* Quick Stats Cards */}
+      <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-4">
+        <StatCard
+          title="Cestelli Attivi"
+          value={activeCycles ? activeCycles.length : 0}
+          icon={<Fish className="h-6 w-6 text-muted-foreground" />}
+          changeText="+2 nell'ultima settimana"
+          changeType="success"
+        />
+        <StatCard
+          title="Operazioni"
+          value={operationsData ? operationsData.length : 0}
+          icon={<ListCheck className="h-6 w-6 text-muted-foreground" />}
+          changeText="+12 nell'ultimo mese"
+          changeType="success"
+        />
+        <StatCard
+          title="Lotti"
+          value={5}
+          icon={<FileSpreadsheet className="h-6 w-6 text-muted-foreground" />}
+          changeText="2 lotti attivi"
+          changeType="info"
+        />
+        <StatCard
+          title="SGR Medio"
+          value={0.92}
+          icon={<ListPlus className="h-6 w-6 text-muted-foreground" />}
+          changeText="+0.12% rispetto al mese scorso"
+          changeType="warning"
+        />
+      </div>
+
+      {/* FLUPSY Visualizer */}
+      <FlupsyVisualizerNew />
+      
+      {/* Tabs with Active Cycles and Recent Operations */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        {/* Active Cycles */}
+        <Card>
+          <CardHeader className="pb-1">
+            <CardTitle>Cicli Attivi</CardTitle>
+            <CardDescription>
+              Cicli attualmente in corso
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <ActiveCycles activeCycles={activeCycles || []} />
+          </CardContent>
+        </Card>
+        
+        {/* Recent Operations */}
+        <Card>
+          <CardHeader className="pb-1">
+            <CardTitle>Operazioni Recenti</CardTitle>
+            <CardDescription>
+              Ultime operazioni effettuate
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <RecentOperations operations={recentOperations} />
+          </CardContent>
+        </Card>
+      </div>
+      
+      {/* Growth Chart */}
+      <Card>
+        <CardHeader className="pb-1">
+          <CardTitle>Crescita e Performance</CardTitle>
+          <CardDescription>
+            Andamento della crescita negli ultimi mesi
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Tabs defaultValue="growth">
+            <TabsList className="mb-4">
+              <TabsTrigger value="growth">Crescita Media</TabsTrigger>
+              <TabsTrigger value="performance">Performance</TabsTrigger>
+            </TabsList>
+            <TabsContent value="growth">
+              <GrowthChart />
+            </TabsContent>
+            <TabsContent value="performance">
+              <div className="text-center py-8 text-muted-foreground">
+                Dati di performance non ancora disponibili.
+              </div>
+            </TabsContent>
+          </Tabs>
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
