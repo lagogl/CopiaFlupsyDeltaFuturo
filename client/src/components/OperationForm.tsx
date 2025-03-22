@@ -45,6 +45,22 @@ const formSchema = operationSchema.extend({
       });
     }
   }),
+  // Il campo lotId è condizionalmente richiesto per le operazioni di prima attivazione
+  lotId: z.number().nullable().optional().superRefine((val, ctx) => {
+    // Otteniamo il tipo di operazione dalle data dell'oggetto ctx
+    // @ts-ignore - Ignoriamo l'errore TS perché sappiamo che data esiste e contiene type
+    const operationType = ctx.data?.type;
+    
+    // Se l'operazione è di tipo 'prima-attivazione', il lotto è obbligatorio
+    if (operationType === 'prima-attivazione') {
+      if (val === null || val === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Il lotto è obbligatorio per la Prima Attivazione",
+        });
+      }
+    }
+  }),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -241,6 +257,19 @@ export default function OperationForm({
       form.setValue('cycleId', filteredCycles[0].id);
     }
   }, [watchBasketId, filteredCycles, watchCycleId, watchType, form]);
+  
+  // Precompila il lotto per operazioni su cestelli con ciclo attivo
+  useEffect(() => {
+    if (watchBasketId && basketOperations && basketOperations.length > 0 && watchType !== 'prima-attivazione') {
+      // Trova l'operazione di Prima Attivazione per questo cestello
+      const primaAttivazione = basketOperations.find(op => op.type === 'prima-attivazione');
+      
+      if (primaAttivazione && primaAttivazione.lotId) {
+        // Precompila con il lotto dell'operazione di Prima Attivazione
+        form.setValue('lotId', primaAttivazione.lotId);
+      }
+    }
+  }, [watchBasketId, basketOperations, watchType, form]);
 
   // Get operation type options based on basket state
   const allOperationTypes = [
@@ -369,6 +398,13 @@ export default function OperationForm({
     if (!values.basketId || !values.type || !values.date) {
       console.error("Mancano campi obbligatori", { basketId: values.basketId, type: values.type, date: values.date });
       alert("Compila tutti i campi obbligatori: Cesta, Tipo operazione e Data");
+      return;
+    }
+    
+    // Verifica che il lotto sia presente per operazioni di prima attivazione
+    if (values.type === 'prima-attivazione' && !values.lotId) {
+      console.error("Manca il lotto per operazione di Prima Attivazione");
+      alert("Il lotto è obbligatorio per le operazioni di Prima Attivazione");
       return;
     }
     
@@ -822,18 +858,28 @@ export default function OperationForm({
             name="lotId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Lotto</FormLabel>
+                <FormLabel>
+                  Lotto
+                  {watchType === 'prima-attivazione' && (
+                    <span className="ml-2 text-red-500 text-xs">*obbligatorio</span>
+                  )}
+                  {watchType !== 'prima-attivazione' && field.value && (
+                    <span className="ml-2 text-blue-500 text-xs">(precompilato)</span>
+                  )}
+                </FormLabel>
                 <Select 
                   onValueChange={(value) => field.onChange(value && value !== "none" ? Number(value) : null)}
                   value={field.value?.toString() || "none"}
                 >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className={watchType === 'prima-attivazione' ? "border-amber-300" : ""}>
                       <SelectValue placeholder="Seleziona lotto" />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    <SelectItem value="none">Nessun lotto</SelectItem>
+                    {watchType !== 'prima-attivazione' && (
+                      <SelectItem value="none">Nessun lotto</SelectItem>
+                    )}
                     {lots?.map((lot) => (
                       <SelectItem key={lot.id} value={lot.id.toString()}>
                         Lotto #{lot.id} - {lot.supplier}
@@ -841,6 +887,16 @@ export default function OperationForm({
                     ))}
                   </SelectContent>
                 </Select>
+                {watchType === 'prima-attivazione' && (
+                  <FormDescription>
+                    Il lotto è obbligatorio per la Prima Attivazione e sarà utilizzato per le operazioni successive
+                  </FormDescription>
+                )}
+                {watchType !== 'prima-attivazione' && (
+                  <FormDescription>
+                    Il lotto viene precompilato automaticamente dal lotto usato nella Prima Attivazione di questo ciclo
+                  </FormDescription>
+                )}
                 <FormMessage />
               </FormItem>
             )}
