@@ -6,6 +6,11 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatNumberWithCommas(value: number): string {
+  // Gestisci i casi in cui value è undefined o null
+  if (value === undefined || value === null) {
+    return "0";
+  }
+  
   // Formato europeo: 1.000,00 (punto come separatore delle migliaia, virgola per i decimali)
   const [integerPart, decimalPart] = value.toString().split(".");
   
