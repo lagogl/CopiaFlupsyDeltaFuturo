@@ -215,6 +215,63 @@ export default function Operations() {
     return cycles?.find((c: any) => c.id === cycleId);
   };
   
+  // Function to calculate growth between two measurement operations
+  const calculateGrowthBetweenOperations = (prevOp: any, currOp: any) => {
+    if (!prevOp || !currOp || !prevOp.animalsPerKg || !currOp.animalsPerKg) {
+      return null;
+    }
+    
+    // Calcola il peso medio in mg da animali/kg
+    const prevWeight = 1000000 / prevOp.animalsPerKg;
+    const currWeight = 1000000 / currOp.animalsPerKg;
+    
+    // Calcola la differenza in giorni tra le due date
+    const prevDate = new Date(prevOp.date);
+    const currDate = new Date(currOp.date);
+    const daysDiff = differenceInDays(currDate, prevDate);
+    
+    if (daysDiff <= 0) return null;
+    
+    // Calcola la percentuale di crescita
+    const weightDiff = currWeight - prevWeight;
+    const growthPercent = (weightDiff / prevWeight) * 100;
+    
+    return {
+      prevWeight,
+      currWeight,
+      weightDiff,
+      daysDiff,
+      growthPercent
+    };
+  };
+  
+  // Function to get SGR data for a specific month
+  const getSgrForMonth = (date: Date) => {
+    if (!sgrData || sgrData.length === 0) return null;
+    
+    const month = format(date, 'MMMM', { locale: it }).toLowerCase();
+    return sgrData.find((sgr: any) => sgr.month.toLowerCase() === month);
+  };
+  
+  // Function to calculate theoretical growth based on SGR
+  const calculateTheoreticalGrowth = (date: Date, days: number) => {
+    const sgrInfo = getSgrForMonth(date);
+    if (!sgrInfo) return null;
+    
+    // La percentuale SGR è mensile, calcoliamo quella giornaliera
+    const dailyPercentage = sgrInfo.percentage / 30;
+    
+    // Calcola la percentuale di crescita teorica per il numero di giorni
+    const theoreticalGrowthPercent = dailyPercentage * days;
+    
+    return {
+      sgrMonth: sgrInfo.month,
+      sgrPercentage: sgrInfo.percentage,
+      sgrDailyPercentage: dailyPercentage,
+      theoreticalGrowthPercent
+    };
+  };
+  
   // Filter operations
   const filteredOperations = useMemo(() => {
     if (!operations) return [];
