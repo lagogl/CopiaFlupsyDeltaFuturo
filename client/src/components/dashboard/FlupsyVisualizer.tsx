@@ -23,7 +23,15 @@ import {
 } from '@/lib/utils';
 import { CheckSquare, Square, Filter, Eye, Layers } from 'lucide-react';
 
+import FlupsyVisualizerNew from './FlupsyVisualizerNew';
+
+// This component is now just a wrapper around the new component
 export default function FlupsyVisualizer() {
+  return <FlupsyVisualizerNew />;
+}
+
+// Kept for reference, not used anymore
+function OldFlupsyVisualizer() {
   const isMobile = useIsMobile();
   const [, navigate] = useLocation();
   const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>([]);
