@@ -21,7 +21,7 @@ import {
   getSizeFromAnimalsPerKg,
   getBasketColorBySize
 } from '@/lib/utils';
-import { CheckSquare, Square, Filter, Eye } from 'lucide-react';
+import { CheckSquare, Square, Filter, Eye, Layers } from 'lucide-react';
 
 export default function FlupsyVisualizer() {
   const isMobile = useIsMobile();
@@ -30,29 +30,63 @@ export default function FlupsyVisualizer() {
   const [selectedTab, setSelectedTab] = useState<string>("all");
   const [showFlupsySelector, setShowFlupsySelector] = useState<boolean>(false);
   
+  // Tipi per i dati
+  interface Flupsy {
+    id: number;
+    name: string;
+    location: string;
+  }
+  
+  interface Basket {
+    id: number;
+    physicalNumber: number;
+    flupsyId: number;
+    row: 'DX' | 'SX' | null;
+    position: number | null;
+    state: 'active' | 'available';
+    currentCycleId: number | null;
+  }
+  
+  interface Operation {
+    id: number;
+    basketId: number;
+    date: string;
+    type: string;
+    notes: string | null;
+    animalsPerKg: number | null;
+  }
+  
+  interface Cycle {
+    id: number;
+    basketId: number;
+    startDate: string;
+    endDate: string | null;
+    state: 'active' | 'closed';
+  }
+
   // Fetch flupsys
-  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
+  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
   });
   
   // Fetch baskets
-  const { data: baskets, isLoading: isLoadingBaskets } = useQuery({
+  const { data: baskets, isLoading: isLoadingBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
   });
   
   // Fetch operations
-  const { data: operations } = useQuery({
+  const { data: operations } = useQuery<Operation[]>({
     queryKey: ['/api/operations'],
   });
   
   // Fetch cycles
-  const { data: cycles } = useQuery({
+  const { data: cycles } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles'],
   });
   
   // Select all FLUPSYs by default
   if (flupsys && flupsys.length > 0 && selectedFlupsyIds.length === 0) {
-    setSelectedFlupsyIds(flupsys.map((f: any) => f.id));
+    setSelectedFlupsyIds(flupsys.map(f => f.id));
   }
   
   // Handle FLUPSY selection/deselection
@@ -69,7 +103,7 @@ export default function FlupsyVisualizer() {
   // Select all FLUPSYs
   const selectAllFlupsys = () => {
     if (!flupsys) return;
-    setSelectedFlupsyIds(flupsys.map((f: any) => f.id));
+    setSelectedFlupsyIds(flupsys.map(f => f.id));
   };
   
   // Deselect all FLUPSYs
@@ -88,50 +122,50 @@ export default function FlupsyVisualizer() {
   };
   
   const activeFlupsyId = getActiveFlupsyId();
-  const selectedFlupsy = activeFlupsyId ? flupsys?.find((f: any) => f.id === activeFlupsyId) : null;
+  const selectedFlupsy = activeFlupsyId && flupsys ? flupsys.find(f => f.id === activeFlupsyId) : null;
   
   // Filter baskets by selected FLUPSYs
   const filteredBaskets = baskets ? 
     (activeFlupsyId ? 
-      baskets.filter((b: any) => b.flupsyId === activeFlupsyId) : 
-      baskets.filter((b: any) => selectedFlupsyIds.includes(b.flupsyId))
+      baskets.filter(b => b.flupsyId === activeFlupsyId) : 
+      baskets.filter(b => selectedFlupsyIds.includes(b.flupsyId))
     ) : [];
   
   // Create a grid of baskets
   const maxPositions = Math.max(
     ...filteredBaskets
-      .filter((b: any) => b.position !== null && b.position !== undefined)
-      .map((b: any) => b.position),
+      .filter(b => b.position !== null && b.position !== undefined)
+      .map(b => b.position || 0),
     10 // Minimum of 10 positions
   );
   
   // Group baskets by row
-  const dxRow = filteredBaskets.filter((b: any) => b.row === 'DX');
-  const sxRow = filteredBaskets.filter((b: any) => b.row === 'SX');
-  const noRowAssigned = filteredBaskets.filter((b: any) => b.row === null || b.row === undefined);
+  const dxRow = filteredBaskets.filter(b => b.row === 'DX');
+  const sxRow = filteredBaskets.filter(b => b.row === 'SX');
+  const noRowAssigned = filteredBaskets.filter(b => b.row === null || b.row === undefined);
   
   // Helper function to get basket by position for a specific row
-  const getBasketByPosition = (row: 'DX' | 'SX', position: number) => {
+  const getBasketByPosition = (row: 'DX' | 'SX', position: number): Basket | undefined => {
     if (row === 'DX') {
-      return dxRow.find((b: any) => b.position === position);
+      return dxRow.find(b => b.position === position);
     }
-    return sxRow.find((b: any) => b.position === position);
+    return sxRow.find(b => b.position === position);
   };
   
   // Helper function to get cycle for a basket
-  const getCycleForBasket = (basketId: number) => {
+  const getCycleForBasket = (basketId: number): Cycle | null => {
     if (!cycles) return null;
-    return cycles.find((c: any) => c.basketId === basketId);
+    return cycles.find(c => c.basketId === basketId) || null;
   };
   
   // Helper function to get operations for a basket
-  const getOperationsForBasket = (basketId: number) => {
+  const getOperationsForBasket = (basketId: number): Operation[] => {
     if (!operations) return [];
-    return operations.filter((op: any) => op.basketId === basketId);
+    return operations.filter(op => op.basketId === basketId);
   };
   
   // Helper function to get the color class for a basket
-  const getBasketColorClass = (basket: any) => {
+  const getBasketColorClass = (basket: Basket | undefined): string => {
     if (!basket) return 'bg-gray-50 border-dashed';
     
     // If basket is not active, return a neutral color
@@ -182,7 +216,7 @@ export default function FlupsyVisualizer() {
   };
 
   // Helper function to render tooltip content
-  const renderTooltipContent = (basket: any) => {
+  const renderTooltipContent = (basket: Basket | undefined) => {
     if (!basket) return <div>Posizione vuota</div>;
     
     const basketOperations = getOperationsForBasket(basket.id);
@@ -248,7 +282,7 @@ export default function FlupsyVisualizer() {
   };
   
   // Event handler for basket click
-  const handleBasketClick = (basket: any) => {
+  const handleBasketClick = (basket: Basket) => {
     if (!basket) return;
     navigate(`/baskets/${basket.id}`);
   };
@@ -315,6 +349,7 @@ export default function FlupsyVisualizer() {
           <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mb-4">
             <TabsList className="w-full">
               <TabsTrigger value="all" className="flex-1">
+                <Layers className="h-4 w-4 mr-1" />
                 Tutti i FLUPSY ({selectedFlupsyIds.length})
               </TabsTrigger>
               
@@ -342,10 +377,19 @@ export default function FlupsyVisualizer() {
             <div className="border rounded-lg p-4 relative">
               <div className="flex justify-between items-center mb-2">
                 <div className="flex items-center gap-2">
-                  <div>
+                  <div className="flex items-center">
                     {selectedTab === "all" 
-                      ? "Vista combinata di tutti i FLUPSY selezionati" 
-                      : `Vista lato elica (${selectedFlupsy?.name || ""})`
+                      ? (
+                          <>
+                            <Layers className="h-4 w-4 mr-1 text-blue-500" />
+                            <span>Vista combinata di tutti i FLUPSY selezionati</span>
+                          </>
+                        ) 
+                      : (
+                          <>
+                            <span>Vista lato elica ({selectedFlupsy?.name || ""})</span>
+                          </>
+                        )
                     }
                   </div>
                   <a href="/flupsy-view" className="text-xs text-blue-600 hover:underline">
