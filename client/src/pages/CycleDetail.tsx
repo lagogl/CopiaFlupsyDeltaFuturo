@@ -39,19 +39,34 @@ function StatisticsTab({
     if (!cycleId || !latestOperation?.animalsPerKg || isLoadingPrediction) return;
     
     setIsLoadingPrediction(true);
-    apiRequest('GET', 
-      `/api/cycles/${cycleId}/growth-prediction?days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
-    )
-    .then(response => {
-      console.log("Dati previsione ricevuti:", response);
-      setGrowthPrediction(response || {});
-    })
-    .catch(error => {
-      console.error('Errore nel calcolo della previsione di crescita:', error);
-    })
-    .finally(() => {
-      setIsLoadingPrediction(false);
-    });
+    
+    // Log dettagliato per debugging
+    console.log(`Richiesta previsione per ciclo ${cycleId}, animalsPerKg=${latestOperation.animalsPerKg}, giorni=${projectionDays}`);
+    
+    fetch(`/api/cycles/${cycleId}/growth-prediction?days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`)
+      .then(response => {
+        if (!response.ok) {
+          throw new Error(`Errore nella risposta API: ${response.status} ${response.statusText}`);
+        }
+        return response.json();
+      })
+      .then(data => {
+        console.log("Dati previsione ricevuti completi:", data);
+        
+        if (!data || Object.keys(data).length === 0) {
+          console.error("Dati di previsione vuoti o non validi");
+          return;
+        }
+        
+        // Imposta i dati direttamente nello stato
+        setGrowthPrediction(data);
+      })
+      .catch(error => {
+        console.error('Errore nel calcolo della previsione di crescita:', error);
+      })
+      .finally(() => {
+        setIsLoadingPrediction(false);
+      });
   }, [cycleId, projectionDays, bestVariation, worstVariation, latestOperation, isLoadingPrediction]);
   
   // Carica automaticamente le previsioni all'avvio se ci sono dati di misurazione disponibili
