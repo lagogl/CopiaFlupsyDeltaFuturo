@@ -150,10 +150,34 @@ export default function CycleDetail() {
 
   // Effect per caricare le previsioni quando si cambia tab
   useEffect(() => {
-    if (activeTab === 'stats' && latestOperation?.animalsPerKg && !growthPrediction && !isLoadingPrediction) {
-      calculateGrowthPrediction();
+    // Verifichiamo che ci siano tutti i dati necessari prima di effettuare il calcolo
+    const shouldCalculate = 
+      activeTab === 'stats' && 
+      latestOperation?.animalsPerKg && 
+      !growthPrediction && 
+      !isLoadingPrediction &&
+      cycleId !== null;
+    
+    // Eseguiamo il calcolo solo se tutte le condizioni sono soddisfatte
+    if (shouldCalculate) {
+      // Utilizziamo una funzione asincrona separata all'interno dell'effect
+      const fetchPrediction = async () => {
+        setIsLoadingPrediction(true);
+        try {
+          const response = await apiRequest('GET', 
+            `/api/cycles/${cycleId}/growth-prediction?days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
+          );
+          setGrowthPrediction(response || {});
+        } catch (error) {
+          console.error('Errore nel calcolo della previsione di crescita:', error);
+        } finally {
+          setIsLoadingPrediction(false);
+        }
+      };
+      
+      fetchPrediction();
     }
-  }, [activeTab, latestOperation, growthPrediction, isLoadingPrediction]);
+  }, [activeTab, latestOperation, growthPrediction, isLoadingPrediction, cycleId, projectionDays, bestVariation, worstVariation]);
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -186,7 +210,24 @@ export default function CycleDetail() {
             </Link>
           </Button>
           {cycle.state === 'active' && (
-            <Button variant="outline" className="text-red-600 border-red-600 hover:bg-red-50">
+            <Button 
+              variant="outline" 
+              className="text-red-600 border-red-600 hover:bg-red-50"
+              onClick={() => {
+                if (window.confirm('Sei sicuro di voler chiudere questo ciclo? Questa operazione non può essere annullata.')) {
+                  // Creare qui l'API call per chiudere il ciclo
+                  apiRequest('POST', `/api/cycles/${cycle.id}/close`, { 
+                    endDate: new Date().toISOString()
+                  }).then(() => {
+                    // Ricaricare la pagina o aggiornare i dati
+                    window.location.reload();
+                  }).catch(error => {
+                    console.error('Errore nella chiusura del ciclo:', error);
+                    alert('Si è verificato un errore durante la chiusura del ciclo. Riprova.');
+                  });
+                }
+              }}
+            >
               Chiudi Ciclo
             </Button>
           )}
