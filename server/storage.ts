@@ -70,7 +70,7 @@ export interface IStorage {
   getBasketPositionHistory(basketId: number): Promise<BasketPositionHistory[]>;
   getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined>;
   createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory>;
-  closeBasketPositionHistory(basketId: number, endDate: Date): Promise<BasketPositionHistory | undefined>;
+  closeBasketPositionHistory(basketId: number, endDate: Date | string): Promise<BasketPositionHistory | undefined>;
 }
 
 export class MemStorage implements IStorage {

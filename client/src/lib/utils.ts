@@ -6,7 +6,19 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 export function formatNumberWithCommas(value: number): string {
-  return value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+  // Formato europeo: 1.000,00 (punto come separatore delle migliaia, virgola per i decimali)
+  const [integerPart, decimalPart] = value.toString().split(".");
+  
+  // Formatta la parte intera con punti ogni 3 cifre
+  const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
+  
+  // Se esiste una parte decimale, restituisci l'intero con la virgola e i decimali
+  if (decimalPart) {
+    return `${formattedIntegerPart},${decimalPart}`;
+  }
+  
+  // Altrimenti restituisci solo la parte intera
+  return formattedIntegerPart;
 }
 
 export function calculateAverageWeight(animalsPerKg: number): number | null {
