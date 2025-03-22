@@ -546,8 +546,37 @@ export default function QuickOperations() {
                 
                 // Se è duplicazione, mostriamo i dati dell'ultima operazione
                 if (selectedOperationType === 'duplicate' && lastOperation) {
-                  // Prepariamo i dati per la nuova operazione
+                  // Verifichiamo se esiste già un'operazione per oggi per questa cesta
                   const today = new Date();
+                  const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+                  
+                  // Cerca operazioni di oggi per questa cesta
+                  const hasOperationToday = basketOperations.some(op => {
+                    const opDate = new Date(op.date).toISOString().split('T')[0];
+                    return opDate === todayString;
+                  });
+                  
+                  // Se esiste già un'operazione oggi, mostra un avviso
+                  if (hasOperationToday) {
+                    return (
+                      <div>
+                        <div className="bg-amber-50 border border-amber-200 rounded p-4 mb-4">
+                          <AlertCircle className="h-5 w-5 text-amber-500 inline mr-2" />
+                          <span className="text-amber-800">
+                            Attenzione: è già presente un'operazione registrata oggi per questa cesta.
+                            Non è possibile registrare più di un'operazione al giorno per la stessa cesta.
+                          </span>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button variant="outline" onClick={() => setOperationDialogOpen(false)}>
+                            Chiudi
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
+                  // Prepariamo i dati per la nuova operazione
                   const operationData = {
                     type: lastOperation.type === 'prima-attivazione' ? 'misura' : lastOperation.type,
                     date: today.toISOString(),
@@ -622,7 +651,36 @@ export default function QuickOperations() {
                   );
                 } else if (selectedOperationType === 'misura' || selectedOperationType === 'pulizia') {
                   // Per operazioni di pulizia o misura semplici
+                  // Verifichiamo se esiste già un'operazione per oggi per questa cesta
                   const today = new Date();
+                  const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
+                  
+                  // Cerca operazioni di oggi per questa cesta
+                  const hasOperationToday = basketOperations.some(op => {
+                    const opDate = new Date(op.date).toISOString().split('T')[0];
+                    return opDate === todayString;
+                  });
+                  
+                  // Se esiste già un'operazione oggi, mostra un avviso
+                  if (hasOperationToday) {
+                    return (
+                      <div>
+                        <div className="bg-amber-50 border border-amber-200 rounded p-4 mb-4">
+                          <AlertCircle className="h-5 w-5 text-amber-500 inline mr-2" />
+                          <span className="text-amber-800">
+                            Attenzione: è già presente un'operazione registrata oggi per questa cesta.
+                            Non è possibile registrare più di un'operazione al giorno per la stessa cesta.
+                          </span>
+                        </div>
+                        <div className="flex justify-end">
+                          <Button variant="outline" onClick={() => setOperationDialogOpen(false)}>
+                            Chiudi
+                          </Button>
+                        </div>
+                      </div>
+                    );
+                  }
+                  
                   const operationData = {
                     type: selectedOperationType,
                     date: today.toISOString(),
