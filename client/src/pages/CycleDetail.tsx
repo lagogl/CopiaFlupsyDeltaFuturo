@@ -1,16 +1,20 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRoute, Link } from 'wouter';
 import { format, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { ArrowLeft, ChevronRight, Calendar, Droplets, List, Box } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Calendar, Droplets, List, Box, LineChart, BarChart, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { apiRequest } from '@/lib/queryClient';
 import { getOperationTypeLabel, getOperationTypeColor, getSizeColor } from '@/lib/utils';
+import GrowthPredictionChart from '@/components/GrowthPredictionChart';
+import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
 export default function CycleDetail() {
   const [, params] = useRoute('/cycles/:id');
@@ -107,7 +111,7 @@ export default function CycleDetail() {
   }
   
   // Helper function to format dates
-  const formatDate = (dateString) => {
+  const formatDate = (dateString: string) => {
     return format(new Date(dateString), 'dd MMMM yyyy', { locale: it });
   };
   
@@ -125,8 +129,31 @@ export default function CycleDetail() {
     return 60;
   };
   
-  // Questa sezione è stata temporaneamente rimossa
-  // La funzionalità di previsione della crescita sarà implementata in futuro
+  // Funzione per calcolare le previsioni di crescita utilizzando l'endpoint specifico per cicli
+  const calculateGrowthPrediction = async () => {
+    if (!cycleId) return;
+    
+    setIsLoadingPrediction(true);
+    try {
+      // Utilizziamo l'endpoint specifico per cicli che calcolerà automaticamente i pesi
+      // e utilizzerà lo SGR reale o quello mensile appropriato
+      const response = await apiRequest('GET', 
+        `/api/cycles/${cycleId}/growth-prediction?days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
+      );
+      setGrowthPrediction(response || {});
+    } catch (error) {
+      console.error('Errore nel calcolo della previsione di crescita:', error);
+    } finally {
+      setIsLoadingPrediction(false);
+    }
+  };
+
+  // Effect per caricare le previsioni quando si cambia tab
+  useEffect(() => {
+    if (activeTab === 'stats' && latestOperation?.animalsPerKg && !growthPrediction && !isLoadingPrediction) {
+      calculateGrowthPrediction();
+    }
+  }, [activeTab, latestOperation, growthPrediction, isLoadingPrediction]);
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -553,18 +580,26 @@ export default function CycleDetail() {
               </CardContent>
             </Card>
             
-            {/* Timeline di proiezione taglie - disabilitata temporaneamente per problemi di hooks 
+            {/* Timeline di proiezione taglie */}
             {latestOperation?.animalsPerKg && growthPrediction && (
-              <>
-                <SizeGrowthTimeline 
-                  currentWeight={growthPrediction.currentWeight}
-                  measurementDate={new Date(growthPrediction.lastMeasurementDate || latestOperation.date)}
-                  sgrMonthlyPercentage={growthPrediction.sgrPercentage}
-                  cycleId={cycle.id}
-                  basketId={cycle.basketId}
-                />
-              </>
-            )} */}
+              <Card className="mt-6">
+                <CardHeader>
+                  <CardTitle>Timeline Proiezione Taglie</CardTitle>
+                  <CardDescription>
+                    Previsione di quando la cesta raggiungerà le diverse taglie target
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <SizeGrowthTimeline 
+                    currentWeight={growthPrediction.currentWeight}
+                    measurementDate={new Date(growthPrediction.lastMeasurementDate || latestOperation.date)}
+                    sgrMonthlyPercentage={growthPrediction.sgrPercentage}
+                    cycleId={cycle.id}
+                    basketId={cycle.basketId}
+                  />
+                </CardContent>
+              </Card>
+            )}
           </div>
         </TabsContent>
         
