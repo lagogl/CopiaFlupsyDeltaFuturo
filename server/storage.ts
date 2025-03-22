@@ -7,6 +7,7 @@ import {
   Sgr, InsertSgr, 
   Lot, InsertLot,
   BasketPositionHistory, InsertBasketPositionHistory,
+  SgrGiornaliero, InsertSgrGiornaliero,
   operationTypes
 } from "@shared/schema";
 
@@ -60,6 +61,14 @@ export interface IStorage {
   createSgr(sgr: InsertSgr): Promise<Sgr>;
   updateSgr(id: number, sgr: Partial<Sgr>): Promise<Sgr | undefined>;
   
+  // SGR Giornalieri methods
+  getSgrGiornalieri(): Promise<SgrGiornaliero[]>;
+  getSgrGiornaliero(id: number): Promise<SgrGiornaliero | undefined>;
+  getSgrGiornalieriByDateRange(startDate: Date, endDate: Date): Promise<SgrGiornaliero[]>;
+  createSgrGiornaliero(sgrGiornaliero: InsertSgrGiornaliero): Promise<SgrGiornaliero>;
+  updateSgrGiornaliero(id: number, sgrGiornaliero: Partial<SgrGiornaliero>): Promise<SgrGiornaliero | undefined>;
+  deleteSgrGiornaliero(id: number): Promise<boolean>;
+  
   // Lot methods
   getLots(): Promise<Lot[]>;
   getActiveLots(): Promise<Lot[]>;
@@ -72,6 +81,16 @@ export interface IStorage {
   getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined>;
   createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory>;
   closeBasketPositionHistory(basketId: number, endDate: Date | string): Promise<BasketPositionHistory | undefined>;
+  
+  // Growth predictions methods
+  calculateActualSgr(operations: Operation[]): Promise<number | null>;
+  calculateGrowthPrediction(
+    currentWeight: number, 
+    measurementDate: Date, 
+    days: number, 
+    sgrPercentage: number, 
+    variationPercentages: {best: number, worst: number}
+  ): Promise<any>;
 }
 
 export class MemStorage implements IStorage {
@@ -83,6 +102,7 @@ export class MemStorage implements IStorage {
   private sgrs: Map<number, Sgr>;
   private lots: Map<number, Lot>;
   private basketPositions: Map<number, BasketPositionHistory>;
+  private sgrGiornalieri: Map<number, SgrGiornaliero>;
   
   private flupsyId: number;
   private basketId: number;
@@ -92,6 +112,7 @@ export class MemStorage implements IStorage {
   private sgrId: number;
   private lotId: number;
   private positionHistoryId: number;
+  private sgrGiornalieroId: number;
   
   constructor() {
     this.flupsys = new Map();
@@ -102,6 +123,7 @@ export class MemStorage implements IStorage {
     this.sgrs = new Map();
     this.lots = new Map();
     this.basketPositions = new Map();
+    this.sgrGiornalieri = new Map();
     
     this.flupsyId = 1;
     this.basketId = 1;
@@ -111,6 +133,7 @@ export class MemStorage implements IStorage {
     this.sgrId = 1;
     this.lotId = 1;
     this.positionHistoryId = 1;
+    this.sgrGiornalieroId = 1;
     
     // Initialize with some default sizes
     this.initializeDefaultData();
@@ -542,6 +565,142 @@ export class MemStorage implements IStorage {
     
     this.basketPositions.set(currentPosition.id, updatedPosition);
     return updatedPosition;
+  }
+  
+  // SGR Giornalieri methods
+  async getSgrGiornalieri(): Promise<SgrGiornaliero[]> {
+    return Array.from(this.sgrGiornalieri.values());
+  }
+  
+  async getSgrGiornaliero(id: number): Promise<SgrGiornaliero | undefined> {
+    return this.sgrGiornalieri.get(id);
+  }
+  
+  async getSgrGiornalieriByDateRange(startDate: Date, endDate: Date): Promise<SgrGiornaliero[]> {
+    const start = new Date(startDate);
+    start.setHours(0, 0, 0, 0);
+    
+    const end = new Date(endDate);
+    end.setHours(23, 59, 59, 999);
+    
+    return Array.from(this.sgrGiornalieri.values())
+      .filter(sgr => {
+        const date = new Date(sgr.recordDate);
+        return date >= start && date <= end;
+      })
+      .sort((a, b) => new Date(a.recordDate).getTime() - new Date(b.recordDate).getTime());
+  }
+  
+  async createSgrGiornaliero(sgrGiornaliero: InsertSgrGiornaliero): Promise<SgrGiornaliero> {
+    const id = this.sgrGiornalieroId++;
+    const newSgrGiornaliero: SgrGiornaliero = {
+      ...sgrGiornaliero,
+      id,
+      notes: sgrGiornaliero.notes || null,
+      temperature: sgrGiornaliero.temperature || null,
+      pH: sgrGiornaliero.pH || null,
+      ammonia: sgrGiornaliero.ammonia || null,
+      oxygen: sgrGiornaliero.oxygen || null,
+      salinity: sgrGiornaliero.salinity || null
+    };
+    this.sgrGiornalieri.set(id, newSgrGiornaliero);
+    return newSgrGiornaliero;
+  }
+  
+  async updateSgrGiornaliero(id: number, sgrGiornaliero: Partial<SgrGiornaliero>): Promise<SgrGiornaliero | undefined> {
+    const currentSgrGiornaliero = this.sgrGiornalieri.get(id);
+    if (!currentSgrGiornaliero) return undefined;
+    
+    const updatedSgrGiornaliero = { ...currentSgrGiornaliero, ...sgrGiornaliero };
+    this.sgrGiornalieri.set(id, updatedSgrGiornaliero);
+    return updatedSgrGiornaliero;
+  }
+  
+  async deleteSgrGiornaliero(id: number): Promise<boolean> {
+    const exists = this.sgrGiornalieri.has(id);
+    if (exists) {
+      this.sgrGiornalieri.delete(id);
+      return true;
+    }
+    return false;
+  }
+  
+  // Growth predictions methods
+  async calculateActualSgr(operations: Operation[]): Promise<number | null> {
+    if (operations.length < 2) return null;
+    
+    // Sort operations by date (oldest first)
+    const sortedOps = [...operations].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
+    
+    // Find operations with weight measurements (animalsPerKg)
+    const weightOps = sortedOps.filter(op => op.animalsPerKg && op.animalsPerKg > 0);
+    if (weightOps.length < 2) return null;
+    
+    // Get first and last weight measurement
+    const firstOp = weightOps[0];
+    const lastOp = weightOps[weightOps.length - 1];
+    
+    // Calculate starting and ending weight in mg
+    const startWeight = firstOp.averageWeight || (firstOp.animalsPerKg ? 1000000 / firstOp.animalsPerKg : 0);
+    const endWeight = lastOp.averageWeight || (lastOp.animalsPerKg ? 1000000 / lastOp.animalsPerKg : 0);
+    
+    if (startWeight <= 0 || endWeight <= 0) return null;
+    
+    // Calculate days between measurements
+    const startDate = new Date(firstOp.date);
+    const endDate = new Date(lastOp.date);
+    const daysDiff = (endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24);
+    
+    if (daysDiff <= 0) return null;
+    
+    // Calculate SGR using the formula: SGR = 100 * (ln(final weight) - ln(initial weight)) / days
+    const sgr = 100 * (Math.log(endWeight) - Math.log(startWeight)) / daysDiff;
+    
+    return sgr;
+  }
+  
+  async calculateGrowthPrediction(
+    currentWeight: number, 
+    measurementDate: Date, 
+    days: number, 
+    sgrPercentage: number, 
+    variationPercentages: {best: number, worst: number}
+  ): Promise<any> {
+    const predictions = [];
+    const baseDate = new Date(measurementDate);
+    
+    // Convert daily SGR from percentage to decimal
+    const dailySGR = sgrPercentage / 100;
+    const bestDailySGR = dailySGR * (1 + variationPercentages.best / 100);
+    const worstDailySGR = dailySGR * (1 - variationPercentages.worst / 100);
+    
+    for (let i = 0; i <= days; i++) {
+      const date = new Date(baseDate);
+      date.setDate(date.getDate() + i);
+      
+      // Calculate theoretical weight using the SGR formula: W(t) = W(0) * e^(SGR * t)
+      // Where t is time in days and SGR is the specific growth rate in decimal form
+      const theoreticalWeight = currentWeight * Math.exp(dailySGR * i);
+      const bestWeight = currentWeight * Math.exp(bestDailySGR * i);
+      const worstWeight = currentWeight * Math.exp(worstDailySGR * i);
+      
+      predictions.push({
+        day: i,
+        date: date.toISOString().split('T')[0],
+        theoreticalWeight,
+        bestWeight,
+        worstWeight
+      });
+    }
+    
+    return {
+      startWeight: currentWeight,
+      startDate: baseDate.toISOString().split('T')[0],
+      sgrDaily: dailySGR,
+      predictions
+    };
   }
 }
 
