@@ -387,6 +387,13 @@ export default function QuickOperations() {
 
   // Gestisce la cancellazione di un'operazione
   const handleDeleteOperation = (operationId: number) => {
+    // Mostra un toast informativo
+    toast({
+      title: 'Eliminazione in corso...',
+      description: 'Eliminazione dell\'operazione in corso'
+    });
+    
+    // Esegui la mutazione
     deleteOperationMutation.mutate(operationId);
   };
   
@@ -679,24 +686,46 @@ export default function QuickOperations() {
                         )}
                       </div>
                       
-                      <div className="flex justify-end space-x-2">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setOperationDialogOpen(false)}
-                        >
-                          Annulla
-                        </Button>
-                        <Button 
-                          onClick={() => createOperationMutation.mutate(operationData)}
-                          disabled={createOperationMutation.isPending}
-                        >
-                          {createOperationMutation.isPending ? (
-                            <>
-                              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              Salvataggio...
-                            </>
-                          ) : "Salva Operazione"}
-                        </Button>
+                      <div className="flex justify-between items-center mt-6">
+                        {/* Pulsante elimina per l'ultima operazione */}
+                        {lastOperation && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            onClick={() => {
+                              handleDeleteOperation(lastOperation.id);
+                              setOperationDialogOpen(false);
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                            Elimina Ultima Operazione
+                          </Button>
+                        )}
+                        
+                        <div className="flex ml-auto space-x-2">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setOperationDialogOpen(false)}
+                          >
+                            Annulla
+                          </Button>
+                          <Button 
+                            onClick={() => createOperationMutation.mutate(operationData)}
+                            disabled={createOperationMutation.isPending}
+                          >
+                            {createOperationMutation.isPending ? (
+                              <>
+                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                Salvataggio...
+                              </>
+                            ) : "Salva Operazione"}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
@@ -788,24 +817,46 @@ export default function QuickOperations() {
                         )}
                       </div>
                       
-                      <div className="flex justify-end space-x-2">
-                        <Button 
-                          variant="outline" 
-                          onClick={() => setOperationDialogOpen(false)}
-                        >
-                          Annulla
-                        </Button>
-                        <Button 
-                          onClick={() => createOperationMutation.mutate(operationData)}
-                          disabled={createOperationMutation.isPending}
-                        >
-                          {createOperationMutation.isPending ? (
-                            <>
-                              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
-                              Salvataggio...
-                            </>
-                          ) : "Salva Operazione"}
-                        </Button>
+                      <div className="flex justify-between items-center mt-6">
+                        {/* Pulsante elimina per l'ultima operazione */}
+                        {lastOperation && (
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            className="text-red-500 hover:text-red-700 hover:bg-red-50 border-red-200"
+                            onClick={() => {
+                              handleDeleteOperation(lastOperation.id);
+                              setOperationDialogOpen(false);
+                            }}
+                          >
+                            <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mr-1">
+                              <path d="M3 6h18"></path>
+                              <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                              <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                            </svg>
+                            Elimina Ultima Operazione
+                          </Button>
+                        )}
+                        
+                        <div className="flex ml-auto space-x-2">
+                          <Button 
+                            variant="outline" 
+                            onClick={() => setOperationDialogOpen(false)}
+                          >
+                            Annulla
+                          </Button>
+                          <Button 
+                            onClick={() => createOperationMutation.mutate(operationData)}
+                            disabled={createOperationMutation.isPending}
+                          >
+                            {createOperationMutation.isPending ? (
+                              <>
+                                <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                                Salvataggio...
+                              </>
+                            ) : "Salva Operazione"}
+                          </Button>
+                        </div>
                       </div>
                     </div>
                   );
