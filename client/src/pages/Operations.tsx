@@ -1,13 +1,21 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { format, addDays } from 'date-fns';
-import { Eye, Search, Filter, Pencil, Plus, Trash2, AlertTriangle, Copy } from 'lucide-react';
+import { format, addDays, parseISO } from 'date-fns';
+import { it } from 'date-fns/locale';
+import { 
+  Eye, Search, Filter, Pencil, Plus, Trash2, AlertTriangle, Copy, 
+  ArrowDown, ArrowUp, RotateCw, Calendar, Box, Target
+} from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
+import { Separator } from "@/components/ui/separator";
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import OperationForm from '@/components/OperationForm';
 
@@ -15,19 +23,33 @@ export default function Operations() {
   const [searchTerm, setSearchTerm] = useState('');
   const [typeFilter, setTypeFilter] = useState('all');
   const [dateFilter, setDateFilter] = useState('');
+  const [flupsyFilter, setFlupsyFilter] = useState('all');
+  const [cycleFilter, setCycleFilter] = useState('all');
+  const [viewMode, setViewMode] = useState<'table' | 'cycles'>('cycles');
+  const [expandedCycles, setExpandedCycles] = useState<number[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedOperation, setSelectedOperation] = useState<any>(null);
   
   // Query operations
-  const { data: operations, isLoading } = useQuery({
+  const { data: operations, isLoading: isLoadingOperations } = useQuery({
     queryKey: ['/api/operations'],
   });
   
   // Query baskets for reference
-  const { data: baskets } = useQuery({
+  const { data: baskets, isLoading: isLoadingBaskets } = useQuery({
     queryKey: ['/api/baskets'],
+  });
+  
+  // Query flupsys for filter
+  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
+    queryKey: ['/api/flupsys'],
+  });
+  
+  // Query cycles for filter and grouping
+  const { data: cycles, isLoading: isLoadingCycles } = useQuery({
+    queryKey: ['/api/cycles'],
   });
 
   // Create mutation
