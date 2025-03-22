@@ -22,7 +22,6 @@ import {
   getSizeFromAnimalsPerKg,
   getBasketColorBySize,
   getBorderThicknessByWeight,
-  getBorderColorByWeight,
   formatAnimalCount
 } from '@/lib/utils';
 import { CheckSquare, Square, Filter, Eye, Layers, TrendingUp, TrendingDown, ArrowUp } from 'lucide-react';
@@ -182,33 +181,27 @@ export default function FlupsyVisualizerNew() {
   // Helper function to get the basket data needed for display
   const getBasketDisplayData = (basket: Basket | undefined): {
     colorClass: string;
-    borderThickness: string;
-    borderColorClass: string;
+    borderThicknessClass: string;
     targetSize: string | null;
     animalCount: string | null;
     averageWeight: number | null;
-    isLargeSize: boolean;
   } => {
     if (!basket) return {
       colorClass: 'bg-gray-50 border-dashed',
-      borderThickness: 'border',
-      borderColorClass: 'border-slate-200',
+      borderThicknessClass: 'border',
       targetSize: null,
       animalCount: null,
-      averageWeight: null,
-      isLargeSize: false
+      averageWeight: null
     };
     
     // If basket is not active, return a neutral color
     if (basket.state !== 'active') {
       return {
         colorClass: 'bg-slate-100 border-slate-200',
-        borderThickness: 'border',
-        borderColorClass: 'border-slate-200',
+        borderThicknessClass: 'border',
         targetSize: null,
         animalCount: null,
-        averageWeight: null,
-        isLargeSize: false
+        averageWeight: null
       };
     }
     
@@ -233,24 +226,16 @@ export default function FlupsyVisualizerNew() {
       formatAnimalCount(latestOperation.animalsPerKg, averageWeight) : null;
     
     // Determine border thickness based on weight
-    const borderThickness = getBorderThicknessByWeight(averageWeight);
-    
-    // Determine if this is a large size (TP-3000 or higher)
-    const isLargeSize = averageWeight ? averageWeight >= 3000 : false;
-    
-    // Determine border color class
-    const borderColorClass = isLargeSize ? 'border-red-500' : 'border-slate-200';
+    const borderThicknessClass = getBorderThicknessByWeight(averageWeight);
     
     // If we have a target size, use its color
     if (targetSize) {
       return {
         colorClass: `${targetSize.color} shadow-sm`,
-        borderThickness,
-        borderColorClass,
+        borderThicknessClass,
         targetSize: targetSize.code,
         animalCount,
-        averageWeight,
-        isLargeSize
+        averageWeight
       };
     }
     
@@ -274,25 +259,37 @@ export default function FlupsyVisualizerNew() {
       
       return {
         colorClass,
-        borderThickness,
-        borderColorClass,
+        borderThicknessClass,
         targetSize: null,
         animalCount,
-        averageWeight,
-        isLargeSize
+        averageWeight
       };
     }
     
     // Default for active baskets with no operations
     return {
       colorClass: 'bg-green-50 border-green-300',
-      borderThickness: 'border',
-      borderColorClass: 'border-slate-200',
+      borderThicknessClass: 'border',
       targetSize: null,
       animalCount: null,
-      averageWeight: null,
-      isLargeSize: false
+      averageWeight: null
     };
+  };
+  
+  // Helper function to check if a basket has a large size (TP-3000 or higher)
+  const hasLargeSize = (basket: Basket | undefined): boolean => {
+    if (!basket || basket.state !== 'active') return false;
+    
+    const basketOperations = getOperationsForBasket(basket.id);
+    const sortedOperations = [...basketOperations].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    const latestOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
+    if (!latestOperation?.animalsPerKg) return false;
+    
+    const averageWeight = 1000000 / latestOperation.animalsPerKg;
+    return averageWeight >= 3000;
   };
   
   // Helper function to get the color class for a basket (backward compatibility)
@@ -514,6 +511,16 @@ export default function FlupsyVisualizerNew() {
                   const position = i + 1;
                   const basket = getFlupsyBasketByPosition('DX', position);
                   const basketData = basket ? getBasketDisplayData(basket) : null;
+                  const isLargeSize = hasLargeSize(basket);
+                  
+                  // Create a conditional style for the border color
+                  let borderStyle = {};
+                  if (isLargeSize) {
+                    borderStyle = { 
+                      borderColor: 'rgb(239, 68, 68)', // red-500
+                      borderStyle: 'solid' 
+                    };
+                  }
                   
                   return (
                     <TooltipProvider key={`${flupsyId}-dx-${position}`}>
@@ -524,8 +531,8 @@ export default function FlupsyVisualizerNew() {
                             className={`rounded-md p-2 text-center text-xs ${
                               basket ? basketData?.colorClass || 'bg-gray-50 border-dashed' : 'bg-gray-50 border-dashed'
                             } ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : 'min-h-[4.5rem]'} 
-                            ${basket && basket.currentCycleId ? basketData?.borderThickness || 'border' : 'border'}
-                            ${basket && basket.currentCycleId ? basketData?.borderColorClass || '' : ''}`}
+                            ${basket && basket.currentCycleId ? basketData?.borderThicknessClass || 'border' : 'border'}`}
+                            style={borderStyle}
                           >
                             <div>Pos. {position}</div>
                             {basket && (
@@ -574,6 +581,16 @@ export default function FlupsyVisualizerNew() {
                   const position = i + 1;
                   const basket = getFlupsyBasketByPosition('SX', position);
                   const basketData = basket ? getBasketDisplayData(basket) : null;
+                  const isLargeSize = hasLargeSize(basket);
+                  
+                  // Create a conditional style for the border color
+                  let borderStyle = {};
+                  if (isLargeSize) {
+                    borderStyle = { 
+                      borderColor: 'rgb(239, 68, 68)', // red-500
+                      borderStyle: 'solid' 
+                    };
+                  }
                   
                   return (
                     <TooltipProvider key={`${flupsyId}-sx-${position}`}>
@@ -584,8 +601,8 @@ export default function FlupsyVisualizerNew() {
                             className={`rounded-md p-2 text-center text-xs ${
                               basket ? basketData?.colorClass || 'bg-gray-50 border-dashed' : 'bg-gray-50 border-dashed'
                             } ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : 'min-h-[4.5rem]'} 
-                            ${basket && basket.currentCycleId ? basketData?.borderThickness || 'border' : 'border'}
-                            ${basket && basket.currentCycleId ? basketData?.borderColorClass || '' : ''}`}
+                            ${basket && basket.currentCycleId ? basketData?.borderThicknessClass || 'border' : 'border'}`}
+                            style={borderStyle}
                           >
                             <div>Pos. {position}</div>
                             {basket && (
@@ -633,6 +650,16 @@ export default function FlupsyVisualizerNew() {
                 <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
                   {flupsyNoRowAssigned.map(basket => {
                     const basketData = basket ? getBasketDisplayData(basket) : null;
+                    const isLargeSize = hasLargeSize(basket);
+                    
+                    // Create a conditional style for the border color
+                    let borderStyle = {};
+                    if (isLargeSize) {
+                      borderStyle = { 
+                        borderColor: 'rgb(239, 68, 68)', // red-500
+                        borderStyle: 'solid' 
+                      };
+                    }
                     
                     return (
                       <TooltipProvider key={`${flupsyId}-norow-${basket.id}`}>
@@ -643,8 +670,8 @@ export default function FlupsyVisualizerNew() {
                               className={`rounded-md p-2 text-center text-xs ${
                                 basketData?.colorClass || 'bg-gray-50 border-dashed'
                               } cursor-pointer hover:shadow-md transition-shadow
-                              ${basket.currentCycleId ? basketData?.borderThickness || 'border' : 'border'}
-                              ${basket.currentCycleId ? basketData?.borderColorClass || '' : ''}`}
+                              ${basket.currentCycleId ? basketData?.borderThicknessClass || 'border' : 'border'}`}
+                              style={borderStyle}
                             >
                               <div>Non posizionato</div>
                               <div className="font-semibold mt-1">
