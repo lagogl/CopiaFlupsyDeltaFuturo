@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRoute, Link } from 'wouter';
 import { format, differenceInDays } from 'date-fns';
@@ -130,7 +130,7 @@ export default function CycleDetail() {
   };
   
   // Funzione per calcolare le previsioni di crescita utilizzando l'endpoint specifico per cicli
-  const calculateGrowthPrediction = async () => {
+  const calculateGrowthPrediction = useCallback(async () => {
     if (!cycleId) return;
     
     setIsLoadingPrediction(true);
@@ -146,38 +146,21 @@ export default function CycleDetail() {
     } finally {
       setIsLoadingPrediction(false);
     }
-  };
+  }, [cycleId, projectionDays, bestVariation, worstVariation]);
 
   // Effect per caricare le previsioni quando si cambia tab
   useEffect(() => {
-    // Verifichiamo che ci siano tutti i dati necessari prima di effettuare il calcolo
-    const shouldCalculate = 
-      activeTab === 'stats' && 
-      latestOperation?.animalsPerKg && 
-      !growthPrediction && 
-      !isLoadingPrediction &&
-      cycleId !== null;
-    
-    // Eseguiamo il calcolo solo se tutte le condizioni sono soddisfatte
-    if (shouldCalculate) {
-      // Utilizziamo una funzione asincrona separata all'interno dell'effect
-      const fetchPrediction = async () => {
-        setIsLoadingPrediction(true);
-        try {
-          const response = await apiRequest('GET', 
-            `/api/cycles/${cycleId}/growth-prediction?days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
-          );
-          setGrowthPrediction(response || {});
-        } catch (error) {
-          console.error('Errore nel calcolo della previsione di crescita:', error);
-        } finally {
-          setIsLoadingPrediction(false);
-        }
-      };
-      
-      fetchPrediction();
+    // Carica le previsioni solo quando la tab delle statistiche è attiva
+    // e abbiamo dati validi e non li stiamo già caricando
+    if (activeTab === 'stats' && 
+        latestOperation?.animalsPerKg && 
+        !growthPrediction && 
+        !isLoadingPrediction &&
+        cycleId) {
+      // Chiamiamo la funzione esterna per calcolare la previsione
+      calculateGrowthPrediction();
     }
-  }, [activeTab, latestOperation, growthPrediction, isLoadingPrediction, cycleId, projectionDays, bestVariation, worstVariation]);
+  }, [activeTab, latestOperation, growthPrediction, isLoadingPrediction, cycleId, calculateGrowthPrediction]);
   
   return (
     <div className="container mx-auto px-4 py-8">
