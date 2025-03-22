@@ -51,22 +51,44 @@ export default function GrowthPerformanceIndicator({
   let performanceColor = 'text-amber-500'; // Default: giallo/arancione
   let bgColor = 'bg-amber-100';
   let progressColor = 'bg-amber-500';
+  let borderColor = 'border-amber-500';
   
-  if (performanceRatio >= 1.1) {
-    // Eccellente: crescita superiore al 110% del target
+  if (performanceRatio >= 1.3) {
+    // Eccellente: crescita superiore al 130% del target
+    performanceColor = 'text-emerald-600';
+    bgColor = 'bg-emerald-100';
+    progressColor = 'bg-emerald-600';
+    borderColor = 'border-emerald-500';
+  } else if (performanceRatio >= 1.1) {
+    // Molto buona: crescita tra il 110% e il 130% del target
     performanceColor = 'text-green-600';
     bgColor = 'bg-green-100';
     progressColor = 'bg-green-600';
+    borderColor = 'border-green-500';
   } else if (performanceRatio >= 0.9) {
     // Buona: crescita tra il 90% e il 110% del target
     performanceColor = 'text-blue-600';
     bgColor = 'bg-blue-100';
     progressColor = 'bg-blue-600';
-  } else if (performanceRatio < 0.7) {
-    // Scarsa: crescita inferiore al 70% del target
+    borderColor = 'border-blue-500';
+  } else if (performanceRatio >= 0.7) {
+    // Media: crescita tra il 70% e il 90% del target
+    performanceColor = 'text-amber-500';
+    bgColor = 'bg-amber-100';
+    progressColor = 'bg-amber-500';
+    borderColor = 'border-amber-500';
+  } else if (performanceRatio >= 0.5) {
+    // Insufficiente: crescita tra il 50% e il 70% del target
+    performanceColor = 'text-orange-600';
+    bgColor = 'bg-orange-100';
+    progressColor = 'bg-orange-600';
+    borderColor = 'border-orange-500';
+  } else {
+    // Scarsa: crescita inferiore al 50% del target
     performanceColor = 'text-red-600';
     bgColor = 'bg-red-100';
     progressColor = 'bg-red-600';
+    borderColor = 'border-red-500';
   }
 
   // Arrotonda le percentuali per la visualizzazione
@@ -75,7 +97,7 @@ export default function GrowthPerformanceIndicator({
   const performancePercentFormatted = (performanceRatio * 100).toFixed(0);
   
   return (
-    <div className={`rounded-md p-3 ${bgColor} border border-${performanceColor} mb-2`}>
+    <div className={`rounded-md p-3 ${bgColor} border ${borderColor} mb-2`}>
       <div className="flex items-center justify-between">
         <div className="flex items-center">
           {performanceRatio >= 0.9 ? (
