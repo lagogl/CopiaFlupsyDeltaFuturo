@@ -7,6 +7,7 @@ import MainLayout from "@/layouts/MainLayout";
 import Dashboard from "@/pages/Dashboard";
 import Baskets from "@/pages/Baskets";
 import Operations from "@/pages/Operations";
+import OperationDetail from "@/pages/OperationDetail";
 import QuickOperations from "@/pages/QuickOperations";
 import Cycles from "@/pages/Cycles";
 import CycleDetail from "@/pages/CycleDetail";
@@ -26,6 +27,7 @@ function Router() {
       <Route path="/flupsy-view" component={FlupsyFullView}/>
       <Route path="/baskets" component={Baskets}/>
       <Route path="/operations" component={Operations}/>
+      <Route path="/operations/:id" component={OperationDetail}/>
       <Route path="/quick-operations" component={QuickOperations}/>
       <Route path="/cycles" component={Cycles}/>
       <Route path="/cycles/:id" component={CycleDetail}/>
