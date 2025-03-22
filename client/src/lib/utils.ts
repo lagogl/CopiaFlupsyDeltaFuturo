@@ -25,6 +25,7 @@ export function getOperationTypeLabel(type: string): string {
     'misura': 'Misura',
     'vendita': 'Vendita',
     'selezione-vendita': 'Selezione per Vendita',
+    'cessazione': 'Cessazione',
   };
   
   return typeMap[type] || type;
@@ -39,6 +40,7 @@ export function getOperationTypeColor(type: string): string {
     'misura': 'bg-primary-light/10 text-primary',
     'vendita': 'bg-success/10 text-success',
     'selezione-vendita': 'bg-success/10 text-success',
+    'cessazione': 'bg-destructive/10 text-destructive',
   };
   
   return colorMap[type] || 'bg-gray-100 text-gray-800';

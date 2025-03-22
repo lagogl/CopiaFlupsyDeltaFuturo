@@ -242,6 +242,7 @@ export default function OperationForm({
     { value: 'misura', label: 'Misura' },
     { value: 'vendita', label: 'Vendita' },
     { value: 'selezione-vendita', label: 'Selezione per Vendita' },
+    { value: 'cessazione', label: 'Cessazione' },
   ];
   
   // Filter operation types based on basket state
