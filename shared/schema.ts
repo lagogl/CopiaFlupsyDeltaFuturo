@@ -32,7 +32,8 @@ export const operationTypes = [
   "trattamento",
   "misura",
   "vendita",
-  "selezione-vendita"
+  "selezione-vendita",
+  "cessazione"
 ] as const;
 
 // Operations (Operazioni)

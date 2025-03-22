@@ -534,6 +534,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
         }
         
+        // Verifica che il cestello non abbia già un ciclo in corso
+        if (basket.currentCycleId !== null) {
+          return res.status(400).json({ message: "Il cestello ha già un ciclo in corso. Non è possibile registrare una nuova Prima Attivazione." });
+        }
+        
         // Crea un nuovo ciclo per questa cesta
         console.log("Creazione nuovo ciclo per prima-attivazione");
         
@@ -640,8 +645,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           }
         }
 
-        // If it's a cycle-closing operation (vendita or selezione-vendita), handle cycle closure
-        if (type === 'vendita' || type === 'selezione-vendita') {
+        // If it's a cycle-closing operation (vendita, selezione-vendita or cessazione), handle cycle closure
+        if (type === 'vendita' || type === 'selezione-vendita' || type === 'cessazione') {
           const closingCycle = await storage.getCycle(cycleId);
           if (closingCycle && closingCycle.state === 'closed') {
             return res.status(400).json({ message: "Non è possibile aggiungere un'operazione di chiusura a un ciclo già chiuso" });
@@ -796,7 +801,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/cycles/:id/close", async (req, res) => {
     // Disabilitata la chiusura manuale dei cicli
     return res.status(400).json({ 
-      message: "La chiusura manuale dei cicli è stata disabilitata. I cicli vengono chiusi automaticamente tramite le operazioni di 'vendita' o 'selezione per vendita'." 
+      message: "La chiusura manuale dei cicli è stata disabilitata. I cicli vengono chiusi automaticamente tramite le operazioni di 'vendita', 'selezione per vendita' o 'cessazione'." 
     });
   });
 
