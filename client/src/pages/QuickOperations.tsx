@@ -290,11 +290,8 @@ export default function QuickOperations() {
   
   // Mutazione per creare una nuova operazione
   const createOperationMutation = useMutation({
-    mutationFn: async (operationData: any) => {
-      return apiRequest('/api/operations', {
-        method: 'POST',
-        data: operationData
-      });
+    mutationFn: (operationData: any) => {
+      return apiRequest('POST', '/api/operations', operationData);
     },
     onSuccess: () => {
       // Invalida la cache delle operazioni per ricaricare i dati
