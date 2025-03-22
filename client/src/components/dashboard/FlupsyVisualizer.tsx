@@ -23,15 +23,8 @@ import {
 } from '@/lib/utils';
 import { CheckSquare, Square, Filter, Eye, Layers } from 'lucide-react';
 
-import FlupsyVisualizerNew from './FlupsyVisualizerNew';
-
-// This component is now just a wrapper around the new component
+// Implementazione completamente nuova che mostra tutti i FLUPSY selezionati contemporaneamente
 export default function FlupsyVisualizer() {
-  return <FlupsyVisualizerNew />;
-}
-
-// Kept for reference, not used anymore
-function OldFlupsyVisualizer() {
   const isMobile = useIsMobile();
   const [, navigate] = useLocation();
   const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>([]);
@@ -131,70 +124,6 @@ function OldFlupsyVisualizer() {
   
   const activeFlupsyId = getActiveFlupsyId();
   const selectedFlupsy = activeFlupsyId && flupsys ? flupsys.find(f => f.id === activeFlupsyId) : null;
-  
-  // Filter baskets by selected FLUPSYs
-  const filteredBaskets = baskets ? 
-    (activeFlupsyId ? 
-      baskets.filter(b => b.flupsyId === activeFlupsyId) : 
-      baskets.filter(b => selectedFlupsyIds.includes(b.flupsyId))
-    ) : [];
-  
-  // Create a grid of baskets
-  const maxPositions = Math.max(
-    ...filteredBaskets
-      .filter(b => b.position !== null && b.position !== undefined)
-      .map(b => b.position || 0),
-    10 // Minimum of 10 positions
-  );
-  
-  // Group baskets by row
-  const dxRow = filteredBaskets.filter(b => b.row === 'DX');
-  const sxRow = filteredBaskets.filter(b => b.row === 'SX');
-  const noRowAssigned = filteredBaskets.filter(b => b.row === null || b.row === undefined);
-  
-  // Group baskets by position and FLUPSY
-  const groupBasketsByPosition = (baskets: Basket[]): Map<number, Map<number, Basket>> => {
-    const result = new Map<number, Map<number, Basket>>();
-    
-    baskets.forEach(basket => {
-      if (basket.position === null) return;
-      
-      if (!result.has(basket.position)) {
-        result.set(basket.position, new Map<number, Basket>());
-      }
-      
-      const flupsyBaskets = result.get(basket.position)!;
-      flupsyBaskets.set(basket.flupsyId, basket);
-    });
-    
-    return result;
-  };
-  
-  const dxRowByPosition = groupBasketsByPosition(dxRow);
-  const sxRowByPosition = groupBasketsByPosition(sxRow);
-  
-  // Helper function to get baskets by position for a specific row
-  const getBasketsByPosition = (row: 'DX' | 'SX', position: number): Basket[] => {
-    const positionMap = row === 'DX' ? dxRowByPosition : sxRowByPosition;
-    const flupsyBaskets = positionMap.get(position);
-    
-    if (!flupsyBaskets) return [];
-    return Array.from(flupsyBaskets.values());
-  };
-  
-  // Helper function to get basket by position for a specific row (first one found or filtered by active FLUPSY)
-  const getBasketByPosition = (row: 'DX' | 'SX', position: number): Basket | undefined => {
-    const baskets = getBasketsByPosition(row, position);
-    
-    if (selectedTab !== "all") {
-      // In single FLUPSY view, return the basket belonging to that FLUPSY
-      const flupsyId = parseInt(selectedTab, 10);
-      return baskets.find(b => b.flupsyId === flupsyId);
-    }
-    
-    // In combined view, return the first basket found
-    return baskets.length > 0 ? baskets[0] : undefined;
-  };
   
   // Helper function to get cycle for a basket
   const getCycleForBasket = (basketId: number): Cycle | null => {
@@ -417,225 +346,211 @@ function OldFlupsyVisualizer() {
           <div className="text-center py-4">Caricamento...</div>
         ) : selectedFlupsyIds.length > 0 ? (
           <div className="space-y-8">
-            {/* FLUPSY Visualization */}
-            <div className="border rounded-lg p-4 relative">
-              <div className="flex justify-between items-center mb-2">
-                <div className="flex items-center gap-2">
-                  <div className="flex items-center">
-                    {selectedTab === "all" 
-                      ? (
-                          <>
-                            <Layers className="h-4 w-4 mr-1 text-blue-500" />
-                            <span>Vista combinata di tutti i FLUPSY selezionati</span>
-                          </>
-                        ) 
-                      : (
-                          <>
-                            <span>Vista lato elica ({selectedFlupsy?.name || ""})</span>
-                          </>
-                        )
-                    }
-                  </div>
-                  <a href="/flupsy-view" className="text-xs text-blue-600 hover:underline">
-                    Vista dettagliata
-                  </a>
-                </div>
-                <Badge variant="outline" className="absolute right-2 top-2">
-                  Cestelli: {filteredBaskets.length}
-                </Badge>
-              </div>
-              
-              <div className="relative pt-6">
-                {/* Propeller indicator positioned at the left side */}
-                <div className="relative mb-4">
-                  <div className="bg-blue-500 w-12 h-12 rounded-full absolute -left-6 -top-6 flex items-center justify-center text-white">
-                    <span className="text-xs font-semibold">Elica</span>
-                  </div>
-                </div>
-                
-                <div className="space-y-4 mt-4">
-                  {/* DX row (Right row) */}
-                  <div>
-                    <div className="flex items-center mb-1">
-                      <Badge variant="secondary" className="mr-2">Fila DX</Badge>
-                      <Separator className="flex-grow" />
-                    </div>
-                    
-                    <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-                      {Array.from({ length: maxPositions }).map((_, i) => {
-                        const position = i + 1;
-                        const baskets = getBasketsByPosition('DX', position);
-                        const basket = baskets.length > 0 ? baskets[0] : undefined;
-                        
-                        return (
-                          <TooltipProvider key={`dx-${position}`}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div 
-                                  onClick={basket ? () => handleBasketClick(basket) : undefined}
-                                  className={`border rounded-md p-2 text-center text-xs ${
-                                    basket ? getBasketColorClass(basket) : 'bg-gray-50 border-dashed'
-                                  } ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-                                >
-                                  <div>Pos. {position}</div>
-                                  {basket && (
-                                    <div className="font-semibold mt-1">
-                                      #{basket.physicalNumber}
-                                      {selectedTab === "all" && flupsys && (
-                                        <div className="text-[10px] text-gray-500 truncate">
-                                          {flupsys.find(f => f.id === basket.flupsyId)?.name || ""}
-                                        </div>
-                                      )}
-                                      {basket.currentCycleId && (
-                                        <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
-                                          Ciclo {basket.currentCycleId}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                  {baskets.length > 1 && selectedTab === "all" && (
-                                    <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
-                                      +{baskets.length - 1}
-                                    </div>
-                                  )}
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" align="center" className="z-50">
-                                {baskets.length > 1 && selectedTab === "all" ? (
-                                  <div className="w-60 p-2">
-                                    <div className="font-bold text-sm mb-2">Posizione {position} - Più cestelli presenti</div>
-                                    <div className="space-y-2">
-                                      {baskets.map(b => (
-                                        <div key={b.id} className="text-xs p-1 border-b">
-                                          <div className="font-semibold">Cestello #{b.physicalNumber}</div>
-                                          <div className="text-gray-500">
-                                            {flupsys?.find(f => f.id === b.flupsyId)?.name || ""}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  renderTooltipContent(basket)
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        );
-                      })}
-                    </div>
-                  </div>
+            {selectedTab === "all" ? (
+              // Mostra tutti i FLUPSY selezionati contemporaneamente
+              <div>
+                {selectedFlupsyIds.map(flupsyId => {
+                  // Ottieni i dettagli per questo specifico FLUPSY
+                  const flupsy = flupsys?.find(f => f.id === flupsyId);
+                  if (!flupsy || !baskets) return null;
                   
-                  {/* SX row (Left row) */}
-                  <div>
-                    <div className="flex items-center mb-1">
-                      <Badge variant="secondary" className="mr-2">Fila SX</Badge>
-                      <Separator className="flex-grow" />
-                    </div>
-                    
-                    <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-                      {Array.from({ length: maxPositions }).map((_, i) => {
-                        const position = i + 1;
-                        const baskets = getBasketsByPosition('SX', position);
-                        const basket = baskets.length > 0 ? baskets[0] : undefined;
+                  // Ottieni i cestelli per questo specifico FLUPSY
+                  const flupsyBaskets = baskets.filter(b => b.flupsyId === flupsyId);
+                  const flupsyDxRow = flupsyBaskets.filter(b => b.row === 'DX');
+                  const flupsySxRow = flupsyBaskets.filter(b => b.row === 'SX');
+                  const flupsyNoRowAssigned = flupsyBaskets.filter(b => b.row === null || b.row === undefined);
+                  
+                  // Calcola il numero massimo di posizioni per questo FLUPSY
+                  const flupsyMaxPositions = Math.max(
+                    ...flupsyBaskets
+                      .filter(b => b.position !== null && b.position !== undefined)
+                      .map(b => b.position || 0),
+                    10 // Minimo di 10 posizioni
+                  );
+                  
+                  // Helper per ottenere il cestello in base alla posizione per questo FLUPSY
+                  const getFlupsyBasketByPosition = (row: 'DX' | 'SX', position: number): Basket | undefined => {
+                    if (row === 'DX') {
+                      return flupsyDxRow.find(b => b.position === position);
+                    }
+                    return flupsySxRow.find(b => b.position === position);
+                  };
+                  
+                  return (
+                    <div key={flupsyId} className="border rounded-lg p-4 relative mb-8">
+                      <div className="flex justify-between items-center mb-2">
+                        <div className="font-medium text-base">{flupsy.name}</div>
+                        <Badge variant="outline" className="absolute right-2 top-2">
+                          Cestelli: {flupsyBaskets.length}
+                        </Badge>
+                      </div>
+                      
+                      <div className="relative pt-6">
+                        {/* Propeller indicator positioned at the left side */}
+                        <div className="relative mb-4">
+                          <div className="bg-blue-500 w-12 h-12 rounded-full absolute -left-6 -top-6 flex items-center justify-center text-white">
+                            <span className="text-xs font-semibold">Elica</span>
+                          </div>
+                        </div>
                         
-                        return (
-                          <TooltipProvider key={`sx-${position}`}>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <div 
-                                  onClick={basket ? () => handleBasketClick(basket) : undefined}
-                                  className={`border rounded-md p-2 text-center text-xs ${
-                                    basket ? getBasketColorClass(basket) : 'bg-gray-50 border-dashed'
-                                  } ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : ''}`}
-                                >
-                                  <div>Pos. {position}</div>
-                                  {basket && (
-                                    <div className="font-semibold mt-1">
-                                      #{basket.physicalNumber}
-                                      {selectedTab === "all" && flupsys && (
-                                        <div className="text-[10px] text-gray-500 truncate">
-                                          {flupsys.find(f => f.id === basket.flupsyId)?.name || ""}
+                        <div className="space-y-4 mt-4">
+                          {/* DX row (Right row) */}
+                          <div>
+                            <div className="flex items-center mb-1">
+                              <Badge variant="secondary" className="mr-2">Fila DX</Badge>
+                              <Separator className="flex-grow" />
+                            </div>
+                            
+                            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+                              {Array.from({ length: flupsyMaxPositions }).map((_, i) => {
+                                const position = i + 1;
+                                const basket = getFlupsyBasketByPosition('DX', position);
+                                
+                                return (
+                                  <TooltipProvider key={`${flupsyId}-dx-${position}`}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div 
+                                          onClick={basket ? () => handleBasketClick(basket) : undefined}
+                                          className={`border rounded-md p-2 text-center text-xs ${
+                                            basket ? getBasketColorClass(basket) : 'bg-gray-50 border-dashed'
+                                          } ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : 'min-h-[3.5rem]'}`}
+                                        >
+                                          <div>Pos. {position}</div>
+                                          {basket && (
+                                            <div className="font-semibold mt-1">
+                                              #{basket.physicalNumber}
+                                              {basket.currentCycleId && (
+                                                <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
+                                                  Ciclo {basket.currentCycleId}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
                                         </div>
-                                      )}
-                                      {basket.currentCycleId && (
-                                        <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
-                                          Ciclo {basket.currentCycleId}
-                                        </div>
-                                      )}
-                                    </div>
-                                  )}
-                                  {baskets.length > 1 && selectedTab === "all" && (
-                                    <div className="absolute -top-1 -right-1 bg-blue-500 text-white rounded-full w-5 h-5 flex items-center justify-center text-[10px] font-bold">
-                                      +{baskets.length - 1}
-                                    </div>
-                                  )}
-                                </div>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" align="center" className="z-50">
-                                {baskets.length > 1 && selectedTab === "all" ? (
-                                  <div className="w-60 p-2">
-                                    <div className="font-bold text-sm mb-2">Posizione {position} - Più cestelli presenti</div>
-                                    <div className="space-y-2">
-                                      {baskets.map(b => (
-                                        <div key={b.id} className="text-xs p-1 border-b">
-                                          <div className="font-semibold">Cestello #{b.physicalNumber}</div>
-                                          <div className="text-gray-500">
-                                            {flupsys?.find(f => f.id === b.flupsyId)?.name || ""}
-                                          </div>
-                                        </div>
-                                      ))}
-                                    </div>
-                                  </div>
-                                ) : (
-                                  renderTooltipContent(basket)
-                                )}
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        );
-                      })}
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            
-            {/* Unassigned baskets section (baskets without positions) */}
-            {noRowAssigned.length > 0 && (
-              <div className="border rounded-lg p-4">
-                <div className="mb-2">
-                  <Badge variant="destructive" className="mb-2">Cestelli senza posizione assegnata</Badge>
-                </div>
-                <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-                  {noRowAssigned.map((basket) => (
-                    <TooltipProvider key={basket.id}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div 
-                            onClick={() => handleBasketClick(basket)}
-                            className={`border rounded-md p-2 text-center text-xs ${
-                              getBasketColorClass(basket)
-                            } cursor-pointer hover:shadow-md transition-shadow`}
-                          >
-                            <div>Cesta #{basket.physicalNumber}</div>
-                            {selectedTab === "all" && flupsys && (
-                              <div className="text-[10px] text-gray-500 truncate">
-                                {flupsys.find(f => f.id === basket.flupsyId)?.name || ""}
-                              </div>
-                            )}
-                            <div className="mt-1 text-gray-500">
-                              {basket.state === 'active' ? 'Attiva' : 'Disponibile'}
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" align="center" className="z-50">
+                                        {renderTooltipContent(basket)}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                );
+                              })}
                             </div>
                           </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" align="center" className="z-50">
-                          {renderTooltipContent(basket)}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
-                </div>
+                          
+                          {/* SX row (Left row) */}
+                          <div>
+                            <div className="flex items-center mb-1">
+                              <Badge variant="secondary" className="mr-2">Fila SX</Badge>
+                              <Separator className="flex-grow" />
+                            </div>
+                            
+                            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+                              {Array.from({ length: flupsyMaxPositions }).map((_, i) => {
+                                const position = i + 1;
+                                const basket = getFlupsyBasketByPosition('SX', position);
+                                
+                                return (
+                                  <TooltipProvider key={`${flupsyId}-sx-${position}`}>
+                                    <Tooltip>
+                                      <TooltipTrigger asChild>
+                                        <div 
+                                          onClick={basket ? () => handleBasketClick(basket) : undefined}
+                                          className={`border rounded-md p-2 text-center text-xs ${
+                                            basket ? getBasketColorClass(basket) : 'bg-gray-50 border-dashed'
+                                          } ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : 'min-h-[3.5rem]'}`}
+                                        >
+                                          <div>Pos. {position}</div>
+                                          {basket && (
+                                            <div className="font-semibold mt-1">
+                                              #{basket.physicalNumber}
+                                              {basket.currentCycleId && (
+                                                <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
+                                                  Ciclo {basket.currentCycleId}
+                                                </div>
+                                              )}
+                                            </div>
+                                          )}
+                                        </div>
+                                      </TooltipTrigger>
+                                      <TooltipContent side="top" align="center" className="z-50">
+                                        {renderTooltipContent(basket)}
+                                      </TooltipContent>
+                                    </Tooltip>
+                                  </TooltipProvider>
+                                );
+                              })}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      {/* Unassigned baskets section (baskets without positions) */}
+                      {flupsyNoRowAssigned.length > 0 && (
+                        <div className="mt-4 pt-4 border-t">
+                          <div className="mb-2">
+                            <Badge variant="destructive" className="mb-2">Cestelli senza posizione assegnata</Badge>
+                          </div>
+                          <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
+                            {flupsyNoRowAssigned.map((basket) => (
+                              <TooltipProvider key={basket.id}>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <div 
+                                      onClick={() => handleBasketClick(basket)}
+                                      className={`border rounded-md p-2 text-center text-xs ${
+                                        getBasketColorClass(basket)
+                                      } cursor-pointer hover:shadow-md transition-shadow`}
+                                    >
+                                      <div>Cesta #{basket.physicalNumber}</div>
+                                      <div className="mt-1 text-gray-500">
+                                        {basket.state === 'active' ? 'Attiva' : 'Disponibile'}
+                                      </div>
+                                    </div>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="top" align="center" className="z-50">
+                                    {renderTooltipContent(basket)}
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            ) : (
+              // Mostra il singolo FLUPSY selezionato
+              <div>
+                {selectedFlupsy && baskets && (
+                  <div className="border rounded-lg p-4 relative mb-8">
+                    <div className="flex justify-between items-center mb-2">
+                      <div className="font-medium text-base">{selectedFlupsy.name}</div>
+                      <Badge variant="outline" className="absolute right-2 top-2">
+                        Visione singola
+                      </Badge>
+                    </div>
+                    
+                    <div className="relative pt-6">
+                      {/* Propeller indicator positioned at the left side */}
+                      <div className="relative mb-4">
+                        <div className="bg-blue-500 w-12 h-12 rounded-full absolute -left-6 -top-6 flex items-center justify-center text-white">
+                          <span className="text-xs font-semibold">Elica</span>
+                        </div>
+                      </div>
+                      
+                      <div className="space-y-4 mt-4">
+                        {/* Qui inserisci la logica per visualizzare un singolo FLUPSY */}
+                        <div className="text-center py-4">
+                          Seleziona "Tutti i FLUPSY" nella scheda in alto per vedere tutti i FLUPSY contemporaneamente
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                )}
               </div>
             )}
           </div>
