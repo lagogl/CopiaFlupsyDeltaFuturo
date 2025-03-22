@@ -18,6 +18,7 @@ import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/component
 import { Separator } from "@/components/ui/separator";
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import OperationForm from '@/components/OperationForm';
+import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
 
 export default function Operations() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -50,6 +51,21 @@ export default function Operations() {
   // Query cycles for filter and grouping
   const { data: cycles, isLoading: isLoadingCycles } = useQuery({
     queryKey: ['/api/cycles'],
+  });
+  
+  // Query sizes for operation size display
+  const { data: sizes, isLoading: isLoadingSizes } = useQuery({
+    queryKey: ['/api/sizes'],
+  });
+  
+  // Query lots for operation lot display
+  const { data: lots, isLoading: isLoadingLots } = useQuery({
+    queryKey: ['/api/lots'],
+  });
+  
+  // Query SGR data for growth performance calculation
+  const { data: sgrData, isLoading: isLoadingSgr } = useQuery({
+    queryKey: ['/api/sgr'],
   });
 
   // Create mutation
