@@ -324,7 +324,7 @@ export default function FlupsyVisualizer() {
               </div>
               
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2 mt-3">
-                {flupsys && flupsys.map((flupsy: any) => (
+                {flupsys && flupsys.map((flupsy) => (
                   <div 
                     key={flupsy.id} 
                     className={`
@@ -353,8 +353,8 @@ export default function FlupsyVisualizer() {
                 Tutti i FLUPSY ({selectedFlupsyIds.length})
               </TabsTrigger>
               
-              {flupsys && selectedFlupsyIds.map((flupsyId: number) => {
-                const flupsy = flupsys.find((f: any) => f.id === flupsyId);
+              {flupsys && selectedFlupsyIds.map((flupsyId) => {
+                const flupsy = flupsys.find(f => f.id === flupsyId);
                 if (!flupsy) return null;
                 
                 return (
@@ -510,7 +510,7 @@ export default function FlupsyVisualizer() {
                   <Badge variant="destructive" className="mb-2">Cestelli senza posizione assegnata</Badge>
                 </div>
                 <div className="grid grid-cols-4 md:grid-cols-8 gap-2">
-                  {noRowAssigned.map((basket: any) => (
+                  {noRowAssigned.map((basket) => (
                     <TooltipProvider key={basket.id}>
                       <Tooltip>
                         <TooltipTrigger asChild>
