@@ -506,7 +506,14 @@ export default function Operations() {
                           {getOperationTypeBadge(op.type)}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          #{op.basket?.physicalNumber || op.basketId}
+                          <div>
+                            #{op.basket?.physicalNumber || op.basketId}
+                            {op.basket?.row && op.basket?.position && (
+                              <span className="text-xs block text-indigo-600 mt-1">
+                                Posizione: {op.basket.row} - {op.basket.position}
+                              </span>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           #{op.cycleId}
@@ -621,7 +628,10 @@ export default function Operations() {
                           <div>
                             <h3 className="text-lg font-semibold">Ciclo #{cycleId}</h3>
                             <p className="text-sm text-gray-500">
-                              Cesta #{basket?.physicalNumber || '?'} • 
+                              Cesta #{basket?.physicalNumber || '?'}
+                              {basket?.row && basket?.position && (
+                                <span className="text-indigo-600"> [Pos: {basket.row} - {basket.position}]</span>
+                              )} • 
                               {cycle?.state === 'active' ? (
                                 <span className="text-emerald-600"> Attivo</span>
                               ) : (
