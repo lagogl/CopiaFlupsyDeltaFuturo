@@ -35,6 +35,7 @@ export interface IStorage {
   getOperationsByDate(date: Date): Promise<Operation[]>;
   createOperation(operation: InsertOperation): Promise<Operation>;
   updateOperation(id: number, operation: Partial<Operation>): Promise<Operation | undefined>;
+  deleteOperation(id: number): Promise<boolean>;
   
   // Cycle methods
   getCycles(): Promise<Cycle[]>;
@@ -337,6 +338,15 @@ export class MemStorage implements IStorage {
     
     this.operations.set(id, updatedOperation);
     return updatedOperation;
+  }
+  
+  async deleteOperation(id: number): Promise<boolean> {
+    const exists = this.operations.has(id);
+    if (exists) {
+      this.operations.delete(id);
+      return true;
+    }
+    return false;
   }
   
   // Cycle methods

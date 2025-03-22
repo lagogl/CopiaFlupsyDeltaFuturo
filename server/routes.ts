@@ -688,6 +688,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.delete("/api/operations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid operation ID" });
+      }
+
+      // Check if the operation exists
+      const operation = await storage.getOperation(id);
+      if (!operation) {
+        return res.status(404).json({ message: "Operation not found" });
+      }
+
+      // Delete the operation
+      const success = await storage.deleteOperation(id);
+      if (success) {
+        return res.status(200).json({ message: "Operation deleted successfully" });
+      } else {
+        return res.status(500).json({ message: "Failed to delete operation" });
+      }
+    } catch (error) {
+      console.error("Error deleting operation:", error);
+      res.status(500).json({ message: "Failed to delete operation" });
+    }
+  });
+
   // === Cycle routes ===
   app.get("/api/cycles", async (req, res) => {
     try {
