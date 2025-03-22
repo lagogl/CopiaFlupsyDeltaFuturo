@@ -7,7 +7,7 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLocation } from 'wouter';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Tooltip, 
@@ -21,7 +21,8 @@ import {
   getSizeFromAnimalsPerKg,
   getBasketColorBySize
 } from '@/lib/utils';
-import { CheckSquare, Square, Filter, Eye, Layers } from 'lucide-react';
+import { CheckSquare, Square, Filter, Eye, Layers, TrendingUp, TrendingDown, ArrowUp } from 'lucide-react';
+import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
 
 export default function FlupsyVisualizerNew() {
   const isMobile = useIsMobile();
