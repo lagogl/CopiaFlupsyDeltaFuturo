@@ -165,6 +165,46 @@ export function getSizeColor(sizeCode: string): string {
   return 'bg-blue-100 text-blue-800';
 }
 
+/**
+ * Calcola lo spessore del bordo in base alla taglia (peso)
+ * @param weight - Peso in mg
+ * @returns Classe CSS per lo spessore del bordo
+ */
+export function getBorderThicknessByWeight(weight: number | null): string {
+  if (!weight || weight <= 0) return 'border';
+  
+  if (weight < 300) return 'border';
+  if (weight < 800) return 'border-2';
+  if (weight < 2000) return 'border-4';
+  if (weight < 5000) return 'border-[6px]';
+  return 'border-[8px]';
+}
+
+/**
+ * Formatta il numero di animali in formato più leggibile
+ * @param animalsPerKg - Numero di animali per kg
+ * @param weight - Peso medio in mg
+ * @returns Stringa formattata con il numero di animali
+ */
+export function formatAnimalCount(animalsPerKg: number | null, weight: number | null): string {
+  if (!animalsPerKg || !weight) return 'N/A';
+  
+  // Per un peso in milligrammi, calcoliamo quanti animali ci sono in un kg
+  const animalsPerGram = animalsPerKg / 1000;
+  
+  // Poi calcoliamo il peso in grammi
+  const weightInGrams = weight / 1000;
+  
+  // Quindi, un numero approssimativo di animali è animali per grammo moltiplicato per il peso in grammi
+  const approximateAnimals = Math.round(animalsPerGram * weightInGrams);
+  
+  if (approximateAnimals < 1000) {
+    return `${approximateAnimals}`;
+  } else {
+    return `${(approximateAnimals / 1000).toFixed(1)}K`;
+  }
+}
+
 export function getBasketColorBySize(targetSizeCode: string | null): string {
   if (!targetSizeCode) return 'bg-slate-100 border border-slate-200';
   
