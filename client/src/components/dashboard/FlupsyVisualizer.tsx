@@ -263,6 +263,11 @@ export default function FlupsyVisualizer() {
                     Taglia target: <span className="font-bold">{targetSize.code}</span> ({targetSize.name})
                   </div>
                 )}
+                {hasLargeSize(basket) && (
+                  <div className="text-xs font-bold mt-1 text-red-600">
+                    Taglia TP-3000 o maggiore
+                  </div>
+                )}
               </div>
             )}
           </>
