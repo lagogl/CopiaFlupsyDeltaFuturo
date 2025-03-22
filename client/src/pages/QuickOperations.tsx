@@ -1,5 +1,6 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation } from '@tanstack/react-query';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Zap, Filter, BarChart, Layers, AlertCircle } from 'lucide-react';
@@ -287,16 +288,58 @@ export default function QuickOperations() {
     }
   };
   
+  // Mutazione per creare una nuova operazione
+  const createOperationMutation = useMutation({
+    mutationFn: async (operationData: any) => {
+      return apiRequest('/api/operations', {
+        method: 'POST',
+        data: operationData
+      });
+    },
+    onSuccess: () => {
+      // Invalida la cache delle operazioni per ricaricare i dati
+      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      
+      // Mostra toast di successo
+      toast({
+        title: 'Operazione registrata',
+        description: 'L\'operazione è stata registrata con successo',
+      });
+      
+      // Chiudi il modal
+      setOperationDialogOpen(false);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Errore',
+        description: `Errore durante la registrazione: ${error.message || 'Errore sconosciuto'}`,
+        variant: 'destructive'
+      });
+    }
+  });
+
   // Gestisce click su operazione rapida
   const handleQuickOperation = (basketId: number, operationType: string) => {
+    // Se l'operazione è "duplicate", dobbiamo ottenere l'ultima operazione
+    // e prepararla per la ripetizione
+    const basket = baskets?.find((b: Basket) => b.id === basketId);
+    if (!basket) return;
+    
+    const basketOperations = operations ? operations.filter((op: Operation) => op.basketId === basketId) : [];
+    const sortedOps = [...basketOperations].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
+    
     setSelectedBasketId(basketId);
     setSelectedOperationType(operationType);
     setOperationDialogOpen(true);
     
-    // Per ora mostreremo solo un toast
+    // Mostra un toast di feedback
     toast({
       title: 'Operazione rapida attivata',
-      description: `Basket #${basketId} - Operazione: ${operationType}`,
+      description: `Basket #${basket.physicalNumber} - Operazione: ${getOperationTypeLabel(operationType)}`,
     });
   };
   
@@ -477,7 +520,7 @@ export default function QuickOperations() {
         </div>
       )}
       
-      {/* Dialog per operazioni - implementazione dettagliata da fare */}
+      {/* Dialog per operazioni rapide */}
       <Dialog open={operationDialogOpen} onOpenChange={setOperationDialogOpen}>
         <DialogContent className="max-w-md">
           <DialogHeader>
@@ -488,20 +531,196 @@ export default function QuickOperations() {
             </DialogTitle>
           </DialogHeader>
           
-          <div className="py-4">
-            <p className="text-center text-muted-foreground">
-              Implementazione completa da fare. Questo è un placeholder per il form di operazione rapida.
-            </p>
-          </div>
-          
-          <div className="flex justify-end space-x-2">
-            <Button variant="outline" onClick={() => setOperationDialogOpen(false)}>
-              Annulla
-            </Button>
-            <Button>
-              Salva Operazione
-            </Button>
-          </div>
+          {selectedBasketId && (
+            <div className="py-4 space-y-4">
+              {(() => {
+                // Recuperiamo i dati necessari
+                const basket = baskets?.find((b: Basket) => b.id === selectedBasketId);
+                const basketOperations = operations ? operations.filter((op: Operation) => op.basketId === selectedBasketId) : [];
+                const sortedOps = [...basketOperations].sort((a, b) => 
+                  new Date(b.date).getTime() - new Date(a.date).getTime()
+                );
+                const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
+                const cycle = cycles?.find((c: Cycle) => c.id === basket?.currentCycleId);
+                
+                if (!basket || !cycle) {
+                  return <div>Errore nel caricamento dei dati della cesta</div>;
+                }
+                
+                // Se è duplicazione, mostriamo i dati dell'ultima operazione
+                if (selectedOperationType === 'duplicate' && lastOperation) {
+                  // Prepariamo i dati per la nuova operazione
+                  const today = new Date();
+                  const operationData = {
+                    type: lastOperation.type === 'prima-attivazione' ? 'misura' : lastOperation.type,
+                    date: today.toISOString(),
+                    basketId: selectedBasketId,
+                    cycleId: cycle.id,
+                    sizeId: lastOperation.sizeId,
+                    lotId: lastOperation.lotId,
+                    sgrId: lastOperation.sgrId,
+                    animalsPerKg: lastOperation.animalsPerKg,
+                    notes: '',
+                    // Calcoliamo i valori derivati
+                    averageWeight: lastOperation.animalsPerKg 
+                      ? 1000000 / lastOperation.animalsPerKg 
+                      : null
+                  };
+                  
+                  return (
+                    <div>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Cesta</label>
+                          <div className="p-2 rounded bg-gray-100">#{basket.physicalNumber}</div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Tipo operazione</label>
+                          <div className="p-2 rounded bg-gray-100">
+                            {getOperationTypeLabel(operationData.type)}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Data</label>
+                          <div className="p-2 rounded bg-gray-100">
+                            {format(today, 'dd/MM/yyyy', { locale: it })}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Animali/kg</label>
+                          <div className="p-2 rounded bg-gray-100">
+                            {operationData.animalsPerKg ? formatNumberWithCommas(operationData.animalsPerKg) : '-'}
+                          </div>
+                        </div>
+                        {operationData.averageWeight && (
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
+                            <div className="p-2 rounded bg-gray-100">
+                              {formatNumberWithCommas(operationData.averageWeight)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex justify-end space-x-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setOperationDialogOpen(false)}
+                        >
+                          Annulla
+                        </Button>
+                        <Button 
+                          onClick={() => createOperationMutation.mutate(operationData)}
+                          disabled={createOperationMutation.isPending}
+                        >
+                          {createOperationMutation.isPending ? (
+                            <>
+                              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              Salvataggio...
+                            </>
+                          ) : "Salva Operazione"}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                } else if (selectedOperationType === 'misura' || selectedOperationType === 'pulizia') {
+                  // Per operazioni di pulizia o misura semplici
+                  const today = new Date();
+                  const operationData = {
+                    type: selectedOperationType,
+                    date: today.toISOString(),
+                    basketId: selectedBasketId,
+                    cycleId: cycle.id,
+                    // Se è pulizia, non richiediamo altri dati
+                    ...(selectedOperationType === 'misura' && lastOperation ? {
+                      sizeId: lastOperation.sizeId,
+                      lotId: lastOperation.lotId,
+                      sgrId: lastOperation.sgrId,
+                      animalsPerKg: lastOperation.animalsPerKg
+                    } : {}),
+                    notes: '',
+                    // Calcoliamo i valori derivati per misura
+                    ...(selectedOperationType === 'misura' && lastOperation?.animalsPerKg ? {
+                      averageWeight: 1000000 / lastOperation.animalsPerKg
+                    } : {})
+                  };
+                  
+                  return (
+                    <div>
+                      <div className="grid grid-cols-2 gap-4 mb-4">
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Cesta</label>
+                          <div className="p-2 rounded bg-gray-100">#{basket.physicalNumber}</div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Tipo operazione</label>
+                          <div className="p-2 rounded bg-gray-100">
+                            {getOperationTypeLabel(operationData.type)}
+                          </div>
+                        </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Data</label>
+                          <div className="p-2 rounded bg-gray-100">
+                            {format(today, 'dd/MM/yyyy', { locale: it })}
+                          </div>
+                        </div>
+                        {operationData.animalsPerKg && (
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Animali/kg</label>
+                            <div className="p-2 rounded bg-gray-100">
+                              {formatNumberWithCommas(operationData.animalsPerKg)}
+                            </div>
+                          </div>
+                        )}
+                        {operationData.averageWeight && (
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
+                            <div className="p-2 rounded bg-gray-100">
+                              {formatNumberWithCommas(operationData.averageWeight)}
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div className="flex justify-end space-x-2">
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setOperationDialogOpen(false)}
+                        >
+                          Annulla
+                        </Button>
+                        <Button 
+                          onClick={() => createOperationMutation.mutate(operationData)}
+                          disabled={createOperationMutation.isPending}
+                        >
+                          {createOperationMutation.isPending ? (
+                            <>
+                              <div className="mr-2 h-4 w-4 animate-spin rounded-full border-2 border-current border-t-transparent" />
+                              Salvataggio...
+                            </>
+                          ) : "Salva Operazione"}
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                } else {
+                  return (
+                    <div>
+                      <p className="text-center text-muted-foreground mb-4">
+                        Questo tipo di operazione richiede un modulo più complesso.
+                        Utilizza la pagina "Operazioni" per registrare un'operazione più dettagliata.
+                      </p>
+                      <div className="flex justify-end">
+                        <Button variant="outline" onClick={() => setOperationDialogOpen(false)}>
+                          Chiudi
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                }
+              })()}
+            </div>
+          )}
         </DialogContent>
       </Dialog>
     </div>
