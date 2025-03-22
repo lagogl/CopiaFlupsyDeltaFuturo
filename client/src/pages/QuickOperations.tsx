@@ -160,14 +160,15 @@ function BasketCard({
                   <Badge variant="outline" className={getOperationTypeColor(lastOperation.type)}>
                     {getOperationTypeLabel(lastOperation.type)}
                   </Badge>
-                  {onDeleteOperation && (
-                    <Button 
+                  <Button 
                       variant="ghost" 
                       size="sm" 
                       className="h-6 w-6 p-0 ml-1 text-red-500 hover:text-red-700 hover:bg-red-50"
                       onClick={(e) => {
                         e.stopPropagation();
-                        onDeleteOperation(lastOperation.id);
+                        if (onDeleteOperation) {
+                          onDeleteOperation(lastOperation.id);
+                        }
                       }}
                     >
                       <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -176,7 +177,6 @@ function BasketCard({
                         <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
                       </svg>
                     </Button>
-                  )}
                 </div>
               </div>
               <div>
