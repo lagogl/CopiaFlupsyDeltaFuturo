@@ -1,20 +1,16 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRoute, Link } from 'wouter';
 import { format, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { ArrowLeft, ChevronRight, Calendar, Droplets, LineChart, List, Box, BarChart, RefreshCw } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Calendar, Droplets, List, Box } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
-import { Input } from '@/components/ui/input';
-import { apiRequest } from '@/lib/queryClient';
 import { getOperationTypeLabel, getOperationTypeColor, getSizeColor } from '@/lib/utils';
-import GrowthPredictionChart from '@/components/GrowthPredictionChart';
-import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
 export default function CycleDetail() {
   const [, params] = useRoute('/cycles/:id');
@@ -129,31 +125,8 @@ export default function CycleDetail() {
     return 60;
   };
   
-  // Funzione per calcolare le previsioni di crescita utilizzando l'endpoint specifico per cicli
-  const calculateGrowthPrediction = async () => {
-    if (!cycleId) return;
-    
-    setIsLoadingPrediction(true);
-    try {
-      // Utilizziamo l'endpoint specifico per cicli che calcolerà automaticamente i pesi
-      // e utilizzerà lo SGR reale o quello mensile appropriato
-      const response = await apiRequest('GET', 
-        `/api/cycles/${cycleId}/growth-prediction?days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
-      );
-      setGrowthPrediction(response || {});
-    } catch (error) {
-      console.error('Errore nel calcolo della previsione di crescita:', error);
-    } finally {
-      setIsLoadingPrediction(false);
-    }
-  };
-
-  // Effetto per caricare automaticamente le previsioni di crescita all'apertura della scheda statistiche
-  useEffect(() => {
-    if (activeTab === 'stats' && latestOperation?.animalsPerKg && !growthPrediction && !isLoadingPrediction) {
-      calculateGrowthPrediction();
-    }
-  }, [activeTab, latestOperation, growthPrediction, isLoadingPrediction]);
+  // Questa sezione è stata temporaneamente rimossa
+  // La funzionalità di previsione della crescita sarà implementata in futuro
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -580,7 +553,7 @@ export default function CycleDetail() {
               </CardContent>
             </Card>
             
-            {/* Timeline di proiezione taglie */}
+            {/* Timeline di proiezione taglie - disabilitata temporaneamente per problemi di hooks 
             {latestOperation?.animalsPerKg && growthPrediction && (
               <>
                 <SizeGrowthTimeline 
@@ -591,7 +564,7 @@ export default function CycleDetail() {
                   basketId={cycle.basketId}
                 />
               </>
-            )}
+            )} */}
           </div>
         </TabsContent>
         
