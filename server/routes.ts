@@ -213,7 +213,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           flupsyId: newBasket.flupsyId,
           row: parsedData.data.row,
           position: parsedData.data.position,
-          startDate: new Date(),
+          startDate: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
           operationId: null
         });
       }
@@ -283,7 +283,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Close the current position if exists
           const currentPosition = await storage.getCurrentBasketPosition(id);
           if (currentPosition) {
-            await storage.closeBasketPositionHistory(id, new Date());
+            const currentDate = new Date();
+            const formattedDate = currentDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+            await storage.closeBasketPositionHistory(id, formattedDate);
           }
           
           // Create a new position history entry
@@ -292,7 +294,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             flupsyId: flupsyId,
             row: parsedData.data.row,
             position: parsedData.data.position,
-            startDate: new Date(),
+            startDate: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
             operationId: null
           });
         }
@@ -989,10 +991,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
 
-      // Converti la data di arrivo in stringa
+      // Converti la data di arrivo nel formato corretto per PostgreSQL (YYYY-MM-DD)
+      const arrivalDate = parsedData.data.arrivalDate instanceof Date 
+        ? parsedData.data.arrivalDate
+        : new Date(parsedData.data.arrivalDate);
+      
+      const formattedDate = arrivalDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        
       const lotData = {
         ...parsedData.data,
-        arrivalDate: parsedData.data.arrivalDate.toString()
+        arrivalDate: formattedDate
       };
       const newLot = await storage.createLot(lotData);
       res.status(201).json(newLot);
