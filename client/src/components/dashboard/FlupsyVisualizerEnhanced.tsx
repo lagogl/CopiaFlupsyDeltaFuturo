@@ -158,6 +158,7 @@ export default function FlupsyVisualizer() {
     
     // Determina se è una taglia grande basandosi sul numero di animali per kg
     // La taglia TP-3000 o superiore ha animalsPerKg <= 32000
+    // Questo range include TP-3000 e TP-2000
     return latestOperation.animalsPerKg <= 32000;
   };
   
@@ -263,8 +264,8 @@ export default function FlupsyVisualizer() {
                   </div>
                 )}
                 {hasLargeSize(basket) && (
-                  <div className="text-xs font-bold mt-1 text-red-600">
-                    Taglia TP-3000 o maggiore
+                  <div className="text-xs font-bold mt-1 text-red-600 bg-red-50 px-1 py-0.5 rounded border border-red-200">
+                    ⚠️ Taglia TP-3000 o maggiore ⚠️
                   </div>
                 )}
                 <div className="text-xs text-muted-foreground mt-1">
@@ -332,8 +333,8 @@ export default function FlupsyVisualizer() {
           )}
           
           {animalCountDisplay && (
-            <div className="text-[9px] text-gray-600 mt-1">
-              {animalCountDisplay} anim
+            <div className="text-[9px] bg-orange-50 text-orange-700 rounded px-1 mt-1 font-semibold">
+              {animalCountDisplay} animali
             </div>
           )}
         </div>

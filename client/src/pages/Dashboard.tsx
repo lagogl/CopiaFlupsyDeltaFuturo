@@ -5,6 +5,7 @@ import RecentOperations from '@/components/dashboard/RecentOperations';
 import GrowthChart from '@/components/dashboard/GrowthChart';
 import ActiveCycles from '@/components/dashboard/ActiveCycles';
 import FlupsyVisualizer from '@/components/dashboard/FlupsyVisualizerEnhanced';
+import { Basket, Cycle, Operation, Lot } from '@shared/schema';
 
 export default function Dashboard() {
   // Query for active baskets and cycles
