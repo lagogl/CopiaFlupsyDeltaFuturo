@@ -3,19 +3,27 @@ import { useQuery } from '@tanstack/react-query';
 import { useRoute, Link } from 'wouter';
 import { format, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { ArrowLeft, ChevronRight, Calendar, Droplets, LineChart, List, Box } from 'lucide-react';
+import { ArrowLeft, ChevronRight, Calendar, Droplets, LineChart, List, Box, BarChart, RefreshCw } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { apiRequest } from '@/lib/queryClient';
 import { getOperationTypeLabel, getOperationTypeColor, getSizeColor } from '@/lib/utils';
+import GrowthPredictionChart from '@/components/GrowthPredictionChart';
 
 export default function CycleDetail() {
   const [, params] = useRoute('/cycles/:id');
   const cycleId = params?.id ? parseInt(params.id) : null;
   const [activeTab, setActiveTab] = useState('operations');
+  const [projectionDays, setProjectionDays] = useState(60); // default: 60 giorni
+  const [bestVariation, setBestVariation] = useState(20); // default: +20%
+  const [worstVariation, setWorstVariation] = useState(30); // default: -30%
+  const [isLoadingPrediction, setIsLoadingPrediction] = useState(false);
+  const [growthPrediction, setGrowthPrediction] = useState(null);
   
   // Fetch cycle details
   const { data: cycle, isLoading: cycleLoading } = useQuery({

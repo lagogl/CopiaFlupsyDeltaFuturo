@@ -21,6 +21,12 @@ export default function Sgr() {
   const [bestVariation, setBestVariation] = useState(20); // +20% default
   const [worstVariation, setWorstVariation] = useState(30); // -30% default
   
+  // Array dei mesi in italiano
+  const monthOrder = [
+    'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+    'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
+  ];
+  
   // Query SGRs
   const { data: sgrs, isLoading } = useQuery({
     queryKey: ['/api/sgr'],
@@ -79,12 +85,7 @@ export default function Sgr() {
       sgr.month.toLowerCase().includes(searchTerm.toLowerCase());
   }) || [];
 
-  // Sort SGRs by month order (Italian months)
-  const monthOrder = [
-    'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
-    'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
-  ];
-  
+  // Sort SGR by month order
   const sortedSgrs = [...(filteredSgrs || [])].sort((a, b) => {
     const monthA = a.month.toLowerCase();
     const monthB = b.month.toLowerCase();
@@ -95,6 +96,14 @@ export default function Sgr() {
   const sortedSgrGiornalieri = [...(sgrGiornalieri || [])].sort((a, b) => {
     return new Date(b.recordDate).getTime() - new Date(a.recordDate).getTime();
   });
+
+  // Utility per calcolare la media dei valori
+  function calculateAverage(values: (number | null)[]): string {
+    const validValues = values.filter(v => v !== null) as number[];
+    if (validValues.length === 0) return '-';
+    const sum = validValues.reduce((acc, curr) => acc + curr, 0);
+    return (sum / validValues.length).toFixed(2);
+  }
 
   return (
     <div>
@@ -410,102 +419,91 @@ export default function Sgr() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
               {isLoadingPrediction ? (
-                <Card className="h-[400px] flex items-center justify-center">
-                  <div className="text-center">
-                    <div className="mb-2">Caricamento previsioni...</div>
-                    <div className="text-sm text-gray-500">Attendere prego</div>
-                  </div>
-                </Card>
+                <div className="h-80 bg-white rounded-lg shadow flex items-center justify-center">
+                  <p className="text-gray-500">Caricamento delle previsioni...</p>
+                </div>
+              ) : !growthPrediction ? (
+                <div className="h-80 bg-white rounded-lg shadow flex items-center justify-center">
+                  <p className="text-gray-500">Clicca su "Aggiorna Previsione" per calcolare le proiezioni di crescita</p>
+                </div>
               ) : (
-                <GrowthPredictionChart
-                  currentWeight={currentWeightForPrediction}
-                  measurementDate={new Date()}
-                  theoreticalSgrMonthlyPercentage={getCurrentMonthSgr()}
-                  projectionDays={projectionDays}
-                  variationPercentages={{
-                    best: bestVariation,
-                    worst: worstVariation
-                  }}
-                />
+                <div className="bg-white p-4 rounded-lg shadow">
+                  <GrowthPredictionChart 
+                    currentWeight={currentWeightForPrediction}
+                    measurementDate={new Date()}
+                    theoreticalSgrMonthlyPercentage={getCurrentMonthSgr()}
+                    projectionDays={projectionDays}
+                    variationPercentages={{
+                      best: bestVariation,
+                      worst: worstVariation
+                    }}
+                  />
+                </div>
               )}
             </div>
+
             <div>
               <Card>
                 <CardHeader>
-                  <CardTitle>Parametri Previsione</CardTitle>
-                  <CardDescription>Modifica i valori per la simulazione</CardDescription>
+                  <CardTitle>Parametri di Proiezione</CardTitle>
+                  <CardDescription>Personalizza la previsione di crescita</CardDescription>
                 </CardHeader>
                 <CardContent>
-                  <div className="space-y-4">
+                  <div className="space-y-6">
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Peso iniziale (mg)</label>
-                      <Input
-                        type="number"
-                        value={currentWeightForPrediction}
+                      <label className="text-sm font-medium">Peso attuale (mg)</label>
+                      <Input 
+                        type="number" 
+                        value={currentWeightForPrediction} 
                         onChange={(e) => setCurrentWeightForPrediction(Number(e.target.value))}
-                        min={10}
-                        max={10000}
-                        step={10}
+                        min={1}
+                        max={5000}
                       />
-                      <div className="text-sm text-gray-500">
-                        Peso attuale in milligrammi
-                      </div>
+                      <p className="text-xs text-gray-500">Peso medio attuale in milligrammi</p>
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Giorni previsione</label>
-                      <Input
-                        type="number"
-                        value={projectionDays}
+                      <label className="text-sm font-medium">Giorni di proiezione</label>
+                      <Input 
+                        type="number" 
+                        value={projectionDays} 
                         onChange={(e) => setProjectionDays(Number(e.target.value))}
                         min={7}
                         max={365}
-                        step={1}
                       />
-                      <div className="text-sm text-gray-500">
-                        Numero di giorni futuri da prevedere
-                      </div>
+                      <p className="text-xs text-gray-500">Numero di giorni nel futuro</p>
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Scenario migliore (%)</label>
-                      <Input
-                        type="number"
-                        value={bestVariation}
+                      <label className="text-sm font-medium">Variazione Positiva (%)</label>
+                      <Input 
+                        type="number" 
+                        value={bestVariation} 
                         onChange={(e) => setBestVariation(Number(e.target.value))}
                         min={0}
                         max={100}
-                        step={5}
                       />
-                      <div className="text-sm text-gray-500">
-                        % migliore rispetto al teorico
-                      </div>
+                      <p className="text-xs text-gray-500">Percentuale di variazione positiva rispetto al valore teorico</p>
                     </div>
-                    
+
                     <div className="space-y-2">
-                      <label className="text-sm font-medium">Scenario peggiore (%)</label>
-                      <Input
-                        type="number"
-                        value={worstVariation}
+                      <label className="text-sm font-medium">Variazione Negativa (%)</label>
+                      <Input 
+                        type="number" 
+                        value={worstVariation} 
                         onChange={(e) => setWorstVariation(Number(e.target.value))}
                         min={0}
                         max={100}
-                        step={5}
                       />
-                      <div className="text-sm text-gray-500">
-                        % peggiore rispetto al teorico
-                      </div>
+                      <p className="text-xs text-gray-500">Percentuale di variazione negativa rispetto al valore teorico</p>
                     </div>
 
-                    <div className="text-sm mt-6">
-                      <h4 className="font-medium mb-2">Informazioni sul modello:</h4>
-                      <ul className="list-disc list-inside space-y-1 text-gray-600">
-                        <li>Basato su SGR mensile: {getCurrentMonthSgr()}%</li>
-                        <li>Formula: W(t) = W₀ × e^(SGR × t)</li>
-                        <li>Scenario migliore: +{bestVariation}% rispetto al teorico</li>
-                        <li>Scenario peggiore: -{worstVariation}% rispetto al teorico</li>
-                      </ul>
-                    </div>
+                    <Button 
+                      className="w-full" 
+                      onClick={() => refetchPrediction()}
+                    >
+                      Calcola Proiezione
+                    </Button>
                   </div>
                 </CardContent>
               </Card>
@@ -516,56 +514,43 @@ export default function Sgr() {
 
       {/* Create SGR Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Crea Nuovo Indice SGR</DialogTitle>
+            <DialogTitle>Crea nuovo indice SGR</DialogTitle>
           </DialogHeader>
           <SgrForm 
-            onSubmit={(data) => createSgrMutation.mutate(data)} 
-            isLoading={createSgrMutation.isPending}
+            onSubmit={createSgrMutation.mutate} 
+            isLoading={createSgrMutation.isPending} 
           />
         </DialogContent>
       </Dialog>
 
       {/* Edit SGR Dialog */}
-      <Dialog 
-        open={editingSgr !== null} 
-        onOpenChange={(open) => !open && setEditingSgr(null)}>
-        <DialogContent className="sm:max-w-[500px]">
+      <Dialog open={!!editingSgr} onOpenChange={() => setEditingSgr(null)}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Modifica Indice SGR</DialogTitle>
+            <DialogTitle>Modifica indice SGR</DialogTitle>
           </DialogHeader>
-          {editingSgr && (
-            <SgrForm 
-              defaultValues={editingSgr}
-              onSubmit={(data) => updateSgrMutation.mutate({ id: editingSgr.id, ...data })} 
-              isLoading={updateSgrMutation.isPending}
-            />
-          )}
+          <SgrForm 
+            onSubmit={updateSgrMutation.mutate} 
+            isLoading={updateSgrMutation.isPending} 
+            defaultValues={editingSgr}
+          />
         </DialogContent>
       </Dialog>
 
       {/* Create SGR Giornaliero Dialog */}
       <Dialog open={isCreateDailyDialogOpen} onOpenChange={setIsCreateDailyDialogOpen}>
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle>Registra Dati Seneye</DialogTitle>
+            <DialogTitle>Aggiungi misurazione Seneye</DialogTitle>
           </DialogHeader>
           <SgrGiornalieriForm 
-            onSubmit={(data) => createSgrGiornalieroMutation.mutate(data)} 
-            isLoading={createSgrGiornalieroMutation.isPending}
+            onSubmit={createSgrGiornalieroMutation.mutate} 
+            isLoading={createSgrGiornalieroMutation.isPending} 
           />
         </DialogContent>
       </Dialog>
     </div>
   );
-}
-
-// Utility function to calculate average of values, ignoring null values
-function calculateAverage(values: (number | null)[]): string {
-  const validValues = values.filter((v): v is number => v !== null);
-  if (validValues.length === 0) return '-';
-  
-  const sum = validValues.reduce((acc, val) => acc + val, 0);
-  return (sum / validValues.length).toFixed(1);
 }
