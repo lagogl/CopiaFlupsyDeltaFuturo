@@ -9,19 +9,19 @@ import { Basket, Cycle, Operation, Lot } from '@shared/schema';
 
 export default function Dashboard() {
   // Query for active baskets and cycles
-  const { data: baskets, isLoading: basketsLoading } = useQuery({
+  const { data: baskets, isLoading: basketsLoading } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
   });
 
-  const { data: cycles, isLoading: cyclesLoading } = useQuery({
+  const { data: cycles, isLoading: cyclesLoading } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles'],
   });
 
-  const { data: operations, isLoading: operationsLoading } = useQuery({
+  const { data: operations, isLoading: operationsLoading } = useQuery<Operation[]>({
     queryKey: ['/api/operations'],
   });
 
-  const { data: lots, isLoading: lotsLoading } = useQuery({
+  const { data: lots, isLoading: lotsLoading } = useQuery<Lot[]>({
     queryKey: ['/api/lots'],
   });
 
