@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter";
 import { 
   Home, Package, FileText, RefreshCw, Package2, BarChart2, 
   Scale, TrendingUp, Settings as SettingsIcon, Menu, Bell, 
-  User, Waves
+  User, Waves, Zap
 } from "lucide-react";
 
 interface MainLayoutProps {
@@ -23,6 +23,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     { icon: <Waves className="h-5 w-5 mr-2" />, label: "Unità FLUPSY", path: "/flupsys" },
     { icon: <Package className="h-5 w-5 mr-2" />, label: "Gestione Ceste", path: "/baskets" },
     { icon: <FileText className="h-5 w-5 mr-2" />, label: "Operazioni", path: "/operations" },
+    { icon: <Zap className="h-5 w-5 mr-2" />, label: "Operazioni Rapide", path: "/quick-operations" },
     { icon: <RefreshCw className="h-5 w-5 mr-2" />, label: "Cicli Produttivi", path: "/cycles" },
     { icon: <Package2 className="h-5 w-5 mr-2" />, label: "Gestione Lotti", path: "/lots" },
     { icon: <BarChart2 className="h-5 w-5 mr-2" />, label: "Statistiche", path: "/statistics" },
