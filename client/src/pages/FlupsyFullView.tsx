@@ -402,8 +402,26 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
   const handleLeftClick = () => {
     if (!basket) return;
     
-    // Naviga alla pagina di dettaglio del cestello o altre azioni
-    navigate(`/baskets/${basket.id}`);
+    if (basket.state === 'active' && basket.currentCycleId) {
+      // Se il cestello è attivo, naviga alla pagina di dettaglio del ciclo corrente
+      navigate(`/cycles/${basket.currentCycleId}`);
+    } else {
+      // Se il cestello è disponibile, trova l'ultimo ciclo chiuso associato a questo cestello
+      const basketCycles = cycles?.filter(cycle => cycle.basketId === basket.id) || [];
+      const latestCycle = basketCycles.length > 0 
+        ? basketCycles.sort((a, b) => 
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+          )[0] 
+        : null;
+      
+      if (latestCycle) {
+        // Se esiste un ciclo chiuso, naviga a quel ciclo
+        navigate(`/cycles/${latestCycle.id}`);
+      } else {
+        // Fallback alla lista dei cestelli se non ci sono cicli
+        navigate('/baskets');
+      }
+    }
   };
   
   const handleRightClick = (e: React.MouseEvent) => {
@@ -579,7 +597,27 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
   // Funzioni per le operazioni di menu contestuale
   const handleViewBasket = () => {
     if (!basket) return;
-    navigate(`/baskets/${basket.id}`);
+    
+    if (basket.state === 'active' && basket.currentCycleId) {
+      // Se il cestello è attivo, naviga alla pagina di dettaglio del ciclo corrente
+      navigate(`/cycles/${basket.currentCycleId}`);
+    } else {
+      // Se il cestello è disponibile, trova l'ultimo ciclo chiuso associato a questo cestello
+      const basketCycles = cycles?.filter(cycle => cycle.basketId === basket.id) || [];
+      const latestCycle = basketCycles.length > 0 
+        ? basketCycles.sort((a, b) => 
+            new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+          )[0] 
+        : null;
+      
+      if (latestCycle) {
+        // Se esiste un ciclo chiuso, naviga a quel ciclo
+        navigate(`/cycles/${latestCycle.id}`);
+      } else {
+        // Fallback alla lista dei cestelli se non ci sono cicli
+        navigate('/baskets');
+      }
+    }
   };
 
   const handleAddOperation = () => {
@@ -589,7 +627,10 @@ function BasketPositionCard({ position, basket, operations = [], cycle, viewMode
 
   const handleEditBasket = () => {
     if (!basket) return;
-    navigate(`/baskets/edit/${basket.id}`);
+    
+    // Verificare se esiste una rotta per l'editing dei cestelli
+    // Per ora reindiriziamo alla dashboard come fallback
+    navigate('/');
   };
 
   const handleActivateBasket = () => {
