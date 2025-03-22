@@ -737,13 +737,27 @@ export default function Operations() {
                         {cycleOps.map((op: any, index: number) => {
                           // Find previous operation to calculate growth
                           const prevOp = index > 0 ? cycleOps[index - 1] : null;
-                          const weightChange = prevOp && op.animalsPerKg && prevOp.animalsPerKg 
-                            ? Math.round((1000000 / op.animalsPerKg) - (1000000 / prevOp.animalsPerKg)) 
-                            : null;
-                          const daysDiff = prevOp 
-                            ? Math.round((new Date(op.date).getTime() - new Date(prevOp.date).getTime()) / (1000 * 60 * 60 * 24))
-                            : null;
-                            
+                          
+                          // Calcola il cambio di peso e i giorni tra le operazioni
+                          const prevWeight = prevOp && prevOp.animalsPerKg ? 1000000 / prevOp.animalsPerKg : null;
+                          const currWeight = op.animalsPerKg ? 1000000 / op.animalsPerKg : null;
+                          const weightChange = prevWeight && currWeight ? Math.round(currWeight - prevWeight) : null;
+                          
+                          const prevDate = prevOp ? new Date(prevOp.date) : null;
+                          const currDate = new Date(op.date);
+                          const daysDiff = prevDate ? Math.round((currDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)) : null;
+                          
+                          // Calcola la crescita percentuale attuale
+                          const actualGrowthPercent = prevWeight && currWeight && prevWeight > 0 ? 
+                            ((currWeight - prevWeight) / prevWeight) * 100 : null;
+                          
+                          // Calcola la crescita teorica basata sull'SGR
+                          const theoreticalGrowth = prevDate && daysDiff ? 
+                            calculateTheoreticalGrowth(prevDate, daysDiff) : null;
+                          
+                          const targetGrowthPercent = theoreticalGrowth ? 
+                            theoreticalGrowth.theoreticalGrowthPercent : null;
+                          
                           return (
                             <Card key={op.id} className={`border-l-4 ${index === 0 ? 'border-l-purple-500' : op.type.includes('vendita') ? 'border-l-green-500' : 'border-l-blue-500'}`}>
                               <CardHeader className="py-3 px-4">
@@ -851,6 +865,22 @@ export default function Operations() {
                                     )}
                                   </div>
                                 </div>
+                                
+                                {/* Visualizza l'indicatore di performance di crescita per le operazioni di misura */}
+                                {index > 0 && op.type === 'misura' && prevWeight && currWeight && actualGrowthPercent !== null && theoreticalGrowth && (
+                                  <div className="mt-4">
+                                    <p className="text-gray-500 text-sm font-medium mb-1">Performance di crescita</p>
+                                    <GrowthPerformanceIndicator
+                                      actualGrowthPercent={actualGrowthPercent}
+                                      targetGrowthPercent={targetGrowthPercent}
+                                      daysBetweenMeasurements={daysDiff || 0}
+                                      currentAverageWeight={currWeight}
+                                      previousAverageWeight={prevWeight}
+                                      sgrMonth={theoreticalGrowth?.sgrMonth}
+                                      sgrDailyPercentage={theoreticalGrowth?.sgrDailyPercentage}
+                                    />
+                                  </div>
+                                )}
                                 
                                 {op.notes && (
                                   <div className="mt-3 text-sm">
