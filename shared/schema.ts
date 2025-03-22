@@ -78,6 +78,20 @@ export const sgr = pgTable("sgr", {
   id: serial("id").primaryKey(),
   month: text("month").notNull(), // e.g., January, February...
   percentage: real("percentage").notNull(), // e.g., 0.5%
+  dailyPercentage: real("daily_percentage"), // Valore giornaliero calcolato dal sistema
+  calculatedFromReal: boolean("calculated_from_real").default(false), // Indica se è stato calcolato da dati reali
+});
+
+// SGR Giornalieri (Dati giornalieri dalla sonda Seneye)
+export const sgrGiornalieri = pgTable("sgr_giornalieri", {
+  id: serial("id").primaryKey(),
+  recordDate: timestamp("record_date").notNull(), // Data e ora di registrazione (fissata alle 12:00)
+  temperature: real("temperature"), // Temperatura dell'acqua in °C
+  pH: real("ph"), // pH dell'acqua
+  ammonia: real("ammonia"), // Livello di ammoniaca in mg/L
+  oxygen: real("oxygen"), // Livello di ossigeno in mg/L
+  salinity: real("salinity"), // Salinità in ppt
+  notes: text("notes"), // Note aggiuntive
 });
 
 // Lots (Lotti)
@@ -132,7 +146,13 @@ export const insertSizeSchema = createInsertSchema(sizes).omit({
 });
 
 export const insertSgrSchema = createInsertSchema(sgr).omit({ 
-  id: true 
+  id: true,
+  dailyPercentage: true,
+  calculatedFromReal: true
+});
+
+export const insertSgrGiornalieriSchema = createInsertSchema(sgrGiornalieri).omit({
+  id: true
 });
 
 export const insertLotSchema = createInsertSchema(lots).omit({ 
@@ -165,6 +185,9 @@ export type InsertSize = z.infer<typeof insertSizeSchema>;
 export type Sgr = typeof sgr.$inferSelect;
 export type InsertSgr = z.infer<typeof insertSgrSchema>;
 
+export type SgrGiornaliero = typeof sgrGiornalieri.$inferSelect;
+export type InsertSgrGiornaliero = z.infer<typeof insertSgrGiornalieriSchema>;
+
 export type Lot = typeof lots.$inferSelect;
 export type InsertLot = z.infer<typeof insertLotSchema>;
 
@@ -186,4 +209,8 @@ export const lotSchema = insertLotSchema.extend({
 
 export const basketPositionHistorySchema = insertBasketPositionHistorySchema.extend({
   startDate: z.coerce.date()
+});
+
+export const sgrGiornalieriSchema = insertSgrGiornalieriSchema.extend({
+  recordDate: z.coerce.date()
 });
