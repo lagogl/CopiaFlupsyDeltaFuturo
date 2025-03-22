@@ -735,6 +735,12 @@ export default function QuickOperations() {
                   const today = new Date();
                   const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
                   
+                  // Ordinare le operazioni per data (più recenti prima)
+                  const sortedOps = [...basketOperations].sort((a, b) => 
+                    new Date(b.date).getTime() - new Date(a.date).getTime()
+                  );
+                  const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
+                  
                   // Cerca operazioni di oggi per questa cesta
                   const hasOperationToday = basketOperations.some(op => {
                     const opDate = new Date(op.date).toISOString().split('T')[0];
