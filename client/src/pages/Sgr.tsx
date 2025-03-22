@@ -32,6 +32,12 @@ export default function Sgr() {
   });
   
   // Get current month's SGR
+  const getCurrentMonthSgr = () => {
+    const today = new Date();
+    const currentMonthName = monthOrder[today.getMonth()];
+    const currentSgr = sgrs?.find(sgr => sgr.month.toLowerCase() === currentMonthName);
+    return currentSgr?.percentage || 60; // Default to 60% if not found
+  };
   
   // Query per le proiezioni di crescita
   const { data: growthPrediction, isLoading: isLoadingPrediction, refetch: refetchPrediction } = useQuery({
