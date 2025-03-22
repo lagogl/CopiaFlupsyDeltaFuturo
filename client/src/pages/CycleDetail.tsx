@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { apiRequest } from '@/lib/queryClient';
 import { getOperationTypeLabel, getOperationTypeColor, getSizeColor } from '@/lib/utils';
 import GrowthPredictionChart from '@/components/GrowthPredictionChart';
+import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
 export default function CycleDetail() {
   const [, params] = useRoute('/cycles/:id');
@@ -407,175 +408,191 @@ export default function CycleDetail() {
         </TabsContent>
         
         <TabsContent value="stats" className="mt-6">
-          <Card>
-            <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
-              <div>
-                <CardTitle>Previsioni di Crescita</CardTitle>
-                <CardDescription>
-                  {growthPrediction ? 
-                    `Proiezioni basate su SGR ${growthPrediction.sgrPercentage?.toFixed(2)}% (${growthPrediction.realSgr ? 'calcolata' : 'teorica'})` : 
-                    'Proiezioni di crescita basate su SGR mensile'}
-                </CardDescription>
-              </div>
-              {latestOperation?.animalsPerKg && (
-                <Button 
-                  variant="outline"
-                  size="sm"
-                  onClick={calculateGrowthPrediction}
-                  disabled={isLoadingPrediction}
-                >
-                  {isLoadingPrediction ? (
-                    <>
-                      <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                      Calcolo...
-                    </>
-                  ) : (
-                    <>
-                      <BarChart className="h-4 w-4 mr-2" />
-                      {growthPrediction ? 'Aggiorna Previsioni' : 'Genera Previsioni'}
-                    </>
-                  )}
-                </Button>
-              )}
-            </CardHeader>
-            <CardContent>
-              {!latestOperation?.animalsPerKg ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <Droplets className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                  <p>Per generare previsioni di crescita, è necessario registrare almeno una misurazione del peso</p>
-                  <Button asChild className="mt-4">
-                    <Link href={`/operations?cycleId=${cycle.id}`}>
-                      <List className="mr-2 h-4 w-4" />
-                      Registra una Misurazione
-                    </Link>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Grafico di previsione peso */}
+            <Card className="md:col-span-2">
+              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
+                <div>
+                  <CardTitle>Previsioni di Crescita</CardTitle>
+                  <CardDescription>
+                    {growthPrediction ? 
+                      `Proiezioni basate su SGR ${growthPrediction.sgrPercentage?.toFixed(2)}% (${growthPrediction.realSgr ? 'calcolata' : 'teorica'})` : 
+                      'Proiezioni di crescita basate su SGR mensile'}
+                  </CardDescription>
+                </div>
+                {latestOperation?.animalsPerKg && (
+                  <Button 
+                    variant="outline"
+                    size="sm"
+                    onClick={calculateGrowthPrediction}
+                    disabled={isLoadingPrediction}
+                  >
+                    {isLoadingPrediction ? (
+                      <>
+                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                        Calcolo...
+                      </>
+                    ) : (
+                      <>
+                        <BarChart className="h-4 w-4 mr-2" />
+                        {growthPrediction ? 'Aggiorna Previsioni' : 'Genera Previsioni'}
+                      </>
+                    )}
                   </Button>
-                </div>
-              ) : !growthPrediction ? (
-                <div className="text-center py-12 text-muted-foreground">
-                  <LineChart className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                  <p>Clicca su "Genera Previsioni" per visualizzare le proiezioni di crescita future</p>
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                    <div className="lg:col-span-3">
-                      <GrowthPredictionChart 
-                        currentWeight={growthPrediction.currentWeight}
-                        measurementDate={new Date(growthPrediction.lastMeasurementDate || latestOperation.date)}
-                        theoreticalSgrMonthlyPercentage={growthPrediction.sgrPercentage}
-                        realSgrMonthlyPercentage={growthPrediction.realSgr}
-                        projectionDays={growthPrediction.days || projectionDays}
-                        variationPercentages={{
-                          best: growthPrediction.bestVariation || bestVariation,
-                          worst: growthPrediction.worstVariation || worstVariation
-                        }}
-                      />
-                    </div>
-                    
-                    <div className="space-y-4">
-                      <div className="bg-white p-4 rounded-lg border">
-                        <h3 className="text-base font-medium mb-3">Parametri</h3>
-                        
-                        <div className="space-y-3">
-                          <div>
-                            <div className="text-sm text-muted-foreground mb-1">
-                              Giorni di proiezione
-                            </div>
-                            <Input
-                              type="number"
-                              min={7}
-                              max={365}
-                              value={projectionDays}
-                              onChange={(e) => setProjectionDays(Number(e.target.value))}
-                            />
-                          </div>
+                )}
+              </CardHeader>
+              <CardContent>
+                {!latestOperation?.animalsPerKg ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <Droplets className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                    <p>Per generare previsioni di crescita, è necessario registrare almeno una misurazione del peso</p>
+                    <Button asChild className="mt-4">
+                      <Link href={`/operations?cycleId=${cycle.id}`}>
+                        <List className="mr-2 h-4 w-4" />
+                        Registra una Misurazione
+                      </Link>
+                    </Button>
+                  </div>
+                ) : !growthPrediction ? (
+                  <div className="text-center py-12 text-muted-foreground">
+                    <LineChart className="h-12 w-12 mx-auto mb-4 opacity-30" />
+                    <p>Clicca su "Genera Previsioni" per visualizzare le proiezioni di crescita future</p>
+                  </div>
+                ) : (
+                  <div className="space-y-6">
+                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                      <div className="lg:col-span-3">
+                        <GrowthPredictionChart 
+                          currentWeight={growthPrediction.currentWeight}
+                          measurementDate={new Date(growthPrediction.lastMeasurementDate || latestOperation.date)}
+                          theoreticalSgrMonthlyPercentage={growthPrediction.sgrPercentage}
+                          realSgrMonthlyPercentage={growthPrediction.realSgr}
+                          projectionDays={growthPrediction.days || projectionDays}
+                          variationPercentages={{
+                            best: growthPrediction.bestVariation || bestVariation,
+                            worst: growthPrediction.worstVariation || worstVariation
+                          }}
+                        />
+                      </div>
+                      
+                      <div className="space-y-4">
+                        <div className="bg-white p-4 rounded-lg border">
+                          <h3 className="text-base font-medium mb-3">Parametri</h3>
                           
-                          <div>
-                            <div className="text-sm text-muted-foreground mb-1">
-                              Variazione positiva (%)
+                          <div className="space-y-3">
+                            <div>
+                              <div className="text-sm text-muted-foreground mb-1">
+                                Giorni di proiezione
+                              </div>
+                              <Input
+                                type="number"
+                                min={7}
+                                max={365}
+                                value={projectionDays}
+                                onChange={(e) => setProjectionDays(Number(e.target.value))}
+                              />
                             </div>
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={bestVariation}
-                              onChange={(e) => setBestVariation(Number(e.target.value))}
-                            />
-                          </div>
-                          
-                          <div>
-                            <div className="text-sm text-muted-foreground mb-1">
-                              Variazione negativa (%)
+                            
+                            <div>
+                              <div className="text-sm text-muted-foreground mb-1">
+                                Variazione positiva (%)
+                              </div>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={bestVariation}
+                                onChange={(e) => setBestVariation(Number(e.target.value))}
+                              />
                             </div>
-                            <Input
-                              type="number"
-                              min={0}
-                              max={100}
-                              value={worstVariation}
-                              onChange={(e) => setWorstVariation(Number(e.target.value))}
-                            />
+                            
+                            <div>
+                              <div className="text-sm text-muted-foreground mb-1">
+                                Variazione negativa (%)
+                              </div>
+                              <Input
+                                type="number"
+                                min={0}
+                                max={100}
+                                value={worstVariation}
+                                onChange={(e) => setWorstVariation(Number(e.target.value))}
+                              />
+                            </div>
+                            
+                            <Button
+                              variant="outline"
+                              className="w-full"
+                              onClick={calculateGrowthPrediction}
+                              disabled={isLoadingPrediction}
+                            >
+                              {isLoadingPrediction ? "Aggiornamento..." : "Aggiorna"}
+                            </Button>
                           </div>
-                          
-                          <Button
-                            variant="outline"
-                            className="w-full"
-                            onClick={calculateGrowthPrediction}
-                            disabled={isLoadingPrediction}
-                          >
-                            {isLoadingPrediction ? "Aggiornamento..." : "Aggiorna"}
-                          </Button>
                         </div>
                       </div>
                     </div>
-                  </div>
-                  
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Card className="bg-green-50">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-green-700">Scenario Migliore</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold text-green-700">
-                          {growthPrediction.summary?.finalBestWeight || "N/A"} mg
-                        </div>
-                        <p className="text-xs text-green-600 mt-1">
-                          In {growthPrediction.days || projectionDays} giorni con SGR +{growthPrediction.bestVariation || bestVariation}%
-                        </p>
-                      </CardContent>
-                    </Card>
                     
-                    <Card>
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-primary">Previsione Standard</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold">
-                          {growthPrediction.summary?.finalTheoreticalWeight || "N/A"} mg
-                        </div>
-                        <p className="text-xs text-muted-foreground mt-1">
-                          In {growthPrediction.days || projectionDays} giorni con SGR {growthPrediction.sgrPercentage?.toFixed(1) || "standard"}%
-                        </p>
-                      </CardContent>
-                    </Card>
-                    
-                    <Card className="bg-red-50">
-                      <CardHeader className="pb-2">
-                        <CardTitle className="text-sm font-medium text-red-700">Scenario Peggiore</CardTitle>
-                      </CardHeader>
-                      <CardContent>
-                        <div className="text-2xl font-bold text-red-700">
-                          {growthPrediction.summary?.finalWorstWeight || "N/A"} mg
-                        </div>
-                        <p className="text-xs text-red-600 mt-1">
-                          In {growthPrediction.days || projectionDays} giorni con SGR -{growthPrediction.worstVariation || worstVariation}%
-                        </p>
-                      </CardContent>
-                    </Card>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <Card className="bg-green-50">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-green-700">Scenario Migliore</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold text-green-700">
+                            {growthPrediction.summary?.finalBestWeight || "N/A"} mg
+                          </div>
+                          <p className="text-xs text-green-600 mt-1">
+                            In {growthPrediction.days || projectionDays} giorni con SGR +{growthPrediction.bestVariation || bestVariation}%
+                          </p>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card>
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-primary">Previsione Standard</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold">
+                            {growthPrediction.summary?.finalTheoreticalWeight || "N/A"} mg
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            In {growthPrediction.days || projectionDays} giorni con SGR {growthPrediction.sgrPercentage?.toFixed(1) || "standard"}%
+                          </p>
+                        </CardContent>
+                      </Card>
+                      
+                      <Card className="bg-red-50">
+                        <CardHeader className="pb-2">
+                          <CardTitle className="text-sm font-medium text-red-700">Scenario Peggiore</CardTitle>
+                        </CardHeader>
+                        <CardContent>
+                          <div className="text-2xl font-bold text-red-700">
+                            {growthPrediction.summary?.finalWorstWeight || "N/A"} mg
+                          </div>
+                          <p className="text-xs text-red-600 mt-1">
+                            In {growthPrediction.days || projectionDays} giorni con SGR -{growthPrediction.worstVariation || worstVariation}%
+                          </p>
+                        </CardContent>
+                      </Card>
+                    </div>
                   </div>
-                </div>
-              )}
-            </CardContent>
-          </Card>
+                )}
+              </CardContent>
+            </Card>
+            
+            {/* Timeline di proiezione taglie */}
+            {latestOperation?.animalsPerKg && growthPrediction && (
+              <>
+                <SizeGrowthTimeline 
+                  currentWeight={growthPrediction.currentWeight}
+                  measurementDate={new Date(growthPrediction.lastMeasurementDate || latestOperation.date)}
+                  sgrMonthlyPercentage={growthPrediction.sgrPercentage}
+                  cycleId={cycle.id}
+                  basketId={cycle.basketId}
+                />
+              </>
+            )}
+          </div>
         </TabsContent>
         
         <TabsContent value="notes" className="mt-6">

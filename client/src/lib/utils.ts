@@ -175,3 +175,158 @@ export function truncateText(text: string, maxLength: number): string {
   if (!text || text.length <= maxLength) return text;
   return text.slice(0, maxLength) + '...';
 }
+
+export interface SizeTimeline {
+  date: Date;
+  weight: number;
+  size: TargetSize | null;
+  daysToReach: number;
+}
+
+/**
+ * Calcola le taglie che raggiungerà una cesta nel tempo, in base al peso attuale e al tasso di crescita
+ * @param currentWeight - Peso attuale in mg
+ * @param measurementDate - Data della misurazione
+ * @param sgrMonthlyPercentage - Percentuale SGR mensile
+ * @param months - Numero di mesi per cui proiettare
+ * @returns Array di previsioni con date di raggiungimento delle varie taglie
+ */
+export function calculateSizeTimeline(
+  currentWeight: number,
+  measurementDate: Date,
+  sgrMonthlyPercentage: number,
+  months: number = 6
+): SizeTimeline[] {
+  if (!currentWeight || currentWeight <= 0 || !sgrMonthlyPercentage) {
+    return [];
+  }
+  
+  // Calcola il tasso di crescita giornaliero
+  const dailyGrowthRate = sgrMonthlyPercentage / 30 / 100;
+  
+  // Trova la taglia attuale
+  const currentSize = getTargetSizeForWeight(currentWeight);
+  
+  // Cerca le taglie future che potrebbero essere raggiunte
+  const futureTargetSizes = TARGET_SIZES
+    .filter(size => size.minWeight > currentWeight)
+    .sort((a, b) => a.minWeight - b.minWeight);
+  
+  if (futureTargetSizes.length === 0) {
+    return []; // Non ci sono taglie future da raggiungere
+  }
+  
+  const timeline: SizeTimeline[] = [];
+  let simulationDate = new Date(measurementDate);
+  let simulationWeight = currentWeight;
+  const maxDays = months * 30; // Massimo numero di giorni da simulare
+  
+  // Aggiungi il punto iniziale
+  timeline.push({
+    date: new Date(simulationDate),
+    weight: simulationWeight,
+    size: currentSize,
+    daysToReach: 0
+  });
+  
+  // Per ogni taglia target futura, calcola quando verrà raggiunta
+  for (const targetSize of futureTargetSizes) {
+    let daysToReach = 0;
+    
+    // Simula la crescita giorno per giorno fino a raggiungere la taglia target
+    while (simulationWeight < targetSize.minWeight && daysToReach < maxDays) {
+      daysToReach++;
+      simulationDate = new Date(simulationDate);
+      simulationDate.setDate(simulationDate.getDate() + 1);
+      
+      // Applica il tasso di crescita giornaliero
+      simulationWeight = simulationWeight * (1 + dailyGrowthRate);
+    }
+    
+    // Se abbiamo raggiunto la taglia target entro il limite temporale
+    if (daysToReach < maxDays) {
+      timeline.push({
+        date: new Date(simulationDate),
+        weight: Math.round(simulationWeight),
+        size: targetSize,
+        daysToReach
+      });
+    } else {
+      // Se non raggiungiamo questa taglia entro il periodo specificato, interrompiamo
+      break;
+    }
+  }
+  
+  return timeline;
+}
+
+/**
+ * Ottiene la data prevista in cui una cesta raggiungerà una taglia target specifica
+ * @param currentWeight - Peso attuale in mg
+ * @param measurementDate - Data della misurazione
+ * @param sgrMonthlyPercentage - Percentuale SGR mensile
+ * @param targetSizeCode - Codice della taglia target da raggiungere
+ * @returns La data prevista o null se non raggiungibile entro 6 mesi
+ */
+export function getTargetSizeReachDate(
+  currentWeight: number,
+  measurementDate: Date,
+  sgrMonthlyPercentage: number,
+  targetSizeCode: string
+): Date | null {
+  const timeline = calculateSizeTimeline(currentWeight, measurementDate, sgrMonthlyPercentage);
+  const targetSizeReached = timeline.find(item => item.size?.code === targetSizeCode);
+  return targetSizeReached ? targetSizeReached.date : null;
+}
+
+/**
+ * Calcola il peso previsto a una data futura
+ * @param currentWeight - Peso attuale in mg
+ * @param measurementDate - Data della misurazione
+ * @param sgrMonthlyPercentage - Percentuale SGR mensile
+ * @param targetDate - Data per cui calcolare il peso previsto
+ * @returns Il peso previsto in mg
+ */
+export function getFutureWeightAtDate(
+  currentWeight: number,
+  measurementDate: Date,
+  sgrMonthlyPercentage: number,
+  targetDate: Date
+): number {
+  if (!currentWeight || currentWeight <= 0 || !sgrMonthlyPercentage) {
+    return currentWeight;
+  }
+  
+  // Calcola il tasso di crescita giornaliero
+  const dailyGrowthRate = sgrMonthlyPercentage / 30 / 100;
+  
+  // Calcola il numero di giorni tra la data di misurazione e la data target
+  const diffTime = targetDate.getTime() - new Date(measurementDate).getTime();
+  const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+  
+  if (diffDays <= 0) {
+    return currentWeight;
+  }
+  
+  // Calcola il peso previsto
+  const futureWeight = currentWeight * Math.pow(1 + dailyGrowthRate, diffDays);
+  return Math.round(futureWeight);
+}
+
+/**
+ * Calcola la taglia prevista a una data futura
+ * @param currentWeight - Peso attuale in mg
+ * @param measurementDate - Data della misurazione
+ * @param sgrMonthlyPercentage - Percentuale SGR mensile
+ * @param targetDate - Data per cui calcolare la taglia prevista
+ * @returns La taglia prevista
+ */
+export function getFutureSizeAtDate(
+  currentWeight: number,
+  measurementDate: Date,
+  sgrMonthlyPercentage: number,
+  targetDate: Date
+): TargetSize | null {
+  const futureWeight = getFutureWeightAtDate(currentWeight, measurementDate, sgrMonthlyPercentage, targetDate);
+  return getTargetSizeForWeight(futureWeight);
+}
