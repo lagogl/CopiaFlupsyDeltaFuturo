@@ -69,6 +69,7 @@ interface BasketCardProps {
   selected: boolean;
   onSelect: (basketId: number) => void;
   onQuickOperation: (basketId: number, operationType: string) => void;
+  onDeleteOperation?: (operationId: number) => void;
 }
 
 // Componente card per singola cesta
@@ -80,7 +81,8 @@ function BasketCard({
   lot,
   selected,
   onSelect,
-  onQuickOperation
+  onQuickOperation,
+  onDeleteOperation
 }: BasketCardProps) {
   const positionText = basket.row && basket.position 
     ? `${basket.row} - Pos. ${basket.position}` 
