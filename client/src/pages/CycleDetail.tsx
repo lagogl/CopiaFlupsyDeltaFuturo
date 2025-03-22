@@ -12,7 +12,7 @@ import { Progress } from '@/components/ui/progress';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { apiRequest } from '@/lib/queryClient';
-import { getOperationTypeLabel, getOperationTypeColor, getSizeColor } from '@/lib/utils';
+import { getOperationTypeLabel, getOperationTypeColor, getSizeColor, formatNumberWithCommas } from '@/lib/utils';
 import GrowthPredictionChart from '@/components/GrowthPredictionChart';
 import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
@@ -43,6 +43,7 @@ function StatisticsTab({
       `/api/cycles/${cycleId}/growth-prediction?days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
     )
     .then(response => {
+      console.log("Dati previsione ricevuti:", response);
       setGrowthPrediction(response || {});
     })
     .catch(error => {
@@ -52,6 +53,13 @@ function StatisticsTab({
       setIsLoadingPrediction(false);
     });
   }, [cycleId, projectionDays, bestVariation, worstVariation, latestOperation, isLoadingPrediction]);
+  
+  // Carica automaticamente le previsioni all'avvio se ci sono dati di misurazione disponibili
+  useEffect(() => {
+    if (latestOperation?.animalsPerKg && !growthPrediction && !isLoadingPrediction) {
+      fetchGrowthPrediction();
+    }
+  }, [latestOperation, growthPrediction, isLoadingPrediction, fetchGrowthPrediction]);
 
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
