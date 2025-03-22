@@ -497,13 +497,28 @@ export class DbStorage implements IStorage {
       });
     }
     
+    // Calcola dati di riepilogo (necessari per la visualizzazione nel frontend)
+    const lastProjection = projections[projections.length - 1];
+    const summary = {
+      // Pesi finali per ciascuno scenario alla fine della proiezione
+      finalTheoreticalWeight: lastProjection.theoretical,
+      finalBestWeight: lastProjection.best,
+      finalWorstWeight: lastProjection.worst,
+      // Percentuali di crescita totale per ciascuno scenario
+      growthPercentageTheoretical: Math.round((lastProjection.theoretical / currentWeight - 1) * 100),
+      growthPercentageBest: Math.round((lastProjection.best / currentWeight - 1) * 100),
+      growthPercentageWorst: Math.round((lastProjection.worst / currentWeight - 1) * 100)
+    };
+    
     return {
       currentWeight,
       measurementDate: measurementDate.toISOString().split('T')[0],
       sgrPercentage,
       days,
       variationPercentages,
-      projections
+      summary,  // Aggiunto il riepilogo qui
+      projections,
+      lastMeasurementDate: measurementDate.toISOString().split('T')[0] // Aggiunto esplicitamente per evitare confusione
     };
   }
 }
