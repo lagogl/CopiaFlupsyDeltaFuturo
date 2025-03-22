@@ -197,6 +197,24 @@ export function getBorderColorByAnimalsPerKg(animalsPerKg: number | null): strin
 }
 
 /**
+ * Funzione centrale per ottenere la classe del bordo per un cestello
+ * Combina la logica per decidere sia il colore che lo spessore del bordo
+ * @param animalsPerKg - Numero di animali per kg
+ * @returns Classe CSS completa per lo stile del bordo
+ */
+export function getBasketBorderClass(animalsPerKg: number | null): string {
+  if (!animalsPerKg || animalsPerKg <= 0) return 'border';
+  
+  // Se la taglia è TP-3000 o superiore (animalsPerKg <= 32000), bordo rosso più spesso
+  if (animalsPerKg <= 32000) {
+    return 'border-red-500 border-2';
+  }
+  
+  // Per taglie piccole, bordo normale
+  return 'border';
+}
+
+/**
  * Ottiene il colore del bordo in base alla taglia (peso)
  * @param weight - Peso in mg
  * @returns Classe CSS per il colore del bordo
