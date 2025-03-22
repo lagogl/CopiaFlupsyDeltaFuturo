@@ -1605,11 +1605,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Calcola il peso medio attuale
-      console.log(`DEBUG: Calcolo peso - animalsPerKg: ${lastMeasurement.animalsPerKg}`);
-      const currentWeight = lastMeasurement.animalsPerKg > 0 
-        ? Math.round(1000 / lastMeasurement.animalsPerKg) // Peso in mg
-        : 0;
-      console.log(`DEBUG: Peso calcolato: ${currentWeight} mg`);
+      // È preferibile utilizzare il campo averageWeight già calcolato dal database,
+      // ma se non è disponibile, facciamo il calcolo basato su animalsPerKg
+      let currentWeight = 0;
+      
+      if (lastMeasurement.averageWeight) {
+        // Usa il campo averageWeight se disponibile (soluzione migliore)
+        currentWeight = Math.round(lastMeasurement.averageWeight);
+        console.log(`DEBUG: Usando campo averageWeight esistente: ${currentWeight} mg`);
+      } else if (lastMeasurement.animalsPerKg && lastMeasurement.animalsPerKg > 0) {
+        // Calcola da animalsPerKg come fallback
+        currentWeight = Math.round(1000 / Number(lastMeasurement.animalsPerKg));
+        console.log(`DEBUG: Calcolato peso da animalsPerKg: ${currentWeight} mg`);
+      } else {
+        console.log(`DEBUG: Nessun dato valido per calcolare il peso, impossibile fare previsioni accurate`);
+      }
       
       // Ottiene l'SGR mensile corretto per il periodo (prende quello del database o usa quello calcolato)
       let sgrPercentage;
