@@ -249,7 +249,7 @@ export default function OperationForm({
   const operationTypes = selectedBasket 
     ? (selectedBasket.state === 'available' 
       ? allOperationTypes.filter(op => op.value === 'prima-attivazione') // Only 'Prima Attivazione' for available baskets
-      : allOperationTypes) // All operations for active baskets
+      : allOperationTypes.filter(op => op.value !== 'prima-attivazione')) // All operations EXCEPT 'Prima Attivazione' for active baskets
     : allOperationTypes;
 
   // Aggiungi una funzione per gestire l'invio del form con log dettagliati per debug
@@ -541,6 +541,10 @@ export default function OperationForm({
                     ))}
                   </SelectContent>
                 </Select>
+                <FormDescription>
+                  {selectedBasket?.state === 'active' && 
+                    "L'operazione Prima Attivazione non è disponibile per cestelli già attivi"}
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
