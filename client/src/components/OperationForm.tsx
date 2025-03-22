@@ -753,15 +753,29 @@ export default function OperationForm({
                         </div>
                       );
                     } else if (prevAnimalsPerKg < currentAnimalsPerKg) {
-                      return (
-                        <div className="text-amber-600 flex items-center">
-                          <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
-                            <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                          </svg>
-                          Attenzione: Il numero di animali per kg è aumentato rispetto all'operazione precedente,
-                          indicando una possibile diminuzione del peso medio.
-                        </div>
-                      );
+                      // Se l'operazione è di tipo "Prima Attivazione", non mostriamo
+                      // il messaggio di avviso sul peso poiché è la prima operazione del ciclo
+                      const operationType = form.getValues("type");
+                      if (operationType === "prima-attivazione") {
+                        return (
+                          <div className="text-blue-600 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7-4a1 1 0 11-2 0 1 1 0 012 0zm-1 8a1 1 0 01-1-1v-3a1 1 0 112 0v3a1 1 0 01-1 1z" clipRule="evenodd" />
+                            </svg>
+                            Prima attivazione del ciclo. Peso medio iniziale: {Math.round(1000000 / currentAnimalsPerKg)} mg.
+                          </div>
+                        );
+                      } else {
+                        return (
+                          <div className="text-amber-600 flex items-center">
+                            <svg xmlns="http://www.w3.org/2000/svg" className="h-5 w-5 mr-1.5" viewBox="0 0 20 20" fill="currentColor">
+                              <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
+                            </svg>
+                            Attenzione: Il numero di animali per kg è aumentato rispetto all'operazione precedente,
+                            indicando una possibile diminuzione del peso medio.
+                          </div>
+                        );
+                      }
                     } else {
                       return (
                         <div className="text-blue-600 flex items-center">
