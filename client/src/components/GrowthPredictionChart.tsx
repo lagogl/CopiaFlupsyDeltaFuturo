@@ -74,28 +74,44 @@ export default function GrowthPredictionChart({
   // Genera i dati per il grafico
   const data: any[] = [];
   
+  // Imposta un peso minimo per la simulazione per evitare grafici piatti o divisioni per zero
+  const minSimulationWeight = 1; // 1 mg come peso minimo
+  const effectiveWeight = currentWeight > 0 ? currentWeight : minSimulationWeight;
+  
+  // Se il peso è 0 o molto basso, usiamo un valore predefinito iniziale che sarà mostrato solo nel grafico
+  if (currentWeight <= 0) {
+    console.log("Attenzione: il peso iniziale è 0 o negativo. Utilizziamo un valore minimo per la simulazione.");
+  }
+  
   for (let day = 0; day <= projectionDays; day++) {
     const date = new Date(measurementDate);
     date.setDate(date.getDate() + day);
     
     // Calcola pesi usando la formula SGR: W(t) = W(0) * e^(SGR * t)
-    const theoreticalWeight = currentWeight * Math.exp(dailySgr * day);
-    const bestWeight = currentWeight * Math.exp(bestDailySgr * day);
-    const worstWeight = currentWeight * Math.exp(worstDailySgr * day);
+    // Utilizziamo il peso effettivo per i calcoli per evitare valori 0 o negativi
+    const theoreticalWeight = effectiveWeight * Math.exp(dailySgr * day);
+    const bestWeight = effectiveWeight * Math.exp(bestDailySgr * day);
+    const worstWeight = effectiveWeight * Math.exp(worstDailySgr * day);
     
     // Aggiungi peso reale se abbiamo l'SGR reale
     const realWeight = realDailySgr 
-      ? currentWeight * Math.exp(realDailySgr * day) 
+      ? effectiveWeight * Math.exp(realDailySgr * day) 
       : undefined;
+    
+    // Assicuriamoci che i valori siano definiti e maggiori di zero prima di usare toFixed()
+    const formatSafeValue = (value: number | undefined) => {
+      if (value === undefined || isNaN(value)) return undefined;
+      return parseFloat((Math.max(0, value)).toFixed(1));
+    };
     
     data.push({
       day,
       date,
       dateFormatted: formatDate(date),
-      theoretical: parseFloat(theoreticalWeight.toFixed(1)),
-      best: parseFloat(bestWeight.toFixed(1)),
-      worst: parseFloat(worstWeight.toFixed(1)),
-      ...(realWeight && { real: parseFloat(realWeight.toFixed(1)) })
+      theoretical: formatSafeValue(theoreticalWeight),
+      best: formatSafeValue(bestWeight),
+      worst: formatSafeValue(worstWeight),
+      ...(realWeight !== undefined ? { real: formatSafeValue(realWeight) } : {})
     });
   }
   

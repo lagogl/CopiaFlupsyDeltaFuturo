@@ -185,7 +185,9 @@ function StatisticsTab({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-green-700">
-                      {growthPrediction.summary?.finalBestWeight || "N/A"} mg
+                      {growthPrediction.summary?.finalBestWeight 
+                        ? formatNumberWithCommas(growthPrediction.summary.finalBestWeight) 
+                        : "N/A"} mg
                     </div>
                     <p className="text-xs text-green-600 mt-1">
                       In {growthPrediction.days || projectionDays} giorni con SGR +{growthPrediction.bestVariation || bestVariation}%
@@ -199,7 +201,9 @@ function StatisticsTab({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold">
-                      {growthPrediction.summary?.finalTheoreticalWeight || "N/A"} mg
+                      {growthPrediction.summary?.finalTheoreticalWeight 
+                        ? formatNumberWithCommas(growthPrediction.summary.finalTheoreticalWeight) 
+                        : "N/A"} mg
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       In {growthPrediction.days || projectionDays} giorni con SGR {growthPrediction.sgrPercentage?.toFixed(1) || "standard"}%
@@ -213,7 +217,9 @@ function StatisticsTab({
                   </CardHeader>
                   <CardContent>
                     <div className="text-2xl font-bold text-red-700">
-                      {growthPrediction.summary?.finalWorstWeight || "N/A"} mg
+                      {growthPrediction.summary?.finalWorstWeight 
+                        ? formatNumberWithCommas(growthPrediction.summary.finalWorstWeight) 
+                        : "N/A"} mg
                     </div>
                     <p className="text-xs text-red-600 mt-1">
                       In {growthPrediction.days || projectionDays} giorni con SGR -{growthPrediction.worstVariation || worstVariation}%
