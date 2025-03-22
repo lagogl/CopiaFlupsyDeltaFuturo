@@ -181,6 +181,22 @@ export function getBorderThicknessByWeight(weight: number | null): string {
 }
 
 /**
+ * Ottiene il colore del bordo in base alla taglia (peso)
+ * @param weight - Peso in mg
+ * @returns Classe CSS per il colore del bordo
+ */
+export function getBorderColorByWeight(weight: number | null): string {
+  if (!weight || weight <= 0) return 'border-slate-200';
+  
+  // Se la taglia è TP-3000 o superiore (peso > 3000 mg), bordo rosso
+  if (weight >= 3000) {
+    return 'border-red-500';
+  }
+  
+  return 'border-slate-200'; // Colore predefinito per taglie inferiori
+}
+
+/**
  * Formatta il numero di animali in formato più leggibile
  * @param animalsPerKg - Numero di animali per kg
  * @param weight - Peso medio in mg

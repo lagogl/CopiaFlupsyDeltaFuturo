@@ -22,6 +22,7 @@ import {
   getSizeFromAnimalsPerKg,
   getBasketColorBySize,
   getBorderThicknessByWeight,
+  getBorderColorByWeight,
   formatAnimalCount
 } from '@/lib/utils';
 import { CheckSquare, Square, Filter, Eye, Layers, TrendingUp, TrendingDown, ArrowUp } from 'lucide-react';
@@ -182,6 +183,7 @@ export default function FlupsyVisualizerNew() {
   const getBasketDisplayData = (basket: Basket | undefined): {
     colorClass: string;
     borderThickness: string;
+    borderColor: string;
     targetSize: string | null;
     animalCount: string | null;
     averageWeight: number | null;
@@ -189,6 +191,7 @@ export default function FlupsyVisualizerNew() {
     if (!basket) return {
       colorClass: 'bg-gray-50 border-dashed',
       borderThickness: 'border',
+      borderColor: 'border-slate-200',
       targetSize: null,
       animalCount: null,
       averageWeight: null
@@ -199,6 +202,7 @@ export default function FlupsyVisualizerNew() {
       return {
         colorClass: 'bg-slate-100 border-slate-200',
         borderThickness: 'border',
+        borderColor: 'border-slate-200',
         targetSize: null,
         animalCount: null,
         averageWeight: null
@@ -228,11 +232,15 @@ export default function FlupsyVisualizerNew() {
     // Determine border thickness based on weight
     const borderThickness = getBorderThicknessByWeight(averageWeight);
     
+    // Determine border color (red if weight >= 3000 mg)
+    const borderColor = getBorderColorByWeight(averageWeight);
+    
     // If we have a target size, use its color
     if (targetSize) {
       return {
         colorClass: `${targetSize.color} shadow-sm`,
         borderThickness,
+        borderColor,
         targetSize: targetSize.code,
         animalCount,
         averageWeight
@@ -260,6 +268,7 @@ export default function FlupsyVisualizerNew() {
       return {
         colorClass,
         borderThickness,
+        borderColor,
         targetSize: null,
         animalCount,
         averageWeight
@@ -270,6 +279,7 @@ export default function FlupsyVisualizerNew() {
     return {
       colorClass: 'bg-green-50 border-green-300',
       borderThickness: 'border',
+      borderColor: 'border-slate-200',
       targetSize: null,
       animalCount: null,
       averageWeight: null
@@ -505,7 +515,8 @@ export default function FlupsyVisualizerNew() {
                             className={`rounded-md p-2 text-center text-xs ${
                               basket ? getBasketColorClass(basket) : 'bg-gray-50 border-dashed'
                             } ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : 'min-h-[4.5rem]'} 
-                            ${basket && basket.currentCycleId ? basketData?.borderThickness || 'border' : 'border'}`}
+                            ${basket && basket.currentCycleId ? basketData?.borderThickness || 'border' : 'border'}
+                            ${basket && basket.currentCycleId ? basketData?.borderColor || '' : ''}`}
                           >
                             <div>Pos. {position}</div>
                             {basket && (
@@ -564,7 +575,8 @@ export default function FlupsyVisualizerNew() {
                             className={`rounded-md p-2 text-center text-xs ${
                               basket ? getBasketColorClass(basket) : 'bg-gray-50 border-dashed'
                             } ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : 'min-h-[4.5rem]'} 
-                            ${basket && basket.currentCycleId ? basketData?.borderThickness || 'border' : 'border'}`}
+                            ${basket && basket.currentCycleId ? basketData?.borderThickness || 'border' : 'border'}
+                            ${basket && basket.currentCycleId ? basketData?.borderColor || '' : ''}`}
                           >
                             <div>Pos. {position}</div>
                             {basket && (
@@ -610,33 +622,51 @@ export default function FlupsyVisualizerNew() {
                 </div>
                 
                 <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-                  {flupsyNoRowAssigned.map(basket => (
-                    <TooltipProvider key={`${flupsyId}-norow-${basket.id}`}>
-                      <Tooltip>
-                        <TooltipTrigger asChild>
-                          <div 
-                            onClick={() => handleBasketClick(basket)}
-                            className={`rounded-md p-2 text-center text-xs ${
-                              getBasketColorClass(basket)
-                            } cursor-pointer hover:shadow-md transition-shadow`}
-                          >
-                            <div>Non posizionato</div>
-                            <div className="font-semibold mt-1">
-                              #{basket.physicalNumber}
-                              {basket.currentCycleId && (
-                                <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
-                                  Ciclo {basket.currentCycleId}
-                                </div>
-                              )}
+                  {flupsyNoRowAssigned.map(basket => {
+                    const basketData = basket ? getBasketDisplayData(basket) : null;
+                    
+                    return (
+                      <TooltipProvider key={`${flupsyId}-norow-${basket.id}`}>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div 
+                              onClick={() => handleBasketClick(basket)}
+                              className={`rounded-md p-2 text-center text-xs ${
+                                getBasketColorClass(basket)
+                              } cursor-pointer hover:shadow-md transition-shadow
+                              ${basket.currentCycleId ? basketData?.borderThickness || 'border' : 'border'}
+                              ${basket.currentCycleId ? basketData?.borderColor || '' : ''}`}
+                            >
+                              <div>Non posizionato</div>
+                              <div className="font-semibold mt-1">
+                                #{basket.physicalNumber}
+                                {basket.currentCycleId && (
+                                  <>
+                                    <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
+                                      Ciclo {basket.currentCycleId}
+                                    </div>
+                                    {basketData?.targetSize && (
+                                      <div className="text-[11px] font-bold mt-1">
+                                        {basketData.targetSize}
+                                      </div>
+                                    )}
+                                    {basketData?.animalCount && (
+                                      <div className="text-[10px] mt-1 bg-gray-100 rounded-full px-1">
+                                        {basketData.animalCount} animali
+                                      </div>
+                                    )}
+                                  </>
+                                )}
+                              </div>
                             </div>
-                          </div>
-                        </TooltipTrigger>
-                        <TooltipContent side="top" align="center" className="z-50">
-                          {renderTooltipContent(basket)}
-                        </TooltipContent>
-                      </Tooltip>
-                    </TooltipProvider>
-                  ))}
+                          </TooltipTrigger>
+                          <TooltipContent side="top" align="center" className="z-50">
+                            {renderTooltipContent(basket)}
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
+                    );
+                  })}
                 </div>
               </div>
             )}
