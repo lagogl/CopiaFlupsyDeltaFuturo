@@ -144,17 +144,47 @@ export default function FlupsyVisualizer() {
   const sxRow = filteredBaskets.filter(b => b.row === 'SX');
   const noRowAssigned = filteredBaskets.filter(b => b.row === null || b.row === undefined);
   
-  // Helper function to get baskets by position for a specific row
-  const getBasketsByPosition = (row: 'DX' | 'SX', position: number): Basket[] => {
-    if (row === 'DX') {
-      return dxRow.filter(b => b.position === position);
-    }
-    return sxRow.filter(b => b.position === position);
+  // Group baskets by position and FLUPSY
+  const groupBasketsByPosition = (baskets: Basket[]): Map<number, Map<number, Basket>> => {
+    const result = new Map<number, Map<number, Basket>>();
+    
+    baskets.forEach(basket => {
+      if (basket.position === null) return;
+      
+      if (!result.has(basket.position)) {
+        result.set(basket.position, new Map<number, Basket>());
+      }
+      
+      const flupsyBaskets = result.get(basket.position)!;
+      flupsyBaskets.set(basket.flupsyId, basket);
+    });
+    
+    return result;
   };
   
-  // Helper function to get basket by position for a specific row (first one found)
+  const dxRowByPosition = groupBasketsByPosition(dxRow);
+  const sxRowByPosition = groupBasketsByPosition(sxRow);
+  
+  // Helper function to get baskets by position for a specific row
+  const getBasketsByPosition = (row: 'DX' | 'SX', position: number): Basket[] => {
+    const positionMap = row === 'DX' ? dxRowByPosition : sxRowByPosition;
+    const flupsyBaskets = positionMap.get(position);
+    
+    if (!flupsyBaskets) return [];
+    return Array.from(flupsyBaskets.values());
+  };
+  
+  // Helper function to get basket by position for a specific row (first one found or filtered by active FLUPSY)
   const getBasketByPosition = (row: 'DX' | 'SX', position: number): Basket | undefined => {
     const baskets = getBasketsByPosition(row, position);
+    
+    if (selectedTab !== "all") {
+      // In single FLUPSY view, return the basket belonging to that FLUPSY
+      const flupsyId = parseInt(selectedTab, 10);
+      return baskets.find(b => b.flupsyId === flupsyId);
+    }
+    
+    // In combined view, return the first basket found
     return baskets.length > 0 ? baskets[0] : undefined;
   };
   
