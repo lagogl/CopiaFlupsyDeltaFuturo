@@ -1226,6 +1226,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint per le proiezioni di crescita
+  app.get("/api/growth-prediction", async (req, res) => {
+    try {
+      const currentWeight = Number(req.query.currentWeight);
+      const sgrPercentage = Number(req.query.sgrPercentage);
+      const days = Number(req.query.days) || 60;
+      const bestVariation = Number(req.query.bestVariation) || 20;
+      const worstVariation = Number(req.query.worstVariation) || 30;
+      
+      if (isNaN(currentWeight) || isNaN(sgrPercentage)) {
+        return res.status(400).json({ message: "currentWeight e sgrPercentage sono richiesti e devono essere numeri validi" });
+      }
+      
+      const measurementDate = req.query.date ? new Date(req.query.date as string) : new Date();
+      
+      const projections = await storage.calculateGrowthPrediction(
+        currentWeight,
+        measurementDate,
+        days,
+        sgrPercentage,
+        { best: bestVariation, worst: worstVariation }
+      );
+      
+      res.json(projections);
+    } catch (error) {
+      console.error("Error calculating growth prediction:", error);
+      res.status(500).json({ message: "Failed to calculate growth prediction" });
+    }
+  });
+
   // === Statistics routes ===
   app.get("/api/statistics/growth/:cycleId", async (req, res) => {
     try {

@@ -17,6 +17,9 @@ export default function Sgr() {
   const [isCreateDailyDialogOpen, setIsCreateDailyDialogOpen] = useState(false);
   const [editingSgr, setEditingSgr] = useState<any>(null);
   const [currentWeightForPrediction, setCurrentWeightForPrediction] = useState(250); // default 250mg
+  const [projectionDays, setProjectionDays] = useState(60); // 60 giorni default
+  const [bestVariation, setBestVariation] = useState(20); // +20% default
+  const [worstVariation, setWorstVariation] = useState(30); // -30% default
   
   // Query SGRs
   const { data: sgrs, isLoading } = useQuery({
@@ -26,6 +29,15 @@ export default function Sgr() {
   // Query SGR Giornalieri
   const { data: sgrGiornalieri, isLoading: isLoadingSgrGiornalieri } = useQuery({
     queryKey: ['/api/sgr-giornalieri'],
+  });
+  
+  // Get current month's SGR
+  
+  // Query per le proiezioni di crescita
+  const { data: growthPrediction, isLoading: isLoadingPrediction, refetch: refetchPrediction } = useQuery({
+    queryKey: ['/api/growth-prediction', currentWeightForPrediction, getCurrentMonthSgr(), projectionDays, bestVariation, worstVariation],
+    queryFn: () => apiRequest('GET', `/api/growth-prediction?currentWeight=${currentWeightForPrediction}&sgrPercentage=${getCurrentMonthSgr()}&days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`),
+    enabled: false
   });
 
   // Create SGR mutation
@@ -72,14 +84,6 @@ export default function Sgr() {
     const monthB = b.month.toLowerCase();
     return monthOrder.indexOf(monthA) - monthOrder.indexOf(monthB);
   });
-
-  // Get current month's SGR
-  const getCurrentMonthSgr = () => {
-    const today = new Date();
-    const currentMonthName = monthOrder[today.getMonth()];
-    const currentSgr = sgrs?.find(sgr => sgr.month.toLowerCase() === currentMonthName);
-    return currentSgr?.percentage || 60; // Default to 60% if not found
-  };
 
   // Sort SGR Giornalieri by date (newest first)
   const sortedSgrGiornalieri = [...(sgrGiornalieri || [])].sort((a, b) => {
@@ -391,20 +395,33 @@ export default function Sgr() {
         <TabsContent value="previsioni">
           <div className="flex justify-between items-center mb-6">
             <h2 className="text-2xl font-condensed font-bold text-gray-800">Previsioni di Crescita</h2>
+            <Button onClick={() => refetchPrediction()}>
+              <LineChart className="h-4 w-4 mr-1" />
+              Aggiorna Previsione
+            </Button>
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
             <div className="lg:col-span-2">
-              <GrowthPredictionChart
-                currentWeight={currentWeightForPrediction}
-                measurementDate={new Date()}
-                theoreticalSgrMonthlyPercentage={getCurrentMonthSgr()}
-                projectionDays={60}
-                variationPercentages={{
-                  best: 20,
-                  worst: 30
-                }}
-              />
+              {isLoadingPrediction ? (
+                <Card className="h-[400px] flex items-center justify-center">
+                  <div className="text-center">
+                    <div className="mb-2">Caricamento previsioni...</div>
+                    <div className="text-sm text-gray-500">Attendere prego</div>
+                  </div>
+                </Card>
+              ) : (
+                <GrowthPredictionChart
+                  currentWeight={currentWeightForPrediction}
+                  measurementDate={new Date()}
+                  theoreticalSgrMonthlyPercentage={getCurrentMonthSgr()}
+                  projectionDays={projectionDays}
+                  variationPercentages={{
+                    best: bestVariation,
+                    worst: worstVariation
+                  }}
+                />
+              )}
             </div>
             <div>
               <Card>
@@ -428,14 +445,59 @@ export default function Sgr() {
                         Peso attuale in milligrammi
                       </div>
                     </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Giorni previsione</label>
+                      <Input
+                        type="number"
+                        value={projectionDays}
+                        onChange={(e) => setProjectionDays(Number(e.target.value))}
+                        min={7}
+                        max={365}
+                        step={1}
+                      />
+                      <div className="text-sm text-gray-500">
+                        Numero di giorni futuri da prevedere
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Scenario migliore (%)</label>
+                      <Input
+                        type="number"
+                        value={bestVariation}
+                        onChange={(e) => setBestVariation(Number(e.target.value))}
+                        min={0}
+                        max={100}
+                        step={5}
+                      />
+                      <div className="text-sm text-gray-500">
+                        % migliore rispetto al teorico
+                      </div>
+                    </div>
+                    
+                    <div className="space-y-2">
+                      <label className="text-sm font-medium">Scenario peggiore (%)</label>
+                      <Input
+                        type="number"
+                        value={worstVariation}
+                        onChange={(e) => setWorstVariation(Number(e.target.value))}
+                        min={0}
+                        max={100}
+                        step={5}
+                      />
+                      <div className="text-sm text-gray-500">
+                        % peggiore rispetto al teorico
+                      </div>
+                    </div>
 
                     <div className="text-sm mt-6">
                       <h4 className="font-medium mb-2">Informazioni sul modello:</h4>
                       <ul className="list-disc list-inside space-y-1 text-gray-600">
                         <li>Basato su SGR mensile: {getCurrentMonthSgr()}%</li>
                         <li>Formula: W(t) = W₀ × e^(SGR × t)</li>
-                        <li>Scenario migliore: +20% rispetto al teorico</li>
-                        <li>Scenario peggiore: -30% rispetto al teorico</li>
+                        <li>Scenario migliore: +{bestVariation}% rispetto al teorico</li>
+                        <li>Scenario peggiore: -{worstVariation}% rispetto al teorico</li>
                       </ul>
                     </div>
                   </div>
