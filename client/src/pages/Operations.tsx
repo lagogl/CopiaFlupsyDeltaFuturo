@@ -737,6 +737,18 @@ export default function Operations() {
                                       <p>{op.totalWeight.toLocaleString()} g</p>
                                     </div>
                                   )}
+                                  
+                                  {op.lot && (
+                                    <div>
+                                      <p className="text-gray-500">Lotto</p>
+                                      <p className="font-medium text-indigo-600">
+                                        {op.lot.name}
+                                        <span className="text-xs text-gray-500 block">
+                                          {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
+                                        </span>
+                                      </p>
+                                    </div>
+                                  )}
                                 </div>
                                 
                                 {op.notes && (
