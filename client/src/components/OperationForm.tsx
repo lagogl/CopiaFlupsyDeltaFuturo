@@ -175,6 +175,9 @@ export default function OperationForm({
       return;
     }
     
+    // Ottieni l'ID del ciclo corrente/attivo per questo cestello
+    const currentCycleId = selectedBasket?.currentCycleId;
+    
     // Converti la data selezionata nel form a un formato YYYY-MM-DD per il confronto
     const selectedDate = watchDate instanceof Date 
       ? watchDate.toISOString().split('T')[0] 
@@ -184,10 +187,11 @@ export default function OperationForm({
     
     if (!selectedDate) return;
     
-    // Cerca operazioni esistenti nella stessa data
+    // Cerca operazioni esistenti nella stessa data, MA SOLO per il ciclo corrente
     const operationOnSameDate = basketOperations.find(op => {
       const opDate = new Date(op.date).toISOString().split('T')[0];
-      return opDate === selectedDate;
+      // Verifica sia la data che l'appartenenza al ciclo corrente
+      return opDate === selectedDate && op.cycleId === currentCycleId;
     });
     
     if (operationOnSameDate) {
@@ -203,8 +207,18 @@ export default function OperationForm({
       return;
     }
     
-    // Sort operations by date (descending)
-    const sortedOperations = [...basketOperations].sort((a, b) => 
+    // Ottieni il ciclo selezionato o corrente
+    const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
+    const currentCycleId = selectedBasket?.currentCycleId || watchCycleId;
+    
+    if (!currentCycleId) return;
+    
+    // Sort operations by date (descending), ma solo per il ciclo corrente
+    const cycleOperations = basketOperations.filter(op => op.cycleId === currentCycleId);
+    
+    if (cycleOperations.length === 0) return;
+    
+    const sortedOperations = [...cycleOperations].sort((a, b) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
     
@@ -237,7 +251,7 @@ export default function OperationForm({
         }
       }
     }
-  }, [watchBasketId, watchCycleId, basketOperations, watchAnimalsPerKg, sgrs]);
+  }, [watchBasketId, watchCycleId, basketOperations, watchAnimalsPerKg, sgrs, baskets]);
 
   // Filter cycles based on selected basket
   const filteredCycles = cycles?.filter(cycle => 
@@ -756,8 +770,31 @@ export default function OperationForm({
             {watchAnimalsPerKg && basketOperations && basketOperations.length > 0 ? (
               <div className="p-3 rounded-md border bg-muted/20">
                 {(() => {
-                  // Find previous operation
-                  const sortedOperations = [...basketOperations].sort((a, b) => 
+                  // Ottieni il ciclo selezionato o corrente
+                  const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
+                  const currentCycleId = selectedBasket?.currentCycleId || watchCycleId;
+                  
+                  if (!currentCycleId) {
+                    return (
+                      <div className="text-muted-foreground">
+                        Nessun ciclo attivo selezionato.
+                      </div>
+                    );
+                  }
+                  
+                  // Filtra operazioni solo per il ciclo corrente
+                  const cycleOperations = basketOperations.filter(op => op.cycleId === currentCycleId);
+                  
+                  if (cycleOperations.length === 0) {
+                    return (
+                      <div className="text-muted-foreground">
+                        Nessuna operazione per il ciclo corrente.
+                      </div>
+                    );
+                  }
+                  
+                  // Find previous operation, ma solo del ciclo corrente
+                  const sortedOperations = [...cycleOperations].sort((a, b) => 
                     new Date(b.date).getTime() - new Date(a.date).getTime()
                   );
                   
