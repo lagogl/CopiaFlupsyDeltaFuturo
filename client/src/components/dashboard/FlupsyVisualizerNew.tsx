@@ -7,7 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLocation } from 'wouter';
-import { format, differenceInDays } from 'date-fns';
+import { format, differenceInDays, parseISO } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Tooltip, 
@@ -83,6 +84,11 @@ export default function FlupsyVisualizerNew() {
   // Fetch cycles
   const { data: cycles } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles'],
+  });
+  
+  // Fetch SGR data
+  const { data: sgrData } = useQuery<any[]>({
+    queryKey: ['/api/sgr']
   });
   
   // Select all FLUPSYs by default
