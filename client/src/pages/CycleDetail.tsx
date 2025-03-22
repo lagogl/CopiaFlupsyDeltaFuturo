@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useRoute, Link } from 'wouter';
 import { format, differenceInDays } from 'date-fns';
@@ -16,15 +16,368 @@ import { getOperationTypeLabel, getOperationTypeColor, getSizeColor } from '@/li
 import GrowthPredictionChart from '@/components/GrowthPredictionChart';
 import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
-export default function CycleDetail() {
-  const [, params] = useRoute('/cycles/:id');
-  const cycleId = params?.id ? parseInt(params.id) : null;
-  const [activeTab, setActiveTab] = useState('operations');
+// Tipi per i parametri
+interface StatisticsTabProps {
+  cycle: any;
+  latestOperation: any;
+  cycleId: number;
+}
+
+// Componente per la sezione delle statistiche
+function StatisticsTab({ 
+  cycle, 
+  latestOperation, 
+  cycleId 
+}: StatisticsTabProps) {
   const [projectionDays, setProjectionDays] = useState(60); // default: 60 giorni
   const [bestVariation, setBestVariation] = useState(20); // default: +20%
   const [worstVariation, setWorstVariation] = useState(30); // default: -30%
   const [isLoadingPrediction, setIsLoadingPrediction] = useState(false);
-  const [growthPrediction, setGrowthPrediction] = useState<any>(null);
+  const [growthPrediction, setGrowthPrediction] = useState(null);
+
+  const fetchGrowthPrediction = useCallback(() => {
+    if (!cycleId || !latestOperation?.animalsPerKg || isLoadingPrediction) return;
+    
+    setIsLoadingPrediction(true);
+    apiRequest('GET', 
+      `/api/cycles/${cycleId}/growth-prediction?days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
+    )
+    .then(response => {
+      setGrowthPrediction(response || {});
+    })
+    .catch(error => {
+      console.error('Errore nel calcolo della previsione di crescita:', error);
+    })
+    .finally(() => {
+      setIsLoadingPrediction(false);
+    });
+  }, [cycleId, projectionDays, bestVariation, worstVariation, latestOperation, isLoadingPrediction]);
+
+  return (
+    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+      {/* Grafico di previsione peso */}
+      <Card className="md:col-span-2">
+        <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
+          <div>
+            <CardTitle>Previsioni di Crescita</CardTitle>
+            <CardDescription>
+              {growthPrediction ? 
+                `Proiezioni basate su SGR ${growthPrediction.sgrPercentage?.toFixed(2)}% (${growthPrediction.realSgr ? 'calcolata' : 'teorica'})` : 
+                'Proiezioni di crescita basate su SGR mensile'}
+            </CardDescription>
+          </div>
+          {latestOperation?.animalsPerKg && (
+            <Button 
+              variant="outline"
+              size="sm"
+              onClick={fetchGrowthPrediction}
+              disabled={isLoadingPrediction}
+            >
+              {isLoadingPrediction ? (
+                <>
+                  <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
+                  Calcolo...
+                </>
+              ) : (
+                <>
+                  <BarChart className="h-4 w-4 mr-2" />
+                  {growthPrediction ? 'Aggiorna Previsioni' : 'Genera Previsioni'}
+                </>
+              )}
+            </Button>
+          )}
+        </CardHeader>
+        <CardContent>
+          {!latestOperation?.animalsPerKg ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <Droplets className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p>Per generare previsioni di crescita, è necessario registrare almeno una misurazione del peso</p>
+              <Button asChild className="mt-4">
+                <Link href={`/operations?cycleId=${cycle.id}`}>
+                  <List className="mr-2 h-4 w-4" />
+                  Registra una Misurazione
+                </Link>
+              </Button>
+            </div>
+          ) : !growthPrediction ? (
+            <div className="text-center py-12 text-muted-foreground">
+              <LineChart className="h-12 w-12 mx-auto mb-4 opacity-30" />
+              <p>Clicca su "Genera Previsioni" per visualizzare le proiezioni di crescita future</p>
+            </div>
+          ) : (
+            <div className="space-y-6">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-3">
+                  <GrowthPredictionChart 
+                    currentWeight={growthPrediction.currentWeight}
+                    measurementDate={new Date(growthPrediction.lastMeasurementDate || latestOperation.date)}
+                    theoreticalSgrMonthlyPercentage={growthPrediction.sgrPercentage}
+                    realSgrMonthlyPercentage={growthPrediction.realSgr}
+                    projectionDays={growthPrediction.days || projectionDays}
+                    variationPercentages={{
+                      best: growthPrediction.bestVariation || bestVariation,
+                      worst: growthPrediction.worstVariation || worstVariation
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-4">
+                  <div className="bg-white p-4 rounded-lg border">
+                    <h3 className="text-base font-medium mb-3">Parametri</h3>
+                    
+                    <div className="space-y-3">
+                      <div>
+                        <div className="text-sm text-muted-foreground mb-1">
+                          Giorni di proiezione
+                        </div>
+                        <Input
+                          type="number"
+                          min={7}
+                          max={365}
+                          value={projectionDays}
+                          onChange={(e) => setProjectionDays(Number(e.target.value))}
+                        />
+                      </div>
+                      
+                      <div>
+                        <div className="text-sm text-muted-foreground mb-1">
+                          Variazione positiva (%)
+                        </div>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={bestVariation}
+                          onChange={(e) => setBestVariation(Number(e.target.value))}
+                        />
+                      </div>
+                      
+                      <div>
+                        <div className="text-sm text-muted-foreground mb-1">
+                          Variazione negativa (%)
+                        </div>
+                        <Input
+                          type="number"
+                          min={0}
+                          max={100}
+                          value={worstVariation}
+                          onChange={(e) => setWorstVariation(Number(e.target.value))}
+                        />
+                      </div>
+                      
+                      <Button
+                        variant="outline"
+                        className="w-full"
+                        onClick={fetchGrowthPrediction}
+                        disabled={isLoadingPrediction}
+                      >
+                        {isLoadingPrediction ? "Aggiornamento..." : "Aggiorna"}
+                      </Button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <Card className="bg-green-50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-green-700">Scenario Migliore</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-green-700">
+                      {growthPrediction.summary?.finalBestWeight || "N/A"} mg
+                    </div>
+                    <p className="text-xs text-green-600 mt-1">
+                      In {growthPrediction.days || projectionDays} giorni con SGR +{growthPrediction.bestVariation || bestVariation}%
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-primary">Previsione Standard</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold">
+                      {growthPrediction.summary?.finalTheoreticalWeight || "N/A"} mg
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      In {growthPrediction.days || projectionDays} giorni con SGR {growthPrediction.sgrPercentage?.toFixed(1) || "standard"}%
+                    </p>
+                  </CardContent>
+                </Card>
+                
+                <Card className="bg-red-50">
+                  <CardHeader className="pb-2">
+                    <CardTitle className="text-sm font-medium text-red-700">Scenario Peggiore</CardTitle>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="text-2xl font-bold text-red-700">
+                      {growthPrediction.summary?.finalWorstWeight || "N/A"} mg
+                    </div>
+                    <p className="text-xs text-red-600 mt-1">
+                      In {growthPrediction.days || projectionDays} giorni con SGR -{growthPrediction.worstVariation || worstVariation}%
+                    </p>
+                  </CardContent>
+                </Card>
+              </div>
+            </div>
+          )}
+        </CardContent>
+      </Card>
+      
+      {/* Timeline di proiezione taglie */}
+      {latestOperation?.animalsPerKg && growthPrediction && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Timeline Proiezione Taglie</CardTitle>
+            <CardDescription>
+              Previsione di quando la cesta raggiungerà le diverse taglie target
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <SizeGrowthTimeline 
+              currentWeight={growthPrediction.currentWeight}
+              measurementDate={new Date(growthPrediction.lastMeasurementDate || latestOperation.date)}
+              sgrMonthlyPercentage={growthPrediction.sgrPercentage}
+              cycleId={cycle.id}
+              basketId={cycle.basketId}
+            />
+          </CardContent>
+        </Card>
+      )}
+    </div>
+  );
+}
+
+// Tipi per i parametri della lista operazioni
+interface OperationsListProps {
+  operations: any[];
+  formatDate: (dateString: string) => string;
+}
+
+// Componente per la lista delle operazioni
+function OperationsList({ operations, formatDate }: OperationsListProps) {
+  const sortedOperations = operations
+    ? [...operations].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+    : [];
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Cronologia Operazioni</CardTitle>
+        <CardDescription>
+          Tutte le operazioni effettuate durante questo ciclo
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {sortedOperations.length === 0 ? (
+          <div className="text-center py-6 text-muted-foreground">
+            Nessuna operazione registrata per questo ciclo
+          </div>
+        ) : (
+          <div className="space-y-6">
+            {sortedOperations.map((op, index) => (
+              <div key={op.id} className="relative">
+                {index !== sortedOperations.length - 1 && (
+                  <div className="absolute left-6 top-8 bottom-0 w-px bg-gray-200"></div>
+                )}
+                <div className="flex items-start">
+                  <div className={`shrink-0 h-12 w-12 rounded-full flex items-center justify-center ${getOperationTypeColor(op.type)}`}>
+                    <Box className="h-5 w-5" />
+                  </div>
+                  <div className="ml-4 grow">
+                    <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1">
+                      <h4 className="font-medium">{getOperationTypeLabel(op.type)}</h4>
+                      <span className="text-sm text-muted-foreground">
+                        {formatDate(op.date)}
+                      </span>
+                    </div>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
+                      {op.animalsPerKg && (
+                        <div>
+                          <div className="text-sm font-medium text-muted-foreground">Animali/Kg</div>
+                          <div className="font-medium">{op.animalsPerKg.toLocaleString('it-IT')}</div>
+                        </div>
+                      )}
+                      
+                      {op.animalCount && (
+                        <div>
+                          <div className="text-sm font-medium text-muted-foreground">N° Animali</div>
+                          <div className="font-medium">{op.animalCount.toLocaleString('it-IT')}</div>
+                        </div>
+                      )}
+                      
+                      {op.totalWeight && (
+                        <div>
+                          <div className="text-sm font-medium text-muted-foreground">Peso Totale</div>
+                          <div className="font-medium">{op.totalWeight.toLocaleString('it-IT', { maximumFractionDigits: 2 })} g</div>
+                        </div>
+                      )}
+                      
+                      {op.size && (
+                        <div>
+                          <div className="text-sm font-medium text-muted-foreground">Taglia</div>
+                          <div className="font-medium">{op.size.code} ({op.size.name})</div>
+                        </div>
+                      )}
+                      
+                      {op.notes && (
+                        <div className="sm:col-span-3">
+                          <div className="text-sm font-medium text-muted-foreground">Note</div>
+                          <div className="text-sm">{op.notes}</div>
+                        </div>
+                      )}
+                    </div>
+                    
+                    <div className="flex justify-end mt-2">
+                      <Link href={`/operations/${op.id}`}>
+                        <Button variant="ghost" size="sm" className="text-xs h-7">
+                          Visualizza dettagli
+                        </Button>
+                      </Link>
+                    </div>
+                  </div>
+                </div>
+                
+                {index !== sortedOperations.length - 1 && <Separator className="my-6" />}
+              </div>
+            ))}
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+// Definizione dei tipi per il componente delle note
+interface NotesTabProps {}
+
+// Componente per la visualizzazione delle note (per ora vuoto)
+function NotesTab({}: NotesTabProps) {
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Note e Documenti</CardTitle>
+        <CardDescription>
+          Note, documenti e informazioni aggiuntive
+        </CardDescription>
+      </CardHeader>
+      <CardContent className="h-[200px] flex items-center justify-center">
+        <div className="text-center text-muted-foreground">
+          <p>Nessuna nota disponibile per questo ciclo</p>
+        </div>
+      </CardContent>
+    </Card>
+  );
+}
+
+// Componente principale
+export default function CycleDetail() {
+  const [, params] = useRoute('/cycles/:id');
+  const cycleId = params?.id ? parseInt(params.id) : null;
+  const [activeTab, setActiveTab] = useState('operations');
   
   // Fetch cycle details
   const { data: cycle, isLoading: cycleLoading } = useQuery({
@@ -111,56 +464,9 @@ export default function CycleDetail() {
   }
   
   // Helper function to format dates
-  const formatDate = (dateString: string) => {
+  const formatDate = (dateString) => {
     return format(new Date(dateString), 'dd MMMM yyyy', { locale: it });
   };
-  
-  // Funzione per ottenere il valore SGR mensile corrente
-  const getCurrentMonthSgr = () => {
-    const today = new Date();
-    const monthNames = [
-      'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
-      'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
-    ];
-    const currentMonthName = monthNames[today.getMonth()];
-    
-    // In un'applicazione reale, qui recupereremmo il valore SGR dal backend
-    // Per ora restituiamo un valore predefinito del 60%
-    return 60;
-  };
-  
-  // Funzione per calcolare le previsioni di crescita utilizzando l'endpoint specifico per cicli
-  const calculateGrowthPrediction = useCallback(async () => {
-    if (!cycleId) return;
-    
-    setIsLoadingPrediction(true);
-    try {
-      // Utilizziamo l'endpoint specifico per cicli che calcolerà automaticamente i pesi
-      // e utilizzerà lo SGR reale o quello mensile appropriato
-      const response = await apiRequest('GET', 
-        `/api/cycles/${cycleId}/growth-prediction?days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`
-      );
-      setGrowthPrediction(response || {});
-    } catch (error) {
-      console.error('Errore nel calcolo della previsione di crescita:', error);
-    } finally {
-      setIsLoadingPrediction(false);
-    }
-  }, [cycleId, projectionDays, bestVariation, worstVariation]);
-
-  // Effect per caricare le previsioni quando si cambia tab
-  useEffect(() => {
-    // Carica le previsioni solo quando la tab delle statistiche è attiva
-    // e abbiamo dati validi e non li stiamo già caricando
-    if (activeTab === 'stats' && 
-        latestOperation?.animalsPerKg && 
-        !growthPrediction && 
-        !isLoadingPrediction &&
-        cycleId) {
-      // Chiamiamo la funzione esterna per calcolare la previsione
-      calculateGrowthPrediction();
-    }
-  }, [activeTab, latestOperation, growthPrediction, isLoadingPrediction, cycleId, calculateGrowthPrediction]);
   
   return (
     <div className="container mx-auto px-4 py-8">
@@ -344,303 +650,19 @@ export default function CycleDetail() {
         </TabsList>
         
         <TabsContent value="operations" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cronologia Operazioni</CardTitle>
-              <CardDescription>
-                Tutte le operazioni effettuate durante questo ciclo
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {sortedOperations.length === 0 ? (
-                <div className="text-center py-6 text-muted-foreground">
-                  Nessuna operazione registrata per questo ciclo
-                </div>
-              ) : (
-                <div className="space-y-6">
-                  {sortedOperations.map((op, index) => (
-                    <div key={op.id} className="relative">
-                      {index !== sortedOperations.length - 1 && (
-                        <div className="absolute left-6 top-8 bottom-0 w-px bg-gray-200"></div>
-                      )}
-                      <div className="flex items-start">
-                        <div className={`shrink-0 h-12 w-12 rounded-full flex items-center justify-center ${getOperationTypeColor(op.type)}`}>
-                          <Box className="h-5 w-5" />
-                        </div>
-                        <div className="ml-4 grow">
-                          <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-1">
-                            <h4 className="font-medium">{getOperationTypeLabel(op.type)}</h4>
-                            <span className="text-sm text-muted-foreground">
-                              {formatDate(op.date)}
-                            </span>
-                          </div>
-                          
-                          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mt-3">
-                            {op.animalsPerKg && (
-                              <div>
-                                <div className="text-sm font-medium text-muted-foreground">Animali/Kg</div>
-                                <div className="font-medium">{op.animalsPerKg.toLocaleString('it-IT')}</div>
-                              </div>
-                            )}
-                            
-                            {op.animalCount && (
-                              <div>
-                                <div className="text-sm font-medium text-muted-foreground">N° Animali</div>
-                                <div className="font-medium">{op.animalCount.toLocaleString('it-IT')}</div>
-                              </div>
-                            )}
-                            
-                            {op.totalWeight && (
-                              <div>
-                                <div className="text-sm font-medium text-muted-foreground">Peso Totale</div>
-                                <div className="font-medium">{op.totalWeight.toLocaleString('it-IT', { maximumFractionDigits: 2 })} g</div>
-                              </div>
-                            )}
-                            
-                            {op.size && (
-                              <div>
-                                <div className="text-sm font-medium text-muted-foreground">Taglia</div>
-                                <div className="font-medium">{op.size.code} ({op.size.name})</div>
-                              </div>
-                            )}
-                            
-                            {op.notes && (
-                              <div className="sm:col-span-3">
-                                <div className="text-sm font-medium text-muted-foreground">Note</div>
-                                <div className="text-sm">{op.notes}</div>
-                              </div>
-                            )}
-                          </div>
-                          
-                          <div className="flex justify-end mt-2">
-                            <Link href={`/operations/${op.id}`}>
-                              <Button variant="ghost" size="sm" className="text-xs h-7">
-                                Visualizza dettagli
-                              </Button>
-                            </Link>
-                          </div>
-                        </div>
-                      </div>
-                      
-                      {index !== sortedOperations.length - 1 && <Separator className="my-6" />}
-                    </div>
-                  ))}
-                </div>
-              )}
-            </CardContent>
-          </Card>
+          <OperationsList operations={operations} formatDate={formatDate} />
         </TabsContent>
         
         <TabsContent value="stats" className="mt-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Grafico di previsione peso */}
-            <Card className="md:col-span-2">
-              <CardHeader className="flex flex-col sm:flex-row items-start sm:items-center sm:justify-between gap-4">
-                <div>
-                  <CardTitle>Previsioni di Crescita</CardTitle>
-                  <CardDescription>
-                    {growthPrediction ? 
-                      `Proiezioni basate su SGR ${growthPrediction.sgrPercentage?.toFixed(2)}% (${growthPrediction.realSgr ? 'calcolata' : 'teorica'})` : 
-                      'Proiezioni di crescita basate su SGR mensile'}
-                  </CardDescription>
-                </div>
-                {latestOperation?.animalsPerKg && (
-                  <Button 
-                    variant="outline"
-                    size="sm"
-                    onClick={calculateGrowthPrediction}
-                    disabled={isLoadingPrediction}
-                  >
-                    {isLoadingPrediction ? (
-                      <>
-                        <RefreshCw className="h-4 w-4 mr-2 animate-spin" />
-                        Calcolo...
-                      </>
-                    ) : (
-                      <>
-                        <BarChart className="h-4 w-4 mr-2" />
-                        {growthPrediction ? 'Aggiorna Previsioni' : 'Genera Previsioni'}
-                      </>
-                    )}
-                  </Button>
-                )}
-              </CardHeader>
-              <CardContent>
-                {!latestOperation?.animalsPerKg ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <Droplets className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Per generare previsioni di crescita, è necessario registrare almeno una misurazione del peso</p>
-                    <Button asChild className="mt-4">
-                      <Link href={`/operations?cycleId=${cycle.id}`}>
-                        <List className="mr-2 h-4 w-4" />
-                        Registra una Misurazione
-                      </Link>
-                    </Button>
-                  </div>
-                ) : !growthPrediction ? (
-                  <div className="text-center py-12 text-muted-foreground">
-                    <LineChart className="h-12 w-12 mx-auto mb-4 opacity-30" />
-                    <p>Clicca su "Genera Previsioni" per visualizzare le proiezioni di crescita future</p>
-                  </div>
-                ) : (
-                  <div className="space-y-6">
-                    <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
-                      <div className="lg:col-span-3">
-                        <GrowthPredictionChart 
-                          currentWeight={growthPrediction.currentWeight}
-                          measurementDate={new Date(growthPrediction.lastMeasurementDate || latestOperation.date)}
-                          theoreticalSgrMonthlyPercentage={growthPrediction.sgrPercentage}
-                          realSgrMonthlyPercentage={growthPrediction.realSgr}
-                          projectionDays={growthPrediction.days || projectionDays}
-                          variationPercentages={{
-                            best: growthPrediction.bestVariation || bestVariation,
-                            worst: growthPrediction.worstVariation || worstVariation
-                          }}
-                        />
-                      </div>
-                      
-                      <div className="space-y-4">
-                        <div className="bg-white p-4 rounded-lg border">
-                          <h3 className="text-base font-medium mb-3">Parametri</h3>
-                          
-                          <div className="space-y-3">
-                            <div>
-                              <div className="text-sm text-muted-foreground mb-1">
-                                Giorni di proiezione
-                              </div>
-                              <Input
-                                type="number"
-                                min={7}
-                                max={365}
-                                value={projectionDays}
-                                onChange={(e) => setProjectionDays(Number(e.target.value))}
-                              />
-                            </div>
-                            
-                            <div>
-                              <div className="text-sm text-muted-foreground mb-1">
-                                Variazione positiva (%)
-                              </div>
-                              <Input
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={bestVariation}
-                                onChange={(e) => setBestVariation(Number(e.target.value))}
-                              />
-                            </div>
-                            
-                            <div>
-                              <div className="text-sm text-muted-foreground mb-1">
-                                Variazione negativa (%)
-                              </div>
-                              <Input
-                                type="number"
-                                min={0}
-                                max={100}
-                                value={worstVariation}
-                                onChange={(e) => setWorstVariation(Number(e.target.value))}
-                              />
-                            </div>
-                            
-                            <Button
-                              variant="outline"
-                              className="w-full"
-                              onClick={calculateGrowthPrediction}
-                              disabled={isLoadingPrediction}
-                            >
-                              {isLoadingPrediction ? "Aggiornamento..." : "Aggiorna"}
-                            </Button>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-                    
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <Card className="bg-green-50">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-green-700">Scenario Migliore</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold text-green-700">
-                            {growthPrediction.summary?.finalBestWeight || "N/A"} mg
-                          </div>
-                          <p className="text-xs text-green-600 mt-1">
-                            In {growthPrediction.days || projectionDays} giorni con SGR +{growthPrediction.bestVariation || bestVariation}%
-                          </p>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card>
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-primary">Previsione Standard</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold">
-                            {growthPrediction.summary?.finalTheoreticalWeight || "N/A"} mg
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            In {growthPrediction.days || projectionDays} giorni con SGR {growthPrediction.sgrPercentage?.toFixed(1) || "standard"}%
-                          </p>
-                        </CardContent>
-                      </Card>
-                      
-                      <Card className="bg-red-50">
-                        <CardHeader className="pb-2">
-                          <CardTitle className="text-sm font-medium text-red-700">Scenario Peggiore</CardTitle>
-                        </CardHeader>
-                        <CardContent>
-                          <div className="text-2xl font-bold text-red-700">
-                            {growthPrediction.summary?.finalWorstWeight || "N/A"} mg
-                          </div>
-                          <p className="text-xs text-red-600 mt-1">
-                            In {growthPrediction.days || projectionDays} giorni con SGR -{growthPrediction.worstVariation || worstVariation}%
-                          </p>
-                        </CardContent>
-                      </Card>
-                    </div>
-                  </div>
-                )}
-              </CardContent>
-            </Card>
-            
-            {/* Timeline di proiezione taglie */}
-            {latestOperation?.animalsPerKg && growthPrediction && (
-              <Card className="mt-6">
-                <CardHeader>
-                  <CardTitle>Timeline Proiezione Taglie</CardTitle>
-                  <CardDescription>
-                    Previsione di quando la cesta raggiungerà le diverse taglie target
-                  </CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <SizeGrowthTimeline 
-                    currentWeight={growthPrediction.currentWeight}
-                    measurementDate={new Date(growthPrediction.lastMeasurementDate || latestOperation.date)}
-                    sgrMonthlyPercentage={growthPrediction.sgrPercentage}
-                    cycleId={cycle.id}
-                    basketId={cycle.basketId}
-                  />
-                </CardContent>
-              </Card>
-            )}
-          </div>
+          <StatisticsTab 
+            cycle={cycle} 
+            latestOperation={latestOperation} 
+            cycleId={cycleId} 
+          />
         </TabsContent>
         
         <TabsContent value="notes" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Note e Documenti</CardTitle>
-              <CardDescription>
-                Note, documenti e informazioni aggiuntive
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="h-[200px] flex items-center justify-center">
-              <div className="text-center text-muted-foreground">
-                <p>Nessuna nota disponibile per questo ciclo</p>
-              </div>
-            </CardContent>
-          </Card>
+          <NotesTab />
         </TabsContent>
       </Tabs>
     </div>
