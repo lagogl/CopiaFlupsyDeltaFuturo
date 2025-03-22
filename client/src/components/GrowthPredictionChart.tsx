@@ -58,8 +58,9 @@ export default function GrowthPredictionChart({
     }).format(date);
   };
   
-  // Converti SGR mensile in giornaliero
-  const dailySgrPercentage = theoreticalSgrMonthlyPercentage / 30;
+  // Converti SGR mensile in giornaliero, gestendo il caso in cui sia undefined
+  const safeTheoreticalSgr = theoreticalSgrMonthlyPercentage || 0;
+  const dailySgrPercentage = safeTheoreticalSgr / 30;
   const dailySgr = dailySgrPercentage / 100;
   
   // Calcola i valori giornalieri per scenari migliori/peggiori
@@ -108,8 +109,10 @@ export default function GrowthPredictionChart({
   ];
   
   // Trova target di peso appropriati da visualizzare
+  // Assicuriamoci che currentWeight sia valido prima di filtrare i target
+  const safeCurrentWeight = currentWeight || 0;
   const relevantTargets = targetWeights.filter(
-    target => target.weight > currentWeight * 0.9 && target.weight < currentWeight * 2.5
+    target => target.weight > safeCurrentWeight * 0.9 && target.weight < safeCurrentWeight * 2.5
   );
 
   return (
@@ -117,7 +120,7 @@ export default function GrowthPredictionChart({
       <CardHeader className="pb-2">
         <CardTitle>Previsione di crescita</CardTitle>
         <CardDescription>
-          Basata su SGR mensile del {theoreticalSgrMonthlyPercentage.toFixed(1)}% 
+          Basata su SGR mensile del {theoreticalSgrMonthlyPercentage ? theoreticalSgrMonthlyPercentage.toFixed(1) : "0.0"}% 
           {realSgrMonthlyPercentage && ` (reale: ${realSgrMonthlyPercentage.toFixed(1)}%)`}
         </CardDescription>
       </CardHeader>
@@ -175,11 +178,13 @@ export default function GrowthPredictionChart({
               ))}
               
               {/* Linea oggi */}
-              <ReferenceLine
-                x={data[0].dateFormatted}
-                stroke="#666"
-                strokeWidth={1}
-              />
+              {data.length > 0 && (
+                <ReferenceLine
+                  x={data[0].dateFormatted}
+                  stroke="#666"
+                  strokeWidth={1}
+                />
+              )}
               
               {/* Linee di crescita */}
               <Line
