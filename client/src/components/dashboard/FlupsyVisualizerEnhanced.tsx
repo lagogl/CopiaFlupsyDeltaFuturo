@@ -271,6 +271,11 @@ export default function FlupsyVisualizer() {
                 <div className="text-xs text-muted-foreground mt-1">
                   {latestOperation.animalsPerKg.toLocaleString()} animali/kg
                 </div>
+                {latestOperation.animalCount && (
+                  <div className="text-xs font-medium mt-1 text-orange-600">
+                    Numero animali: <span className="font-bold">{latestOperation.animalCount.toLocaleString()}</span>
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -294,9 +299,18 @@ export default function FlupsyVisualizer() {
     const averageWeight = animalsPerKg ? Math.round(1000000 / animalsPerKg) : null;
     const targetSize = averageWeight ? getTargetSizeForWeight(averageWeight) : null;
     
+    // Ottieni il valore di animalCount dall'operazione
+    const totalAnimalCount = latestOperation?.animalCount;
+    
     // Calcola il numero di animali nel cestello (se possibile)
     let animalCountDisplay = '';
-    if (animalsPerKg && averageWeight) {
+    if (totalAnimalCount) {
+      // Usa direttamente il valore di animalCount se disponibile
+      animalCountDisplay = totalAnimalCount >= 1000 
+        ? `${(totalAnimalCount / 1000).toFixed(1)}K` 
+        : totalAnimalCount.toString();
+    } else if (animalsPerKg && averageWeight) {
+      // Altrimenti, calcola una stima
       const animalCount = formatAnimalCount(animalsPerKg, averageWeight);
       animalCountDisplay = animalCount;
     }
