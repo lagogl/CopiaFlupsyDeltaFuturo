@@ -79,15 +79,38 @@ export default function SizeGrowthTimeline({
   // Ottieni la taglia attuale
   const currentSize = growthTimeline[0]?.size;
   
-  // Trova l'indice della taglia attuale nell'array delle taglie target
-  const currentSizeIndex = currentSize 
-    ? TARGET_SIZES.findIndex(size => size.code === currentSize.code)
+  // Usa sizes se disponibile, altrimenti usa TARGET_SIZES
+  const sizesArray = sizes && sizes.length > 0 ? sizes : TARGET_SIZES;
+  
+  // Trova l'indice della taglia attuale nell'array delle taglie disponibili
+  const currentSizeIndex = currentSize && sizesArray 
+    ? sizesArray.findIndex((size: any) => {
+        // Se è dal database (ha minAnimalsPerKg) oppure è dalla lista hardcoded
+        return (size.code === currentSize.code) || 
+               (size.minAnimalsPerKg && currentSize.code === `TP-${size.minAnimalsPerKg}`);
+      })
     : -1;
   
-  // Filtra le taglie future (quelle con indice maggiore della taglia attuale)
-  const futureSizes = currentSizeIndex >= 0 
-    ? TARGET_SIZES.slice(currentSizeIndex + 1)
-    : [];
+  // Filtra le taglie future
+  let futureSizes: TargetSize[] = [];
+  
+  if (currentSizeIndex >= 0 && sizes && sizes.length > 0) {
+    // Se stiamo usando taglie dal database, ottieni quelle future in formato TargetSize
+    const dbFutureSizes = sizes
+      .slice(currentSizeIndex + 1)
+      .map((size: any) => ({
+        code: size.code,
+        name: size.name,
+        minWeight: 1000000 / size.maxAnimalsPerKg,
+        maxWeight: 1000000 / size.minAnimalsPerKg,
+        color: getDefaultColorForSize(size.code)
+      }));
+    
+    futureSizes = dbFutureSizes;
+  } else if (currentSizeIndex >= 0) {
+    // Fallback a TARGET_SIZES
+    futureSizes = TARGET_SIZES.slice(currentSizeIndex + 1);
+  }
     
   // Per ogni taglia futura, trova la data in cui verrà raggiunta (se presente nella timeline)
   const sizeReachDates = futureSizes.map(targetSize => {
