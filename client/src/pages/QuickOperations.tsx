@@ -492,20 +492,25 @@ export default function QuickOperations() {
       console.log("Calculator result applied:", result);
       console.log("Updated operation data:", updatedData);
       
-      // Aggiorniamo lo stato con i nuovi dati
-      setCurrentOperationData(updatedData);
-      
       // Se esiste una funzione di callback per l'aggiornamento del form, la chiamiamo
       if (typeof updatedData.updateForm === 'function') {
-        // Usiamo un timeout per assicurarci che la UI sia stata aggiornata
-        setTimeout(() => {
-          updatedData.updateForm();
-          console.log("Form data updated via callback");
-          
-          // Forziamo un aggiornamento della UI
-          setOperationDialogOpen(prev => prev);
-        }, 50);
+        updatedData.updateForm();
+        console.log("Form data updated via callback");
       }
+      
+      // Creiamo un oggetto completamente nuovo per forzare il refresh dei componenti
+      const refreshedData = { ...updatedData };
+      
+      // Aggiorniamo lo stato con i nuovi dati
+      setCurrentOperationData(refreshedData);
+      
+      // Reset e aggiorna il dialog dopo un breve ritardo
+      setTimeout(() => {
+        setOperationDialogOpen(false);
+        setTimeout(() => {
+          setOperationDialogOpen(true);
+        }, 50);
+      }, 10);
     }
   };
   
@@ -1016,10 +1021,17 @@ export default function QuickOperations() {
                                     // Aggiungiamo una funzione di callback che verrà usata
                                     // per aggiornare i valori del form dopo il calcolo
                                     updatedOperationData.updateForm = () => {
+                                      // Aggiorniamo i dati
                                       operationData.animalsPerKg = updatedOperationData.animalsPerKg;
                                       operationData.averageWeight = updatedOperationData.averageWeight;
                                       operationData.deadCount = updatedOperationData.deadCount;
                                       operationData.mortalityRate = updatedOperationData.mortalityRate;
+                                      
+                                      // Forziamo chiusura e riapertura del dialog per resettare il form
+                                      setOperationDialogOpen(false);
+                                      setTimeout(() => {
+                                        setOperationDialogOpen(true);
+                                      }, 50);
                                     };
                                     
                                     setCalculatorOpen(true);
