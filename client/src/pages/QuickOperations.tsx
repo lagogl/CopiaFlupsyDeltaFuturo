@@ -1068,7 +1068,7 @@ export default function QuickOperations() {
                               <h3 className="text-md font-medium">Registra peso totale</h3>
                             </div>
                             <p className="text-sm text-muted-foreground mb-4">
-                              Inserisci il peso totale in kg della cesta e verranno calcolati automaticamente il peso medio e gli animali per kg
+                              Inserisci il peso totale in kg della cesta e usa il pulsante "Calcola" per determinare il peso medio e gli animali per kg
                             </p>
                             
                             <div className="grid grid-cols-1 gap-4 mb-2">
@@ -1080,6 +1080,7 @@ export default function QuickOperations() {
                                     step="0.01"
                                     placeholder="Inserisci il peso in kg" 
                                     className="h-9"
+                                    value={operationData.totalWeight ? (operationData.totalWeight / 1000).toString() : ''}
                                     onChange={(e) => {
                                       const totalWeightKg = parseFloat(e.target.value);
                                       
@@ -1087,59 +1088,97 @@ export default function QuickOperations() {
                                         // Convertiamo in grammi per il database
                                         const totalWeightGrams = totalWeightKg * 1000;
                                         
-                                        // Ottieni il numero di animali dall'ultima operazione
-                                        let animalCount = operationData.animalCount;
-                                        
-                                        // Se non abbiamo il numero di animali, lo prendiamo dall'ultima operazione
-                                        if (!animalCount && lastOperation) {
-                                          animalCount = lastOperation.animalCount;
-                                        }
-                                        
-                                        // Se abbiamo sia il peso totale che il numero di animali, possiamo calcolare
-                                        // il numero di animali per kg e il peso medio
-                                        if (animalCount && animalCount > 0) {
-                                          // Calcola animali per kg
-                                          const animalsPerKg = Math.round(animalCount / totalWeightKg);
-                                          
-                                          // Calcola peso medio in mg
-                                          const averageWeight = 1000000 / animalsPerKg;
-                                          
-                                          // Determina la taglia in base al peso medio
-                                          const targetSize = getSizeFromAnimalsPerKg(animalsPerKg);
-                                          console.log("Taglia target calcolata:", targetSize);
-                                          
-                                          // Trova l'ID della taglia corrispondente nel database
-                                          const sizeId = targetSize ? 
-                                            sizes?.find(s => s.code === targetSize.code)?.id || lastOperation?.sizeId : 
-                                            lastOperation?.sizeId;
-                                            
-                                          console.log("SizeId determinato:", sizeId);
-                                          
-                                          // Aggiorna i dati dell'operazione
-                                          const updatedData = { 
-                                            ...operationData,
-                                            totalWeight: totalWeightGrams,
-                                            animalsPerKg,
-                                            averageWeight,
-                                            animalCount,
-                                            sizeId // Aggiorna l'ID della taglia
-                                          };
-                                          
-                                          console.log("Dati operazione peso aggiornati:", updatedData);
-                                          setCurrentOperationData(updatedData);
-                                        } else {
-                                          // Se non abbiamo il numero di animali, aggiorniamo solo il peso totale
-                                          const updatedData = { 
-                                            ...operationData,
-                                            totalWeight: totalWeightGrams
-                                          };
-                                          setCurrentOperationData(updatedData);
-                                        }
+                                        // Aggiorniamo solo il peso totale
+                                        const updatedData = { 
+                                          ...operationData,
+                                          totalWeight: totalWeightGrams
+                                        };
+                                        setCurrentOperationData(updatedData);
+                                      } else {
+                                        // Reset se il valore non è valido
+                                        const updatedData = { 
+                                          ...operationData,
+                                          totalWeight: null
+                                        };
+                                        setCurrentOperationData(updatedData);
                                       }
                                     }}
                                   />
                                   <div className="ml-2 px-3 py-2 bg-gray-100 text-gray-500 rounded">kg</div>
                                 </div>
+                              </div>
+                              <div className="flex justify-end">
+                                <Button 
+                                  type="button"
+                                  onClick={() => {
+                                    // Verifica che il peso totale sia valido
+                                    if (!operationData.totalWeight) {
+                                      toast({
+                                        title: "Errore",
+                                        description: "Inserisci un peso totale valido prima di calcolare",
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+
+                                    // Ottieni il numero di animali dall'ultima operazione o dai dati correnti
+                                    let animalCount = operationData.animalCount;
+                                    
+                                    // Se non abbiamo il numero di animali, lo prendiamo dall'ultima operazione
+                                    if (!animalCount && lastOperation) {
+                                      animalCount = lastOperation.animalCount;
+                                    }
+                                    
+                                    if (!animalCount || animalCount <= 0) {
+                                      toast({
+                                        title: "Errore",
+                                        description: "Numero di animali non disponibile. Verifica che sia presente nell'ultima operazione.",
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+
+                                    // Calcola animali per kg
+                                    const totalWeightKg = operationData.totalWeight / 1000;
+                                    const animalsPerKg = Math.round(animalCount / totalWeightKg);
+                                    
+                                    // Calcola peso medio in mg
+                                    const averageWeight = 1000000 / animalsPerKg;
+                                    
+                                    // Determina la taglia in base al peso medio
+                                    const targetSize = getSizeFromAnimalsPerKg(animalsPerKg);
+                                    console.log("Taglia target calcolata:", targetSize);
+                                    
+                                    // Trova l'ID della taglia corrispondente nel database
+                                    const sizeId = targetSize ? 
+                                      sizes?.find(s => s.code === targetSize.code)?.id || lastOperation?.sizeId : 
+                                      lastOperation?.sizeId;
+                                      
+                                    console.log("SizeId determinato:", sizeId);
+                                    
+                                    // Aggiorna i dati dell'operazione
+                                    const updatedData = { 
+                                      ...operationData,
+                                      animalsPerKg,
+                                      averageWeight,
+                                      animalCount,
+                                      sizeId // Aggiorna l'ID della taglia
+                                    };
+                                    
+                                    console.log("Dati operazione peso calcolati:", updatedData);
+                                    setCurrentOperationData(updatedData);
+                                    
+                                    toast({
+                                      title: "Calcolo completato",
+                                      description: `Calcolati ${animalsPerKg} animali/kg con peso medio di ${Math.round(averageWeight)} mg`,
+                                    });
+                                  }}
+                                  size="sm"
+                                  className="bg-blue-100 text-blue-700 hover:bg-blue-200 hover:text-blue-800 border border-blue-200"
+                                >
+                                  <Calculator className="mr-2 h-4 w-4" />
+                                  Calcola
+                                </Button>
                               </div>
                             </div>
                             
