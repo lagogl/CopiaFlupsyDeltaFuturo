@@ -12,7 +12,7 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
-import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getBasketColorBySize } from '@/lib/utils';
+import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getBasketColorBySize, getSizeFromAnimalsPerKg } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { type SampleCalculatorResult } from '@/components/SampleCalculator';
@@ -1100,13 +1100,25 @@ export default function QuickOperations() {
                                           // Calcola peso medio in mg
                                           const averageWeight = 1000000 / animalsPerKg;
                                           
+                                          // Determina la taglia in base al peso medio
+                                          const targetSize = getSizeFromAnimalsPerKg(animalsPerKg);
+                                          console.log("Taglia target calcolata:", targetSize);
+                                          
+                                          // Trova l'ID della taglia corrispondente nel database
+                                          const sizeId = targetSize ? 
+                                            sizes?.find(s => s.code === targetSize.code)?.id || lastOperation?.sizeId : 
+                                            lastOperation?.sizeId;
+                                            
+                                          console.log("SizeId determinato:", sizeId);
+                                          
                                           // Aggiorna i dati dell'operazione
                                           const updatedData = { 
                                             ...operationData,
                                             totalWeight: totalWeightGrams,
                                             animalsPerKg,
                                             averageWeight,
-                                            animalCount
+                                            animalCount,
+                                            sizeId // Aggiorna l'ID della taglia
                                           };
                                           
                                           console.log("Dati operazione peso aggiornati:", updatedData);
