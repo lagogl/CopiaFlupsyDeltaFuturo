@@ -102,7 +102,10 @@ const DropTargetBasket = ({ basket, operations, onOperationDrop }: any) => {
       onOperationDrop(basket.id, item.type);
       return { basket };
     },
-    canDrop: () => basket.state === 'active' && basket.currentCycleId !== null,
+    canDrop: () => {
+      console.log("Basket state:", basket.state, "currentCycleId:", basket.currentCycleId);
+      return basket.state === 'active' && basket.currentCycleId !== null;
+    },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
       canDrop: !!monitor.canDrop(),
