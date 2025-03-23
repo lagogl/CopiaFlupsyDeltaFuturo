@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { formatNumberWithCommas } from '@/lib/utils';
@@ -19,7 +19,7 @@ export default function IntegratedSampleCalculator({
   defaultDeadCount,
   defaultMortalityRate
 }: IntegratedSampleCalculatorProps) {
-  console.log("IntegratedSampleCalculator rendered with defaults:", {
+  console.log("IntegratedSampleCalculator v2 rendered con defaults:", {
     defaultAnimalsPerKg, 
     defaultAverageWeight,
     defaultDeadCount,
@@ -32,69 +32,115 @@ export default function IntegratedSampleCalculator({
   const [samplePercentage, setSamplePercentage] = useState<number>(100); // Percentuale del campione (default 100%)
   const [deadCount, setDeadCount] = useState<number | null>(defaultDeadCount || null); // Numero di animali morti
   
-  // Stati per i risultati calcolati
-  const [animalsPerKg, setAnimalsPerKg] = useState<number | null>(defaultAnimalsPerKg || null);
-  const [averageWeight, setAverageWeight] = useState<number | null>(defaultAverageWeight || 
-    (defaultAnimalsPerKg && defaultAnimalsPerKg > 0 ? 1000000 / defaultAnimalsPerKg : null)
-  );
-  const [totalPopulation, setTotalPopulation] = useState<number | null>(null);
-  const [mortalityRate, setMortalityRate] = useState<number | null>(defaultMortalityRate || null);
+  // Stati per i risultati calcolati - usati solo per visualizzazione
+  const [calculatedValues, setCalculatedValues] = useState({
+    animalsPerKg: defaultAnimalsPerKg || null,
+    averageWeight: defaultAverageWeight || 
+      (defaultAnimalsPerKg && defaultAnimalsPerKg > 0 ? 1000000 / defaultAnimalsPerKg : null),
+    totalPopulation: null as number | null,
+    mortalityRate: defaultMortalityRate || null,
+    deadCount: defaultDeadCount || null
+  });
   
-  // Calcola risultati quando cambiano gli input
-  useEffect(() => {
-    if (sampleWeight && animalsCount && samplePercentage) {
+  // Riferimento per tenere traccia dei cambiamenti
+  const isCalculating = useRef(false);
+  
+  // Funzione per calcolare i risultati
+  const calculateResults = () => {
+    if (sampleWeight && animalsCount && sampleWeight > 0 && animalsCount > 0) {
+      isCalculating.current = true;
+      
       // Calcolo del numero di animali per kg
-      // Poiché sampleWeight è in grammi, dobbiamo moltiplicare per 1000 per ottenere animali/kg
-      const calculatedAnimalsPerKg = Math.round((animalsCount / sampleWeight) * 1000);
+      const animalsPerKg = Math.round((animalsCount / sampleWeight) * 1000);
       
       // Calcolo del peso medio in mg
-      const calculatedAverageWeight = calculatedAnimalsPerKg > 0 ? 1000000 / calculatedAnimalsPerKg : 0;
+      const averageWeight = animalsPerKg > 0 ? 1000000 / animalsPerKg : 0;
       
       // Calcolo della popolazione totale stimata
-      const calculatedTotalPopulation = Math.round(animalsCount / (samplePercentage / 100));
+      const totalPopulation = Math.round(animalsCount / (samplePercentage / 100));
       
-      setAnimalsPerKg(calculatedAnimalsPerKg);
-      setAverageWeight(calculatedAverageWeight);
-      setTotalPopulation(calculatedTotalPopulation);
-      
-      // Calcolo della mortalità se esiste un valore di morti
-      let calculatedMortalityRate = null;
+      // Calcolo della mortalità
+      let mortalityRate = null;
       let totalDeadCount = null;
       
-      if (deadCount !== null && deadCount >= 0 && calculatedTotalPopulation > 0) {
+      if (deadCount !== null && deadCount >= 0 && totalPopulation > 0) {
         // Se il deadCount è relativo al campione, calcoliamo il valore totale
         totalDeadCount = samplePercentage < 100 
           ? Math.round(deadCount / (samplePercentage / 100)) 
           : deadCount;
           
         // Calcoliamo la percentuale di mortalità
-        calculatedMortalityRate = (totalDeadCount / (calculatedTotalPopulation + totalDeadCount)) * 100;
-        calculatedMortalityRate = Math.round(calculatedMortalityRate * 10) / 10; // Arrotondiamo a una cifra decimale
-        setMortalityRate(calculatedMortalityRate);
-      } else {
-        setMortalityRate(null);
+        mortalityRate = (totalDeadCount / (totalPopulation + totalDeadCount)) * 100;
+        mortalityRate = Math.round(mortalityRate * 10) / 10; // Arrotondiamo a una cifra decimale
       }
       
-      // Notifichiamo il componente genitore dei risultati calcolati
-      // console.log("Invio nuovi dati calcolati:", calculatedAnimalsPerKg, calculatedAverageWeight);
-      onChange({
-        animalsPerKg: calculatedAnimalsPerKg,
-        averageWeight: calculatedAverageWeight,
-        deadCount: totalDeadCount,
-        mortalityRate: calculatedMortalityRate
-      });
-    } else {
-      // Reimposta i risultati ai valori predefiniti se non abbiamo dati sufficienti
-      setAnimalsPerKg(defaultAnimalsPerKg || null);
-      setAverageWeight(
-        defaultAverageWeight || (defaultAnimalsPerKg && defaultAnimalsPerKg > 0 ? 1000000 / defaultAnimalsPerKg : null)
-      );
-      setTotalPopulation(null);
-      setMortalityRate(defaultMortalityRate || null);
+      // Aggiorniamo i valori calcolati
+      const newValues = {
+        animalsPerKg,
+        averageWeight,
+        totalPopulation,
+        mortalityRate,
+        deadCount: totalDeadCount
+      };
       
-      // Non notifichiamo cambiamenti se non abbiamo calcoli completi
+      setCalculatedValues(newValues);
+      
+      // Importante: inviamo i risultati al genitore solo se i valori sono cambiati
+      const result = {
+        animalsPerKg,
+        averageWeight,
+        deadCount: totalDeadCount,
+        mortalityRate
+      };
+      
+      console.log("CALCOLO COMPLETATO - Invio nuovi valori al form:", result);
+      
+      // Invio i risultati direttamente al genitore
+      onChange(result);
+      
+      isCalculating.current = false;
+    } else {
+      setCalculatedValues({
+        animalsPerKg: defaultAnimalsPerKg || null,
+        averageWeight: defaultAverageWeight || 
+          (defaultAnimalsPerKg && defaultAnimalsPerKg > 0 ? 1000000 / defaultAnimalsPerKg : null),
+        totalPopulation: null,
+        mortalityRate: defaultMortalityRate || null,
+        deadCount: defaultDeadCount || null
+      });
     }
-  }, [sampleWeight, animalsCount, samplePercentage, deadCount, defaultAnimalsPerKg, defaultAverageWeight, defaultMortalityRate, onChange]);
+  };
+  
+  // Effetto per calcolare i risultati quando cambiano gli input
+  useEffect(() => {
+    calculateResults();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [sampleWeight, animalsCount, samplePercentage, deadCount]);
+  
+  // Effetto per inviare i risultati al genitore quando cambiano
+  useEffect(() => {
+    const onMount = {
+      animalsPerKg: defaultAnimalsPerKg || null,
+      averageWeight: defaultAverageWeight || null,
+      deadCount: defaultDeadCount || null,
+      mortalityRate: defaultMortalityRate || null
+    };
+    console.log("Invio valori iniziali:", onMount);
+    onChange(onMount);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+  
+  // Pulsante per calcolo esplicito, come backup
+  const handleCalculateButtonClick = () => {
+    calculateResults();
+  };
+  
+  const {
+    animalsPerKg, 
+    averageWeight, 
+    totalPopulation, 
+    mortalityRate
+  } = calculatedValues;
   
   return (
     <div className="space-y-4 mb-6 border rounded-md p-4 bg-muted/10">
@@ -188,6 +234,17 @@ export default function IntegratedSampleCalculator({
           <p className="text-xs text-muted-foreground mt-1">
             Numero di animali morti trovati nel campione o nell'intera cesta
           </p>
+        </div>
+        
+        <div className="flex justify-end">
+          <Button 
+            onClick={handleCalculateButtonClick} 
+            type="button" 
+            variant="outline" 
+            size="sm"
+          >
+            Aggiorna Calcolo
+          </Button>
         </div>
       </div>
       
