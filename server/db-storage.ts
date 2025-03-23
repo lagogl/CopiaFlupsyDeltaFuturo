@@ -111,6 +111,54 @@ export class DbStorage implements IStorage {
       // Formula: 1,000,000 mg diviso per animalsPerKg = peso medio in milligrammi
       const averageWeight = 1000000 / operationData.animalsPerKg;
       operationData.averageWeight = averageWeight;
+      
+      // Se l'operazione include animalsPerKg, assegna automaticamente la taglia corretta
+      // basandosi sui valori min e max del database
+      if (!operationData.sizeId) {
+        console.log(`Determinazione automatica della taglia per animalsPerKg: ${operationData.animalsPerKg}`);
+        
+        // Ottieni tutte le taglie disponibili
+        const allSizes = await this.getSizes();
+        
+        // Trova la taglia corrispondente in base a animalsPerKg
+        const matchingSize = allSizes.find(size => 
+          operationData.animalsPerKg! >= size.minAnimalsPerKg && 
+          operationData.animalsPerKg! <= size.maxAnimalsPerKg
+        );
+        
+        if (matchingSize) {
+          console.log(`Taglia determinata automaticamente: ${matchingSize.code} (ID: ${matchingSize.id})`);
+          operationData.sizeId = matchingSize.id;
+        } else {
+          console.log(`Nessuna taglia trovata per animalsPerKg: ${operationData.animalsPerKg}`);
+        }
+      } else {
+        // Verifica che la taglia assegnata sia coerente con animalsPerKg
+        const assignedSize = await this.getSize(operationData.sizeId);
+        if (assignedSize) {
+          const isInRange = operationData.animalsPerKg >= assignedSize.minAnimalsPerKg && 
+                          operationData.animalsPerKg <= assignedSize.maxAnimalsPerKg;
+          
+          if (!isInRange) {
+            console.log(`Attenzione: La taglia assegnata ${assignedSize.code} non corrisponde a animalsPerKg ${operationData.animalsPerKg}`);
+            console.log(`Range atteso: ${assignedSize.minAnimalsPerKg}-${assignedSize.maxAnimalsPerKg}`);
+            
+            // Ottieni tutte le taglie disponibili
+            const allSizes = await this.getSizes();
+            
+            // Trova la taglia corretta
+            const correctSize = allSizes.find(size => 
+              operationData.animalsPerKg! >= size.minAnimalsPerKg && 
+              operationData.animalsPerKg! <= size.maxAnimalsPerKg
+            );
+            
+            if (correctSize) {
+              console.log(`Correzione automatica della taglia da ${assignedSize.code} a ${correctSize.code}`);
+              operationData.sizeId = correctSize.id;
+            }
+          }
+        }
+      }
     }
     
     const results = await db.insert(operations).values(operationData).returning();
