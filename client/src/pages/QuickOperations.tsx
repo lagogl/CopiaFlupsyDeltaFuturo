@@ -284,24 +284,8 @@ export default function QuickOperations() {
   const [currentOperationData, setCurrentOperationData] = useState<CurrentOperationData | null>(null);
   // Questo oggetto contiene i dati più recenti del calcolatore e persiste tra le sessioni di dialogo
   const [calculatorResults, setCalculatorResults] = useState<SampleCalculatorResult | null>(null);
-  // Importiamo useEffect
-  const { useEffect } = React;
   
-  // Questo effect si occupa di aggiornare il form con i dati del calcolatore quando disponibili
-  useEffect(() => {
-    if (calculatorResults && currentOperationData) {
-      // Aggiorniamo i dati dell'operazione corrente
-      setCurrentOperationData({
-        ...currentOperationData,
-        animalsPerKg: calculatorResults.animalsPerKg,
-        averageWeight: calculatorResults.averageWeight,
-        deadCount: calculatorResults.deadCount,
-        mortalityRate: calculatorResults.mortalityRate
-      });
-      
-      console.log("Form updated with calculator results via effect");
-    }
-  }, [calculatorResults]);
+
   
   const { toast } = useToast();
   
