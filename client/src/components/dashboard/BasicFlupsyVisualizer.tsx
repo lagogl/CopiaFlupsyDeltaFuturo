@@ -251,7 +251,7 @@ export default function BasicFlupsyVisualizer() {
             <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
               <div className="text-[10px] font-medium text-slate-500">Taglia:</div>
               <div className="text-[12px] font-bold">
-                {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
+                {latestOperation.size?.code || getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
               </div>
             </div>
             
@@ -411,7 +411,7 @@ export default function BasicFlupsyVisualizer() {
           {latestOperation.sizeId && (
             <div className="flex justify-between">
               <span className="font-medium">Taglia:</span>
-              <span>{getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}</span>
+              <span>{latestOperation.size?.code || getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}</span>
             </div>
           )}
           
