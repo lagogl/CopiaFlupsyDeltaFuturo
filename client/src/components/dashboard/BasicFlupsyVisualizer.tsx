@@ -159,16 +159,16 @@ export default function BasicFlupsyVisualizer() {
             bgClass = 'bg-yellow-50';
           } else if (sizeCode === 'T3') {
             // Ingrasso iniziale (T3)
-            borderClass = 'border-green-600 border-2';
-            bgClass = 'bg-green-50';
+            borderClass = 'border-sky-600 border-2';
+            bgClass = 'bg-sky-50';
           } else if (sizeCode === 'T2') {
             // Pre-ingrasso avanzato (T2)
-            borderClass = 'border-green-500 border-2';
-            bgClass = 'bg-green-50';
+            borderClass = 'border-sky-500 border-2';
+            bgClass = 'bg-sky-50';
           } else if (sizeCode === 'T1') {
             // Pre-ingrasso iniziale (T1)
-            borderClass = 'border-emerald-400 border-2';
-            bgClass = 'bg-emerald-50';
+            borderClass = 'border-sky-400 border-2';
+            bgClass = 'bg-sky-50';
           }
         }
       }
@@ -467,15 +467,15 @@ export default function BasicFlupsyVisualizer() {
         <div className="flex flex-wrap gap-2 mt-3">
           {/* Legenda taglie dettagliata */}
           <div className="flex items-center gap-1 text-xs">
-            <div className="w-3 h-3 rounded-sm border-2 border-emerald-400 bg-emerald-50"></div>
+            <div className="w-3 h-3 rounded-sm border-2 border-sky-400 bg-sky-50"></div>
             <span>T1 (Pre-ingrasso iniziale)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
-            <div className="w-3 h-3 rounded-sm border-2 border-green-500 bg-green-50"></div>
+            <div className="w-3 h-3 rounded-sm border-2 border-sky-500 bg-sky-50"></div>
             <span>T2 (Pre-ingrasso avanzato)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
-            <div className="w-3 h-3 rounded-sm border-2 border-green-600 bg-green-50"></div>
+            <div className="w-3 h-3 rounded-sm border-2 border-sky-600 bg-sky-50"></div>
             <span>T3 (Ingrasso iniziale)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
