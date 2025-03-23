@@ -122,14 +122,14 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`} 
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-2 text-center text-sm h-12 
+        className={`${borderClass} rounded-md p-2 text-center text-sm h-14 
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basket ? (
           <div className={`font-semibold ${basket.state !== 'active' || !basket.currentCycleId ? 'text-slate-400' : ''}`}>
             #{basket.physicalNumber}
             {latestOperation?.animalsPerKg && basket.state === 'active' && basket.currentCycleId && (
-              <div className="text-[10px] mt-1 font-bold">
+              <div className="text-[11px] mt-1 font-bold">
                 {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
               </div>
             )}
@@ -162,7 +162,7 @@ export default function BasicFlupsyVisualizer() {
             <div className="text-sm font-medium">Fila DX</div>
           </div>
           
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+          <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
             {Array.from({ length: 10 }, (_, i) => 
               renderBasketPosition(flupsy.id, 'DX', i + 1)
             )}
@@ -178,7 +178,7 @@ export default function BasicFlupsyVisualizer() {
             <div className="text-sm font-medium">Fila SX</div>
           </div>
           
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+          <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
             {Array.from({ length: 10 }, (_, i) => 
               renderBasketPosition(flupsy.id, 'SX', i + 1)
             )}
