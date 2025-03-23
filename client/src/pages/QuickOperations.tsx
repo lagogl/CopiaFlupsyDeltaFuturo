@@ -359,6 +359,7 @@ export default function QuickOperations() {
   // Mutazione per creare una nuova operazione
   const createOperationMutation = useMutation({
     mutationFn: (operationData: any) => {
+      console.log("Dati operazione inviati al server:", operationData);
       return apiRequest('POST', '/api/operations', operationData);
     },
     onSuccess: () => {
