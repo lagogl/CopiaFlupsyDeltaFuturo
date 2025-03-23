@@ -57,6 +57,9 @@ export default function FlupsyVisualizer() {
     type: string;
     notes: string | null;
     animalsPerKg: number | null;
+    deadCount: number | null;  // Numero di animali morti
+    mortalityRate: number | null; // Percentuale di mortalità
+    animalCount?: number; // Numero totale di animali (facoltativo)
   }
   
   interface Cycle {
