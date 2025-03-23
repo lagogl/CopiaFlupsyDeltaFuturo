@@ -486,11 +486,19 @@ export default function QuickOperations() {
     setTimeout(() => {
       // L'uso di setTimeout garantisce che questo codice venga eseguito dopo il rendering del DOM
       try {
-        // Trova tutti gli input per i campi relativi
-        const inputAnimalsPerKg = document.querySelector('input[placeholder*="animali per kg"]') as HTMLInputElement;
-        const inputAverageWeight = document.querySelector('input[placeholder*="medio"]') as HTMLInputElement;
-        const inputDeadCount = document.querySelector('input[placeholder*="animali morti"]') as HTMLInputElement;
-        const inputMortalityRate = document.querySelector('input[placeholder*="mortalità"]') as HTMLInputElement;
+        // Trova tutti gli input per i campi relativi usando selezione più precisa
+        // Cerchiamo anche con selezione più ampia dato che potrebbero esserci diversi stili di etichetta
+        const inputAnimalsPerKg = document.querySelector('input[placeholder="Animali/kg"]') as HTMLInputElement;
+        const inputAverageWeight = document.querySelector('input[placeholder="Peso medio (mg)"]') as HTMLInputElement;
+        const inputDeadCount = document.querySelector('input[placeholder="N. animali morti"]') as HTMLInputElement;
+        const inputMortalityRate = document.querySelector('input[placeholder="Tasso mortalità (%)"]') as HTMLInputElement;
+        
+        console.log("Selectors found:", 
+          Boolean(inputAnimalsPerKg), 
+          Boolean(inputAverageWeight), 
+          Boolean(inputDeadCount), 
+          Boolean(inputMortalityRate)
+        );
         
         // Aggiorna i valori se gli elementi esistono
         if (inputAnimalsPerKg) {
