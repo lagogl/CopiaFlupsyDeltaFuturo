@@ -307,7 +307,7 @@ export default function FlupsyVisualizer() {
     }
     
     return (
-      <TooltipProvider>
+      <TooltipProvider key={`basket-${flupsyId}-${row}-${position}`}>
         <Tooltip>
           <TooltipTrigger asChild>
             <div
@@ -481,20 +481,22 @@ export default function FlupsyVisualizer() {
       </CardHeader>
       
       <CardContent>
-        <TabsContent value="all">
-          {flupsys && selectedFlupsyIds.map((flupsyId) => (
-            <div key={flupsyId}>
-              {renderFlupsy(flupsyId)}
-              {flupsyId !== selectedFlupsyIds[selectedFlupsyIds.length - 1] && <Separator className="my-4" />}
-            </div>
-          ))}
-        </TabsContent>
-        
-        {flupsys && flupsys.map((flupsy) => (
-          <TabsContent key={flupsy.id} value={flupsy.id.toString()}>
-            {renderFlupsy(flupsy.id)}
+        <Tabs value={selectedTab} onValueChange={setSelectedTab}>
+          <TabsContent value="all">
+            {flupsys && selectedFlupsyIds.map((flupsyId) => (
+              <div key={flupsyId}>
+                {renderFlupsy(flupsyId)}
+                {flupsyId !== selectedFlupsyIds[selectedFlupsyIds.length - 1] && <Separator className="my-4" />}
+              </div>
+            ))}
           </TabsContent>
-        ))}
+          
+          {flupsys && flupsys.map((flupsy) => (
+            <TabsContent key={flupsy.id} value={flupsy.id.toString()}>
+              {renderFlupsy(flupsy.id)}
+            </TabsContent>
+          ))}
+        </Tabs>
       </CardContent>
     </Card>
   );
