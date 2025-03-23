@@ -141,17 +141,25 @@ export function getTargetSizeForWeight(weight: number, availableSizes?: any[]): 
     // Converti peso in animali per kg per utilizzare i range del database
     const estimatedAnimalsPerKg = weight > 0 ? Math.round(1000000 / weight) : 0;
     
-    const matchingSize = availableSizes.find(size => 
-      estimatedAnimalsPerKg >= size.minAnimalsPerKg && estimatedAnimalsPerKg <= size.maxAnimalsPerKg
-    );
+    const matchingSize = availableSizes.find(size => {
+      // Gestisci sia camelCase che snake_case (dal database)
+      const minValue = size.minAnimalsPerKg !== undefined ? size.minAnimalsPerKg : size.min_animals_per_kg;
+      const maxValue = size.maxAnimalsPerKg !== undefined ? size.maxAnimalsPerKg : size.max_animals_per_kg;
+      
+      // Verifica se l'animalsPerKg rientra nel range
+      return estimatedAnimalsPerKg >= minValue && estimatedAnimalsPerKg <= maxValue;
+    });
     
     if (matchingSize) {
       // Crea un oggetto TargetSize dal formato database
+      const minValue = matchingSize.minAnimalsPerKg !== undefined ? matchingSize.minAnimalsPerKg : matchingSize.min_animals_per_kg;
+      const maxValue = matchingSize.maxAnimalsPerKg !== undefined ? matchingSize.maxAnimalsPerKg : matchingSize.max_animals_per_kg;
+      
       return {
         code: matchingSize.code,
         name: matchingSize.name,
-        minWeight: 1000000 / matchingSize.maxAnimalsPerKg,
-        maxWeight: 1000000 / matchingSize.minAnimalsPerKg,
+        minWeight: 1000000 / maxValue,
+        maxWeight: 1000000 / minValue,
         color: getDefaultColorForSize(matchingSize.code)
       };
     }
@@ -196,17 +204,25 @@ export function getSizeFromAnimalsPerKg(animalsPerKg: number, availableSizes?: a
   
   // Se abbiamo taglie disponibili dal database, le usiamo
   if (availableSizes && availableSizes.length > 0) {
-    const matchingSize = availableSizes.find(size => 
-      animalsPerKg >= size.minAnimalsPerKg && animalsPerKg <= size.maxAnimalsPerKg
-    );
+    const matchingSize = availableSizes.find(size => {
+      // Gestisci sia camelCase che snake_case (dal database)
+      const minValue = size.minAnimalsPerKg !== undefined ? size.minAnimalsPerKg : size.min_animals_per_kg;
+      const maxValue = size.maxAnimalsPerKg !== undefined ? size.maxAnimalsPerKg : size.max_animals_per_kg;
+      
+      // Verifica se l'animalsPerKg rientra nel range
+      return animalsPerKg >= minValue && animalsPerKg <= maxValue;
+    });
     
     if (matchingSize) {
       // Crea un oggetto TargetSize dal formato database
+      const minValue = matchingSize.minAnimalsPerKg !== undefined ? matchingSize.minAnimalsPerKg : matchingSize.min_animals_per_kg;
+      const maxValue = matchingSize.maxAnimalsPerKg !== undefined ? matchingSize.maxAnimalsPerKg : matchingSize.max_animals_per_kg;
+      
       return {
         code: matchingSize.code,
         name: matchingSize.name,
-        minWeight: 1000000 / matchingSize.maxAnimalsPerKg,
-        maxWeight: 1000000 / matchingSize.minAnimalsPerKg,
+        minWeight: 1000000 / maxValue,
+        maxWeight: 1000000 / minValue,
         color: getDefaultColorForSize(matchingSize.code)
       };
     }
@@ -388,17 +404,29 @@ export function calculateSizeTimeline(
     // Cerca le taglie future che hanno un valore maxAnimalsPerKg inferiore al valore corrente di animalsPerKg
     // (meno animalsPerKg = animali più grandi = fasi più avanzate)
     const dbFutureTargetSizes = availableSizes
-      .filter(size => size.maxAnimalsPerKg < currentAnimalsPerKg)
-      .sort((a, b) => b.maxAnimalsPerKg - a.maxAnimalsPerKg); // Ordina in modo crescente per peso 
+      .filter(size => {
+        const maxValue = size.maxAnimalsPerKg !== undefined ? size.maxAnimalsPerKg : size.max_animals_per_kg;
+        return maxValue < currentAnimalsPerKg;
+      })
+      .sort((a, b) => {
+        const maxValueA = a.maxAnimalsPerKg !== undefined ? a.maxAnimalsPerKg : a.max_animals_per_kg;
+        const maxValueB = b.maxAnimalsPerKg !== undefined ? b.maxAnimalsPerKg : b.max_animals_per_kg;
+        return maxValueB - maxValueA;
+      }); // Ordina in modo crescente per peso 
     
     // Converti in formato TargetSize
-    futureTargetSizes = dbFutureTargetSizes.map(size => ({
-      code: size.code,
-      name: size.name,
-      minWeight: 1000000 / size.maxAnimalsPerKg,
-      maxWeight: 1000000 / size.minAnimalsPerKg,
-      color: getDefaultColorForSize(size.code)
-    }));
+    futureTargetSizes = dbFutureTargetSizes.map(size => {
+      const minValue = size.minAnimalsPerKg !== undefined ? size.minAnimalsPerKg : size.min_animals_per_kg;
+      const maxValue = size.maxAnimalsPerKg !== undefined ? size.maxAnimalsPerKg : size.max_animals_per_kg;
+      
+      return {
+        code: size.code,
+        name: size.name,
+        minWeight: 1000000 / maxValue,
+        maxWeight: 1000000 / minValue,
+        color: getDefaultColorForSize(size.code)
+      };
+    });
   } else {
     // Fallback alle taglie hardcoded
     futureTargetSizes = TARGET_SIZES
