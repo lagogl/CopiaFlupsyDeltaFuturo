@@ -485,7 +485,7 @@ export default function BasicFlupsyVisualizer() {
             <TooltipTrigger asChild>
               <div 
                 onClick={() => handleBasketClick(basket)}
-                className={`${borderClass} rounded-md p-1.5 text-center text-sm h-40 overflow-hidden
+                className={`${borderClass} rounded-md p-1.5 text-center text-sm h-44 overflow-hidden
                   cursor-pointer hover:shadow-md transition-shadow ${bgClass}`}
               >
                 {basketContent}
@@ -504,7 +504,7 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`}
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-1.5 text-center text-sm h-40 overflow-hidden
+        className={`${borderClass} rounded-md p-1.5 text-center text-sm h-44 overflow-hidden
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basketContent}
