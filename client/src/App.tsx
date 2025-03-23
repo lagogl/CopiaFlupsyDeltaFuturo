@@ -18,6 +18,7 @@ import Sgr from "@/pages/Sgr";
 import Settings from "@/pages/Settings";
 import Flupsys from "@/pages/Flupsys";
 import FlupsyFullView from "@/pages/FlupsyFullView";
+import FlupsyPositions from "@/pages/FlupsyPositions";
 import TestView from "@/pages/TestView";
 
 function Router() {
