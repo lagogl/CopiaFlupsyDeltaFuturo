@@ -10,6 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
+import { Input } from '@/components/ui/input';
 import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getBasketColorBySize } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -666,15 +667,32 @@ export default function QuickOperations() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">Data</label>
-                          <div className="p-2 rounded bg-gray-100">
-                            {format(today, 'dd/MM/yyyy', { locale: it })}
-                          </div>
+                          <Input 
+                            type="date" 
+                            defaultValue={format(today, 'yyyy-MM-dd')}
+                            onChange={(e) => {
+                              operationData.date = new Date(e.target.value).toISOString();
+                            }}
+                            className="h-9"
+                          />
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">Animali/kg</label>
-                          <div className="p-2 rounded bg-gray-100">
-                            {operationData.animalsPerKg ? formatNumberWithCommas(operationData.animalsPerKg) : '-'}
-                          </div>
+                          <Input 
+                            type="number" 
+                            defaultValue={operationData.animalsPerKg?.toString() || ''}
+                            onChange={(e) => {
+                              const value = parseInt(e.target.value);
+                              operationData.animalsPerKg = isNaN(value) ? null : value;
+                              // Aggiorna anche il peso medio se necessario
+                              if (!isNaN(value) && value > 0) {
+                                operationData.averageWeight = 1000000 / value;
+                              } else {
+                                operationData.averageWeight = null;
+                              }
+                            }}
+                            className="h-9"
+                          />
                         </div>
                         {operationData.averageWeight && (
                           <div>
@@ -804,18 +822,35 @@ export default function QuickOperations() {
                         
                         <div>
                           <label className="block text-sm font-medium mb-1">Data</label>
-                          <div className="p-2 rounded bg-gray-100">
-                            {format(today, 'dd/MM/yyyy', { locale: it })}
-                          </div>
+                          <Input 
+                            type="date" 
+                            defaultValue={format(today, 'yyyy-MM-dd')}
+                            onChange={(e) => {
+                              operationData.date = new Date(e.target.value).toISOString();
+                            }}
+                            className="h-9"
+                          />
                         </div>
                         
                         <div className="grid grid-cols-2 gap-4">
-                          {operationData.animalsPerKg && (
+                          {operationData.type === 'misura' && (
                             <div>
                               <label className="block text-sm font-medium mb-1">Animali/kg</label>
-                              <div className="p-2 rounded bg-gray-100">
-                                {formatNumberWithCommas(operationData.animalsPerKg)}
-                              </div>
+                              <Input 
+                                type="number" 
+                                defaultValue={operationData.animalsPerKg?.toString() || ''}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  operationData.animalsPerKg = isNaN(value) ? null : value;
+                                  // Aggiorna anche il peso medio se necessario
+                                  if (!isNaN(value) && value > 0) {
+                                    operationData.averageWeight = 1000000 / value;
+                                  } else {
+                                    operationData.averageWeight = null;
+                                  }
+                                }}
+                                className="h-9"
+                              />
                             </div>
                           )}
                           {operationData.averageWeight && (
