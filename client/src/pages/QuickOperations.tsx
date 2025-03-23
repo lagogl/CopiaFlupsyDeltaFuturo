@@ -141,8 +141,8 @@ function BasketCard({
         </CardTitle>
         <CardDescription>
           {flupsy ? flupsy.name : `FLUPSY #${basket.flupsyId}`}
-          <div className="text-xs mt-1">{positionText}</div>
         </CardDescription>
+        <div className="text-xs mt-1 px-6 -mt-1 text-muted-foreground">{positionText}</div>
       </CardHeader>
       
       <CardContent className="pb-2">
@@ -574,14 +574,14 @@ export default function QuickOperations() {
       
       {/* Dialog per operazioni rapide */}
       <Dialog open={operationDialogOpen} onOpenChange={setOperationDialogOpen}>
-        <DialogContent className="max-w-md md:min-w-[500px]" aria-describedby="operation-dialog-description">
+        <DialogContent className="max-w-md md:min-w-[500px]">
           <DialogHeader>
             <DialogTitle>
               {selectedOperationType === 'duplicate' 
                 ? 'Ripeti Ultima Operazione' 
                 : `Nuova operazione: ${getOperationTypeLabel(selectedOperationType || '')}`}
             </DialogTitle>
-            <DialogDescription id="operation-dialog-description">
+            <DialogDescription>
               Inserisci i dati per registrare l'operazione
             </DialogDescription>
           </DialogHeader>
