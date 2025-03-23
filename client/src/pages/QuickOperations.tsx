@@ -454,10 +454,21 @@ export default function QuickOperations() {
   // Gestisce i risultati del calcolatore
   const handleCalculatorResult = (result: SampleCalculatorResult) => {
     if (currentOperationData) {
+      // Aggiorniamo tutti i campi calcolati dal calcolatore
       currentOperationData.animalsPerKg = result.animalsPerKg;
-      currentOperationData.averageWeight = result.averageWeight;
+      currentOperationData.averageWeight = result.averageWeight; // In mg per animale
       currentOperationData.deadCount = result.deadCount;
       currentOperationData.mortalityRate = result.mortalityRate;
+      
+      // Calcoliamo anche il valore derivato animalCount se possibile
+      if (result.animalsPerKg && currentOperationData.batchWeight) {
+        // animalCount = animalsPerKg * batchWeight (kg)
+        const batchWeightKg = currentOperationData.batchWeight / 1000; // Convertiamo in kg
+        currentOperationData.animalCount = Math.round(result.animalsPerKg * batchWeightKg);
+      }
+      
+      console.log("Calculator result applied:", result);
+      console.log("Updated operation data:", currentOperationData);
       
       // Facciamo un aggiornamento esplicito dello stato per assicurarci che la UI si aggiorni
       setCurrentOperationData({...currentOperationData});
@@ -748,14 +759,36 @@ export default function QuickOperations() {
                             </Button>
                           </div>
                         </div>
-                        {operationData.averageWeight && (
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
-                            <div className="p-2 rounded bg-gray-100">
-                              {formatNumberWithCommas(operationData.averageWeight)}
-                            </div>
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
+                          <div className="p-2 rounded bg-gray-100">
+                            {operationData.averageWeight ? formatNumberWithCommas(operationData.averageWeight) : "N/D"}
                           </div>
-                        )}
+                        </div>
+                        
+                        {/* Sezione mortalità */}
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Mortalità (opzionale)</label>
+                          <div className="flex space-x-2">
+                            <Input 
+                              type="number" 
+                              placeholder="N. animali morti"
+                              value={operationData.deadCount?.toString() || ''}
+                              onChange={e => {
+                                const value = parseInt(e.target.value);
+                                operationData.deadCount = isNaN(value) ? null : value;
+                                // Se non abbiamo dati sufficienti per calcolare la mortalità, impostiamo a null
+                                operationData.mortalityRate = null;
+                              }}
+                              className="h-9 flex-1"
+                            />
+                            {operationData.mortalityRate !== null && (
+                              <div className="p-2 rounded bg-gray-100 flex-shrink-0 min-w-20 text-center">
+                                {formatNumberWithCommas(operationData.mortalityRate)}%
+                              </div>
+                            )}
+                          </div>
+                        </div>
                       </div>
                       
                       <div className="flex justify-between items-center mt-6">
@@ -923,14 +956,12 @@ export default function QuickOperations() {
                               </div>
                             </div>
                           )}
-                          {operationData.averageWeight && (
-                            <div>
-                              <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
-                              <div className="p-2 rounded bg-gray-100">
-                                {formatNumberWithCommas(operationData.averageWeight)}
-                              </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
+                            <div className="p-2 rounded bg-gray-100">
+                              {operationData.averageWeight ? formatNumberWithCommas(operationData.averageWeight) : "N/D"}
                             </div>
-                          )}
+                          </div>
                         </div>
                         
                         {/* Sezione mortalità */}
@@ -949,6 +980,11 @@ export default function QuickOperations() {
                               }}
                               className="h-9 flex-1"
                             />
+                            {operationData.mortalityRate !== null && (
+                              <div className="p-2 rounded bg-gray-100 flex-shrink-0 min-w-20 text-center">
+                                {formatNumberWithCommas(operationData.mortalityRate)}%
+                              </div>
+                            )}
                           </div>
                           <p className="text-xs text-muted-foreground mt-1">
                             Numero di animali morti trovati
