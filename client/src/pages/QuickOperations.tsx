@@ -473,37 +473,39 @@ export default function QuickOperations() {
   // Gestisce i risultati del calcolatore
   const handleCalculatorResult = (result: SampleCalculatorResult) => {
     if (currentOperationData) {
+      // Creiamo una copia dell'oggetto corrente per le modifiche
+      const updatedData = { ...currentOperationData };
+      
       // Aggiorniamo tutti i campi calcolati dal calcolatore
-      currentOperationData.animalsPerKg = result.animalsPerKg;
-      currentOperationData.averageWeight = result.averageWeight; // In mg per animale
-      currentOperationData.deadCount = result.deadCount;
-      currentOperationData.mortalityRate = result.mortalityRate;
+      updatedData.animalsPerKg = result.animalsPerKg;
+      updatedData.averageWeight = result.averageWeight; // In mg per animale
+      updatedData.deadCount = result.deadCount;
+      updatedData.mortalityRate = result.mortalityRate;
       
       // Calcoliamo anche il valore derivato animalCount se possibile
-      if (result.animalsPerKg && currentOperationData.batchWeight) {
+      if (result.animalsPerKg && updatedData.batchWeight) {
         // animalCount = animalsPerKg * batchWeight (kg)
-        const batchWeightKg = currentOperationData.batchWeight / 1000; // Convertiamo in kg
-        currentOperationData.animalCount = Math.round(result.animalsPerKg * batchWeightKg);
+        const batchWeightKg = updatedData.batchWeight / 1000; // Convertiamo in kg
+        updatedData.animalCount = Math.round(result.animalsPerKg * batchWeightKg);
       }
       
       console.log("Calculator result applied:", result);
-      console.log("Updated operation data:", currentOperationData);
+      console.log("Updated operation data:", updatedData);
       
-      // Forziamo un aggiornamento dell'interfaccia utente impostando un nuovo oggetto
-      // Questo è necessario perché stiamo modificando direttamente l'oggetto esistente
-      setCurrentOperationData({...currentOperationData});
+      // Aggiorniamo lo stato con i nuovi dati
+      setCurrentOperationData(updatedData);
       
       // Se esiste una funzione di callback per l'aggiornamento del form, la chiamiamo
-      if (typeof currentOperationData.updateForm === 'function') {
-        currentOperationData.updateForm();
-        console.log("Form data updated via callback");
+      if (typeof updatedData.updateForm === 'function') {
+        // Usiamo un timeout per assicurarci che la UI sia stata aggiornata
+        setTimeout(() => {
+          updatedData.updateForm();
+          console.log("Form data updated via callback");
+          
+          // Forziamo un aggiornamento della UI
+          setOperationDialogOpen(prev => prev);
+        }, 50);
       }
-      
-      // Forziamo un aggiornamento della UI usando un effetto minimo sul DOM
-      setTimeout(() => {
-        // Questo aiuta React a rilevare le modifiche ai dati
-        setOperationDialogOpen(prev => prev);
-      }, 0);
     }
   };
   
@@ -790,10 +792,26 @@ export default function QuickOperations() {
                                 // Aggiungiamo una funzione di callback che verrà usata
                                 // per aggiornare i valori del form dopo il calcolo
                                 updatedOperationData.updateForm = () => {
+                                  // Aggiorniamo il valore visibile nell'interfaccia utente
+                                  const inputAnimalsPerKg = document.querySelector('input[placeholder="Animali/kg"]') as HTMLInputElement;
+                                  if (inputAnimalsPerKg) {
+                                    inputAnimalsPerKg.value = updatedOperationData.animalsPerKg?.toString() || '';
+                                  }
+                                  
+                                  // Aggiorniamo il valore dei morti
+                                  const inputDeadCount = document.querySelector('input[placeholder="N. animali morti"]') as HTMLInputElement;
+                                  if (inputDeadCount) {
+                                    inputDeadCount.value = updatedOperationData.deadCount?.toString() || '';
+                                  }
+                                  
+                                  // Aggiorniamo i dati dell'operazione
                                   operationData.animalsPerKg = updatedOperationData.animalsPerKg;
                                   operationData.averageWeight = updatedOperationData.averageWeight;
                                   operationData.deadCount = updatedOperationData.deadCount;
                                   operationData.mortalityRate = updatedOperationData.mortalityRate;
+                                  
+                                  // Forziamo l'aggiornamento dell'interfaccia
+                                  setOperationDialogOpen(prev => prev);
                                 };
                                 
                                 setCalculatorOpen(true);
