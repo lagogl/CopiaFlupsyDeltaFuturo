@@ -160,30 +160,30 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`} 
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-2 text-center text-sm h-32 
+        className={`${borderClass} rounded-md p-1.5 text-center text-sm h-24 overflow-hidden
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basket ? (
           <div className={`font-semibold ${basket.state !== 'active' ? 'text-slate-400' : ''}`}>
             {latestOperation?.animalsPerKg && basket.state === 'active' && basket.currentCycleId && (
-              <div className="flex flex-col gap-y-1.5">
+              <div className="flex flex-col gap-y-0.5">
                 {/* Numero cesta con bordo colorato e più evidente */}
-                <div className={`text-[12px] font-bold bg-slate-50 border-b-2 ${borderClass.replace('border-2', 'border-b-2').replace('border-4', 'border-b-2')} rounded-md py-0.5 mb-1`}>
+                <div className={`text-[11px] font-bold bg-slate-50 border-b-2 ${borderClass.replace('border-2', 'border-b-2').replace('border-4', 'border-b-2')} rounded-md py-0.5 mb-0.5`}>
                   CESTA #{basket.physicalNumber}
                 </div>
                 
                 {/* Taglia */}
-                <div className="flex justify-between items-center bg-slate-50 px-2 py-1 rounded-md">
-                  <div className="text-[10px] font-medium text-slate-500">Taglia:</div>
-                  <div className="text-[12px] font-bold">
+                <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
+                  <div className="text-[9px] font-medium text-slate-500">Taglia:</div>
+                  <div className="text-[11px] font-bold">
                     {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
                   </div>
                 </div>
                 
                 {/* Quantità */}
-                <div className="flex justify-between items-center bg-slate-50 px-2 py-1 rounded-md">
-                  <div className="text-[10px] font-medium text-slate-500">Q.tà:</div>
-                  <div className="text-[11px]">{latestOperation.animalsPerKg}/kg</div>
+                <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
+                  <div className="text-[9px] font-medium text-slate-500">Q.tà:</div>
+                  <div className="text-[10px]">{latestOperation.animalsPerKg}/kg</div>
                 </div>
                 
                 {/* SGR Indicator */}
@@ -234,11 +234,11 @@ export default function BasicFlupsyVisualizer() {
                   }
                   
                   return (
-                    <div className="flex justify-between items-center bg-slate-50 px-2 py-1 rounded-md">
-                      <div className="text-[10px] font-medium text-slate-500">SGR:</div>
-                      <div className={`flex items-center ${colorClass} ${bgColorClass} px-1.5 py-0.5 rounded-md`}>
+                    <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
+                      <div className="text-[9px] font-medium text-slate-500">SGR:</div>
+                      <div className={`flex items-center ${colorClass} ${bgColorClass} px-1 py-0.5 rounded-md`}>
                         {icon}
-                        <span className="text-[10px] ml-0.5 font-medium">
+                        <span className="text-[9px] ml-0.5 font-medium">
                           {sgr.value.toFixed(1).replace('.', ',')}%
                         </span>
                       </div>
@@ -247,22 +247,15 @@ export default function BasicFlupsyVisualizer() {
                 })()}
                 
                 {/* Data e ciclo */}
-                <div className="flex justify-between items-center border-t border-slate-100 pt-1 mt-1">
-                  <div className="flex flex-col">
-                    <div className="text-[9px] text-slate-400 font-medium">
-                      Operazione:
-                    </div>
-                    <div className="text-[10px] font-semibold">
+                <div className="flex justify-between items-center border-t border-slate-100 pt-0.5 mt-0.5 text-[8px]">
+                  <div>
+                    <span className="text-slate-500">Op:</span>
+                    <span className="font-medium ml-0.5">
                       {latestOperation.type.slice(0, 3)} {format(new Date(latestOperation.date), 'dd/MM', { locale: it })}
-                    </div>
+                    </span>
                   </div>
-                  <div className="flex flex-col items-end">
-                    <div className="text-[9px] text-slate-400 font-medium">
-                      Ciclo:
-                    </div>
-                    <div className="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 rounded-md">
-                      #{basket.currentCycleId}
-                    </div>
+                  <div className="bg-blue-100 text-blue-800 font-semibold px-1 rounded">
+                    C{basket.currentCycleId}
                   </div>
                 </div>
               </div>
@@ -304,7 +297,7 @@ export default function BasicFlupsyVisualizer() {
             <div className="text-sm font-medium">Fila DX</div>
           </div>
           
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+          <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
             {Array.from({ length: 10 }, (_, i) => 
               renderBasketPosition(flupsy.id, 'DX', i + 1)
             )}
@@ -320,7 +313,7 @@ export default function BasicFlupsyVisualizer() {
             <div className="text-sm font-medium">Fila SX</div>
           </div>
           
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-3">
+          <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
             {Array.from({ length: 10 }, (_, i) => 
               renderBasketPosition(flupsy.id, 'SX', i + 1)
             )}
