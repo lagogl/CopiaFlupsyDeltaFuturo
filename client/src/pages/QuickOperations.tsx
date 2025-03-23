@@ -1112,9 +1112,7 @@ export default function QuickOperations() {
                                 <Button 
                                   type="button"
                                   onClick={() => {
-                                    // Prende il valore direttamente dall'input invece di usare lo stato
-                                    const totalWeightInput = document.querySelector('input[placeholder="Inserisci il peso in kg"]') as HTMLInputElement;
-                                    if (!totalWeightInput || !totalWeightInput.value) {
+                                    if (!operationData.totalWeight) {
                                       toast({
                                         title: "Errore",
                                         description: "Inserisci un peso totale valido prima di calcolare",
@@ -1122,19 +1120,6 @@ export default function QuickOperations() {
                                       });
                                       return;
                                     }
-
-                                    const totalWeightKg = parseFloat(totalWeightInput.value);
-                                    if (isNaN(totalWeightKg) || totalWeightKg <= 0) {
-                                      toast({
-                                        title: "Errore",
-                                        description: "Inserisci un peso totale valido (maggiore di zero)",
-                                        variant: "destructive"
-                                      });
-                                      return;
-                                    }
-                                    
-                                    // Converti in grammi per il database
-                                    const totalWeightGrams = totalWeightKg * 1000;
 
                                     // Ottieni il numero di animali dall'ultima operazione o dai dati correnti
                                     let animalCount = operationData.animalCount;
