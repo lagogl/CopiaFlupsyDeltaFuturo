@@ -569,12 +569,23 @@ export default function QuickOperations() {
               );
               const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
               
+              // Recuperiamo i dati del lotto se presente
+              let lottoDati = null;
+              if (lastOperation?.lotId) {
+                const lotto = lots?.find((l: any) => l.id === lastOperation.lotId);
+                if (lotto) {
+                  lottoDati = `${lotto.id} - ${lotto.supplier}`;
+                }
+              }
+              
               return (
                 <MisurazioneDirectForm 
                   basketId={selectedBasketId}
                   cycleId={cycle.id}
                   sizeId={lastOperation?.sizeId || null}
                   lotId={lastOperation?.lotId || null}
+                  lottoInfo={lottoDati}
+                  basketNumber={basket?.physicalNumber || 0}
                   defaultAnimalsPerKg={lastOperation?.animalsPerKg || null}
                   defaultAverageWeight={lastOperation?.averageWeight || null}
                   defaultAnimalCount={lastOperation?.animalCount || null}

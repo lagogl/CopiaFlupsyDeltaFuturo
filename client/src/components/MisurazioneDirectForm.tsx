@@ -11,6 +11,8 @@ interface MisurazioneDirectFormProps {
   cycleId: number;
   sizeId: number | null;
   lotId?: number | null;
+  lottoInfo?: string | null; // Informazioni sul lotto in formato leggibile
+  basketNumber?: number; // Numero fisico della cesta
   defaultAnimalsPerKg?: number | null;
   defaultAverageWeight?: number | null;
   defaultAnimalCount?: number | null;
@@ -23,6 +25,8 @@ export default function MisurazioneDirectForm({
   cycleId,
   sizeId,
   lotId = null,
+  lottoInfo = null,
+  basketNumber = 0,
   defaultAnimalsPerKg = null,
   defaultAverageWeight = null,
   defaultAnimalCount = null,
@@ -171,6 +175,44 @@ export default function MisurazioneDirectForm({
     <div className="space-y-6">
       <div className="space-y-4 p-4 rounded-lg border bg-card">
         <h3 className="text-lg font-semibold">Nuova Misurazione</h3>
+        
+        {/* Mostra informazioni sulla cesta e ultima misurazione */}
+        <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mb-4">
+          <h4 className="text-sm font-medium text-blue-800 mb-2">Informazioni sulla cesta:</h4>
+          <div className="grid grid-cols-2 gap-2 text-sm mb-3">
+            <div>
+              <span className="text-blue-600 font-medium">Cesta #:</span> {basketNumber}
+            </div>
+            {lottoInfo && (
+              <div>
+                <span className="text-blue-600 font-medium">Lotto:</span> {lottoInfo}
+              </div>
+            )}
+          </div>
+          
+          {(defaultAnimalsPerKg || defaultAverageWeight || defaultAnimalCount) && (
+            <>
+              <h4 className="text-sm font-medium text-blue-800 mb-2">Valori precedenti:</h4>
+              <div className="grid grid-cols-2 gap-2 text-sm">
+                {defaultAnimalsPerKg && (
+                  <div>
+                    <span className="text-blue-600 font-medium">Animali/kg:</span> {formatNumberWithCommas(defaultAnimalsPerKg)}
+                  </div>
+                )}
+                {defaultAverageWeight && (
+                  <div>
+                    <span className="text-blue-600 font-medium">Peso medio (mg):</span> {formatNumberWithCommas(defaultAverageWeight)}
+                  </div>
+                )}
+                {defaultAnimalCount && (
+                  <div>
+                    <span className="text-blue-600 font-medium">Popolazione:</span> {formatNumberWithCommas(defaultAnimalCount)}
+                  </div>
+                )}
+              </div>
+            </>
+          )}
+        </div>
         
         <div className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
