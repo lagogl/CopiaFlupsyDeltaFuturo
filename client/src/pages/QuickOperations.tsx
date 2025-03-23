@@ -257,10 +257,10 @@ function BasketCard({
         <Button 
           size="sm" 
           variant="outline"
-          className="flex-1 h-8 text-xs"
-          onClick={() => onQuickOperation(basket.id, 'pulizia')}
+          className="flex-1 h-8 text-xs bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
+          onClick={() => onQuickOperation(basket.id, 'peso')}
         >
-          Pulizia
+          Peso
         </Button>
         <Button 
           size="sm" 
@@ -679,9 +679,9 @@ export default function QuickOperations() {
                 size="sm" 
                 variant="outline"
                 disabled={selectedBaskets.length === 0}
-                onClick={() => handleBulkOperation('pulizia')}
+                onClick={() => handleBulkOperation('peso')}
               >
-                Pulizia
+                Peso
               </Button>
               <Button 
                 size="sm" 
@@ -943,8 +943,8 @@ export default function QuickOperations() {
                       </div>
                     </div>
                   );
-                } else if (selectedOperationType === 'misura' || selectedOperationType === 'pulizia') {
-                  // Per operazioni di pulizia o misura semplici
+                } else if (selectedOperationType === 'misura' || selectedOperationType === 'peso') {
+                  // Per operazioni di peso o misura semplici
                   // Verifichiamo se esiste già un'operazione per oggi per questa cesta
                   const today = new Date();
                   const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
