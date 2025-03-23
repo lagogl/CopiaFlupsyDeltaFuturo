@@ -57,12 +57,16 @@ export default function BasicFlupsyVisualizer() {
   
   // Render basket cell
   const renderBasketPosition = (flupsyId: number, row: string, position: number) => {
-    // Find basket at this position, if any
-    const basket = baskets?.find((b: any) => 
+    // Find all baskets at this position (resolve conflicts)
+    const basketsAtPosition = baskets?.filter((b: any) => 
       b.flupsyId === flupsyId && 
       b.row === row && 
       b.position === position
-    );
+    ) || [];
+    
+    // Prioritize active baskets over available ones
+    const basket = basketsAtPosition.find((b: any) => b.state === 'active') || 
+                  (basketsAtPosition.length > 0 ? basketsAtPosition[0] : undefined);
     
     // Get the latest operation for the basket to determine styling
     const latestOperation = basket ? getLatestOperation(basket.id) : null;
@@ -72,20 +76,30 @@ export default function BasicFlupsyVisualizer() {
     let borderClass = basket ? 'border' : 'border border-dashed border-slate-300';
     let bgClass = basket ? 'bg-white' : 'bg-slate-50';
     
-    // Enhanced styling based on weight
-    if (basket && basket.state === 'active' && averageWeight) {
-      if (averageWeight >= 3000) {
-        borderClass = 'border-red-500 border-4';
-        bgClass = 'bg-red-50';
-      } else if (averageWeight >= 1000) {
-        borderClass = 'border-orange-500 border-2';
-        bgClass = 'bg-orange-50';
-      } else if (averageWeight >= 500) {
-        borderClass = 'border-yellow-500 border-2';
-        bgClass = 'bg-yellow-50';
-      } else {
-        borderClass = 'border-green-500 border';
-        bgClass = 'bg-green-50';
+    // Set different styles for active baskets
+    if (basket && basket.state === 'active') {
+      // Base styling for active baskets
+      borderClass = 'border-blue-400 border-2';
+      
+      // Special styling for baskets with weight data
+      if (latestOperation?.animalsPerKg) {
+        // Clear weight info for console
+        console.log(`Basket #${basket.physicalNumber} at position ${row}-${position} has weight data: ${latestOperation.animalsPerKg} animals/kg (${Math.round(averageWeight || 0)} mg)`);
+        
+        // Make active baskets with weight data stand out
+        if (averageWeight && averageWeight >= 3000) {
+          borderClass = 'border-red-500 border-4';
+          bgClass = 'bg-red-50';
+        } else if (averageWeight && averageWeight >= 1000) {
+          borderClass = 'border-orange-500 border-2';
+          bgClass = 'bg-orange-50';
+        } else if (averageWeight && averageWeight >= 500) {
+          borderClass = 'border-yellow-500 border-2';
+          bgClass = 'bg-yellow-50';
+        } else if (averageWeight) {
+          borderClass = 'border-green-500 border-2';
+          bgClass = 'bg-green-50';
+        }
       }
     }
     
