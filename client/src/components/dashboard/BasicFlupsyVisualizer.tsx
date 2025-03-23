@@ -4,6 +4,8 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from 'wouter';
 import { calculateAverageWeight, getSizeFromAnimalsPerKg, TARGET_SIZES } from '@/lib/utils';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 
 export default function BasicFlupsyVisualizer() {
   const [, navigate] = useLocation();
@@ -122,15 +124,25 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`} 
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-2 text-center text-sm h-14 
+        className={`${borderClass} rounded-md p-2 text-center text-sm h-20 
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basket ? (
           <div className={`font-semibold ${basket.state !== 'active' || !basket.currentCycleId ? 'text-slate-400' : ''}`}>
             #{basket.physicalNumber}
             {latestOperation?.animalsPerKg && basket.state === 'active' && basket.currentCycleId && (
-              <div className="text-[11px] mt-1 font-bold">
-                {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
+              <div className="flex flex-col mt-1">
+                <div className="text-[11px] font-bold">
+                  {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
+                </div>
+                <div className="text-[9px]">{latestOperation.animalsPerKg}/kg</div>
+                <div className="text-[8px] mt-1 text-slate-500">
+                  {format(new Date(latestOperation.date), 'dd/MM', { locale: it })}
+                </div>
+                <div className="text-[8px] text-slate-500 flex justify-between">
+                  <span>{latestOperation.type.slice(0, 3)}</span>
+                  <span>C{basket.currentCycleId}</span>
+                </div>
               </div>
             )}
             {basket.state === 'active' && !basket.currentCycleId && (
