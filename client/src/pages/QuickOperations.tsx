@@ -1138,8 +1138,9 @@ export default function QuickOperations() {
                                       return;
                                     }
 
-                                    // Calcola animali per kg usando il peso in kg ottenuto dall'input
-                                    // Non creiamo una nuova variabile totalWeightKg, usiamo quella già definita sopra
+                                    // Calcola animali per kg usando il peso totale (che è in grammi nel database)
+                                    // Convertiamo da grammi a kg per il calcolo 
+                                    const totalWeightKg = operationData.totalWeight / 1000;
                                     const animalsPerKg = Math.round(animalCount / totalWeightKg);
                                     
                                     // Calcola peso medio in mg
