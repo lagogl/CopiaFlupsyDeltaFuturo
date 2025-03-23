@@ -65,6 +65,8 @@ interface CurrentOperationData {
   animalCount?: number | null;
   batchWeight?: number | null;
   notes?: string | null;
+  sampleWeight?: number | null; // Peso del campione in grammi
+  sampleCount?: number | null; // Numero di animali contati nel campione
   updateForm?: () => void; // Funzione di callback per aggiornare il form
 }
 
@@ -477,55 +479,44 @@ export default function QuickOperations() {
   
   const isLoading = basketsLoading || flupsysLoading || operationsLoading || cyclesLoading || lotsLoading;
   
-  // Gestisce i risultati del calcolatore
-  const handleCalculatorResult = (result: SampleCalculatorResult) => {
-    // Salviamo i risultati del calcolatore nello stato globale
-    setCalculatorResults(result);
-    
-    console.log("Calculator result saved globally:", result);
-    
-    // Approccio completamente diverso: forziamo la chiusura e riapertura del dialog
-    // Questo causa un re-render completo che poi mostrerà i nuovi valori
-    console.log("Trying with a dialog reset approach instead of DOM manipulation");
-    try {
-      // Manteniamo solo lo stato globale
-      if (currentOperationData) {
-        // Non modifichiamo lo stato attuale, facciamo qualcosa di molto più radicale
-        // Chiudiamo la finestra di dialogo e la riapriamo subito dopo
-        setOperationDialogOpen(false);
-        
-        // Riapriamo dopo un breve delay
-        setTimeout(() => {
-          setOperationDialogOpen(true);
-        }, 50);
-      }
-    } catch (error) {
-      console.error("Error with dialog reset approach:", error);
-    }
-    
-    // Manteniamo anche l'approccio con lo stato
-    if (currentOperationData) {
-      // Creiamo una copia dell'oggetto corrente per le modifiche
-      const updatedData = { ...currentOperationData };
+  // Funzione per calcolare risultati in base ai dati di input del campione
+  const calculateSampleResults = (weight: number | null, count: number | null, percentage: number = 100, deadCount: number | null = null) => {
+    if (weight && count && weight > 0 && count > 0) {
+      // Calcolo del numero di animali per kg
+      const animalsPerKg = Math.round((count / weight) * 1000);
       
-      // Aggiorniamo tutti i campi calcolati dal calcolatore
-      updatedData.animalsPerKg = result.animalsPerKg;
-      updatedData.averageWeight = result.averageWeight; // In mg per animale
-      updatedData.deadCount = result.deadCount;
-      updatedData.mortalityRate = result.mortalityRate;
+      // Calcolo del peso medio in mg
+      const averageWeight = animalsPerKg > 0 ? 1000000 / animalsPerKg : 0;
       
-      // Calcoliamo anche il valore derivato animalCount se possibile
-      if (result.animalsPerKg && updatedData.batchWeight) {
-        // animalCount = animalsPerKg * batchWeight (kg)
-        const batchWeightKg = updatedData.batchWeight / 1000; // Convertiamo in kg
-        updatedData.animalCount = Math.round(result.animalsPerKg * batchWeightKg);
+      // Calcolo della popolazione totale stimata
+      const totalPopulation = Math.round(count / (percentage / 100));
+      
+      // Risultati da restituire
+      const results = {
+        animalsPerKg,
+        averageWeight,
+        totalPopulation,
+        deadCount: null as number | null,
+        mortalityRate: null as number | null
+      };
+      
+      // Calcoliamo la mortalità se esiste un valore di morti
+      if (deadCount !== null && deadCount >= 0 && totalPopulation > 0) {
+        // Se il deadCount è relativo al campione, calcoliamo il valore totale
+        const totalDeadCount = percentage < 100 
+          ? Math.round(deadCount / (percentage / 100)) 
+          : deadCount;
+          
+        // Calcoliamo la percentuale di mortalità
+        const calculatedMortalityRate = (totalDeadCount / (totalPopulation + totalDeadCount)) * 100;
+        results.deadCount = totalDeadCount;
+        results.mortalityRate = Math.round(calculatedMortalityRate * 10) / 10; // Arrotondiamo a una cifra decimale
       }
       
-      console.log("Updated operation data:", updatedData);
-      
-      // Aggiorniamo lo stato con i nuovi dati
-      setCurrentOperationData(updatedData);
+      return results;
     }
+    
+    return null;
   };
   
   return (
@@ -775,11 +766,10 @@ export default function QuickOperations() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">Animali/kg</label>
-                          <div className="flex space-x-2">
-                            <Input 
+                          <Input 
                               type="number" 
                               placeholder="Animali/kg"
-                              value={(calculatorResults?.animalsPerKg || operationData.animalsPerKg)?.toString() || ''}
+                              value={operationData.animalsPerKg?.toString() || ''}
                               onChange={(e) => {
                                 const value = parseInt(e.target.value);
                                 operationData.animalsPerKg = isNaN(value) ? null : value;
@@ -790,49 +780,8 @@ export default function QuickOperations() {
                                   operationData.averageWeight = null;
                                 }
                               }}
-                              className="h-9 flex-1"
+                              className="h-9 w-full"
                             />
-                            <Button 
-                              type="button"
-                              variant="outline"
-                              size="icon"
-                              className="h-9 w-9 flex-shrink-0"
-                              onClick={() => {
-                                // Salviamo riferimento per l'aggiornamento dopo il calcolo
-                                const updatedOperationData = {...operationData};
-                                setCurrentOperationData(updatedOperationData);
-                                
-                                // Aggiungiamo una funzione di callback che verrà usata
-                                // per aggiornare i valori del form dopo il calcolo
-                                updatedOperationData.updateForm = () => {
-                                  // Aggiorniamo il valore visibile nell'interfaccia utente
-                                  const inputAnimalsPerKg = document.querySelector('input[placeholder="Animali/kg"]') as HTMLInputElement;
-                                  if (inputAnimalsPerKg) {
-                                    inputAnimalsPerKg.value = updatedOperationData.animalsPerKg?.toString() || '';
-                                  }
-                                  
-                                  // Aggiorniamo il valore dei morti
-                                  const inputDeadCount = document.querySelector('input[placeholder="N. animali morti"]') as HTMLInputElement;
-                                  if (inputDeadCount) {
-                                    inputDeadCount.value = updatedOperationData.deadCount?.toString() || '';
-                                  }
-                                  
-                                  // Aggiorniamo i dati dell'operazione
-                                  operationData.animalsPerKg = updatedOperationData.animalsPerKg;
-                                  operationData.averageWeight = updatedOperationData.averageWeight;
-                                  operationData.deadCount = updatedOperationData.deadCount;
-                                  operationData.mortalityRate = updatedOperationData.mortalityRate;
-                                  
-                                  // Forziamo l'aggiornamento dell'interfaccia
-                                  setOperationDialogOpen(prev => prev);
-                                };
-                                
-                                setCalculatorOpen(true);
-                              }}
-                            >
-                              <Calculator className="h-4 w-4" />
-                            </Button>
-                          </div>
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
