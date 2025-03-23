@@ -43,6 +43,7 @@ export function getOperationTypeLabel(type: string): string {
     'vendita': 'Vendita',
     'selezione-vendita': 'Selezione per Vendita',
     'cessazione': 'Cessazione',
+    'peso': 'Peso',
   };
   
   return typeMap[type] || type;
@@ -55,6 +56,7 @@ export function getOperationTypeColor(type: string): string {
     'vagliatura': 'bg-primary-light/10 text-primary-light',
     'trattamento': 'bg-warning/10 text-warning',
     'misura': 'bg-primary-light/10 text-primary',
+    'peso': 'bg-blue-100 text-blue-600',
     'vendita': 'bg-success/10 text-success',
     'selezione-vendita': 'bg-success/10 text-success',
     'cessazione': 'bg-destructive/10 text-destructive',
