@@ -5,13 +5,26 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState } from "react";
-import { AlertCircle, Save, Smartphone } from "lucide-react";
+import { AlertCircle, DatabaseBackup, Save, Smartphone, Trash2 } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import NFCReader from "@/components/NFCReader";
+import { useToast } from "@/hooks/use-toast";
+import { 
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+  DialogTrigger,
+} from "@/components/ui/dialog";
+import { apiRequest } from "@/lib/queryClient";
 
 export default function Settings() {
   const [nfcSupported, setNfcSupported] = useState<boolean | null>(null);
   const [readingNfc, setReadingNfc] = useState(false);
+  const [isResetting, setIsResetting] = useState(false);
+  const { toast } = useToast();
   
   // Check NFC support on component mount
   useState(() => {
@@ -22,6 +35,36 @@ export default function Settings() {
     }
   });
 
+  // Funzione per azzerare le operazioni e i cicli
+  const resetOperationsAndCycles = async () => {
+    try {
+      setIsResetting(true);
+      const response = await apiRequest('/api/reset-operations', {
+        method: 'POST',
+        body: JSON.stringify({}),
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Azzeramento completato",
+          description: "Le operazioni, i cicli e le posizioni sono stati azzerati correttamente.",
+          variant: "success",
+        });
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Errore sconosciuto');
+      }
+    } catch (error) {
+      toast({
+        title: "Errore durante l'azzeramento",
+        description: error instanceof Error ? error.message : "Si è verificato un errore",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResetting(false);
+    }
+  };
+
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
@@ -29,9 +72,10 @@ export default function Settings() {
       </div>
 
       <Tabs defaultValue="general" className="w-full">
-        <TabsList className="grid grid-cols-3 mb-6">
+        <TabsList className="grid grid-cols-4 mb-6">
           <TabsTrigger value="general">Generale</TabsTrigger>
           <TabsTrigger value="nfc">NFC</TabsTrigger>
+          <TabsTrigger value="database">Database</TabsTrigger>
           <TabsTrigger value="about">Informazioni</TabsTrigger>
         </TabsList>
         
