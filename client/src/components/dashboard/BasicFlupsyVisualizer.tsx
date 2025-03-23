@@ -160,7 +160,7 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`} 
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-2 text-center text-sm h-24 
+        className={`${borderClass} rounded-md p-2 text-center text-sm h-28 
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basket ? (
@@ -216,7 +216,7 @@ export default function BasicFlupsyVisualizer() {
                       <div className={`flex items-center ${colorClass}`}>
                         {icon}
                         <span className="text-[8px] ml-0.5">
-                          {sgr.value.toFixed(1)}%
+                          {sgr.value.toFixed(1).replace('.', ',')}%
                         </span>
                       </div>
                     );
@@ -320,28 +320,28 @@ export default function BasicFlupsyVisualizer() {
           <div className="flex items-center gap-1 text-xs">
             <div className="flex items-center text-green-600">
               <TrendingUp className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px]">+2.5%</span>
+              <span className="ml-0.5 text-[9px]">+2,5%</span>
             </div>
             <span>Crescita forte</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="flex items-center text-green-500">
               <ArrowUp className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px]">+1.2%</span>
+              <span className="ml-0.5 text-[9px]">+1,2%</span>
             </div>
             <span>Crescita media</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="flex items-center text-slate-400">
               <Minus className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px]">0.0%</span>
+              <span className="ml-0.5 text-[9px]">0,0%</span>
             </div>
             <span>Stabile</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="flex items-center text-red-500">
               <ArrowDown className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px]">-1.5%</span>
+              <span className="ml-0.5 text-[9px]">-1,5%</span>
             </div>
             <span>Decrescita</span>
           </div>
