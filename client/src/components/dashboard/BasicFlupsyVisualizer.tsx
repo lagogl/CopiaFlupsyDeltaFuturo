@@ -166,10 +166,10 @@ export default function BasicFlupsyVisualizer() {
         {basket ? (
           <div className={`font-semibold ${basket.state !== 'active' ? 'text-slate-400' : ''}`}>
             {latestOperation?.animalsPerKg && basket.state === 'active' && basket.currentCycleId && (
-              <div className="flex flex-col gap-y-0.5">
+              <div className="flex flex-col gap-y-0.5 relative pt-4">
                 {/* Numero cesta con bordo colorato e più evidente */}
-                <div className="flex justify-center">
-                  <div className={`text-[10px] font-bold bg-slate-50 ${borderClass.replace('border-2', 'border-b-2').replace('border-4', 'border-b-2')} rounded py-0.5 mb-0.5 px-2 inline-block`}>
+                <div className="absolute top-0 inset-x-0 flex justify-center">
+                  <div className={`text-[10px] font-bold bg-white ${borderClass.replace('border-2', 'border-b-2').replace('border-4', 'border-b-2')} rounded py-0.5 px-2 inline-block z-10 shadow-sm`}>
                     CESTA #{basket.physicalNumber}
                   </div>
                 </div>
