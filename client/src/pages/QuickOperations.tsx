@@ -282,6 +282,26 @@ export default function QuickOperations() {
   const [filterDays, setFilterDays] = useState<string>('all');
   const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [currentOperationData, setCurrentOperationData] = useState<CurrentOperationData | null>(null);
+  // Questo oggetto contiene i dati più recenti del calcolatore e persiste tra le sessioni di dialogo
+  const [calculatorResults, setCalculatorResults] = useState<SampleCalculatorResult | null>(null);
+  // Importiamo useEffect
+  const { useEffect } = React;
+  
+  // Questo effect si occupa di aggiornare il form con i dati del calcolatore quando disponibili
+  useEffect(() => {
+    if (calculatorResults && currentOperationData) {
+      // Aggiorniamo i dati dell'operazione corrente
+      setCurrentOperationData({
+        ...currentOperationData,
+        animalsPerKg: calculatorResults.animalsPerKg,
+        averageWeight: calculatorResults.averageWeight,
+        deadCount: calculatorResults.deadCount,
+        mortalityRate: calculatorResults.mortalityRate
+      });
+      
+      console.log("Form updated with calculator results via effect");
+    }
+  }, [calculatorResults]);
   
   const { toast } = useToast();
   
@@ -472,6 +492,11 @@ export default function QuickOperations() {
   
   // Gestisce i risultati del calcolatore
   const handleCalculatorResult = (result: SampleCalculatorResult) => {
+    // Salviamo i risultati del calcolatore nello stato globale
+    setCalculatorResults(result);
+    
+    console.log("Calculator result saved globally:", result);
+    
     if (currentOperationData) {
       // Creiamo una copia dell'oggetto corrente per le modifiche
       const updatedData = { ...currentOperationData };
@@ -489,28 +514,10 @@ export default function QuickOperations() {
         updatedData.animalCount = Math.round(result.animalsPerKg * batchWeightKg);
       }
       
-      console.log("Calculator result applied:", result);
       console.log("Updated operation data:", updatedData);
       
-      // Se esiste una funzione di callback per l'aggiornamento del form, la chiamiamo
-      if (typeof updatedData.updateForm === 'function') {
-        updatedData.updateForm();
-        console.log("Form data updated via callback");
-      }
-      
-      // Creiamo un oggetto completamente nuovo per forzare il refresh dei componenti
-      const refreshedData = { ...updatedData };
-      
       // Aggiorniamo lo stato con i nuovi dati
-      setCurrentOperationData(refreshedData);
-      
-      // Reset e aggiorna il dialog dopo un breve ritardo
-      setTimeout(() => {
-        setOperationDialogOpen(false);
-        setTimeout(() => {
-          setOperationDialogOpen(true);
-        }, 50);
-      }, 10);
+      setCurrentOperationData(updatedData);
     }
   };
   
@@ -771,7 +778,7 @@ export default function QuickOperations() {
                           <div className="flex space-x-2">
                             <Input 
                               type="number" 
-                              defaultValue={operationData.animalsPerKg?.toString() || ''}
+                              value={(calculatorResults?.animalsPerKg || operationData.animalsPerKg)?.toString() || ''}
                               onChange={(e) => {
                                 const value = parseInt(e.target.value);
                                 operationData.animalsPerKg = isNaN(value) ? null : value;
