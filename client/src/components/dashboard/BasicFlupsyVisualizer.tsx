@@ -159,8 +159,8 @@ export default function BasicFlupsyVisualizer() {
             bgClass = 'bg-yellow-50';
           } else if (sizeCode === 'T3') {
             // Ingrasso iniziale (T3)
-            borderClass = 'border-sky-600 border-2';
-            bgClass = 'bg-sky-50';
+            borderClass = 'border-green-600 border-2';
+            bgClass = 'bg-green-50';
           } else if (sizeCode === 'T2') {
             // Pre-ingrasso avanzato (T2)
             borderClass = 'border-sky-500 border-2';
@@ -475,7 +475,7 @@ export default function BasicFlupsyVisualizer() {
             <span>T2 (Pre-ingrasso avanzato)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
-            <div className="w-3 h-3 rounded-sm border-2 border-sky-600 bg-sky-50"></div>
+            <div className="w-3 h-3 rounded-sm border-2 border-green-600 bg-green-50"></div>
             <span>T3 (Ingrasso iniziale)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
