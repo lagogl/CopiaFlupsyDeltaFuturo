@@ -41,6 +41,7 @@ export default function MisurazioneDirectForm({
   const [animalsCount, setAnimalsCount] = useState<number | null>(null);
   const [samplePercentage, setSamplePercentage] = useState<number>(100);
   const [deadCount, setDeadCount] = useState<number | null>(null);
+  const [totalWeight, setTotalWeight] = useState<number | null>(null);
   const [notes, setNotes] = useState<string>('');
   
   // Valori calcolati
@@ -50,12 +51,14 @@ export default function MisurazioneDirectForm({
     totalPopulation: number | null;
     mortalityRate: number | null;
     totalDeadCount: number | null;
+    totalWeight: number | null;
   }>({
     animalsPerKg: null,
     averageWeight: null,
     totalPopulation: null,
     mortalityRate: null,
-    totalDeadCount: null
+    totalDeadCount: null,
+    totalWeight: null
   });
   
   // Calcola i valori basati sui dati del campione
@@ -69,6 +72,16 @@ export default function MisurazioneDirectForm({
       
       // Calcolo popolazione totale
       const totalPopulation = Math.round(animalsCount / (samplePercentage / 100));
+      
+      // Calcolo del peso totale in kg (se totalWeight è stato inserito manualmente, usiamo quello)
+      let calculatedTotalWeight = null;
+      if (totalWeight !== null && totalWeight > 0) {
+        // Usa il peso totale inserito manualmente
+        calculatedTotalWeight = totalWeight;
+      } else if (totalPopulation && animalsPerKg) {
+        // Calcola il peso totale in base a popolazione e animali per kg
+        calculatedTotalWeight = Math.round((totalPopulation / animalsPerKg) * 10) / 10;
+      }
       
       // Calcolo mortalità
       let mortalityRate = null;
@@ -90,7 +103,8 @@ export default function MisurazioneDirectForm({
         averageWeight,
         totalPopulation,
         mortalityRate,
-        totalDeadCount
+        totalDeadCount,
+        totalWeight: calculatedTotalWeight
       });
       
       return true;
@@ -112,7 +126,7 @@ export default function MisurazioneDirectForm({
       return;
     }
     
-    const { animalsPerKg, averageWeight, totalDeadCount, mortalityRate, totalPopulation } = calculatedValues;
+    const { animalsPerKg, averageWeight, totalDeadCount, mortalityRate, totalPopulation, totalWeight } = calculatedValues;
     
     if (!animalsPerKg || !averageWeight) {
       toast({
@@ -138,6 +152,7 @@ export default function MisurazioneDirectForm({
         animalsPerKg,
         averageWeight,
         animalCount: totalPopulation || defaultAnimalCount,  // Usiamo la popolazione calcolata o quella precedente
+        totalWeight, // Aggiungiamo il peso totale
         deadCount: totalDeadCount,
         mortalityRate,
         notes
@@ -241,6 +256,23 @@ export default function MisurazioneDirectForm({
               />
               <p className="text-xs text-muted-foreground mt-1">
                 Numero di esemplari contati nel campione
+              </p>
+            </div>
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
+            <div>
+              <label className="block text-sm font-medium mb-1">Peso totale della cesta (kg)</label>
+              <Input 
+                type="number" 
+                placeholder="Peso totale in kg"
+                step="0.1"
+                value={totalWeight?.toString() || ''}
+                onChange={e => setTotalWeight(parseFloat(e.target.value) || null)}
+                className="h-9"
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Peso totale degli animali nella cesta (opzionale)
               </p>
             </div>
           </div>
@@ -353,6 +385,17 @@ export default function MisurazioneDirectForm({
                 {calculatedValues.totalPopulation ? formatNumberWithCommas(calculatedValues.totalPopulation) : '-'}
               </div>
             </div>
+            {calculatedValues.totalWeight && (
+              <div>
+                <label className="block text-xs text-muted-foreground">Peso totale stimato (kg):</label>
+                <div className="font-semibold text-md">
+                  {calculatedValues.totalWeight}
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="grid grid-cols-2 gap-4">
             {deadCount !== null && deadCount > 0 && (
               <div>
                 <label className="block text-xs text-muted-foreground">Tasso di mortalità:</label>
