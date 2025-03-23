@@ -1076,34 +1076,12 @@ export default function QuickOperations() {
                                 <label className="block text-sm font-medium mb-1">Peso totale della cesta (kg)</label>
                                 <div className="flex items-center">
                                   <Input 
+                                    id="peso-totale-kg"
                                     type="number" 
                                     step="0.01"
                                     placeholder="Inserisci il peso in kg" 
                                     className="h-9"
                                     defaultValue=""
-                                    onChange={(e) => {
-                                      const totalWeightKg = parseFloat(e.target.value);
-                                      
-                                      if (!isNaN(totalWeightKg) && totalWeightKg > 0) {
-                                        // Convertiamo in grammi per il database
-                                        const totalWeightGrams = totalWeightKg * 1000;
-                                        
-                                        // Aggiorniamo solo il peso totale
-                                        const updatedData = { 
-                                          ...operationData,
-                                          totalWeight: totalWeightGrams
-                                        };
-                                        console.log("Aggiorno peso totale:", totalWeightGrams, "g");
-                                        setCurrentOperationData(updatedData);
-                                      } else {
-                                        // Reset se il valore non è valido
-                                        const updatedData = { 
-                                          ...operationData,
-                                          totalWeight: null
-                                        };
-                                        setCurrentOperationData(updatedData);
-                                      }
-                                    }}
                                   />
                                   <div className="ml-2 px-3 py-2 bg-gray-100 text-gray-500 rounded">kg</div>
                                 </div>
@@ -1112,7 +1090,9 @@ export default function QuickOperations() {
                                 <Button 
                                   type="button"
                                   onClick={() => {
-                                    if (!operationData.totalWeight) {
+                                    // Leggiamo direttamente il valore dal campo input
+                                    const input = document.getElementById('peso-totale-kg') as HTMLInputElement;
+                                    if (!input || !input.value) {
                                       toast({
                                         title: "Errore",
                                         description: "Inserisci un peso totale valido prima di calcolare",
@@ -1120,6 +1100,20 @@ export default function QuickOperations() {
                                       });
                                       return;
                                     }
+                                    
+                                    const totalWeightKg = parseFloat(input.value);
+                                    if (isNaN(totalWeightKg) || totalWeightKg <= 0) {
+                                      toast({
+                                        title: "Errore",
+                                        description: "Inserisci un peso totale valido (maggiore di zero)",
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+                                    
+                                    // Converti in grammi per il database
+                                    const totalWeightGrams = totalWeightKg * 1000;
+                                    console.log("Peso totale in grammi:", totalWeightGrams);
 
                                     // Ottieni il numero di animali dall'ultima operazione o dai dati correnti
                                     let animalCount = operationData.animalCount;
@@ -1138,9 +1132,7 @@ export default function QuickOperations() {
                                       return;
                                     }
 
-                                    // Calcola animali per kg usando il peso totale (che è in grammi nel database)
-                                    // Convertiamo da grammi a kg per il calcolo 
-                                    const totalWeightKg = operationData.totalWeight / 1000;
+                                    // Calcola animali per kg
                                     const animalsPerKg = Math.round(animalCount / totalWeightKg);
                                     
                                     // Calcola peso medio in mg
@@ -1160,6 +1152,7 @@ export default function QuickOperations() {
                                     // Aggiorna i dati dell'operazione
                                     const updatedData = { 
                                       ...operationData,
+                                      totalWeight: totalWeightGrams,
                                       animalsPerKg,
                                       averageWeight,
                                       animalCount,
