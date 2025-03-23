@@ -43,6 +43,8 @@ interface Operation {
   averageWeight: number | null;
   sizeId: number | null;
   lotId: number | null;
+  deadCount: number | null;  // Numero di animali morti
+  mortalityRate: number | null;  // Percentuale di mortalità
   notes: string | null;
 }
 
