@@ -15,7 +15,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getBasketColorBySize } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
-import SampleCalculator, { SampleCalculatorResult } from '@/components/SampleCalculator';
+import { type SampleCalculatorResult } from '@/components/SampleCalculator';
 
 // Tipi che useremo 
 interface Basket {
@@ -281,10 +281,12 @@ export default function QuickOperations() {
   const [selectedBasketId, setSelectedBasketId] = useState<number | null>(null);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [filterDays, setFilterDays] = useState<string>('all');
-  const [calculatorOpen, setCalculatorOpen] = useState(false);
   const [currentOperationData, setCurrentOperationData] = useState<CurrentOperationData | null>(null);
-  // Questo oggetto contiene i dati più recenti del calcolatore e persiste tra le sessioni di dialogo
-  const [calculatorResults, setCalculatorResults] = useState<SampleCalculatorResult | null>(null);
+  
+  // Stati per il calcolatore integrato
+  const [sampleWeight, setSampleWeight] = useState<number | null>(null);
+  const [sampleCount, setSampleCount] = useState<number | null>(null);
+  const [samplePercentage, setSamplePercentage] = useState<number>(100);
   
 
   
@@ -528,13 +530,6 @@ export default function QuickOperations() {
   
   return (
     <div>
-      <SampleCalculator 
-        open={calculatorOpen}
-        onOpenChange={setCalculatorOpen}
-        onCalculate={handleCalculatorResult}
-        defaultAnimalsPerKg={currentOperationData?.animalsPerKg}
-        defaultDeadCount={currentOperationData?.deadCount}
-      />
       
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-condensed font-bold text-gray-800">Operazioni Rapide</h2>
