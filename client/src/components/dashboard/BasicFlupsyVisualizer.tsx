@@ -586,15 +586,14 @@ export default function BasicFlupsyVisualizer() {
           <Badge variant="outline">{flupsy.location}</Badge>
         </div>
         
-        {/* Propeller/Fan icon centered between rows */}
-        <div className="flex items-center justify-center -ml-8 mb-4">
-          <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300 relative z-10">
-            <Fan className="w-10 h-10 animate-spin-slow" />
+        {/* Container for aligned rows with propeller/fan icon on the left edge */}
+        <div className="relative ml-8"> {/* Added margin to align both rows */}
+          {/* Propeller/Fan icon positioned on the left edge */}
+          <div className="absolute -left-14 top-32 z-10">
+            <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300">
+              <Fan className="w-10 h-10 animate-spin-slow" />
+            </div>
           </div>
-        </div>
-        
-        {/* Container for aligned rows */}
-        <div className="ml-8"> {/* Added margin to align both rows */}
           {/* DX row */}
           <div className="bg-white rounded-md p-3 shadow-sm mb-2">
             <div className="flex items-center mb-2">
