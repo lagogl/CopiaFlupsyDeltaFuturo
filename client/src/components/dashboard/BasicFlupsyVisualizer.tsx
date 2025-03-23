@@ -602,26 +602,29 @@ export default function BasicFlupsyVisualizer() {
           </div>
         </div>
         
-        {/* Propeller/Fan icon in the middle */}
-        <div className="relative flex justify-center my-2">
-          <div className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300">
-            <Fan className="w-8 h-8 animate-spin-slow" />
-          </div>
-        </div>
-        
-        {/* SX row */}
-        <div className="bg-white rounded-md p-3 shadow-sm">
-          <div className="flex items-center mb-2">
-            <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
-              <span>SX</span>
+        {/* SX row with Propeller/Fan icon on the left */}
+        <div className="flex items-start mb-2">
+          {/* Propeller/Fan icon on the left */}
+          <div className="mr-2 mt-4">
+            <div className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300">
+              <Fan className="w-8 h-8 animate-spin-slow" />
             </div>
-            <div className="text-sm font-medium">Fila SX</div>
           </div>
           
-          <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-            {Array.from({ length: 10 }, (_, i) => 
-              renderBasketPosition(flupsy.id, 'SX', i + 1, flupsyBadges)
-            )}
+          {/* SX row */}
+          <div className="bg-white rounded-md p-3 shadow-sm flex-1">
+            <div className="flex items-center mb-2">
+              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
+                <span>SX</span>
+              </div>
+              <div className="text-sm font-medium">Fila SX</div>
+            </div>
+            
+            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+              {Array.from({ length: 10 }, (_, i) => 
+                renderBasketPosition(flupsy.id, 'SX', i + 1, flupsyBadges)
+              )}
+            </div>
           </div>
         </div>
       </div>
