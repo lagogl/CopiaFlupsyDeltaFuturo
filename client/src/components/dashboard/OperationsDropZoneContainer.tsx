@@ -142,33 +142,46 @@ const DropTargetBasket = ({ basket, operations, onOperationDrop }: any) => {
   return (
     <div
       ref={drop}
-      className={`relative rounded-lg p-4 ${getBorderClass()} ${getBackgroundClass()} 
+      className={`relative rounded-lg p-3 ${getBorderClass()} ${getBackgroundClass()} 
         ${!canDrop ? 'opacity-70' : 'opacity-100'} 
         transition-all duration-200 shadow-sm hover:shadow-md
         ${canDrop ? 'transform hover:-translate-y-1' : ''}`}
       style={{ 
-        minHeight: '90px',
+        minHeight: '120px',
         backgroundImage: canDrop ? 'radial-gradient(circle at center, rgba(255,255,255,1) 50%, rgba(240,240,250,0.8) 100%)' : 'none' 
       }}
     >
-      <div className="flex justify-between items-start">
+      <div className="flex flex-col h-full justify-between">
         <div>
-          <div className="font-bold text-slate-800">
+          <div className="font-bold text-slate-800 mb-2 truncate">
             Cesta #{basket.physicalNumber}
             {basket.row && basket.position ? ` (${basket.row}-${basket.position})` : ''}
           </div>
-          {lastOperation && (
-            <div className="text-xs text-slate-600">
-              Ultima op: {getOperationTypeLabel(lastOperation.type)} - {new Date(lastOperation.date).toLocaleDateString('it-IT')}
-            </div>
-          )}
-        </div>
-        {animalsPerKg && (
-          <div className="text-xs text-right">
-            <div className="font-medium">{animalsPerKg.toLocaleString('it-IT')} pz/kg</div>
-            {averageWeight && (
-              <div className="font-medium">{averageWeight.toLocaleString('it-IT')} mg</div>
+          
+          <div className="grid grid-cols-2 gap-1 mb-2">
+            {animalsPerKg && (
+              <div className="bg-blue-50 px-2 py-1 rounded border border-blue-100">
+                <div className="text-xs font-medium text-center">
+                  {animalsPerKg.toLocaleString('it-IT')} pz/kg
+                </div>
+              </div>
             )}
+            
+            {averageWeight && (
+              <div className="bg-green-50 px-2 py-1 rounded border border-green-100">
+                <div className="text-xs font-medium text-center">
+                  {averageWeight.toLocaleString('it-IT')} mg
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        
+        {lastOperation && (
+          <div className="text-xs text-slate-600 bg-slate-50 rounded px-2 py-1 mt-1 border border-slate-100">
+            <span className="font-medium">Ultima op:</span><br />
+            {getOperationTypeLabel(lastOperation.type)}<br />
+            <span className="text-slate-500 text-[10px]">{new Date(lastOperation.date).toLocaleDateString('it-IT')}</span>
           </div>
         )}
       </div>
