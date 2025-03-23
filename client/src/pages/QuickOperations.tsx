@@ -577,13 +577,16 @@ export default function QuickOperations() {
       
       {/* Dialog per operazioni rapide */}
       <Dialog open={operationDialogOpen} onOpenChange={setOperationDialogOpen}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md md:min-w-[500px]" aria-describedby="operation-dialog-description">
           <DialogHeader>
             <DialogTitle>
               {selectedOperationType === 'duplicate' 
                 ? 'Ripeti Ultima Operazione' 
                 : `Nuova operazione: ${getOperationTypeLabel(selectedOperationType || '')}`}
             </DialogTitle>
+            <DialogDescription id="operation-dialog-description">
+              Inserisci i dati per registrare l'operazione
+            </DialogDescription>
           </DialogHeader>
           
           {selectedBasketId && (
