@@ -6,6 +6,7 @@ import { useLocation } from 'wouter';
 import { calculateAverageWeight, getSizeFromAnimalsPerKg, TARGET_SIZES } from '@/lib/utils';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
 
 export default function BasicFlupsyVisualizer() {
   const [, navigate] = useLocation();
@@ -44,6 +45,41 @@ export default function BasicFlupsyVisualizer() {
     return basketOperations.sort((a: any, b: any) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     )[0];
+  };
+  
+  // Helper function to get the second-to-last operation for a basket
+  const getPreviousOperation = (basketId: number) => {
+    if (!operations) return null;
+    
+    const basketOperations = operations.filter((op: any) => op.basketId === basketId);
+    if (basketOperations.length <= 1) return null;
+    
+    return basketOperations.sort((a: any, b: any) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    )[1];
+  };
+  
+  // Calculate SGR between two operations
+  const calculateSGR = (currentOp: any, prevOp: any) => {
+    if (!currentOp || !prevOp || !currentOp.animalsPerKg || !prevOp.animalsPerKg) return null;
+    
+    const currentWeight = calculateAverageWeight(currentOp.animalsPerKg);
+    const prevWeight = calculateAverageWeight(prevOp.animalsPerKg);
+    
+    if (!currentWeight || !prevWeight) return null;
+    
+    const currentDate = new Date(currentOp.date);
+    const prevDate = new Date(prevOp.date);
+    const daysDiff = Math.max(1, Math.round((currentDate.getTime() - prevDate.getTime()) / (1000 * 60 * 60 * 24)));
+    
+    // Calcola SGR giornaliero in percentuale
+    const sgrDaily = ((Math.log(currentWeight) - Math.log(prevWeight)) / daysDiff) * 100;
+    
+    return {
+      value: sgrDaily,
+      isPositive: sgrDaily > 0,
+      intensity: Math.abs(sgrDaily) > 2 ? 'high' : Math.abs(sgrDaily) > 0.5 ? 'medium' : 'low'
+    };
   };
   
   // Handle basket click
@@ -124,7 +160,7 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`} 
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-2 text-center text-sm h-20 
+        className={`${borderClass} rounded-md p-2 text-center text-sm h-24 
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basket ? (
@@ -132,9 +168,61 @@ export default function BasicFlupsyVisualizer() {
             #{basket.physicalNumber}
             {latestOperation?.animalsPerKg && basket.state === 'active' && basket.currentCycleId && (
               <div className="flex flex-col mt-1">
-                <div className="text-[11px] font-bold">
-                  {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
+                <div className="flex justify-between items-center">
+                  <div className="text-[11px] font-bold">
+                    {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
+                  </div>
+                  
+                  {/* SGR Indicator */}
+                  {(() => {
+                    const prevOp = getPreviousOperation(basket.id);
+                    const sgr = calculateSGR(latestOperation, prevOp);
+                    
+                    if (!sgr) return null;
+                    
+                    let icon;
+                    let colorClass;
+                    
+                    // Intensity and direction of growth
+                    if (Math.abs(sgr.value) < 0.1) {
+                      // Crescita praticamente nulla
+                      icon = <Minus className="w-3 h-3" />;
+                      colorClass = "text-slate-400";
+                    } else if (sgr.isPositive) {
+                      if (sgr.intensity === 'high') {
+                        icon = <TrendingUp className="w-3 h-3" />;
+                        colorClass = "text-green-600";
+                      } else if (sgr.intensity === 'medium') {
+                        icon = <ArrowUp className="w-3 h-3" />;
+                        colorClass = "text-green-500";
+                      } else {
+                        icon = <ArrowUp className="w-3 h-3" />;
+                        colorClass = "text-green-400";
+                      }
+                    } else {
+                      if (sgr.intensity === 'high') {
+                        icon = <TrendingDown className="w-3 h-3" />;
+                        colorClass = "text-red-600";
+                      } else if (sgr.intensity === 'medium') {
+                        icon = <ArrowDown className="w-3 h-3" />;
+                        colorClass = "text-red-500";
+                      } else {
+                        icon = <ArrowDown className="w-3 h-3" />;
+                        colorClass = "text-red-400";
+                      }
+                    }
+                    
+                    return (
+                      <div className={`flex items-center ${colorClass}`}>
+                        {icon}
+                        <span className="text-[8px] ml-0.5">
+                          {sgr.value.toFixed(1)}%
+                        </span>
+                      </div>
+                    );
+                  })()}
                 </div>
+                
                 <div className="text-[9px]">{latestOperation.animalsPerKg}/kg</div>
                 <div className="text-[8px] mt-1 text-slate-500">
                   {format(new Date(latestOperation.date), 'dd/MM', { locale: it })}
@@ -224,6 +312,38 @@ export default function BasicFlupsyVisualizer() {
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-4 border-red-500 bg-red-50"></div>
             <span>T6-T7 (Commerciale)</span>
+          </div>
+        </div>
+        
+        {/* Legenda trend SGR */}
+        <div className="flex flex-wrap gap-3 mt-2">
+          <div className="flex items-center gap-1 text-xs">
+            <div className="flex items-center text-green-600">
+              <TrendingUp className="w-3 h-3" />
+              <span className="ml-0.5 text-[9px]">+2.5%</span>
+            </div>
+            <span>Crescita forte</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="flex items-center text-green-500">
+              <ArrowUp className="w-3 h-3" />
+              <span className="ml-0.5 text-[9px]">+1.2%</span>
+            </div>
+            <span>Crescita media</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="flex items-center text-slate-400">
+              <Minus className="w-3 h-3" />
+              <span className="ml-0.5 text-[9px]">0.0%</span>
+            </div>
+            <span>Stabile</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="flex items-center text-red-500">
+              <ArrowDown className="w-3 h-3" />
+              <span className="ml-0.5 text-[9px]">-1.5%</span>
+            </div>
+            <span>Decrescita</span>
           </div>
         </div>
       </CardHeader>
