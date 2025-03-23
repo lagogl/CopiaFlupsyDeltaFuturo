@@ -1,3 +1,4 @@
+import React from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
@@ -357,11 +358,10 @@ export default function BasicFlupsyVisualizer() {
     // Se la cesta è attiva, ha un'operazione e ha un ciclo, mostriamo il tooltip
     if (basket && basket.state === 'active' && basket.currentCycleId && latestOperation) {
       return (
-        <TooltipProvider>
+        <TooltipProvider key={`tooltip-${flupsyId}-${row}-${position}`}>
           <Tooltip>
             <TooltipTrigger asChild>
               <div 
-                key={`${flupsyId}-${row}-${position}`}
                 onClick={() => handleBasketClick(basket)}
                 className={`${borderClass} rounded-md p-1.5 text-center text-sm h-40 overflow-hidden
                   cursor-pointer hover:shadow-md transition-shadow ${bgClass}`}
