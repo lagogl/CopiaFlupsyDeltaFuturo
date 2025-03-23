@@ -325,6 +325,10 @@ export default function QuickOperations() {
     queryKey: ['/api/lots'],
   });
   
+  const { data: sizes, isLoading: sizesLoading } = useQuery({
+    queryKey: ['/api/sizes'],
+  });
+  
   // Filtriamo solo le ceste con cicli attivi
   const activeCycles = cycles ? cycles.filter((c: Cycle) => c.state === 'active') : [];
   const basketsWithActiveCycles = baskets ? baskets.filter((b: Basket) => b.currentCycleId !== null) : [];
@@ -497,7 +501,7 @@ export default function QuickOperations() {
     return { basket, flupsy, lastOperation, cycle, lot };
   };
   
-  const isLoading = basketsLoading || flupsysLoading || operationsLoading || cyclesLoading || lotsLoading;
+  const isLoading = basketsLoading || flupsysLoading || operationsLoading || cyclesLoading || lotsLoading || sizesLoading;
   
   // Funzione per calcolare risultati in base ai dati di input del campione
   const calculateSampleResults = (weight: number | null, count: number | null, percentage: number = 100, deadCount: number | null = null) => {
