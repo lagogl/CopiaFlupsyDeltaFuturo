@@ -11,7 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getBasketColorBySize } from '@/lib/utils';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 
 // Tipi che useremo 
@@ -350,15 +350,12 @@ export default function QuickOperations() {
     
     const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
     
+    // Prepara il form dell'operazione
     setSelectedBasketId(basketId);
     setSelectedOperationType(operationType);
     setOperationDialogOpen(true);
     
-    // Mostra un toast di feedback
-    toast({
-      title: 'Operazione rapida attivata',
-      description: `Basket #${basket.physicalNumber} - Operazione: ${getOperationTypeLabel(operationType)}`,
-    });
+    // Non mostriamo più il toast qui, lo mostreremo solo quando l'operazione viene salvata con successo
   };
   
   // Mutazione per cancellare un'operazione
@@ -791,39 +788,45 @@ export default function QuickOperations() {
                   
                   return (
                     <div>
-                      <div className="grid grid-cols-2 gap-4 mb-4">
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Cesta</label>
-                          <div className="p-2 rounded bg-gray-100">#{basket.physicalNumber}</div>
-                        </div>
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Tipo operazione</label>
-                          <div className="p-2 rounded bg-gray-100">
-                            {getOperationTypeLabel(operationData.type)}
+                      <div className="space-y-4 mb-4">
+                        <div className="grid grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Cesta</label>
+                            <div className="p-2 rounded bg-gray-100">#{basket.physicalNumber}</div>
+                          </div>
+                          <div>
+                            <label className="block text-sm font-medium mb-1">Tipo operazione</label>
+                            <div className="p-2 rounded bg-gray-100">
+                              {getOperationTypeLabel(operationData.type)}
+                            </div>
                           </div>
                         </div>
+                        
                         <div>
                           <label className="block text-sm font-medium mb-1">Data</label>
                           <div className="p-2 rounded bg-gray-100">
                             {format(today, 'dd/MM/yyyy', { locale: it })}
                           </div>
                         </div>
-                        {operationData.animalsPerKg && (
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Animali/kg</label>
-                            <div className="p-2 rounded bg-gray-100">
-                              {formatNumberWithCommas(operationData.animalsPerKg)}
+                        
+                        <div className="grid grid-cols-2 gap-4">
+                          {operationData.animalsPerKg && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Animali/kg</label>
+                              <div className="p-2 rounded bg-gray-100">
+                                {formatNumberWithCommas(operationData.animalsPerKg)}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        {operationData.averageWeight && (
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
-                            <div className="p-2 rounded bg-gray-100">
-                              {formatNumberWithCommas(operationData.averageWeight)}
+                          )}
+                          {operationData.averageWeight && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
+                              <div className="p-2 rounded bg-gray-100">
+                                {formatNumberWithCommas(operationData.averageWeight)}
+                              </div>
                             </div>
-                          </div>
-                        )}
+                          )}
+                        </div>
                       </div>
                       
                       <div className="flex justify-between items-center mt-6">
