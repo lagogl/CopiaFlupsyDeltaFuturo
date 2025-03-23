@@ -90,7 +90,10 @@ export default function GrowthChart() {
         </button>
       </div>
       
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expanded ? 'max-h-[500px]' : chartData.length === 0 ? 'max-h-[120px]' : 'max-h-[200px]'}`}>
+      <div className="relative overflow-hidden" style={{ 
+        maxHeight: expanded ? '500px' : chartData.length === 0 ? '150px' : '200px',
+        transition: 'max-height 300ms ease-in-out'
+      }}>
         <div className="p-4">
           <div className="flex mb-4 flex-wrap">
             {selectedCycles.map((cycle, index) => (
@@ -104,7 +107,9 @@ export default function GrowthChart() {
             ))}
           </div>
           
-          <div className={`w-full transition-all duration-300 ${expanded ? 'h-[300px]' : 'h-[80px]'}`}>
+          <div className="w-full transition-all duration-300" style={{ 
+            height: expanded ? '300px' : '80px' 
+          }}>
             {chartData.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
                 <LineChart
@@ -152,7 +157,7 @@ export default function GrowthChart() {
             )}
           </div>
           
-          <div className="mt-4 text-center">
+          <div className="mt-4 text-center relative z-10">
             {!expanded && chartData.length > 0 && (
               <button
                 onClick={() => setExpanded(true)}
@@ -165,13 +170,13 @@ export default function GrowthChart() {
               Visualizza tutte le statistiche →
             </Link>
           </div>
+          
+          {/* Sfumatura quando non è espanso */}
+          {!expanded && chartData.length > 0 && (
+            <div className="absolute bottom-0 left-0 right-0 h-20 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+          )}
         </div>
       </div>
-      
-      {/* Sfumatura quando non è espanso */}
-      {!expanded && chartData.length > 0 && (
-        <div className="absolute bottom-16 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
-      )}
     </div>
   );
 }
