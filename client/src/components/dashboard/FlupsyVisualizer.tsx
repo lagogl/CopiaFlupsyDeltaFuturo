@@ -55,6 +55,8 @@ export default function FlupsyVisualizer() {
     type: string;
     notes: string | null;
     animalsPerKg: number | null;
+    deadCount: number | null;  // Numero di animali morti
+    mortalityRate: number | null; // Percentuale di mortalità
   }
   
   interface Cycle {
@@ -272,6 +274,22 @@ export default function FlupsyVisualizer() {
                 {hasLargeSize(basket) && (
                   <div className="text-xs font-bold mt-1 text-red-600">
                     Taglia TP-3000 o maggiore
+                  </div>
+                )}
+              </div>
+            )}
+            
+            {/* Dati sulla mortalità */}
+            {latestOperation.deadCount && latestOperation.deadCount > 0 && (
+              <div className="text-sm mt-1">
+                <span className="text-muted-foreground">Mortalità: </span>
+                <span className="font-medium">
+                  {latestOperation.mortalityRate ? `${latestOperation.mortalityRate}%` : ''} 
+                  {latestOperation.deadCount ? ` (${latestOperation.deadCount} morti)` : ''}
+                </span>
+                {latestOperation.mortalityRate && latestOperation.mortalityRate > 5 && (
+                  <div className="text-xs font-bold mt-1 text-red-600">
+                    Mortalità elevata
                   </div>
                 )}
               </div>
