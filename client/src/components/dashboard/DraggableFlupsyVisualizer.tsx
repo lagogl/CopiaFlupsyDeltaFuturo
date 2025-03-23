@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
-import { getBasketBorderClass, getBasketColorBySize } from "@/lib/utils";
+import { getBasketBorderClass, getBasketColorBySize, formatNumberWithCommas } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -290,7 +290,7 @@ export default function DraggableFlupsyVisualizer() {
               <div><span className="font-medium">Ultima operazione:</span> {latestOperation.type}</div>
               <div><span className="font-medium">Data:</span> {new Date(latestOperation.date).toLocaleDateString()}</div>
               {latestOperation.animalsPerKg && (
-                <div><span className="font-medium">Animali/kg:</span> {latestOperation.animalsPerKg.toLocaleString()}</div>
+                <div><span className="font-medium">Animali/kg:</span> {formatNumberWithCommas(latestOperation.animalsPerKg)}</div>
               )}
               {latestOperation.sizeId && latestOperation.size && (
                 <div><span className="font-medium">Taglia:</span> {latestOperation.size.code}</div>

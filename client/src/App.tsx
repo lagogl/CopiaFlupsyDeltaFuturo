@@ -27,6 +27,7 @@ function Router() {
       <Route path="/" component={Dashboard}/>
       <Route path="/flupsys" component={Flupsys}/>
       <Route path="/flupsy-view" component={FlupsyFullView}/>
+      <Route path="/flupsy-positions" component={FlupsyPositions}/>
       <Route path="/baskets" component={Baskets}/>
       <Route path="/operations" component={Operations}/>
       <Route path="/operations/:id" component={OperationDetail}/>
