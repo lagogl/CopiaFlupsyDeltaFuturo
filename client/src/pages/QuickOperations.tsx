@@ -191,6 +191,18 @@ function BasketCard({
                   {formatNumberWithCommas(lastOperation.animalsPerKg)}
                 </div>
               )}
+              {lastOperation.deadCount && lastOperation.deadCount > 0 && (
+                <div className="flex items-center">
+                  <span className="font-medium">Mortalità:</span>{' '}
+                  <span className="ml-1">
+                    {lastOperation.mortalityRate ? `${lastOperation.mortalityRate}%` : ''}
+                    {lastOperation.deadCount ? ` (${lastOperation.deadCount} morti)` : ''}
+                  </span>
+                  {lastOperation.mortalityRate && lastOperation.mortalityRate > 5 && (
+                    <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0">Alta</Badge>
+                  )}
+                </div>
+              )}
               {lot && (
                 <div>
                   <span className="font-medium">Lotto:</span>{' '}
@@ -917,6 +929,28 @@ export default function QuickOperations() {
                               </div>
                             </div>
                           )}
+                        </div>
+                        
+                        {/* Sezione mortalità */}
+                        <div>
+                          <label className="block text-sm font-medium mb-1">Mortalità (opzionale)</label>
+                          <div className="flex space-x-2">
+                            <Input 
+                              type="number" 
+                              placeholder="N. animali morti"
+                              value={operationData.deadCount?.toString() || ''}
+                              onChange={e => {
+                                const value = parseInt(e.target.value);
+                                operationData.deadCount = isNaN(value) ? null : value;
+                                // Se non abbiamo dati sufficienti per calcolare la mortalità, impostiamo a null
+                                operationData.mortalityRate = null;
+                              }}
+                              className="h-9 flex-1"
+                            />
+                          </div>
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Numero di animali morti trovati
+                          </p>
                         </div>
                       </div>
                       
