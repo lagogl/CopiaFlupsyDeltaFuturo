@@ -37,7 +37,7 @@ export default function OperationsDropZoneContainer() {
               title="Peso"
               description="Registra i dati di peso della cesta"
               color="green-500"
-              icon={<ScaleIcon className="h-5 w-5" />}
+              icon={<Scale className="h-5 w-5" />}
             />
             
             <OperationsDropZone 
