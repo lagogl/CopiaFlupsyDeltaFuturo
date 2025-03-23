@@ -3,7 +3,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from 'wouter';
-import { calculateAverageWeight } from '@/lib/utils';
+import { calculateAverageWeight, getSizeFromAnimalsPerKg, TARGET_SIZES } from '@/lib/utils';
 
 export default function BasicFlupsyVisualizer() {
   const [, navigate] = useLocation();
@@ -90,21 +90,30 @@ export default function BasicFlupsyVisualizer() {
       
       // Special styling for baskets with weight data
       if (latestOperation?.animalsPerKg) {
-        console.log(`Basket #${basket.physicalNumber} at position ${row}-${position} has weight data: ${latestOperation.animalsPerKg} animals/kg (${Math.round(averageWeight || 0)} mg)`);
+        const targetSize = getSizeFromAnimalsPerKg(latestOperation.animalsPerKg);
+        console.log(`Basket #${basket.physicalNumber} at position ${row}-${position} has weight data: ${latestOperation.animalsPerKg} animals/kg (${Math.round(averageWeight || 0)} mg, taglia: ${targetSize?.code || 'N/D'})`);
         
-        // Make active baskets with weight data stand out
-        if (averageWeight && averageWeight >= 3000) {
-          borderClass = 'border-red-500 border-4';
-          bgClass = 'bg-red-50';
-        } else if (averageWeight && averageWeight >= 1000) {
-          borderClass = 'border-orange-500 border-2';
-          bgClass = 'bg-orange-50';
-        } else if (averageWeight && averageWeight >= 500) {
-          borderClass = 'border-yellow-500 border-2';
-          bgClass = 'bg-yellow-50';
-        } else if (averageWeight) {
-          borderClass = 'border-green-500 border-2';
-          bgClass = 'bg-green-50';
+        // Make active baskets with weight data stand out based on size
+        if (targetSize) {
+          const sizeCode = targetSize.code;
+          
+          if (sizeCode === 'T6' || sizeCode === 'T7') {
+            // Taglie commerciali (T6-T7)
+            borderClass = 'border-red-500 border-4';
+            bgClass = 'bg-red-50';
+          } else if (sizeCode === 'T5') {
+            // Pre-vendita (T5)
+            borderClass = 'border-orange-500 border-2';
+            bgClass = 'bg-orange-50';
+          } else if (sizeCode === 'T4') {
+            // Ingrasso avanzato (T4)
+            borderClass = 'border-yellow-500 border-2';
+            bgClass = 'bg-yellow-50';
+          } else if (sizeCode === 'T2' || sizeCode === 'T3') {
+            // Pre-ingrasso e Ingrasso iniziale (T2-T3)
+            borderClass = 'border-green-500 border-2';
+            bgClass = 'bg-green-50';
+          }
         }
       }
     }
@@ -119,8 +128,10 @@ export default function BasicFlupsyVisualizer() {
         {basket ? (
           <div className={`font-semibold ${basket.state !== 'active' || !basket.currentCycleId ? 'text-slate-400' : ''}`}>
             #{basket.physicalNumber}
-            {averageWeight && basket.state === 'active' && basket.currentCycleId && (
-              <div className="text-[10px] mt-1 font-bold">{Math.round(averageWeight)} mg</div>
+            {latestOperation?.animalsPerKg && basket.state === 'active' && basket.currentCycleId && (
+              <div className="text-[10px] mt-1 font-bold">
+                {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
+              </div>
             )}
             {basket.state === 'active' && !basket.currentCycleId && (
               <div className="text-[9px] mt-1 text-slate-500">no ciclo</div>
@@ -185,21 +196,22 @@ export default function BasicFlupsyVisualizer() {
           Disposizione delle ceste attive con cicli
         </CardDescription>
         <div className="flex flex-wrap gap-2 mt-3">
+          {/* Mostriamo le taglie principali per semplicità */}
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-green-500 bg-green-50"></div>
-            <span>&lt;500 mg</span>
+            <span>T2-T3 (Pre-ingrasso)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-yellow-500 bg-yellow-50"></div>
-            <span>500-1000 mg</span>
+            <span>T4 (Ingrasso avanzato)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-orange-500 bg-orange-50"></div>
-            <span>1000-3000 mg</span>
+            <span>T5 (Pre-vendita)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-4 border-red-500 bg-red-50"></div>
-            <span>&gt;3000 mg</span>
+            <span>T6-T7 (Commerciale)</span>
           </div>
         </div>
       </CardHeader>
