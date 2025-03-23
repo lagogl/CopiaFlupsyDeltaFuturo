@@ -9,6 +9,7 @@ import Baskets from "@/pages/Baskets";
 import Operations from "@/pages/Operations";
 import OperationDetail from "@/pages/OperationDetail";
 import QuickOperations from "@/pages/QuickOperations";
+import OperationsDragDrop from "@/pages/OperationsDragDrop";
 import Cycles from "@/pages/Cycles";
 import CycleDetail from "@/pages/CycleDetail";
 import Lots from "@/pages/Lots";
@@ -33,6 +34,7 @@ function Router() {
       <Route path="/operations/:id" component={OperationDetail}/>
       <Route path="/quick-operations" component={QuickOperations}/>
       <Route path="/quickoperations" component={QuickOperations}/>
+      <Route path="/operations-drag-drop" component={OperationsDragDrop}/>
       <Route path="/cycles" component={Cycles}/>
       <Route path="/cycles/:id" component={CycleDetail}/>
       <Route path="/lots" component={Lots}/>
