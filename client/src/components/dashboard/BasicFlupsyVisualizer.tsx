@@ -7,7 +7,7 @@ import { useLocation } from 'wouter';
 import { calculateAverageWeight, getSizeFromAnimalsPerKg, TARGET_SIZES, getOperationTypeLabel } from '@/lib/utils';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus, Fan } from 'lucide-react';
 import {
   Tooltip,
   TooltipContent,
