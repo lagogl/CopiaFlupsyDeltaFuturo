@@ -19,7 +19,8 @@ import {
   getOperationTypeLabel, 
   getTargetSizeForWeight, 
   getSizeFromAnimalsPerKg,
-  getBasketColorBySize
+  getBasketColorBySize,
+  getBasketBorderClass
 } from '@/lib/utils';
 import { CheckSquare, Square, Filter, Eye, Layers } from 'lucide-react';
 
@@ -156,14 +157,35 @@ export default function FlupsyVisualizer() {
     return latestOperation.animalsPerKg <= 32000;
   };
   
-  // Helper per ottenere la classe del bordo basata sulla taglia
-  const getBasketBorderClass = (basket: Basket | undefined): string => {
+  // Helper function per ottenere il numero di animali per kg dell'ultima operazione
+  const getLatestAnimalsPerKg = (basket: Basket | undefined): number | null => {
+    if (!basket) return null;
+    
+    const basketOperations = getOperationsForBasket(basket.id);
+    
+    // Sort operations by date (newest first)
+    const sortedOperations = [...basketOperations].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    // Get the latest operation
+    const latestOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
+    
+    return latestOperation?.animalsPerKg || null;
+  };
+  
+  // Wrapper per la funzione globale getBasketBorderClass
+  const getBasketBorderStyle = (basket: Basket | undefined): string => {
     if (!basket) return 'border';
-    return hasLargeSize(basket) ? 'border-red-500 border-2' : 'border';
+    
+    const animalsPerKg = getLatestAnimalsPerKg(basket);
+    if (animalsPerKg === null) return 'border';
+    
+    return getBasketBorderClass(animalsPerKg);
   };
   
   // Helper function to get the color class for a basket
-  const getBasketColorClass = (basket: Basket | undefined): string => {
+  const getBasketColorStyle = (basket: Basket | undefined): string => {
     if (!basket) return 'bg-gray-50 border-dashed';
     
     // If basket is not active, return a neutral color
@@ -181,6 +203,16 @@ export default function FlupsyVisualizer() {
     // Get the latest operation
     const latestOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
     
+    // Verifica se ci sono dati di mortalità
+    const hasMortalityData = latestOperation?.deadCount !== null && 
+                            latestOperation?.deadCount !== undefined && 
+                            latestOperation.deadCount > 0;
+    
+    // Se ci sono dati di mortalità, aggiungi un indicatore rosso
+    if (hasMortalityData) {
+      return 'bg-red-100 shadow-sm';
+    }
+    
     // Calculate average weight if available
     const averageWeight = latestOperation?.animalsPerKg ? 1000000 / latestOperation.animalsPerKg : null;
     
@@ -190,23 +222,6 @@ export default function FlupsyVisualizer() {
     // If we have a target size, use its color
     if (targetSize) {
       return `${targetSize.color} shadow-sm`;
-    }
-    
-    // Otherwise, color based on days since last operation
-    if (latestOperation) {
-      const daysSinceLastOperation = Math.floor(
-        (new Date().getTime() - new Date(latestOperation.date).getTime()) / (1000 * 60 * 60 * 24)
-      );
-      
-      if (daysSinceLastOperation <= 7) {
-        return 'bg-green-100 border-green-400 shadow-sm';
-      } else if (daysSinceLastOperation <= 14) {
-        return 'bg-green-50 border-green-300';
-      } else if (daysSinceLastOperation <= 30) {
-        return 'bg-amber-50 border-amber-300';
-      } else {
-        return 'bg-red-50 border-red-300';
-      }
     }
     
     // Default color for active baskets with no operations
