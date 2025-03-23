@@ -505,9 +505,9 @@ export default function FlupsyVisualizer() {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle>Visualizzazione FLUPSY</CardTitle>
+        <CardTitle>Visualizzazione FLUPSY Avanzata</CardTitle>
         <CardDescription>
-          Disposizione delle ceste all'interno dell'unità FLUPSY
+          Disposizione delle ceste all'interno dell'unità FLUPSY con dati dettagliati di crescita e mortalità
         </CardDescription>
         
         <div className="pt-2">
