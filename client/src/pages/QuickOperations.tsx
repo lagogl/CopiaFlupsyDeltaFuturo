@@ -955,129 +955,16 @@ export default function QuickOperations() {
                               Calcola rapidamente i dati per l'operazione inserendo i valori del campione
                             </p>
                             
-                                <div className="grid grid-cols-2 gap-4 mb-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-1">Peso campione (g)</label>
-                                <Input 
-                                  type="number" 
-                                  placeholder="Peso in grammi"
-                                  step="0.1"
-                                  onChange={e => {
-                                    const sampleWeight = parseFloat(e.target.value) || null;
-                                    
-                                    // Crea una copia attuale dei dati per aggiornamento
-                                    const updatedData = { ...operationData };
-                                    updatedData.sampleWeight = sampleWeight;
-                                    
-                                    const sampleCount = updatedData.sampleCount || null;
-                                    
-                                    // Calcolo solo se abbiamo entrambi i valori
-                                    if (sampleWeight && sampleCount) {
-                                      // Calcolo animali per kg
-                                      const calcAnimalsPerKg = Math.round((sampleCount / sampleWeight) * 1000);
-                                      updatedData.animalsPerKg = calcAnimalsPerKg;
-                                      
-                                      // Calcolo peso medio in mg
-                                      updatedData.averageWeight = calcAnimalsPerKg > 0 ? 1000000 / calcAnimalsPerKg : null;
-                                    }
-                                    
-                                    // Aggiorna lo stato completo
-                                    setCurrentOperationData(updatedData);
-                                    setOperationDialogOpen(false);
-                                    setTimeout(() => {
-                                      setOperationDialogOpen(true);
-                                    }, 10);
-                                  }}
-                                  className="h-9"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">Animali contati</label>
-                                <Input 
-                                  type="number" 
-                                  placeholder="N. animali"
-                                  onChange={e => {
-                                    const sampleCount = parseInt(e.target.value) || null;
-                                    
-                                    // Crea una copia attuale dei dati per aggiornamento
-                                    const updatedData = { ...operationData };
-                                    updatedData.sampleCount = sampleCount;
-                                    
-                                    const sampleWeight = updatedData.sampleWeight || null;
-                                    
-                                    // Calcolo solo se abbiamo entrambi i valori
-                                    if (sampleWeight && sampleCount) {
-                                      // Calcolo animali per kg
-                                      const calcAnimalsPerKg = Math.round((sampleCount / sampleWeight) * 1000);
-                                      updatedData.animalsPerKg = calcAnimalsPerKg;
-                                      
-                                      // Calcolo peso medio in mg
-                                      updatedData.averageWeight = calcAnimalsPerKg > 0 ? 1000000 / calcAnimalsPerKg : null;
-                                    }
-                                    
-                                    // Aggiorna lo stato completo
-                                    setCurrentOperationData(updatedData);
-                                    setOperationDialogOpen(false);
-                                    setTimeout(() => {
-                                      setOperationDialogOpen(true);
-                                    }, 10);
-                                  }}
-                                  className="h-9"
-                                />
-                              </div>
-                            </div>
-                            
-                            <div className="grid grid-cols-2 gap-4 mb-4">
-                              <div>
-                                <label className="block text-sm font-medium mb-1">Animali morti (opzionale)</label>
-                                <Input 
-                                  type="number" 
-                                  placeholder="N. animali morti"
-                                  onChange={e => {
-                                    const deadCount = parseInt(e.target.value) || null;
-                                    
-                                    // Crea una copia attuale dei dati per aggiornamento
-                                    const updatedData = { ...operationData };
-                                    updatedData.deadCount = deadCount;
-                                    
-                                    // Calcola mortalità se abbiamo i dati necessari
-                                    const sampleCount = updatedData.sampleCount || null;
-                                    const sampleWeight = updatedData.sampleWeight || null;
-                                    
-                                    if (deadCount !== null && deadCount >= 0 && sampleCount && sampleWeight) {
-                                      // Stima totale animali basata su peso e densità
-                                      const calcAnimalsPerKg = Math.round((sampleCount / sampleWeight) * 1000);
-                                      
-                                      // Se abbiamo il peso totale, usiamo quello per una stima più precisa
-                                      if (updatedData.batchWeight) {
-                                        const batchWeightKg = updatedData.batchWeight / 1000; // Convertiamo in kg
-                                        const totalAnimals = Math.round(calcAnimalsPerKg * batchWeightKg);
-                                        
-                                        // Calcoliamo la percentuale di mortalità
-                                        updatedData.mortalityRate = Math.round((deadCount / (totalAnimals + deadCount)) * 1000) / 10;
-                                      } else {
-                                        // Senza peso totale, facciamo una stima approssimativa
-                                        updatedData.mortalityRate = Math.round((deadCount / (sampleCount + deadCount)) * 1000) / 10;
-                                      }
-                                    }
-                                    
-                                    // Aggiorna lo stato completo
-                                    setCurrentOperationData(updatedData);
-                                    setOperationDialogOpen(false);
-                                    setTimeout(() => {
-                                      setOperationDialogOpen(true);
-                                    }, 10);
-                                  }}
-                                  className="h-9"
-                                />
-                              </div>
-                              <div>
-                                <label className="block text-sm font-medium mb-1">Mortalità</label>
-                                <div className="p-2 rounded bg-gray-100">
-                                  {operationData.mortalityRate ? formatNumberWithCommas(operationData.mortalityRate) + '%' : "N/D"}
-                                </div>
-                              </div>
-                            </div>
+                            <IntegratedSampleCalculator 
+                              defaultAnimalsPerKg={operationData.animalsPerKg || null}
+                              defaultDeadCount={operationData.deadCount || null}
+                              defaultAverageWeight={operationData.averageWeight || null}
+                              defaultMortalityRate={operationData.mortalityRate || null}
+                              onChange={(result) => {
+                                const updatedData = { ...operationData, ...result };
+                                setCurrentOperationData(updatedData);
+                              }}
+                            />
                           </div>
                         )}
                         
