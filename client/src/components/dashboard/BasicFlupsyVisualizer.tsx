@@ -160,18 +160,18 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`} 
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-1.5 text-center text-sm h-28 overflow-hidden
+        className={`${borderClass} rounded-md p-1.5 text-center text-sm h-36 overflow-hidden
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basket ? (
           <div className={`font-semibold ${basket.state !== 'active' ? 'text-slate-400' : ''}`}>
             {latestOperation?.animalsPerKg && basket.state === 'active' && basket.currentCycleId && (
-              <div className="flex flex-col gap-y-0.5 relative pt-4">
+              <div className="flex flex-col gap-y-0.5 mt-1">
                 {/* Numero cesta con bordo colorato e più evidente */}
-                <div className="absolute top-0 inset-x-0 flex justify-center">
-                  <div className={`text-[10px] font-bold bg-white ${borderClass.replace('border-2', 'border-b-2').replace('border-4', 'border-b-2')} rounded py-0.5 px-2 inline-block z-10 shadow-sm`}>
+                <div className="bg-slate-200 py-0.5 px-1 mb-1 text-center rounded-t-md">
+                  <span className="text-[10px] font-bold text-slate-700">
                     CESTA #{basket.physicalNumber}
-                  </div>
+                  </span>
                 </div>
                 
                 {/* Taglia */}
