@@ -1113,7 +1113,8 @@ export default function QuickOperations() {
                                   type="button"
                                   onClick={() => {
                                     // Verifica che il peso totale sia valido
-                                    if (!operationData.totalWeight) {
+                                    console.log("Verifico peso totale:", operationData.totalWeight);
+                                    if (!operationData.totalWeight || operationData.totalWeight <= 0) {
                                       toast({
                                         title: "Errore",
                                         description: "Inserisci un peso totale valido prima di calcolare",
