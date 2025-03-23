@@ -955,7 +955,7 @@ export default function QuickOperations() {
                               Calcola rapidamente i dati per l'operazione inserendo i valori del campione
                             </p>
                             
-                            <div className="grid grid-cols-2 gap-4 mb-4">
+                                <div className="grid grid-cols-2 gap-4 mb-4">
                               <div>
                                 <label className="block text-sm font-medium mb-1">Peso campione (g)</label>
                                 <Input 
@@ -978,7 +978,17 @@ export default function QuickOperations() {
                                       operationData.averageWeight = calcAnimalsPerKg > 0 ? 1000000 / calcAnimalsPerKg : null;
                                       
                                       // Forza aggiornamento dell'interfaccia
-                                      setOperationDialogOpen(prev => prev);
+                                      setCurrentOperationData({...operationData});
+
+                                      // Aggiorna anche gli altri campi del form
+                                      setTimeout(() => {
+                                        // Trova l'input per animali/kg e imposta il valore
+                                        const animalsPerKgInputs = document.querySelectorAll('input[placeholder="Animali/kg"]');
+                                        animalsPerKgInputs.forEach(el => {
+                                          const input = el as HTMLInputElement;
+                                          input.value = operationData.animalsPerKg?.toString() || '';
+                                        });
+                                      }, 10);
                                     }
                                   }}
                                   className="h-9"
@@ -1005,11 +1015,66 @@ export default function QuickOperations() {
                                       operationData.averageWeight = calcAnimalsPerKg > 0 ? 1000000 / calcAnimalsPerKg : null;
                                       
                                       // Forza aggiornamento dell'interfaccia
-                                      setOperationDialogOpen(prev => prev);
+                                      setCurrentOperationData({...operationData});
+                                      
+                                      // Aggiorna anche gli altri campi del form
+                                      setTimeout(() => {
+                                        // Trova l'input per animali/kg e imposta il valore
+                                        const animalsPerKgInputs = document.querySelectorAll('input[placeholder="Animali/kg"]');
+                                        animalsPerKgInputs.forEach(el => {
+                                          const input = el as HTMLInputElement;
+                                          input.value = operationData.animalsPerKg?.toString() || '';
+                                        });
+                                      }, 10);
                                     }
                                   }}
                                   className="h-9"
                                 />
+                              </div>
+                            </div>
+                            
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Animali morti (opzionale)</label>
+                                <Input 
+                                  type="number" 
+                                  placeholder="N. animali morti"
+                                  onChange={e => {
+                                    const deadCount = parseInt(e.target.value) || null;
+                                    operationData.deadCount = deadCount;
+                                    
+                                    // Calcola mortalità se abbiamo i dati necessari
+                                    const sampleCount = operationData.sampleCount || null;
+                                    const sampleWeight = operationData.sampleWeight || null;
+                                    
+                                    if (deadCount !== null && deadCount >= 0 && sampleCount && sampleWeight) {
+                                      // Stima totale animali basata su peso e densità
+                                      const calcAnimalsPerKg = Math.round((sampleCount / sampleWeight) * 1000);
+                                      
+                                      // Se abbiamo il peso totale, usiamo quello per una stima più precisa
+                                      if (operationData.batchWeight) {
+                                        const batchWeightKg = operationData.batchWeight / 1000; // Convertiamo in kg
+                                        const totalAnimals = Math.round(calcAnimalsPerKg * batchWeightKg);
+                                        
+                                        // Calcoliamo la percentuale di mortalità
+                                        operationData.mortalityRate = Math.round((deadCount / (totalAnimals + deadCount)) * 1000) / 10;
+                                      } else {
+                                        // Senza peso totale, facciamo una stima approssimativa
+                                        operationData.mortalityRate = Math.round((deadCount / (sampleCount + deadCount)) * 1000) / 10;
+                                      }
+                                      
+                                      // Aggiorna interfaccia
+                                      setCurrentOperationData({...operationData});
+                                    }
+                                  }}
+                                  className="h-9"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Mortalità</label>
+                                <div className="p-2 rounded bg-gray-100">
+                                  {operationData.mortalityRate ? formatNumberWithCommas(operationData.mortalityRate) + '%' : "N/D"}
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -1048,32 +1113,7 @@ export default function QuickOperations() {
                           )}
                         </div>
                         
-                        {/* Sezione mortalità */}
-                        <div>
-                          <label className="block text-sm font-medium mb-1">Mortalità (opzionale)</label>
-                          <div className="flex space-x-2">
-                            <Input 
-                              type="number" 
-                              placeholder="N. animali morti"
-                              value={operationData.deadCount?.toString() || ''}
-                              onChange={e => {
-                                const value = parseInt(e.target.value);
-                                operationData.deadCount = isNaN(value) ? null : value;
-                                // Se non abbiamo dati sufficienti per calcolare la mortalità, impostiamo a null
-                                operationData.mortalityRate = null;
-                              }}
-                              className="h-9 flex-1"
-                            />
-                            {operationData.mortalityRate !== null && (
-                              <div className="p-2 rounded bg-gray-100 flex-shrink-0 min-w-20 text-center">
-                                {formatNumberWithCommas(operationData.mortalityRate)}%
-                              </div>
-                            )}
-                          </div>
-                          <p className="text-xs text-muted-foreground mt-1">
-                            Numero di animali morti trovati
-                          </p>
-                        </div>
+                        {/* La sezione mortalità è stata integrata nel calcolatore campione */}
                       </div>
                       
                       <div className="flex justify-between items-center mt-6">
