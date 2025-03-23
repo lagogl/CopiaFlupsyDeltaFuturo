@@ -442,6 +442,8 @@ export default function QuickOperations() {
     if (currentOperationData) {
       currentOperationData.animalsPerKg = result.animalsPerKg;
       currentOperationData.averageWeight = result.averageWeight;
+      currentOperationData.deadCount = result.deadCount;
+      currentOperationData.mortalityRate = result.mortalityRate;
       
       // Facciamo un aggiornamento esplicito dello stato per assicurarci che la UI si aggiorni
       setCurrentOperationData({...currentOperationData});
@@ -455,6 +457,7 @@ export default function QuickOperations() {
         onOpenChange={setCalculatorOpen}
         onCalculate={handleCalculatorResult}
         defaultAnimalsPerKg={currentOperationData?.animalsPerKg}
+        defaultDeadCount={currentOperationData?.deadCount}
       />
       
       <div className="flex justify-between items-center mb-6">

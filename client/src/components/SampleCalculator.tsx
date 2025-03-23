@@ -113,8 +113,10 @@ export default function SampleCalculator({
       setSampleWeight(null);
       setAnimalsCount(null);
       setSamplePercentage(100);
+      // Manteniamo il valore di default per deadCount se esiste
+      setDeadCount(defaultDeadCount || null);
     }
-  }, [open]);
+  }, [open, defaultDeadCount]);
   
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
