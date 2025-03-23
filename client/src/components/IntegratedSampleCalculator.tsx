@@ -57,37 +57,42 @@ export default function IntegratedSampleCalculator({
       setAverageWeight(calculatedAverageWeight);
       setTotalPopulation(calculatedTotalPopulation);
       
-      // Calcoliamo la mortalità se esiste un valore di morti
+      // Calcolo della mortalità se esiste un valore di morti
+      let calculatedMortalityRate = null;
+      let totalDeadCount = null;
+      
       if (deadCount !== null && deadCount >= 0 && calculatedTotalPopulation > 0) {
         // Se il deadCount è relativo al campione, calcoliamo il valore totale
-        const totalDeadCount = samplePercentage < 100 
+        totalDeadCount = samplePercentage < 100 
           ? Math.round(deadCount / (samplePercentage / 100)) 
           : deadCount;
           
         // Calcoliamo la percentuale di mortalità
-        const calculatedMortalityRate = (totalDeadCount / (calculatedTotalPopulation + totalDeadCount)) * 100;
-        setMortalityRate(Math.round(calculatedMortalityRate * 10) / 10); // Arrotondiamo a una cifra decimale
+        calculatedMortalityRate = (totalDeadCount / (calculatedTotalPopulation + totalDeadCount)) * 100;
+        calculatedMortalityRate = Math.round(calculatedMortalityRate * 10) / 10; // Arrotondiamo a una cifra decimale
+        setMortalityRate(calculatedMortalityRate);
       } else {
         setMortalityRate(null);
       }
       
       // Notifichiamo il componente genitore dei risultati calcolati
+      // console.log("Invio nuovi dati calcolati:", calculatedAnimalsPerKg, calculatedAverageWeight);
       onChange({
         animalsPerKg: calculatedAnimalsPerKg,
         averageWeight: calculatedAverageWeight,
-        deadCount: deadCount !== null && samplePercentage < 100
-          ? Math.round(deadCount / (samplePercentage / 100))
-          : deadCount,
-        mortalityRate: mortalityRate
+        deadCount: totalDeadCount,
+        mortalityRate: calculatedMortalityRate
       });
     } else {
-      // Reimposta i risultati se non abbiamo dati sufficienti
+      // Reimposta i risultati ai valori predefiniti se non abbiamo dati sufficienti
       setAnimalsPerKg(defaultAnimalsPerKg || null);
       setAverageWeight(
         defaultAverageWeight || (defaultAnimalsPerKg && defaultAnimalsPerKg > 0 ? 1000000 / defaultAnimalsPerKg : null)
       );
       setTotalPopulation(null);
       setMortalityRate(defaultMortalityRate || null);
+      
+      // Non notifichiamo cambiamenti se non abbiamo calcoli completi
     }
   }, [sampleWeight, animalsCount, samplePercentage, deadCount, defaultAnimalsPerKg, defaultAverageWeight, defaultMortalityRate, onChange]);
   

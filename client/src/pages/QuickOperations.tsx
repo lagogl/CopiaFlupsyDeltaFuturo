@@ -962,7 +962,9 @@ export default function QuickOperations() {
                               defaultAverageWeight={operationData.averageWeight || null}
                               defaultMortalityRate={operationData.mortalityRate || null}
                               onChange={(result) => {
+                                console.log("Ricevuti nuovi valori calcolati:", result);
                                 const updatedData = { ...operationData, ...result };
+                                console.log("Dati operazione aggiornati:", updatedData);
                                 setCurrentOperationData(updatedData);
                               }}
                             />
