@@ -699,21 +699,35 @@ export default function QuickOperations() {
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">Animali/kg</label>
-                          <Input 
-                            type="number" 
-                            defaultValue={operationData.animalsPerKg?.toString() || ''}
-                            onChange={(e) => {
-                              const value = parseInt(e.target.value);
-                              operationData.animalsPerKg = isNaN(value) ? null : value;
-                              // Aggiorna anche il peso medio se necessario
-                              if (!isNaN(value) && value > 0) {
-                                operationData.averageWeight = 1000000 / value;
-                              } else {
-                                operationData.averageWeight = null;
-                              }
-                            }}
-                            className="h-9"
-                          />
+                          <div className="flex space-x-2">
+                            <Input 
+                              type="number" 
+                              defaultValue={operationData.animalsPerKg?.toString() || ''}
+                              onChange={(e) => {
+                                const value = parseInt(e.target.value);
+                                operationData.animalsPerKg = isNaN(value) ? null : value;
+                                // Aggiorna anche il peso medio se necessario
+                                if (!isNaN(value) && value > 0) {
+                                  operationData.averageWeight = 1000000 / value;
+                                } else {
+                                  operationData.averageWeight = null;
+                                }
+                              }}
+                              className="h-9 flex-1"
+                            />
+                            <Button 
+                              type="button"
+                              variant="outline"
+                              size="icon"
+                              className="h-9 w-9 flex-shrink-0"
+                              onClick={() => {
+                                setCurrentOperationData(operationData);
+                                setCalculatorOpen(true);
+                              }}
+                            >
+                              <Calculator className="h-4 w-4" />
+                            </Button>
+                          </div>
                         </div>
                         {operationData.averageWeight && (
                           <div>
@@ -857,21 +871,35 @@ export default function QuickOperations() {
                           {operationData.type === 'misura' && (
                             <div>
                               <label className="block text-sm font-medium mb-1">Animali/kg</label>
-                              <Input 
-                                type="number" 
-                                defaultValue={operationData.animalsPerKg?.toString() || ''}
-                                onChange={(e) => {
-                                  const value = parseInt(e.target.value);
-                                  operationData.animalsPerKg = isNaN(value) ? null : value;
-                                  // Aggiorna anche il peso medio se necessario
-                                  if (!isNaN(value) && value > 0) {
-                                    operationData.averageWeight = 1000000 / value;
-                                  } else {
-                                    operationData.averageWeight = null;
-                                  }
-                                }}
-                                className="h-9"
-                              />
+                              <div className="flex space-x-2">
+                                <Input 
+                                  type="number" 
+                                  defaultValue={operationData.animalsPerKg?.toString() || ''}
+                                  onChange={(e) => {
+                                    const value = parseInt(e.target.value);
+                                    operationData.animalsPerKg = isNaN(value) ? null : value;
+                                    // Aggiorna anche il peso medio se necessario
+                                    if (!isNaN(value) && value > 0) {
+                                      operationData.averageWeight = 1000000 / value;
+                                    } else {
+                                      operationData.averageWeight = null;
+                                    }
+                                  }}
+                                  className="h-9 flex-1"
+                                />
+                                <Button 
+                                  type="button"
+                                  variant="outline"
+                                  size="icon"
+                                  className="h-9 w-9 flex-shrink-0"
+                                  onClick={() => {
+                                    setCurrentOperationData(operationData);
+                                    setCalculatorOpen(true);
+                                  }}
+                                >
+                                  <Calculator className="h-4 w-4" />
+                                </Button>
+                              </div>
                             </div>
                           )}
                           {operationData.averageWeight && (
