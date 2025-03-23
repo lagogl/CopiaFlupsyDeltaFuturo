@@ -1,8 +1,6 @@
-import { useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
 import { Helmet } from "react-helmet";
-import MainLayout from "@/layouts/MainLayout";
 import DraggableFlupsyVisualizer from "@/components/dashboard/DraggableFlupsyVisualizer";
 
 export default function FlupsyPositions() {
@@ -23,14 +21,10 @@ export default function FlupsyPositions() {
   });
 
   return (
-    <MainLayout>
+    <>
       <Helmet>
         <title>Gestione Posizioni FLUPSY</title>
       </Helmet>
-
-      <div className="flex items-center justify-between mb-6">
-        <h1 className="text-2xl font-bold">Gestione Posizioni FLUPSY</h1>
-      </div>
 
       <div className="space-y-6">
         <div className="bg-yellow-50 border-l-4 border-yellow-400 p-4 mb-6">
@@ -46,6 +40,6 @@ export default function FlupsyPositions() {
 
         <DraggableFlupsyVisualizer />
       </div>
-    </MainLayout>
+    </>
   );
 }
