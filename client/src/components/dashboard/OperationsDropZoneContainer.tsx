@@ -96,6 +96,9 @@ const DraggableOperationItem = ({ type, icon, label }: DraggableOperationItemPro
 
 // Componente per il target (cesta) dove rilasciare l'operazione
 const DropTargetBasket = ({ basket, operations, onOperationDrop }: any) => {
+  // Verifica diretta se la cesta è disponibile per le operazioni
+  const isBasketAvailable = basket.state === 'active' && basket.currentCycleId !== null;
+  
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: 'OPERATION',
     drop: (item: { type: DraggableOperationType }) => {
@@ -104,7 +107,7 @@ const DropTargetBasket = ({ basket, operations, onOperationDrop }: any) => {
     },
     canDrop: () => {
       console.log("Basket state:", basket.state, "currentCycleId:", basket.currentCycleId);
-      return basket.state === 'active' && basket.currentCycleId !== null;
+      return isBasketAvailable;
     },
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
@@ -135,9 +138,9 @@ const DropTargetBasket = ({ basket, operations, onOperationDrop }: any) => {
     return 'border-indigo-500 border-2';
   };
 
-  // Calcola la classe del background in base al canDrop e isOver
+  // Calcola la classe del background in base a isBasketAvailable e isOver
   const getBackgroundClass = () => {
-    if (!canDrop) return 'bg-gray-50';
+    if (!isBasketAvailable) return 'bg-gray-50';
     if (isOver) return 'bg-blue-100';
     return 'bg-white hover:bg-slate-50';
   };
@@ -146,12 +149,12 @@ const DropTargetBasket = ({ basket, operations, onOperationDrop }: any) => {
     <div
       ref={drop}
       className={`relative rounded-lg p-3 ${getBorderClass()} ${getBackgroundClass()} 
-        ${!canDrop ? 'opacity-70' : 'opacity-100'} 
+        ${!isBasketAvailable ? 'opacity-70' : 'opacity-100'} 
         transition-all duration-200 shadow-sm hover:shadow-md
-        ${canDrop ? 'transform hover:-translate-y-1' : ''}`}
+        ${isBasketAvailable ? 'transform hover:-translate-y-1' : ''}`}
       style={{ 
         minHeight: '120px',
-        backgroundImage: canDrop ? 'radial-gradient(circle at center, rgba(255,255,255,1) 50%, rgba(240,240,250,0.8) 100%)' : 'none' 
+        backgroundImage: isBasketAvailable ? 'radial-gradient(circle at center, rgba(255,255,255,1) 50%, rgba(240,240,250,0.8) 100%)' : 'none' 
       }}
     >
       <div className="flex flex-col h-full justify-between">
@@ -189,13 +192,13 @@ const DropTargetBasket = ({ basket, operations, onOperationDrop }: any) => {
         )}
       </div>
       
-      {!canDrop && (
+      {!isBasketAvailable && (
         <div className="absolute inset-0 flex items-center justify-center bg-white bg-opacity-70 rounded-lg">
           <span className="text-xs text-gray-600 font-medium bg-gray-100 px-2 py-1 rounded">Non disponibile</span>
         </div>
       )}
       
-      {isOver && canDrop && (
+      {isOver && isBasketAvailable && (
         <div className="absolute inset-0 flex items-center justify-center bg-blue-50 bg-opacity-40 rounded-lg border-2 border-blue-300 border-dashed">
           <span className="text-xs text-blue-700 font-medium px-2 py-1 rounded">Rilascia qui</span>
         </div>
