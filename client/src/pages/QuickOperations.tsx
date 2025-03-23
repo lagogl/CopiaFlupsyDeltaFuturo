@@ -1112,9 +1112,9 @@ export default function QuickOperations() {
                                 <Button 
                                   type="button"
                                   onClick={() => {
-                                    // Verifica che il peso totale sia valido
-                                    console.log("Verifico peso totale:", operationData.totalWeight);
-                                    if (!operationData.totalWeight || operationData.totalWeight <= 0) {
+                                    // Prende il valore direttamente dall'input invece di usare lo stato
+                                    const totalWeightInput = document.querySelector('input[placeholder="Inserisci il peso in kg"]') as HTMLInputElement;
+                                    if (!totalWeightInput || !totalWeightInput.value) {
                                       toast({
                                         title: "Errore",
                                         description: "Inserisci un peso totale valido prima di calcolare",
@@ -1122,6 +1122,19 @@ export default function QuickOperations() {
                                       });
                                       return;
                                     }
+
+                                    const totalWeightKg = parseFloat(totalWeightInput.value);
+                                    if (isNaN(totalWeightKg) || totalWeightKg <= 0) {
+                                      toast({
+                                        title: "Errore",
+                                        description: "Inserisci un peso totale valido (maggiore di zero)",
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+                                    
+                                    // Converti in grammi per il database
+                                    const totalWeightGrams = totalWeightKg * 1000;
 
                                     // Ottieni il numero di animali dall'ultima operazione o dai dati correnti
                                     let animalCount = operationData.animalCount;
@@ -1140,8 +1153,8 @@ export default function QuickOperations() {
                                       return;
                                     }
 
-                                    // Calcola animali per kg
-                                    const totalWeightKg = operationData.totalWeight / 1000;
+                                    // Calcola animali per kg usando il peso in kg ottenuto dall'input
+                                    // Non creiamo una nuova variabile totalWeightKg, usiamo quella già definita sopra
                                     const animalsPerKg = Math.round(animalCount / totalWeightKg);
                                     
                                     // Calcola peso medio in mg
