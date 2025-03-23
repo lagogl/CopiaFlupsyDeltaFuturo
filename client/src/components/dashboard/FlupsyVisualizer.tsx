@@ -21,7 +21,7 @@ import {
   getSizeFromAnimalsPerKg,
   getBasketColorBySize
 } from '@/lib/utils';
-import { CheckSquare, Square, Filter, Eye, Layers } from 'lucide-react';
+import { CheckSquare, Square, Filter, Eye, Layers, Fan } from 'lucide-react';
 
 // Implementazione completamente nuova che mostra tutti i FLUPSY selezionati contemporaneamente
 export default function FlupsyVisualizer() {
@@ -452,10 +452,10 @@ export default function FlupsyVisualizer() {
                       </div>
                       
                       <div className="relative pt-6">
-                        {/* Propeller indicator positioned at the left side */}
-                        <div className="relative mb-4">
-                          <div className="bg-blue-500 w-12 h-12 rounded-full absolute -left-6 -top-6 flex items-center justify-center text-white">
-                            <span className="text-xs font-semibold">Elica</span>
+                        {/* Propeller indicator positioned between rows */}
+                        <div className="relative mb-4 flex justify-center">
+                          <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300">
+                            <Fan className="w-10 h-10 animate-spin-slow" />
                           </div>
                         </div>
                         
@@ -601,10 +601,10 @@ export default function FlupsyVisualizer() {
                     </div>
                     
                     <div className="relative pt-6">
-                      {/* Propeller indicator positioned at the left side */}
-                      <div className="relative mb-4">
-                        <div className="bg-blue-500 w-12 h-12 rounded-full absolute -left-6 -top-6 flex items-center justify-center text-white">
-                          <span className="text-xs font-semibold">Elica</span>
+                      {/* Propeller indicator positioned between rows */}
+                      <div className="relative mb-4 flex justify-center">
+                        <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300">
+                          <Fan className="w-10 h-10 animate-spin-slow" />
                         </div>
                       </div>
                       
