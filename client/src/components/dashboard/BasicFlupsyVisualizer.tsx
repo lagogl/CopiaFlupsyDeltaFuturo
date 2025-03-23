@@ -588,8 +588,8 @@ export default function BasicFlupsyVisualizer() {
         
         {/* Container for aligned rows with propeller/fan icon on the left edge */}
         <div className="relative ml-8"> {/* Added margin to align both rows */}
-          {/* Propeller/Fan icon positioned on the left edge */}
-          <div className="absolute -left-14 top-32 z-10">
+          {/* Propeller/Fan icon positioned on the left edge, aligned with top */}
+          <div className="absolute -left-14 top-0 z-10">
             <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300">
               <Fan className="w-10 h-10 animate-spin-slow" />
             </div>
