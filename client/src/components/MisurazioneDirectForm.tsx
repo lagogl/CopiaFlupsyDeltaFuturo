@@ -75,12 +75,20 @@ export default function MisurazioneDirectForm({
       
       // Calcolo del peso totale in kg (se totalWeight è stato inserito manualmente, usiamo quello)
       let calculatedTotalWeight = null;
+      let calculatedTotalPopulation = null;
+      
       if (totalWeight !== null && totalWeight > 0) {
         // Usa il peso totale inserito manualmente
         calculatedTotalWeight = totalWeight;
+        
+        // Ricalcola la popolazione sulla base del peso totale e animali per kg
+        if (animalsPerKg) {
+          calculatedTotalPopulation = Math.round(animalsPerKg * totalWeight);
+        }
       } else if (totalPopulation && animalsPerKg) {
         // Calcola il peso totale in base a popolazione e animali per kg
         calculatedTotalWeight = Math.round((totalPopulation / animalsPerKg) * 10) / 10;
+        calculatedTotalPopulation = totalPopulation;
       }
       
       // Calcolo mortalità
@@ -101,7 +109,7 @@ export default function MisurazioneDirectForm({
       setCalculatedValues({
         animalsPerKg,
         averageWeight,
-        totalPopulation,
+        totalPopulation: calculatedTotalPopulation || totalPopulation,
         mortalityRate,
         totalDeadCount,
         totalWeight: calculatedTotalWeight
@@ -140,6 +148,17 @@ export default function MisurazioneDirectForm({
     setIsLoading(true);
     
     try {
+      // Calcola animalCount in base ad animalsPerKg e totalWeight
+      let animalCount = totalPopulation || defaultAnimalCount;
+      
+      // Se abbiamo sia il peso totale che gli animali per kg, calcoliamo la popolazione totale
+      if (totalWeight && animalsPerKg) {
+        animalCount = Math.round(animalsPerKg * totalWeight);
+      }
+      
+      // Converti il peso totale da kg a mg per il salvataggio nel database
+      const totalWeightInMg = totalWeight ? Math.round(totalWeight * 1000000) : null;
+      
       // Prepara i dati dell'operazione
       const operationData = {
         type: 'misura',
@@ -151,8 +170,8 @@ export default function MisurazioneDirectForm({
         sgrId: null,  // Opzionale
         animalsPerKg,
         averageWeight,
-        animalCount: totalPopulation || defaultAnimalCount,  // Usiamo la popolazione calcolata o quella precedente
-        totalWeight, // Aggiungiamo il peso totale
+        animalCount, // Popolazione calcolata in base a totalWeight * animalsPerKg
+        totalWeight: totalWeightInMg, // Salva il peso totale in milligrammi
         deadCount: totalDeadCount,
         mortalityRate,
         notes
