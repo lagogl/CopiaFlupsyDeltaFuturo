@@ -1673,49 +1673,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Route per azzerare operazioni e cicli
   app.post("/api/reset-operations", async (req, res) => {
     try {
-      // Importiamo il queryClient dal modulo db all'inizio del file
+      // Importiamo il queryClient dal modulo db
       const { queryClient } = await import("./db.js");
       
-      // Esegui le operazioni in una singola transazione
-      await queryClient`BEGIN`;
+      // Usiamo il metodo corretto per le transazioni
+      await queryClient.begin(async sql => {
+        try {
+          // 1. Aggiorna i cestelli per rimuovere i cicli attivi
+          await sql`
+            UPDATE baskets 
+            SET current_cycle_id = NULL, 
+                cycle_code = NULL, 
+                state = 'available' 
+            WHERE current_cycle_id IS NOT NULL
+          `;
+          
+          // 2. Elimina le operazioni
+          await sql`DELETE FROM operations`;
+          
+          // 3. Elimina i cicli
+          await sql`DELETE FROM cycles`;
+          
+          // 4. Elimina la cronologia delle posizioni dei cestelli
+          await sql`DELETE FROM basket_position_history`;
+          
+          // 5. Resettiamo le sequenze degli ID
+          await sql`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS basket_position_history_id_seq RESTART WITH 1`;
+          
+          return true; // Successo - commit implicito
+        } catch (error) {
+          console.error("Errore durante l'azzeramento dei dati:", error);
+          throw error; // Rollback implicito
+        }
+      });
       
-      try {
-        // 1. Aggiorna i cestelli per rimuovere i cicli attivi
-        await queryClient`
-          UPDATE baskets 
-          SET current_cycle_id = NULL, 
-              cycle_code = NULL, 
-              state = 'available' 
-          WHERE current_cycle_id IS NOT NULL
-        `;
-        
-        // 2. Elimina le operazioni
-        await queryClient`DELETE FROM operations`;
-        
-        // 3. Elimina i cicli
-        await queryClient`DELETE FROM cycles`;
-        
-        // 4. Elimina la cronologia delle posizioni dei cestelli
-        await queryClient`DELETE FROM basket_position_history`;
-        
-        // 5. Resettiamo le sequenze degli ID
-        await queryClient`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`;
-        await queryClient`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
-        await queryClient`ALTER SEQUENCE IF EXISTS basket_position_history_id_seq RESTART WITH 1`;
-        
-        // Commit della transazione
-        await queryClient`COMMIT`;
-        
-        res.status(200).json({ 
-          success: true,
-          message: "Dati azzerati con successo. Operazioni, cicli e posizioni eliminati."
-        });
-      } catch (error) {
-        // Rollback in caso di errore
-        await queryClient`ROLLBACK`;
-        console.error("Errore durante l'azzeramento dei dati:", error);
-        throw error;
-      }
+      res.status(200).json({ 
+        success: true,
+        message: "Dati azzerati con successo. Operazioni, cicli e posizioni eliminati."
+      });
     } catch (error) {
       console.error("Errore durante l'azzeramento dei dati operativi:", error);
       res.status(500).json({ 
