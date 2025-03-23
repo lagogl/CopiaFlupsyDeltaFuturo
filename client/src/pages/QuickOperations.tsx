@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator } from 'lucide-react';
+import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator, Scale as ScaleIcon } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -66,6 +66,7 @@ interface CurrentOperationData {
   mortalityRate?: number | null;
   animalCount?: number | null;
   batchWeight?: number | null;
+  totalWeight?: number | null; // Peso totale in grammi
   notes?: string | null;
   sampleWeight?: number | null; // Peso del campione in grammi
   sampleCount?: number | null; // Numero di animali contati nel campione
@@ -986,14 +987,15 @@ export default function QuickOperations() {
                     date: today.toISOString(),
                     basketId: selectedBasketId,
                     cycleId: cycle.id,
-                    // Se è pulizia, non richiediamo altri dati
-                    ...(selectedOperationType === 'misura' && lastOperation ? {
+                    // Per misura e peso, manteniamo i dati precedenti
+                    ...((selectedOperationType === 'misura' || selectedOperationType === 'peso') && lastOperation ? {
                       sizeId: lastOperation.sizeId,
                       lotId: lastOperation.lotId,
                       sgrId: lastOperation.sgrId,
                       animalsPerKg: lastOperation.animalsPerKg,
                       deadCount: lastOperation.deadCount || null,
-                      mortalityRate: lastOperation.mortalityRate || null
+                      mortalityRate: lastOperation.mortalityRate || null,
+                      animalCount: lastOperation.animalCount || null
                     } : {}),
                     notes: '',
                     // Calcoliamo i valori derivati per misura
@@ -1055,6 +1057,106 @@ export default function QuickOperations() {
                           </div>
                         )}
                         
+                        {operationData.type === 'peso' && (
+                          <div className="bg-blue-50 p-4 rounded-md border border-blue-100 mb-4">
+                            <div className="flex items-center mb-3">
+                              <ScaleIcon className="mr-2 h-5 w-5 text-blue-600" />
+                              <h3 className="text-md font-medium">Registra peso totale</h3>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Inserisci il peso totale in kg della cesta e verranno calcolati automaticamente il peso medio e gli animali per kg
+                            </p>
+                            
+                            <div className="grid grid-cols-1 gap-4 mb-2">
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Peso totale della cesta (kg)</label>
+                                <div className="flex items-center">
+                                  <Input 
+                                    type="number" 
+                                    step="0.01"
+                                    placeholder="Inserisci il peso in kg" 
+                                    className="h-9"
+                                    onChange={(e) => {
+                                      const totalWeightKg = parseFloat(e.target.value);
+                                      
+                                      if (!isNaN(totalWeightKg) && totalWeightKg > 0) {
+                                        // Convertiamo in grammi per il database
+                                        const totalWeightGrams = totalWeightKg * 1000;
+                                        
+                                        // Ottieni il numero di animali dall'ultima operazione
+                                        let animalCount = operationData.animalCount;
+                                        
+                                        // Se non abbiamo il numero di animali, lo prendiamo dall'ultima operazione
+                                        if (!animalCount && lastOperation) {
+                                          animalCount = lastOperation.animalCount;
+                                        }
+                                        
+                                        // Se abbiamo sia il peso totale che il numero di animali, possiamo calcolare
+                                        // il numero di animali per kg e il peso medio
+                                        if (animalCount && animalCount > 0) {
+                                          // Calcola animali per kg
+                                          const animalsPerKg = Math.round(animalCount / totalWeightKg);
+                                          
+                                          // Calcola peso medio in mg
+                                          const averageWeight = 1000000 / animalsPerKg;
+                                          
+                                          // Aggiorna i dati dell'operazione
+                                          const updatedData = { 
+                                            ...operationData,
+                                            totalWeight: totalWeightGrams,
+                                            animalsPerKg,
+                                            averageWeight,
+                                            animalCount
+                                          };
+                                          
+                                          console.log("Dati operazione peso aggiornati:", updatedData);
+                                          setCurrentOperationData(updatedData);
+                                        } else {
+                                          // Se non abbiamo il numero di animali, aggiorniamo solo il peso totale
+                                          const updatedData = { 
+                                            ...operationData,
+                                            totalWeight: totalWeightGrams
+                                          };
+                                          setCurrentOperationData(updatedData);
+                                        }
+                                      }
+                                    }}
+                                  />
+                                  <div className="ml-2 px-3 py-2 bg-gray-100 text-gray-500 rounded">kg</div>
+                                </div>
+                              </div>
+                            </div>
+                            
+                            {/* Visualizza informazioni dalla misurazione precedente */}
+                            {lastOperation && (
+                              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mt-4 pt-4 border-t border-blue-100">
+                                <div>
+                                  <span className="text-sm font-medium">Ultima misurazione</span>
+                                  <div className="text-xs mt-1 text-muted-foreground">
+                                    {format(new Date(lastOperation.date), 'dd/MM/yyyy', { locale: it })}
+                                  </div>
+                                </div>
+                                {lastOperation.animalsPerKg && (
+                                  <div>
+                                    <span className="text-sm font-medium">Animali/kg precedente</span>
+                                    <div className="text-xs mt-1 text-muted-foreground">
+                                      {formatNumberWithCommas(lastOperation.animalsPerKg)}
+                                    </div>
+                                  </div>
+                                )}
+                                {lastOperation.animalCount && (
+                                  <div>
+                                    <span className="text-sm font-medium">Num. animali</span>
+                                    <div className="text-xs mt-1 text-muted-foreground">
+                                      {formatNumberWithCommas(lastOperation.animalCount)}
+                                    </div>
+                                  </div>
+                                )}
+                              </div>
+                            )}
+                          </div>
+                        )}
+                        
                         <div className="grid grid-cols-2 gap-4">
                           {operationData.type === 'misura' && (
                             <div>
@@ -1091,6 +1193,39 @@ export default function QuickOperations() {
                                 {operationData.averageWeight ? formatNumberWithCommas(operationData.averageWeight) : "N/D"}
                               </div>
                             </div>
+                          )}
+                          
+                          {operationData.type === 'peso' && operationData.animalsPerKg && (
+                            <>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Animali/kg calcolati</label>
+                                <div className="p-2 rounded bg-blue-50 border border-blue-100 text-blue-700 font-medium">
+                                  {formatNumberWithCommas(operationData.animalsPerKg)}
+                                </div>
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
+                                <div className="p-2 rounded bg-blue-50 border border-blue-100 text-blue-700 font-medium">
+                                  {operationData.averageWeight ? formatNumberWithCommas(operationData.averageWeight) : "N/D"}
+                                </div>
+                              </div>
+                              {operationData.animalCount && (
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">Numero animali</label>
+                                  <div className="p-2 rounded bg-blue-50 border border-blue-100 text-blue-700 font-medium">
+                                    {formatNumberWithCommas(operationData.animalCount)}
+                                  </div>
+                                </div>
+                              )}
+                              {operationData.totalWeight && (
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">Peso totale (kg)</label>
+                                  <div className="p-2 rounded bg-blue-50 border border-blue-100 text-blue-700 font-medium">
+                                    {formatNumberWithCommas(operationData.totalWeight / 1000)}
+                                  </div>
+                                </div>
+                              )}
+                            </>
                           )}
                         </div>
                         
