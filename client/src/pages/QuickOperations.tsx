@@ -369,11 +369,50 @@ export default function QuickOperations() {
     }
   };
   
+  // Funzione ausiliaria per preparare i dati dell'operazione peso
+  const preparePesoOperationData = (data: any): any => {
+    if (data.type !== 'peso') return data;
+    
+    // Controlliamo se abbiamo già i dati calcolati
+    if (data.totalWeight && data.animalsPerKg && data.averageWeight) {
+      return data;
+    }
+    
+    // Leggiamo il peso direttamente dal campo input
+    const input = document.getElementById('peso-totale-kg') as HTMLInputElement;
+    if (!input || !input.value) return data;
+    
+    const totalWeightKg = parseFloat(input.value);
+    if (isNaN(totalWeightKg) || totalWeightKg <= 0) return data;
+    
+    // Convertiamo in grammi per il database
+    const totalWeightGrams = totalWeightKg * 1000;
+    
+    // Se non abbiamo animalsPerKg ma abbiamo animalCount, calcoliamolo
+    let animalsPerKg = data.animalsPerKg;
+    let averageWeight = data.averageWeight;
+    
+    if (!animalsPerKg && data.animalCount) {
+      animalsPerKg = Math.round(data.animalCount / totalWeightKg);
+      averageWeight = 1000000 / animalsPerKg;
+    }
+    
+    // Creiamo una copia arricchita dei dati
+    return {
+      ...data,
+      totalWeight: totalWeightGrams,
+      animalsPerKg,
+      averageWeight
+    };
+  };
+  
   // Mutazione per creare una nuova operazione
   const createOperationMutation = useMutation({
     mutationFn: (operationData: any) => {
-      console.log("Dati operazione inviati al server:", operationData);
-      return apiRequest('POST', '/api/operations', operationData);
+      // Utilizziamo la funzione ausiliaria per assicurarci che i dati siano completi
+      const preparedData = preparePesoOperationData(operationData);
+      console.log("Dati operazione inviati al server:", preparedData);
+      return apiRequest('POST', '/api/operations', preparedData);
     },
     onSuccess: () => {
       // Invalida la cache delle operazioni per ricaricare i dati
