@@ -15,6 +15,8 @@ import { Calculator } from 'lucide-react';
 export interface SampleCalculatorResult {
   animalsPerKg: number;
   averageWeight: number;
+  deadCount: number | null;
+  mortalityRate: number | null;
 }
 
 interface SampleCalculatorProps {
@@ -22,18 +24,21 @@ interface SampleCalculatorProps {
   onOpenChange: (open: boolean) => void;
   onCalculate: (result: SampleCalculatorResult) => void;
   defaultAnimalsPerKg?: number | null;
+  defaultDeadCount?: number | null;
 }
 
 export default function SampleCalculator({ 
   open, 
   onOpenChange, 
   onCalculate,
-  defaultAnimalsPerKg
+  defaultAnimalsPerKg,
+  defaultDeadCount
 }: SampleCalculatorProps) {
   // Stati per i valori di input
   const [sampleWeight, setSampleWeight] = useState<number | null>(null); // Peso del campione in grammi
   const [animalsCount, setAnimalsCount] = useState<number | null>(null); // Numero di animali contati
   const [samplePercentage, setSamplePercentage] = useState<number>(100); // Percentuale del campione (default 100%)
+  const [deadCount, setDeadCount] = useState<number | null>(defaultDeadCount || null); // Numero di animali morti
   
   // Stati per i risultati calcolati
   const [animalsPerKg, setAnimalsPerKg] = useState<number | null>(defaultAnimalsPerKg || null);
@@ -41,6 +46,7 @@ export default function SampleCalculator({
     defaultAnimalsPerKg && defaultAnimalsPerKg > 0 ? 1000000 / defaultAnimalsPerKg : null
   );
   const [totalPopulation, setTotalPopulation] = useState<number | null>(null);
+  const [mortalityRate, setMortalityRate] = useState<number | null>(null);
   
   // Calcola risultati quando cambiano gli input
   useEffect(() => {
@@ -58,6 +64,20 @@ export default function SampleCalculator({
       setAnimalsPerKg(calculatedAnimalsPerKg);
       setAverageWeight(calculatedAverageWeight);
       setTotalPopulation(calculatedTotalPopulation);
+      
+      // Calcoliamo la mortalità se esiste un valore di morti
+      if (deadCount !== null && deadCount >= 0 && calculatedTotalPopulation > 0) {
+        // Se il deadCount è relativo al campione, calcoliamo il valore totale
+        const totalDeadCount = samplePercentage < 100 
+          ? Math.round(deadCount / (samplePercentage / 100)) 
+          : deadCount;
+          
+        // Calcoliamo la percentuale di mortalità
+        const calculatedMortalityRate = (totalDeadCount / (calculatedTotalPopulation + totalDeadCount)) * 100;
+        setMortalityRate(Math.round(calculatedMortalityRate * 10) / 10); // Arrotondiamo a una cifra decimale
+      } else {
+        setMortalityRate(null);
+      }
     } else {
       // Reimposta i risultati se non abbiamo dati sufficienti
       setAnimalsPerKg(defaultAnimalsPerKg || null);
@@ -65,15 +85,23 @@ export default function SampleCalculator({
         defaultAnimalsPerKg && defaultAnimalsPerKg > 0 ? 1000000 / defaultAnimalsPerKg : null
       );
       setTotalPopulation(null);
+      setMortalityRate(null);
     }
-  }, [sampleWeight, animalsCount, samplePercentage, defaultAnimalsPerKg]);
+  }, [sampleWeight, animalsCount, samplePercentage, deadCount, defaultAnimalsPerKg]);
   
   // Gestisce il submit del form
   const handleSubmit = () => {
     if (animalsPerKg) {
+      // Calcola il numero totale di morti (nel caso sia basato sul campione)
+      const totalDeadCount = deadCount !== null && samplePercentage < 100
+        ? Math.round(deadCount / (samplePercentage / 100))
+        : deadCount;
+        
       onCalculate({
         animalsPerKg,
-        averageWeight: averageWeight || 0
+        averageWeight: averageWeight || 0,
+        deadCount: totalDeadCount,
+        mortalityRate
       });
       onOpenChange(false);
     }
@@ -179,6 +207,19 @@ export default function SampleCalculator({
                 Percentuale della popolazione totale rappresentata dal campione analizzato
               </p>
             </div>
+            
+            <div>
+              <label className="block text-sm font-medium mb-1">Numero animali morti</label>
+              <Input 
+                type="number" 
+                placeholder="N. morti"
+                value={deadCount?.toString() || ''}
+                onChange={e => setDeadCount(parseInt(e.target.value) || null)}
+              />
+              <p className="text-xs text-muted-foreground mt-1">
+                Numero di animali morti trovati nel campione o nell'intera cesta
+              </p>
+            </div>
           </div>
           
           {/* Risultati del calcolo */}
@@ -215,6 +256,18 @@ export default function SampleCalculator({
                 Numero stimato di animali nella cesta
               </div>
             </div>
+            
+            {deadCount !== null && deadCount > 0 && (
+              <div>
+                <label className="block text-xs text-muted-foreground">Tasso di mortalità:</label>
+                <div className="font-semibold text-lg">
+                  {mortalityRate !== null ? `${mortalityRate}%` : '-'}
+                </div>
+                <div className="text-xs text-muted-foreground">
+                  Percentuale di animali morti sul totale
+                </div>
+              </div>
+            )}
           </div>
         </div>
         
