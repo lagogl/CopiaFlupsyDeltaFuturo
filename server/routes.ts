@@ -1670,6 +1670,63 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Route per azzerare operazioni e cicli
+  app.post("/api/reset-operations", async (req, res) => {
+    try {
+      // Connessione diretta al database per operazioni complesse
+      const { db } = await import("./db");
+      const { sql } = await import("drizzle-orm");
+
+      // Avvio transazione
+      await db.execute(sql`BEGIN`);
+
+      try {
+        // 1. Aggiorna i cestelli per rimuovere i cicli attivi
+        await db.execute(sql`
+          UPDATE baskets
+          SET current_cycle_id = NULL,
+              cycle_code = NULL,
+              state = 'available'
+          WHERE current_cycle_id IS NOT NULL
+        `);
+
+        // 2. Elimina le operazioni
+        await db.execute(sql`DELETE FROM operations`);
+
+        // 3. Elimina i cicli
+        await db.execute(sql`DELETE FROM cycles`);
+
+        // 4. Elimina la cronologia delle posizioni dei cestelli
+        await db.execute(sql`DELETE FROM basket_position_history`);
+
+        // 5. Resetta le sequenze degli ID
+        await db.execute(sql`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`);
+        await db.execute(sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`);
+        await db.execute(sql`ALTER SEQUENCE IF EXISTS basket_position_history_id_seq RESTART WITH 1`);
+
+        // Commit transazione
+        await db.execute(sql`COMMIT`);
+
+        res.status(200).json({ 
+          success: true,
+          message: "Dati azzerati con successo. Operazioni, cicli e posizioni eliminati."
+        });
+      } catch (error) {
+        // Rollback in caso di errore
+        await db.execute(sql`ROLLBACK`);
+        console.error("Errore durante l'azzeramento dei dati:", error);
+        throw error;
+      }
+    } catch (error) {
+      console.error("Errore durante l'azzeramento dei dati operativi:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Errore durante l'azzeramento dei dati operativi",
+        error: error instanceof Error ? error.message : "Errore sconosciuto"
+      });
+    }
+  });
+
   // Create HTTP server
   const httpServer = createServer(app);
   return httpServer;

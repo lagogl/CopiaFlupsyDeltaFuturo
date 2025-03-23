@@ -39,8 +39,11 @@ export default function Settings() {
   const resetOperationsAndCycles = async () => {
     try {
       setIsResetting(true);
-      const response = await apiRequest('/api/reset-operations', {
+      const response = await fetch('/api/reset-operations', {
         method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
         body: JSON.stringify({}),
       });
       
@@ -48,7 +51,6 @@ export default function Settings() {
         toast({
           title: "Azzeramento completato",
           description: "Le operazioni, i cicli e le posizioni sono stati azzerati correttamente.",
-          variant: "success",
         });
       } else {
         const error = await response.json();
@@ -176,6 +178,90 @@ export default function Settings() {
                     onAbort={() => setReadingNfc(false)}
                   />
                 )}
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="database" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle>Gestione Database</CardTitle>
+              <CardDescription>
+                Operazioni di manutenzione sul database
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <Alert className="mb-4 border-yellow-500 bg-yellow-50 text-yellow-900">
+                <AlertCircle className="h-4 w-4" />
+                <AlertTitle>Attenzione</AlertTitle>
+                <AlertDescription>
+                  Le operazioni in questa sezione possono eliminare dati in modo permanente.
+                  Assicurati di capire l'impatto di ciascuna azione prima di procedere.
+                </AlertDescription>
+              </Alert>
+              
+              <div className="border border-border rounded-lg p-4 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium mb-1">Azzeramento Operazioni e Cicli</h3>
+                    <p className="text-sm text-gray-500">
+                      Elimina tutte le operazioni, i cicli e la cronologia delle posizioni. I cestelli torneranno nello stato disponibile.
+                      I contatori verranno ripristinati a 1.
+                    </p>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="destructive" className="whitespace-nowrap ml-4">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Azzera Dati
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Conferma Azzeramento</DialogTitle>
+                        <DialogDescription>
+                          Stai per eliminare TUTTI i dati operativi del sistema. Questa azione:
+                          <ul className="list-disc list-inside my-2 space-y-1">
+                            <li>Eliminerà tutte le operazioni registrate</li>
+                            <li>Eliminerà tutti i cicli di crescita</li>
+                            <li>Eliminerà la cronologia delle posizioni dei cestelli</li>
+                            <li>Ripristinerà i cestelli allo stato disponibile</li>
+                            <li>Resetterà i contatori delle sequenze ID a 1</li>
+                          </ul>
+                          Questa operazione non può essere annullata.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => {/* chiudi dialogo */}}>
+                          Annulla
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          onClick={resetOperationsAndCycles}
+                          disabled={isResetting}
+                        >
+                          {isResetting ? "Azzeramento in corso..." : "Conferma Azzeramento"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+              
+              <div className="border border-border rounded-lg p-4 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium mb-1">Backup Database</h3>
+                    <p className="text-sm text-gray-500">
+                      Esporta un backup completo del database in formato SQL.
+                    </p>
+                  </div>
+                  <Button variant="outline" className="whitespace-nowrap ml-4">
+                    <DatabaseBackup className="h-4 w-4 mr-2" />
+                    Esporta Backup
+                  </Button>
+                </div>
               </div>
             </CardContent>
           </Card>
