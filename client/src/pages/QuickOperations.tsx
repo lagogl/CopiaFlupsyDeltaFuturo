@@ -1241,6 +1241,17 @@ export default function QuickOperations() {
                                   </div>
                                 </div>
                               )}
+                              {operationData.sizeId && sizes && (
+                                <div>
+                                  <label className="block text-sm font-medium mb-1">Taglia calcolata</label>
+                                  <div className="p-2 rounded bg-blue-50 border border-blue-100 text-blue-700 font-medium">
+                                    {(() => {
+                                      const size = sizes.find((s: any) => s.id === operationData.sizeId);
+                                      return size ? `${size.code} - ${size.name}` : 'Sconosciuta';
+                                    })()}
+                                  </div>
+                                </div>
+                              )}
                             </>
                           )}
                         </div>
