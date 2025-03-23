@@ -20,9 +20,13 @@ import {
   getTargetSizeForWeight, 
   getSizeFromAnimalsPerKg,
   getBasketColorBySize,
-  getBasketBorderClass
+  getBasketBorderClass,
+  calculateAverageWeight,
+  formatAnimalCount,
+  getBorderThicknessByWeight,
+  getBorderColorByAnimalsPerKg
 } from '@/lib/utils';
-import { CheckSquare, Square, Filter, Eye, Layers } from 'lucide-react';
+import { CheckSquare, Square, Filter, Eye, Layers, TrendingUp } from 'lucide-react';
 
 // Implementazione completamente nuova che mostra tutti i FLUPSY selezionati contemporaneamente
 export default function FlupsyVisualizer() {
