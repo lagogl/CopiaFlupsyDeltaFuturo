@@ -10,6 +10,10 @@ interface MisurazioneDirectFormProps {
   basketId: number;
   cycleId: number;
   sizeId: number | null;
+  lotId?: number | null;
+  defaultAnimalsPerKg?: number | null;
+  defaultAverageWeight?: number | null;
+  defaultAnimalCount?: number | null;
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -18,6 +22,10 @@ export default function MisurazioneDirectForm({
   basketId,
   cycleId,
   sizeId,
+  lotId = null,
+  defaultAnimalsPerKg = null,
+  defaultAverageWeight = null,
+  defaultAnimalCount = null,
   onSuccess,
   onCancel
 }: MisurazioneDirectFormProps) {
@@ -121,11 +129,11 @@ export default function MisurazioneDirectForm({
         basketId,
         cycleId,
         sizeId,
-        lotId: null,  // In genere non necessario per misurazioni
+        lotId,  // Preserviamo il lotto
         sgrId: null,  // Opzionale
         animalsPerKg,
         averageWeight,
-        animalCount: totalPopulation,  // Popolazione totale calcolata
+        animalCount: totalPopulation || defaultAnimalCount,  // Usiamo la popolazione calcolata o quella precedente
         deadCount: totalDeadCount,
         mortalityRate,
         notes

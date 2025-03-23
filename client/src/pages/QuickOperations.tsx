@@ -560,11 +560,24 @@ export default function QuickOperations() {
               const cycle = cycles?.find((c: Cycle) => c.id === basket?.currentCycleId);
               if (!basket || !cycle) return <div>Errore: cesta o ciclo non trovati</div>;
               
+              // Recuperiamo l'ultima operazione per precompilare alcuni campi
+              const basketOperations = operations 
+                ? operations.filter((op: Operation) => op.basketId === selectedBasketId) 
+                : [];
+              const sortedOps = [...basketOperations].sort((a, b) => 
+                new Date(b.date).getTime() - new Date(a.date).getTime()
+              );
+              const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
+              
               return (
                 <MisurazioneDirectForm 
                   basketId={selectedBasketId}
                   cycleId={cycle.id}
-                  sizeId={null}
+                  sizeId={lastOperation?.sizeId || null}
+                  lotId={lastOperation?.lotId || null}
+                  defaultAnimalsPerKg={lastOperation?.animalsPerKg || null}
+                  defaultAverageWeight={lastOperation?.averageWeight || null}
+                  defaultAnimalCount={lastOperation?.animalCount || null}
                   onSuccess={() => {
                     setShowMisurazioneForm(false);
                     // Invalida la cache delle operazioni per ricaricare i dati
