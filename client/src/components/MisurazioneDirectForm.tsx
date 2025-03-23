@@ -134,10 +134,7 @@ export default function MisurazioneDirectForm({
       console.log("Salvataggio misurazione con dati:", operationData);
       
       // Chiama l'API per salvare l'operazione
-      const response = await apiRequest('/api/operations', {
-        method: 'POST',
-        body: JSON.stringify(operationData)
-      });
+      const response = await apiRequest('POST', '/api/operations', operationData);
       
       if (response.ok) {
         toast({

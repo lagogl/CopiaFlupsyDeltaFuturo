@@ -17,6 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from '@/hooks/use-toast';
 import { type SampleCalculatorResult } from '@/components/SampleCalculator';
 import IntegratedSampleCalculator from '@/components/IntegratedSampleCalculator';
+import MisurazioneDirectForm from '@/components/MisurazioneDirectForm';
 
 // Tipi che useremo 
 interface Basket {
@@ -391,6 +392,9 @@ export default function QuickOperations() {
     }
   });
 
+  // Stato per il form di misurazione diretta
+  const [showMisurazioneForm, setShowMisurazioneForm] = useState(false);
+  
   // Gestisce click su operazione rapida
   const handleQuickOperation = (basketId: number, operationType: string) => {
     // Se l'operazione è "duplicate", dobbiamo ottenere l'ultima operazione
@@ -405,12 +409,18 @@ export default function QuickOperations() {
     
     const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
     
-    // Prepara il form dell'operazione
+    // Se è un'operazione di misurazione, usiamo il form diretto
+    if (operationType === 'misura') {
+      setSelectedBasketId(basketId);
+      setShowMisurazioneForm(true);
+      // Non apriamo il dialogo classico
+      return;
+    }
+    
+    // Per altre operazioni, seguiamo il flusso normale
     setSelectedBasketId(basketId);
     setSelectedOperationType(operationType);
     setOperationDialogOpen(true);
-    
-    // Non mostriamo più il toast qui, lo mostreremo solo quando l'operazione viene salvata con successo
   };
   
   // Mutazione per cancellare un'operazione
@@ -530,6 +540,48 @@ export default function QuickOperations() {
   
   return (
     <div>
+      {/* Form di misurazione diretta */}
+      {showMisurazioneForm && selectedBasketId && (
+        <div className="mb-8">
+          <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Nuova Misurazione</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowMisurazioneForm(false)}
+              >
+                Chiudi
+              </Button>
+            </div>
+            
+            {(() => {
+              const basket = baskets?.find((b: Basket) => b.id === selectedBasketId);
+              const cycle = cycles?.find((c: Cycle) => c.id === basket?.currentCycleId);
+              if (!basket || !cycle) return <div>Errore: cesta o ciclo non trovati</div>;
+              
+              return (
+                <MisurazioneDirectForm 
+                  basketId={selectedBasketId}
+                  cycleId={cycle.id}
+                  sizeId={null}
+                  onSuccess={() => {
+                    setShowMisurazioneForm(false);
+                    // Invalida la cache delle operazioni per ricaricare i dati
+                    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+                    // Mostra toast di successo
+                    toast({
+                      title: 'Misurazione completata',
+                      description: 'La misurazione è stata registrata con successo'
+                    });
+                  }}
+                  onCancel={() => setShowMisurazioneForm(false)}
+                />
+              );
+            })()}
+          </div>
+        </div>
+      )}
       
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-condensed font-bold text-gray-800">Operazioni Rapide</h2>
