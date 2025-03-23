@@ -7,7 +7,8 @@ import { Checkbox } from "@/components/ui/checkbox";
 import { Button } from "@/components/ui/button";
 import { useIsMobile } from '@/hooks/use-mobile';
 import { useLocation } from 'wouter';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
+import { it } from 'date-fns/locale';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { 
   Tooltip, 
@@ -21,9 +22,11 @@ import {
   getSizeFromAnimalsPerKg,
   getBasketColorBySize,
   getBasketBorderClass,
-  formatAnimalCount
+  formatAnimalCount,
+  getBorderThicknessByWeight,
+  getBorderColorByAnimalsPerKg
 } from '@/lib/utils';
-import { CheckSquare, Square, Filter, Eye, Layers } from 'lucide-react';
+import { CheckSquare, Square, Filter, Eye, Layers, TrendingUp } from 'lucide-react';
 
 // Implementazione migliorata con dati dettagliati e bordi chiari
 export default function FlupsyVisualizer() {
@@ -129,6 +132,38 @@ export default function FlupsyVisualizer() {
   
   const activeFlupsyId = getActiveFlupsyId();
   const selectedFlupsy = activeFlupsyId && flupsys ? flupsys.find(f => f.id === activeFlupsyId) : null;
+  
+  // Fetch SGR data for growth performance calculation
+  const { data: sgrData } = useQuery({
+    queryKey: ['/api/sgr'],
+  });
+  
+  // Function to get SGR data for a specific month
+  const getSgrForMonth = (date: Date) => {
+    if (!sgrData || !Array.isArray(sgrData) || sgrData.length === 0) return null;
+    
+    const month = format(date, 'MMMM', { locale: it }).toLowerCase();
+    return sgrData.find((sgr: any) => sgr.month.toLowerCase() === month);
+  };
+  
+  // Function to calculate theoretical growth based on SGR
+  const calculateTheoreticalGrowth = (date: Date, days: number) => {
+    const sgrInfo = getSgrForMonth(date);
+    if (!sgrInfo) return null;
+    
+    // La percentuale SGR è mensile, calcoliamo quella giornaliera
+    const dailyPercentage = sgrInfo.percentage / 30;
+    
+    // Calcola la percentuale di crescita teorica per il numero di giorni
+    const theoreticalGrowthPercent = dailyPercentage * days;
+    
+    return {
+      sgrMonth: sgrInfo.month,
+      sgrPercentage: sgrInfo.percentage,
+      sgrDailyPercentage: dailyPercentage,
+      theoreticalGrowthPercent
+    };
+  };
   
   // Helper function to get cycle for a basket
   const getCycleForBasket = (basketId: number): Cycle | null => {
@@ -326,8 +361,58 @@ export default function FlupsyVisualizer() {
       animalCountDisplay = animalCount;
     }
     
-    // Assicuriamoci che animalsPerKg non sia undefined prima di passarlo alla funzione
-    const borderClass = getBasketBorderClass(animalsPerKg || null);
+    // Calcola SGR se ci sono operazioni con misure per mostrare il tasso di crescita
+    let sgrDisplay = null;
+    let growthPercentDisplay = null;
+    
+    if (latestOperation && latestOperation.type === 'misura') {
+      // Trova l'operazione di misura precedente
+      const basketOperations = getOperationsForBasket(basket.id)
+        .filter(op => op.type === 'misura' && op.animalsPerKg)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      if (basketOperations.length > 1) {
+        const currentOp = basketOperations[0];
+        const prevOp = basketOperations[1];
+        
+        // Calcola il peso medio in mg da animali/kg
+        const currWeight = currentOp.animalsPerKg ? 1000000 / currentOp.animalsPerKg : null;
+        const prevWeight = prevOp.animalsPerKg ? 1000000 / prevOp.animalsPerKg : null;
+        
+        if (currWeight && prevWeight && prevWeight > 0) {
+          // Calcola la differenza in giorni tra le due date
+          const currDate = new Date(currentOp.date);
+          const prevDate = new Date(prevOp.date);
+          const daysDiff = differenceInDays(currDate, prevDate);
+          
+          if (daysDiff > 0) {
+            // Calcola la percentuale di crescita
+            const growthPercent = ((currWeight - prevWeight) / prevWeight) * 100;
+            
+            // Calcola la percentuale di crescita teorica basata sull'SGR
+            const theoreticalGrowth = calculateTheoreticalGrowth(prevDate, daysDiff);
+            
+            // Formatta la percentuale di crescita
+            growthPercentDisplay = growthPercent.toFixed(1);
+            
+            // Se c'è un valore SGR teorico, calcola la percentuale di efficienza
+            if (theoreticalGrowth) {
+              const efficiency = (growthPercent / theoreticalGrowth.theoreticalGrowthPercent) * 100;
+              sgrDisplay = `${efficiency.toFixed(0)}%`;
+            }
+          }
+        }
+      }
+    }
+    
+    // Ottieni lo spessore del bordo in base al peso
+    const borderThickness = getBorderThicknessByWeight(averageWeight);
+    
+    // Ottieni il colore del bordo in base agli animali per kg
+    const borderColor = getBorderColorByAnimalsPerKg(animalsPerKg || null);
+    
+    // Combine border classes
+    const borderClass = `${borderThickness} ${borderColor} rounded-md`;
     
     return (
       <div 
@@ -363,9 +448,27 @@ export default function FlupsyVisualizer() {
             </div>
           )}
           
-          {latestOperation?.deadCount !== null && latestOperation?.deadCount > 0 && (
+          {latestOperation && latestOperation.deadCount !== null && latestOperation.deadCount > 0 && (
             <div className="text-[9px] bg-red-50 text-red-700 rounded px-1 mt-1 font-semibold">
-              -{latestOperation.deadCount} ({latestOperation.mortalityRate?.toFixed(1)}%)
+              -{latestOperation.deadCount} ({latestOperation.mortalityRate !== null ? latestOperation.mortalityRate.toFixed(1) : 0}%)
+            </div>
+          )}
+          
+          {/* Visualizzazione dell'SGR calcolato e della percentuale di crescita */}
+          {growthPercentDisplay && (
+            <div className="text-[9px] bg-blue-50 text-blue-700 rounded px-1 mt-1 font-semibold flex items-center justify-center">
+              <TrendingUp className="h-3 w-3 mr-0.5" /> 
+              +{growthPercentDisplay}%
+            </div>
+          )}
+          
+          {sgrDisplay && (
+            <div className={`text-[9px] ${
+              parseFloat(sgrDisplay) >= 90 ? 'bg-green-50 text-green-700' : 
+              parseFloat(sgrDisplay) >= 70 ? 'bg-amber-50 text-amber-700' : 
+              'bg-red-50 text-red-700'
+            } rounded px-1 mt-1 font-semibold`}>
+              SGR {sgrDisplay}
             </div>
           )}
         </div>
