@@ -55,6 +55,8 @@ export default function FlupsyVisualizer() {
     type: string;
     notes: string | null;
     animalsPerKg: number | null;
+    deadCount: number | null;  // Numero di animali morti
+    mortalityRate: number | null;  // Percentuale di mortalità
   }
   
   interface Cycle {
@@ -232,6 +234,9 @@ export default function FlupsyVisualizer() {
     // Determine target size based on weight
     const targetSize = averageWeight ? getTargetSizeForWeight(averageWeight) : null;
     
+    // Ottieni i dati di mortalità
+    const hasMortalityData = latestOperation?.deadCount !== null && latestOperation?.deadCount !== undefined;
+    
     return (
       <div className="w-60 p-2">
         <div className="font-bold text-lg mb-1">Cestello #{basket.physicalNumber}</div>
@@ -276,6 +281,17 @@ export default function FlupsyVisualizer() {
                 )}
               </div>
             )}
+            
+            {/* Visualizzazione dati di mortalità */}
+            {hasMortalityData && (
+              <div className="text-sm mt-2 p-1 bg-red-50 border border-red-200 rounded">
+                <div className="text-red-700 font-medium">Mortalità rilevata:</div>
+                <div className="flex justify-between">
+                  <div className="text-xs text-red-600">Animali morti: <span className="font-bold">{latestOperation.deadCount}</span></div>
+                  <div className="text-xs text-red-600">Tasso: <span className="font-bold">{latestOperation.mortalityRate}%</span></div>
+                </div>
+              </div>
+            )}
           </>
         )}
       </div>
@@ -311,9 +327,9 @@ export default function FlupsyVisualizer() {
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle>Visualizzazione FLUPSY</CardTitle>
+        <CardTitle>Visualizzazione FLUPSY Avanzata</CardTitle>
         <CardDescription>
-          Disposizione delle ceste all'interno dell'unità FLUPSY
+          Disposizione delle ceste all'interno dell'unità FLUPSY con dati di mortalità
         </CardDescription>
         
         <div className="pt-2">
