@@ -964,32 +964,29 @@ export default function QuickOperations() {
                                   step="0.1"
                                   onChange={e => {
                                     const sampleWeight = parseFloat(e.target.value) || null;
-                                    // Salviamo per calcoli futuri
-                                    operationData.sampleWeight = sampleWeight;
-                                    const sampleCount = operationData.sampleCount || null;
+                                    
+                                    // Crea una copia attuale dei dati per aggiornamento
+                                    const updatedData = { ...operationData };
+                                    updatedData.sampleWeight = sampleWeight;
+                                    
+                                    const sampleCount = updatedData.sampleCount || null;
                                     
                                     // Calcolo solo se abbiamo entrambi i valori
                                     if (sampleWeight && sampleCount) {
                                       // Calcolo animali per kg
                                       const calcAnimalsPerKg = Math.round((sampleCount / sampleWeight) * 1000);
-                                      operationData.animalsPerKg = calcAnimalsPerKg;
+                                      updatedData.animalsPerKg = calcAnimalsPerKg;
                                       
                                       // Calcolo peso medio in mg
-                                      operationData.averageWeight = calcAnimalsPerKg > 0 ? 1000000 / calcAnimalsPerKg : null;
-                                      
-                                      // Forza aggiornamento dell'interfaccia
-                                      setCurrentOperationData({...operationData});
-
-                                      // Aggiorna anche gli altri campi del form
-                                      setTimeout(() => {
-                                        // Trova l'input per animali/kg e imposta il valore
-                                        const animalsPerKgInputs = document.querySelectorAll('input[placeholder="Animali/kg"]');
-                                        animalsPerKgInputs.forEach(el => {
-                                          const input = el as HTMLInputElement;
-                                          input.value = operationData.animalsPerKg?.toString() || '';
-                                        });
-                                      }, 10);
+                                      updatedData.averageWeight = calcAnimalsPerKg > 0 ? 1000000 / calcAnimalsPerKg : null;
                                     }
+                                    
+                                    // Aggiorna lo stato completo
+                                    setCurrentOperationData(updatedData);
+                                    setOperationDialogOpen(false);
+                                    setTimeout(() => {
+                                      setOperationDialogOpen(true);
+                                    }, 10);
                                   }}
                                   className="h-9"
                                 />
@@ -1001,32 +998,29 @@ export default function QuickOperations() {
                                   placeholder="N. animali"
                                   onChange={e => {
                                     const sampleCount = parseInt(e.target.value) || null;
-                                    // Salva il valore per i calcoli
-                                    operationData.sampleCount = sampleCount;
-                                    const sampleWeight = operationData.sampleWeight || null;
+                                    
+                                    // Crea una copia attuale dei dati per aggiornamento
+                                    const updatedData = { ...operationData };
+                                    updatedData.sampleCount = sampleCount;
+                                    
+                                    const sampleWeight = updatedData.sampleWeight || null;
                                     
                                     // Calcolo solo se abbiamo entrambi i valori
                                     if (sampleWeight && sampleCount) {
                                       // Calcolo animali per kg
                                       const calcAnimalsPerKg = Math.round((sampleCount / sampleWeight) * 1000);
-                                      operationData.animalsPerKg = calcAnimalsPerKg;
+                                      updatedData.animalsPerKg = calcAnimalsPerKg;
                                       
                                       // Calcolo peso medio in mg
-                                      operationData.averageWeight = calcAnimalsPerKg > 0 ? 1000000 / calcAnimalsPerKg : null;
-                                      
-                                      // Forza aggiornamento dell'interfaccia
-                                      setCurrentOperationData({...operationData});
-                                      
-                                      // Aggiorna anche gli altri campi del form
-                                      setTimeout(() => {
-                                        // Trova l'input per animali/kg e imposta il valore
-                                        const animalsPerKgInputs = document.querySelectorAll('input[placeholder="Animali/kg"]');
-                                        animalsPerKgInputs.forEach(el => {
-                                          const input = el as HTMLInputElement;
-                                          input.value = operationData.animalsPerKg?.toString() || '';
-                                        });
-                                      }, 10);
+                                      updatedData.averageWeight = calcAnimalsPerKg > 0 ? 1000000 / calcAnimalsPerKg : null;
                                     }
+                                    
+                                    // Aggiorna lo stato completo
+                                    setCurrentOperationData(updatedData);
+                                    setOperationDialogOpen(false);
+                                    setTimeout(() => {
+                                      setOperationDialogOpen(true);
+                                    }, 10);
                                   }}
                                   className="h-9"
                                 />
@@ -1041,31 +1035,38 @@ export default function QuickOperations() {
                                   placeholder="N. animali morti"
                                   onChange={e => {
                                     const deadCount = parseInt(e.target.value) || null;
-                                    operationData.deadCount = deadCount;
+                                    
+                                    // Crea una copia attuale dei dati per aggiornamento
+                                    const updatedData = { ...operationData };
+                                    updatedData.deadCount = deadCount;
                                     
                                     // Calcola mortalità se abbiamo i dati necessari
-                                    const sampleCount = operationData.sampleCount || null;
-                                    const sampleWeight = operationData.sampleWeight || null;
+                                    const sampleCount = updatedData.sampleCount || null;
+                                    const sampleWeight = updatedData.sampleWeight || null;
                                     
                                     if (deadCount !== null && deadCount >= 0 && sampleCount && sampleWeight) {
                                       // Stima totale animali basata su peso e densità
                                       const calcAnimalsPerKg = Math.round((sampleCount / sampleWeight) * 1000);
                                       
                                       // Se abbiamo il peso totale, usiamo quello per una stima più precisa
-                                      if (operationData.batchWeight) {
-                                        const batchWeightKg = operationData.batchWeight / 1000; // Convertiamo in kg
+                                      if (updatedData.batchWeight) {
+                                        const batchWeightKg = updatedData.batchWeight / 1000; // Convertiamo in kg
                                         const totalAnimals = Math.round(calcAnimalsPerKg * batchWeightKg);
                                         
                                         // Calcoliamo la percentuale di mortalità
-                                        operationData.mortalityRate = Math.round((deadCount / (totalAnimals + deadCount)) * 1000) / 10;
+                                        updatedData.mortalityRate = Math.round((deadCount / (totalAnimals + deadCount)) * 1000) / 10;
                                       } else {
                                         // Senza peso totale, facciamo una stima approssimativa
-                                        operationData.mortalityRate = Math.round((deadCount / (sampleCount + deadCount)) * 1000) / 10;
+                                        updatedData.mortalityRate = Math.round((deadCount / (sampleCount + deadCount)) * 1000) / 10;
                                       }
-                                      
-                                      // Aggiorna interfaccia
-                                      setCurrentOperationData({...operationData});
                                     }
+                                    
+                                    // Aggiorna lo stato completo
+                                    setCurrentOperationData(updatedData);
+                                    setOperationDialogOpen(false);
+                                    setTimeout(() => {
+                                      setOperationDialogOpen(true);
+                                    }, 10);
                                   }}
                                   className="h-9"
                                 />
@@ -1089,15 +1090,24 @@ export default function QuickOperations() {
                                 value={operationData.animalsPerKg?.toString() || ''}
                                 onChange={(e) => {
                                   const value = parseInt(e.target.value);
-                                  operationData.animalsPerKg = isNaN(value) ? null : value;
+                                  
+                                  // Crea una copia attuale dei dati per aggiornamento
+                                  const updatedData = { ...operationData };
+                                  updatedData.animalsPerKg = isNaN(value) ? null : value;
+                                  
                                   // Aggiorna anche il peso medio se necessario
                                   if (!isNaN(value) && value > 0) {
-                                    operationData.averageWeight = 1000000 / value;
+                                    updatedData.averageWeight = 1000000 / value;
                                   } else {
-                                    operationData.averageWeight = null;
+                                    updatedData.averageWeight = null;
                                   }
-                                  // Forza aggiornamento
-                                  setOperationDialogOpen(prev => prev);
+                                  
+                                  // Aggiorna lo stato completo
+                                  setCurrentOperationData(updatedData);
+                                  setOperationDialogOpen(false);
+                                  setTimeout(() => {
+                                    setOperationDialogOpen(true);
+                                  }, 10);
                                 }}
                                 className="h-9"
                               />
