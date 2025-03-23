@@ -552,7 +552,7 @@ export class MemStorage implements IStorage {
     return newPositionHistory;
   }
   
-  async closeBasketPositionHistory(basketId: number, endDate: Date): Promise<BasketPositionHistory | undefined> {
+  async closeBasketPositionHistory(basketId: number, endDate: Date | string): Promise<BasketPositionHistory | undefined> {
     // Find the current position (with no end date)
     const currentPosition = await this.getCurrentBasketPosition(basketId);
     if (!currentPosition) return undefined;

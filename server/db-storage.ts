@@ -390,9 +390,14 @@ export class DbStorage implements IStorage {
     return results[0];
   }
 
-  async closeBasketPositionHistory(basketId: number, endDate: Date): Promise<BasketPositionHistory | undefined> {
+  async closeBasketPositionHistory(basketId: number, endDate: Date | string): Promise<BasketPositionHistory | undefined> {
     // Convert date to string format
-    const endDateStr = endDate.toISOString().split('T')[0];
+    let endDateStr: string;
+    if (typeof endDate === 'string') {
+      endDateStr = endDate;
+    } else {
+      endDateStr = endDate.toISOString().split('T')[0];
+    }
     
     // Get the current active position
     const currentPosition = await this.getCurrentBasketPosition(basketId);
