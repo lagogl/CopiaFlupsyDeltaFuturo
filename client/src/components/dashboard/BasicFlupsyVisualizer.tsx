@@ -587,7 +587,7 @@ export default function BasicFlupsyVisualizer() {
         </div>
         
         {/* DX row */}
-        <div className="bg-white rounded-md p-3 shadow-sm mb-4">
+        <div className="bg-white rounded-md p-3 shadow-sm mb-2">
           <div className="flex items-center mb-2">
             <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
               <span>DX</span>
@@ -599,6 +599,13 @@ export default function BasicFlupsyVisualizer() {
             {Array.from({ length: 10 }, (_, i) => 
               renderBasketPosition(flupsy.id, 'DX', i + 1, flupsyBadges)
             )}
+          </div>
+        </div>
+        
+        {/* Propeller/Fan icon in the middle */}
+        <div className="relative flex justify-center my-2">
+          <div className="bg-blue-100 w-12 h-12 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300">
+            <Fan className="w-8 h-8 animate-spin-slow" />
           </div>
         </div>
         
