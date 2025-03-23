@@ -31,6 +31,10 @@ export default function BasicFlupsyVisualizer() {
     queryKey: ['/api/operations'] 
   });
   
+  const { data: cycles } = useQuery({ 
+    queryKey: ['/api/cycles'] 
+  });
+  
   if (isLoadingFlupsys || isLoadingBaskets) {
     return (
       <Card>
@@ -174,16 +178,80 @@ export default function BasicFlupsyVisualizer() {
       }
     }
     
+    // Calcola indicatori speciali per questa cesta
+    let isTopSgr = false;
+    let isHighPopulation = false;
+    let isOldBasket = false;
+    
+    if (basket?.state === 'active' && basket.currentCycleId && operations && cycles) {
+      // Verifica se è tra le ceste con SGR più alto
+      if (latestOperation) {
+        const prevOp = getPreviousOperation(basket.id);
+        const sgr = calculateSGR(latestOperation, prevOp);
+        
+        if (sgr && sgr.value > 1.5) {  // Se SGR è significativamente positivo
+          isTopSgr = true;
+        }
+      }
+      
+      // Verifica se ha un numero elevato di animali
+      if (latestOperation?.animalCount && latestOperation.animalCount > 5000) {
+        isHighPopulation = true;
+      }
+      
+      // Verifica anzianità del ciclo
+      const cycle = cycles.find((c: any) => c.id === basket.currentCycleId);
+      if (cycle && cycle.startDate) {
+        const cycleStartDate = new Date(cycle.startDate);
+        const now = new Date();
+        const cycleAgeDays = Math.floor((now.getTime() - cycleStartDate.getTime()) / (1000 * 60 * 60 * 24));
+        
+        if (cycleAgeDays > 90) {  // Se il ciclo è attivo da più di 90 giorni
+          isOldBasket = true;
+        }
+      }
+    }
+    
     // Contenuto principale della cesta
     const basketContent = (
       <div className={`font-semibold ${basket?.state !== 'active' ? 'text-slate-400' : ''}`}>
         {latestOperation?.animalsPerKg && basket?.state === 'active' && basket.currentCycleId && (
           <div className="flex flex-col gap-y-0.5 mt-1">
             {/* Numero cesta con bordo colorato e più evidente */}
-            <div className="bg-slate-200 py-0.5 px-1 mb-1 text-center rounded-t-md">
+            <div className="bg-slate-200 py-0.5 px-1 mb-1 text-center rounded-t-md relative">
               <span className="text-[10px] font-bold text-slate-700">
                 CESTA #{basket.physicalNumber}
               </span>
+              
+              {/* Badge indicatori */}
+              <div className="absolute -top-2 -right-2 flex gap-0.5">
+                {isTopSgr && (
+                  <div className="h-4 w-4 rounded-full bg-amber-400 flex items-center justify-center text-white shadow-sm" 
+                       title="Top SGR">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+                    </svg>
+                  </div>
+                )}
+                
+                {isHighPopulation && (
+                  <div className="h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-sm" 
+                       title="Alta popolazione">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+                    </svg>
+                  </div>
+                )}
+                
+                {isOldBasket && (
+                  <div className="h-4 w-4 rounded-full bg-gray-400 flex items-center justify-center text-white shadow-sm" 
+                       title="Ciclo anziano">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
+              </div>
             </div>
             
             {/* Taglia */}
@@ -464,6 +532,35 @@ export default function BasicFlupsyVisualizer() {
         <CardDescription>
           Disposizione delle ceste attive con cicli
         </CardDescription>
+        
+        {/* Legenda badge indicatori */}
+        <div className="flex flex-wrap gap-3 mt-3 mb-3 border-b pb-3">
+          <div className="flex items-center gap-1 text-xs">
+            <div className="h-4 w-4 rounded-full bg-amber-400 flex items-center justify-center text-white shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M9.049 2.927c.3-.921 1.603-.921 1.902 0l1.07 3.292a1 1 0 00.95.69h3.462c.969 0 1.371 1.24.588 1.81l-2.8 2.034a1 1 0 00-.364 1.118l1.07 3.292c.3.921-.755 1.688-1.54 1.118l-2.8-2.034a1 1 0 00-1.175 0l-2.8 2.034c-.784.57-1.838-.197-1.539-1.118l1.07-3.292a1 1 0 00-.364-1.118L2.98 8.72c-.783-.57-.38-1.81.588-1.81h3.461a1 1 0 00.951-.69l1.07-3.292z" />
+              </svg>
+            </div>
+            <span>Crescita eccellente (SGR maggiore 1,5%)</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="h-4 w-4 rounded-full bg-blue-500 flex items-center justify-center text-white shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path d="M13 6a3 3 0 11-6 0 3 3 0 016 0zM18 8a2 2 0 11-4 0 2 2 0 014 0zM14 15a4 4 0 00-8 0v3h8v-3zM6 8a2 2 0 11-4 0 2 2 0 014 0zM16 18v-3a5.972 5.972 0 00-.75-2.906A3.005 3.005 0 0119 15v3h-3zM4.75 12.094A5.973 5.973 0 004 15v3H1v-3a3 3 0 013.75-2.906z" />
+              </svg>
+            </div>
+            <span>Alta popolazione (oltre 5.000 animali)</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="h-4 w-4 rounded-full bg-gray-400 flex items-center justify-center text-white shadow-sm">
+              <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm1-12a1 1 0 10-2 0v4a1 1 0 00.293.707l2.828 2.829a1 1 0 101.415-1.415L11 9.586V6z" clipRule="evenodd" />
+              </svg>
+            </div>
+            <span>Ciclo anziano (oltre 90 giorni)</span>
+          </div>
+        </div>
+        
         <div className="flex flex-wrap gap-2 mt-3">
           {/* Legenda taglie dettagliata */}
           <div className="flex items-center gap-1 text-xs">
