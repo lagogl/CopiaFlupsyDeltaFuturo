@@ -156,8 +156,8 @@ export default function MisurazioneDirectForm({
         animalCount = Math.round(animalsPerKg * totalWeight);
       }
       
-      // Converti il peso totale da kg a mg per il salvataggio nel database
-      const totalWeightInMg = totalWeight ? Math.round(totalWeight * 1000000) : null;
+      // Converti il peso totale da kg a grammi per il salvataggio nel database
+      const totalWeightInGrams = totalWeight ? Math.round(totalWeight * 1000) : null;
       
       // Prepara i dati dell'operazione
       const operationData = {
@@ -171,7 +171,7 @@ export default function MisurazioneDirectForm({
         animalsPerKg,
         averageWeight,
         animalCount, // Popolazione calcolata in base a totalWeight * animalsPerKg
-        totalWeight: totalWeightInMg, // Salva il peso totale in milligrammi
+        totalWeight: totalWeightInGrams, // Salva il peso totale in grammi
         deadCount: totalDeadCount,
         mortalityRate,
         notes
