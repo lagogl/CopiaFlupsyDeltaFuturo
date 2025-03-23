@@ -2,8 +2,12 @@ import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
+import { useLocation } from 'wouter';
+import { calculateAverageWeight } from '@/lib/utils';
 
 export default function BasicFlupsyVisualizer() {
+  const [, navigate] = useLocation();
+  
   // Fetch data
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({ 
     queryKey: ['/api/flupsys'] 
@@ -11,6 +15,10 @@ export default function BasicFlupsyVisualizer() {
   
   const { data: baskets, isLoading: isLoadingBaskets } = useQuery({ 
     queryKey: ['/api/baskets'] 
+  });
+  
+  const { data: operations } = useQuery({ 
+    queryKey: ['/api/operations'] 
   });
   
   if (isLoadingFlupsys || isLoadingBaskets) {
@@ -24,31 +32,77 @@ export default function BasicFlupsyVisualizer() {
     );
   }
   
-  // Helper function to filter baskets by flupsy and row
-  const getBasketsByRow = (flupsyId: number, row: string) => {
-    if (!baskets) return [];
-    return baskets.filter(b => 
-      b.flupsyId === flupsyId && 
-      b.row === row
-    );
+  // Helper function to get latest operation for a basket
+  const getLatestOperation = (basketId: number) => {
+    if (!operations) return null;
+    
+    const basketOperations = operations.filter((op: any) => op.basketId === basketId);
+    if (basketOperations.length === 0) return null;
+    
+    return basketOperations.sort((a: any, b: any) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    )[0];
+  };
+  
+  // Handle basket click
+  const handleBasketClick = (basket: any) => {
+    if (!basket) return;
+    
+    if (basket.state === 'active' && basket.currentCycleId) {
+      navigate(`/cycles/${basket.currentCycleId}`);
+    } else {
+      navigate('/baskets');
+    }
   };
   
   // Render basket cell
   const renderBasketPosition = (flupsyId: number, row: string, position: number) => {
     // Find basket at this position, if any
-    const basket = baskets?.find(b => 
+    const basket = baskets?.find((b: any) => 
       b.flupsyId === flupsyId && 
       b.row === row && 
       b.position === position
     );
     
-    // Styling based on whether a basket exists at this position
-    const bgClass = basket ? 'bg-white border-blue-400 border-2' : 'bg-slate-50 border-dashed border-slate-300';
+    // Get the latest operation for the basket to determine styling
+    const latestOperation = basket ? getLatestOperation(basket.id) : null;
+    const averageWeight = latestOperation?.animalsPerKg ? calculateAverageWeight(latestOperation.animalsPerKg) : null;
+    
+    // Base styling
+    let borderClass = basket ? 'border' : 'border border-dashed border-slate-300';
+    let bgClass = basket ? 'bg-white' : 'bg-slate-50';
+    
+    // Enhanced styling based on weight
+    if (basket && basket.state === 'active' && averageWeight) {
+      if (averageWeight >= 3000) {
+        borderClass = 'border-red-500 border-4';
+        bgClass = 'bg-red-50';
+      } else if (averageWeight >= 1000) {
+        borderClass = 'border-orange-500 border-2';
+        bgClass = 'bg-orange-50';
+      } else if (averageWeight >= 500) {
+        borderClass = 'border-yellow-500 border-2';
+        bgClass = 'bg-yellow-50';
+      } else {
+        borderClass = 'border-green-500 border';
+        bgClass = 'bg-green-50';
+      }
+    }
     
     return (
-      <div key={`${flupsyId}-${row}-${position}`} className={`border ${bgClass} p-2 rounded-md text-center text-sm h-12`}>
+      <div 
+        key={`${flupsyId}-${row}-${position}`} 
+        onClick={() => basket && handleBasketClick(basket)}
+        className={`${borderClass} rounded-md p-2 text-center text-sm h-12 
+          ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
+      >
         {basket ? (
-          <div className="font-semibold">#{basket.physicalNumber}</div>
+          <div className="font-semibold">
+            #{basket.physicalNumber}
+            {averageWeight && (
+              <div className="text-[10px] mt-1">{Math.round(averageWeight)} mg</div>
+            )}
+          </div>
         ) : (
           <div className="text-slate-400">Pos. {position}</div>
         )}
