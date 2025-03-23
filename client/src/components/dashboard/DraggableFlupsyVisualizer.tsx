@@ -19,7 +19,7 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Info, Filter, MapPin } from "lucide-react";
+import { Info, Filter, MapPin, Fan, Wind } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 
 // Item types for drag and drop
@@ -337,7 +337,14 @@ export default function DraggableFlupsyVisualizer() {
           </Badge>
         </div>
         
-        <div className="space-y-6">
+        <div className="space-y-6 relative">
+          {/* Icona elica (per orientare l'operatore) */}
+          <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 z-10">
+            <div className="bg-blue-100 p-2 rounded-full shadow-md">
+              <Fan className="h-6 w-6 text-blue-600 animate-spin-slow" />
+            </div>
+          </div>
+          
           {/* DX row (Right row) */}
           <div>
             <div className="flex items-center mb-2">
