@@ -669,6 +669,8 @@ export default function QuickOperations() {
                     lotId: lastOperation.lotId,
                     sgrId: lastOperation.sgrId,
                     animalsPerKg: lastOperation.animalsPerKg,
+                    deadCount: lastOperation.deadCount || null,
+                    mortalityRate: lastOperation.mortalityRate || null,
                     notes: '',
                     // Calcoliamo i valori derivati
                     averageWeight: lastOperation.animalsPerKg 
@@ -833,7 +835,9 @@ export default function QuickOperations() {
                       sizeId: lastOperation.sizeId,
                       lotId: lastOperation.lotId,
                       sgrId: lastOperation.sgrId,
-                      animalsPerKg: lastOperation.animalsPerKg
+                      animalsPerKg: lastOperation.animalsPerKg,
+                      deadCount: lastOperation.deadCount || null,
+                      mortalityRate: lastOperation.mortalityRate || null
                     } : {}),
                     notes: '',
                     // Calcoliamo i valori derivati per misura

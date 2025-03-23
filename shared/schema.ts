@@ -50,6 +50,8 @@ export const operations = pgTable("operations", {
   totalWeight: real("total_weight"), // in grams
   animalsPerKg: integer("animals_per_kg"),
   averageWeight: real("average_weight"), // in milligrams, calculated: 1,000,000 / animalsPerKg
+  deadCount: integer("dead_count"), // numero di animali morti
+  mortalityRate: real("mortality_rate"), // percentuale di mortalità
   notes: text("notes"),
 });
 
