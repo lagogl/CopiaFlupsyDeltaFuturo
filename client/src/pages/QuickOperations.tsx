@@ -1080,7 +1080,7 @@ export default function QuickOperations() {
                                     step="0.01"
                                     placeholder="Inserisci il peso in kg" 
                                     className="h-9"
-                                    value={operationData.totalWeight ? (operationData.totalWeight / 1000).toString() : ''}
+                                    defaultValue=""
                                     onChange={(e) => {
                                       const totalWeightKg = parseFloat(e.target.value);
                                       
@@ -1093,6 +1093,7 @@ export default function QuickOperations() {
                                           ...operationData,
                                           totalWeight: totalWeightGrams
                                         };
+                                        console.log("Aggiorno peso totale:", totalWeightGrams, "g");
                                         setCurrentOperationData(updatedData);
                                       } else {
                                         // Reset se il valore non è valido
