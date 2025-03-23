@@ -284,7 +284,14 @@ export default function QuickOperations() {
   const [selectedBasketId, setSelectedBasketId] = useState<number | null>(null);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [filterDays, setFilterDays] = useState<string>('all');
-  const [currentOperationData, setCurrentOperationData] = useState<CurrentOperationData | null>(null);
+  // Funzione personalizzata per aggiornare i dati dell'operazione in modo tracciabile
+  const [currentOperationData, setCurrentOperationDataInternal] = useState<CurrentOperationData | null>(null);
+  
+  // Wrapper per il setter originale che aggiunge logging
+  const setCurrentOperationData = (data: CurrentOperationData) => {
+    console.log("setCurrentOperationData chiamata con:", data);
+    setCurrentOperationDataInternal(data);
+  };
   
   // Stati per il calcolatore integrato
   const [sampleWeight, setSampleWeight] = useState<number | null>(null);
