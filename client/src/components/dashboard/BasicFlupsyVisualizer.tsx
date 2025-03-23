@@ -160,7 +160,7 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`} 
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-1.5 text-center text-sm h-36 overflow-hidden
+        className={`${borderClass} rounded-md p-1.5 text-center text-sm h-40 overflow-hidden
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basket ? (
@@ -182,10 +182,20 @@ export default function BasicFlupsyVisualizer() {
                   </div>
                 </div>
                 
-                {/* Quantità */}
+                {/* Quantità animali per kg formattata con separatori */}
                 <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
                   <div className="text-[9px] font-medium text-slate-500">Q.tà:</div>
-                  <div className="text-[10px]">{latestOperation.animalsPerKg}/kg</div>
+                  <div className="text-[10px]">
+                    {latestOperation.animalsPerKg.toLocaleString('it-IT')}/kg
+                  </div>
+                </div>
+                
+                {/* Numero totale di animali stimato */}
+                <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
+                  <div className="text-[9px] font-medium text-slate-500">Tot:</div>
+                  <div className="text-[10px]">
+                    {Math.round(latestOperation.animalsPerKg * 0.2).toLocaleString('it-IT')} animali
+                  </div>
                 </div>
                 
                 {/* SGR Indicator */}
