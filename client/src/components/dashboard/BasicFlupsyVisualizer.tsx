@@ -121,9 +121,9 @@ export default function BasicFlupsyVisualizer() {
     let borderClass = 'border border-dashed border-slate-300';
     let bgClass = 'bg-slate-50';
     
-    // Solo stile base per cestelli non attivi (anche se presenti)
+    // Stile per cestelli presenti ma non attivi (in deposito)
     if (basket && basket.state !== 'active') {
-      borderClass = 'border border-slate-200';
+      borderClass = 'border-2 border-dashed border-slate-400';
       bgClass = 'bg-slate-100/50';
     }
     
@@ -141,9 +141,13 @@ export default function BasicFlupsyVisualizer() {
         if (targetSize) {
           const sizeCode = targetSize.code;
           
-          if (sizeCode === 'T6' || sizeCode === 'T7') {
-            // Taglie commerciali (T6-T7)
-            borderClass = 'border-red-500 border-4';
+          if (sizeCode === 'T7') {
+            // Commerciale grande (T7)
+            borderClass = 'border-red-600 border-4';
+            bgClass = 'bg-red-50';
+          } else if (sizeCode === 'T6') {
+            // Commerciale (T6)
+            borderClass = 'border-red-500 border-3';
             bgClass = 'bg-red-50';
           } else if (sizeCode === 'T5') {
             // Pre-vendita (T5)
@@ -153,10 +157,18 @@ export default function BasicFlupsyVisualizer() {
             // Ingrasso avanzato (T4)
             borderClass = 'border-yellow-500 border-2';
             bgClass = 'bg-yellow-50';
-          } else if (sizeCode === 'T2' || sizeCode === 'T3' || sizeCode === 'T1') {
-            // Pre-ingrasso e Ingrasso iniziale (T1-T2-T3)
+          } else if (sizeCode === 'T3') {
+            // Ingrasso iniziale (T3)
+            borderClass = 'border-green-600 border-2';
+            bgClass = 'bg-green-50';
+          } else if (sizeCode === 'T2') {
+            // Pre-ingrasso avanzato (T2)
             borderClass = 'border-green-500 border-2';
             bgClass = 'bg-green-50';
+          } else if (sizeCode === 'T1') {
+            // Pre-ingrasso iniziale (T1)
+            borderClass = 'border-emerald-400 border-2';
+            bgClass = 'bg-emerald-50';
           }
         }
       }
@@ -271,6 +283,17 @@ export default function BasicFlupsyVisualizer() {
               <div className="bg-blue-100 text-blue-800 font-semibold px-1 rounded">
                 C{basket.currentCycleId}
               </div>
+            </div>
+          </div>
+        )}
+        {basket && basket.state !== 'active' && (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="text-xs font-semibold mt-2">
+              CESTA #{basket.physicalNumber}
+            </div>
+            <div className="text-[11px] mt-1 text-slate-500">non attiva</div>
+            <div className="mt-2 bg-slate-100 rounded-md px-2 py-1 text-[10px] text-slate-600">
+              In deposito
             </div>
           </div>
         )}
@@ -442,10 +465,18 @@ export default function BasicFlupsyVisualizer() {
           Disposizione delle ceste attive con cicli
         </CardDescription>
         <div className="flex flex-wrap gap-2 mt-3">
-          {/* Mostriamo le taglie principali per semplicità */}
+          {/* Legenda taglie dettagliata */}
+          <div className="flex items-center gap-1 text-xs">
+            <div className="w-3 h-3 rounded-sm border-2 border-emerald-400 bg-emerald-50"></div>
+            <span>T1 (Pre-ingrasso iniziale)</span>
+          </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-green-500 bg-green-50"></div>
-            <span>T1-T2-T3 (Pre-ingrasso)</span>
+            <span>T2 (Pre-ingrasso avanzato)</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="w-3 h-3 rounded-sm border-2 border-green-600 bg-green-50"></div>
+            <span>T3 (Ingrasso iniziale)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-yellow-500 bg-yellow-50"></div>
@@ -456,8 +487,16 @@ export default function BasicFlupsyVisualizer() {
             <span>T5 (Pre-vendita)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
-            <div className="w-3 h-3 rounded-sm border-4 border-red-500 bg-red-50"></div>
-            <span>T6-T7 (Commerciale)</span>
+            <div className="w-3 h-3 rounded-sm border-3 border-red-500 bg-red-50"></div>
+            <span>T6 (Commerciale)</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="w-3 h-3 rounded-sm border-4 border-red-600 bg-red-50"></div>
+            <span>T7 (Commerciale grande)</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="w-3 h-3 rounded-sm border-2 border-dashed border-slate-400 bg-slate-100/50"></div>
+            <span>Cesta non attiva (in deposito)</span>
           </div>
         </div>
         
