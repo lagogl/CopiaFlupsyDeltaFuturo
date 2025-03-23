@@ -1673,38 +1673,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Route per azzerare operazioni e cicli
   app.post("/api/reset-operations", async (req, res) => {
     try {
-      // Importiamo direttamente il client postgres invece di usare drizzle
-      const { queryClient } = await import("./db");
+      // Importiamo il queryClient dal modulo db all'inizio del file
+      const { queryClient } = await import("./db.js");
       
       // Esegui le operazioni in una singola transazione
-      await queryClient.query('BEGIN');
+      await queryClient`BEGIN`;
       
       try {
         // 1. Aggiorna i cestelli per rimuovere i cicli attivi
-        await queryClient.query(`
+        await queryClient`
           UPDATE baskets 
           SET current_cycle_id = NULL, 
               cycle_code = NULL, 
               state = 'available' 
           WHERE current_cycle_id IS NOT NULL
-        `);
+        `;
         
         // 2. Elimina le operazioni
-        await queryClient.query('DELETE FROM operations');
+        await queryClient`DELETE FROM operations`;
         
         // 3. Elimina i cicli
-        await queryClient.query('DELETE FROM cycles');
+        await queryClient`DELETE FROM cycles`;
         
         // 4. Elimina la cronologia delle posizioni dei cestelli
-        await queryClient.query('DELETE FROM basket_position_history');
+        await queryClient`DELETE FROM basket_position_history`;
         
         // 5. Resettiamo le sequenze degli ID
-        await queryClient.query('ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1');
-        await queryClient.query('ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1');
-        await queryClient.query('ALTER SEQUENCE IF EXISTS basket_position_history_id_seq RESTART WITH 1');
+        await queryClient`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`;
+        await queryClient`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
+        await queryClient`ALTER SEQUENCE IF EXISTS basket_position_history_id_seq RESTART WITH 1`;
         
         // Commit della transazione
-        await queryClient.query('COMMIT');
+        await queryClient`COMMIT`;
         
         res.status(200).json({ 
           success: true,
@@ -1712,7 +1712,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       } catch (error) {
         // Rollback in caso di errore
-        await queryClient.query('ROLLBACK');
+        await queryClient`ROLLBACK`;
         console.error("Errore durante l'azzeramento dei dati:", error);
         throw error;
       }

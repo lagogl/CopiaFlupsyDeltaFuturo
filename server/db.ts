@@ -3,7 +3,7 @@ import postgres from 'postgres';
 import * as schema from '../shared/schema';
 
 // Create a PostgreSQL connection
-const queryClient = postgres(process.env.DATABASE_URL!, {
+export const queryClient = postgres(process.env.DATABASE_URL!, {
   max: 10, // Max number of connections in the pool
   prepare: false,
 });
