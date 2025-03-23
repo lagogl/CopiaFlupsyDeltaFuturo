@@ -90,7 +90,7 @@ export default function GrowthChart() {
         </button>
       </div>
       
-      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expanded ? 'max-h-[500px]' : 'max-h-[150px]'}`}>
+      <div className={`transition-all duration-300 ease-in-out overflow-hidden ${expanded ? 'max-h-[500px]' : chartData.length === 0 ? 'max-h-[120px]' : 'max-h-[200px]'}`}>
         <div className="p-4">
           <div className="flex mb-4 flex-wrap">
             {selectedCycles.map((cycle, index) => (
@@ -170,7 +170,7 @@ export default function GrowthChart() {
       
       {/* Sfumatura quando non è espanso */}
       {!expanded && chartData.length > 0 && (
-        <div className="absolute bottom-0 left-0 right-0 h-12 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
+        <div className="absolute bottom-16 left-0 right-0 h-16 bg-gradient-to-t from-white to-transparent pointer-events-none"></div>
       )}
     </div>
   );
