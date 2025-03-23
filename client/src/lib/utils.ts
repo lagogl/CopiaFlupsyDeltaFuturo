@@ -133,12 +133,62 @@ export const TARGET_SIZES: TargetSize[] = [
   }
 ];
 
-export function getTargetSizeForWeight(weight: number): TargetSize | null {
+export function getTargetSizeForWeight(weight: number, availableSizes?: any[]): TargetSize | null {
   if (!weight || weight <= 0) return null;
   
+  // Se abbiamo taglie disponibili dal database, le usiamo
+  if (availableSizes && availableSizes.length > 0) {
+    // Converti peso in animali per kg per utilizzare i range del database
+    const estimatedAnimalsPerKg = weight > 0 ? Math.round(1000000 / weight) : 0;
+    
+    const matchingSize = availableSizes.find(size => 
+      estimatedAnimalsPerKg >= size.minAnimalsPerKg && estimatedAnimalsPerKg <= size.maxAnimalsPerKg
+    );
+    
+    if (matchingSize) {
+      // Crea un oggetto TargetSize dal formato database
+      return {
+        code: matchingSize.code,
+        name: matchingSize.name,
+        minWeight: 1000000 / matchingSize.maxAnimalsPerKg,
+        maxWeight: 1000000 / matchingSize.minAnimalsPerKg,
+        color: getDefaultColorForSize(matchingSize.code)
+      };
+    }
+  }
+  
+  // Fallback alle taglie predefinite se non troviamo corrispondenze nel database
   return TARGET_SIZES.find(
     size => weight >= size.minWeight && weight <= size.maxWeight
   ) || null;
+}
+
+// Funzione helper per ottenere il colore default per una taglia basata sul codice
+function getDefaultColorForSize(code: string): string {
+  // TP-XXXX dove XXXX è il numero di animali per kg
+  if (code.startsWith('TP-')) {
+    const numStr = code.substring(3);
+    const num = parseInt(numStr);
+    
+    if (num >= 6000) {
+      return 'bg-red-50 border-red-600 border-4';
+    } else if (num >= 4000) {
+      return 'bg-red-50 border-red-500 border-3';
+    } else if (num >= 3000) {
+      return 'bg-orange-50 border-orange-500 border-2';
+    } else if (num >= 2000) {
+      return 'bg-yellow-50 border-yellow-500 border-2';
+    } else if (num >= 1500) {
+      return 'bg-green-50 border-green-600 border-2';
+    } else if (num >= 1000) {
+      return 'bg-sky-50 border-sky-500 border-2';
+    } else {
+      return 'bg-sky-50 border-sky-400 border-2';
+    }
+  }
+  
+  // Fallback per altri formati di codice
+  return 'bg-blue-100 border-blue-300';
 }
 
 export function getSizeFromAnimalsPerKg(animalsPerKg: number, availableSizes?: any[]): TargetSize | null {
@@ -157,7 +207,7 @@ export function getSizeFromAnimalsPerKg(animalsPerKg: number, availableSizes?: a
         name: matchingSize.name,
         minWeight: 1000000 / matchingSize.maxAnimalsPerKg,
         maxWeight: 1000000 / matchingSize.minAnimalsPerKg,
-        color: 'bg-blue-100 border-blue-300' // Colore di default che verrà sovrascritto dal sistema di colori
+        color: getDefaultColorForSize(matchingSize.code)
       };
     }
   }
@@ -314,7 +364,8 @@ export function calculateSizeTimeline(
   currentWeight: number,
   measurementDate: Date,
   sgrMonthlyPercentage: number,
-  months: number = 6
+  months: number = 6,
+  availableSizes?: any[]
 ): SizeTimeline[] {
   if (!currentWeight || currentWeight <= 0 || !sgrMonthlyPercentage) {
     return [];
@@ -323,13 +374,37 @@ export function calculateSizeTimeline(
   // Calcola il tasso di crescita giornaliero
   const dailyGrowthRate = sgrMonthlyPercentage / 30 / 100;
   
-  // Trova la taglia attuale
-  const currentSize = getTargetSizeForWeight(currentWeight);
+  // Trova la taglia attuale - usa le taglie del database se disponibili
+  const currentSize = getTargetSizeForWeight(currentWeight, availableSizes);
   
-  // Cerca le taglie future che potrebbero essere raggiunte
-  const futureTargetSizes = TARGET_SIZES
-    .filter(size => size.minWeight > currentWeight)
-    .sort((a, b) => a.minWeight - b.minWeight);
+  // Definisci le taglie target da raggiungere
+  let futureTargetSizes: TargetSize[] = [];
+  
+  // Se abbiamo le taglie del database, usale
+  if (availableSizes && availableSizes.length > 0) {
+    // Converti il peso corrente in animalsPerKg per confrontare con i range del database
+    const currentAnimalsPerKg = currentWeight > 0 ? Math.round(1000000 / currentWeight) : Number.MAX_SAFE_INTEGER;
+    
+    // Cerca le taglie future che hanno un valore maxAnimalsPerKg inferiore al valore corrente di animalsPerKg
+    // (meno animalsPerKg = animali più grandi = fasi più avanzate)
+    const dbFutureTargetSizes = availableSizes
+      .filter(size => size.maxAnimalsPerKg < currentAnimalsPerKg)
+      .sort((a, b) => b.maxAnimalsPerKg - a.maxAnimalsPerKg); // Ordina in modo crescente per peso 
+    
+    // Converti in formato TargetSize
+    futureTargetSizes = dbFutureTargetSizes.map(size => ({
+      code: size.code,
+      name: size.name,
+      minWeight: 1000000 / size.maxAnimalsPerKg,
+      maxWeight: 1000000 / size.minAnimalsPerKg,
+      color: getDefaultColorForSize(size.code)
+    }));
+  } else {
+    // Fallback alle taglie hardcoded
+    futureTargetSizes = TARGET_SIZES
+      .filter(size => size.minWeight > currentWeight)
+      .sort((a, b) => a.minWeight - b.minWeight);
+  }
   
   if (futureTargetSizes.length === 0) {
     return []; // Non ci sono taglie future da raggiungere
@@ -391,9 +466,10 @@ export function getTargetSizeReachDate(
   currentWeight: number,
   measurementDate: Date,
   sgrMonthlyPercentage: number,
-  targetSizeCode: string
+  targetSizeCode: string,
+  availableSizes?: any[]
 ): Date | null {
-  const timeline = calculateSizeTimeline(currentWeight, measurementDate, sgrMonthlyPercentage);
+  const timeline = calculateSizeTimeline(currentWeight, measurementDate, sgrMonthlyPercentage, 6, availableSizes);
   const targetSizeReached = timeline.find(item => item.size?.code === targetSizeCode);
   return targetSizeReached ? targetSizeReached.date : null;
 }
@@ -444,8 +520,9 @@ export function getFutureSizeAtDate(
   currentWeight: number,
   measurementDate: Date,
   sgrMonthlyPercentage: number,
-  targetDate: Date
+  targetDate: Date,
+  availableSizes?: any[]
 ): TargetSize | null {
   const futureWeight = getFutureWeightAtDate(currentWeight, measurementDate, sgrMonthlyPercentage, targetDate);
-  return getTargetSizeForWeight(futureWeight);
+  return getTargetSizeForWeight(futureWeight, availableSizes);
 }

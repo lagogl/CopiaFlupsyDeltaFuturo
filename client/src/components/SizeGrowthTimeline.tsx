@@ -11,10 +11,13 @@ import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import {
   calculateSizeTimeline,
+  getFutureWeightAtDate,
+  getTargetSizeForWeight,
   SizeTimeline,
   TargetSize,
   TARGET_SIZES
 } from '@/lib/utils';
+import { useQuery } from '@tanstack/react-query';
 
 interface SizeGrowthTimelineProps {
   currentWeight: number;
@@ -35,12 +38,19 @@ export default function SizeGrowthTimeline({
   const [targetDate, setTargetDate] = useState<Date | undefined>(addMonths(new Date(), 3));
   const [activeTab, setActiveTab] = useState('timeline');
   
-  // Calcola la timeline di crescita
+  // Carica le taglie dal database
+  const { data: sizes } = useQuery({ 
+    queryKey: ['/api/sizes'],
+    refetchOnWindowFocus: false,
+  });
+  
+  // Calcola la timeline di crescita usando le taglie disponibili
   const growthTimeline = calculateSizeTimeline(
     currentWeight,
     measurementDate,
     sgrMonthlyPercentage,
-    projectionMonths
+    projectionMonths,
+    sizes
   );
   
   // Se non ci sono dati, mostra un messaggio
