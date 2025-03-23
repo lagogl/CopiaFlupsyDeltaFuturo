@@ -153,41 +153,79 @@ export default function BasicFlupsyVisualizer() {
       bgClass = 'bg-white';
       
       // Special styling for baskets with weight data
-      if (latestOperation?.animalsPerKg) {
-        const targetSize = getSizeFromAnimalsPerKg(latestOperation.animalsPerKg);
+      if (latestOperation) {
+        // Prioritize the database size value from the relation
+        const sizeCode = latestOperation.size?.code;
         
         // Make active baskets with weight data stand out based on size
-        if (targetSize) {
-          const sizeCode = targetSize.code;
+        if (sizeCode) {
+          // Determine style based on TP- codes from database
+          if (sizeCode.startsWith('TP-')) {
+            const num = parseInt(sizeCode.replace('TP-', ''));
+            
+            if (num >= 6000) {
+              // TP-6000 e superiori - Commerciale grande
+              borderClass = 'border-red-600 border-4';
+              bgClass = 'bg-red-50';
+            } else if (num >= 4000 && num < 6000) {
+              // TP-4000, TP-5000 - Commerciale
+              borderClass = 'border-red-500 border-3';
+              bgClass = 'bg-red-50';
+            } else if (num >= 3000 && num < 4000) {
+              // TP-3000 - Pre-vendita
+              borderClass = 'border-orange-500 border-2';
+              bgClass = 'bg-orange-50';
+            } else if (num >= 2000 && num < 3000) {
+              // TP-2000 - Ingrasso avanzato
+              borderClass = 'border-yellow-500 border-2';
+              bgClass = 'bg-yellow-50';
+            } else if (num >= 1500 && num < 2000) {
+              // TP-1500 - Ingrasso iniziale
+              borderClass = 'border-green-600 border-2';
+              bgClass = 'bg-green-50';
+            } else if (num >= 1000 && num < 1500) {
+              // TP-1000, TP-1140 - Pre-ingrasso avanzato
+              borderClass = 'border-sky-500 border-2';
+              bgClass = 'bg-sky-50';
+            } else {
+              // TP-800 e inferiori - Pre-ingrasso iniziale
+              borderClass = 'border-sky-400 border-2';
+              bgClass = 'bg-sky-50';
+            }
+          } else {
+            // Fallback se non è un codice TP-
+            borderClass = 'border-blue-400 border-2';
+            bgClass = 'bg-white';
+          }
+        } else if (latestOperation.animalsPerKg) {
+          // Fallback utilizzando animalsPerKg se non c'è size
+          const targetSize = getSizeFromAnimalsPerKg(latestOperation.animalsPerKg);
           
-          if (sizeCode === 'T7') {
-            // Commerciale grande (T7)
-            borderClass = 'border-red-600 border-4';
-            bgClass = 'bg-red-50';
-          } else if (sizeCode === 'T6') {
-            // Commerciale (T6)
-            borderClass = 'border-red-500 border-3';
-            bgClass = 'bg-red-50';
-          } else if (sizeCode === 'T5') {
-            // Pre-vendita (T5)
-            borderClass = 'border-orange-500 border-2';
-            bgClass = 'bg-orange-50';
-          } else if (sizeCode === 'T4') {
-            // Ingrasso avanzato (T4)
-            borderClass = 'border-yellow-500 border-2';
-            bgClass = 'bg-yellow-50';
-          } else if (sizeCode === 'T3') {
-            // Ingrasso iniziale (T3)
-            borderClass = 'border-green-600 border-2';
-            bgClass = 'bg-green-50';
-          } else if (sizeCode === 'T2') {
-            // Pre-ingrasso avanzato (T2)
-            borderClass = 'border-sky-500 border-2';
-            bgClass = 'bg-sky-50';
-          } else if (sizeCode === 'T1') {
-            // Pre-ingrasso iniziale (T1)
-            borderClass = 'border-sky-400 border-2';
-            bgClass = 'bg-sky-50';
+          if (targetSize) {
+            const fallbackSizeCode = targetSize.code;
+            
+            if (fallbackSizeCode === 'T7') {
+              borderClass = 'border-red-600 border-4';
+              bgClass = 'bg-red-50';
+            } else if (fallbackSizeCode === 'T6') {
+              borderClass = 'border-red-500 border-3';
+              bgClass = 'bg-red-50';
+            } else if (fallbackSizeCode === 'T5') {
+              borderClass = 'border-orange-500 border-2';
+              bgClass = 'bg-orange-50';
+            } else if (fallbackSizeCode === 'T4') {
+              borderClass = 'border-yellow-500 border-2';
+              bgClass = 'bg-yellow-50';
+            } else if (fallbackSizeCode === 'T3') {
+              borderClass = 'border-green-600 border-2';
+              bgClass = 'bg-green-50';
+            } else if (fallbackSizeCode === 'T2') {
+              borderClass = 'border-sky-500 border-2';
+              bgClass = 'bg-sky-50';
+            } else if (fallbackSizeCode === 'T1') {
+              borderClass = 'border-sky-400 border-2';
+              bgClass = 'bg-sky-50';
+            }
           }
         }
       }
@@ -686,34 +724,34 @@ export default function BasicFlupsyVisualizer() {
         </div>
         
         <div className="flex flex-wrap gap-2 mt-3">
-          {/* Legenda taglie dettagliata */}
+          {/* Legenda taglie dettagliata basata sul sistema TP- */}
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-sky-400 bg-sky-50"></div>
-            <span>T1 (Pre-ingrasso iniziale)</span>
+            <span>TP-800 e inferiori (Pre-ingrasso iniziale)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-sky-500 bg-sky-50"></div>
-            <span>T2 (Pre-ingrasso avanzato)</span>
+            <span>TP-1000, TP-1140 (Pre-ingrasso avanzato)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-green-600 bg-green-50"></div>
-            <span>T3 (Ingrasso iniziale)</span>
+            <span>TP-1500 (Ingrasso iniziale)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-yellow-500 bg-yellow-50"></div>
-            <span>T4 (Ingrasso avanzato)</span>
+            <span>TP-2000 (Ingrasso avanzato)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-orange-500 bg-orange-50"></div>
-            <span>T5 (Pre-vendita)</span>
+            <span>TP-3000 (Pre-vendita)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-3 border-red-500 bg-red-50"></div>
-            <span>T6 (Commerciale)</span>
+            <span>TP-4000, TP-5000 (Commerciale)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-4 border-red-600 bg-red-50"></div>
-            <span>T7 (Commerciale grande)</span>
+            <span>TP-6000 e superiori (Commerciale grande)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-dashed border-slate-400 bg-slate-100/50"></div>
