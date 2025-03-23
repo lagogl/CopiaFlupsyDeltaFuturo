@@ -11,6 +11,7 @@ import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
+import { Textarea } from '@/components/ui/textarea';
 import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getBasketColorBySize } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
@@ -1000,66 +1001,107 @@ export default function QuickOperations() {
                           />
                         </div>
                         
+                        {operationData.type === 'misura' && (
+                          <div className="bg-muted/20 p-4 rounded-md border mb-4">
+                            <div className="flex items-center mb-3">
+                              <Calculator className="mr-2 h-5 w-5 text-primary" />
+                              <h3 className="text-md font-medium">Calcolatore campione</h3>
+                            </div>
+                            <p className="text-sm text-muted-foreground mb-4">
+                              Calcola rapidamente i dati per l'operazione inserendo i valori del campione
+                            </p>
+                            
+                            <div className="grid grid-cols-2 gap-4 mb-4">
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Peso campione (g)</label>
+                                <Input 
+                                  type="number" 
+                                  placeholder="Peso in grammi"
+                                  step="0.1"
+                                  onChange={e => {
+                                    const sampleWeight = parseFloat(e.target.value) || null;
+                                    // Salviamo per calcoli futuri
+                                    operationData.sampleWeight = sampleWeight;
+                                    const sampleCount = operationData.sampleCount || null;
+                                    
+                                    // Calcolo solo se abbiamo entrambi i valori
+                                    if (sampleWeight && sampleCount) {
+                                      // Calcolo animali per kg
+                                      const calcAnimalsPerKg = Math.round((sampleCount / sampleWeight) * 1000);
+                                      operationData.animalsPerKg = calcAnimalsPerKg;
+                                      
+                                      // Calcolo peso medio in mg
+                                      operationData.averageWeight = calcAnimalsPerKg > 0 ? 1000000 / calcAnimalsPerKg : null;
+                                      
+                                      // Forza aggiornamento dell'interfaccia
+                                      setOperationDialogOpen(prev => prev);
+                                    }
+                                  }}
+                                  className="h-9"
+                                />
+                              </div>
+                              <div>
+                                <label className="block text-sm font-medium mb-1">Animali contati</label>
+                                <Input 
+                                  type="number" 
+                                  placeholder="N. animali"
+                                  onChange={e => {
+                                    const sampleCount = parseInt(e.target.value) || null;
+                                    // Salva il valore per i calcoli
+                                    operationData.sampleCount = sampleCount;
+                                    const sampleWeight = operationData.sampleWeight || null;
+                                    
+                                    // Calcolo solo se abbiamo entrambi i valori
+                                    if (sampleWeight && sampleCount) {
+                                      // Calcolo animali per kg
+                                      const calcAnimalsPerKg = Math.round((sampleCount / sampleWeight) * 1000);
+                                      operationData.animalsPerKg = calcAnimalsPerKg;
+                                      
+                                      // Calcolo peso medio in mg
+                                      operationData.averageWeight = calcAnimalsPerKg > 0 ? 1000000 / calcAnimalsPerKg : null;
+                                      
+                                      // Forza aggiornamento dell'interfaccia
+                                      setOperationDialogOpen(prev => prev);
+                                    }
+                                  }}
+                                  className="h-9"
+                                />
+                              </div>
+                            </div>
+                          </div>
+                        )}
+                        
                         <div className="grid grid-cols-2 gap-4">
                           {operationData.type === 'misura' && (
                             <div>
                               <label className="block text-sm font-medium mb-1">Animali/kg</label>
-                              <div className="flex space-x-2">
-                                <Input 
-                                  type="number" 
-                                  defaultValue={operationData.animalsPerKg?.toString() || ''}
-                                  onChange={(e) => {
-                                    const value = parseInt(e.target.value);
-                                    operationData.animalsPerKg = isNaN(value) ? null : value;
-                                    // Aggiorna anche il peso medio se necessario
-                                    if (!isNaN(value) && value > 0) {
-                                      operationData.averageWeight = 1000000 / value;
-                                    } else {
-                                      operationData.averageWeight = null;
-                                    }
-                                  }}
-                                  className="h-9 flex-1"
-                                />
-                                <Button 
-                                  type="button"
-                                  variant="outline"
-                                  size="icon"
-                                  className="h-9 w-9 flex-shrink-0"
-                                  onClick={() => {
-                                    // Salviamo riferimento per l'aggiornamento dopo il calcolo
-                                    const updatedOperationData = {...operationData};
-                                    setCurrentOperationData(updatedOperationData);
-                                    
-                                    // Aggiungiamo una funzione di callback che verrà usata
-                                    // per aggiornare i valori del form dopo il calcolo
-                                    updatedOperationData.updateForm = () => {
-                                      // Aggiorniamo i dati
-                                      operationData.animalsPerKg = updatedOperationData.animalsPerKg;
-                                      operationData.averageWeight = updatedOperationData.averageWeight;
-                                      operationData.deadCount = updatedOperationData.deadCount;
-                                      operationData.mortalityRate = updatedOperationData.mortalityRate;
-                                      
-                                      // Forziamo chiusura e riapertura del dialog per resettare il form
-                                      setOperationDialogOpen(false);
-                                      setTimeout(() => {
-                                        setOperationDialogOpen(true);
-                                      }, 50);
-                                    };
-                                    
-                                    setCalculatorOpen(true);
-                                  }}
-                                >
-                                  <Calculator className="h-4 w-4" />
-                                </Button>
+                              <Input 
+                                type="number" 
+                                value={operationData.animalsPerKg?.toString() || ''}
+                                onChange={(e) => {
+                                  const value = parseInt(e.target.value);
+                                  operationData.animalsPerKg = isNaN(value) ? null : value;
+                                  // Aggiorna anche il peso medio se necessario
+                                  if (!isNaN(value) && value > 0) {
+                                    operationData.averageWeight = 1000000 / value;
+                                  } else {
+                                    operationData.averageWeight = null;
+                                  }
+                                  // Forza aggiornamento
+                                  setOperationDialogOpen(prev => prev);
+                                }}
+                                className="h-9"
+                              />
+                            </div>
+                          )}
+                          {operationData.type === 'misura' && (
+                            <div>
+                              <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
+                              <div className="p-2 rounded bg-gray-100">
+                                {operationData.averageWeight ? formatNumberWithCommas(operationData.averageWeight) : "N/D"}
                               </div>
                             </div>
                           )}
-                          <div>
-                            <label className="block text-sm font-medium mb-1">Peso medio (mg)</label>
-                            <div className="p-2 rounded bg-gray-100">
-                              {operationData.averageWeight ? formatNumberWithCommas(operationData.averageWeight) : "N/D"}
-                            </div>
-                          </div>
                         </div>
                         
                         {/* Sezione mortalità */}
