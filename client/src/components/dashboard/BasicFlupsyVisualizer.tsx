@@ -109,8 +109,8 @@ export default function BasicFlupsyVisualizer() {
             // Ingrasso avanzato (T4)
             borderClass = 'border-yellow-500 border-2';
             bgClass = 'bg-yellow-50';
-          } else if (sizeCode === 'T2' || sizeCode === 'T3') {
-            // Pre-ingrasso e Ingrasso iniziale (T2-T3)
+          } else if (sizeCode === 'T2' || sizeCode === 'T3' || sizeCode === 'T1') {
+            // Pre-ingrasso e Ingrasso iniziale (T1-T2-T3)
             borderClass = 'border-green-500 border-2';
             bgClass = 'bg-green-50';
           }
@@ -199,7 +199,7 @@ export default function BasicFlupsyVisualizer() {
           {/* Mostriamo le taglie principali per semplicità */}
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-green-500 bg-green-50"></div>
-            <span>T2-T3 (Pre-ingrasso)</span>
+            <span>T1-T2-T3 (Pre-ingrasso)</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="w-3 h-3 rounded-sm border-2 border-yellow-500 bg-yellow-50"></div>
