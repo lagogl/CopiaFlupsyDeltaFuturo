@@ -240,7 +240,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
   // Mutation per creare una nuova operazione
   const createOperationMutation = useMutation({
     mutationFn: async (operationData: any) => {
-      return apiRequest("/api/operations", "POST", JSON.stringify(operationData));
+      return apiRequest("POST", "/api/operations", operationData);
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
