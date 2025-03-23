@@ -16,6 +16,7 @@ import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, g
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { type SampleCalculatorResult } from '@/components/SampleCalculator';
+import IntegratedSampleCalculator from '@/components/IntegratedSampleCalculator';
 
 // Tipi che useremo 
 interface Basket {
