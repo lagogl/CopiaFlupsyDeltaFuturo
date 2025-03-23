@@ -348,7 +348,11 @@ function OperationsList({ operations, formatDate }: OperationsListProps) {
                       {op.size && (
                         <div>
                           <div className="text-sm font-medium text-muted-foreground">Taglia</div>
-                          <div className="font-medium">{op.size.code} ({op.size.name})</div>
+                          <div className="font-medium">
+                            {typeof op.size === 'object' 
+                              ? `${op.size.code} (${op.size.name})`
+                              : op.size}
+                          </div>
                         </div>
                       )}
                       
@@ -595,12 +599,20 @@ export default function CycleDetail() {
           <CardContent>
             <div className="flex justify-between items-center">
               <span className="text-2xl font-bold">
-                {latestOperation?.size?.code || "N/A"}
+                {typeof latestOperation?.size === 'object' 
+                  ? latestOperation.size.code 
+                  : (latestOperation?.size || "N/A")}
               </span>
               <span className={`px-2 py-1 rounded-full text-xs ${
-                latestOperation?.size ? getSizeColor(latestOperation.size.code) : 'bg-gray-100 text-gray-800'
+                latestOperation?.size 
+                  ? getSizeColor(typeof latestOperation.size === 'object' 
+                    ? latestOperation.size.code 
+                    : latestOperation.size) 
+                  : 'bg-gray-100 text-gray-800'
               }`}>
-                {latestOperation?.size?.name || "Non disponibile"}
+                {typeof latestOperation?.size === 'object' 
+                  ? latestOperation.size.name 
+                  : "Non disponibile"}
               </span>
             </div>
           </CardContent>
