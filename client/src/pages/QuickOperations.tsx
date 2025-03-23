@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Zap, Filter, BarChart, Layers, AlertCircle } from 'lucide-react';
+import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -14,6 +14,7 @@ import { Input } from '@/components/ui/input';
 import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getBasketColorBySize } from '@/lib/utils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import SampleCalculator, { SampleCalculatorResult } from '@/components/SampleCalculator';
 
 // Tipi che useremo 
 interface Basket {
@@ -246,6 +247,8 @@ export default function QuickOperations() {
   const [selectedBasketId, setSelectedBasketId] = useState<number | null>(null);
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [filterDays, setFilterDays] = useState<string>('all');
+  const [calculatorOpen, setCalculatorOpen] = useState(false);
+  const [currentOperationData, setCurrentOperationData] = useState<any>(null);
   
   const { toast } = useToast();
   
@@ -434,8 +437,26 @@ export default function QuickOperations() {
   
   const isLoading = basketsLoading || flupsysLoading || operationsLoading || cyclesLoading || lotsLoading;
   
+  // Gestisce i risultati del calcolatore
+  const handleCalculatorResult = (result: SampleCalculatorResult) => {
+    if (currentOperationData) {
+      currentOperationData.animalsPerKg = result.animalsPerKg;
+      currentOperationData.averageWeight = result.averageWeight;
+      
+      // Facciamo un aggiornamento esplicito dello stato per assicurarci che la UI si aggiorni
+      setCurrentOperationData({...currentOperationData});
+    }
+  };
+  
   return (
     <div>
+      <SampleCalculator 
+        open={calculatorOpen}
+        onOpenChange={setCalculatorOpen}
+        onCalculate={handleCalculatorResult}
+        defaultAnimalsPerKg={currentOperationData?.animalsPerKg}
+      />
+      
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-condensed font-bold text-gray-800">Operazioni Rapide</h2>
         
