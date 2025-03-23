@@ -481,6 +481,50 @@ export default function QuickOperations() {
     
     console.log("Calculator result saved globally:", result);
     
+    // Aggiorniamo immediatamente i campi del form corrente usando riferimenti diretti al DOM
+    // Questo metodo è meno "React-standard" ma è più affidabile per sincronizzare valori tra componenti
+    setTimeout(() => {
+      // L'uso di setTimeout garantisce che questo codice venga eseguito dopo il rendering del DOM
+      try {
+        // Trova tutti gli input per i campi relativi
+        const inputAnimalsPerKg = document.querySelector('input[placeholder*="animali per kg"]') as HTMLInputElement;
+        const inputAverageWeight = document.querySelector('input[placeholder*="medio"]') as HTMLInputElement;
+        const inputDeadCount = document.querySelector('input[placeholder*="animali morti"]') as HTMLInputElement;
+        const inputMortalityRate = document.querySelector('input[placeholder*="mortalità"]') as HTMLInputElement;
+        
+        // Aggiorna i valori se gli elementi esistono
+        if (inputAnimalsPerKg) {
+          inputAnimalsPerKg.value = result.animalsPerKg.toString();
+          // Scatena un evento di input per attivare i listener di React
+          const event = new Event('input', { bubbles: true });
+          inputAnimalsPerKg.dispatchEvent(event);
+        }
+        
+        if (inputAverageWeight) {
+          inputAverageWeight.value = result.averageWeight.toString();
+          const event = new Event('input', { bubbles: true });
+          inputAverageWeight.dispatchEvent(event);
+        }
+        
+        if (inputDeadCount && result.deadCount !== null) {
+          inputDeadCount.value = result.deadCount.toString();
+          const event = new Event('input', { bubbles: true });
+          inputDeadCount.dispatchEvent(event);
+        }
+        
+        if (inputMortalityRate && result.mortalityRate !== null) {
+          inputMortalityRate.value = result.mortalityRate.toString();
+          const event = new Event('input', { bubbles: true });
+          inputMortalityRate.dispatchEvent(event);
+        }
+        
+        console.log("Form fields updated directly from calculator results");
+      } catch (error) {
+        console.error("Error updating form fields:", error);
+      }
+    }, 100);
+    
+    // Manteniamo anche l'approccio con lo stato
     if (currentOperationData) {
       // Creiamo una copia dell'oggetto corrente per le modifiche
       const updatedData = { ...currentOperationData };
