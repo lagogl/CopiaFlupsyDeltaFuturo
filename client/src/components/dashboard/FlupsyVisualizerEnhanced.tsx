@@ -279,6 +279,14 @@ export default function FlupsyVisualizer() {
                     Numero animali: <span className="font-bold">{latestOperation.animalCount.toLocaleString()}</span>
                   </div>
                 )}
+                {latestOperation.deadCount !== null && latestOperation.deadCount > 0 && (
+                  <div className="text-xs font-medium mt-1 text-red-600 bg-red-50 px-1 py-0.5 rounded border border-red-200">
+                    Mortalità: <span className="font-bold">{latestOperation.deadCount}</span> animali
+                    {latestOperation.mortalityRate !== null && (
+                      <span className="ml-1">({latestOperation.mortalityRate.toFixed(2)}%)</span>
+                    )}
+                  </div>
+                )}
               </div>
             )}
           </>
@@ -352,6 +360,12 @@ export default function FlupsyVisualizer() {
           {animalCountDisplay && (
             <div className="text-[9px] bg-orange-50 text-orange-700 rounded px-1 mt-1 font-semibold">
               {animalCountDisplay} animali
+            </div>
+          )}
+          
+          {latestOperation?.deadCount !== null && latestOperation?.deadCount > 0 && (
+            <div className="text-[9px] bg-red-50 text-red-700 rounded px-1 mt-1 font-semibold">
+              -{latestOperation.deadCount} ({latestOperation.mortalityRate?.toFixed(1)}%)
             </div>
           )}
         </div>
