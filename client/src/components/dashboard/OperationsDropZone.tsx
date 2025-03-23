@@ -15,7 +15,7 @@ import { useQuery } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import MisurazioneDirectForm from '@/components/MisurazioneDirectForm';
 import { useToast } from "@/hooks/use-toast";
-import { ChartBarIcon, BeakerIcon, ScissorsIcon, TicketIcon, ScaleIcon, ListFilterIcon } from 'lucide-react';
+import { BarChart, Microscope, Scissors, ShoppingCart, Scale, ListFilter } from 'lucide-react';
 
 // Item types for drag and drop
 const ItemTypes = {
