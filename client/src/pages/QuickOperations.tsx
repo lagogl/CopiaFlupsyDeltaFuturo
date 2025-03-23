@@ -916,7 +916,7 @@ export default function QuickOperations() {
                     );
                   }
                   
-                  const operationData = {
+                  const operationData: CurrentOperationData = {
                     type: selectedOperationType,
                     date: today.toISOString(),
                     basketId: selectedBasketId,
