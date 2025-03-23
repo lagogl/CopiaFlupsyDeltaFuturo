@@ -176,25 +176,27 @@ export default function BasicFlupsyVisualizer() {
                 
                 {/* Taglia */}
                 <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-                  <div className="text-[9px] font-medium text-slate-500">Taglia:</div>
-                  <div className="text-[11px] font-bold">
+                  <div className="text-[10px] font-medium text-slate-500">Taglia:</div>
+                  <div className="text-[12px] font-bold">
                     {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
                   </div>
                 </div>
                 
                 {/* Quantità animali per kg formattata con separatori */}
                 <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-                  <div className="text-[9px] font-medium text-slate-500">Q.tà:</div>
-                  <div className="text-[10px]">
+                  <div className="text-[10px] font-medium text-slate-500">Q.tà:</div>
+                  <div className="text-[11px]">
                     {latestOperation.animalsPerKg.toLocaleString('it-IT')}/kg
                   </div>
                 </div>
                 
-                {/* Numero totale di animali stimato */}
+                {/* Numero totale di animali dalla tabella operations */}
                 <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-                  <div className="text-[9px] font-medium text-slate-500">Tot:</div>
-                  <div className="text-[10px]">
-                    {Math.round(latestOperation.animalsPerKg * 0.2).toLocaleString('it-IT')} animali
+                  <div className="text-[10px] font-medium text-slate-500">Tot:</div>
+                  <div className="text-[11px]">
+                    {latestOperation.animalCount 
+                      ? latestOperation.animalCount.toLocaleString('it-IT') 
+                      : "N/D"} animali
                   </div>
                 </div>
                 
@@ -247,10 +249,10 @@ export default function BasicFlupsyVisualizer() {
                   
                   return (
                     <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-                      <div className="text-[9px] font-medium text-slate-500">SGR:</div>
+                      <div className="text-[10px] font-medium text-slate-500">SGR:</div>
                       <div className={`flex items-center ${colorClass} ${bgColorClass} px-1 py-0.5 rounded-md`}>
                         {icon}
-                        <span className="text-[9px] ml-0.5 font-medium">
+                        <span className="text-[10px] ml-0.5 font-medium">
                           {sgr.value.toFixed(1).replace('.', ',')}%
                         </span>
                       </div>
@@ -259,7 +261,7 @@ export default function BasicFlupsyVisualizer() {
                 })()}
                 
                 {/* Data e ciclo */}
-                <div className="flex justify-between items-center border-t border-slate-100 pt-0.5 mt-0.5 text-[8px]">
+                <div className="flex justify-between items-center border-t border-slate-100 pt-0.5 mt-0.5 text-[9px]">
                   <div>
                     <span className="text-slate-500">Op:</span>
                     <span className="font-medium ml-0.5">
@@ -367,28 +369,28 @@ export default function BasicFlupsyVisualizer() {
           <div className="flex items-center gap-1 text-xs">
             <div className="flex items-center text-green-700 bg-green-50 px-1.5 py-0.5 rounded-md">
               <TrendingUp className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px] font-medium">+2,5%</span>
+              <span className="ml-0.5 text-[10px] font-medium">+2,5%</span>
             </div>
             <span>Crescita forte</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="flex items-center text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md">
               <ArrowUp className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px] font-medium">+1,2%</span>
+              <span className="ml-0.5 text-[10px] font-medium">+1,2%</span>
             </div>
             <span>Crescita media</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="flex items-center text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded-md">
               <Minus className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px] font-medium">0,0%</span>
+              <span className="ml-0.5 text-[10px] font-medium">0,0%</span>
             </div>
             <span>Stabile</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
             <div className="flex items-center text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md">
               <ArrowDown className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px] font-medium">-1,5%</span>
+              <span className="ml-0.5 text-[10px] font-medium">-1,5%</span>
             </div>
             <span>Decrescita</span>
           </div>
