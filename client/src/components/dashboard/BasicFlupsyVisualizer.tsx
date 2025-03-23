@@ -73,17 +73,23 @@ export default function BasicFlupsyVisualizer() {
     const averageWeight = latestOperation?.animalsPerKg ? calculateAverageWeight(latestOperation.animalsPerKg) : null;
     
     // Base styling
-    let borderClass = basket ? 'border' : 'border border-dashed border-slate-300';
-    let bgClass = basket ? 'bg-white' : 'bg-slate-50';
+    let borderClass = 'border border-dashed border-slate-300';
+    let bgClass = 'bg-slate-50';
     
-    // Set different styles for active baskets
-    if (basket && basket.state === 'active') {
+    // Solo stile base per cestelli non attivi (anche se presenti)
+    if (basket && basket.state !== 'active') {
+      borderClass = 'border border-slate-200';
+      bgClass = 'bg-slate-100/50';
+    }
+    
+    // Stile più evidente SOLO per cestelli con ciclo attivo
+    if (basket && basket.state === 'active' && basket.currentCycleId) {
       // Base styling for active baskets
       borderClass = 'border-blue-400 border-2';
+      bgClass = 'bg-white';
       
       // Special styling for baskets with weight data
       if (latestOperation?.animalsPerKg) {
-        // Clear weight info for console
         console.log(`Basket #${basket.physicalNumber} at position ${row}-${position} has weight data: ${latestOperation.animalsPerKg} animals/kg (${Math.round(averageWeight || 0)} mg)`);
         
         // Make active baskets with weight data stand out
@@ -106,15 +112,18 @@ export default function BasicFlupsyVisualizer() {
     return (
       <div 
         key={`${flupsyId}-${row}-${position}`} 
-        onClick={() => basket && handleBasketClick(basket)}
+        onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
         className={`${borderClass} rounded-md p-2 text-center text-sm h-12 
-          ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
+          ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basket ? (
-          <div className="font-semibold">
+          <div className={`font-semibold ${basket.state !== 'active' || !basket.currentCycleId ? 'text-slate-400' : ''}`}>
             #{basket.physicalNumber}
-            {averageWeight && (
-              <div className="text-[10px] mt-1">{Math.round(averageWeight)} mg</div>
+            {averageWeight && basket.state === 'active' && basket.currentCycleId && (
+              <div className="text-[10px] mt-1 font-bold">{Math.round(averageWeight)} mg</div>
+            )}
+            {basket.state === 'active' && !basket.currentCycleId && (
+              <div className="text-[9px] mt-1 text-slate-500">no ciclo</div>
             )}
           </div>
         ) : (
@@ -173,8 +182,26 @@ export default function BasicFlupsyVisualizer() {
       <CardHeader className="pb-2">
         <CardTitle>Visualizzazione FLUPSY</CardTitle>
         <CardDescription>
-          Disposizione delle ceste all'interno dell'unità FLUPSY
+          Disposizione delle ceste attive con cicli
         </CardDescription>
+        <div className="flex flex-wrap gap-2 mt-3">
+          <div className="flex items-center gap-1 text-xs">
+            <div className="w-3 h-3 rounded-sm border-2 border-green-500 bg-green-50"></div>
+            <span>&lt;500 mg</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="w-3 h-3 rounded-sm border-2 border-yellow-500 bg-yellow-50"></div>
+            <span>500-1000 mg</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="w-3 h-3 rounded-sm border-2 border-orange-500 bg-orange-50"></div>
+            <span>1000-3000 mg</span>
+          </div>
+          <div className="flex items-center gap-1 text-xs">
+            <div className="w-3 h-3 rounded-sm border-4 border-red-500 bg-red-50"></div>
+            <span>&gt;3000 mg</span>
+          </div>
+        </div>
       </CardHeader>
       
       <CardContent>
