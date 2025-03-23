@@ -160,81 +160,123 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`} 
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-2 text-center text-sm h-28 
+        className={`${borderClass} rounded-md p-2 text-center text-sm h-32 
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basket ? (
-          <div className={`font-semibold ${basket.state !== 'active' || !basket.currentCycleId ? 'text-slate-400' : ''}`}>
-            #{basket.physicalNumber}
+          <div className={`font-semibold ${basket.state !== 'active' ? 'text-slate-400' : ''}`}>
             {latestOperation?.animalsPerKg && basket.state === 'active' && basket.currentCycleId && (
-              <div className="flex flex-col mt-1">
-                <div className="flex justify-between items-center">
-                  <div className="text-[11px] font-bold">
+              <div className="flex flex-col gap-y-1.5">
+                {/* Numero cesta con bordo colorato e più evidente */}
+                <div className={`text-[12px] font-bold bg-slate-50 border-b-2 ${borderClass.replace('border-2', 'border-b-2').replace('border-4', 'border-b-2')} rounded-md py-0.5 mb-1`}>
+                  CESTA #{basket.physicalNumber}
+                </div>
+                
+                {/* Taglia */}
+                <div className="flex justify-between items-center bg-slate-50 px-2 py-1 rounded-md">
+                  <div className="text-[10px] font-medium text-slate-500">Taglia:</div>
+                  <div className="text-[12px] font-bold">
                     {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
                   </div>
+                </div>
+                
+                {/* Quantità */}
+                <div className="flex justify-between items-center bg-slate-50 px-2 py-1 rounded-md">
+                  <div className="text-[10px] font-medium text-slate-500">Q.tà:</div>
+                  <div className="text-[11px]">{latestOperation.animalsPerKg}/kg</div>
+                </div>
+                
+                {/* SGR Indicator */}
+                {(() => {
+                  const prevOp = getPreviousOperation(basket.id);
+                  const sgr = calculateSGR(latestOperation, prevOp);
                   
-                  {/* SGR Indicator */}
-                  {(() => {
-                    const prevOp = getPreviousOperation(basket.id);
-                    const sgr = calculateSGR(latestOperation, prevOp);
-                    
-                    if (!sgr) return null;
-                    
-                    let icon;
-                    let colorClass;
-                    
-                    // Intensity and direction of growth
-                    if (Math.abs(sgr.value) < 0.1) {
-                      // Crescita praticamente nulla
-                      icon = <Minus className="w-3 h-3" />;
-                      colorClass = "text-slate-400";
-                    } else if (sgr.isPositive) {
-                      if (sgr.intensity === 'high') {
-                        icon = <TrendingUp className="w-3 h-3" />;
-                        colorClass = "text-green-600";
-                      } else if (sgr.intensity === 'medium') {
-                        icon = <ArrowUp className="w-3 h-3" />;
-                        colorClass = "text-green-500";
-                      } else {
-                        icon = <ArrowUp className="w-3 h-3" />;
-                        colorClass = "text-green-400";
-                      }
+                  if (!sgr) return null;
+                  
+                  let icon;
+                  let colorClass;
+                  let bgColorClass;
+                  
+                  // Intensity and direction of growth
+                  if (Math.abs(sgr.value) < 0.1) {
+                    // Crescita praticamente nulla
+                    icon = <Minus className="w-3 h-3" />;
+                    colorClass = "text-slate-500";
+                    bgColorClass = "bg-slate-50";
+                  } else if (sgr.isPositive) {
+                    if (sgr.intensity === 'high') {
+                      icon = <TrendingUp className="w-3 h-3" />;
+                      colorClass = "text-green-700";
+                      bgColorClass = "bg-green-50";
+                    } else if (sgr.intensity === 'medium') {
+                      icon = <ArrowUp className="w-3 h-3" />;
+                      colorClass = "text-green-600";
+                      bgColorClass = "bg-green-50";
                     } else {
-                      if (sgr.intensity === 'high') {
-                        icon = <TrendingDown className="w-3 h-3" />;
-                        colorClass = "text-red-600";
-                      } else if (sgr.intensity === 'medium') {
-                        icon = <ArrowDown className="w-3 h-3" />;
-                        colorClass = "text-red-500";
-                      } else {
-                        icon = <ArrowDown className="w-3 h-3" />;
-                        colorClass = "text-red-400";
-                      }
+                      icon = <ArrowUp className="w-3 h-3" />;
+                      colorClass = "text-green-500";
+                      bgColorClass = "bg-green-50";
                     }
-                    
-                    return (
-                      <div className={`flex items-center ${colorClass}`}>
+                  } else {
+                    if (sgr.intensity === 'high') {
+                      icon = <TrendingDown className="w-3 h-3" />;
+                      colorClass = "text-red-700";
+                      bgColorClass = "bg-red-50";
+                    } else if (sgr.intensity === 'medium') {
+                      icon = <ArrowDown className="w-3 h-3" />;
+                      colorClass = "text-red-600";
+                      bgColorClass = "bg-red-50";
+                    } else {
+                      icon = <ArrowDown className="w-3 h-3" />;
+                      colorClass = "text-red-500";
+                      bgColorClass = "bg-red-50";
+                    }
+                  }
+                  
+                  return (
+                    <div className="flex justify-between items-center bg-slate-50 px-2 py-1 rounded-md">
+                      <div className="text-[10px] font-medium text-slate-500">SGR:</div>
+                      <div className={`flex items-center ${colorClass} ${bgColorClass} px-1.5 py-0.5 rounded-md`}>
                         {icon}
-                        <span className="text-[8px] ml-0.5">
+                        <span className="text-[10px] ml-0.5 font-medium">
                           {sgr.value.toFixed(1).replace('.', ',')}%
                         </span>
                       </div>
-                    );
-                  })()}
-                </div>
+                    </div>
+                  );
+                })()}
                 
-                <div className="text-[9px]">{latestOperation.animalsPerKg}/kg</div>
-                <div className="text-[8px] mt-1 text-slate-500">
-                  {format(new Date(latestOperation.date), 'dd/MM', { locale: it })}
-                </div>
-                <div className="text-[8px] text-slate-500 flex justify-between">
-                  <span>{latestOperation.type.slice(0, 3)}</span>
-                  <span>C{basket.currentCycleId}</span>
+                {/* Data e ciclo */}
+                <div className="flex justify-between items-center border-t border-slate-100 pt-1 mt-1">
+                  <div className="flex flex-col">
+                    <div className="text-[9px] text-slate-400 font-medium">
+                      Operazione:
+                    </div>
+                    <div className="text-[10px] font-semibold">
+                      {latestOperation.type.slice(0, 3)} {format(new Date(latestOperation.date), 'dd/MM', { locale: it })}
+                    </div>
+                  </div>
+                  <div className="flex flex-col items-end">
+                    <div className="text-[9px] text-slate-400 font-medium">
+                      Ciclo:
+                    </div>
+                    <div className="text-[10px] bg-blue-100 text-blue-800 font-semibold px-2 rounded-md">
+                      #{basket.currentCycleId}
+                    </div>
+                  </div>
                 </div>
               </div>
             )}
             {basket.state === 'active' && !basket.currentCycleId && (
-              <div className="text-[9px] mt-1 text-slate-500">no ciclo</div>
+              <div className="flex flex-col items-center justify-center h-full">
+                <div className="text-xs font-semibold mt-2">
+                  CESTA #{basket.physicalNumber}
+                </div>
+                <div className="text-[11px] mt-1 text-slate-500">nessun ciclo attivo</div>
+                <div className="mt-2 bg-slate-100 rounded-md px-2 py-1 text-[10px] text-slate-600">
+                  Avvia un nuovo ciclo per questa cesta
+                </div>
+              </div>
             )}
           </div>
         ) : (
@@ -318,30 +360,30 @@ export default function BasicFlupsyVisualizer() {
         {/* Legenda trend SGR */}
         <div className="flex flex-wrap gap-3 mt-2">
           <div className="flex items-center gap-1 text-xs">
-            <div className="flex items-center text-green-600">
+            <div className="flex items-center text-green-700 bg-green-50 px-1.5 py-0.5 rounded-md">
               <TrendingUp className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px]">+2,5%</span>
+              <span className="ml-0.5 text-[9px] font-medium">+2,5%</span>
             </div>
             <span>Crescita forte</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
-            <div className="flex items-center text-green-500">
+            <div className="flex items-center text-green-600 bg-green-50 px-1.5 py-0.5 rounded-md">
               <ArrowUp className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px]">+1,2%</span>
+              <span className="ml-0.5 text-[9px] font-medium">+1,2%</span>
             </div>
             <span>Crescita media</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
-            <div className="flex items-center text-slate-400">
+            <div className="flex items-center text-slate-500 bg-slate-50 px-1.5 py-0.5 rounded-md">
               <Minus className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px]">0,0%</span>
+              <span className="ml-0.5 text-[9px] font-medium">0,0%</span>
             </div>
             <span>Stabile</span>
           </div>
           <div className="flex items-center gap-1 text-xs">
-            <div className="flex items-center text-red-500">
+            <div className="flex items-center text-red-600 bg-red-50 px-1.5 py-0.5 rounded-md">
               <ArrowDown className="w-3 h-3" />
-              <span className="ml-0.5 text-[9px]">-1,5%</span>
+              <span className="ml-0.5 text-[9px] font-medium">-1,5%</span>
             </div>
             <span>Decrescita</span>
           </div>
