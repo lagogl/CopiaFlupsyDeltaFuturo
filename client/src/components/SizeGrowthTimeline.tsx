@@ -279,12 +279,19 @@ function FutureSizeAtDate({
   sgrPercentage, 
   targetDate 
 }: FutureSizeAtDateProps) {
+  // Carica le taglie dal database
+  const { data: sizes } = useQuery({ 
+    queryKey: ['/api/sizes'],
+    refetchOnWindowFocus: false,
+  });
+  
   // Calcola la timeline di crescita
   const timeline = calculateSizeTimeline(
     currentWeight,
     measurementDate,
     sgrPercentage,
-    12 // Usa 12 mesi come periodo massimo
+    12, // Usa 12 mesi come periodo massimo
+    sizes
   );
   
   // Trova la taglia alla data target
@@ -315,10 +322,8 @@ function FutureSizeAtDate({
     // Calcola il peso previsto alla data target
     const targetWeight = closestEntry.weight * Math.pow(1 + dailyGrowthRate, diffDays);
     
-    // Trova la taglia corrispondente
-    const targetSize = TARGET_SIZES.find(
-      size => targetWeight >= size.minWeight && targetWeight <= size.maxWeight
-    );
+    // Trova la taglia corrispondente usando i dati del database
+    const targetSize = getTargetSizeForWeight(targetWeight, sizes);
     
     return (
       <div className="mt-1 flex items-center space-x-2">
@@ -354,12 +359,19 @@ function SizeProgressToDate({
   sgrPercentage,
   targetDate
 }: SizeProgressToDateProps) {
+  // Carica le taglie dal database
+  const { data: sizes } = useQuery({ 
+    queryKey: ['/api/sizes'],
+    refetchOnWindowFocus: false,
+  });
+  
   // Calcola la timeline di crescita
   const timeline = calculateSizeTimeline(
     currentWeight,
     measurementDate,
     sgrPercentage,
-    12 // Usa 12 mesi come periodo massimo
+    12, // Usa 12 mesi come periodo massimo
+    sizes
   );
   
   // Trova gli eventi di cambio taglia prima della data target
