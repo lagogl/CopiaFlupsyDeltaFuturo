@@ -48,6 +48,25 @@ interface Operation {
   notes: string | null;
 }
 
+// Interfaccia estesa per l'operazione corrente durante l'editing
+interface CurrentOperationData {
+  type: string;
+  date: string;
+  basketId: number;
+  cycleId: number;
+  sizeId?: number | null;
+  lotId?: number | null;
+  sgrId?: number | null;
+  animalsPerKg?: number | null;
+  averageWeight?: number | null;
+  deadCount?: number | null;
+  mortalityRate?: number | null;
+  animalCount?: number | null;
+  batchWeight?: number | null;
+  notes?: string | null;
+  updateForm?: () => void; // Funzione di callback per aggiornare il form
+}
+
 interface Cycle {
   id: number;
   basketId: number;
@@ -262,7 +281,7 @@ export default function QuickOperations() {
   const [view, setView] = useState<'grid' | 'list'>('grid');
   const [filterDays, setFilterDays] = useState<string>('all');
   const [calculatorOpen, setCalculatorOpen] = useState(false);
-  const [currentOperationData, setCurrentOperationData] = useState<any>(null);
+  const [currentOperationData, setCurrentOperationData] = useState<CurrentOperationData | null>(null);
   
   const { toast } = useToast();
   
@@ -470,8 +489,21 @@ export default function QuickOperations() {
       console.log("Calculator result applied:", result);
       console.log("Updated operation data:", currentOperationData);
       
-      // Facciamo un aggiornamento esplicito dello stato per assicurarci che la UI si aggiorni
+      // Forziamo un aggiornamento dell'interfaccia utente impostando un nuovo oggetto
+      // Questo è necessario perché stiamo modificando direttamente l'oggetto esistente
       setCurrentOperationData({...currentOperationData});
+      
+      // Se esiste una funzione di callback per l'aggiornamento del form, la chiamiamo
+      if (typeof currentOperationData.updateForm === 'function') {
+        currentOperationData.updateForm();
+        console.log("Form data updated via callback");
+      }
+      
+      // Forziamo un aggiornamento della UI usando un effetto minimo sul DOM
+      setTimeout(() => {
+        // Questo aiuta React a rilevare le modifiche ai dati
+        setOperationDialogOpen(prev => prev);
+      }, 0);
     }
   };
   
@@ -624,7 +656,7 @@ export default function QuickOperations() {
       
       {/* Dialog per operazioni rapide */}
       <Dialog open={operationDialogOpen} onOpenChange={setOperationDialogOpen}>
-        <DialogContent className="max-w-md md:min-w-[500px]">
+        <DialogContent className="max-w-md md:min-w-[500px] dialog-content">
           <DialogHeader>
             <DialogTitle>
               {selectedOperationType === 'duplicate' 
@@ -685,7 +717,7 @@ export default function QuickOperations() {
                   }
                   
                   // Prepariamo i dati per la nuova operazione
-                  const operationData = {
+                  const operationData: CurrentOperationData = {
                     type: lastOperation.type === 'prima-attivazione' ? 'misura' : lastOperation.type,
                     date: today.toISOString(),
                     basketId: selectedBasketId,
@@ -751,7 +783,19 @@ export default function QuickOperations() {
                               size="icon"
                               className="h-9 w-9 flex-shrink-0"
                               onClick={() => {
-                                setCurrentOperationData(operationData);
+                                // Salviamo riferimento per l'aggiornamento dopo il calcolo
+                                const updatedOperationData = {...operationData};
+                                setCurrentOperationData(updatedOperationData);
+                                
+                                // Aggiungiamo una funzione di callback che verrà usata
+                                // per aggiornare i valori del form dopo il calcolo
+                                updatedOperationData.updateForm = () => {
+                                  operationData.animalsPerKg = updatedOperationData.animalsPerKg;
+                                  operationData.averageWeight = updatedOperationData.averageWeight;
+                                  operationData.deadCount = updatedOperationData.deadCount;
+                                  operationData.mortalityRate = updatedOperationData.mortalityRate;
+                                };
+                                
                                 setCalculatorOpen(true);
                               }}
                             >
@@ -947,7 +991,19 @@ export default function QuickOperations() {
                                   size="icon"
                                   className="h-9 w-9 flex-shrink-0"
                                   onClick={() => {
-                                    setCurrentOperationData(operationData);
+                                    // Salviamo riferimento per l'aggiornamento dopo il calcolo
+                                    const updatedOperationData = {...operationData};
+                                    setCurrentOperationData(updatedOperationData);
+                                    
+                                    // Aggiungiamo una funzione di callback che verrà usata
+                                    // per aggiornare i valori del form dopo il calcolo
+                                    updatedOperationData.updateForm = () => {
+                                      operationData.animalsPerKg = updatedOperationData.animalsPerKg;
+                                      operationData.averageWeight = updatedOperationData.averageWeight;
+                                      operationData.deadCount = updatedOperationData.deadCount;
+                                      operationData.mortalityRate = updatedOperationData.mortalityRate;
+                                    };
+                                    
                                     setCalculatorOpen(true);
                                   }}
                                 >
