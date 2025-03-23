@@ -993,12 +993,9 @@ export default function QuickOperations() {
                                     updatedData.averageWeight = null;
                                   }
                                   
-                                  // Aggiorna lo stato completo
+                                  // Aggiorna lo stato completo, senza chiudere e riaprire il dialog
+                                  console.log("Aggiorno dati operazione manualmente:", updatedData);
                                   setCurrentOperationData(updatedData);
-                                  setOperationDialogOpen(false);
-                                  setTimeout(() => {
-                                    setOperationDialogOpen(true);
-                                  }, 10);
                                 }}
                                 className="h-9"
                               />
