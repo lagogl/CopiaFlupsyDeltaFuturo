@@ -157,7 +157,7 @@ function BasketCard({
               <div className="flex justify-between items-center">
                 <span className="font-medium">Ultima operazione:</span>{' '}
                 <div className="flex items-center">
-                  <Badge variant="outline" className={getOperationTypeColor(lastOperation.type)}>
+                  <Badge variant="secondary" className="text-foreground font-medium">
                     {getOperationTypeLabel(lastOperation.type)}
                   </Badge>
                   <Button 
