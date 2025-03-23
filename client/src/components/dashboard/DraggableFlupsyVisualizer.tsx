@@ -210,33 +210,100 @@ export default function DraggableFlupsyVisualizer() {
   // Render a basket box or empty position
   const renderBasketBox = (basket: any, position: number, row: 'DX' | 'SX', flupsyId: number) => {
     const isOccupied = !!basket;
+    
+    // Get additional data for the basket
+    let latestOperation = null;
+    let cycle = null;
+    let size = null;
+    let animalCount = null;
+    let startDate = null;
+    
+    if (isOccupied) {
+      // Get latest operation for this basket
+      const basketOperations = operations
+        ? operations
+            .filter((op: any) => op.basketId === basket.id)
+            .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        : [];
+      latestOperation = basketOperations.length > 0 ? basketOperations[0] : null;
+      
+      // Get cycle data
+      if (basket.currentCycleId) {
+        cycle = queryClient.getQueryData(['api/cycles'])?.find((c: any) => c.id === basket.currentCycleId);
+        if (cycle) {
+          startDate = new Date(cycle.startDate);
+        }
+      }
+      
+      // Get size and animal count from latest operation
+      if (latestOperation) {
+        size = latestOperation.size?.code;
+        animalCount = latestOperation.animalCount;
+        if (!animalCount && latestOperation.animalsPerKg) {
+          // Calcola il numero di animali solo se non è già presente nel campo animalCount
+          const totalWeight = latestOperation.totalWeight || 0;
+          if (totalWeight > 0) {
+            // totalWeight è in grammi, convertiamo in kg e moltiplichiamo per animali/kg
+            animalCount = Math.round((totalWeight / 1000) * latestOperation.animalsPerKg);
+          }
+        }
+      }
+    }
+    
     const content = (
       <div 
         className={`
           rounded-md p-2 text-center text-xs
           ${isOccupied 
-            ? `${getBasketBorderClass(basket?.animalsPerKg)} ${getBasketColorBySize(basket?.size?.code)}` 
+            ? `${getBasketBorderClass(latestOperation?.animalsPerKg)} ${getBasketColorBySize(size)}` 
             : 'border border-dashed border-gray-300 bg-gray-50'
           }
-          min-h-[80px] flex flex-col justify-center items-center
+          min-h-[120px] flex flex-col justify-between items-center
         `}
       >
         {isOccupied ? (
           <>
-            <div className="font-semibold">
-              #{basket.physicalNumber}
-              {basket.currentCycleId && (
-                <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
-                  Ciclo {basket.currentCycleId}
+            {/* Header con numero fisico cesta */}
+            <div className="font-semibold w-full border-b pb-1 text-center">
+              <span className="text-base">#{basket.physicalNumber}</span>
+            </div>
+            
+            {/* Corpo con dati principali */}
+            <div className="py-1 flex flex-col items-center">
+              {/* Taglia */}
+              {size && (
+                <div className="font-medium">
+                  <span className="text-gray-700">Taglia:</span> {size}
+                </div>
+              )}
+              
+              {/* Numero animali */}
+              {animalCount && (
+                <div className="text-[10px]">
+                  <span className="text-gray-700">Animali:</span> {formatNumberWithCommas(animalCount)}
+                </div>
+              )}
+              
+              {/* Data inizio ciclo */}
+              {startDate && (
+                <div className="text-[10px]">
+                  <span className="text-gray-700">Dal:</span> {startDate.toLocaleDateString()}
                 </div>
               )}
             </div>
-            <div className="mt-1 text-gray-500">
-              {basket.state === 'active' ? 'Attiva' : 'Disponibile'}
+            
+            {/* Footer con stato */}
+            <div className="w-full pt-1 border-t text-center">
+              <div className={`text-[10px] rounded px-1 ${basket.state === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'}`}>
+                {basket.currentCycleId ? 
+                  <span>Ciclo {basket.currentCycleId}</span> : 
+                  <span>{basket.state === 'active' ? 'Attiva' : 'Disponibile'}</span>
+                }
+              </div>
             </div>
           </>
         ) : (
-          <div className="text-gray-400">
+          <div className="text-gray-400 flex flex-col items-center justify-center h-full">
             <MapPin className="h-4 w-4 mx-auto mb-1" />
             <span>{row}-{position}</span>
           </div>
@@ -278,22 +345,76 @@ export default function DraggableFlupsyVisualizer() {
           .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
       : [];
     const latestOperation = basketOperations.length > 0 ? basketOperations[0] : null;
+    
+    // Get cycle data
+    let cycle = null;
+    let startDate = null;
+    if (basket.currentCycleId) {
+      cycle = queryClient.getQueryData(['api/cycles'])?.find((c: any) => c.id === basket.currentCycleId);
+      if (cycle) {
+        startDate = new Date(cycle.startDate);
+      }
+    }
+    
+    // Calcola il numero di giorni del ciclo se startDate è disponibile
+    let cycleDays = null;
+    if (startDate) {
+      const today = new Date();
+      const diffTime = Math.abs(today.getTime() - startDate.getTime());
+      cycleDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+    }
+    
+    // Calcola il numero di animali se disponibile
+    let animalCount = null;
+    if (latestOperation) {
+      animalCount = latestOperation.animalCount;
+      if (!animalCount && latestOperation.animalsPerKg) {
+        const totalWeight = latestOperation.totalWeight || 0;
+        if (totalWeight > 0) {
+          animalCount = Math.round((totalWeight / 1000) * latestOperation.animalsPerKg);
+        }
+      }
+    }
 
     return (
-      <div className="p-2 max-w-[300px]">
-        <div className="font-medium mb-1">Cesta #{basket.physicalNumber}</div>
-        <div className="text-xs">
-          <div><span className="font-medium">Stato:</span> {basket.state === 'active' ? 'Attiva' : 'Disponibile'}</div>
-          <div><span className="font-medium">Posizione:</span> {basket.row || '-'}-{basket.position || '-'}</div>
+      <div className="p-3 max-w-[320px]">
+        <div className="font-semibold text-base mb-2 border-b pb-1">Cesta #{basket.physicalNumber}</div>
+        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
+          <div><span className="font-medium text-gray-700">Stato:</span> {basket.state === 'active' ? 'Attiva' : 'Disponibile'}</div>
+          <div><span className="font-medium text-gray-700">Posizione:</span> {basket.row || '-'}-{basket.position || '-'}</div>
+          
+          {cycle && (
+            <>
+              <div><span className="font-medium text-gray-700">Ciclo:</span> #{cycle.id}</div>
+              {cycleDays && (
+                <div><span className="font-medium text-gray-700">Giorni:</span> {cycleDays}</div>
+              )}
+              {startDate && (
+                <div><span className="font-medium text-gray-700">Inizio:</span> {startDate.toLocaleDateString()}</div>
+              )}
+            </>
+          )}
+          
           {latestOperation && (
             <>
-              <div><span className="font-medium">Ultima operazione:</span> {latestOperation.type}</div>
-              <div><span className="font-medium">Data:</span> {new Date(latestOperation.date).toLocaleDateString()}</div>
+              <div className="col-span-2 mt-1 pt-1 border-t font-medium text-gray-900">Ultima operazione:</div>
+              <div><span className="font-medium text-gray-700">Tipo:</span> {latestOperation.type}</div>
+              <div><span className="font-medium text-gray-700">Data:</span> {new Date(latestOperation.date).toLocaleDateString()}</div>
+              
               {latestOperation.animalsPerKg && (
-                <div><span className="font-medium">Animali/kg:</span> {formatNumberWithCommas(latestOperation.animalsPerKg)}</div>
+                <div><span className="font-medium text-gray-700">Animali/kg:</span> {formatNumberWithCommas(latestOperation.animalsPerKg)}</div>
               )}
+              
+              {animalCount && (
+                <div><span className="font-medium text-gray-700">Tot. animali:</span> {formatNumberWithCommas(animalCount)}</div>
+              )}
+              
               {latestOperation.sizeId && latestOperation.size && (
-                <div><span className="font-medium">Taglia:</span> {latestOperation.size.code}</div>
+                <div><span className="font-medium text-gray-700">Taglia:</span> {latestOperation.size.code}</div>
+              )}
+              
+              {latestOperation.averageWeight && (
+                <div><span className="font-medium text-gray-700">Peso medio:</span> {latestOperation.averageWeight.toFixed(2)} mg</div>
               )}
             </>
           )}
@@ -339,9 +460,9 @@ export default function DraggableFlupsyVisualizer() {
         
         <div className="space-y-6 relative">
           {/* Icona elica (per orientare l'operatore) */}
-          <div className="absolute -left-8 top-1/2 transform -translate-y-1/2 z-10">
-            <div className="bg-blue-100 p-2 rounded-full shadow-md">
-              <Fan className="h-6 w-6 text-blue-600 animate-spin-slow" />
+          <div className="absolute -left-14 top-0 z-10">
+            <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300">
+              <Fan className="w-10 h-10 animate-spin-slow" />
             </div>
           </div>
           
