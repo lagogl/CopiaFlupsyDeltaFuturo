@@ -481,56 +481,24 @@ export default function QuickOperations() {
     
     console.log("Calculator result saved globally:", result);
     
-    // Aggiorniamo immediatamente i campi del form corrente usando riferimenti diretti al DOM
-    // Questo metodo è meno "React-standard" ma è più affidabile per sincronizzare valori tra componenti
-    setTimeout(() => {
-      // L'uso di setTimeout garantisce che questo codice venga eseguito dopo il rendering del DOM
-      try {
-        // Trova tutti gli input per i campi relativi usando selezione più precisa
-        // Cerchiamo anche con selezione più ampia dato che potrebbero esserci diversi stili di etichetta
-        const inputAnimalsPerKg = document.querySelector('input[placeholder="Animali/kg"]') as HTMLInputElement;
-        const inputAverageWeight = document.querySelector('input[placeholder="Peso medio (mg)"]') as HTMLInputElement;
-        const inputDeadCount = document.querySelector('input[placeholder="N. animali morti"]') as HTMLInputElement;
-        const inputMortalityRate = document.querySelector('input[placeholder="Tasso mortalità (%)"]') as HTMLInputElement;
+    // Approccio completamente diverso: forziamo la chiusura e riapertura del dialog
+    // Questo causa un re-render completo che poi mostrerà i nuovi valori
+    console.log("Trying with a dialog reset approach instead of DOM manipulation");
+    try {
+      // Manteniamo solo lo stato globale
+      if (currentOperationData) {
+        // Non modifichiamo lo stato attuale, facciamo qualcosa di molto più radicale
+        // Chiudiamo la finestra di dialogo e la riapriamo subito dopo
+        setOperationDialogOpen(false);
         
-        console.log("Selectors found:", 
-          Boolean(inputAnimalsPerKg), 
-          Boolean(inputAverageWeight), 
-          Boolean(inputDeadCount), 
-          Boolean(inputMortalityRate)
-        );
-        
-        // Aggiorna i valori se gli elementi esistono
-        if (inputAnimalsPerKg) {
-          inputAnimalsPerKg.value = result.animalsPerKg.toString();
-          // Scatena un evento di input per attivare i listener di React
-          const event = new Event('input', { bubbles: true });
-          inputAnimalsPerKg.dispatchEvent(event);
-        }
-        
-        if (inputAverageWeight) {
-          inputAverageWeight.value = result.averageWeight.toString();
-          const event = new Event('input', { bubbles: true });
-          inputAverageWeight.dispatchEvent(event);
-        }
-        
-        if (inputDeadCount && result.deadCount !== null) {
-          inputDeadCount.value = result.deadCount.toString();
-          const event = new Event('input', { bubbles: true });
-          inputDeadCount.dispatchEvent(event);
-        }
-        
-        if (inputMortalityRate && result.mortalityRate !== null) {
-          inputMortalityRate.value = result.mortalityRate.toString();
-          const event = new Event('input', { bubbles: true });
-          inputMortalityRate.dispatchEvent(event);
-        }
-        
-        console.log("Form fields updated directly from calculator results");
-      } catch (error) {
-        console.error("Error updating form fields:", error);
+        // Riapriamo dopo un breve delay
+        setTimeout(() => {
+          setOperationDialogOpen(true);
+        }, 50);
       }
-    }, 100);
+    } catch (error) {
+      console.error("Error with dialog reset approach:", error);
+    }
     
     // Manteniamo anche l'approccio con lo stato
     if (currentOperationData) {
@@ -814,6 +782,7 @@ export default function QuickOperations() {
                           <div className="flex space-x-2">
                             <Input 
                               type="number" 
+                              placeholder="Animali/kg"
                               value={(calculatorResults?.animalsPerKg || operationData.animalsPerKg)?.toString() || ''}
                               onChange={(e) => {
                                 const value = parseInt(e.target.value);

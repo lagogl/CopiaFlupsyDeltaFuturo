@@ -34,6 +34,7 @@ export default function SampleCalculator({
   defaultAnimalsPerKg,
   defaultDeadCount
 }: SampleCalculatorProps) {
+  console.log("SampleCalculator rendered with defaults:", {defaultAnimalsPerKg, defaultDeadCount});
   // Stati per i valori di input
   const [sampleWeight, setSampleWeight] = useState<number | null>(null); // Peso del campione in grammi
   const [animalsCount, setAnimalsCount] = useState<number | null>(null); // Numero di animali contati
