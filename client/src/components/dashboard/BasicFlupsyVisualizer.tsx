@@ -3,10 +3,16 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from 'wouter';
-import { calculateAverageWeight, getSizeFromAnimalsPerKg, TARGET_SIZES } from '@/lib/utils';
+import { calculateAverageWeight, getSizeFromAnimalsPerKg, TARGET_SIZES, getOperationTypeLabel } from '@/lib/utils';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { TrendingUp, TrendingDown, ArrowUp, ArrowDown, Minus } from 'lucide-react';
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 export default function BasicFlupsyVisualizer() {
   const [, navigate] = useLocation();
@@ -129,7 +135,6 @@ export default function BasicFlupsyVisualizer() {
       // Special styling for baskets with weight data
       if (latestOperation?.animalsPerKg) {
         const targetSize = getSizeFromAnimalsPerKg(latestOperation.animalsPerKg);
-        console.log(`Basket #${basket.physicalNumber} at position ${row}-${position} has weight data: ${latestOperation.animalsPerKg} animals/kg (${Math.round(averageWeight || 0)} mg, taglia: ${targetSize?.code || 'N/D'})`);
         
         // Make active baskets with weight data stand out based on size
         if (targetSize) {
@@ -156,139 +161,231 @@ export default function BasicFlupsyVisualizer() {
       }
     }
     
+    // Contenuto principale della cesta
+    const basketContent = (
+      <div className={`font-semibold ${basket?.state !== 'active' ? 'text-slate-400' : ''}`}>
+        {latestOperation?.animalsPerKg && basket?.state === 'active' && basket.currentCycleId && (
+          <div className="flex flex-col gap-y-0.5 mt-1">
+            {/* Numero cesta con bordo colorato e più evidente */}
+            <div className="bg-slate-200 py-0.5 px-1 mb-1 text-center rounded-t-md">
+              <span className="text-[10px] font-bold text-slate-700">
+                CESTA #{basket.physicalNumber}
+              </span>
+            </div>
+            
+            {/* Taglia */}
+            <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
+              <div className="text-[10px] font-medium text-slate-500">Taglia:</div>
+              <div className="text-[12px] font-bold">
+                {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
+              </div>
+            </div>
+            
+            {/* Quantità animali per kg formattata con separatori */}
+            <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
+              <div className="text-[10px] font-medium text-slate-500">Q.tà:</div>
+              <div className="text-[11px]">
+                {latestOperation.animalsPerKg.toLocaleString('it-IT')}/kg
+              </div>
+            </div>
+            
+            {/* Numero totale di animali dalla tabella operations */}
+            <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
+              <div className="text-[10px] font-medium text-slate-500">Tot:</div>
+              <div className="text-[11px]">
+                {latestOperation.animalCount 
+                  ? latestOperation.animalCount.toLocaleString('it-IT') 
+                  : "N/D"} animali
+              </div>
+            </div>
+            
+            {/* SGR Indicator */}
+            {(() => {
+              const prevOp = getPreviousOperation(basket.id);
+              const sgr = calculateSGR(latestOperation, prevOp);
+              
+              if (!sgr) return null;
+              
+              let icon;
+              let colorClass;
+              let bgColorClass;
+              
+              // Intensity and direction of growth
+              if (Math.abs(sgr.value) < 0.1) {
+                // Crescita praticamente nulla
+                icon = <Minus className="w-3 h-3" />;
+                colorClass = "text-slate-500";
+                bgColorClass = "bg-slate-50";
+              } else if (sgr.isPositive) {
+                if (sgr.intensity === 'high') {
+                  icon = <TrendingUp className="w-3 h-3" />;
+                  colorClass = "text-green-700";
+                  bgColorClass = "bg-green-50";
+                } else if (sgr.intensity === 'medium') {
+                  icon = <ArrowUp className="w-3 h-3" />;
+                  colorClass = "text-green-600";
+                  bgColorClass = "bg-green-50";
+                } else {
+                  icon = <ArrowUp className="w-3 h-3" />;
+                  colorClass = "text-green-500";
+                  bgColorClass = "bg-green-50";
+                }
+              } else {
+                if (sgr.intensity === 'high') {
+                  icon = <TrendingDown className="w-3 h-3" />;
+                  colorClass = "text-red-700";
+                  bgColorClass = "bg-red-50";
+                } else if (sgr.intensity === 'medium') {
+                  icon = <ArrowDown className="w-3 h-3" />;
+                  colorClass = "text-red-600";
+                  bgColorClass = "bg-red-50";
+                } else {
+                  icon = <ArrowDown className="w-3 h-3" />;
+                  colorClass = "text-red-500";
+                  bgColorClass = "bg-red-50";
+                }
+              }
+              
+              return (
+                <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
+                  <div className="text-[10px] font-medium text-slate-500">SGR:</div>
+                  <div className={`flex items-center ${colorClass} ${bgColorClass} px-1 py-0.5 rounded-md`}>
+                    {icon}
+                    <span className="text-[10px] ml-0.5 font-medium">
+                      {sgr.value.toFixed(1).replace('.', ',')}%
+                    </span>
+                  </div>
+                </div>
+              );
+            })()}
+            
+            {/* Data e ciclo */}
+            <div className="flex justify-between items-center border-t border-slate-100 pt-0.5 mt-0.5 text-[9px]">
+              <div>
+                <span className="text-slate-500">Op:</span>
+                <span className="font-medium ml-0.5">
+                  {latestOperation.type.slice(0, 3)} {format(new Date(latestOperation.date), 'dd/MM', { locale: it })}
+                </span>
+              </div>
+              <div className="bg-blue-100 text-blue-800 font-semibold px-1 rounded">
+                C{basket.currentCycleId}
+              </div>
+            </div>
+          </div>
+        )}
+        {basket?.state === 'active' && !basket.currentCycleId && (
+          <div className="flex flex-col items-center justify-center h-full">
+            <div className="text-xs font-semibold mt-2">
+              CESTA #{basket.physicalNumber}
+            </div>
+            <div className="text-[11px] mt-1 text-slate-500">nessun ciclo attivo</div>
+            <div className="mt-2 bg-slate-100 rounded-md px-2 py-1 text-[10px] text-slate-600">
+              Avvia un nuovo ciclo per questa cesta
+            </div>
+          </div>
+        )}
+        {!basket && (
+          <div className="text-slate-400">Pos. {position}</div>
+        )}
+      </div>
+    );
+    
+    // Contenuto informativo dell'operazione da mostrare nel tooltip
+    const tooltipContent = (basket && latestOperation) ? (
+      <div className="w-72 p-2">
+        <h4 className="font-bold text-sm mb-2 pb-1 border-b">Dettagli cesta #{basket.physicalNumber}</h4>
+        
+        <div className="flex flex-col gap-1 text-sm">
+          <div className="flex justify-between">
+            <span className="font-medium">Operazione:</span>
+            <span>{getOperationTypeLabel(latestOperation.type)}</span>
+          </div>
+          
+          <div className="flex justify-between">
+            <span className="font-medium">Data:</span>
+            <span>{format(new Date(latestOperation.date), 'dd/MM/yyyy', { locale: it })}</span>
+          </div>
+          
+          <div className="flex justify-between">
+            <span className="font-medium">Ciclo:</span>
+            <span>#{basket.currentCycleId}</span>
+          </div>
+          
+          <div className="flex justify-between">
+            <span className="font-medium">Animali per kg:</span>
+            <span>{latestOperation.animalsPerKg.toLocaleString('it-IT')}</span>
+          </div>
+          
+          {latestOperation.animalCount && (
+            <div className="flex justify-between">
+              <span className="font-medium">Totale animali:</span>
+              <span>{latestOperation.animalCount.toLocaleString('it-IT')}</span>
+            </div>
+          )}
+          
+          {latestOperation.sizeId && (
+            <div className="flex justify-between">
+              <span className="font-medium">Taglia:</span>
+              <span>{getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}</span>
+            </div>
+          )}
+          
+          {latestOperation.lotId && (
+            <div className="flex justify-between">
+              <span className="font-medium">Lotto:</span>
+              <span>#{latestOperation.lotId}</span>
+            </div>
+          )}
+          
+          {latestOperation.deadCount !== null && (
+            <div className="flex justify-between">
+              <span className="font-medium">Mortalità:</span>
+              <span>{latestOperation.deadCount} animali ({latestOperation.mortalityRate?.toFixed(1).replace('.', ',')}%)</span>
+            </div>
+          )}
+          
+          {latestOperation.notes && (
+            <div className="mt-1 pt-1 border-t">
+              <span className="font-medium">Note:</span>
+              <p className="text-xs mt-1">{latestOperation.notes}</p>
+            </div>
+          )}
+        </div>
+      </div>
+    ) : null;
+
+    // Se la cesta è attiva, ha un'operazione e ha un ciclo, mostriamo il tooltip
+    if (basket && basket.state === 'active' && basket.currentCycleId && latestOperation) {
+      return (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div 
+                key={`${flupsyId}-${row}-${position}`}
+                onClick={() => handleBasketClick(basket)}
+                className={`${borderClass} rounded-md p-1.5 text-center text-sm h-40 overflow-hidden
+                  cursor-pointer hover:shadow-md transition-shadow ${bgClass}`}
+              >
+                {basketContent}
+              </div>
+            </TooltipTrigger>
+            <TooltipContent side="right" align="start" className="z-50 bg-white">
+              {tooltipContent}
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      );
+    }
+    
+    // Altrimenti mostriamo la cesta senza tooltip
     return (
       <div 
-        key={`${flupsyId}-${row}-${position}`} 
+        key={`${flupsyId}-${row}-${position}`}
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
         className={`${borderClass} rounded-md p-1.5 text-center text-sm h-40 overflow-hidden
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
-        {basket ? (
-          <div className={`font-semibold ${basket.state !== 'active' ? 'text-slate-400' : ''}`}>
-            {latestOperation?.animalsPerKg && basket.state === 'active' && basket.currentCycleId && (
-              <div className="flex flex-col gap-y-0.5 mt-1">
-                {/* Numero cesta con bordo colorato e più evidente */}
-                <div className="bg-slate-200 py-0.5 px-1 mb-1 text-center rounded-t-md">
-                  <span className="text-[10px] font-bold text-slate-700">
-                    CESTA #{basket.physicalNumber}
-                  </span>
-                </div>
-                
-                {/* Taglia */}
-                <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-                  <div className="text-[10px] font-medium text-slate-500">Taglia:</div>
-                  <div className="text-[12px] font-bold">
-                    {getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
-                  </div>
-                </div>
-                
-                {/* Quantità animali per kg formattata con separatori */}
-                <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-                  <div className="text-[10px] font-medium text-slate-500">Q.tà:</div>
-                  <div className="text-[11px]">
-                    {latestOperation.animalsPerKg.toLocaleString('it-IT')}/kg
-                  </div>
-                </div>
-                
-                {/* Numero totale di animali dalla tabella operations */}
-                <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-                  <div className="text-[10px] font-medium text-slate-500">Tot:</div>
-                  <div className="text-[11px]">
-                    {latestOperation.animalCount 
-                      ? latestOperation.animalCount.toLocaleString('it-IT') 
-                      : "N/D"} animali
-                  </div>
-                </div>
-                
-                {/* SGR Indicator */}
-                {(() => {
-                  const prevOp = getPreviousOperation(basket.id);
-                  const sgr = calculateSGR(latestOperation, prevOp);
-                  
-                  if (!sgr) return null;
-                  
-                  let icon;
-                  let colorClass;
-                  let bgColorClass;
-                  
-                  // Intensity and direction of growth
-                  if (Math.abs(sgr.value) < 0.1) {
-                    // Crescita praticamente nulla
-                    icon = <Minus className="w-3 h-3" />;
-                    colorClass = "text-slate-500";
-                    bgColorClass = "bg-slate-50";
-                  } else if (sgr.isPositive) {
-                    if (sgr.intensity === 'high') {
-                      icon = <TrendingUp className="w-3 h-3" />;
-                      colorClass = "text-green-700";
-                      bgColorClass = "bg-green-50";
-                    } else if (sgr.intensity === 'medium') {
-                      icon = <ArrowUp className="w-3 h-3" />;
-                      colorClass = "text-green-600";
-                      bgColorClass = "bg-green-50";
-                    } else {
-                      icon = <ArrowUp className="w-3 h-3" />;
-                      colorClass = "text-green-500";
-                      bgColorClass = "bg-green-50";
-                    }
-                  } else {
-                    if (sgr.intensity === 'high') {
-                      icon = <TrendingDown className="w-3 h-3" />;
-                      colorClass = "text-red-700";
-                      bgColorClass = "bg-red-50";
-                    } else if (sgr.intensity === 'medium') {
-                      icon = <ArrowDown className="w-3 h-3" />;
-                      colorClass = "text-red-600";
-                      bgColorClass = "bg-red-50";
-                    } else {
-                      icon = <ArrowDown className="w-3 h-3" />;
-                      colorClass = "text-red-500";
-                      bgColorClass = "bg-red-50";
-                    }
-                  }
-                  
-                  return (
-                    <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-                      <div className="text-[10px] font-medium text-slate-500">SGR:</div>
-                      <div className={`flex items-center ${colorClass} ${bgColorClass} px-1 py-0.5 rounded-md`}>
-                        {icon}
-                        <span className="text-[10px] ml-0.5 font-medium">
-                          {sgr.value.toFixed(1).replace('.', ',')}%
-                        </span>
-                      </div>
-                    </div>
-                  );
-                })()}
-                
-                {/* Data e ciclo */}
-                <div className="flex justify-between items-center border-t border-slate-100 pt-0.5 mt-0.5 text-[9px]">
-                  <div>
-                    <span className="text-slate-500">Op:</span>
-                    <span className="font-medium ml-0.5">
-                      {latestOperation.type.slice(0, 3)} {format(new Date(latestOperation.date), 'dd/MM', { locale: it })}
-                    </span>
-                  </div>
-                  <div className="bg-blue-100 text-blue-800 font-semibold px-1 rounded">
-                    C{basket.currentCycleId}
-                  </div>
-                </div>
-              </div>
-            )}
-            {basket.state === 'active' && !basket.currentCycleId && (
-              <div className="flex flex-col items-center justify-center h-full">
-                <div className="text-xs font-semibold mt-2">
-                  CESTA #{basket.physicalNumber}
-                </div>
-                <div className="text-[11px] mt-1 text-slate-500">nessun ciclo attivo</div>
-                <div className="mt-2 bg-slate-100 rounded-md px-2 py-1 text-[10px] text-slate-600">
-                  Avvia un nuovo ciclo per questa cesta
-                </div>
-              </div>
-            )}
-          </div>
-        ) : (
-          <div className="text-slate-400">Pos. {position}</div>
-        )}
+        {basketContent}
       </div>
     );
   };
@@ -398,7 +495,7 @@ export default function BasicFlupsyVisualizer() {
       </CardHeader>
       
       <CardContent>
-        {flupsys && flupsys.map((flupsy: any) => (
+        {flupsys?.map((flupsy: any) => (
           <div key={flupsy.id}>
             {renderFlupsy(flupsy)}
             {flupsy.id !== flupsys[flupsys.length - 1].id && (
