@@ -141,10 +141,28 @@ export function getTargetSizeForWeight(weight: number): TargetSize | null {
   ) || null;
 }
 
-export function getSizeFromAnimalsPerKg(animalsPerKg: number): TargetSize | null {
+export function getSizeFromAnimalsPerKg(animalsPerKg: number, availableSizes?: any[]): TargetSize | null {
   if (!animalsPerKg || animalsPerKg <= 0) return null;
   
-  // Converti animali/kg in peso medio in mg
+  // Se abbiamo taglie disponibili dal database, le usiamo
+  if (availableSizes && availableSizes.length > 0) {
+    const matchingSize = availableSizes.find(size => 
+      animalsPerKg >= size.minAnimalsPerKg && animalsPerKg <= size.maxAnimalsPerKg
+    );
+    
+    if (matchingSize) {
+      // Crea un oggetto TargetSize dal formato database
+      return {
+        code: matchingSize.code,
+        name: matchingSize.name,
+        minWeight: 1000000 / matchingSize.maxAnimalsPerKg,
+        maxWeight: 1000000 / matchingSize.minAnimalsPerKg,
+        color: 'bg-blue-100 border-blue-300' // Colore di default che verrà sovrascritto dal sistema di colori
+      };
+    }
+  }
+  
+  // Fallback alle taglie predefinite se non troviamo corrispondenze nel database
   const weight = 1000000 / animalsPerKg;
   return getTargetSizeForWeight(weight);
 }

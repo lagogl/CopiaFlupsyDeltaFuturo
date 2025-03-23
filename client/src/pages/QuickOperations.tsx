@@ -1177,14 +1177,31 @@ export default function QuickOperations() {
                                     // Calcola peso medio in mg
                                     const averageWeight = 1000000 / animalsPerKg;
                                     
-                                    // Determina la taglia in base al peso medio
-                                    const targetSize = getSizeFromAnimalsPerKg(animalsPerKg);
-                                    console.log("Taglia target calcolata:", targetSize);
+                                    // Determina la taglia in base agli animali per kg direttamente dal database
+                                    let sizeId = null;
                                     
-                                    // Trova l'ID della taglia corrispondente nel database
-                                    const sizeId = targetSize ? 
-                                      sizes?.find(s => s.code === targetSize.code)?.id || lastOperation?.sizeId : 
-                                      lastOperation?.sizeId;
+                                    // Cerca la taglia direttamente tra quelle disponibili nel database
+                                    if (sizes && sizes.length > 0) {
+                                      const matchingSize = sizes.find(size => 
+                                        animalsPerKg >= size.minAnimalsPerKg && animalsPerKg <= size.maxAnimalsPerKg
+                                      );
+                                      
+                                      if (matchingSize) {
+                                        sizeId = matchingSize.id;
+                                        console.log(`Taglia calcolata direttamente dal database: ${matchingSize.code} (id: ${matchingSize.id})`);
+                                      }
+                                    }
+                                    
+                                    // Se non troviamo una corrispondenza esatta nel database, usiamo la logica predefinita
+                                    if (!sizeId) {
+                                      const targetSize = getSizeFromAnimalsPerKg(animalsPerKg, sizes);
+                                      console.log("Taglia target calcolata con funzione di fallback:", targetSize);
+                                      
+                                      // Trova l'ID della taglia corrispondente nel database
+                                      sizeId = targetSize ? 
+                                        sizes?.find(s => s.code === targetSize.code)?.id || lastOperation?.sizeId : 
+                                        lastOperation?.sizeId;
+                                    }
                                       
                                     console.log("SizeId determinato:", sizeId);
                                     
