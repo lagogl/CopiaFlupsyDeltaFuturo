@@ -30,6 +30,7 @@ function Router() {
       <Route path="/operations" component={Operations}/>
       <Route path="/operations/:id" component={OperationDetail}/>
       <Route path="/quick-operations" component={QuickOperations}/>
+      <Route path="/quickoperations" component={QuickOperations}/>
       <Route path="/cycles" component={Cycles}/>
       <Route path="/cycles/:id" component={CycleDetail}/>
       <Route path="/lots" component={Lots}/>
