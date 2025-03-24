@@ -283,10 +283,11 @@ function StatisticsTab({
 interface OperationsListProps {
   operations: any[];
   formatDate: (dateString: string) => string;
+  onDeleteOperation?: (operationId: number) => void;
 }
 
 // Componente per la lista delle operazioni
-function OperationsList({ operations, formatDate }: OperationsListProps) {
+function OperationsList({ operations, formatDate, onDeleteOperation }: OperationsListProps) {
   const sortedOperations = operations
     ? [...operations].sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
     : [];
@@ -364,12 +365,27 @@ function OperationsList({ operations, formatDate }: OperationsListProps) {
                       )}
                     </div>
                     
-                    <div className="flex justify-end mt-2">
+                    <div className="flex justify-end gap-2 mt-2">
                       <Link href={`/operations/${op.id}`}>
                         <Button variant="ghost" size="sm" className="text-xs h-7">
                           Visualizza dettagli
                         </Button>
                       </Link>
+                      {onDeleteOperation && (
+                        <Button 
+                          variant="ghost" 
+                          size="sm" 
+                          className="text-xs h-7 text-red-600 hover:text-red-700"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            if (window.confirm('Sei sicuro di voler eliminare questa operazione? Questa azione non può essere annullata.')) {
+                              onDeleteOperation(op.id);
+                            }
+                          }}
+                        >
+                          Elimina
+                        </Button>
+                      )}
                     </div>
                   </div>
                 </div>
