@@ -256,7 +256,7 @@ export default function FlupsyComparison() {
   // Renderizza un cestello per la visualizzazione attuale
   const renderCurrentBasket = (basket) => {
     if (!basket) return (
-      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-36 flex items-center justify-center text-gray-400">
+      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-36 flex items-center justify-center text-gray-400 text-xs">
         Vuoto
       </div>
     );
@@ -287,25 +287,25 @@ export default function FlupsyComparison() {
         <div className="flex justify-between items-start">
           <span className="font-bold text-[9px]">#{basket.physicalNumber}</span>
           {cycle && (
-            <Badge variant="outline" className="text-[9px]">
+            <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">
               C#{cycle.id}
             </Badge>
           )}
         </div>
         
         {currentSize && (
-          <div className="mt-0.5 flex justify-between items-center">
-            <Badge className="text-[9px] bg-blue-500 text-white">
+          <div className="flex justify-between items-center">
+            <Badge className="text-[8px] px-1 py-0 h-4 bg-blue-500 text-white">
               {currentSize.code}
             </Badge>
-            <div className="text-[9px]">{currentWeight} mg</div>
+            <div className="text-[8px]">{currentWeight} mg</div>
           </div>
         )}
         
         {latestOperation && (
-          <div className="mt-auto text-[9px] text-center">
+          <div className="mt-auto text-[8px] flex justify-between items-center">
             <div>{format(new Date(latestOperation.date), 'dd/MM')}</div>
-            <div className="opacity-70 text-[8px]">{latestOperation.type}</div>
+            <div className="opacity-70">{latestOperation.type}</div>
           </div>
         )}
       </div>
@@ -315,7 +315,7 @@ export default function FlupsyComparison() {
   // Renderizza un cestello per la visualizzazione futura (per data)
   const renderFutureBasketByDate = (basket) => {
     if (!basket) return (
-      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-36 flex items-center justify-center text-gray-400">
+      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-36 flex items-center justify-center text-gray-400 text-xs">
         Vuoto
       </div>
     );
@@ -356,24 +356,24 @@ export default function FlupsyComparison() {
         <div className="flex justify-between items-start">
           <span className="font-bold text-[9px]">#{basket.physicalNumber}</span>
           {cycle && (
-            <Badge variant="outline" className="text-[9px]">
+            <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">
               C#{cycle.id}
             </Badge>
           )}
         </div>
         
         {futureSize && (
-          <div className="mt-0.5 flex justify-between items-center">
-            <Badge className="text-[9px] bg-blue-500 text-white">
+          <div className="flex justify-between items-center">
+            <Badge className="text-[8px] px-1 py-0 h-4 bg-blue-500 text-white">
               {futureSize.code}
             </Badge>
-            <div className="text-[9px]">{futureWeight} mg</div>
+            <div className="text-[8px]">{futureWeight} mg</div>
           </div>
         )}
         
         {growthPercentage !== null && (
-          <div className="mt-auto text-[9px] flex justify-between items-center">
-            <Badge className={`text-[9px] ${growthPercentage > 20 ? "bg-green-500 text-white" : "bg-gray-200"}`}>
+          <div className="mt-auto flex justify-between items-center">
+            <Badge className={`text-[8px] px-1 py-0 h-4 ${growthPercentage > 20 ? "bg-green-500 text-white" : "bg-gray-200"}`}>
               +{growthPercentage}%
             </Badge>
             <div className="opacity-70 text-[8px]">
@@ -388,7 +388,7 @@ export default function FlupsyComparison() {
   // Renderizza un cestello per la visualizzazione futura (per taglia target)
   const renderFutureBasketBySize = (basket) => {
     if (!basket) return (
-      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-36 flex items-center justify-center text-gray-400">
+      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-36 flex items-center justify-center text-gray-400 text-xs">
         Vuoto
       </div>
     );
@@ -433,31 +433,31 @@ export default function FlupsyComparison() {
         <div className="flex justify-between items-start">
           <span className="font-bold text-[9px]">#{basket.physicalNumber}</span>
           {cycle && (
-            <Badge variant="outline" className="text-[9px]">
+            <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">
               C#{cycle.id}
             </Badge>
           )}
         </div>
         
-        <div className="mt-0.5 flex justify-between items-center">
+        <div className="flex justify-between items-center">
           {currentSize?.code === targetSizeCode ? (
-            <Badge className="text-[9px] bg-green-500 text-white">Già {targetSizeCode}</Badge>
+            <Badge className="text-[8px] px-1 py-0 h-4 bg-green-500 text-white">Già {targetSizeCode}</Badge>
           ) : willReach ? (
-            <Badge className="text-[9px] bg-blue-500 text-white">→{targetSizeCode}</Badge>
+            <Badge className="text-[8px] px-1 py-0 h-4 bg-blue-500 text-white">→{targetSizeCode}</Badge>
           ) : (
-            <Badge variant="outline" className="text-[9px]">No</Badge>
+            <Badge variant="outline" className="text-[8px] px-1 py-0 h-4">No</Badge>
           )}
           
           {daysToReach !== null && daysToReach > 0 && (
-            <div className="text-[9px]">
+            <div className="text-[8px]">
               {daysToReach}g
             </div>
           )}
         </div>
         
         {daysToReach !== null && daysToReach > 0 && (
-          <div className="mt-auto text-[8px] flex justify-between items-center">
-            <div className="opacity-70">
+          <div className="mt-auto flex justify-between items-center">
+            <div className="opacity-70 text-[8px]">
               {format(addDays(new Date(), daysToReach), 'dd/MM')}
             </div>
           </div>
