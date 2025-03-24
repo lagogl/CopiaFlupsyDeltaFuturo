@@ -1127,25 +1127,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  app.get("/api/mortality-rates/:id", async (req, res) => {
+  // Prima le rotte specifiche con path fissi
+  app.get("/api/mortality-rates/by-month-and-size", async (req, res) => {
     try {
-      const id = parseInt(req.params.id);
-      if (isNaN(id)) {
-        return res.status(400).json({ message: "Invalid mortality rate ID" });
+      const month = req.query.month as string;
+      const sizeIdStr = req.query.sizeId as string;
+      
+      if (!month || !sizeIdStr) {
+        return res.status(400).json({ 
+          message: "Both month and sizeId are required parameters" 
+        });
       }
-
-      const mortalityRate = await storage.getMortalityRate(id);
+      
+      const sizeId = parseInt(sizeIdStr);
+      if (isNaN(sizeId)) {
+        return res.status(400).json({ 
+          message: "sizeId must be a valid number" 
+        });
+      }
+      
+      // Normalizza il mese per la ricerca (tutto minuscolo)
+      const normalizedMonth = month.toLowerCase();
+      
+      const mortalityRate = await storage.getMortalityRateByMonthAndSize(normalizedMonth, sizeId);
       if (!mortalityRate) {
-        return res.status(404).json({ message: "Mortality rate not found" });
+        return res.status(404).json({ 
+          message: `No mortality rate found for month ${normalizedMonth} and size ID ${sizeId}` 
+        });
       }
-
+      
       // Includi informazioni sulla taglia
-      const size = mortalityRate.sizeId ? await storage.getSize(mortalityRate.sizeId) : null;
+      const size = await storage.getSize(sizeId);
       
       res.json({ ...mortalityRate, size });
     } catch (error) {
-      console.error("Error fetching mortality rate:", error);
-      res.status(500).json({ message: "Failed to fetch mortality rate" });
+      console.error("Error fetching mortality rate by month and size:", error);
+      res.status(500).json({ message: "Failed to fetch mortality rate by month and size" });
     }
   });
   
@@ -1189,41 +1206,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/mortality-rates/by-month-and-size", async (req, res) => {
+  // Dopo le rotte con percorsi specifici, metti la rotta parametrizzata che può causare conflitti
+  app.get("/api/mortality-rates/:id", async (req, res) => {
     try {
-      const month = req.query.month as string;
-      const sizeIdStr = req.query.sizeId as string;
-      
-      if (!month || !sizeIdStr) {
-        return res.status(400).json({ 
-          message: "Both month and sizeId are required parameters" 
-        });
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid mortality rate ID" });
       }
-      
-      const sizeId = parseInt(sizeIdStr);
-      if (isNaN(sizeId)) {
-        return res.status(400).json({ 
-          message: "sizeId must be a valid number" 
-        });
-      }
-      
-      // Normalizza il mese per la ricerca (tutto minuscolo)
-      const normalizedMonth = month.toLowerCase();
-      
-      const mortalityRate = await storage.getMortalityRateByMonthAndSize(normalizedMonth, sizeId);
+
+      const mortalityRate = await storage.getMortalityRate(id);
       if (!mortalityRate) {
-        return res.status(404).json({ 
-          message: `No mortality rate found for month ${normalizedMonth} and size ID ${sizeId}` 
-        });
+        return res.status(404).json({ message: "Mortality rate not found" });
       }
-      
+
       // Includi informazioni sulla taglia
-      const size = await storage.getSize(sizeId);
+      const size = mortalityRate.sizeId ? await storage.getSize(mortalityRate.sizeId) : null;
       
       res.json({ ...mortalityRate, size });
     } catch (error) {
-      console.error("Error fetching mortality rate by month and size:", error);
-      res.status(500).json({ message: "Failed to fetch mortality rate by month and size" });
+      console.error("Error fetching mortality rate:", error);
+      res.status(500).json({ message: "Failed to fetch mortality rate" });
     }
   });
   
