@@ -636,6 +636,17 @@ export default function Operations() {
                             <Button
                               variant="ghost"
                               size="icon"
+                              className="text-red-600 hover:text-red-800 hover:bg-red-100"
+                              onClick={() => {
+                                setSelectedOperation(op);
+                                setIsDeleteDialogOpen(true);
+                              }}
+                            >
+                              <Trash2 className="h-5 w-5" />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="icon"
                               onClick={() => {
                                 // Duplica l'operazione
                                 const nextDay = addDays(new Date(op.date), 1);
@@ -656,16 +667,7 @@ export default function Operations() {
                             >
                               <Copy className="h-5 w-5 text-indigo-600" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                setSelectedOperation(op);
-                                setIsDeleteDialogOpen(true);
-                              }}
-                            >
-                              <Trash2 className="h-5 w-5 text-destructive" />
-                            </Button>
+
                           </div>
                         </td>
                       </tr>
@@ -790,6 +792,17 @@ export default function Operations() {
                                       }}
                                     >
                                       <Pencil className="h-4 w-4 text-gray-600" />
+                                    </Button>
+                                    <Button
+                                      variant="ghost"
+                                      size="icon"
+                                      className="text-red-600 hover:text-red-800 hover:bg-red-100"
+                                      onClick={() => {
+                                        setSelectedOperation(op);
+                                        setIsDeleteDialogOpen(true);
+                                      }}
+                                    >
+                                      <Trash2 className="h-4 w-4" />
                                     </Button>
                                     <Button
                                       variant="ghost"
