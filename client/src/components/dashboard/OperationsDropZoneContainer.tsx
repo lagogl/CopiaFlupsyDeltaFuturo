@@ -37,7 +37,8 @@ import {
   LifeBuoy,
   Brush,
   Droplets,
-  PanelLeft
+  PanelLeft,
+  Tag
 } from "lucide-react";
 import { calculateAverageWeight, getOperationTypeLabel } from "@/lib/utils";
 
@@ -301,6 +302,8 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
         animalsPerKg: lastOperation?.animalsPerKg || null,
         averageWeight: lastOperation?.averageWeight || null,
         animalCount: lastOperation?.animalCount || null,
+        lotId: lastOperation?.lotId || null,  // Includi il lotto dall'ultima operazione
+        sizeId: lastOperation?.sizeId || null, // Includi anche la taglia
         notes: ""
       };
 
@@ -482,6 +485,13 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                       <span className="ml-1 text-blue-900">{currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}</span>
                     </div>
                   </div>
+                  {currentOperation.formData.lotId && (
+                    <div className="mt-2 bg-blue-100 p-2 rounded text-xs flex items-center">
+                      <Tag className="h-3 w-3 mr-1" />
+                      <span className="text-blue-600 font-medium">Lotto:</span>
+                      <span className="ml-1 text-blue-900">ID: {currentOperation.formData.lotId}</span>
+                    </div>
+                  )}
                 </div>
               )}
               
