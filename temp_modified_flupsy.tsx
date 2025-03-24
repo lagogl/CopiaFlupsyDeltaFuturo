@@ -285,7 +285,7 @@ export default function FlupsyComparison() {
         onClick={() => {}}
       >
         <div className="flex justify-between items-start">
-          <span className="font-bold text-[9px]">#{basket.physicalNumber}</span>
+          <span className="font-bold text-xs">#{basket.physicalNumber}</span>
           {cycle && (
             <Badge variant="outline" className="text-[9px]">
               C#{cycle.id}
@@ -294,11 +294,11 @@ export default function FlupsyComparison() {
         </div>
         
         {currentSize && (
-          <div className="mt-0.5 text-center">
+          <div className="mt-1 text-center">
             <Badge className="text-[9px] bg-blue-500 text-white">
               {currentSize.code}
             </Badge>
-            <div className="text-[9px] mt-0.5">{currentWeight} mg</div>
+            <div className="text-[9px] mt-1">{currentWeight} mg</div>
           </div>
         )}
         
@@ -363,11 +363,11 @@ export default function FlupsyComparison() {
         </div>
         
         {futureSize && (
-          <div className="mt-0.5 text-center">
+          <div className="mt-1 text-center">
             <Badge className="text-[9px] bg-blue-500 text-white">
               {futureSize.code}
             </Badge>
-            <div className="text-[9px] mt-0.5">{futureWeight} mg</div>
+            <div className="text-[9px] mt-1">{futureWeight} mg</div>
           </div>
         )}
         
@@ -439,7 +439,7 @@ export default function FlupsyComparison() {
           )}
         </div>
         
-        <div className="mt-0.5 text-center">
+        <div className="mt-1 text-center">
           {currentSize?.code === targetSizeCode ? (
             <Badge className="text-[9px] bg-green-500 text-white">Già {targetSizeCode}</Badge>
           ) : willReach ? (
@@ -449,15 +449,15 @@ export default function FlupsyComparison() {
           )}
           
           {daysToReach !== null && daysToReach > 0 && (
-            <div className="text-[9px] mt-0.5">
+            <div className="text-[9px] mt-1">
               {daysToReach}g
             </div>
           )}
         </div>
         
         {daysToReach !== null && daysToReach > 0 && (
-          <div className="mt-auto text-[8px] text-center">
-            <div className="opacity-70">
+          <div className="mt-auto text-[9px] text-center">
+            <div className="opacity-70 text-[8px]">
               {format(addDays(new Date(), daysToReach), 'dd/MM')}
             </div>
           </div>
@@ -477,11 +477,11 @@ export default function FlupsyComparison() {
     
     return (
       <div className="flupsy-visualizer">
-        <div className="flupsy-grid flex justify-center gap-6">
+        <div className="flupsy-grid flex justify-center gap-4">
           {/* Fila SX */}
           <div className="fila-sx">
-            <div className="text-center mb-4">
-              <h3 className="text-sm font-semibold">FILA SX</h3>
+            <div className="text-center mb-2">
+              <h3 className="text-xs font-semibold">FILA SX</h3>
             </div>
             <div className="flex flex-col gap-2">
               {Array.from({ length: maxPosition }).map((_, idx) => {
@@ -489,7 +489,7 @@ export default function FlupsyComparison() {
                 const basket = fluspyBaskets.find(b => b.row === 'SX' && b.position === position);
                 return (
                   <div key={`SX-${position}`} className="relative">
-                    <div className="position-number absolute -left-5 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
+                    <div className="position-number absolute -left-4 top-1/2 transform -translate-y-1/2 text-[9px] text-gray-500">
                       {position}
                     </div>
                     {renderBasketFn(basket)}
@@ -501,8 +501,8 @@ export default function FlupsyComparison() {
           
           {/* Fila DX */}
           <div className="fila-dx">
-            <div className="text-center mb-4">
-              <h3 className="text-sm font-semibold">FILA DX</h3>
+            <div className="text-center mb-2">
+              <h3 className="text-xs font-semibold">FILA DX</h3>
             </div>
             <div className="flex flex-col gap-2">
               {Array.from({ length: maxPosition }).map((_, idx) => {
@@ -510,7 +510,7 @@ export default function FlupsyComparison() {
                 const basket = fluspyBaskets.find(b => b.row === 'DX' && b.position === position);
                 return (
                   <div key={`DX-${position}`} className="relative">
-                    <div className="position-number absolute -left-5 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
+                    <div className="position-number absolute -left-4 top-1/2 transform -translate-y-1/2 text-[9px] text-gray-500">
                       {position}
                     </div>
                     {renderBasketFn(basket)}
@@ -525,26 +525,26 @@ export default function FlupsyComparison() {
   };
 
   return (
-    <div className="container mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Confronto FLUPSY: Attuale vs Futuro</h1>
-        <p className="text-muted-foreground">
+    <div className="container mx-auto px-2">
+      <div className="mb-4">
+        <h1 className="text-xl font-bold">Confronto FLUPSY: Attuale vs Futuro</h1>
+        <p className="text-muted-foreground text-sm">
           Confronta lo stato attuale con lo stato futuro delle vongole in base alla crescita prevista
         </p>
       </div>
       
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
         {/* Card selezione FLUPSY */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-md">Seleziona Unità FLUPSY</CardTitle>
+        <Card className="p-2">
+          <CardHeader className="pb-2 pt-2">
+            <CardTitle className="text-sm">Seleziona Unità FLUPSY</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-2">
             <Select 
               value={selectedFlupsyId?.toString() || ''} 
               onValueChange={(value) => setSelectedFlupsyId(parseInt(value, 10))}
             >
-              <SelectTrigger>
+              <SelectTrigger className="h-8 text-sm">
                 <SelectValue placeholder="Seleziona FLUPSY" />
               </SelectTrigger>
               <SelectContent>
@@ -559,19 +559,19 @@ export default function FlupsyComparison() {
         </Card>
         
         {/* Card visualizzazione */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-md">Tipo di confronto</CardTitle>
+        <Card className="p-2">
+          <CardHeader className="pb-2 pt-2">
+            <CardTitle className="text-sm">Tipo di confronto</CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-2">
             <Tabs value={currentTabId} onValueChange={setCurrentTabId} className="w-full">
-              <TabsList className="w-full">
-                <TabsTrigger value="data-futuro" className="flex-1 flex items-center justify-center">
-                  <Calendar className="w-4 h-4 mr-2" />
+              <TabsList className="w-full h-8">
+                <TabsTrigger value="data-futuro" className="flex-1 flex items-center justify-center text-xs h-7">
+                  <Calendar className="w-3 h-3 mr-1" />
                   Data futura
                 </TabsTrigger>
-                <TabsTrigger value="taglia-target" className="flex-1 flex items-center justify-center">
-                  <Clock className="w-4 h-4 mr-2" />
+                <TabsTrigger value="taglia-target" className="flex-1 flex items-center justify-center text-xs h-7">
+                  <Clock className="w-3 h-3 mr-1" />
                   Taglia target
                 </TabsTrigger>
               </TabsList>
@@ -580,18 +580,18 @@ export default function FlupsyComparison() {
         </Card>
         
         {/* Card impostazioni */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-md">
+        <Card className="p-2">
+          <CardHeader className="pb-2 pt-2">
+            <CardTitle className="text-sm">
               {currentTabId === 'data-futuro' ? 'Giorni nel futuro' : 'Taglia target'}
             </CardTitle>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-2">
             {currentTabId === 'data-futuro' ? (
               <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm">Proiezione a:</span>
-                  <Badge>{daysInFuture} giorni</Badge>
+                <div className="flex justify-between mb-1">
+                  <span className="text-xs">Proiezione a:</span>
+                  <Badge className="text-xs h-5">{daysInFuture} giorni</Badge>
                 </div>
                 <Slider
                   value={[daysInFuture]}
@@ -599,10 +599,11 @@ export default function FlupsyComparison() {
                   max={120}
                   step={10}
                   onValueChange={(value) => setDaysInFuture(value[0])}
+                  className="py-1"
                 />
-                <div className="text-xs text-muted-foreground mt-2 text-center">
+                <div className="text-[10px] text-muted-foreground mt-1 text-center">
                   {format(new Date(), 'dd/MM/yyyy')} 
-                  <ArrowRight className="inline mx-2 w-3 h-3" /> 
+                  <ArrowRight className="inline mx-1 w-2 h-2" /> 
                   {format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')}
                 </div>
               </div>
@@ -611,7 +612,7 @@ export default function FlupsyComparison() {
                 value={targetSizeCode} 
                 onValueChange={setTargetSizeCode}
               >
-                <SelectTrigger>
+                <SelectTrigger className="h-8 text-sm">
                   <SelectValue placeholder="Seleziona taglia target" />
                 </SelectTrigger>
                 <SelectContent>
@@ -628,18 +629,18 @@ export default function FlupsyComparison() {
       </div>
       
       {/* Visualizzazione principale */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Stato attuale */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Stato attuale</CardTitle>
-            <CardDescription>
+        <Card className="p-2">
+          <CardHeader className="pb-2 pt-2">
+            <CardTitle className="text-sm">Stato attuale</CardTitle>
+            <CardDescription className="text-xs">
               Visualizzazione corrente del FLUPSY {selectedFlupsy?.name}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-2">
             {isLoadingBaskets || isLoadingFlupsys ? (
-              <div className="text-center py-4">Caricamento...</div>
+              <div className="text-center py-2 text-sm">Caricamento...</div>
             ) : (
               renderFlupsy(renderCurrentBasket)
             )}
@@ -647,22 +648,22 @@ export default function FlupsyComparison() {
         </Card>
         
         {/* Stato futuro */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <Card className="p-2">
+          <CardHeader className="pb-2 pt-2">
+            <CardTitle className="text-sm">
               {currentTabId === 'data-futuro' 
                 ? `Stato futuro (${format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')})` 
                 : `Vongole che raggiungeranno la taglia ${targetSizeCode}`}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-xs">
               {currentTabId === 'data-futuro' 
                 ? `Proiezione a ${daysInFuture} giorni da oggi` 
                 : `Tempistica prevista per raggiungere la taglia ${targetSizeCode}`}
             </CardDescription>
           </CardHeader>
-          <CardContent>
+          <CardContent className="pb-2">
             {isLoadingBaskets || isLoadingFlupsys ? (
-              <div className="text-center py-4">Caricamento...</div>
+              <div className="text-center py-2 text-sm">Caricamento...</div>
             ) : (
               renderFlupsy(
                 currentTabId === 'data-futuro' 
@@ -673,8 +674,6 @@ export default function FlupsyComparison() {
           </CardContent>
         </Card>
       </div>
-      
-
     </div>
   );
 }
