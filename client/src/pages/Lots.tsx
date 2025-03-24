@@ -2,19 +2,25 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Eye, Search, Filter, Plus, Package2 } from 'lucide-react';
+import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
-import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useToast } from "@/hooks/use-toast";
 import LotForm from '@/components/LotForm';
 
 export default function Lots() {
+  const { toast } = useToast();
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [selectedLot, setSelectedLot] = useState<any>(null);
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   
   // Query lots
   const { data: lots, isLoading } = useQuery({
@@ -27,6 +33,57 @@ export default function Lots() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
       setIsCreateDialogOpen(false);
+      toast({
+        title: "Lotto creato",
+        description: "Il nuovo lotto è stato creato con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante la creazione del lotto",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Update mutation
+  const updateLotMutation = useMutation({
+    mutationFn: (lotData: any) => apiRequest('PATCH', `/api/lots/${lotData.id}`, lotData),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+      setIsEditDialogOpen(false);
+      toast({
+        title: "Lotto aggiornato",
+        description: "Il lotto è stato aggiornato con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante l'aggiornamento del lotto",
+        variant: "destructive",
+      });
+    }
+  });
+
+  // Delete mutation
+  const deleteLotMutation = useMutation({
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/lots/${id}`),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+      setIsDeleteDialogOpen(false);
+      toast({
+        title: "Lotto eliminato",
+        description: "Il lotto è stato eliminato con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante l'eliminazione del lotto",
+        variant: "destructive",
+      });
     }
   });
 
@@ -36,6 +93,17 @@ export default function Lots() {
       apiRequest('PATCH', `/api/lots/${id}`, { state }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+      toast({
+        title: "Stato aggiornato",
+        description: "Lo stato del lotto è stato aggiornato con successo",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante l'aggiornamento dello stato",
+        variant: "destructive",
+      });
     }
   });
 
@@ -66,6 +134,21 @@ export default function Lots() {
         state: newState
       });
     }
+  };
+  
+  const handleEditLot = (lot: any) => {
+    setSelectedLot(lot);
+    setIsEditDialogOpen(true);
+  };
+  
+  const handleDeleteLot = (lot: any) => {
+    setSelectedLot(lot);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  const handleViewLot = (lot: any) => {
+    setSelectedLot(lot);
+    setIsViewDialogOpen(true);
   };
 
   return (
@@ -203,8 +286,19 @@ export default function Lots() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="icon" title="Visualizza dettagli">
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Visualizza dettagli"
+                            onClick={() => handleViewLot(lot)}>
                             <Eye className="h-5 w-5 text-primary" />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Modifica lotto"
+                            onClick={() => handleEditLot(lot)}>
+                            <Edit className="h-5 w-5 text-blue-500" />
                           </Button>
                           <Button 
                             variant="ghost" 
@@ -212,6 +306,13 @@ export default function Lots() {
                             title={lot.state === 'active' ? 'Segna come esaurito' : 'Riattiva lotto'}
                             onClick={() => handleToggleLotState(lot)}>
                             <Package2 className={`h-5 w-5 ${lot.state === 'active' ? 'text-warning' : 'text-success'}`} />
+                          </Button>
+                          <Button 
+                            variant="ghost" 
+                            size="icon" 
+                            title="Elimina lotto"
+                            onClick={() => handleDeleteLot(lot)}>
+                            <Trash2 className="h-5 w-5 text-red-500" />
                           </Button>
                         </div>
                       </td>
@@ -236,6 +337,142 @@ export default function Lots() {
           />
         </DialogContent>
       </Dialog>
+
+      {/* Edit Lot Dialog */}
+      {selectedLot && (
+        <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+          <DialogContent className="sm:max-w-[500px]">
+            <DialogHeader>
+              <DialogTitle>Modifica Lotto #{selectedLot.id}</DialogTitle>
+            </DialogHeader>
+            <LotForm 
+              onSubmit={(data) => {
+                // Manteniamo l'ID del lotto selezionato
+                updateLotMutation.mutate({ ...data, id: selectedLot.id });
+              }}
+              isLoading={updateLotMutation.isPending}
+              defaultValues={{
+                arrivalDate: selectedLot.arrivalDate,
+                supplier: selectedLot.supplier,
+                quality: selectedLot.quality,
+                sizeId: selectedLot.sizeId,
+                animalCount: selectedLot.animalCount,
+                weight: selectedLot.weight,
+                state: selectedLot.state,
+                notes: selectedLot.notes
+              }}
+            />
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* View Lot Details Dialog */}
+      {selectedLot && (
+        <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
+          <DialogContent className="sm:max-w-[550px]">
+            <DialogHeader>
+              <DialogTitle>Dettagli Lotto #{selectedLot.id}</DialogTitle>
+            </DialogHeader>
+            <div className="space-y-4">
+              <div className="grid grid-cols-2 gap-4">
+                <div>
+                  <h4 className="font-medium text-sm text-gray-500">Data Arrivo</h4>
+                  <p>{format(new Date(selectedLot.arrivalDate), 'dd MMMM yyyy', { locale: it })}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-gray-500">Fornitore</h4>
+                  <p>{selectedLot.supplier}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-gray-500">Qualità</h4>
+                  <p>{selectedLot.quality || '-'}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-gray-500">Taglia</h4>
+                  <p>
+                    {selectedLot.size ? (
+                      <Badge className="bg-blue-100 text-blue-800">
+                        {selectedLot.size.code}
+                      </Badge>
+                    ) : '-'}
+                  </p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-gray-500">Numero Animali</h4>
+                  <p>{selectedLot.animalCount ? selectedLot.animalCount.toLocaleString() : '-'}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-gray-500">Peso (g)</h4>
+                  <p>{selectedLot.weight ? selectedLot.weight.toLocaleString() : '-'}</p>
+                </div>
+                <div>
+                  <h4 className="font-medium text-sm text-gray-500">Stato</h4>
+                  <p>
+                    <Badge className={`${
+                      selectedLot.state === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                    }`}>
+                      {selectedLot.state === 'active' ? 'Attivo' : 'Esaurito'}
+                    </Badge>
+                  </p>
+                </div>
+              </div>
+              
+              {selectedLot.notes && (
+                <div>
+                  <h4 className="font-medium text-sm text-gray-500 mb-1">Note</h4>
+                  <p className="text-sm">{selectedLot.notes}</p>
+                </div>
+              )}
+              
+              <div className="flex justify-end space-x-2 pt-4">
+                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                  Chiudi
+                </Button>
+                <Button onClick={() => {
+                  setIsViewDialogOpen(false);
+                  handleEditLot(selectedLot);
+                }}>
+                  <Edit className="h-4 w-4 mr-2" />
+                  Modifica
+                </Button>
+              </div>
+            </div>
+          </DialogContent>
+        </Dialog>
+      )}
+
+      {/* Delete Lot Confirmation Dialog */}
+      {selectedLot && (
+        <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent className="sm:max-w-[450px]">
+            <DialogHeader>
+              <DialogTitle>Conferma Eliminazione</DialogTitle>
+              <DialogDescription>
+                Sei sicuro di voler eliminare il lotto #{selectedLot.id} ({selectedLot.supplier})?
+                <div className="mt-2 p-2 bg-orange-50 text-orange-700 border border-orange-100 rounded-md flex items-start">
+                  <AlertCircle className="h-5 w-5 mt-0.5 mr-2 flex-shrink-0" />
+                  <span>Questa azione è permanente e non può essere annullata. Tutti i dati relativi a questo lotto verranno persi.</span>
+                </div>
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter className="flex space-x-2 justify-end">
+              <Button 
+                variant="outline" 
+                onClick={() => setIsDeleteDialogOpen(false)}
+              >
+                Annulla
+              </Button>
+              <Button 
+                variant="destructive" 
+                onClick={() => deleteLotMutation.mutate(selectedLot.id)}
+                disabled={deleteLotMutation.isPending}
+              >
+                {deleteLotMutation.isPending ? "Eliminazione in corso..." : "Elimina Lotto"}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
+      )}
     </div>
   );
 }
