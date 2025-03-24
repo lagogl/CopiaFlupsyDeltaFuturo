@@ -16,7 +16,7 @@ import {
   getFutureWeightAtDate,
   getSizeFromAnimalsPerKg
 } from "@/lib/utils";
-import { CalendarIcon, Filter, Search, TrendingUp } from "lucide-react";
+import { CalendarIcon, Search, TrendingUp, LineChart, BarChart3, ListFilter, Database, Fish, Scale } from "lucide-react";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
 import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -678,112 +678,146 @@ export default function Inventory() {
         <title>Inventario - Gestione FLUPSY</title>
       </Helmet>
       
-      <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-3xl font-bold tracking-tight">Inventario</h2>
-          <div className="flex items-center space-x-2">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="flex items-center gap-2">
-                  <CalendarIcon className="h-4 w-4" />
-                  {targetDate ? (
-                    <span>{formatDateIT(targetDate)}</span>
-                  ) : (
-                    <span>Scegli data</span>
-                  )}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0" align="end">
-                <Calendar
-                  mode="single"
-                  selected={targetDate}
-                  onSelect={setTargetDate}
-                  initialFocus
-                  locale={it}
-                />
-              </PopoverContent>
-            </Popover>
-            
-            <div className="flex flex-col gap-1">
-              <div className="text-sm">SGR mensile: {sgr}%</div>
-              <Slider
-                defaultValue={[sgr]}
-                min={1}
-                max={20}
-                step={0.5}
-                onValueChange={(values) => setSgr(values[0])}
-                className="w-40"
-              />
+      <div className="space-y-8">
+        <div className="bg-gradient-to-r from-blue-100 to-blue-50 p-6 rounded-xl shadow-sm border border-blue-200">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+            <div>
+              <h2 className="text-3xl font-bold tracking-tight text-blue-900">Inventario e Previsioni</h2>
+              <p className="text-blue-600 text-sm mt-1">Gestione completa delle ceste e delle proiezioni di crescita</p>
             </div>
-            
-            <Select value={targetSize} onValueChange={setTargetSize}>
-              <SelectTrigger className="w-[200px]">
-                <SelectValue placeholder="Taglia target" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectGroup>
-                  <SelectItem value="none">Nessuna taglia target</SelectItem>
-                  {sizeOptions.map(option => (
-                    <SelectItem key={option.value} value={option.value}>
-                      {option.label}
-                    </SelectItem>
-                  ))}
-                </SelectGroup>
-              </SelectContent>
-            </Select>
+            <div className="flex flex-wrap items-center gap-3">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button variant="outline" className="flex items-center gap-2 bg-white shadow-sm hover:bg-blue-50 border-blue-200">
+                    <CalendarIcon className="h-4 w-4 text-blue-500" />
+                    {targetDate ? (
+                      <span>{formatDateIT(targetDate)}</span>
+                    ) : (
+                      <span>Scegli data</span>
+                    )}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0 border-blue-200 shadow-md" align="end">
+                  <Calendar
+                    mode="single"
+                    selected={targetDate}
+                    onSelect={setTargetDate}
+                    initialFocus
+                    locale={it}
+                    className="rounded-md"
+                  />
+                </PopoverContent>
+              </Popover>
+              
+              <div className="flex flex-col gap-1 bg-white p-2 rounded-lg shadow-sm border border-blue-200">
+                <div className="text-sm font-medium text-blue-800 flex justify-between px-1">
+                  <span>SGR mensile:</span> 
+                  <span className="font-bold text-blue-900">{sgr}%</span>
+                </div>
+                <Slider
+                  defaultValue={[sgr]}
+                  min={1}
+                  max={20}
+                  step={0.5}
+                  onValueChange={(values) => setSgr(values[0])}
+                  className="w-48"
+                />
+              </div>
+              
+              <Select value={targetSize} onValueChange={setTargetSize}>
+                <SelectTrigger className="w-[220px] bg-white shadow-sm border-blue-200 hover:bg-blue-50">
+                  <SelectValue placeholder="Taglia target" />
+                </SelectTrigger>
+                <SelectContent className="border-blue-200">
+                  <SelectGroup>
+                    <SelectItem value="none">Nessuna taglia target</SelectItem>
+                    {sizeOptions.map(option => (
+                      <SelectItem key={option.value} value={option.value} className="font-medium">
+                        {option.label}
+                      </SelectItem>
+                    ))}
+                  </SelectGroup>
+                </SelectContent>
+              </Select>
+            </div>
           </div>
         </div>
         
         <Tabs defaultValue="summary" className="w-full">
-          <TabsList className="grid w-full grid-cols-4">
-            <TabsTrigger value="summary">Riepilogo</TabsTrigger>
-            <TabsTrigger value="details">Dettaglio Ceste</TabsTrigger>
-            <TabsTrigger value="predictions">Previsioni</TabsTrigger>
-            <TabsTrigger value="comparison">Comparazione</TabsTrigger>
+          <TabsList className="grid w-full grid-cols-4 bg-blue-100 p-1 rounded-xl">
+            <TabsTrigger value="summary" className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
+              <LineChart className="h-4 w-4 mr-2" />
+              Riepilogo
+            </TabsTrigger>
+            <TabsTrigger value="details" className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
+              <ListFilter className="h-4 w-4 mr-2" />
+              Dettaglio Ceste
+            </TabsTrigger>
+            <TabsTrigger value="predictions" className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
+              <TrendingUp className="h-4 w-4 mr-2" />
+              Previsioni
+            </TabsTrigger>
+            <TabsTrigger value="comparison" className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
+              <BarChart3 className="h-4 w-4 mr-2" />
+              Comparazione
+            </TabsTrigger>
           </TabsList>
           
           <TabsContent value="summary">
-            <Card>
-              <CardHeader>
-                <CardTitle>Riepilogo Inventario</CardTitle>
-                <CardDescription>
+            <Card className="border border-blue-100 shadow-md">
+              <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
+                <CardTitle className="text-blue-800 flex items-center gap-2">
+                  <LineChart className="h-5 w-5 text-blue-500" />
+                  Riepilogo Inventario
+                </CardTitle>
+                <CardDescription className="text-blue-600">
                   Panoramica delle giacenze e distribuzione per taglia
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
-                  <Card>
-                    <CardHeader className="py-4">
-                      <CardTitle className="text-xl">Ceste Attive</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-4xl font-bold">{formatNumberEU(inventoryStats.totalBaskets)}</div>
+              <CardContent className="p-6">
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                  <Card className="border border-blue-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                    <div className="bg-blue-50 border-b border-blue-100 flex justify-between items-center px-4 py-3">
+                      <CardTitle className="text-lg text-blue-700">Ceste Attive</CardTitle>
+                      <Database className="h-5 w-5 text-blue-400" />
+                    </div>
+                    <CardContent className="p-4 text-center">
+                      <div className="text-4xl font-bold text-blue-900">{formatNumberEU(inventoryStats.totalBaskets)}</div>
+                      <div className="text-xs mt-2 text-blue-500">unità in produzione</div>
                     </CardContent>
                   </Card>
-                  <Card>
-                    <CardHeader className="py-4">
-                      <CardTitle className="text-xl">Animali Totali</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-4xl font-bold">{formatNumberEU(inventoryStats.totalAnimals)}</div>
+                  
+                  <Card className="border border-blue-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                    <div className="bg-green-50 border-b border-green-100 flex justify-between items-center px-4 py-3">
+                      <CardTitle className="text-lg text-green-700">Animali Totali</CardTitle>
+                      <Fish className="h-5 w-5 text-green-400" />
+                    </div>
+                    <CardContent className="p-4 text-center">
+                      <div className="text-4xl font-bold text-green-900">{formatNumberEU(inventoryStats.totalAnimals)}</div>
+                      <div className="text-xs mt-2 text-green-500">esemplari in allevamento</div>
                     </CardContent>
                   </Card>
-                  <Card>
-                    <CardHeader className="py-4">
-                      <CardTitle className="text-xl">Peso Medio</CardTitle>
-                    </CardHeader>
-                    <CardContent>
-                      <div className="text-4xl font-bold">{formatDecimalEU(inventoryStats.averageWeight)} mg</div>
+                  
+                  <Card className="border border-blue-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                    <div className="bg-amber-50 border-b border-amber-100 flex justify-between items-center px-4 py-3">
+                      <CardTitle className="text-lg text-amber-700">Peso Medio</CardTitle>
+                      <Scale className="h-5 w-5 text-amber-400" />
+                    </div>
+                    <CardContent className="p-4 text-center">
+                      <div className="text-4xl font-bold text-amber-900">{formatDecimalEU(inventoryStats.averageWeight)} <span className="text-sm">mg</span></div>
+                      <div className="text-xs mt-2 text-amber-500">per esemplare</div>
                     </CardContent>
                   </Card>
                 </div>
                 
-                <InventorySummary 
-                  inventoryStats={inventoryStats}
-                  scatterData={scatterData}
-                  formatNumberEU={formatNumberEU}
-                  formatDecimalEU={formatDecimalEU}
-                />
+                <div className="bg-white p-5 rounded-xl border border-gray-100 shadow-sm">
+                  <InventorySummary 
+                    inventoryStats={inventoryStats}
+                    scatterData={scatterData}
+                    formatNumberEU={formatNumberEU}
+                    formatDecimalEU={formatDecimalEU}
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
