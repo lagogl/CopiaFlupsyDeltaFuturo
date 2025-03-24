@@ -104,24 +104,17 @@ export default function FlupsyComparison() {
     const currentWeight = latestOperation.animalsPerKg ? 1000000 / latestOperation.animalsPerKg : 0;
     const measurementDate = new Date(latestOperation.date);
     
-    // Ottieni la percentuale SGR giornaliera
+    // Ottieni la percentuale SGR giornaliera (percentage è già la crescita giornaliera)
     let sgrDailyPercentage = 1.0; // Valore di default (1% al giorno)
     if (sgrs && sgrs.length > 0) {
       // Usa il valore SGR del mese corrente se disponibile
       const currentMonth = format(new Date(), 'MMMM').toLowerCase();
       const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
-      if (currentSgr && currentSgr.dailyPercentage !== null) {
-        sgrDailyPercentage = currentSgr.dailyPercentage;
+      if (currentSgr) {
+        sgrDailyPercentage = currentSgr.percentage; // Diretta, già valore giornaliero
       } else {
-        // Altrimenti usa il valore medio
-        // Se i valori giornalieri sono disponibili, usiamo quelli
-        const dailyValues = sgrs.filter(sgr => sgr.dailyPercentage !== null);
-        if (dailyValues.length > 0) {
-          sgrDailyPercentage = dailyValues.reduce((acc, sgr) => acc + (sgr.dailyPercentage || 0), 0) / dailyValues.length;
-        } else {
-          // Altrimenti calcoliamo una stima giornaliera dalle percentuali mensili
-          sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length / 30;
-        }
+        // Altrimenti usa il valore medio delle percentuali giornaliere
+        sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
       }
     }
     
@@ -141,8 +134,8 @@ export default function FlupsyComparison() {
       let dailyRate = sgrDailyPercentage;
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
-        if (monthSgr && monthSgr.dailyPercentage !== null) {
-          dailyRate = monthSgr.dailyPercentage;
+        if (monthSgr) {
+          dailyRate = monthSgr.percentage; // Diretta, è già il valore giornaliero
         }
       }
       
@@ -203,24 +196,19 @@ export default function FlupsyComparison() {
       // Usa il valore SGR del mese corrente se disponibile
       const currentMonth = format(new Date(), 'MMMM').toLowerCase();
       const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
-      if (currentSgr && currentSgr.dailyPercentage !== null) {
-        sgrDailyPercentage = currentSgr.dailyPercentage;
+      if (currentSgr) {
+        sgrDailyPercentage = currentSgr.percentage; // Diretta, già valore giornaliero
       } else {
-        // Altrimenti usa il valore medio dei tassi giornalieri
-        const dailyValues = sgrs.filter(sgr => sgr.dailyPercentage !== null);
-        if (dailyValues.length > 0) {
-          sgrDailyPercentage = dailyValues.reduce((acc, sgr) => acc + (sgr.dailyPercentage || 0), 0) / dailyValues.length;
-        } else {
-          // Altrimenti calcoliamo una stima giornaliera dalle percentuali mensili
-          sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length / 30;
-        }
+        // Altrimenti usa il valore medio delle percentuali giornaliere
+        sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
       }
     }
     
     // Calcolo dei giorni necessari usando i valori SGR giornalieri mese per mese
     let simulationWeight = currentWeight;
     let days = 0;
-    let currentDate = new Date(measurementDate);
+    const measureDate = new Date(latestOperation.date); // Ottieni la data dalla misurazione
+    let currentDate = new Date(measureDate);
     
     while (simulationWeight < targetWeight && days < 365) {
       // Determina il mese corrente per usare il tasso SGR appropriato
@@ -230,8 +218,8 @@ export default function FlupsyComparison() {
       let dailyRate = sgrDailyPercentage;
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
-        if (monthSgr && monthSgr.dailyPercentage !== null) {
-          dailyRate = monthSgr.dailyPercentage;
+        if (monthSgr) {
+          dailyRate = monthSgr.percentage; // Diretta, è già il valore giornaliero
         }
       }
       
