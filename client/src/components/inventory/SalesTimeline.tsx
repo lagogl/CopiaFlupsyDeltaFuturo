@@ -154,6 +154,10 @@ const SalesTimeline: React.FC<SalesTimelineProps> = ({
 
   const getSgrRateForDate = (date: Date): number => {
     const month = getMonthFromDate(date);
+    // Aggiungiamo controlli di sicurezza per verificare che sgrRates esista e sia un array
+    if (!sgrRates || !Array.isArray(sgrRates) || sgrRates.length === 0) {
+      return 0.01; // 1% come valore di default se non ci sono dati SGR
+    }
     const sgr = sgrRates.find(s => s.month === month);
     return sgr ? (sgr.dailyPercentage || sgr.percentage / 30) : 0.01; // 1% come valore di default
   };
@@ -163,6 +167,11 @@ const SalesTimeline: React.FC<SalesTimelineProps> = ({
     const size = sizes.find(s => s.code === sizeCode);
     
     if (!size) return 0;
+    
+    // Controllo di sicurezza per verificare che mortalityRates esista e sia un array
+    if (!mortalityRates || !Array.isArray(mortalityRates) || mortalityRates.length === 0) {
+      return 0.01; // 1% come valore di default se non ci sono dati di mortalità
+    }
     
     // Troviamo la taglia di riferimento più vicina per la mortalità (TP-500, TP-800, TP-1500)
     let referenceSizeId = 1; // Default a TP-500
@@ -444,7 +453,9 @@ const SalesTimeline: React.FC<SalesTimelineProps> = ({
       // Filtra solo gli eventi di cambio taglia
       const sizeChangeEvents = timeline.events.filter((event, index, arr) => {
         // È un cambio taglia se è il primo evento o se la taglia è diversa dall'evento precedente
-        return index === 0 || (event.size && arr[index-1].size && event.size.code !== arr[index-1].size.code);
+        if (index === 0) return true;
+        if (!event.size || !arr[index-1].size) return false;
+        return event.size.code !== arr[index-1].size.code;
       });
       
       // Per ogni evento di cambio taglia
