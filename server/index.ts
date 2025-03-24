@@ -57,25 +57,34 @@ app.use((req, res, next) => {
     serveStatic(app);
   }
 
-  // ALWAYS serve the app on port 5000
-  // this serves both the API and the client.
-  // It is not firewalled.
+  // Configure port for production/development
   const port = process.env.PORT || 5000;
-  server.listen({
-    port,
-    host: "0.0.0.0",
-    reusePort: true,
-  }, () => {
-    log(`${app.get("env")} server serving on port ${port}`);
-  }).on('error', (err) => {
-    if (err.code === 'EADDRINUSE') {
-      log(`Port ${port} is already in use. Trying again in 1 second...`);
-      setTimeout(() => {
-        server.close();
-        server.listen(port);
-      }, 1000);
-    } else {
-      console.error('Server error:', err);
-    }
+  const startServer = () => {
+    server.listen({
+      port,
+      host: "0.0.0.0",
+      reusePort: true,
+    }, () => {
+      log(`${app.get("env")} server serving on port ${port}`);
+    }).on('error', (err) => {
+      if (err.code === 'EADDRINUSE') {
+        log(`Port ${port} is already in use. Please ensure no other process is using port ${port}`);
+        process.exit(1);
+      } else {
+        console.error('Server error:', err);
+        process.exit(1);
+      }
+    });
+  };
+
+  // Graceful shutdown
+  process.on('SIGTERM', () => {
+    log('Received SIGTERM. Performing graceful shutdown...');
+    server.close(() => {
+      log('Server closed');
+      process.exit(0);
+    });
   });
+
+  startServer();
 })();
