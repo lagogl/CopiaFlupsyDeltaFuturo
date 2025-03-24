@@ -744,20 +744,20 @@ export default function Inventory() {
         </div>
         
         <Tabs defaultValue="summary" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-blue-100 p-1 rounded-xl">
-            <TabsTrigger value="summary" className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
+          <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-slate-50 to-white border border-slate-200 p-1 rounded-xl shadow-sm mb-6">
+            <TabsTrigger value="summary" className="rounded-lg border-0 data-[state=active]:border-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white text-slate-700 shadow-none data-[state=active]:shadow-sm">
               <LineChart className="h-4 w-4 mr-2" />
               Riepilogo
             </TabsTrigger>
-            <TabsTrigger value="details" className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
+            <TabsTrigger value="details" className="rounded-lg border-0 data-[state=active]:border-0 data-[state=active]:bg-indigo-500 data-[state=active]:text-white text-slate-700 shadow-none data-[state=active]:shadow-sm">
               <ListFilter className="h-4 w-4 mr-2" />
               Dettaglio Ceste
             </TabsTrigger>
-            <TabsTrigger value="predictions" className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
+            <TabsTrigger value="predictions" className="rounded-lg border-0 data-[state=active]:border-0 data-[state=active]:bg-emerald-500 data-[state=active]:text-white text-slate-700 shadow-none data-[state=active]:shadow-sm">
               <TrendingUp className="h-4 w-4 mr-2" />
               Previsioni
             </TabsTrigger>
-            <TabsTrigger value="comparison" className="data-[state=active]:bg-white data-[state=active]:text-blue-700 data-[state=active]:shadow-sm">
+            <TabsTrigger value="comparison" className="rounded-lg border-0 data-[state=active]:border-0 data-[state=active]:bg-purple-500 data-[state=active]:text-white text-slate-700 shadow-none data-[state=active]:shadow-sm">
               <BarChart3 className="h-4 w-4 mr-2" />
               Comparazione
             </TabsTrigger>
@@ -779,7 +779,9 @@ export default function Inventory() {
                   <Card className="border border-blue-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                     <div className="bg-blue-50 border-b border-blue-100 flex justify-between items-center px-4 py-3">
                       <CardTitle className="text-lg text-blue-700">Ceste Attive</CardTitle>
-                      <Database className="h-5 w-5 text-blue-400" />
+                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <LineChart className="h-5 w-5 text-blue-500" />
+                      </div>
                     </div>
                     <CardContent className="p-4 text-center">
                       <div className="text-4xl font-bold text-blue-900">{formatNumberEU(inventoryStats.totalBaskets)}</div>
@@ -787,10 +789,12 @@ export default function Inventory() {
                     </CardContent>
                   </Card>
                   
-                  <Card className="border border-blue-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                  <Card className="border border-green-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                     <div className="bg-green-50 border-b border-green-100 flex justify-between items-center px-4 py-3">
                       <CardTitle className="text-lg text-green-700">Animali Totali</CardTitle>
-                      <Fish className="h-5 w-5 text-green-400" />
+                      <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
+                        <BarChart3 className="h-5 w-5 text-green-500" />
+                      </div>
                     </div>
                     <CardContent className="p-4 text-center">
                       <div className="text-4xl font-bold text-green-900">{formatNumberEU(inventoryStats.totalAnimals)}</div>
@@ -798,10 +802,12 @@ export default function Inventory() {
                     </CardContent>
                   </Card>
                   
-                  <Card className="border border-blue-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
+                  <Card className="border border-amber-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
                     <div className="bg-amber-50 border-b border-amber-100 flex justify-between items-center px-4 py-3">
                       <CardTitle className="text-lg text-amber-700">Peso Medio</CardTitle>
-                      <Scale className="h-5 w-5 text-amber-400" />
+                      <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
+                        <TrendingUp className="h-5 w-5 text-amber-500" />
+                      </div>
                     </div>
                     <CardContent className="p-4 text-center">
                       <div className="text-4xl font-bold text-amber-900">{formatDecimalEU(inventoryStats.averageWeight)} <span className="text-sm">mg</span></div>
@@ -823,50 +829,65 @@ export default function Inventory() {
           </TabsContent>
           
           <TabsContent value="details">
-            <Card>
-              <CardHeader>
-                <CardTitle>Dettaglio Ceste</CardTitle>
-                <CardDescription>
+            <Card className="border border-indigo-100 shadow-md">
+              <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
+                <CardTitle className="text-indigo-800 flex items-center gap-2">
+                  <ListFilter className="h-5 w-5 text-indigo-500" />
+                  Dettaglio Ceste
+                </CardTitle>
+                <CardDescription className="text-indigo-600">
                   Elenco dettagliato di tutte le ceste attive
                 </CardDescription>
                 <div className="flex flex-wrap gap-4 mt-4">
-                  <div className="flex items-center space-x-2">
-                    <Search className="h-4 w-4 text-muted-foreground" />
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-slate-400" />
+                    </div>
                     <Input
                       placeholder="Cerca per numero cesta"
-                      className="w-[150px]"
+                      className="pl-10 w-[220px] bg-white border-indigo-100 focus:border-indigo-300 focus:ring-indigo-200"
                       value={detailSearchTerm}
                       onChange={(e) => setDetailSearchTerm(e.target.value)}
                     />
                   </div>
                   
-                  <Select value={detailSizeFilter} onValueChange={setDetailSizeFilter}>
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue placeholder="Filtra per taglia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tutte le taglie</SelectItem>
-                      {sizeOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex-grow sm:flex-grow-0">
+                    <Select value={detailSizeFilter} onValueChange={setDetailSizeFilter}>
+                      <SelectTrigger className="w-full sm:w-[180px] border-indigo-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-indigo-100"></div>
+                          <SelectValue placeholder="Filtra per taglia" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tutte le taglie</SelectItem>
+                        {sizeOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
-                  <Select value={detailFlupsyFilter} onValueChange={setDetailFlupsyFilter}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Filtra per FLUPSY" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tutti i FLUPSY</SelectItem>
-                      {flupsyOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex-grow sm:flex-grow-0">
+                    <Select value={detailFlupsyFilter} onValueChange={setDetailFlupsyFilter}>
+                      <SelectTrigger className="w-full sm:w-[220px] border-indigo-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-indigo-100"></div>
+                          <SelectValue placeholder="Filtra per FLUPSY" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tutti i FLUPSY</SelectItem>
+                        {flupsyOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
                   <Button 
                     variant="outline" 
@@ -875,26 +896,30 @@ export default function Inventory() {
                       setDetailSizeFilter('');
                       setDetailFlupsyFilter('');
                     }}
+                    className="border-indigo-200 text-indigo-700 hover:bg-indigo-50"
                   >
                     Reset filtri
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
-                <BasketDetailTable 
-                  baskets={filteredBasketsData}
-                  formatNumberEU={formatNumberEU}
-                  formatDecimalEU={formatDecimalEU}
-                  formatDateIT={formatDateIT}
-                />
+              <CardContent className="p-5">
+                <div className="rounded-xl border border-indigo-50 overflow-hidden shadow-sm">
+                  <BasketDetailTable 
+                    baskets={filteredBasketsData}
+                    formatNumberEU={formatNumberEU}
+                    formatDecimalEU={formatDecimalEU}
+                    formatDateIT={formatDateIT}
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
           
           <TabsContent value="predictions">
-            <Card>
-              <CardHeader>
-                <CardTitle>
+            <Card className="border border-emerald-100 shadow-md">
+              <CardHeader className="bg-gradient-to-r from-emerald-50 to-white border-b border-emerald-100">
+                <CardTitle className="text-emerald-800 flex items-center gap-2">
+                  <TrendingUp className="h-5 w-5 text-emerald-500" />
                   {targetSize ? 
                     `Previsione di raggiungimento taglia ${targetSize}` : 
                     targetDate ? 
@@ -902,7 +927,7 @@ export default function Inventory() {
                     'Previsioni di Crescita'
                   }
                 </CardTitle>
-                <CardDescription>
+                <CardDescription className="text-emerald-600">
                   {targetSize ? 
                     `Elenco delle ceste che raggiungeranno la taglia ${targetSize} e quando` : 
                     targetDate ? 
@@ -911,43 +936,55 @@ export default function Inventory() {
                   }
                 </CardDescription>
                 <div className="flex flex-wrap gap-4 mt-4">
-                  <div className="flex items-center space-x-2">
-                    <Search className="h-4 w-4 text-muted-foreground" />
+                  <div className="relative">
+                    <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                      <Search className="h-4 w-4 text-slate-400" />
+                    </div>
                     <Input
                       placeholder="Cerca per numero cesta"
-                      className="w-[150px]"
+                      className="pl-10 w-[220px] bg-white border-emerald-100 focus:border-emerald-300 focus:ring-emerald-200"
                       value={searchTerm}
                       onChange={(e) => setSearchTerm(e.target.value)}
                     />
                   </div>
                   
-                  <Select value={sizeFilter} onValueChange={setSizeFilter}>
-                    <SelectTrigger className="w-[150px]">
-                      <SelectValue placeholder="Filtra per taglia" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tutte le taglie</SelectItem>
-                      {sizeOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex-grow sm:flex-grow-0">
+                    <Select value={sizeFilter} onValueChange={setSizeFilter}>
+                      <SelectTrigger className="w-full sm:w-[180px] border-emerald-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-emerald-100"></div>
+                          <SelectValue placeholder="Filtra per taglia" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tutte le taglie</SelectItem>
+                        {sizeOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
-                  <Select value={flupsyFilter} onValueChange={setFlupsyFilter}>
-                    <SelectTrigger className="w-[200px]">
-                      <SelectValue placeholder="Filtra per FLUPSY" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="all">Tutti i FLUPSY</SelectItem>
-                      {flupsyOptions.map(option => (
-                        <SelectItem key={option.value} value={option.value}>
-                          {option.label}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <div className="flex-grow sm:flex-grow-0">
+                    <Select value={flupsyFilter} onValueChange={setFlupsyFilter}>
+                      <SelectTrigger className="w-full sm:w-[220px] border-emerald-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-emerald-100"></div>
+                          <SelectValue placeholder="Filtra per FLUPSY" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="all">Tutti i FLUPSY</SelectItem>
+                        {flupsyOptions.map(option => (
+                          <SelectItem key={option.value} value={option.value}>
+                            {option.label}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
                   
                   <Button 
                     variant="outline" 
@@ -956,31 +993,97 @@ export default function Inventory() {
                       setSizeFilter('');
                       setFlupsyFilter('');
                     }}
+                    className="border-emerald-200 text-emerald-700 hover:bg-emerald-50"
                   >
                     Reset filtri
                   </Button>
                 </div>
               </CardHeader>
-              <CardContent>
+              <CardContent className="p-5">
                 {(targetDate || targetSize) ? (
-                  <GrowthPrediction 
-                    predictions={filteredGrowthPredictions}
-                    targetSize={targetSize}
-                    targetDate={targetDate}
-                    growthChartData={growthChartData}
-                    sizes={sizes as Size[]}
-                    formatNumberEU={formatNumberEU}
-                    formatDecimalEU={formatDecimalEU}
-                    formatDateIT={formatDateIT}
-                    getColorForSize={getColorForSize}
-                  />
+                  <div className="rounded-xl border border-emerald-50 overflow-hidden shadow-sm p-4">
+                    <GrowthPrediction 
+                      predictions={filteredGrowthPredictions}
+                      targetSize={targetSize}
+                      targetDate={targetDate}
+                      growthChartData={growthChartData}
+                      sizes={sizes as Size[]}
+                      formatNumberEU={formatNumberEU}
+                      formatDecimalEU={formatDecimalEU}
+                      formatDateIT={formatDateIT}
+                      getColorForSize={getColorForSize}
+                    />
+                  </div>
                 ) : (
-                  <div className="text-center py-12">
-                    <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground" />
-                    <h3 className="mt-4 text-lg font-semibold">Nessuna previsione disponibile</h3>
-                    <p className="mt-2 text-sm text-muted-foreground">
-                      Seleziona una data target o una taglia target per visualizzare le previsioni di crescita
+                  <div className="text-center bg-white rounded-xl border border-emerald-50 shadow-sm py-16">
+                    <div className="h-16 w-16 rounded-full bg-emerald-50 flex items-center justify-center mx-auto mb-4">
+                      <TrendingUp className="h-8 w-8 text-emerald-400" />
+                    </div>
+                    <h3 className="mt-4 text-xl font-semibold text-emerald-700">Nessuna previsione disponibile</h3>
+                    <p className="mt-2 text-sm text-emerald-600 max-w-md mx-auto">
+                      Seleziona una data target o una taglia target nei controlli qui sotto per visualizzare le previsioni di crescita
                     </p>
+                    
+                    <div className="flex flex-wrap gap-6 justify-center mt-8 max-w-3xl mx-auto px-4">
+                      <div className="border border-emerald-100 rounded-lg p-4 bg-emerald-50/40 w-full md:w-auto">
+                        <h4 className="text-sm font-medium text-emerald-700 mb-2">Taglia Target</h4>
+                        <Select value={targetSize} onValueChange={setTargetSize}>
+                          <SelectTrigger className="w-full border-emerald-200 bg-white">
+                            <SelectValue placeholder="Seleziona taglia" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            <SelectItem value="">Nessuna taglia</SelectItem>
+                            {sizeOptions.map(option => (
+                              <SelectItem key={option.value} value={option.value}>
+                                {option.label}
+                              </SelectItem>
+                            ))}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                      
+                      <div className="border border-emerald-100 rounded-lg p-4 bg-emerald-50/40 w-full md:w-auto">
+                        <h4 className="text-sm font-medium text-emerald-700 mb-2">Data Target</h4>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal border-emerald-200 bg-white"
+                            >
+                              <CalendarIcon className="mr-2 h-4 w-4" />
+                              {targetDate ? (
+                                format(targetDate, "d MMMM yyyy", { locale: it })
+                              ) : (
+                                <span>Seleziona data</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={targetDate}
+                              onSelect={setTargetDate}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                      
+                      <div className="border border-emerald-100 rounded-lg p-4 bg-emerald-50/40 w-full md:w-auto">
+                        <h4 className="text-sm font-medium text-emerald-700 mb-2">SGR mensile (%)</h4>
+                        <div className="pt-2 pb-4">
+                          <Slider
+                            value={[sgr]}
+                            onValueChange={(values) => setSgr(values[0])}
+                            min={0}
+                            max={20}
+                            step={0.5}
+                            className="w-full"
+                          />
+                          <div className="text-center mt-2 font-medium">{sgr}%</div>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 )}
               </CardContent>
@@ -988,23 +1091,28 @@ export default function Inventory() {
           </TabsContent>
           
           <TabsContent value="comparison">
-            <Card>
-              <CardHeader>
-                <CardTitle>Comparazione Crescita</CardTitle>
-                <CardDescription>
+            <Card className="border border-purple-100 shadow-md">
+              <CardHeader className="bg-gradient-to-r from-purple-50 to-white border-b border-purple-100">
+                <CardTitle className="text-purple-800 flex items-center gap-2">
+                  <BarChart3 className="h-5 w-5 text-purple-500" />
+                  Comparazione Crescita
+                </CardTitle>
+                <CardDescription className="text-purple-600">
                   Confronto dei tassi di crescita e proiezioni future
                 </CardDescription>
               </CardHeader>
-              <CardContent>
-                <GrowthComparison 
-                  basketsData={basketsData}
-                  inventoryStats={inventoryStats}
-                  sgr={sgr}
-                  sizes={sizes as Size[]}
-                  formatNumberEU={formatNumberEU}
-                  formatDecimalEU={formatDecimalEU}
-                  formatDateIT={formatDateIT}
-                />
+              <CardContent className="p-5">
+                <div className="rounded-xl border border-purple-50 overflow-hidden shadow-sm p-4">
+                  <GrowthComparison 
+                    basketsData={basketsData}
+                    inventoryStats={inventoryStats}
+                    sgr={sgr}
+                    sizes={sizes as Size[]}
+                    formatNumberEU={formatNumberEU}
+                    formatDecimalEU={formatDecimalEU}
+                    formatDateIT={formatDateIT}
+                  />
+                </div>
               </CardContent>
             </Card>
           </TabsContent>
