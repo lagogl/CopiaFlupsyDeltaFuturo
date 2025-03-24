@@ -291,7 +291,7 @@ export default function FlupsyComparison() {
         
         {currentSize && (
           <div className="mt-1 text-center">
-            <Badge className={`text-xs ${currentSize.color.includes('bg-') ? currentSize.color : `bg-${currentSize.color}`} text-white`}>
+            <Badge className="text-xs bg-blue-500 text-white">
               {currentSize.code}
             </Badge>
             <div className="text-xs mt-1">{currentWeight} mg</div>
@@ -356,7 +356,7 @@ export default function FlupsyComparison() {
         
         {futureSize && (
           <div className="mt-1 text-center">
-            <Badge className={`text-xs ${futureSize.color.includes('bg-') ? futureSize.color : `bg-${futureSize.color}`} text-white`}>
+            <Badge className="text-xs bg-blue-500 text-white">
               {futureSize.code}
             </Badge>
             <div className="text-xs mt-1">{futureWeight} mg</div>
