@@ -774,7 +774,7 @@ export default function Inventory() {
         </div>
         
         <Tabs defaultValue="summary" className="w-full">
-          <TabsList className="grid w-full grid-cols-4 bg-gradient-to-r from-slate-50 to-white border border-slate-200 p-1 rounded-xl shadow-sm mb-6">
+          <TabsList className="grid w-full grid-cols-5 bg-gradient-to-r from-slate-50 to-white border border-slate-200 p-1 rounded-xl shadow-sm mb-6">
             <TabsTrigger value="summary" className="rounded-lg border-0 data-[state=active]:border-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white text-slate-700 shadow-none data-[state=active]:shadow-sm">
               <LineChart className="h-4 w-4 mr-2" />
               Riepilogo
@@ -790,6 +790,10 @@ export default function Inventory() {
             <TabsTrigger value="comparison" className="rounded-lg border-0 data-[state=active]:border-0 data-[state=active]:bg-purple-500 data-[state=active]:text-white text-slate-700 shadow-none data-[state=active]:shadow-sm">
               <BarChart3 className="h-4 w-4 mr-2" />
               Comparazione
+            </TabsTrigger>
+            <TabsTrigger value="timeline" className="rounded-lg border-0 data-[state=active]:border-0 data-[state=active]:bg-amber-500 data-[state=active]:text-white text-slate-700 shadow-none data-[state=active]:shadow-sm">
+              <CalendarIcon className="h-4 w-4 mr-2" />
+              Timeline Vendite
             </TabsTrigger>
           </TabsList>
           
@@ -1138,6 +1142,74 @@ export default function Inventory() {
                     inventoryStats={inventoryStats}
                     sgr={sgr}
                     sizes={sizes as Size[]}
+                    formatNumberEU={formatNumberEU}
+                    formatDecimalEU={formatDecimalEU}
+                    formatDateIT={formatDateIT}
+                  />
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="timeline">
+            <Card className="border border-amber-100 shadow-md">
+              <CardHeader className="bg-gradient-to-r from-amber-50 to-white border-b border-amber-100">
+                <CardTitle className="text-amber-800 flex items-center gap-2">
+                  <CalendarIcon className="h-5 w-5 text-amber-500" />
+                  Timeline di Vendita
+                </CardTitle>
+                <CardDescription className="text-amber-600">
+                  Proiezione cronologica delle taglie commerciali
+                </CardDescription>
+                <div className="flex flex-wrap gap-4 mt-4">
+                  <div className="flex-grow sm:flex-grow-0">
+                    <div className="flex items-center space-x-2">
+                      <span className="text-sm font-medium">Mesi di proiezione:</span>
+                      <Slider
+                        className="w-[200px]"
+                        min={1}
+                        max={12}
+                        step={1}
+                        value={[projectionMonths]}
+                        onValueChange={(value) => setProjectionMonths(value[0])}
+                      />
+                      <span className="w-9 text-center bg-amber-50 border border-amber-100 rounded-md text-sm py-1">
+                        {projectionMonths}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div className="flex-grow sm:flex-grow-0">
+                    <Select 
+                      value={sgr.toString()} 
+                      onValueChange={(val) => setSgr(parseFloat(val))}
+                    >
+                      <SelectTrigger className="w-full sm:w-[220px] border-amber-100">
+                        <div className="flex items-center gap-2">
+                          <div className="w-3 h-3 rounded-full bg-amber-100"></div>
+                          <SelectValue placeholder="SGR Mensile" />
+                        </div>
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="1">1% - Crescita molto lenta</SelectItem>
+                        <SelectItem value="3">3% - Crescita lenta</SelectItem>
+                        <SelectItem value="5">5% - Crescita media (Default)</SelectItem>
+                        <SelectItem value="7">7% - Crescita veloce</SelectItem>
+                        <SelectItem value="10">10% - Crescita molto veloce</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </div>
+              </CardHeader>
+              <CardContent className="p-5">
+                <div className="rounded-xl border border-amber-50 overflow-hidden shadow-sm p-4">
+                  <SalesTimeline 
+                    basketsData={basketsData}
+                    sizes={sizes as Size[]}
+                    sgrRates={sgrs as any[]}
+                    mortalityRates={mortalityRates as MortalityRate[]}
+                    projectionMonths={projectionMonths}
+                    targetSizes={['TP-1200', 'TP-1500', 'TP-2000', 'TP-3000']}
                     formatNumberEU={formatNumberEU}
                     formatDecimalEU={formatDecimalEU}
                     formatDateIT={formatDateIT}
