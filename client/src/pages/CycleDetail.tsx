@@ -436,11 +436,23 @@ export default function CycleDetail() {
   });
   
   // Fetch operations for this cycle
-  const { data: operations, isLoading: opsLoading } = useQuery({
+  const { data: operations, isLoading: opsLoading, refetch: refetchOperations } = useQuery({
     queryKey: ['/api/operations', cycleId],
     queryFn: cycleId ? () => fetch(`/api/operations?cycleId=${cycleId}`).then(res => res.json()) : undefined,
     enabled: !!cycleId
   });
+  
+  // Function to handle operation deletion
+  const handleDeleteOperation = async (operationId: number) => {
+    try {
+      await apiRequest('DELETE', `/api/operations/${operationId}`);
+      // Refresh operations data
+      refetchOperations();
+    } catch (error) {
+      console.error('Errore nella cancellazione dell\'operazione:', error);
+      alert('Si è verificato un errore durante la cancellazione dell\'operazione. Riprova.');
+    }
+  };
   
   // Loading state
   if (cycleLoading || opsLoading) {
@@ -707,7 +719,11 @@ export default function CycleDetail() {
         </TabsList>
         
         <TabsContent value="operations" className="mt-6">
-          <OperationsList operations={operations} formatDate={formatDate} />
+          <OperationsList 
+            operations={operations} 
+            formatDate={formatDate} 
+            onDeleteOperation={handleDeleteOperation} 
+          />
         </TabsContent>
         
         <TabsContent value="stats" className="mt-6">
