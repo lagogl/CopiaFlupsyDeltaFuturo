@@ -113,6 +113,7 @@ export class MemStorage implements IStorage {
   private lots: Map<number, Lot>;
   private basketPositions: Map<number, BasketPositionHistory>;
   private sgrGiornalieri: Map<number, SgrGiornaliero>;
+  private mortalityRates: Map<number, MortalityRate>;
   
   private flupsyId: number;
   private basketId: number;
@@ -123,6 +124,7 @@ export class MemStorage implements IStorage {
   private lotId: number;
   private positionHistoryId: number;
   private sgrGiornalieroId: number;
+  private mortalityRateId: number;
   
   constructor() {
     this.flupsys = new Map();
@@ -134,6 +136,7 @@ export class MemStorage implements IStorage {
     this.lots = new Map();
     this.basketPositions = new Map();
     this.sgrGiornalieri = new Map();
+    this.mortalityRates = new Map();
     
     this.flupsyId = 1;
     this.basketId = 1;
@@ -144,6 +147,7 @@ export class MemStorage implements IStorage {
     this.lotId = 1;
     this.positionHistoryId = 1;
     this.sgrGiornalieroId = 1;
+    this.mortalityRateId = 1;
     
     // Initialize with some default sizes
     this.initializeDefaultData();
@@ -181,9 +185,55 @@ export class MemStorage implements IStorage {
       { month: 'Dicembre', percentage: 0.6 }
     ];
     
+    // Initialize default mortality rates
+    const defaultMortalityRates: InsertMortalityRate[] = [
+      // T0 size mortality rates
+      { month: 'Gennaio', sizeId: 1, percentage: 2.5, notes: 'Mortalità invernale T0' },
+      { month: 'Febbraio', sizeId: 1, percentage: 2.3, notes: 'Mortalità invernale T0' },
+      { month: 'Marzo', sizeId: 1, percentage: 2.0, notes: 'Mortalità primaverile T0' },
+      { month: 'Aprile', sizeId: 1, percentage: 1.8, notes: 'Mortalità primaverile T0' },
+      { month: 'Maggio', sizeId: 1, percentage: 1.5, notes: 'Mortalità primaverile T0' },
+      { month: 'Giugno', sizeId: 1, percentage: 1.3, notes: 'Mortalità estiva T0' },
+      { month: 'Luglio', sizeId: 1, percentage: 1.5, notes: 'Mortalità estiva T0' },
+      { month: 'Agosto', sizeId: 1, percentage: 1.8, notes: 'Mortalità estiva T0' },
+      { month: 'Settembre', sizeId: 1, percentage: 1.7, notes: 'Mortalità autunnale T0' },
+      { month: 'Ottobre', sizeId: 1, percentage: 1.9, notes: 'Mortalità autunnale T0' },
+      { month: 'Novembre', sizeId: 1, percentage: 2.1, notes: 'Mortalità autunnale T0' },
+      { month: 'Dicembre', sizeId: 1, percentage: 2.4, notes: 'Mortalità invernale T0' },
+      
+      // T1 size mortality rates (generally lower than T0)
+      { month: 'Gennaio', sizeId: 2, percentage: 2.0, notes: 'Mortalità invernale T1' },
+      { month: 'Febbraio', sizeId: 2, percentage: 1.8, notes: 'Mortalità invernale T1' },
+      { month: 'Marzo', sizeId: 2, percentage: 1.5, notes: 'Mortalità primaverile T1' },
+      { month: 'Aprile', sizeId: 2, percentage: 1.3, notes: 'Mortalità primaverile T1' },
+      { month: 'Maggio', sizeId: 2, percentage: 1.0, notes: 'Mortalità primaverile T1' },
+      { month: 'Giugno', sizeId: 2, percentage: 0.8, notes: 'Mortalità estiva T1' },
+      { month: 'Luglio', sizeId: 2, percentage: 1.0, notes: 'Mortalità estiva T1' },
+      { month: 'Agosto', sizeId: 2, percentage: 1.3, notes: 'Mortalità estiva T1' },
+      { month: 'Settembre', sizeId: 2, percentage: 1.2, notes: 'Mortalità autunnale T1' },
+      { month: 'Ottobre', sizeId: 2, percentage: 1.4, notes: 'Mortalità autunnale T1' },
+      { month: 'Novembre', sizeId: 2, percentage: 1.6, notes: 'Mortalità autunnale T1' },
+      { month: 'Dicembre', sizeId: 2, percentage: 1.9, notes: 'Mortalità invernale T1' },
+      
+      // M1 size mortality rates (lower as they're more mature)
+      { month: 'Gennaio', sizeId: 3, percentage: 1.5, notes: 'Mortalità invernale M1' },
+      { month: 'Febbraio', sizeId: 3, percentage: 1.3, notes: 'Mortalità invernale M1' },
+      { month: 'Marzo', sizeId: 3, percentage: 1.0, notes: 'Mortalità primaverile M1' },
+      { month: 'Aprile', sizeId: 3, percentage: 0.8, notes: 'Mortalità primaverile M1' },
+      { month: 'Maggio', sizeId: 3, percentage: 0.5, notes: 'Mortalità primaverile M1' },
+      { month: 'Giugno', sizeId: 3, percentage: 0.3, notes: 'Mortalità estiva M1' },
+      { month: 'Luglio', sizeId: 3, percentage: 0.5, notes: 'Mortalità estiva M1' },
+      { month: 'Agosto', sizeId: 3, percentage: 0.8, notes: 'Mortalità estiva M1' },
+      { month: 'Settembre', sizeId: 3, percentage: 0.7, notes: 'Mortalità autunnale M1' },
+      { month: 'Ottobre', sizeId: 3, percentage: 0.9, notes: 'Mortalità autunnale M1' },
+      { month: 'Novembre', sizeId: 3, percentage: 1.1, notes: 'Mortalità autunnale M1' },
+      { month: 'Dicembre', sizeId: 3, percentage: 1.4, notes: 'Mortalità invernale M1' }
+    ];
+    
     defaultFlupsys.forEach(flupsy => this.createFlupsy(flupsy));
     defaultSizes.forEach(size => this.createSize(size));
     defaultSgrs.forEach(sgr => this.createSgr(sgr));
+    defaultMortalityRates.forEach(rate => this.createMortalityRate(rate));
   }
   
   // FLUPSY methods
@@ -633,6 +683,53 @@ export class MemStorage implements IStorage {
       return true;
     }
     return false;
+  }
+  
+  // Mortality Rate methods
+  async getMortalityRates(): Promise<MortalityRate[]> {
+    return Array.from(this.mortalityRates.values());
+  }
+
+  async getMortalityRate(id: number): Promise<MortalityRate | undefined> {
+    return this.mortalityRates.get(id);
+  }
+
+  async getMortalityRatesBySize(sizeId: number): Promise<MortalityRate[]> {
+    return Array.from(this.mortalityRates.values())
+      .filter(rate => rate.sizeId === sizeId);
+  }
+
+  async getMortalityRatesByMonth(month: string): Promise<MortalityRate[]> {
+    return Array.from(this.mortalityRates.values())
+      .filter(rate => rate.month.toLowerCase() === month.toLowerCase());
+  }
+
+  async getMortalityRateByMonthAndSize(month: string, sizeId: number): Promise<MortalityRate | undefined> {
+    return Array.from(this.mortalityRates.values())
+      .find(rate => 
+        rate.month.toLowerCase() === month.toLowerCase() && 
+        rate.sizeId === sizeId
+      );
+  }
+
+  async createMortalityRate(mortalityRate: InsertMortalityRate): Promise<MortalityRate> {
+    const id = this.mortalityRateId++;
+    const newMortalityRate: MortalityRate = { 
+      ...mortalityRate, 
+      id,
+      notes: mortalityRate.notes || null
+    };
+    this.mortalityRates.set(id, newMortalityRate);
+    return newMortalityRate;
+  }
+
+  async updateMortalityRate(id: number, mortalityRateUpdate: Partial<MortalityRate>): Promise<MortalityRate | undefined> {
+    const currentMortalityRate = this.mortalityRates.get(id);
+    if (!currentMortalityRate) return undefined;
+    
+    const updatedMortalityRate = { ...currentMortalityRate, ...mortalityRateUpdate };
+    this.mortalityRates.set(id, updatedMortalityRate);
+    return updatedMortalityRate;
   }
   
   // Growth predictions methods
