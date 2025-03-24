@@ -240,15 +240,17 @@ export function getSizeColor(sizeCode: string): string {
     // Trova la taglia target corrispondente
     const targetSize = TARGET_SIZES.find(size => size.code === sizeCode);
     if (targetSize) {
-      // Restituisci il colore del testo in base alla taglia target
-      return `${targetSize.color.replace('border-', 'text-')}`;
+      // Restituisci il colore di sfondo in base alla taglia target
+      // Usa il colore ma assicurati che sia un bg-* e non text-* o border-*
+      const baseColor = targetSize.color.replace('border-', '').replace('text-', '');
+      return `bg-${baseColor} text-white`;
     }
-    return 'bg-yellow-100 text-yellow-800';
+    return 'bg-yellow-500 text-white';
   } else if (sizeCode.startsWith('M')) {
-    return 'bg-green-100 text-green-800';
+    return 'bg-green-500 text-white';
   }
   
-  return 'bg-blue-100 text-blue-800';
+  return 'bg-blue-500 text-white';
 }
 
 /**

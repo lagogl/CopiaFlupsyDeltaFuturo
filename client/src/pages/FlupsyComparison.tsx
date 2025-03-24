@@ -8,27 +8,28 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { format, addDays, differenceInWeeks } from 'date-fns';
 import { Calendar, Clock, ArrowRight } from 'lucide-react';
-import { getTargetSizeForWeight, getFutureWeightAtDate } from '@/lib/utils';
+import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor } from '@/lib/utils';
 
 // Helper function per ottenere il colore di una taglia
-const getSizeColor = (sizeCode: string): string => {
+const getSizeColorWithBorder = (sizeCode: string): string => {
+  // Funzione locale che restituisce colori con contrasto adeguato per la visualizzazione
   switch (sizeCode) {
     case 'T1':
-      return 'bg-blue-100 border-blue-300';
+      return 'bg-blue-500 text-white border-blue-700';
     case 'T2':
-      return 'bg-cyan-100 border-cyan-300';
+      return 'bg-cyan-500 text-white border-cyan-700';
     case 'T3':
-      return 'bg-teal-100 border-teal-300';
+      return 'bg-teal-500 text-white border-teal-700';
     case 'T4':
-      return 'bg-green-100 border-green-300';
+      return 'bg-green-500 text-white border-green-700';
     case 'T5':
-      return 'bg-lime-100 border-lime-300';
+      return 'bg-lime-500 text-white border-lime-700';
     case 'T6':
-      return 'bg-amber-100 border-amber-300';
+      return 'bg-amber-500 text-white border-amber-700';
     case 'T7':
-      return 'bg-orange-100 border-orange-300';
+      return 'bg-orange-500 text-white border-orange-700';
     default:
-      return 'bg-gray-100 border-gray-300';
+      return 'bg-gray-500 text-white border-gray-700';
   }
 };
 
@@ -271,8 +272,8 @@ export default function FlupsyComparison() {
     
     // Classe CSS per il colore del cestello
     const colorClass = currentSize?.code 
-      ? getSizeColor(currentSize.code) 
-      : 'bg-gray-100 border-gray-300';
+      ? getSizeColorWithBorder(currentSize.code) 
+      : 'bg-gray-100 text-gray-800 border-gray-300';
     
     return (
       <div 
@@ -331,8 +332,8 @@ export default function FlupsyComparison() {
     
     // Classe CSS per il colore del cestello futuro
     const colorClass = futureSize?.code 
-      ? getSizeColor(futureSize.code) 
-      : 'bg-gray-100 border-gray-300';
+      ? getSizeColorWithBorder(futureSize.code) 
+      : 'bg-gray-100 text-gray-800 border-gray-300';
     
     // Calcola la percentuale di crescita
     const growthPercentage = currentWeight && futureWeight 
@@ -403,13 +404,13 @@ export default function FlupsyComparison() {
     const targetSizeObj = sizes ? sizes.find(s => s.code === targetSizeCode) : null;
     
     // Classe CSS per il colore del cestello
-    let colorClass = 'bg-gray-100 border-gray-300';
+    let colorClass = 'bg-gray-100 text-gray-800 border-gray-300';
     if (currentSize?.code === targetSizeCode) {
       // È già nella taglia target
-      colorClass = getSizeColor(targetSizeCode);
+      colorClass = getSizeColorWithBorder(targetSizeCode);
     } else if (willReach) {
       // Raggiungerà la taglia target (colore più tenue)
-      colorClass = getSizeColor(targetSizeCode).replace('-300', '-200');
+      colorClass = getSizeColorWithBorder(targetSizeCode).replace('-500', '-400');
     }
     
     return (
@@ -673,7 +674,7 @@ export default function FlupsyComparison() {
           <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-6 gap-4">
             {sizes && sizes.map(size => (
               <div key={size.id} className="flex items-center">
-                <div className={`w-4 h-4 mr-2 rounded ${getSizeColor(size.code)}`}></div>
+                <div className={`w-4 h-4 mr-2 rounded ${getSizeColorWithBorder(size.code)}`}></div>
                 <span className="text-sm">{size.code} - {size.name}</span>
               </div>
             ))}
