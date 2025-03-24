@@ -20,6 +20,7 @@ import Settings from "@/pages/Settings";
 import Flupsys from "@/pages/Flupsys";
 import FlupsyFullView from "@/pages/FlupsyFullView";
 import FlupsyPositions from "@/pages/FlupsyPositions";
+import Inventory from "@/pages/Inventory";
 import TestView from "@/pages/TestView";
 
 function Router() {
@@ -39,6 +40,7 @@ function Router() {
       <Route path="/cycles/:id" component={CycleDetail}/>
       <Route path="/lots" component={Lots}/>
       <Route path="/statistics" component={Statistics}/>
+      <Route path="/inventory" component={Inventory}/>
       <Route path="/sizes" component={Sizes}/>
       <Route path="/sgr" component={Sgr}/>
       <Route path="/settings" component={Settings}/>
