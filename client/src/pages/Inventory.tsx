@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
 import { Helmet } from "react-helmet";
@@ -9,20 +9,30 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
-import {
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { formatNumberWithCommas, TARGET_SIZES, getTargetSizeForWeight } from "@/lib/utils";
-import { PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts";
+import { 
+  calculateSizeTimeline, 
+  getTargetSizeReachDate, 
+  getFutureWeightAtDate,
+  getSizeFromAnimalsPerKg
+} from "@/lib/utils";
+import { CalendarIcon, Filter, Search, TrendingUp } from "lucide-react";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { Select, SelectContent, SelectGroup, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { Slider } from "@/components/ui/slider";
+import { Input } from "@/components/ui/input";
+import { Button } from "@/components/ui/button";
+import { format, addMonths, isValid, differenceInDays } from "date-fns";
+import { it } from "date-fns/locale";
 
-// Interfaccia per i dati di inventario aggregati per taglia
+// Importazione dei componenti
+import InventorySummary from "@/components/inventory/InventorySummary";
+import BasketDetailTable from "@/components/inventory/BasketDetailTable";
+import GrowthPrediction from "@/components/inventory/GrowthPrediction";
+import GrowthComparison from "@/components/inventory/GrowthComparison";
+
+// Interfacce dei dati
 interface SizeInventory {
   sizeCode: string;
   sizeName: string;
@@ -31,6 +41,67 @@ interface SizeInventory {
   totalAnimals: number;
   averageAnimalsPerKg: number;
   averageWeight: number;
+  minAnimalsPerKg: number | null;
+  maxAnimalsPerKg: number | null;
+}
+
+interface BasketData {
+  id: number;
+  physicalNumber: number;
+  flupsyId: number;
+  flupsyName: string;
+  row: string | null;
+  position: number | null;
+  state: string;
+  currentCycleId: number | null;
+  sizeCode: string | null;
+  sizeName: string | null;
+  color: string | null;
+  animalsPerKg: number | null;
+  averageWeight: number | null;
+  totalAnimals: number | null;
+  lastOperationDate: string | null;
+  lastOperationType: string | null;
+  cycleStartDate: string | null;
+  cycleDuration: number | null;
+  growthRate: number | null;
+}
+
+interface GrowthPrediction {
+  basketId: number;
+  physicalNumber: number;
+  flupsyName: string;
+  currentWeight: number;
+  currentAnimalsPerKg: number;
+  currentSizeCode: string;
+  currentSizeName: string;
+  predictedWeight: number;
+  predictedAnimalsPerKg: number;
+  predictedSizeCode: string | null;
+  predictedSizeName: string | null;
+  growthPercentage: number;
+  daysToTarget: number | null;
+  targetDate: Date | null;
+}
+
+interface Size {
+  id: number;
+  code: string;
+  name: string;
+  sizeMm: number | null;
+  minAnimalsPerKg: number | null;
+  maxAnimalsPerKg: number | null;
+  notes: string | null;
+  color?: string;
+}
+
+interface MortalityRate {
+  id: number;
+  month: string;
+  sizeId: number;
+  percentage: number;
+  sizeName?: string;
+  sizeCode?: string;
 }
 
 export default function Inventory() {
@@ -47,6 +118,28 @@ export default function Inventory() {
     sizeDistribution: [],
   });
 
+  // Stato per i dati delle ceste
+  const [basketsData, setBasketsData] = useState<BasketData[]>([]);
+  
+  // Stato per le previsioni di crescita
+  const [growthPredictions, setGrowthPredictions] = useState<GrowthPrediction[]>([]);
+  
+  // Stato per i filtri delle previsioni
+  const [targetSize, setTargetSize] = useState<string>("");
+  const [targetDate, setTargetDate] = useState<Date | undefined>(addMonths(new Date(), 3));
+  const [sgr, setSgr] = useState<number>(5); // Tasso di crescita mensile predefinito (%)
+  const [searchTerm, setSearchTerm] = useState<string>("");
+  const [sizeFilter, setSizeFilter] = useState<string>("");
+  const [flupsyFilter, setFlupsyFilter] = useState<string>("");
+  
+  // Filtri per la tabella di dettaglio
+  const [detailSizeFilter, setDetailSizeFilter] = useState<string>("");
+  const [detailFlupsyFilter, setDetailFlupsyFilter] = useState<string>("");
+  const [detailSearchTerm, setDetailSearchTerm] = useState<string>("");
+  
+  // Numero di mesi per le proiezioni
+  const [projectionMonths, setProjectionMonths] = useState<number>(6);
+
   // Carica dati necessari
   const { data: baskets, isLoading: loadingBaskets } = useQuery({
     queryKey: ['/api/baskets'],
@@ -62,13 +155,60 @@ export default function Inventory() {
     queryKey: ['/api/sizes'],
     queryFn: getQueryFn({ on401: "throw" })
   });
+  
+  const { data: flupsys, isLoading: loadingFlupsys } = useQuery({
+    queryKey: ['/api/flupsys'],
+    queryFn: getQueryFn({ on401: "throw" })
+  });
+  
+  const { data: cycles, isLoading: loadingCycles } = useQuery({
+    queryKey: ['/api/cycles'],
+    queryFn: getQueryFn({ on401: "throw" })
+  });
+  
+  const { data: sgrs, isLoading: loadingSgrs } = useQuery({
+    queryKey: ['/api/sgrs'],
+    queryFn: getQueryFn({ on401: "throw" })
+  });
+  
+  const { data: mortalityRates, isLoading: loadingMortalityRates } = useQuery({
+    queryKey: ['/api/mortality-rates'],
+    queryFn: getQueryFn({ on401: "throw" })
+  });
+
+  // Prepara le opzioni per i filtri
+  const sizeOptions = useMemo(() => {
+    if (!sizes) return [];
+    return (sizes as Size[]).map((size: Size) => ({
+      value: size.code,
+      label: `${size.code} - ${size.name}`,
+      minAnimalsPerKg: size.minAnimalsPerKg,
+      maxAnimalsPerKg: size.maxAnimalsPerKg
+    }));
+  }, [sizes]);
+  
+  const flupsyOptions = useMemo(() => {
+    if (!flupsys) return [];
+    return (flupsys as any[]).map((flupsy: any) => ({
+      value: flupsy.id.toString(),
+      label: flupsy.name
+    }));
+  }, [flupsys]);
 
   // Calcola le statistiche di inventario quando i dati sono disponibili
   useEffect(() => {
-    if (baskets && operations && sizes) {
+    if (baskets && operations && sizes && flupsys && cycles) {
       calculateInventoryStats();
+      prepareBasketData();
     }
-  }, [baskets, operations, sizes]);
+  }, [baskets, operations, sizes, flupsys, cycles]);
+  
+  // Calcola le previsioni di crescita quando cambiano i parametri
+  useEffect(() => {
+    if (basketsData.length > 0) {
+      calculateGrowthPredictions();
+    }
+  }, [basketsData, targetSize, targetDate, sgr, projectionMonths]);
 
   // Funzione per calcolare le statistiche di inventario
   const calculateInventoryStats = () => {
@@ -81,23 +221,25 @@ export default function Inventory() {
 
     // Prepara un map per le dimensioni
     const sizeMap = new Map();
-    (sizes as any[]).forEach((size: any) => {
+    (sizes as Size[]).forEach((size: Size) => {
       sizeMap.set(size.id, size);
     });
 
     // Prepara la struttura per la distribuzione delle taglie
     const sizeDistribution: Record<string, SizeInventory> = {};
     
-    // Inizializza con tutte le taglie possibili
-    TARGET_SIZES.forEach(targetSize => {
-      sizeDistribution[targetSize.code] = {
-        sizeCode: targetSize.code,
-        sizeName: targetSize.name,
-        color: targetSize.color,
+    // Inizializza con tutte le taglie dal database 
+    (sizes as Size[]).forEach(size => {
+      sizeDistribution[size.code] = {
+        sizeCode: size.code,
+        sizeName: size.name,
+        color: getColorForSize(size),
         count: 0,
         totalAnimals: 0,
         averageAnimalsPerKg: 0,
         averageWeight: 0,
+        minAnimalsPerKg: size.minAnimalsPerKg,
+        maxAnimalsPerKg: size.maxAnimalsPerKg
       };
     });
 
@@ -118,21 +260,21 @@ export default function Inventory() {
       if (!lastOperation.animalsPerKg) return;
 
       // Calcola il peso medio
-      const averageWeight = lastOperation.averageWeight || (1000 / lastOperation.animalsPerKg);
+      const averageWeight = lastOperation.averageWeight || (1000000 / lastOperation.animalsPerKg);
       
-      // Determina la taglia in base al peso
-      const targetSize = getTargetSizeForWeight(averageWeight);
-      if (!targetSize) return;
+      // Determina la taglia in base al numero di animali per kg (usando i dati del db)
+      const matchingSize = findSizeFromAnimalsPerKg(lastOperation.animalsPerKg);
+      if (!matchingSize) return;
       
       // Calcola il numero totale di animali nella cesta
-      const animalCount = lastOperation.animalCount || 0;
+      const animalCount = lastOperation.animalCount || calculateAnimalCount(lastOperation);
       
       // Aggiorna la distribuzione delle taglie
-      if (sizeDistribution[targetSize.code]) {
-        sizeDistribution[targetSize.code].count++;
-        sizeDistribution[targetSize.code].totalAnimals += animalCount;
-        sizeDistribution[targetSize.code].averageAnimalsPerKg += lastOperation.animalsPerKg;
-        sizeDistribution[targetSize.code].averageWeight += averageWeight;
+      if (sizeDistribution[matchingSize.code]) {
+        sizeDistribution[matchingSize.code].count++;
+        sizeDistribution[matchingSize.code].totalAnimals += animalCount;
+        sizeDistribution[matchingSize.code].averageAnimalsPerKg += lastOperation.animalsPerKg;
+        sizeDistribution[matchingSize.code].averageWeight += averageWeight;
       }
       
       totalAnimals += animalCount;
@@ -152,10 +294,10 @@ export default function Inventory() {
     const filteredSizeDistribution = Object.values(sizeDistribution)
       .filter(size => size.count > 0)
       .sort((a, b) => {
-        // Ordina per codice taglia (assumendo che il formato sia T1, T2, ecc.)
-        const aCode = parseInt(a.sizeCode.replace('T', ''));
-        const bCode = parseInt(b.sizeCode.replace('T', ''));
-        return aCode - bCode;
+        // Ordina per animalsPerKg (dal più grande al più piccolo - dalle taglie più piccole alle più grandi)
+        const aValue = a.averageAnimalsPerKg || 0;
+        const bValue = b.averageAnimalsPerKg || 0;
+        return bValue - aValue; 
       });
 
     setInventoryStats({
@@ -165,241 +307,674 @@ export default function Inventory() {
       sizeDistribution: filteredSizeDistribution,
     });
   };
-
-  // Prepara i dati per i grafici
-  const pieChartData = inventoryStats.sizeDistribution.map(size => ({
-    name: size.sizeCode,
-    value: size.count,
-    color: size.color,
-  }));
-
-  const barChartData = inventoryStats.sizeDistribution.map(size => ({
-    name: size.sizeCode,
-    Ceste: size.count,
-    Animali: size.totalAnimals,
-    "Peso medio (mg)": size.averageWeight,
-  }));
-
-  // Funzione per formattare numeri in stile europeo (con virgola come decimale)
+  
+  // Funzione per preparare i dati dettagliati delle ceste
+  const prepareBasketData = () => {
+    if (!baskets || !operations || !sizes || !flupsys || !cycles) return;
+    
+    // Filtra solo le ceste attive con un ciclo
+    const activeBaskets = (baskets as any[]).filter((basket: any) => 
+      basket.state === 'active' && basket.currentCycleId !== null
+    );
+    
+    // Prepara mappe per ricerca veloce
+    const flupsyMap = new Map();
+    (flupsys as any[]).forEach((flupsy: any) => {
+      flupsyMap.set(flupsy.id, flupsy);
+    });
+    
+    const cycleMap = new Map();
+    (cycles as any[]).forEach((cycle: any) => {
+      cycleMap.set(cycle.id, cycle);
+    });
+    
+    const sizeMap = new Map();
+    (sizes as Size[]).forEach((size: Size) => {
+      sizeMap.set(size.id, size);
+    });
+    
+    // Prepara dati per ogni cesta
+    const basketsDataArray: BasketData[] = [];
+    
+    activeBaskets.forEach((basket: any) => {
+      // Trova l'ultima operazione di questa cesta
+      const basketOperations = (operations as any[])
+        .filter((op: any) => op.basketId === basket.id)
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      if (basketOperations.length === 0) return;
+      
+      const lastOperation = basketOperations[0];
+      if (!lastOperation.animalsPerKg) return;
+      
+      // Ottieni il ciclo corrente
+      const currentCycle = cycleMap.get(basket.currentCycleId);
+      if (!currentCycle) return;
+      
+      // Ottieni il FLUPSY
+      const flupsy = flupsyMap.get(basket.flupsyId);
+      if (!flupsy) return;
+      
+      // Calcola il peso medio e la taglia
+      const averageWeight = lastOperation.averageWeight || (1000000 / lastOperation.animalsPerKg);
+      const matchingSize = findSizeFromAnimalsPerKg(lastOperation.animalsPerKg);
+      
+      // Calcola la durata del ciclo in giorni
+      const cycleDuration = differenceInDays(
+        new Date(), 
+        new Date(currentCycle.startDate)
+      );
+      
+      // Calcola il tasso di crescita se ci sono almeno due operazioni
+      let growthRate: number | null = null;
+      if (basketOperations.length >= 2) {
+        const firstMeasureOp = basketOperations
+          .filter(op => op.type === 'misura' || op.type === 'peso')
+          .pop(); // Prende la prima operazione di misura
+          
+        const lastMeasureOp = basketOperations
+          .filter(op => op.type === 'misura' || op.type === 'peso')
+          .shift(); // Prende l'ultima operazione di misura
+          
+        if (firstMeasureOp && lastMeasureOp && 
+            firstMeasureOp.averageWeight && lastMeasureOp.averageWeight) {
+          const daysDiff = differenceInDays(
+            new Date(lastMeasureOp.date),
+            new Date(firstMeasureOp.date)
+          );
+          
+          if (daysDiff > 0) {
+            // Calcola SGR come percentuale mensile
+            const dailyGrowthRate = Math.pow(
+              lastMeasureOp.averageWeight / firstMeasureOp.averageWeight, 
+              1 / daysDiff
+            ) - 1;
+            growthRate = dailyGrowthRate * 30 * 100; // Converti in percentuale mensile
+          }
+        }
+      }
+      
+      // Calcola il numero totale di animali nella cesta
+      const totalAnimals = lastOperation.animalCount || calculateAnimalCount(lastOperation);
+      
+      basketsDataArray.push({
+        id: basket.id,
+        physicalNumber: basket.physicalNumber,
+        flupsyId: basket.flupsyId,
+        flupsyName: flupsy.name,
+        row: basket.row,
+        position: basket.position,
+        state: basket.state,
+        currentCycleId: basket.currentCycleId,
+        sizeCode: matchingSize?.code || null,
+        sizeName: matchingSize?.name || null,
+        color: matchingSize ? getColorForSize(matchingSize) : null,
+        animalsPerKg: lastOperation.animalsPerKg,
+        averageWeight,
+        totalAnimals,
+        lastOperationDate: lastOperation.date,
+        lastOperationType: lastOperation.type,
+        cycleStartDate: currentCycle.startDate,
+        cycleDuration,
+        growthRate
+      });
+    });
+    
+    // Ordina per numero fisico della cesta
+    basketsDataArray.sort((a, b) => a.physicalNumber - b.physicalNumber);
+    
+    setBasketsData(basketsDataArray);
+  };
+  
+  // Funzione per calcolare le previsioni di crescita
+  const calculateGrowthPredictions = () => {
+    if (!targetDate && !targetSize) return;
+    
+    const predictions: GrowthPrediction[] = [];
+    
+    // Ottiene la taglia target se specificata
+    let targetSizeObj: Size | undefined;
+    if (targetSize) {
+      targetSizeObj = (sizes as Size[]).find((s: Size) => s.code === targetSize);
+    }
+    
+    // Calcola le previsioni per ogni cesta
+    basketsData.forEach(basket => {
+      if (!basket.averageWeight || !basket.animalsPerKg) return;
+      
+      // Usa il tasso di crescita specifico della cesta se disponibile, altrimenti usa quello generale
+      const growthRateToUse = basket.growthRate !== null ? basket.growthRate : sgr;
+      
+      let predictedWeight, predictedAnimalsPerKg, daysToTarget = null, targetReachDate = null;
+      let predictedSizeCode = null, predictedSizeName = null;
+      
+      if (targetDate) {
+        // Calcola il peso previsto alla data target
+        predictedWeight = getFutureWeightAtDate(
+          basket.averageWeight,
+          new Date(basket.lastOperationDate || new Date()),
+          growthRateToUse,
+          targetDate
+        );
+        
+        // Calcola gli animali per kg previsti
+        predictedAnimalsPerKg = 1000000 / predictedWeight;
+        
+        // Determina la taglia prevista
+        const predictedSize = findSizeFromAnimalsPerKg(predictedAnimalsPerKg);
+        if (predictedSize) {
+          predictedSizeCode = predictedSize.code;
+          predictedSizeName = predictedSize.name;
+        }
+      }
+      
+      if (targetSize && targetSizeObj) {
+        // Calcola i giorni per raggiungere la taglia target
+        if (targetSizeObj.minAnimalsPerKg && targetSizeObj.maxAnimalsPerKg) {
+          // Usa il valore medio della taglia target per i calcoli
+          const targetAnimalsPerKg = (targetSizeObj.minAnimalsPerKg + targetSizeObj.maxAnimalsPerKg) / 2;
+          const targetWeight = 1000000 / targetAnimalsPerKg;
+          
+          // Calcola la data prevista per raggiungere la taglia target
+          const result = getTargetSizeReachDate(
+            basket.averageWeight,
+            new Date(basket.lastOperationDate || new Date()),
+            growthRateToUse,
+            targetSizeObj.code
+          );
+          
+          if (result) {
+            targetReachDate = result;
+            daysToTarget = differenceInDays(result, new Date());
+          }
+        }
+      }
+      
+      // Crescita percentuale
+      const growthPercentage = targetDate 
+        ? (predictedWeight! / basket.averageWeight - 1) * 100
+        : 0;
+      
+      predictions.push({
+        basketId: basket.id,
+        physicalNumber: basket.physicalNumber,
+        flupsyName: basket.flupsyName,
+        currentWeight: basket.averageWeight,
+        currentAnimalsPerKg: basket.animalsPerKg,
+        currentSizeCode: basket.sizeCode || 'N/D',
+        currentSizeName: basket.sizeName || 'Non definita',
+        predictedWeight: predictedWeight || 0,
+        predictedAnimalsPerKg: predictedAnimalsPerKg || 0,
+        predictedSizeCode,
+        predictedSizeName,
+        growthPercentage,
+        daysToTarget,
+        targetDate: targetReachDate
+      });
+    });
+    
+    setGrowthPredictions(predictions);
+  };
+  
+  // Funzione per trovare la taglia in base agli animali per kg
+  const findSizeFromAnimalsPerKg = (animalsPerKg: number): Size | undefined => {
+    if (!sizes) return undefined;
+    
+    // Cerca una taglia che corrisponda al range di animali per kg
+    return (sizes as Size[]).find((size: Size) => 
+      size.minAnimalsPerKg !== null && 
+      size.maxAnimalsPerKg !== null &&
+      animalsPerKg >= size.minAnimalsPerKg && 
+      animalsPerKg <= size.maxAnimalsPerKg
+    );
+  };
+  
+  // Funzione per calcolare il numero di animali da animalsPerKg e totalWeight
+  const calculateAnimalCount = (operation: any): number => {
+    if (operation.animalCount) return operation.animalCount;
+    if (operation.animalsPerKg && operation.totalWeight) {
+      return Math.round(operation.animalsPerKg * operation.totalWeight / 1000);
+    }
+    return 0;
+  };
+  
+  // Funzione per formattare i numeri in stile europeo
   const formatNumberEU = (value: number): string => {
-    return value.toLocaleString('it-IT', {
-      minimumFractionDigits: 0,
-      maximumFractionDigits: 0,
+    if (value === undefined || value === null || isNaN(value)) {
+      return "0";
+    }
+    
+    // Formato europeo: 1.000 (punto come separatore delle migliaia)
+    return value.toLocaleString('it-IT', { 
+      maximumFractionDigits: 0 
     });
   };
-
-  // Funzione per formattare numeri decimali in stile europeo
+  
+  // Funzione per formattare i numeri decimali in stile europeo
   const formatDecimalEU = (value: number): string => {
-    return value.toLocaleString('it-IT', {
+    if (value === undefined || value === null || isNaN(value)) {
+      return "0,00";
+    }
+    
+    // Formato europeo: 1.000,00 (punto separatore migliaia, virgola per decimali)
+    return value.toLocaleString('it-IT', { 
       minimumFractionDigits: 2,
-      maximumFractionDigits: 2,
+      maximumFractionDigits: 2 
     });
   };
+  
+  // Funzione per formattare date in formato italiano
+  const formatDateIT = (date: Date | string): string => {
+    try {
+      const dateObj = typeof date === 'string' ? new Date(date) : date;
+      if (!isValid(dateObj)) return 'Data non valida';
+      return format(dateObj, 'dd/MM/yyyy', { locale: it });
+    } catch (error) {
+      return 'Data non valida';
+    }
+  };
+  
+  // Funzione per ottenere il colore per una taglia
+  const getColorForSize = (size: Size): string => {
+    const tagColorMap: Record<string, string> = {
+      'T1': '#1e40af', // Blu scuro
+      'T2': '#3b82f6', // Blu
+      'T3': '#22c55e', // Verde
+      'T4': '#eab308', // Giallo
+      'T5': '#f97316', // Arancione
+      'T6': '#ef4444', // Rosso
+      'T7': '#b91c1c', // Rosso scuro
+    };
+    
+    return tagColorMap[size.code] || '#9ca3af'; // Grigio come fallback
+  };
+  
+  // Filtra i dati delle ceste per la tabella di dettaglio
+  const filteredBasketsData = useMemo(() => {
+    return basketsData.filter(basket => {
+      // Filtra per numero di cesta
+      if (detailSearchTerm && !basket.physicalNumber.toString().includes(detailSearchTerm)) {
+        return false;
+      }
+      
+      // Filtra per taglia
+      if (detailSizeFilter && basket.sizeCode !== detailSizeFilter) {
+        return false;
+      }
+      
+      // Filtra per FLUPSY
+      if (detailFlupsyFilter && basket.flupsyId.toString() !== detailFlupsyFilter) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [basketsData, detailSearchTerm, detailSizeFilter, detailFlupsyFilter]);
+  
+  // Prepara i dati per il grafico a dispersione
+  const scatterData = useMemo(() => {
+    return basketsData.map(basket => ({
+      basket: basket.physicalNumber,
+      flupsy: basket.flupsyName,
+      x: basket.averageWeight || 0, // Peso medio
+      y: basket.animalsPerKg || 0, // Animali per kg
+      z: basket.totalAnimals || 0, // Numero totale di animali
+      size: basket.sizeCode || 'N/D',
+      cycleDuration: basket.cycleDuration || 0,
+    }));
+  }, [basketsData]);
+  
+  // Prepara i dati per il grafico di comparazione delle crescite
+  const growthChartData = useMemo(() => {
+    if (!targetDate) return [];
+    
+    return growthPredictions.map(pred => ({
+      name: `Cesta ${pred.physicalNumber}`,
+      flupsyName: pred.flupsyName,
+      current: pred.currentWeight,
+      predicted: pred.predictedWeight,
+      growth: pred.growthPercentage,
+      size: pred.currentSizeCode,
+      predictedSize: pred.predictedSizeCode,
+      animalsPerKg: pred.currentAnimalsPerKg,
+      predictedAnimalsPerKg: pred.predictedAnimalsPerKg
+    }));
+  }, [growthPredictions, targetDate]);
+  
+  // Filtro le previsioni di crescita in base ai filtri selezionati
+  const filteredGrowthPredictions = useMemo(() => {
+    return growthPredictions.filter(prediction => {
+      // Filtra per numero di cesta
+      if (searchTerm && !prediction.physicalNumber.toString().includes(searchTerm)) {
+        return false;
+      }
+      
+      // Se stiamo filtrando per taglia attuale
+      if (sizeFilter && prediction.currentSizeCode !== sizeFilter) {
+        return false;
+      }
+      
+      // Se stiamo filtrando per FLUPSY
+      if (flupsyFilter && !prediction.flupsyName.toLowerCase().includes(flupsyFilter.toLowerCase())) {
+        return false;
+      }
+      
+      return true;
+    });
+  }, [growthPredictions, searchTerm, sizeFilter, flupsyFilter]);
+  
+  const isLoading = 
+    loadingBaskets || 
+    loadingOperations || 
+    loadingSizes || 
+    loadingFlupsys || 
+    loadingCycles || 
+    loadingSgrs ||
+    loadingMortalityRates;
 
   return (
     <>
       <Helmet>
-        <title>Inventario Giacenze</title>
+        <title>Inventario - Gestione FLUPSY</title>
       </Helmet>
-
+      
       <div className="space-y-6">
-        <h1 className="text-3xl font-bold tracking-tight">Inventario Giacenze</h1>
-        <p className="text-muted-foreground">
-          Panoramica completa delle giacenze attuali, suddivise per taglie.
-        </p>
-
-        {loadingBaskets || loadingOperations || loadingSizes ? (
-          <div className="flex items-center justify-center h-40">
-            <p>Caricamento dati in corso...</p>
-          </div>
-        ) : (
-          <>
-            {/* Statistiche di riepilogo */}
-            <div className="grid gap-4 md:grid-cols-3">
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Ceste Attive</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {formatNumberEU(inventoryStats.totalBaskets)}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Animali Totali</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {formatNumberEU(inventoryStats.totalAnimals)}
-                  </div>
-                </CardContent>
-              </Card>
-              <Card>
-                <CardHeader className="pb-2">
-                  <CardTitle className="text-sm font-medium">Peso Medio (mg)</CardTitle>
-                </CardHeader>
-                <CardContent>
-                  <div className="text-3xl font-bold">
-                    {formatDecimalEU(inventoryStats.averageWeight)}
-                  </div>
-                </CardContent>
-              </Card>
+        <div className="flex items-center justify-between">
+          <h2 className="text-3xl font-bold tracking-tight">Inventario</h2>
+          <div className="flex items-center space-x-2">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button variant="outline" className="flex items-center gap-2">
+                  <CalendarIcon className="h-4 w-4" />
+                  {targetDate ? (
+                    <span>{formatDateIT(targetDate)}</span>
+                  ) : (
+                    <span>Scegli data</span>
+                  )}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0" align="end">
+                <Calendar
+                  mode="single"
+                  selected={targetDate}
+                  onSelect={setTargetDate}
+                  initialFocus
+                  locale={it}
+                />
+              </PopoverContent>
+            </Popover>
+            
+            <div className="flex flex-col gap-1">
+              <div className="text-sm">SGR mensile: {sgr}%</div>
+              <Slider
+                defaultValue={[sgr]}
+                min={1}
+                max={20}
+                step={0.5}
+                onValueChange={(values) => setSgr(values[0])}
+                className="w-40"
+              />
             </div>
-
-            {/* Grafici e Tabelle */}
-            <Tabs defaultValue="charts">
-              <TabsList>
-                <TabsTrigger value="charts">Grafici</TabsTrigger>
-                <TabsTrigger value="details">Dettagli</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="charts" className="space-y-6">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Distribuzione delle Ceste per Taglia</CardTitle>
-                    <CardDescription>
-                      Visualizzazione della distribuzione del numero di ceste per ogni taglia
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="flex flex-col md:flex-row items-center justify-center h-80 gap-8">
-                      {/* Grafico a torta */}
-                      <div className="w-full md:w-1/2 h-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <PieChart>
-                            <Pie
-                              data={pieChartData}
-                              cx="50%"
-                              cy="50%"
-                              labelLine={true}
-                              label={({ name, percent }) => `${name}: ${(percent * 100).toFixed(0)}%`}
-                              outerRadius="70%"
-                              fill="#8884d8"
-                              dataKey="value"
-                            >
-                              {pieChartData.map((entry, index) => (
-                                <Cell key={`cell-${index}`} fill={entry.color} />
-                              ))}
-                            </Pie>
-                            <Tooltip 
-                              formatter={(value) => [formatNumberEU(Number(value)), 'Ceste']}
-                              contentStyle={{ border: '1px solid #ccc', borderRadius: '4px', backgroundColor: 'white' }}
-                            />
-                          </PieChart>
-                        </ResponsiveContainer>
-                      </div>
-                      
-                      {/* Grafico a barre */}
-                      <div className="w-full md:w-1/2 h-full">
-                        <ResponsiveContainer width="100%" height="100%">
-                          <BarChart data={barChartData}>
-                            <CartesianGrid strokeDasharray="3 3" />
-                            <XAxis dataKey="name" />
-                            <YAxis yAxisId="left" orientation="left" />
-                            <YAxis yAxisId="right" orientation="right" />
-                            <Tooltip 
-                              formatter={(value) => [formatNumberEU(Number(value)), '']}
-                              contentStyle={{ border: '1px solid #ccc', borderRadius: '4px', backgroundColor: 'white' }}
-                            />
-                            <Legend />
-                            <Bar yAxisId="left" dataKey="Ceste" fill="#8884d8" />
-                            <Bar yAxisId="right" dataKey="Animali" fill="#82ca9d" />
-                          </BarChart>
-                        </ResponsiveContainer>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+            
+            <Select value={targetSize} onValueChange={setTargetSize}>
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder="Taglia target" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectGroup>
+                  <SelectItem value="">Nessuna taglia target</SelectItem>
+                  {sizeOptions.map(option => (
+                    <SelectItem key={option.value} value={option.value}>
+                      {option.label}
+                    </SelectItem>
+                  ))}
+                </SelectGroup>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        
+        <Tabs defaultValue="summary" className="w-full">
+          <TabsList className="grid w-full grid-cols-4">
+            <TabsTrigger value="summary">Riepilogo</TabsTrigger>
+            <TabsTrigger value="details">Dettaglio Ceste</TabsTrigger>
+            <TabsTrigger value="predictions">Previsioni</TabsTrigger>
+            <TabsTrigger value="comparison">Comparazione</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="summary">
+            <Card>
+              <CardHeader>
+                <CardTitle>Riepilogo Inventario</CardTitle>
+                <CardDescription>
+                  Panoramica delle giacenze e distribuzione per taglia
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-6">
+                  <Card>
+                    <CardHeader className="py-4">
+                      <CardTitle className="text-xl">Ceste Attive</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-4xl font-bold">{formatNumberEU(inventoryStats.totalBaskets)}</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="py-4">
+                      <CardTitle className="text-xl">Animali Totali</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-4xl font-bold">{formatNumberEU(inventoryStats.totalAnimals)}</div>
+                    </CardContent>
+                  </Card>
+                  <Card>
+                    <CardHeader className="py-4">
+                      <CardTitle className="text-xl">Peso Medio</CardTitle>
+                    </CardHeader>
+                    <CardContent>
+                      <div className="text-4xl font-bold">{formatDecimalEU(inventoryStats.averageWeight)} mg</div>
+                    </CardContent>
+                  </Card>
+                </div>
                 
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Peso Medio per Taglia</CardTitle>
-                    <CardDescription>
-                      Visualizzazione del peso medio degli animali per ogni taglia
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <div className="h-80">
-                      <ResponsiveContainer width="100%" height="100%">
-                        <BarChart data={barChartData}>
-                          <CartesianGrid strokeDasharray="3 3" />
-                          <XAxis dataKey="name" />
-                          <YAxis />
-                          <Tooltip 
-                            formatter={(value) => [formatDecimalEU(Number(value)), 'mg']}
-                            contentStyle={{ border: '1px solid #ccc', borderRadius: '4px', backgroundColor: 'white' }}
-                          />
-                          <Legend />
-                          <Bar dataKey="Peso medio (mg)" fill="#f59e0b">
-                            {barChartData.map((entry, index) => (
-                              <Cell 
-                                key={`cell-${index}`} 
-                                fill={inventoryStats.sizeDistribution[index]?.color || '#f59e0b'} 
-                              />
-                            ))}
-                          </Bar>
-                        </BarChart>
-                      </ResponsiveContainer>
-                    </div>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-              
-              <TabsContent value="details">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>Dettaglio Giacenze per Taglia</CardTitle>
-                    <CardDescription>
-                      Panoramica dettagliata delle giacenze suddivise per taglia
-                    </CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <Table>
-                      <TableHeader>
-                        <TableRow>
-                          <TableHead>Taglia</TableHead>
-                          <TableHead>Nome</TableHead>
-                          <TableHead className="text-right">Ceste</TableHead>
-                          <TableHead className="text-right">Animali Totali</TableHead>
-                          <TableHead className="text-right">Animali/Kg (Media)</TableHead>
-                          <TableHead className="text-right">Peso Medio (mg)</TableHead>
-                        </TableRow>
-                      </TableHeader>
-                      <TableBody>
-                        {inventoryStats.sizeDistribution.map((size) => (
-                          <TableRow key={size.sizeCode}>
-                            <TableCell>
-                              <Badge
-                                style={{ 
-                                  backgroundColor: size.color,
-                                  color: parseInt(size.sizeCode.replace('T', '')) <= 3 ? 'white' : 'black'
-                                }}
-                              >
-                                {size.sizeCode}
-                              </Badge>
-                            </TableCell>
-                            <TableCell>{size.sizeName}</TableCell>
-                            <TableCell className="text-right font-medium">{formatNumberEU(size.count)}</TableCell>
-                            <TableCell className="text-right">{formatNumberEU(size.totalAnimals)}</TableCell>
-                            <TableCell className="text-right">{formatNumberEU(size.averageAnimalsPerKg)}</TableCell>
-                            <TableCell className="text-right">{formatDecimalEU(size.averageWeight)}</TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                    {inventoryStats.sizeDistribution.length === 0 && (
-                      <div className="py-6 text-center text-muted-foreground">
-                        Nessun dato disponibile
-                      </div>
-                    )}
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-          </>
-        )}
+                <InventorySummary 
+                  inventoryStats={inventoryStats}
+                  scatterData={scatterData}
+                  formatNumberEU={formatNumberEU}
+                  formatDecimalEU={formatDecimalEU}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="details">
+            <Card>
+              <CardHeader>
+                <CardTitle>Dettaglio Ceste</CardTitle>
+                <CardDescription>
+                  Elenco dettagliato di tutte le ceste attive
+                </CardDescription>
+                <div className="flex flex-wrap gap-4 mt-4">
+                  <div className="flex items-center space-x-2">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Cerca per numero cesta"
+                      className="w-[150px]"
+                      value={detailSearchTerm}
+                      onChange={(e) => setDetailSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  
+                  <Select value={detailSizeFilter} onValueChange={setDetailSizeFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Filtra per taglia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tutte le taglie</SelectItem>
+                      {sizeOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={detailFlupsyFilter} onValueChange={setDetailFlupsyFilter}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Filtra per FLUPSY" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tutti i FLUPSY</SelectItem>
+                      {flupsyOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setDetailSearchTerm('');
+                      setDetailSizeFilter('');
+                      setDetailFlupsyFilter('');
+                    }}
+                  >
+                    Reset filtri
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                <BasketDetailTable 
+                  baskets={filteredBasketsData}
+                  formatNumberEU={formatNumberEU}
+                  formatDecimalEU={formatDecimalEU}
+                  formatDateIT={formatDateIT}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="predictions">
+            <Card>
+              <CardHeader>
+                <CardTitle>
+                  {targetSize ? 
+                    `Previsione di raggiungimento taglia ${targetSize}` : 
+                    targetDate ? 
+                    `Previsione taglie al ${formatDateIT(targetDate)}` : 
+                    'Previsioni di Crescita'
+                  }
+                </CardTitle>
+                <CardDescription>
+                  {targetSize ? 
+                    `Elenco delle ceste che raggiungeranno la taglia ${targetSize} e quando` : 
+                    targetDate ? 
+                    `Proiezione delle taglie che raggiungeranno le ceste alla data selezionata` : 
+                    'Seleziona una data target o una taglia target per visualizzare le previsioni'
+                  }
+                </CardDescription>
+                <div className="flex flex-wrap gap-4 mt-4">
+                  <div className="flex items-center space-x-2">
+                    <Search className="h-4 w-4 text-muted-foreground" />
+                    <Input
+                      placeholder="Cerca per numero cesta"
+                      className="w-[150px]"
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                  </div>
+                  
+                  <Select value={sizeFilter} onValueChange={setSizeFilter}>
+                    <SelectTrigger className="w-[150px]">
+                      <SelectValue placeholder="Filtra per taglia" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tutte le taglie</SelectItem>
+                      {sizeOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Select value={flupsyFilter} onValueChange={setFlupsyFilter}>
+                    <SelectTrigger className="w-[200px]">
+                      <SelectValue placeholder="Filtra per FLUPSY" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tutti i FLUPSY</SelectItem>
+                      {flupsyOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  
+                  <Button 
+                    variant="outline" 
+                    onClick={() => {
+                      setSearchTerm('');
+                      setSizeFilter('');
+                      setFlupsyFilter('');
+                    }}
+                  >
+                    Reset filtri
+                  </Button>
+                </div>
+              </CardHeader>
+              <CardContent>
+                {(targetDate || targetSize) ? (
+                  <GrowthPrediction 
+                    predictions={filteredGrowthPredictions}
+                    targetSize={targetSize}
+                    targetDate={targetDate}
+                    growthChartData={growthChartData}
+                    sizes={sizes as Size[]}
+                    formatNumberEU={formatNumberEU}
+                    formatDecimalEU={formatDecimalEU}
+                    formatDateIT={formatDateIT}
+                    getColorForSize={getColorForSize}
+                  />
+                ) : (
+                  <div className="text-center py-12">
+                    <TrendingUp className="mx-auto h-12 w-12 text-muted-foreground" />
+                    <h3 className="mt-4 text-lg font-semibold">Nessuna previsione disponibile</h3>
+                    <p className="mt-2 text-sm text-muted-foreground">
+                      Seleziona una data target o una taglia target per visualizzare le previsioni di crescita
+                    </p>
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="comparison">
+            <Card>
+              <CardHeader>
+                <CardTitle>Comparazione Crescita</CardTitle>
+                <CardDescription>
+                  Confronto dei tassi di crescita e proiezioni future
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <GrowthComparison 
+                  basketsData={basketsData}
+                  inventoryStats={inventoryStats}
+                  sgr={sgr}
+                  sizes={sizes as Size[]}
+                  formatNumberEU={formatNumberEU}
+                  formatDecimalEU={formatDecimalEU}
+                  formatDateIT={formatDateIT}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
       </div>
     </>
   );
