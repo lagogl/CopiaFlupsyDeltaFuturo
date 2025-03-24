@@ -104,23 +104,53 @@ export default function FlupsyComparison() {
     const currentWeight = latestOperation.animalsPerKg ? 1000000 / latestOperation.animalsPerKg : 0;
     const measurementDate = new Date(latestOperation.date);
     
-    // Ottieni la percentuale SGR mensile
-    let sgrMonthlyPercentage = 30; // Valore di default
+    // Ottieni la percentuale SGR giornaliera
+    let sgrDailyPercentage = 1.0; // Valore di default (1% al giorno)
     if (sgrs && sgrs.length > 0) {
       // Usa il valore SGR del mese corrente se disponibile
       const currentMonth = format(new Date(), 'MMMM').toLowerCase();
       const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
-      if (currentSgr) {
-        sgrMonthlyPercentage = currentSgr.percentage;
+      if (currentSgr && currentSgr.dailyPercentage !== null) {
+        sgrDailyPercentage = currentSgr.dailyPercentage;
       } else {
         // Altrimenti usa il valore medio
-        sgrMonthlyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
+        // Se i valori giornalieri sono disponibili, usiamo quelli
+        const dailyValues = sgrs.filter(sgr => sgr.dailyPercentage !== null);
+        if (dailyValues.length > 0) {
+          sgrDailyPercentage = dailyValues.reduce((acc, sgr) => acc + (sgr.dailyPercentage || 0), 0) / dailyValues.length;
+        } else {
+          // Altrimenti calcoliamo una stima giornaliera dalle percentuali mensili
+          sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length / 30;
+        }
       }
     }
     
-    // Calcola il peso futuro
+    // Calcola il peso futuro usando direttamente la percentuale giornaliera
     const targetDate = addDays(new Date(), daysToAdd);
-    return getFutureWeightAtDate(currentWeight, measurementDate, sgrMonthlyPercentage, targetDate);
+    
+    // Calcolo manuale del peso futuro
+    const days = Math.floor((targetDate.getTime() - measurementDate.getTime()) / (1000 * 60 * 60 * 24));
+    let simulatedWeight = currentWeight;
+    
+    for (let i = 0; i < days; i++) {
+      // Per ogni giorno, calcoliamo il mese corrispondente per usare il tasso SGR appropriato
+      const currentDate = addDays(measurementDate, i);
+      const month = format(currentDate, 'MMMM').toLowerCase();
+      
+      // Trova il tasso SGR per questo mese
+      let dailyRate = sgrDailyPercentage;
+      if (sgrs) {
+        const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
+        if (monthSgr && monthSgr.dailyPercentage !== null) {
+          dailyRate = monthSgr.dailyPercentage;
+        }
+      }
+      
+      // Applica la crescita giornaliera
+      simulatedWeight = simulatedWeight * (1 + dailyRate / 100);
+    }
+    
+    return Math.round(simulatedWeight);
   };
 
   // Determina se un cestello raggiungerà una taglia target
@@ -167,21 +197,48 @@ export default function FlupsyComparison() {
     // Se il peso corrente è già maggiore del peso target, è già nella taglia target
     if (currentWeight >= targetWeight) return 0;
     
-    // Ottieni la percentuale SGR mensile
-    let sgrMonthlyPercentage = 30; // Valore di default
+    // Ottieni la percentuale SGR giornaliera
+    let sgrDailyPercentage = 1.0; // Valore di default (1% al giorno)
     if (sgrs && sgrs.length > 0) {
-      // Usa il valore medio
-      sgrMonthlyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
+      // Usa il valore SGR del mese corrente se disponibile
+      const currentMonth = format(new Date(), 'MMMM').toLowerCase();
+      const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
+      if (currentSgr && currentSgr.dailyPercentage !== null) {
+        sgrDailyPercentage = currentSgr.dailyPercentage;
+      } else {
+        // Altrimenti usa il valore medio dei tassi giornalieri
+        const dailyValues = sgrs.filter(sgr => sgr.dailyPercentage !== null);
+        if (dailyValues.length > 0) {
+          sgrDailyPercentage = dailyValues.reduce((acc, sgr) => acc + (sgr.dailyPercentage || 0), 0) / dailyValues.length;
+        } else {
+          // Altrimenti calcoliamo una stima giornaliera dalle percentuali mensili
+          sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length / 30;
+        }
+      }
     }
     
-    // Calcola i giorni necessari (formula semplificata)
-    const dailyGrowthRate = sgrMonthlyPercentage / 100 / 30;
+    // Calcolo dei giorni necessari usando i valori SGR giornalieri mese per mese
     let simulationWeight = currentWeight;
     let days = 0;
+    let currentDate = new Date(measurementDate);
     
     while (simulationWeight < targetWeight && days < 365) {
-      simulationWeight = simulationWeight * (1 + dailyGrowthRate);
+      // Determina il mese corrente per usare il tasso SGR appropriato
+      const month = format(currentDate, 'MMMM').toLowerCase();
+      
+      // Trova il tasso SGR per questo mese
+      let dailyRate = sgrDailyPercentage;
+      if (sgrs) {
+        const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
+        if (monthSgr && monthSgr.dailyPercentage !== null) {
+          dailyRate = monthSgr.dailyPercentage;
+        }
+      }
+      
+      // Applica la crescita giornaliera
+      simulationWeight = simulationWeight * (1 + dailyRate / 100);
       days++;
+      currentDate = addDays(currentDate, 1);
     }
     
     return days < 365 ? days : null;
