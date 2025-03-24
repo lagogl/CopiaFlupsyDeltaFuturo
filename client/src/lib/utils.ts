@@ -369,11 +369,26 @@ export interface SizeTimeline {
 }
 
 /**
- * Calcola le taglie che raggiungerà una cesta nel tempo, in base al peso attuale e al tasso di crescita
+ * Ottiene il mese in italiano da una data
+ * @param date - Data di cui ottenere il mese
+ * @returns Il nome del mese in italiano
+ */
+export function getMonthNameIT(date: Date): string {
+  const months = [
+    'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+    'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
+  ];
+  return months[date.getMonth()];
+}
+
+/**
+ * Calcola le taglie che raggiungerà una cesta nel tempo, considerando i valori SGR specifici per mese
  * @param currentWeight - Peso attuale in mg
  * @param measurementDate - Data della misurazione
- * @param sgrMonthlyPercentage - Percentuale SGR mensile
+ * @param sgrMonthlyPercentage - Percentuale SGR mensile (usata come fallback)
  * @param months - Numero di mesi per cui proiettare
+ * @param availableSizes - Array delle taglie disponibili
+ * @param sgrRates - Array dei tassi SGR mensili
  * @returns Array di previsioni con date di raggiungimento delle varie taglie
  */
 export function calculateSizeTimeline(
@@ -381,14 +396,33 @@ export function calculateSizeTimeline(
   measurementDate: Date,
   sgrMonthlyPercentage: number,
   months: number = 6,
-  availableSizes?: any[]
+  availableSizes?: any[],
+  sgrRates?: any[]
 ): SizeTimeline[] {
-  if (!currentWeight || currentWeight <= 0 || !sgrMonthlyPercentage) {
+  if (!currentWeight || currentWeight <= 0) {
     return [];
   }
-  
-  // Calcola il tasso di crescita giornaliero
-  const dailyGrowthRate = sgrMonthlyPercentage / 30 / 100;
+
+  // Funzione per ottenere il tasso SGR giornaliero in base al mese della data
+  const getDailySgrRate = (date: Date): number => {
+    if (!sgrRates || sgrRates.length === 0) {
+      // Fallback se non abbiamo dati SGR specifici
+      return sgrMonthlyPercentage / 30 / 100;
+    }
+    
+    const monthName = getMonthNameIT(date);
+    const monthSgr = sgrRates.find(sgr => sgr.month === monthName);
+    
+    if (monthSgr) {
+      // Usa il valore giornaliero se presente, altrimenti calcola dal mensile
+      return monthSgr.dailyPercentage 
+        ? monthSgr.dailyPercentage / 100 
+        : (monthSgr.percentage / 100) / 30;
+    }
+    
+    // Fallback se non troviamo il mese
+    return sgrMonthlyPercentage / 30 / 100;
+  };
   
   // Trova la taglia attuale - usa le taglie del database se disponibili
   const currentSize = getTargetSizeForWeight(currentWeight, availableSizes);
@@ -458,11 +492,16 @@ export function calculateSizeTimeline(
     // Simula la crescita giorno per giorno fino a raggiungere la taglia target
     while (simulationWeight < targetSize.minWeight && daysToReach < maxDays) {
       daysToReach++;
-      simulationDate = new Date(simulationDate);
-      simulationDate.setDate(simulationDate.getDate() + 1);
+      // Incrementa la data di un giorno
+      const nextDate = new Date(simulationDate);
+      nextDate.setDate(nextDate.getDate() + 1);
+      
+      // Ottieni il tasso SGR specifico per il giorno
+      const dailyGrowthRate = getDailySgrRate(nextDate);
       
       // Applica il tasso di crescita giornaliero
       simulationWeight = simulationWeight * (1 + dailyGrowthRate);
+      simulationDate = nextDate;
     }
     
     // Se abbiamo raggiunto la taglia target entro il limite temporale

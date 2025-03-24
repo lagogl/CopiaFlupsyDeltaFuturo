@@ -31,6 +31,7 @@ import InventorySummary from "@/components/inventory/InventorySummary";
 import BasketDetailTable from "@/components/inventory/BasketDetailTable";
 import GrowthPrediction from "@/components/inventory/GrowthPrediction";
 import GrowthComparison from "@/components/inventory/GrowthComparison";
+import SalesTimeline from "@/components/inventory/SalesTimeline";
 
 // Interfacce dei dati
 interface SizeInventory {
