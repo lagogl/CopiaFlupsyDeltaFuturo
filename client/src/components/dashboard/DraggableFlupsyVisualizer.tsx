@@ -83,7 +83,9 @@ function DropTarget({ flupsyId, row, position, onDrop, isOccupied, children }: D
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.BASKET,
     drop: (item: BasketDragItem) => onDrop(item, row, position),
-    canDrop: () => !isOccupied, // Non si può trascinare su una posizione occupata
+    // Permettiamo sempre il drop, anche su posizioni occupate
+    // La logica di switch verrà gestita nella funzione di onDrop
+    canDrop: () => true,
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
       canDrop: !!monitor.canDrop()
@@ -121,6 +123,8 @@ export default function DraggableFlupsyVisualizer() {
     basketId: number;
     targetRow: string;
     targetPosition: number;
+    isSwitch?: boolean;
+    targetBasketId?: number;
   } | null>(null);
 
   // Data queries
@@ -180,13 +184,38 @@ export default function DraggableFlupsyVisualizer() {
       return; // No change in position
     }
     
-    setPendingBasketMove({
-      basketId: item.id,
-      targetRow,
-      targetPosition
-    });
+    // Verifichiamo se la posizione target è già occupata da un'altra cesta
+    const getFlupsyBasketByPosition = (row: 'DX' | 'SX', position: number): any => {
+      if (!baskets) return null;
+      const rowBaskets = baskets.filter((b: any) => 
+        b.flupsyId === parseInt(item.id.toString().split('-')[0]) && 
+        b.row === row
+      );
+      return rowBaskets.find((b: any) => b.position === position);
+    };
+    
+    const targetBasket = getFlupsyBasketByPosition(targetRow as 'DX' | 'SX', targetPosition);
+    
+    if (targetBasket) {
+      // Se c'è già una cesta nella posizione target, allora è un'operazione di switch
+      setPendingBasketMove({
+        basketId: item.id,
+        targetRow,
+        targetPosition,
+        isSwitch: true,
+        targetBasketId: targetBasket.id
+      });
+    } else {
+      // Spostamento normale
+      setPendingBasketMove({
+        basketId: item.id,
+        targetRow,
+        targetPosition
+      });
+    }
+    
     setConfirmDialogOpen(true);
-  }, []);
+  }, [baskets]);
 
   // Handle basket click
   const handleBasketClick = (basket: any) => {
