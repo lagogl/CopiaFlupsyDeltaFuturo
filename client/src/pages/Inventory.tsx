@@ -679,66 +679,95 @@ export default function Inventory() {
       </Helmet>
       
       <div className="space-y-8">
-        <div className="bg-gradient-to-r from-blue-100 to-blue-50 p-6 rounded-xl shadow-sm border border-blue-200">
+        <div className="bg-gradient-to-br from-blue-50 via-white to-indigo-50 p-6 rounded-xl shadow-sm border border-blue-200 relative overflow-hidden">
+          <div className="absolute top-0 right-0 w-32 h-32 bg-gradient-to-br from-blue-100/30 to-indigo-200/40 rounded-bl-[80px] -z-10"></div>
+          <div className="absolute bottom-0 left-0 w-24 h-24 bg-gradient-to-tr from-emerald-100/30 to-blue-200/30 rounded-tr-[60px] -z-10"></div>
+          
           <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
             <div>
+              <div className="inline-flex items-center gap-2 bg-blue-100/70 text-blue-700 px-3 py-1 rounded-full text-xs font-medium mb-2 backdrop-blur-sm">
+                <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
+                Dashboard inventario
+              </div>
               <h2 className="text-3xl font-bold tracking-tight text-blue-900">Inventario e Previsioni</h2>
-              <p className="text-blue-600 text-sm mt-1">Gestione completa delle ceste e delle proiezioni di crescita</p>
+              <p className="text-blue-700 text-sm mt-1 max-w-lg">Gestione completa delle ceste e delle proiezioni di crescita, con analisi dettagliate e monitoraggio delle taglie</p>
             </div>
             <div className="flex flex-wrap items-center gap-3">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="flex items-center gap-2 bg-white shadow-sm hover:bg-blue-50 border-blue-200">
-                    <CalendarIcon className="h-4 w-4 text-blue-500" />
-                    {targetDate ? (
-                      <span>{formatDateIT(targetDate)}</span>
-                    ) : (
-                      <span>Scegli data</span>
-                    )}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0 border-blue-200 shadow-md" align="end">
-                  <Calendar
-                    mode="single"
-                    selected={targetDate}
-                    onSelect={setTargetDate}
-                    initialFocus
-                    locale={it}
-                    className="rounded-md"
+              <div className="flex flex-wrap gap-3">
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2 bg-white shadow-sm hover:bg-blue-50 border-blue-200 transition-all">
+                      <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center">
+                        <CalendarIcon className="h-3 w-3 text-blue-600" />
+                      </div>
+                      {targetDate ? (
+                        <span className="font-medium">{formatDateIT(targetDate)}</span>
+                      ) : (
+                        <span>Scegli data</span>
+                      )}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 border-blue-200 shadow-md rounded-xl overflow-hidden" align="end">
+                    <div className="bg-blue-50 px-4 py-2 border-b border-blue-100 flex items-center justify-between">
+                      <span className="text-sm font-medium text-blue-700">Seleziona data target</span>
+                      <CalendarIcon className="h-4 w-4 text-blue-400" />
+                    </div>
+                    <Calendar
+                      mode="single"
+                      selected={targetDate}
+                      onSelect={setTargetDate}
+                      initialFocus
+                      locale={it}
+                      className="rounded-b-xl"
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                <div className="flex flex-col gap-1 bg-white p-3 rounded-xl shadow-sm border border-blue-200 relative overflow-hidden group">
+                  <div className="absolute inset-0 bg-gradient-to-r from-blue-50/40 to-transparent opacity-0 group-hover:opacity-100 transition-opacity"></div>
+                  <div className="text-sm font-medium text-blue-800 flex justify-between items-center gap-3 px-1 relative z-10">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center">
+                        <TrendingUp className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <span>SGR mensile</span>
+                    </div>
+                    <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">{sgr}%</span>
+                  </div>
+                  <Slider
+                    defaultValue={[sgr]}
+                    min={1}
+                    max={20}
+                    step={0.5}
+                    onValueChange={(values) => setSgr(values[0])}
+                    className="w-48 relative z-10"
                   />
-                </PopoverContent>
-              </Popover>
-              
-              <div className="flex flex-col gap-1 bg-white p-2 rounded-lg shadow-sm border border-blue-200">
-                <div className="text-sm font-medium text-blue-800 flex justify-between px-1">
-                  <span>SGR mensile:</span> 
-                  <span className="font-bold text-blue-900">{sgr}%</span>
                 </div>
-                <Slider
-                  defaultValue={[sgr]}
-                  min={1}
-                  max={20}
-                  step={0.5}
-                  onValueChange={(values) => setSgr(values[0])}
-                  className="w-48"
-                />
+                
+                <Select value={targetSize} onValueChange={setTargetSize}>
+                  <SelectTrigger className="min-w-[220px] bg-white shadow-sm border-blue-200 hover:bg-blue-50/50 transition-colors">
+                    <div className="flex items-center gap-2">
+                      <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center">
+                        <ListFilter className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <SelectValue placeholder="Taglia target" />
+                    </div>
+                  </SelectTrigger>
+                  <SelectContent className="border-blue-200 rounded-xl overflow-hidden shadow-md">
+                    <div className="bg-blue-50 px-4 py-2 border-b border-blue-100">
+                      <span className="text-sm font-medium text-blue-700">Seleziona taglia target</span>
+                    </div>
+                    <SelectGroup>
+                      <SelectItem value="none" className="focus:bg-blue-50/50">Nessuna taglia target</SelectItem>
+                      {sizeOptions.map(option => (
+                        <SelectItem key={option.value} value={option.value} className="font-medium focus:bg-blue-50/50">
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectGroup>
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <Select value={targetSize} onValueChange={setTargetSize}>
-                <SelectTrigger className="w-[220px] bg-white shadow-sm border-blue-200 hover:bg-blue-50">
-                  <SelectValue placeholder="Taglia target" />
-                </SelectTrigger>
-                <SelectContent className="border-blue-200">
-                  <SelectGroup>
-                    <SelectItem value="none">Nessuna taglia target</SelectItem>
-                    {sizeOptions.map(option => (
-                      <SelectItem key={option.value} value={option.value} className="font-medium">
-                        {option.label}
-                      </SelectItem>
-                    ))}
-                  </SelectGroup>
-                </SelectContent>
-              </Select>
             </div>
           </div>
         </div>
