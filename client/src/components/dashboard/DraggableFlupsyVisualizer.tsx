@@ -93,13 +93,23 @@ function DropTarget({ flupsyId, row, position, onDrop, isOccupied, children }: D
   }));
 
   // Stile per evidenziare la posizione durante il drag-and-drop
-  const isActive = isOver && canDrop;
-  const backgroundColor = isActive ? 'rgba(52, 211, 153, 0.2)' : 'transparent';
-  const border = isActive 
-    ? '2px dashed rgba(52, 211, 153, 0.8)' 
-    : isOver && !canDrop 
-      ? '2px dashed rgba(239, 68, 68, 0.8)' 
-      : '2px dashed transparent';
+  // Aggiunto supporto per evidenziare diversamente le posizioni occupate
+  // ma che supportano lo switch
+  let backgroundColor = 'transparent';
+  let border = '2px dashed transparent';
+  
+  if (isOver) {
+    // Sempre mostrare bordo quando siamo sopra (indipendentemente se occupato o no)
+    if (isOccupied) {
+      // Posizione occupata ma possiamo fare switch
+      backgroundColor = 'rgba(234, 179, 8, 0.2)'; // Colore giallo per switch
+      border = '2px dashed rgba(234, 179, 8, 0.8)';
+    } else {
+      // Posizione libera, normale drop
+      backgroundColor = 'rgba(52, 211, 153, 0.2)'; // Verde per drop normale
+      border = '2px dashed rgba(52, 211, 153, 0.8)';
+    }
+  }
 
   return (
     <div 
@@ -242,13 +252,20 @@ export default function DraggableFlupsyVisualizer() {
       position2Row: string;
       position2Number: number;
     }) => {
-      // Prima aggiorniamo la posizione del primo cestello
+      // Per prima cosa, sposta il cestello 2 in una posizione temporanea (null)
+      // in modo da liberare la sua posizione
+      await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
+        row: null,
+        position: null
+      });
+      
+      // Ora che la posizione è libera, sposta il cestello 1 nella posizione che era del cestello 2
       await apiRequest('PATCH', `/api/baskets/${basket1Id}`, {
         row: position2Row,
         position: position2Number
       });
       
-      // Poi aggiorniamo la posizione del secondo cestello
+      // Infine, sposta il cestello 2 nella posizione originale del cestello 1
       return await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
         row: position1Row,
         position: position1Number
