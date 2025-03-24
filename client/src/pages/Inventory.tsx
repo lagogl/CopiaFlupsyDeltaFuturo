@@ -1209,7 +1209,7 @@ export default function Inventory() {
                     sgrRates={sgrs as any[]}
                     mortalityRates={mortalityRates as MortalityRate[]}
                     projectionMonths={projectionMonths}
-                    targetSizes={['TP-1200', 'TP-1500', 'TP-2000', 'TP-3000']}
+                    targetSizes={['TP-1500', 'TP-2000', 'TP-3000', 'TP-5000']}
                     formatNumberEU={formatNumberEU}
                     formatDecimalEU={formatDecimalEU}
                     formatDateIT={formatDateIT}

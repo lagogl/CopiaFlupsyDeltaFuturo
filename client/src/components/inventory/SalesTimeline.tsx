@@ -542,7 +542,7 @@ const SalesTimeline: React.FC<SalesTimelineProps> = ({
                   hide
                 />
                 <Tooltip 
-                  formatter={(value, name) => {
+                  formatter={(value: any, name: any) => {
                     if (name === 'totalAnimals') {
                       return [formatNumberEU(Number(value)), 'Animali Totali'];
                     }
@@ -552,13 +552,14 @@ const SalesTimeline: React.FC<SalesTimelineProps> = ({
                   }}
                   labelFormatter={(label) => `Data: ${label}`}
                   contentStyle={{ backgroundColor: 'white', border: '1px solid #ccc', borderRadius: '4px', padding: '10px' }}
-                  content={({ active, payload, label }) => {
+                  content={(props: any) => {
+                    const { active, payload, label } = props;
                     if (active && payload && payload.length) {
                       return (
                         <div className="bg-white p-3 border border-gray-200 rounded shadow-sm">
                           <p className="font-bold mb-1">{`Data: ${label}`}</p>
                           <div className="space-y-1">
-                            {payload.map((entry, index) => {
+                            {payload.map((entry: any, index: number) => {
                               // Colora il quadratino del colore della serie
                               const isTotal = entry.name === 'totalAnimals';
                               const sizeObj = isTotal ? null : sizes.find(s => s.code === entry.name);
@@ -742,7 +743,8 @@ const SalesTimeline: React.FC<SalesTimelineProps> = ({
                 />
                 <Tooltip 
                   formatter={(value) => [formatNumberEU(Number(value)), 'Animali']}
-                  content={({ active, payload, label }) => {
+                  content={(props: any) => {
+                    const { active, payload, label } = props;
                     if (active && payload && payload.length) {
                       const data = payload[0].payload;
                       return (
