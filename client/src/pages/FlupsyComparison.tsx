@@ -319,7 +319,7 @@ export default function FlupsyComparison() {
         
         {growthPercentage !== null && (
           <div className="mt-auto text-xs text-center">
-            <Badge variant={growthPercentage > 20 ? "success" : "secondary"} className="text-xs">
+            <Badge className={`text-xs ${growthPercentage > 20 ? "bg-green-500 text-white" : "bg-gray-200"}`}>
               +{growthPercentage}%
             </Badge>
             <div className="opacity-70 mt-1 text-[10px]">
@@ -383,7 +383,7 @@ export default function FlupsyComparison() {
         
         <div className="mt-1 text-center">
           {currentSize?.code === targetSizeCode ? (
-            <Badge variant="success" className="text-xs">Già {targetSizeCode}</Badge>
+            <Badge className="text-xs bg-green-500 text-white">Già {targetSizeCode}</Badge>
           ) : willReach ? (
             <Badge className="text-xs">Raggiungerà {targetSizeCode}</Badge>
           ) : (
