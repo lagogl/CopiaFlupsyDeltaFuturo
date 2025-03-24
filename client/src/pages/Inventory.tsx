@@ -598,12 +598,12 @@ export default function Inventory() {
       }
       
       // Filtra per taglia
-      if (detailSizeFilter && basket.sizeCode !== detailSizeFilter) {
+      if (detailSizeFilter && detailSizeFilter !== "all" && basket.sizeCode !== detailSizeFilter) {
         return false;
       }
       
       // Filtra per FLUPSY
-      if (detailFlupsyFilter && basket.flupsyId.toString() !== detailFlupsyFilter) {
+      if (detailFlupsyFilter && detailFlupsyFilter !== "all" && basket.flupsyId.toString() !== detailFlupsyFilter) {
         return false;
       }
       
@@ -650,12 +650,12 @@ export default function Inventory() {
       }
       
       // Se stiamo filtrando per taglia attuale
-      if (sizeFilter && prediction.currentSizeCode !== sizeFilter) {
+      if (sizeFilter && sizeFilter !== "all" && prediction.currentSizeCode !== sizeFilter) {
         return false;
       }
       
       // Se stiamo filtrando per FLUPSY
-      if (flupsyFilter && !prediction.flupsyName.toLowerCase().includes(flupsyFilter.toLowerCase())) {
+      if (flupsyFilter && flupsyFilter !== "all" && !prediction.flupsyName.toLowerCase().includes(flupsyFilter.toLowerCase())) {
         return false;
       }
       
@@ -722,7 +722,7 @@ export default function Inventory() {
               </SelectTrigger>
               <SelectContent>
                 <SelectGroup>
-                  <SelectItem value="">Nessuna taglia target</SelectItem>
+                  <SelectItem value="none">Nessuna taglia target</SelectItem>
                   {sizeOptions.map(option => (
                     <SelectItem key={option.value} value={option.value}>
                       {option.label}
@@ -811,7 +811,7 @@ export default function Inventory() {
                       <SelectValue placeholder="Filtra per taglia" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tutte le taglie</SelectItem>
+                      <SelectItem value="all">Tutte le taglie</SelectItem>
                       {sizeOptions.map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -825,7 +825,7 @@ export default function Inventory() {
                       <SelectValue placeholder="Filtra per FLUPSY" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tutti i FLUPSY</SelectItem>
+                      <SelectItem value="all">Tutti i FLUPSY</SelectItem>
                       {flupsyOptions.map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -892,7 +892,7 @@ export default function Inventory() {
                       <SelectValue placeholder="Filtra per taglia" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tutte le taglie</SelectItem>
+                      <SelectItem value="all">Tutte le taglie</SelectItem>
                       {sizeOptions.map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
@@ -906,7 +906,7 @@ export default function Inventory() {
                       <SelectValue placeholder="Filtra per FLUPSY" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tutti i FLUPSY</SelectItem>
+                      <SelectItem value="all">Tutti i FLUPSY</SelectItem>
                       {flupsyOptions.map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
