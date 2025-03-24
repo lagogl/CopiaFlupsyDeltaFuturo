@@ -83,12 +83,17 @@ const GrowthComparison: React.FC<GrowthComparisonProps> = ({
   formatDateIT,
 }) => {
   return (
-    <div className="space-y-6">
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-        <Card>
-          <CardHeader>
-            <CardTitle>Crescita per Taglia</CardTitle>
-            <CardDescription>
+    <div className="space-y-8">
+      <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+        <Card className="border-emerald-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-emerald-50 to-white border-b border-emerald-100">
+            <CardTitle className="text-emerald-800 flex items-center gap-2">
+              <div className="h-6 w-6 rounded-full bg-emerald-100 flex items-center justify-center">
+                <div className="h-3 w-3 rounded-full bg-emerald-500"></div>
+              </div>
+              Crescita per Taglia
+            </CardTitle>
+            <CardDescription className="text-emerald-600">
               Tassi di crescita medi delle ceste per taglia
             </CardDescription>
           </CardHeader>
@@ -202,11 +207,16 @@ const GrowthComparison: React.FC<GrowthComparisonProps> = ({
           </CardContent>
         </Card>
         
-        <Card>
-          <CardHeader>
-            <CardTitle>Top 10 Ceste per Crescita</CardTitle>
-            <CardDescription>
-              Le ceste con il più alto tasso di crescita
+        <Card className="border-blue-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-blue-50 to-white border-b border-blue-100">
+            <CardTitle className="text-blue-800 flex items-center gap-2">
+              <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
+                <div className="h-3 w-3 rounded-full bg-blue-500"></div>
+              </div>
+              Top 10 Ceste per Crescita
+            </CardTitle>
+            <CardDescription className="text-blue-600">
+              Le ceste con i più alti tassi di crescita
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -287,10 +297,15 @@ const GrowthComparison: React.FC<GrowthComparisonProps> = ({
         </Card>
       </div>
       
-      <Card>
-        <CardHeader>
-          <CardTitle>Timeline di Crescita</CardTitle>
-          <CardDescription>
+      <Card className="border-purple-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+        <CardHeader className="bg-gradient-to-r from-purple-50 to-white border-b border-purple-100">
+          <CardTitle className="text-purple-800 flex items-center gap-2">
+            <div className="h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center">
+              <div className="h-3 w-3 rounded-full bg-purple-500"></div>
+            </div>
+            Timeline di Crescita
+          </CardTitle>
+          <CardDescription className="text-purple-600">
             Timeline delle ceste e proiezione delle loro taglie nel tempo
           </CardDescription>
         </CardHeader>
