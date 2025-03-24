@@ -546,9 +546,45 @@ const SalesTimeline: React.FC<SalesTimelineProps> = ({
                     if (name === 'totalAnimals') {
                       return [formatNumberEU(Number(value)), 'Animali Totali'];
                     }
-                    return [formatNumberEU(Number(value)), `Taglia ${name}`];
+                    // Trova il nome completo della taglia
+                    const sizeObj = sizes.find(s => s.code === name);
+                    return [formatNumberEU(Number(value)), `Taglia ${name} (${sizeObj?.name || ''})`];
                   }}
                   labelFormatter={(label) => `Data: ${label}`}
+                  contentStyle={{ backgroundColor: 'white', border: '1px solid #ccc', borderRadius: '4px', padding: '10px' }}
+                  content={({ active, payload, label }) => {
+                    if (active && payload && payload.length) {
+                      return (
+                        <div className="bg-white p-3 border border-gray-200 rounded shadow-sm">
+                          <p className="font-bold mb-1">{`Data: ${label}`}</p>
+                          <div className="space-y-1">
+                            {payload.map((entry, index) => {
+                              // Colora il quadratino del colore della serie
+                              const isTotal = entry.name === 'totalAnimals';
+                              const sizeObj = isTotal ? null : sizes.find(s => s.code === entry.name);
+                              return (
+                                <div key={index} className="flex items-center gap-2">
+                                  <div 
+                                    className="w-3 h-3" 
+                                    style={{ backgroundColor: entry.color }}
+                                  />
+                                  <span className="text-sm">
+                                    {isTotal 
+                                      ? 'Animali Totali' 
+                                      : `${entry.name} ${sizeObj?.name ? `(${sizeObj.name})` : ''}`}:
+                                  </span>
+                                  <span className="font-medium text-sm">
+                                    {formatNumberEU(Number(entry.value))}
+                                  </span>
+                                </div>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      );
+                    }
+                    return null;
+                  }}
                 />
                 <Legend />
                 
