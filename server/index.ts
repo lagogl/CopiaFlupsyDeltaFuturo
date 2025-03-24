@@ -58,23 +58,37 @@ app.use((req, res, next) => {
   }
 
   // Configure port for production/development
-  const port = process.env.PORT || 5000;
+  let port = parseInt(process.env.PORT || "5000");
+  const maxPortAttempts = 10;
+  
   const startServer = () => {
-    server.listen({
-      port,
-      host: "0.0.0.0",
-      reusePort: true,
-    }, () => {
-      log(`${app.get("env")} server serving on port ${port}`);
-    }).on('error', (err) => {
-      if (err.code === 'EADDRINUSE') {
-        log(`Port ${port} is already in use. Please ensure no other process is using port ${port}`);
-        process.exit(1);
-      } else {
-        console.error('Server error:', err);
-        process.exit(1);
-      }
-    });
+    const tryPort = (attemptPort: number, attempt = 1) => {
+      server.listen({
+        port: attemptPort,
+        host: "0.0.0.0",
+        reusePort: true,
+      }, () => {
+        log(`${app.get("env")} server serving on port ${attemptPort}`);
+      }).on('error', (err: any) => {
+        if (err.code === 'EADDRINUSE') {
+          if (attempt < maxPortAttempts) {
+            // Try the next port
+            const nextPort = attemptPort + 1;
+            log(`Port ${attemptPort} is already in use. Trying port ${nextPort}...`);
+            tryPort(nextPort, attempt + 1);
+          } else {
+            log(`Failed to find an available port after ${maxPortAttempts} attempts.`);
+            process.exit(1);
+          }
+        } else {
+          console.error('Server error:', err);
+          process.exit(1);
+        }
+      });
+    };
+    
+    // Start with the initial port
+    tryPort(port);
   };
 
   // Graceful shutdown
