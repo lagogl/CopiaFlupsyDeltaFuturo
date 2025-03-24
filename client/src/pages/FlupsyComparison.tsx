@@ -256,7 +256,7 @@ export default function FlupsyComparison() {
   // Renderizza un cestello per la visualizzazione attuale
   const renderCurrentBasket = (basket) => {
     if (!basket) return (
-      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-28 flex items-center justify-center text-gray-400">
+      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-36 flex items-center justify-center text-gray-400">
         Vuoto
       </div>
     );
@@ -281,7 +281,7 @@ export default function FlupsyComparison() {
     
     return (
       <div 
-        className={`basket-card p-1 rounded border-2 ${colorClass} h-16 w-28 flex flex-col justify-between`}
+        className={`basket-card p-1 rounded border-2 ${colorClass} h-16 w-36 flex flex-col justify-between`}
         onClick={() => {}}
       >
         <div className="flex justify-between items-start">
@@ -294,11 +294,11 @@ export default function FlupsyComparison() {
         </div>
         
         {currentSize && (
-          <div className="mt-0.5 text-center">
+          <div className="mt-0.5 flex justify-between items-center">
             <Badge className="text-[9px] bg-blue-500 text-white">
               {currentSize.code}
             </Badge>
-            <div className="text-[9px] mt-0.5">{currentWeight} mg</div>
+            <div className="text-[9px]">{currentWeight} mg</div>
           </div>
         )}
         
@@ -315,7 +315,7 @@ export default function FlupsyComparison() {
   // Renderizza un cestello per la visualizzazione futura (per data)
   const renderFutureBasketByDate = (basket) => {
     if (!basket) return (
-      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-28 flex items-center justify-center text-gray-400">
+      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-36 flex items-center justify-center text-gray-400">
         Vuoto
       </div>
     );
@@ -350,7 +350,7 @@ export default function FlupsyComparison() {
     
     return (
       <div 
-        className={`basket-card p-1 rounded border-2 ${colorClass} h-16 w-28 flex flex-col justify-between`}
+        className={`basket-card p-1 rounded border-2 ${colorClass} h-16 w-36 flex flex-col justify-between`}
         onClick={() => {}}
       >
         <div className="flex justify-between items-start">
@@ -363,16 +363,16 @@ export default function FlupsyComparison() {
         </div>
         
         {futureSize && (
-          <div className="mt-0.5 text-center">
+          <div className="mt-0.5 flex justify-between items-center">
             <Badge className="text-[9px] bg-blue-500 text-white">
               {futureSize.code}
             </Badge>
-            <div className="text-[9px] mt-0.5">{futureWeight} mg</div>
+            <div className="text-[9px]">{futureWeight} mg</div>
           </div>
         )}
         
         {growthPercentage !== null && (
-          <div className="mt-auto text-[9px] text-center">
+          <div className="mt-auto text-[9px] flex justify-between items-center">
             <Badge className={`text-[9px] ${growthPercentage > 20 ? "bg-green-500 text-white" : "bg-gray-200"}`}>
               +{growthPercentage}%
             </Badge>
@@ -388,7 +388,7 @@ export default function FlupsyComparison() {
   // Renderizza un cestello per la visualizzazione futura (per taglia target)
   const renderFutureBasketBySize = (basket) => {
     if (!basket) return (
-      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-28 flex items-center justify-center text-gray-400">
+      <div className="basket-card p-1 rounded border-2 border-dashed border-gray-300 h-16 w-36 flex items-center justify-center text-gray-400">
         Vuoto
       </div>
     );
@@ -427,7 +427,7 @@ export default function FlupsyComparison() {
     
     return (
       <div 
-        className={`basket-card p-1 rounded border-2 ${colorClass} h-16 w-28 flex flex-col justify-between ${!willReach ? 'opacity-40' : ''}`}
+        className={`basket-card p-1 rounded border-2 ${colorClass} h-16 w-36 flex flex-col justify-between ${!willReach ? 'opacity-40' : ''}`}
         onClick={() => {}}
       >
         <div className="flex justify-between items-start">
@@ -439,7 +439,7 @@ export default function FlupsyComparison() {
           )}
         </div>
         
-        <div className="mt-0.5 text-center">
+        <div className="mt-0.5 flex justify-between items-center">
           {currentSize?.code === targetSizeCode ? (
             <Badge className="text-[9px] bg-green-500 text-white">Già {targetSizeCode}</Badge>
           ) : willReach ? (
@@ -449,14 +449,14 @@ export default function FlupsyComparison() {
           )}
           
           {daysToReach !== null && daysToReach > 0 && (
-            <div className="text-[9px] mt-0.5">
+            <div className="text-[9px]">
               {daysToReach}g
             </div>
           )}
         </div>
         
         {daysToReach !== null && daysToReach > 0 && (
-          <div className="mt-auto text-[8px] text-center">
+          <div className="mt-auto text-[8px] flex justify-between items-center">
             <div className="opacity-70">
               {format(addDays(new Date(), daysToReach), 'dd/MM')}
             </div>
