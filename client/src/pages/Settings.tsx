@@ -50,7 +50,7 @@ export default function Settings() {
       if (response.ok) {
         toast({
           title: "Azzeramento completato",
-          description: "Le operazioni, i cicli e le posizioni sono stati azzerati correttamente.",
+          description: "Le operazioni, i cicli, i cestelli e le posizioni sono stati azzerati correttamente.",
         });
       } else {
         const error = await response.json();
@@ -204,9 +204,9 @@ export default function Settings() {
               <div className="border border-border rounded-lg p-4 space-y-4">
                 <div className="flex items-start justify-between">
                   <div>
-                    <h3 className="text-lg font-medium mb-1">Azzeramento Operazioni e Cicli</h3>
+                    <h3 className="text-lg font-medium mb-1">Azzeramento Operazioni, Cicli e Cestelli</h3>
                     <p className="text-sm text-gray-500">
-                      Elimina tutte le operazioni, i cicli e la cronologia delle posizioni. I cestelli torneranno nello stato disponibile.
+                      Elimina tutte le operazioni, i cicli, i cestelli e la cronologia delle posizioni.
                       I contatori verranno ripristinati a 1.
                     </p>
                   </div>
@@ -225,8 +225,8 @@ export default function Settings() {
                           <ul className="list-disc list-inside my-2 space-y-1">
                             <li>Eliminerà tutte le operazioni registrate</li>
                             <li>Eliminerà tutti i cicli di crescita</li>
+                            <li>Eliminerà tutti i cestelli</li>
                             <li>Eliminerà la cronologia delle posizioni dei cestelli</li>
-                            <li>Ripristinerà i cestelli allo stato disponibile</li>
                             <li>Resetterà i contatori delle sequenze ID a 1</li>
                           </ul>
                           Questa operazione non può essere annullata.

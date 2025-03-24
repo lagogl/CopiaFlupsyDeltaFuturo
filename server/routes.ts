@@ -1880,7 +1880,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Route per azzerare operazioni e cicli
+  // Route per azzerare operazioni, cicli e cestelli
   app.post("/api/reset-operations", async (req, res) => {
     try {
       // Importiamo il queryClient dal modulo db
@@ -1889,14 +1889,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Usiamo il metodo corretto per le transazioni
       await queryClient.begin(async sql => {
         try {
-          // 1. Aggiorna i cestelli per rimuovere i cicli attivi
-          await sql`
-            UPDATE baskets 
-            SET current_cycle_id = NULL, 
-                cycle_code = NULL, 
-                state = 'available' 
-            WHERE current_cycle_id IS NOT NULL
-          `;
+          // 1. Elimina la cronologia delle posizioni dei cestelli
+          await sql`DELETE FROM basket_position_history`;
           
           // 2. Elimina le operazioni
           await sql`DELETE FROM operations`;
@@ -1904,13 +1898,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 3. Elimina i cicli
           await sql`DELETE FROM cycles`;
           
-          // 4. Elimina la cronologia delle posizioni dei cestelli
-          await sql`DELETE FROM basket_position_history`;
+          // 4. Elimina i cestelli
+          await sql`DELETE FROM baskets`;
           
           // 5. Resettiamo le sequenze degli ID
           await sql`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS basket_position_history_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`;
           
           return true; // Successo - commit implicito
         } catch (error) {
@@ -1921,7 +1916,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json({ 
         success: true,
-        message: "Dati azzerati con successo. Operazioni, cicli e posizioni eliminati."
+        message: "Dati azzerati con successo. Operazioni, cicli, cestelli e posizioni eliminati."
       });
     } catch (error) {
       console.error("Errore durante l'azzeramento dei dati operativi:", error);
