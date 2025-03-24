@@ -598,6 +598,9 @@ export default function Operations() {
                               <span className="text-xs block text-gray-500">
                                 Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
                               </span>
+                              <span className="text-xs block text-gray-500">
+                                Fornitore: {op.lot.supplier || 'N/D'}
+                              </span>
                             </div>
                           ) : (
                             <span className="text-gray-400 italic">Nessun lotto</span>
@@ -858,6 +861,9 @@ export default function Operations() {
                                         {op.lot.name}
                                         <span className="text-xs text-gray-500 block">
                                           Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
+                                        </span>
+                                        <span className="text-xs text-gray-500 block">
+                                          Fornitore: {op.lot.supplier || 'N/D'}
                                         </span>
                                       </p>
                                     ) : (
