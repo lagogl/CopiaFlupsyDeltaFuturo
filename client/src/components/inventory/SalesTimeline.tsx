@@ -455,7 +455,7 @@ const SalesTimeline: React.FC<SalesTimelineProps> = ({
         // È un cambio taglia se è il primo evento o se la taglia è diversa dall'evento precedente
         if (index === 0) return true;
         if (!event.size || !arr[index-1].size) return false;
-        return event.size.code !== arr[index-1].size.code;
+        return event.size.code !== arr[index-1].size?.code;
       });
       
       // Per ogni evento di cambio taglia
@@ -634,7 +634,7 @@ const SalesTimeline: React.FC<SalesTimelineProps> = ({
                       <Badge
                         style={{ 
                           backgroundColor: color,
-                          color: parseInt(milestone.targetSize.replace('TP-', '')) <= 1500 ? 'white' : 'black'
+                          color: parseInt(milestone.targetSize.replace('TP-', '')) <= 1500 || parseInt(milestone.targetSize.replace('TP-', '')) >= 6000 ? 'white' : 'black'
                         }}
                         className="shadow-sm font-bold px-2.5"
                       >

@@ -372,7 +372,7 @@ const GrowthComparison: React.FC<GrowthComparisonProps> = ({
                                     <Badge
                                       style={{ 
                                         backgroundColor: cesta.color || 'gray',
-                                        color: cesta.sizeCode && parseInt(cesta.sizeCode.replace('T', '')) <= 3 ? 'white' : 'black'
+                                        color: cesta.sizeCode && ['T1', 'T2', 'T3', 'T7'].includes(cesta.sizeCode) ? 'white' : 'black'
                                       }}
                                       className="text-xs shadow-sm font-bold px-2"
                                     >
@@ -393,7 +393,7 @@ const GrowthComparison: React.FC<GrowthComparisonProps> = ({
                                         <Badge
                                           style={{ 
                                             backgroundColor: point.size?.color || 'gray',
-                                            color: point.size?.code && parseInt(point.size?.code.replace('T', '')) <= 3 ? 'white' : 'black'
+                                            color: point.size?.code && ['T1', 'T2', 'T3', 'T7'].includes(point.size.code) ? 'white' : 'black'
                                           }}
                                           className="text-xs shadow-sm font-bold px-2"
                                         >
