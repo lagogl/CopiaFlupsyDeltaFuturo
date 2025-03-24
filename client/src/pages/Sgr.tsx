@@ -532,7 +532,12 @@ export default function Sgr() {
             <DialogTitle>Modifica indice SGR</DialogTitle>
           </DialogHeader>
           <SgrForm 
-            onSubmit={updateSgrMutation.mutate} 
+            onSubmit={(values) => {
+              // Assicurati che l'ID sia incluso nei dati inviati
+              if (editingSgr && editingSgr.id) {
+                updateSgrMutation.mutate({ ...values, id: editingSgr.id });
+              }
+            }} 
             isLoading={updateSgrMutation.isPending} 
             defaultValues={editingSgr}
           />
