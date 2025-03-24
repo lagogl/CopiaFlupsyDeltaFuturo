@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real, date } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, date, numeric } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -122,6 +122,15 @@ export const basketPositionHistory = pgTable("basket_position_history", {
   operationId: integer("operation_id"), // operazione che ha causato il cambio di posizione
 });
 
+// Mortality Rate (Tasso di mortalità previsto per taglia e mese)
+export const mortalityRates = pgTable("mortality_rates", {
+  id: serial("id").primaryKey(),
+  sizeId: integer("size_id").notNull(), // reference to the size
+  month: text("month").notNull(), // e.g., gennaio, febbraio...
+  percentage: real("percentage").notNull(), // percentuale di mortalità prevista per questa taglia e mese
+  notes: text("notes"),
+});
+
 // Insert schemas
 export const insertFlupsySchema = createInsertSchema(flupsys).omit({
   id: true
@@ -168,6 +177,10 @@ export const insertBasketPositionHistorySchema = createInsertSchema(basketPositi
   endDate: true
 });
 
+export const insertMortalityRateSchema = createInsertSchema(mortalityRates).omit({
+  id: true
+});
+
 // Types
 export type Flupsy = typeof flupsys.$inferSelect;
 export type InsertFlupsy = z.infer<typeof insertFlupsySchema>;
@@ -197,6 +210,9 @@ export type InsertLot = z.infer<typeof insertLotSchema>;
 export type BasketPositionHistory = typeof basketPositionHistory.$inferSelect;
 export type InsertBasketPositionHistory = z.infer<typeof insertBasketPositionHistorySchema>;
 
+export type MortalityRate = typeof mortalityRates.$inferSelect;
+export type InsertMortalityRate = z.infer<typeof insertMortalityRateSchema>;
+
 // Extended schemas for validation
 export const operationSchema = insertOperationSchema.extend({
   date: z.coerce.date()
@@ -216,4 +232,8 @@ export const basketPositionHistorySchema = insertBasketPositionHistorySchema.ext
 
 export const sgrGiornalieriSchema = insertSgrGiornalieriSchema.extend({
   recordDate: z.coerce.date()
+});
+
+export const mortalityRateSchema = insertMortalityRateSchema.extend({
+  // Validation rules if needed
 });

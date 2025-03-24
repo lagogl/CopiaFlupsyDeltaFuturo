@@ -5,7 +5,7 @@ import {
   Basket, Cycle, InsertBasket, InsertCycle, InsertLot, InsertOperation, 
   InsertSgr, InsertSize, Lot, Operation, Size, Sgr, baskets, cycles, lots,
   operations, sgr, sizes, basketPositionHistory, BasketPositionHistory, InsertBasketPositionHistory,
-  SgrGiornaliero, InsertSgrGiornaliero, sgrGiornalieri
+  SgrGiornaliero, InsertSgrGiornaliero, sgrGiornalieri, MortalityRate, InsertMortalityRate, mortalityRates
 } from '../shared/schema';
 import { IStorage } from './storage';
 
@@ -480,6 +480,47 @@ export class DbStorage implements IStorage {
         id: sgrGiornalieri.id
       });
     return results.length > 0;
+  }
+  
+  // MORTALITY RATES
+  async getMortalityRates(): Promise<MortalityRate[]> {
+    return await db.select().from(mortalityRates);
+  }
+
+  async getMortalityRate(id: number): Promise<MortalityRate | undefined> {
+    const results = await db.select().from(mortalityRates).where(eq(mortalityRates.id, id));
+    return results[0];
+  }
+
+  async getMortalityRatesBySize(sizeId: number): Promise<MortalityRate[]> {
+    return await db.select().from(mortalityRates).where(eq(mortalityRates.sizeId, sizeId));
+  }
+
+  async getMortalityRatesByMonth(month: string): Promise<MortalityRate[]> {
+    return await db.select().from(mortalityRates).where(eq(mortalityRates.month, month));
+  }
+
+  async getMortalityRateByMonthAndSize(month: string, sizeId: number): Promise<MortalityRate | undefined> {
+    const results = await db.select().from(mortalityRates).where(
+      and(
+        eq(mortalityRates.month, month),
+        eq(mortalityRates.sizeId, sizeId)
+      )
+    );
+    return results[0];
+  }
+
+  async createMortalityRate(mortalityRate: InsertMortalityRate): Promise<MortalityRate> {
+    const results = await db.insert(mortalityRates).values(mortalityRate).returning();
+    return results[0];
+  }
+
+  async updateMortalityRate(id: number, mortalityRateUpdate: Partial<MortalityRate>): Promise<MortalityRate | undefined> {
+    const results = await db.update(mortalityRates)
+      .set(mortalityRateUpdate)
+      .where(eq(mortalityRates.id, id))
+      .returning();
+    return results[0];
   }
   
   // Growth calculations

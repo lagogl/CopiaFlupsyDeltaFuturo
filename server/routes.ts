@@ -12,7 +12,9 @@ import {
   sgrGiornalieriSchema,
   insertSgrGiornalieriSchema,
   lotSchema, 
-  operationTypes
+  operationTypes,
+  mortalityRateSchema,
+  insertMortalityRateSchema
 } from "@shared/schema";
 import { format, addDays } from "date-fns";
 import { z } from "zod";
@@ -1102,6 +1104,202 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error deleting SGR giornaliero:", error);
       res.status(500).json({ message: "Failed to delete SGR giornaliero" });
+    }
+  });
+
+  // === Mortality Rate routes ===
+  app.get("/api/mortality-rates", async (req, res) => {
+    try {
+      const mortalityRates = await storage.getMortalityRates();
+      
+      // Aggiungi informazioni sulla taglia
+      const mortalityRatesWithSizes = await Promise.all(
+        mortalityRates.map(async (rate) => {
+          const size = rate.sizeId ? await storage.getSize(rate.sizeId) : null;
+          return { ...rate, size };
+        })
+      );
+      
+      res.json(mortalityRatesWithSizes);
+    } catch (error) {
+      console.error("Error fetching mortality rates:", error);
+      res.status(500).json({ message: "Failed to fetch mortality rates" });
+    }
+  });
+
+  app.get("/api/mortality-rates/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid mortality rate ID" });
+      }
+
+      const mortalityRate = await storage.getMortalityRate(id);
+      if (!mortalityRate) {
+        return res.status(404).json({ message: "Mortality rate not found" });
+      }
+
+      // Includi informazioni sulla taglia
+      const size = mortalityRate.sizeId ? await storage.getSize(mortalityRate.sizeId) : null;
+      
+      res.json({ ...mortalityRate, size });
+    } catch (error) {
+      console.error("Error fetching mortality rate:", error);
+      res.status(500).json({ message: "Failed to fetch mortality rate" });
+    }
+  });
+  
+  app.get("/api/mortality-rates/by-month/:month", async (req, res) => {
+    try {
+      const month = req.params.month;
+      const mortalityRates = await storage.getMortalityRatesByMonth(month);
+      
+      // Aggiungi informazioni sulla taglia
+      const mortalityRatesWithSizes = await Promise.all(
+        mortalityRates.map(async (rate) => {
+          const size = rate.sizeId ? await storage.getSize(rate.sizeId) : null;
+          return { ...rate, size };
+        })
+      );
+      
+      res.json(mortalityRatesWithSizes);
+    } catch (error) {
+      console.error("Error fetching mortality rates by month:", error);
+      res.status(500).json({ message: "Failed to fetch mortality rates by month" });
+    }
+  });
+  
+  app.get("/api/mortality-rates/by-size/:sizeId", async (req, res) => {
+    try {
+      const sizeId = parseInt(req.params.sizeId);
+      if (isNaN(sizeId)) {
+        return res.status(400).json({ message: "Invalid size ID" });
+      }
+      
+      const mortalityRates = await storage.getMortalityRatesBySize(sizeId);
+      
+      // Aggiungi informazioni sulla taglia
+      const size = await storage.getSize(sizeId);
+      const mortalityRatesWithSize = mortalityRates.map(rate => ({ ...rate, size }));
+      
+      res.json(mortalityRatesWithSize);
+    } catch (error) {
+      console.error("Error fetching mortality rates by size:", error);
+      res.status(500).json({ message: "Failed to fetch mortality rates by size" });
+    }
+  });
+  
+  app.get("/api/mortality-rates/by-month-and-size", async (req, res) => {
+    try {
+      const month = req.query.month as string;
+      const sizeId = parseInt(req.query.sizeId as string);
+      
+      if (!month || isNaN(sizeId)) {
+        return res.status(400).json({ 
+          message: "Both month and sizeId are required parameters" 
+        });
+      }
+      
+      const mortalityRate = await storage.getMortalityRateByMonthAndSize(month, sizeId);
+      if (!mortalityRate) {
+        return res.status(404).json({ 
+          message: `No mortality rate found for month ${month} and size ID ${sizeId}` 
+        });
+      }
+      
+      // Includi informazioni sulla taglia
+      const size = await storage.getSize(sizeId);
+      
+      res.json({ ...mortalityRate, size });
+    } catch (error) {
+      console.error("Error fetching mortality rate by month and size:", error);
+      res.status(500).json({ message: "Failed to fetch mortality rate by month and size" });
+    }
+  });
+  
+  app.post("/api/mortality-rates", async (req, res) => {
+    try {
+      const parsedData = mortalityRateSchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+      
+      // Verifica se esiste già un tasso di mortalità per questa combinazione mese/taglia
+      const existingRate = await storage.getMortalityRateByMonthAndSize(
+        parsedData.data.month, 
+        parsedData.data.sizeId
+      );
+      
+      if (existingRate) {
+        return res.status(409).json({ 
+          message: "Un tasso di mortalità per questa combinazione mese/taglia esiste già",
+          existingRate
+        });
+      }
+      
+      const mortalityRate = await storage.createMortalityRate(parsedData.data);
+      
+      // Aggiungi informazioni sulla taglia nella risposta
+      const size = mortalityRate.sizeId ? await storage.getSize(mortalityRate.sizeId) : null;
+      
+      res.status(201).json({ ...mortalityRate, size });
+    } catch (error) {
+      console.error("Error creating mortality rate:", error);
+      res.status(500).json({ message: "Failed to create mortality rate" });
+    }
+  });
+  
+  app.patch("/api/mortality-rates/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid mortality rate ID" });
+      }
+      
+      // Verifica che il tasso di mortalità esista
+      const mortalityRate = await storage.getMortalityRate(id);
+      if (!mortalityRate) {
+        return res.status(404).json({ message: "Mortality rate not found" });
+      }
+      
+      // Parse e valida i dati di aggiornamento
+      const updateSchema = z.object({
+        month: z.string().optional(),
+        sizeId: z.number().optional(),
+        percentage: z.number().optional(),
+        notes: z.string().nullable().optional()
+      });
+      
+      const parsedData = updateSchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+      
+      // Se si sta aggiornando mese o taglia, verifica che non esista già un altro record con la stessa combinazione
+      if (parsedData.data.month || parsedData.data.sizeId) {
+        const month = parsedData.data.month || mortalityRate.month;
+        const sizeId = parsedData.data.sizeId || mortalityRate.sizeId;
+        
+        const existingRate = await storage.getMortalityRateByMonthAndSize(month, sizeId);
+        if (existingRate && existingRate.id !== id) {
+          return res.status(409).json({
+            message: "Un tasso di mortalità per questa combinazione mese/taglia esiste già",
+            existingRate
+          });
+        }
+      }
+      
+      const updatedMortalityRate = await storage.updateMortalityRate(id, parsedData.data);
+      
+      // Includi informazioni sulla taglia nella risposta
+      const size = updatedMortalityRate?.sizeId ? await storage.getSize(updatedMortalityRate.sizeId) : null;
+      
+      res.json({ ...updatedMortalityRate, size });
+    } catch (error) {
+      console.error("Error updating mortality rate:", error);
+      res.status(500).json({ message: "Failed to update mortality rate" });
     }
   });
 

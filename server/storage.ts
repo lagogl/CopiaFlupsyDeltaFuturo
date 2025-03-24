@@ -8,6 +8,7 @@ import {
   Lot, InsertLot,
   BasketPositionHistory, InsertBasketPositionHistory,
   SgrGiornaliero, InsertSgrGiornaliero,
+  MortalityRate, InsertMortalityRate,
   operationTypes
 } from "@shared/schema";
 
@@ -81,6 +82,15 @@ export interface IStorage {
   getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined>;
   createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory>;
   closeBasketPositionHistory(basketId: number, endDate: Date | string): Promise<BasketPositionHistory | undefined>;
+  
+  // Mortality Rate methods
+  getMortalityRates(): Promise<MortalityRate[]>;
+  getMortalityRate(id: number): Promise<MortalityRate | undefined>;
+  getMortalityRatesBySize(sizeId: number): Promise<MortalityRate[]>;
+  getMortalityRatesByMonth(month: string): Promise<MortalityRate[]>;
+  getMortalityRateByMonthAndSize(month: string, sizeId: number): Promise<MortalityRate | undefined>;
+  createMortalityRate(mortalityRate: InsertMortalityRate): Promise<MortalityRate>;
+  updateMortalityRate(id: number, mortalityRate: Partial<MortalityRate>): Promise<MortalityRate | undefined>;
   
   // Growth predictions methods
   calculateActualSgr(operations: Operation[]): Promise<number | null>;
