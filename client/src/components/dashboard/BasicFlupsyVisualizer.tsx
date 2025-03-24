@@ -42,6 +42,10 @@ export default function BasicFlupsyVisualizer() {
     queryKey: ['/api/cycles'] 
   });
   
+  const { data: lots } = useQuery({ 
+    queryKey: ['/api/lots'] 
+  });
+  
   // Handler per aggiornare i contatori dei badge
   const handleBadgeCountChange = (category: 'topSgr' | 'topPopulation' | 'oldestCycles', value: number) => {
     setBadgeCounts(prev => ({
@@ -454,10 +458,18 @@ export default function BasicFlupsyVisualizer() {
           )}
           
           {latestOperation.lotId && (
-            <div className="flex justify-between">
-              <span className="font-medium">Lotto:</span>
-              <span>#{latestOperation.lotId}</span>
-            </div>
+            <>
+              <div className="flex justify-between">
+                <span className="font-medium">Lotto:</span>
+                <span>#{latestOperation.lotId}</span>
+              </div>
+              {lots && (
+                <div className="flex justify-between">
+                  <span className="font-medium">Fornitore:</span>
+                  <span>{lots.find((l: any) => l.id === latestOperation.lotId)?.supplier || 'N/D'}</span>
+                </div>
+              )}
+            </>
           )}
           
           {latestOperation.deadCount !== null && (
