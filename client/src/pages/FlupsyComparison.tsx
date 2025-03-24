@@ -290,7 +290,7 @@ export default function FlupsyComparison() {
         
         {currentSize && (
           <div className="mt-1 text-center">
-            <Badge className={`text-xs text-white bg-${currentSize.color.replace('bg-', '').replace('-100', '-500')}`}>
+            <Badge className={`text-xs ${currentSize.color.includes('bg-') ? currentSize.color : `bg-${currentSize.color}`} text-white`}>
               {currentSize.code}
             </Badge>
             <div className="text-xs mt-1">{currentWeight} mg</div>
@@ -355,7 +355,7 @@ export default function FlupsyComparison() {
         
         {futureSize && (
           <div className="mt-1 text-center">
-            <Badge className={`text-xs text-white bg-${futureSize.color.replace('bg-', '').replace('-100', '-500')}`}>
+            <Badge className={`text-xs ${futureSize.color.includes('bg-') ? futureSize.color : `bg-${futureSize.color}`} text-white`}>
               {futureSize.code}
             </Badge>
             <div className="text-xs mt-1">{futureWeight} mg</div>
@@ -430,7 +430,7 @@ export default function FlupsyComparison() {
           {currentSize?.code === targetSizeCode ? (
             <Badge className="text-xs bg-green-500 text-white">Già {targetSizeCode}</Badge>
           ) : willReach ? (
-            <Badge className="text-xs">Raggiungerà {targetSizeCode}</Badge>
+            <Badge className="text-xs bg-blue-500 text-white">Raggiungerà {targetSizeCode}</Badge>
           ) : (
             <Badge variant="outline" className="text-xs">Non raggiungerà</Badge>
           )}
