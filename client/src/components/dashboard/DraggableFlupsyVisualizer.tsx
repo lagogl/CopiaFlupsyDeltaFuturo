@@ -225,9 +225,86 @@ export default function DraggableFlupsyVisualizer() {
     }
   };
 
+  // Switch basket positions mutation
+  const switchBasketPositions = useMutation({
+    mutationFn: async ({ 
+      basket1Id, 
+      basket2Id,
+      position1Row,
+      position1Number, 
+      position2Row,
+      position2Number 
+    }: { 
+      basket1Id: number;
+      basket2Id: number;
+      position1Row: string;
+      position1Number: number;
+      position2Row: string;
+      position2Number: number;
+    }) => {
+      // Prima aggiorniamo la posizione del primo cestello
+      await apiRequest('PATCH', `/api/baskets/${basket1Id}`, {
+        row: position2Row,
+        position: position2Number
+      });
+      
+      // Poi aggiorniamo la posizione del secondo cestello
+      return await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
+        row: position1Row,
+        position: position1Number
+      });
+    },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      toast({
+        title: "Scambio completato",
+        description: "Lo scambio delle ceste è stato completato con successo.",
+      });
+      setConfirmDialogOpen(false);
+      setPendingBasketMove(null);
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante lo scambio delle ceste.",
+        variant: "destructive",
+      });
+      setConfirmDialogOpen(false);
+      setPendingBasketMove(null);
+    }
+  });
+
   // Confirm basket move
   const confirmBasketMove = () => {
-    if (pendingBasketMove) {
+    if (!pendingBasketMove) return;
+    
+    if (pendingBasketMove.isSwitch && pendingBasketMove.targetBasketId) {
+      // Caso di switch tra due cestelli
+      const basket1 = baskets?.find((b: any) => b.id === pendingBasketMove.basketId);
+      const basket2 = baskets?.find((b: any) => b.id === pendingBasketMove.targetBasketId);
+      
+      if (!basket1 || !basket2) {
+        toast({
+          title: "Errore",
+          description: "Impossibile trovare i cestelli da scambiare.",
+          variant: "destructive",
+        });
+        setConfirmDialogOpen(false);
+        setPendingBasketMove(null);
+        return;
+      }
+      
+      // Eseguiamo lo scambio
+      switchBasketPositions.mutate({
+        basket1Id: basket1.id,
+        basket2Id: basket2.id,
+        position1Row: basket1.row || "",
+        position1Number: basket1.position || 0,
+        position2Row: basket2.row || "",
+        position2Number: basket2.position || 0
+      });
+    } else {
+      // Caso normale: sposta un cestello in una posizione vuota
       updateBasketPosition.mutate({
         basketId: pendingBasketMove.basketId,
         row: pendingBasketMove.targetRow,
@@ -636,13 +713,28 @@ export default function DraggableFlupsyVisualizer() {
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Conferma spostamento</AlertDialogTitle>
+            <AlertDialogTitle>
+              {pendingBasketMove?.isSwitch ? "Conferma scambio" : "Conferma spostamento"}
+            </AlertDialogTitle>
             <AlertDialogDescription>
-              Vuoi spostare la cesta nella nuova posizione?
+              {pendingBasketMove?.isSwitch 
+                ? "Vuoi fare switch? Le posizioni delle due ceste verranno scambiate."
+                : "Vuoi spostare la cesta nella nuova posizione?"
+              }
               {pendingBasketMove && (
                 <div className="mt-2 text-sm bg-muted p-2 rounded">
-                  <span className="font-medium">Nuova posizione:</span> 
-                  {pendingBasketMove.targetRow}-{pendingBasketMove.targetPosition}
+                  <span className="font-medium">
+                    {pendingBasketMove.isSwitch ? "Posizioni da scambiare:" : "Nuova posizione:"}
+                  </span>
+                  <div>
+                    Cesta in posizione: {pendingBasketMove.targetRow}-{pendingBasketMove.targetPosition}
+                    {pendingBasketMove.isSwitch && (
+                      <div className="mt-1">
+                        <span className="mr-2">↔️</span>
+                        Cesta #{baskets?.find((b: any) => b.id === pendingBasketMove.basketId)?.physicalNumber} 
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </AlertDialogDescription>
