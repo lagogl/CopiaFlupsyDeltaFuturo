@@ -255,7 +255,11 @@ export default function FlupsyComparison() {
 
   // Renderizza un cestello per la visualizzazione attuale
   const renderCurrentBasket = (basket) => {
-    if (!basket) return <div className="empty-position">Vuoto</div>;
+    if (!basket) return (
+      <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-32 flex items-center justify-center text-gray-400">
+        Vuoto
+      </div>
+    );
     
     const latestOperation = getLatestOperationForBasket(basket.id);
     const cycle = getCycleForBasket(basket.id);
@@ -310,7 +314,11 @@ export default function FlupsyComparison() {
 
   // Renderizza un cestello per la visualizzazione futura (per data)
   const renderFutureBasketByDate = (basket) => {
-    if (!basket) return <div className="empty-position">Vuoto</div>;
+    if (!basket) return (
+      <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-32 flex items-center justify-center text-gray-400">
+        Vuoto
+      </div>
+    );
     
     const latestOperation = getLatestOperationForBasket(basket.id);
     const cycle = getCycleForBasket(basket.id);
@@ -379,7 +387,11 @@ export default function FlupsyComparison() {
 
   // Renderizza un cestello per la visualizzazione futura (per taglia target)
   const renderFutureBasketBySize = (basket) => {
-    if (!basket) return <div className="empty-position">Vuoto</div>;
+    if (!basket) return (
+      <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-32 flex items-center justify-center text-gray-400">
+        Vuoto
+      </div>
+    );
     
     const latestOperation = getLatestOperationForBasket(basket.id);
     const cycle = getCycleForBasket(basket.id);
