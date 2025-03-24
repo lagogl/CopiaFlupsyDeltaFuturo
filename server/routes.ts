@@ -1192,18 +1192,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/mortality-rates/by-month-and-size", async (req, res) => {
     try {
       const month = req.query.month as string;
-      const sizeId = parseInt(req.query.sizeId as string);
+      const sizeIdStr = req.query.sizeId as string;
       
-      if (!month || isNaN(sizeId)) {
+      if (!month || !sizeIdStr) {
         return res.status(400).json({ 
           message: "Both month and sizeId are required parameters" 
         });
       }
       
-      const mortalityRate = await storage.getMortalityRateByMonthAndSize(month, sizeId);
+      const sizeId = parseInt(sizeIdStr);
+      if (isNaN(sizeId)) {
+        return res.status(400).json({ 
+          message: "sizeId must be a valid number" 
+        });
+      }
+      
+      // Normalizza il mese per la ricerca (tutto minuscolo)
+      const normalizedMonth = month.toLowerCase();
+      
+      const mortalityRate = await storage.getMortalityRateByMonthAndSize(normalizedMonth, sizeId);
       if (!mortalityRate) {
         return res.status(404).json({ 
-          message: `No mortality rate found for month ${month} and size ID ${sizeId}` 
+          message: `No mortality rate found for month ${normalizedMonth} and size ID ${sizeId}` 
         });
       }
       
