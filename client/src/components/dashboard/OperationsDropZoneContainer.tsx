@@ -222,7 +222,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
     formData: any;
   } | null>(null);
 
-  // Carica dati delle ceste, operazioni e cicli
+  // Carica dati delle ceste, operazioni, cicli e lotti
   const { data: baskets } = useQuery({
     queryKey: ['/api/baskets'],
     queryFn: getQueryFn({ on401: "throw" })
@@ -235,6 +235,11 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
 
   const { data: cycles } = useQuery({
     queryKey: ['/api/cycles'],
+    queryFn: getQueryFn({ on401: "throw" })
+  });
+  
+  const { data: lots } = useQuery({
+    queryKey: ['/api/lots'],
     queryFn: getQueryFn({ on401: "throw" })
   });
 
@@ -262,15 +267,17 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
   });
 
   // Filtra le ceste per il FLUPSY selezionato
-  const filteredBaskets = baskets 
+  const filteredBaskets = baskets && Array.isArray(baskets)
     ? baskets.filter((basket: any) => basket.flupsyId === flupsyId)
     : [];
 
   // Gestisce il rilascio di un'operazione su una cesta
   const handleOperationDrop = useCallback(
     (basketId: number, operationType: DraggableOperationType) => {
+      if (!baskets || !operations) return;
+      
       // Trova il ciclo attivo per questa cesta
-      const basket = baskets?.find((b: any) => b.id === basketId);
+      const basket = (baskets && Array.isArray(baskets)) ? baskets.find((b: any) => b.id === basketId) : undefined;
       if (!basket || basket.currentCycleId === null) {
         toast({
           title: "Impossibile eseguire l'operazione",
@@ -281,7 +288,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       }
 
       // Trova l'ultima operazione per questa cesta
-      const basketOperations = operations 
+      const basketOperations = operations && Array.isArray(operations)
         ? operations.filter((op: any) => op.basketId === basketId)
             .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
         : [];
@@ -486,10 +493,20 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                     </div>
                   </div>
                   {currentOperation.formData.lotId && (
-                    <div className="mt-2 bg-blue-100 p-2 rounded text-xs flex items-center">
-                      <Tag className="h-3 w-3 mr-1" />
-                      <span className="text-blue-600 font-medium">Lotto:</span>
-                      <span className="ml-1 text-blue-900">ID: {currentOperation.formData.lotId}</span>
+                    <div className="mt-2 bg-blue-100 p-2 rounded text-xs">
+                      <div className="flex items-center mb-1">
+                        <Tag className="h-3 w-3 mr-1" />
+                        <span className="text-blue-600 font-medium">Lotto ID:</span>
+                        <span className="ml-1 text-blue-900">{currentOperation.formData.lotId}</span>
+                      </div>
+                      <div className="flex items-center">
+                        <span className="text-xs text-blue-600 font-medium">Fornitore:</span>
+                        <span className="ml-1 text-xs text-blue-900">
+                          {lots && Array.isArray(lots) 
+                            ? lots.find((l: any) => l.id === currentOperation.formData.lotId)?.supplier || "-"
+                            : "-"}
+                        </span>
+                      </div>
                     </div>
                   )}
                 </div>
