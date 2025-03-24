@@ -20,6 +20,7 @@ import Settings from "@/pages/Settings";
 import Flupsys from "@/pages/Flupsys";
 import FlupsyFullView from "@/pages/FlupsyFullView";
 import FlupsyPositions from "@/pages/FlupsyPositions";
+import FlupsyComparison from "@/pages/FlupsyComparison";
 import Inventory from "@/pages/Inventory";
 import TestView from "@/pages/TestView";
 
@@ -30,6 +31,7 @@ function Router() {
       <Route path="/flupsys" component={Flupsys}/>
       <Route path="/flupsy-view" component={FlupsyFullView}/>
       <Route path="/flupsy-positions" component={FlupsyPositions}/>
+      <Route path="/flupsy-comparison" component={FlupsyComparison}/>
       <Route path="/baskets" component={Baskets}/>
       <Route path="/operations" component={Operations}/>
       <Route path="/operations/:id" component={OperationDetail}/>

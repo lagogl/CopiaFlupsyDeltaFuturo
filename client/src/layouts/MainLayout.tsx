@@ -3,7 +3,7 @@ import { useLocation, Link } from "wouter";
 import { 
   Home, Package, FileText, RefreshCw, Package2, BarChart2, 
   Scale, TrendingUp, Settings as SettingsIcon, Menu, Bell, 
-  User, Waves, Zap, Move, GripHorizontal, Boxes
+  User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare
 } from "lucide-react";
 
 interface MainLayoutProps {
@@ -22,6 +22,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     { icon: <Home className="h-5 w-5 mr-2" />, label: "Dashboard", path: "/" },
     { icon: <Waves className="h-5 w-5 mr-2" />, label: "Unità FLUPSY", path: "/flupsys" },
     { icon: <Move className="h-5 w-5 mr-2" />, label: "Gestione Posizioni", path: "/flupsy-positions" },
+    { icon: <GitCompare className="h-5 w-5 mr-2" />, label: "Confronto FLUPSY", path: "/flupsy-comparison" },
     { icon: <Package className="h-5 w-5 mr-2" />, label: "Gestione Ceste", path: "/baskets" },
     { icon: <FileText className="h-5 w-5 mr-2" />, label: "Operazioni", path: "/operations" },
     { icon: <Zap className="h-5 w-5 mr-2" />, label: "Operazioni Rapide", path: "/quick-operations" },
