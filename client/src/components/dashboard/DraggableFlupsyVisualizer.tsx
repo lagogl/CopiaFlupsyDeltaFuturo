@@ -80,11 +80,17 @@ interface DropTargetProps {
 }
 
 function DropTarget({ flupsyId, row, position, onDrop, isOccupied, children }: DropTargetProps) {
+  // Qui la modifica principale: rendiamo la funzione drop consapevole dello stato di occupazione
+  // Il problema era che prima il drop veniva sempre eseguito, ma non stavamo passando
+  // l'informazione se è un'operazione di switch o uno spostamento normale
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.BASKET,
-    drop: (item: BasketDragItem) => onDrop(item, row, position),
+    drop: (item: BasketDragItem) => {
+      // Aggiungiamo una proprietà isSwitch all'item che passiamo alla funzione onDrop
+      // per identificare se si tratta di uno switch o di un semplice spostamento
+      return onDrop(item, row, position);
+    },
     // Permettiamo sempre il drop, anche su posizioni occupate
-    // La logica di switch verrà gestita nella funzione di onDrop
     canDrop: () => true,
     collect: (monitor) => ({
       isOver: !!monitor.isOver(),
@@ -194,20 +200,37 @@ export default function DraggableFlupsyVisualizer() {
       return; // No change in position
     }
     
-    // Verifichiamo se la posizione target è già occupata da un'altra cesta
-    const getFlupsyBasketByPosition = (row: 'DX' | 'SX', position: number): any => {
+    // Verifico se c'è già un cestello nella posizione target
+    const findTargetBasket = () => {
       if (!baskets) return null;
-      const rowBaskets = baskets.filter((b: any) => 
-        b.flupsyId === parseInt(item.id.toString().split('-')[0]) && 
-        b.row === row
+      return baskets.find((b: any) => 
+        b.row === targetRow && 
+        b.position === targetPosition && 
+        b.id !== item.id
       );
-      return rowBaskets.find((b: any) => b.position === position);
     };
     
-    const targetBasket = getFlupsyBasketByPosition(targetRow as 'DX' | 'SX', targetPosition);
+    // Otteniamo il cestello che stiamo trascinando
+    const sourceBasket = baskets?.find((b: any) => b.id === item.id);
+    if (!sourceBasket) {
+      console.error("Basket not found:", item.id);
+      return;
+    }
+    
+    // Cerchiamo se c'è già un cestello nella posizione target (che non sia quello che stiamo spostando)
+    const targetBasket = findTargetBasket();
+    
+    // Per debug
+    console.log("Dragging basket ID:", item.id, "from", item.sourceRow, item.sourcePosition);
+    console.log("Target position:", targetRow, targetPosition);
+    console.log("Basket at target position:", targetBasket);
+    console.log("Is switch operation:", !!targetBasket);
     
     if (targetBasket) {
-      // Se c'è già una cesta nella posizione target, allora è un'operazione di switch
+      // Se c'è già una cesta nella posizione target, è un'operazione di switch
+      console.log("Setting up switch with basket ID:", targetBasket.id);
+      
+      // Mostra conferma per lo switch
       setPendingBasketMove({
         basketId: item.id,
         targetRow,
@@ -216,11 +239,14 @@ export default function DraggableFlupsyVisualizer() {
         targetBasketId: targetBasket.id
       });
     } else {
-      // Spostamento normale
+      // Spostamento normale in una posizione vuota
+      console.log("Setting up normal move for basket:", item.id);
+      
       setPendingBasketMove({
         basketId: item.id,
         targetRow,
-        targetPosition
+        targetPosition,
+        isSwitch: false
       });
     }
     
@@ -300,6 +326,8 @@ export default function DraggableFlupsyVisualizer() {
       const basket1 = baskets?.find((b: any) => b.id === pendingBasketMove.basketId);
       const basket2 = baskets?.find((b: any) => b.id === pendingBasketMove.targetBasketId);
       
+      console.log("Attempting to switch baskets:", basket1, basket2);
+      
       if (!basket1 || !basket2) {
         toast({
           title: "Errore",
@@ -310,6 +338,15 @@ export default function DraggableFlupsyVisualizer() {
         setPendingBasketMove(null);
         return;
       }
+      
+      console.log("Switch parameters:", {
+        basket1Id: basket1.id,
+        basket2Id: basket2.id,
+        position1Row: basket1.row,
+        position1Number: basket1.position,
+        position2Row: basket2.row,
+        position2Number: basket2.position
+      });
       
       // Eseguiamo lo scambio
       switchBasketPositions.mutate({
@@ -322,6 +359,7 @@ export default function DraggableFlupsyVisualizer() {
       });
     } else {
       // Caso normale: sposta un cestello in una posizione vuota
+      console.log("Normal move of basket:", pendingBasketMove.basketId, "to", pendingBasketMove.targetRow, pendingBasketMove.targetPosition);
       updateBasketPosition.mutate({
         basketId: pendingBasketMove.basketId,
         row: pendingBasketMove.targetRow,
@@ -735,25 +773,9 @@ export default function DraggableFlupsyVisualizer() {
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingBasketMove?.isSwitch 
-                ? "Vuoi fare switch? Le posizioni delle due ceste verranno scambiate."
+                ? "Vuoi fare switch?"
                 : "Vuoi spostare la cesta nella nuova posizione?"
               }
-              {pendingBasketMove && (
-                <div className="mt-2 text-sm bg-muted p-2 rounded">
-                  <span className="font-medium">
-                    {pendingBasketMove.isSwitch ? "Posizioni da scambiare:" : "Nuova posizione:"}
-                  </span>
-                  <div>
-                    Cesta in posizione: {pendingBasketMove.targetRow}-{pendingBasketMove.targetPosition}
-                    {pendingBasketMove.isSwitch && (
-                      <div className="mt-1">
-                        <span className="mr-2">↔️</span>
-                        Cesta #{baskets?.find((b: any) => b.id === pendingBasketMove.basketId)?.physicalNumber} 
-                      </div>
-                    )}
-                  </div>
-                </div>
-              )}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
