@@ -78,6 +78,7 @@ const BasketDetailTable: React.FC<BasketDetailTableProps> = ({
                       backgroundColor: basket.color || 'gray',
                       color: basket.sizeCode && parseInt(basket.sizeCode.replace('T', '')) <= 3 ? 'white' : 'black'
                     }}
+                    className="shadow-sm font-semibold px-2.5 py-0.5"
                   >
                     {basket.sizeCode}
                   </Badge>

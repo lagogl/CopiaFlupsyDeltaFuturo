@@ -69,13 +69,18 @@ const GrowthPrediction: React.FC<GrowthPredictionProps> = ({
   getColorForSize,
 }) => {
   return (
-    <div className="space-y-6">
+    <div className="space-y-8">
       {/* Grafico previsioni */}
       {targetDate && growthChartData.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>Crescita Prevista al {formatDateIT(targetDate)}</CardTitle>
-            <CardDescription>
+        <Card className="border-indigo-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
+            <CardTitle className="text-indigo-800 flex items-center gap-2">
+              <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center">
+                <div className="h-3 w-3 rounded-full bg-indigo-500"></div>
+              </div>
+              Crescita Prevista al {formatDateIT(targetDate)}
+            </CardTitle>
+            <CardDescription className="text-indigo-600">
               Confronto tra peso attuale e peso previsto per ogni cesta
             </CardDescription>
           </CardHeader>
@@ -135,14 +140,17 @@ const GrowthPrediction: React.FC<GrowthPredictionProps> = ({
       
       {/* Tabella previsioni */}
       {(targetDate || targetSize) && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <Card className="border-pink-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-pink-50 to-white border-b border-pink-100">
+            <CardTitle className="text-pink-800 flex items-center gap-2">
+              <div className="h-6 w-6 rounded-full bg-pink-100 flex items-center justify-center">
+                <div className="h-3 w-3 rounded-full bg-pink-500"></div>
+              </div>
               {targetSize ? 
                 `Previsione di raggiungimento taglia ${targetSize}` : 
                 `Previsione taglie al ${formatDateIT(targetDate || new Date())}`}
             </CardTitle>
-            <CardDescription>
+            <CardDescription className="text-pink-600">
               {targetSize ? 
                 `Elenco delle ceste che raggiungeranno la taglia ${targetSize} e quando` : 
                 `Proiezione delle taglie che raggiungeranno le ceste alla data selezionata`}

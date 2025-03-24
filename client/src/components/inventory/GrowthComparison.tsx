@@ -316,8 +316,11 @@ const GrowthComparison: React.FC<GrowthComparisonProps> = ({
               const cesteDiQuestaTaglia = basketsData.filter(b => b.sizeCode === size.sizeCode);
               
               return cesteDiQuestaTaglia.length > 0 ? (
-                <Card key={size.sizeCode}>
-                  <CardHeader className="pb-2">
+                <Card key={size.sizeCode} className="border-gray-200 shadow-sm hover:shadow-md transition-all overflow-hidden">
+                  <CardHeader className="pb-2" style={{ 
+                    borderBottom: `1px solid ${size.color}30`,
+                    background: `linear-gradient(to right, ${size.color}15, white)`
+                  }}>
                     <div className="flex items-center justify-between">
                       <div className="flex items-center space-x-2">
                         <Badge
@@ -325,13 +328,14 @@ const GrowthComparison: React.FC<GrowthComparisonProps> = ({
                             backgroundColor: size.color,
                             color: parseInt(size.sizeCode.replace('T', '')) <= 3 ? 'white' : 'black'
                           }}
+                          className="shadow-sm font-bold"
                         >
                           {size.sizeCode}
                         </Badge>
-                        <CardTitle className="text-lg">{size.sizeName}</CardTitle>
+                        <CardTitle className="text-lg font-semibold">{size.sizeName}</CardTitle>
                       </div>
                       <div>
-                        <Badge variant="outline">
+                        <Badge variant="outline" className="bg-white shadow-sm">
                           {cesteDiQuestaTaglia.length} {cesteDiQuestaTaglia.length === 1 ? 'cesta' : 'ceste'}
                         </Badge>
                       </div>
@@ -364,30 +368,38 @@ const GrowthComparison: React.FC<GrowthComparisonProps> = ({
                                 </div>
                                 
                                 <div className="flex items-center space-x-1">
-                                  <Badge
-                                    style={{ 
-                                      backgroundColor: cesta.color || 'gray',
-                                      color: cesta.sizeCode && parseInt(cesta.sizeCode.replace('T', '')) <= 3 ? 'white' : 'black'
-                                    }}
-                                    className="text-xs"
-                                  >
-                                    {cesta.sizeCode}
-                                  </Badge>
+                                  <div className="flex flex-col items-center">
+                                    <Badge
+                                      style={{ 
+                                        backgroundColor: cesta.color || 'gray',
+                                        color: cesta.sizeCode && parseInt(cesta.sizeCode.replace('T', '')) <= 3 ? 'white' : 'black'
+                                      }}
+                                      className="text-xs shadow-sm font-bold px-2"
+                                    >
+                                      {cesta.sizeCode}
+                                    </Badge>
+                                    <span className="text-xs text-muted-foreground mt-0.5">
+                                      Oggi
+                                    </span>
+                                  </div>
                                   
                                   {timeline.length > 1 && timeline.slice(1).map((point, index) => (
                                     <div key={index} className="flex items-center space-x-1">
-                                      <ArrowRight className="h-3 w-3 text-muted-foreground" />
-                                      <div className="flex flex-col">
+                                      <div className="flex flex-col items-center">
+                                        <ArrowRight className="h-3 w-3 text-gray-400" />
+                                        <div className="w-full h-[1px] bg-gray-200"></div>
+                                      </div>
+                                      <div className="flex flex-col items-center">
                                         <Badge
                                           style={{ 
                                             backgroundColor: point.size?.color || 'gray',
-                                            color: point.size?.code && parseInt(point.size.code.replace('T', '')) <= 3 ? 'white' : 'black'
+                                            color: point.size?.code && parseInt(point.size?.code.replace('T', '')) <= 3 ? 'white' : 'black'
                                           }}
-                                          className="text-xs"
+                                          className="text-xs shadow-sm font-bold px-2"
                                         >
                                           {point.size?.code}
                                         </Badge>
-                                        <span className="text-xs text-muted-foreground mt-0.5">
+                                        <span className="text-xs text-muted-foreground mt-0.5 whitespace-nowrap">
                                           {formatDateIT(point.date)}
                                         </span>
                                       </div>
@@ -395,7 +407,7 @@ const GrowthComparison: React.FC<GrowthComparisonProps> = ({
                                   ))}
                                   
                                   {timeline.length <= 1 && (
-                                    <div className="text-xs text-muted-foreground">
+                                    <div className="text-xs text-gray-500 ml-2 italic">
                                       Nessuna taglia futura prevista nel periodo
                                     </div>
                                   )}
