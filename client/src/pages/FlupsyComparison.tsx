@@ -8,20 +8,13 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { 
   Tooltip,
-  TooltipContent,
   TooltipProvider,
   TooltipTrigger,
 } from "@/components/ui/tooltip";
+import { HighContrastTooltip } from "@/components/ui/high-contrast-tooltip";
 import { format, addDays, differenceInWeeks } from 'date-fns';
 import { Calendar, Clock, ArrowRight, Info } from 'lucide-react';
 import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor } from '@/lib/utils';
-
-// Componente personalizzato per il tooltip che garantisce alta leggibilità
-const HighContrastTooltip = ({ children, className = "" }) => (
-  <TooltipContent className={`bg-white text-gray-900 border-2 border-gray-300 shadow-md ${className}`}>
-    {children}
-  </TooltipContent>
-);
 
 // Helper function per ottenere il colore di una taglia
 const getSizeColorWithBorder = (sizeCode: string): string => {
