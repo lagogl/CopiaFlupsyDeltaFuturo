@@ -1,5 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
+import { format, addDays, differenceInDays } from "date-fns";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -594,4 +595,145 @@ export function getFutureSizeAtDate(
 ): TargetSize | null {
   const futureWeight = getFutureWeightAtDate(currentWeight, measurementDate, sgrMonthlyPercentage, targetDate);
   return getTargetSizeForWeight(futureWeight, availableSizes);
+}
+
+/**
+ * Restituisce il tasso di crescita SGR giornaliero per il mese corrente
+ * @param sgrs - Array di tassi SGR mensili
+ * @param targetDate - Data per cui ottenere il tasso SGR
+ * @param defaultPercentage - Percentuale di default se non viene trovato un valore
+ * @returns Percentuale SGR giornaliera
+ */
+export function getSgrDailyPercentageForDate(
+  sgrs: any[] | undefined, 
+  targetDate: Date,
+  defaultPercentage: number = 1.0
+): number {
+  if (!sgrs || sgrs.length === 0) return defaultPercentage;
+  
+  // Ottieni il mese della data target
+  const month = format(targetDate, 'MMMM').toLowerCase();
+  
+  // Trova il tasso SGR per questo mese
+  const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
+  if (monthSgr && monthSgr.percentage !== null) {
+    return monthSgr.percentage; // È già il valore giornaliero
+  }
+  
+  // Se non trovi un valore specifico, usa la media
+  return sgrs.reduce((acc, sgr) => acc + (sgr.percentage || 0), 0) / sgrs.length || defaultPercentage;
+}
+
+/**
+ * Calcola il peso futuro giorno per giorno utilizzando i valori SGR mensili
+ * @param currentWeight - Peso attuale in mg
+ * @param measurementDate - Data della misurazione
+ * @param sgrs - Array di tassi SGR mensili
+ * @param daysToAdd - Numero di giorni per la previsione
+ * @param defaultSgrPercentage - Percentuale SGR di default giornaliera
+ * @returns Peso futuro in mg
+ */
+export function calculateFutureWeightWithMonthlySgr(
+  currentWeight: number,
+  measurementDate: Date,
+  sgrs: any[] | undefined,
+  daysToAdd: number,
+  defaultSgrPercentage: number = 1.0
+): number {
+  if (!currentWeight || currentWeight <= 0) return 0;
+  
+  const targetDate = addDays(new Date(measurementDate), daysToAdd);
+  const days = Math.floor((targetDate.getTime() - new Date(measurementDate).getTime()) / (1000 * 60 * 60 * 24));
+  
+  let simulatedWeight = currentWeight;
+  
+  for (let i = 0; i < days; i++) {
+    // Per ogni giorno, calcoliamo il mese corrispondente per usare il tasso SGR appropriato
+    const currentDate = addDays(new Date(measurementDate), i);
+    
+    // Trova il tasso SGR per questo giorno
+    const dailyRate = getSgrDailyPercentageForDate(sgrs, currentDate, defaultSgrPercentage);
+    
+    // Applica la crescita giornaliera
+    simulatedWeight = simulatedWeight * (1 + dailyRate / 100);
+  }
+  
+  return Math.round(simulatedWeight);
+}
+
+/**
+ * Calcola i giorni necessari per raggiungere un peso target
+ * @param currentWeight - Peso attuale in mg
+ * @param targetWeight - Peso target in mg
+ * @param measurementDate - Data della misurazione
+ * @param sgrs - Array di tassi SGR mensili
+ * @param defaultSgrPercentage - Percentuale SGR di default giornaliera
+ * @param maxDays - Numero massimo di giorni per la simulazione
+ * @returns Numero di giorni necessari o null se non raggiungibile
+ */
+export function getDaysToReachWeight(
+  currentWeight: number,
+  targetWeight: number,
+  measurementDate: Date,
+  sgrs: any[] | undefined,
+  defaultSgrPercentage: number = 1.0,
+  maxDays: number = 365
+): number | null {
+  if (!currentWeight || currentWeight <= 0 || !targetWeight || targetWeight <= 0) return null;
+  
+  // Se già ha raggiunto il peso target
+  if (currentWeight >= targetWeight) return 0;
+  
+  let simulationWeight = currentWeight;
+  let days = 0;
+  let currentDate = new Date(measurementDate);
+  
+  while (simulationWeight < targetWeight && days < maxDays) {
+    // Trova il tasso SGR per questo giorno
+    const dailyRate = getSgrDailyPercentageForDate(sgrs, currentDate, defaultSgrPercentage);
+    
+    // Applica la crescita giornaliera
+    simulationWeight = simulationWeight * (1 + dailyRate / 100);
+    days++;
+    currentDate = addDays(currentDate, 1);
+  }
+  
+  return days < maxDays ? days : null;
+}
+
+/**
+ * Determina se un peso raggiungerà un peso target entro un certo numero di giorni
+ * @param currentWeight - Peso attuale in mg
+ * @param targetWeight - Peso target in mg
+ * @param measurementDate - Data della misurazione
+ * @param sgrs - Array di tassi SGR mensili
+ * @param maxDays - Numero massimo di giorni per la simulazione
+ * @param defaultSgrPercentage - Percentuale SGR di default giornaliera
+ * @returns true se il peso target sarà raggiunto entro maxDays
+ */
+export function willReachTargetWeight(
+  currentWeight: number,
+  targetWeight: number,
+  measurementDate: Date,
+  sgrs: any[] | undefined,
+  maxDays: number = 180,
+  defaultSgrPercentage: number = 1.0
+): boolean {
+  if (!currentWeight || !targetWeight) return false;
+  
+  // Se il peso corrente è già maggiore del peso target, è già raggiunto
+  if (currentWeight >= targetWeight) return true;
+  
+  // Calcola i giorni necessari
+  const daysToReach = getDaysToReachWeight(
+    currentWeight, 
+    targetWeight, 
+    measurementDate, 
+    sgrs, 
+    defaultSgrPercentage,
+    maxDays
+  );
+  
+  // Se restituisce un numero (non null), significa che il peso sarà raggiunto entro maxDays
+  return daysToReach !== null;
 }
