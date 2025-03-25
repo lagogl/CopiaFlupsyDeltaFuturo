@@ -615,7 +615,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} h-16 w-40 flex flex-col justify-between ${!willReach ? 'opacity-40' : ''} cursor-pointer`}
+              className={`basket-card p-2 rounded border-2 ${colorClass} h-20 w-48 flex flex-col justify-between ${!willReach ? 'opacity-40' : ''} cursor-pointer`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -632,23 +632,50 @@ export default function FlupsyComparison() {
                 ) : willReach ? (
                   <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">→{targetSizeCode}</Badge>
                 ) : (
-                  <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4">No</Badge>
+                  <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 text-gray-500">No {targetSizeCode}</Badge>
                 )}
                 
-                {daysToReach !== null && daysToReach > 0 && (
+                {currentSize && (
                   <div className="text-[9px] font-medium">
-                    {daysToReach}g
+                    {currentWeight} mg
                   </div>
                 )}
               </div>
               
-              {daysToReach !== null && daysToReach > 0 && (
-                <div className="mt-auto flex justify-between items-center w-full">
-                  <div className="opacity-75 text-[9px] font-medium">
-                    {format(addDays(new Date(), daysToReach), 'dd/MM')}
+              {/* Mostra la data prevista con il peso previsto */}
+              {willReach && daysToReach !== null && daysToReach > 0 && (
+                <div className="flex justify-between items-center w-full">
+                  <div className="text-[9px] flex items-center gap-1 font-medium text-blue-600">
+                    <Calendar className="h-3 w-3" /> 
+                    {format(addDays(new Date(), daysToReach), 'dd/MM/yyyy')}
+                  </div>
+                  <div className="text-[9px] font-medium">
+                    {daysToReach}g
                   </div>
                 </div>
               )}
+              
+              {/* Mostra un indicatore di stato/progresso */}
+              <div className="w-full mt-1">
+                {willReach && daysToReach !== null && daysToReach > 0 ? (
+                  <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div 
+                      className="bg-blue-500 h-1.5 rounded-full" 
+                      style={{ 
+                        width: `${Math.min(100, Math.max(5, 100 - (daysToReach / 180) * 100))}%` 
+                      }}
+                    ></div>
+                  </div>
+                ) : currentSize?.code === targetSizeCode ? (
+                  <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div className="bg-green-500 h-1.5 rounded-full w-full"></div>
+                  </div>
+                ) : (
+                  <div className="w-full bg-gray-100 rounded-full h-1.5">
+                    <div className="bg-gray-300 h-1.5 rounded-full w-[5%]"></div>
+                  </div>
+                )}
+              </div>
             </div>
           </TooltipTrigger>
           <HighContrastTooltip>

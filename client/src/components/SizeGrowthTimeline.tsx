@@ -46,10 +46,13 @@ function FutureSizeAtDate({
   targetDate: Date;
 }) {
   // Carica le taglie dal database
-  const { data: sizes } = useQuery({ 
+  const { data: sizesData } = useQuery({ 
     queryKey: ['/api/sizes'],
     refetchOnWindowFocus: false,
   });
+  
+  // Converti sizes in array per il tipo
+  const sizes = (sizesData as any[] || []);
   
   // Calcola la timeline di crescita
   const timeline = calculateSizeTimeline(
@@ -125,10 +128,13 @@ function SizeProgressToDate({
   targetDate: Date;
 }) {
   // Carica le taglie dal database
-  const { data: sizes } = useQuery({ 
+  const { data: sizesData } = useQuery({ 
     queryKey: ['/api/sizes'],
     refetchOnWindowFocus: false,
   });
+  
+  // Converti sizes in array per il tipo
+  const sizes = (sizesData as any[] || []);
   
   // Calcola la timeline di crescita
   const timeline = calculateSizeTimeline(
@@ -206,10 +212,13 @@ export default function SizeGrowthTimeline({
   const [activeTab, setActiveTab] = useState('timeline');
   
   // Carica le taglie dal database
-  const { data: sizes } = useQuery({ 
+  const { data: sizesData } = useQuery({ 
     queryKey: ['/api/sizes'],
     refetchOnWindowFocus: false,
   });
+  
+  // Converti sizes in array per il tipo
+  const sizes = (sizesData as any[] || []);
   
   // Calcola la timeline di crescita usando le taglie disponibili
   const growthTimeline = calculateSizeTimeline(
