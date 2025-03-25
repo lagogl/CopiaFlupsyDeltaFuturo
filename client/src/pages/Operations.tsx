@@ -17,6 +17,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { monthlyToDaily } from '@/lib/utils';
 import OperationForm from '@/components/OperationForm';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
 
@@ -258,8 +259,8 @@ export default function Operations() {
     const sgrInfo = getSgrForMonth(date);
     if (!sgrInfo) return null;
     
-    // La percentuale SGR è mensile, calcoliamo quella giornaliera
-    const dailyPercentage = sgrInfo.percentage / 30;
+    // Convertiamo la percentuale SGR mensile in giornaliera
+    const dailyPercentage = monthlyToDaily(sgrInfo.percentage);
     
     // Calcola la percentuale di crescita teorica per il numero di giorni
     const theoreticalGrowthPercent = dailyPercentage * days;

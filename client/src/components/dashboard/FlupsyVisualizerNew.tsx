@@ -22,7 +22,8 @@ import {
   getSizeFromAnimalsPerKg,
   getBasketColorBySize,
   getBorderThicknessByWeight,
-  formatAnimalCount
+  formatAnimalCount,
+  monthlyToDaily
 } from '@/lib/utils';
 import { CheckSquare, Square, Filter, Eye, Layers, TrendingUp, TrendingDown, ArrowUp } from 'lucide-react';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
@@ -158,8 +159,8 @@ export default function FlupsyVisualizerNew() {
     const sgrInfo = getSgrForMonth(date);
     if (!sgrInfo) return null;
     
-    // La percentuale SGR è mensile, calcoliamo quella giornaliera
-    const dailyPercentage = sgrInfo.percentage / 30;
+    // Convertiamo la percentuale SGR mensile in giornaliera
+    const dailyPercentage = monthlyToDaily(sgrInfo.percentage);
     
     // Calcola la percentuale di crescita teorica per il numero di giorni
     const theoreticalGrowthPercent = dailyPercentage * days;
