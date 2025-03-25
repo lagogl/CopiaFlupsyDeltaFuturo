@@ -178,7 +178,7 @@ export default function FlupsyComparison() {
     const measurementDate = new Date(latestOperation.date);
     
     // Ottieni la percentuale SGR giornaliera (percentage è già la crescita giornaliera)
-    let sgrDailyPercentage = 1.0; // Valore di default (1% al giorno)
+    let sgrDailyPercentage = 2.0; // Valore di default (2% al giorno per crescita più realistica)
     if (sgrs && sgrs.length > 0) {
       // Usa il valore SGR del mese corrente se disponibile
       const currentMonth = format(new Date(), 'MMMM').toLowerCase();
@@ -189,6 +189,11 @@ export default function FlupsyComparison() {
         // Altrimenti usa il valore medio delle percentuali giornaliere
         sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
       }
+    }
+    
+    // Se non ci sono dati SGR, usiamo un valore correttamente calibrato per la crescita
+    if (!sgrs || sgrs.length === 0) {
+      console.log("Nessun dato SGR trovato, usando valore di default:", sgrDailyPercentage, "% giornaliero");
     }
     
     // Calcola il peso futuro usando direttamente la percentuale giornaliera
@@ -264,7 +269,7 @@ export default function FlupsyComparison() {
     if (currentWeight >= targetWeight) return 0;
     
     // Ottieni la percentuale SGR giornaliera
-    let sgrDailyPercentage = 1.0; // Valore di default (1% al giorno)
+    let sgrDailyPercentage = 2.0; // Valore di default (2% al giorno per crescita più realistica)
     if (sgrs && sgrs.length > 0) {
       // Usa il valore SGR del mese corrente se disponibile
       const currentMonth = format(new Date(), 'MMMM').toLowerCase();
@@ -275,6 +280,11 @@ export default function FlupsyComparison() {
         // Altrimenti usa il valore medio delle percentuali giornaliere
         sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
       }
+    }
+    
+    // Se non ci sono dati SGR, usiamo un valore correttamente calibrato per la crescita
+    if (!sgrs || sgrs.length === 0) {
+      console.log("Nessun dato SGR trovato per getDaysToReachTargetSize, usando valore di default:", sgrDailyPercentage, "% giornaliero");
     }
     
     // Calcolo dei giorni necessari usando i valori SGR giornalieri mese per mese
