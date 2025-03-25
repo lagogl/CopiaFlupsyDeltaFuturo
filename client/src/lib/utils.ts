@@ -7,13 +7,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Converti percentuale SGR mensile in percentuale giornaliera
- * Formula: dailyRate = ((1 + monthlyRate/100)^(1/30) - 1) * 100
- * @param monthlyPercentage - Percentuale mensile da convertire
- * @returns Percentuale giornaliera equivalente
+ * Questa funzione è stata mantenuta per retrocompatibilità
+ * Ora il valore SGR è già in percentuale giornaliera e non richiede conversione
+ * @param dailyPercentage - Percentuale giornaliera
+ * @returns La stessa percentuale giornaliera senza modifiche
  */
-export function monthlyToDaily(monthlyPercentage: number): number {
-  return ((Math.pow(1 + monthlyPercentage/100, 1/30) - 1) * 100);
+export function monthlyToDaily(dailyPercentage: number): number {
+  // Restituisce il valore invariato poiché è già giornaliero
+  return dailyPercentage;
 }
 
 export function formatNumberWithCommas(value: number): string {
@@ -420,19 +421,19 @@ export function calculateSizeTimeline(
   const getDailySgrRate = (date: Date): number => {
     if (!sgrRates || sgrRates.length === 0) {
       // Fallback se non abbiamo dati SGR specifici
-      return monthlyToDaily(sgrMonthlyPercentage) / 100;
+      return sgrMonthlyPercentage / 100;
     }
     
     const monthName = getMonthNameIT(date);
     const monthSgr = sgrRates.find(sgr => sgr.month === monthName);
     
     if (monthSgr) {
-      // Calcola il valore giornaliero dal valore percentuale mensile
-      return monthlyToDaily(monthSgr.percentage) / 100;
+      // Il campo percentage ora contiene direttamente il tasso giornaliero
+      return monthSgr.percentage / 100;
     }
     
     // Fallback se non troviamo il mese
-    return monthlyToDaily(sgrMonthlyPercentage) / 100;
+    return sgrMonthlyPercentage / 100;
   };
   
   // Trova la taglia attuale - usa le taglie del database se disponibili
@@ -556,22 +557,22 @@ export function getTargetSizeReachDate(
  * Calcola il peso previsto a una data futura
  * @param currentWeight - Peso attuale in mg
  * @param measurementDate - Data della misurazione
- * @param sgrMonthlyPercentage - Percentuale SGR mensile
+ * @param sgrDailyPercentage - Percentuale SGR giornaliera
  * @param targetDate - Data per cui calcolare il peso previsto
  * @returns Il peso previsto in mg
  */
 export function getFutureWeightAtDate(
   currentWeight: number,
   measurementDate: Date,
-  sgrMonthlyPercentage: number,
+  sgrDailyPercentage: number,
   targetDate: Date
 ): number {
-  if (!currentWeight || currentWeight <= 0 || !sgrMonthlyPercentage) {
+  if (!currentWeight || currentWeight <= 0 || !sgrDailyPercentage) {
     return currentWeight;
   }
   
-  // Calcola il tasso di crescita giornaliero
-  const dailyGrowthRate = sgrMonthlyPercentage / 30 / 100;
+  // Il tasso giornaliero è già espresso come percentuale
+  const dailyGrowthRate = sgrDailyPercentage / 100;
   
   // Calcola il numero di giorni tra la data di misurazione e la data target
   const diffTime = targetDate.getTime() - new Date(measurementDate).getTime();
@@ -590,24 +591,24 @@ export function getFutureWeightAtDate(
  * Calcola la taglia prevista a una data futura
  * @param currentWeight - Peso attuale in mg
  * @param measurementDate - Data della misurazione
- * @param sgrMonthlyPercentage - Percentuale SGR mensile
+ * @param sgrDailyPercentage - Percentuale SGR giornaliera
  * @param targetDate - Data per cui calcolare la taglia prevista
  * @returns La taglia prevista
  */
 export function getFutureSizeAtDate(
   currentWeight: number,
   measurementDate: Date,
-  sgrMonthlyPercentage: number,
+  sgrDailyPercentage: number,
   targetDate: Date,
   availableSizes?: any[]
 ): TargetSize | null {
-  const futureWeight = getFutureWeightAtDate(currentWeight, measurementDate, sgrMonthlyPercentage, targetDate);
+  const futureWeight = getFutureWeightAtDate(currentWeight, measurementDate, sgrDailyPercentage, targetDate);
   return getTargetSizeForWeight(futureWeight, availableSizes);
 }
 
 /**
  * Restituisce il tasso di crescita SGR giornaliero per il mese corrente
- * @param sgrs - Array di tassi SGR mensili
+ * @param sgrs - Array di tassi SGR giornalieri
  * @param targetDate - Data per cui ottenere il tasso SGR
  * @param defaultPercentage - Percentuale di default se non viene trovato un valore
  * @returns Percentuale SGR giornaliera
@@ -617,7 +618,7 @@ export function getSgrDailyPercentageForDate(
   targetDate: Date,
   defaultPercentage: number = 1.0
 ): number {
-  if (!sgrs || sgrs.length === 0) return monthlyToDaily(defaultPercentage);
+  if (!sgrs || sgrs.length === 0) return defaultPercentage;
   
   // Ottieni il mese della data target
   const month = format(targetDate, 'MMMM').toLowerCase();
@@ -625,24 +626,24 @@ export function getSgrDailyPercentageForDate(
   // Trova il tasso SGR per questo mese
   const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
   if (monthSgr && monthSgr.percentage !== null) {
-    return monthlyToDaily(monthSgr.percentage);
+    return monthSgr.percentage;
   }
   
-  // Se non trovi un valore specifico, usa la media dei valori mensili e converti
-  const avgMonthlyPercentage = sgrs.reduce((acc, sgr) => acc + (sgr.percentage || 0), 0) / sgrs.length || defaultPercentage;
-  return monthlyToDaily(avgMonthlyPercentage);
+  // Se non trovi un valore specifico, usa la media dei valori mensili
+  const avgDailyPercentage = sgrs.reduce((acc, sgr) => acc + (sgr.percentage || 0), 0) / sgrs.length || defaultPercentage;
+  return avgDailyPercentage;
 }
 
 /**
- * Calcola il peso futuro giorno per giorno utilizzando i valori SGR mensili
+ * Calcola il peso futuro giorno per giorno utilizzando i valori SGR giornalieri
  * @param currentWeight - Peso attuale in mg
  * @param measurementDate - Data della misurazione
- * @param sgrs - Array di tassi SGR mensili
+ * @param sgrs - Array di tassi SGR giornalieri
  * @param daysToAdd - Numero di giorni per la previsione
  * @param defaultSgrPercentage - Percentuale SGR di default giornaliera
  * @returns Peso futuro in mg
  */
-export function calculateFutureWeightWithMonthlySgr(
+export function calculateFutureWeightWithDailySgr(
   currentWeight: number,
   measurementDate: Date,
   sgrs: any[] | undefined,
@@ -675,7 +676,7 @@ export function calculateFutureWeightWithMonthlySgr(
  * @param currentWeight - Peso attuale in mg
  * @param targetWeight - Peso target in mg
  * @param measurementDate - Data della misurazione
- * @param sgrs - Array di tassi SGR mensili
+ * @param sgrs - Array di tassi SGR giornalieri
  * @param defaultSgrPercentage - Percentuale SGR di default giornaliera
  * @param maxDays - Numero massimo di giorni per la simulazione
  * @returns Numero di giorni necessari o null se non raggiungibile
@@ -715,7 +716,7 @@ export function getDaysToReachWeight(
  * @param currentWeight - Peso attuale in mg
  * @param targetWeight - Peso target in mg
  * @param measurementDate - Data della misurazione
- * @param sgrs - Array di tassi SGR mensili
+ * @param sgrs - Array di tassi SGR giornalieri
  * @param maxDays - Numero massimo di giorni per la simulazione
  * @param defaultSgrPercentage - Percentuale SGR di default giornaliera
  * @returns true se il peso target sarà raggiunto entro maxDays
