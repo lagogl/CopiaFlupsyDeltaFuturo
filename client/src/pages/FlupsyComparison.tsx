@@ -759,7 +759,171 @@ export default function FlupsyComparison() {
                   <Clock className="w-4 h-4 mr-2" />
                   Taglia target
                 </TabsTrigger>
+                <TabsTrigger value="timeline-taglie" className="flex-1 flex items-center justify-center">
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                  Timeline taglie
+                </TabsTrigger>
               </TabsList>
+              
+              <TabsContent value="data-futuro">
+                {/* Qui inserire il contenuto esistente per la vista "data futura" */}
+              </TabsContent>
+              
+              <TabsContent value="taglia-target">
+                {/* Qui inserire il contenuto esistente per la vista "taglia target" */}
+              </TabsContent>
+              
+              <TabsContent value="timeline-taglie" className="space-y-4 pt-4">
+                <div className="flex items-center gap-2 mb-4">
+                  <span className="text-sm font-medium">Giorni di proiezione:</span>
+                  <Slider
+                    value={[daysInFuture]}
+                    onValueChange={(value) => setDaysInFuture(value[0])}
+                    max={180}
+                    min={1}
+                    step={1}
+                    className="w-64"
+                  />
+                  <span className="bg-muted px-2 py-1 rounded text-sm">{daysInFuture} giorni</span>
+                </div>
+                
+                <div className="border rounded-md">
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm">
+                      <thead>
+                        <tr className="border-b bg-muted/50">
+                          <th className="px-4 py-2 text-left font-medium">Cestello</th>
+                          <th className="px-4 py-2 text-left font-medium">Taglia attuale</th>
+                          <th className="px-4 py-2 text-left font-medium">Peso attuale</th>
+                          <th className="px-4 py-2 text-left font-medium">Timeline taglie</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {fluspyBaskets.map(basket => {
+                          const latestOperation = getLatestOperationForBasket(basket.id);
+                          if (!latestOperation || latestOperation.animalsPerKg === null) return null;
+                          
+                          // Calcola il peso attuale in mg
+                          const currentWeight = latestOperation.animalsPerKg ? Math.round(1000000 / latestOperation.animalsPerKg) : 0;
+                          const currentSize = currentWeight ? getTargetSizeForWeight(currentWeight, sizes) : null;
+                          
+                          // Timeline delle taglie
+                          const timelineDates: { size: string, name: string, days: number | null, date: Date | null, color: string }[] = [];
+                          
+                          // Trova tutte le taglie successive alla taglia corrente
+                          if (sizes && sizes.length > 0) {
+                            const sortedSizes = [...sizes].sort((a, b) => {
+                              // Se minAnimalsPerKg è null, considera come se fosse infinito (taglia più piccola)
+                              const aMin = a.minAnimalsPerKg || Number.MAX_SAFE_INTEGER;
+                              const bMin = b.minAnimalsPerKg || Number.MAX_SAFE_INTEGER;
+                              
+                              // Ordine decrescente: taglie più grandi prima (minAnimalsPerKg più basso)
+                              return aMin - bMin;
+                            });
+                            
+                            for (const size of sortedSizes) {
+                              // Salta la taglia se non ha un valore minAnimalsPerKg
+                              if (!size.minAnimalsPerKg) continue;
+                              
+                              // Calcola il peso target in mg
+                              const targetWeight = 1000000 / size.minAnimalsPerKg;
+                              
+                              // Salta la taglia se è già stata raggiunta o è più piccola della taglia attuale
+                              if (currentWeight >= targetWeight) continue;
+                              
+                              // Calcola i giorni necessari per raggiungere questa taglia
+                              const daysToReach = getDaysToReachTargetSize(basket.id, size.code);
+                              
+                              // Se non c'è una stima dei giorni necessari o supera i giorni di proiezione, salta
+                              if (!daysToReach || daysToReach > daysInFuture) continue;
+                              
+                              // Calcola la data prevista
+                              const targetDate = daysToReach > 0 
+                                ? addDays(new Date(), daysToReach)
+                                : new Date(); // oggi se la taglia è già raggiunta
+                              
+                              // Determina il colore per la taglia
+                              const sizeColor = getSizeColor(size.code);
+                              
+                              // Aggiungi alla timeline
+                              timelineDates.push({
+                                size: size.code,
+                                name: size.name,
+                                days: daysToReach,
+                                date: targetDate,
+                                color: sizeColor
+                              });
+                            }
+                          }
+                          
+                          return (
+                            <tr key={basket.id} className="border-b hover:bg-muted/30">
+                              <td className="px-4 py-3 font-medium">#{basket.physicalNumber}</td>
+                              <td className="px-4 py-3">
+                                {currentSize ? (
+                                  <Badge className={getSizeColor(currentSize.code)}>
+                                    {currentSize.code}
+                                  </Badge>
+                                ) : (
+                                  <span className="text-muted-foreground">N/A</span>
+                                )}
+                              </td>
+                              <td className="px-4 py-3">{currentWeight} mg</td>
+                              <td className="px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  {timelineDates.length > 0 ? (
+                                    timelineDates.map((item, i) => (
+                                      <TooltipProvider key={item.size}>
+                                        <Tooltip>
+                                          <TooltipTrigger asChild>
+                                            <div className="flex flex-col items-center">
+                                              <Badge className={item.color}>{item.size}</Badge>
+                                              <div className="text-xs mt-1">
+                                                {format(item.date!, 'dd/MM/yy')}
+                                              </div>
+                                              {i < timelineDates.length - 1 && (
+                                                <ArrowRight className="mx-1 text-muted-foreground h-3 w-3" />
+                                              )}
+                                            </div>
+                                          </TooltipTrigger>
+                                          <HighContrastTooltip>
+                                            <div className="p-2 max-w-xs">
+                                              <div className="font-medium mb-1">Taglia {item.size}</div>
+                                              <div className="text-sm">
+                                                <div className="mb-1">{item.name}</div>
+                                                <div className="flex items-center gap-1 text-muted-foreground">
+                                                  <Calendar className="h-3 w-3" />
+                                                  <span>
+                                                    {format(item.date!, 'dd/MM/yyyy')}
+                                                  </span>
+                                                </div>
+                                                <div className="flex items-center gap-1 text-muted-foreground">
+                                                  <Clock className="h-3 w-3" />
+                                                  <span>
+                                                    {item.days} giorni
+                                                  </span>
+                                                </div>
+                                              </div>
+                                            </div>
+                                          </HighContrastTooltip>
+                                        </Tooltip>
+                                      </TooltipProvider>
+                                    ))
+                                  ) : (
+                                    <span className="text-muted-foreground">
+                                      Nessuna taglia raggiungibile entro {daysInFuture} giorni
+                                    </span>
+                                  )}
+                                </div>
+                              </td>
+                            </tr>
+                          );
+                        })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </TabsContent>
             </Tabs>
           </CardContent>
         </Card>
