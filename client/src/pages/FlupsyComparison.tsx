@@ -1,4 +1,69 @@
 import { useState, useMemo } from 'react';
+
+interface Basket {
+  id: number;
+  physicalNumber: number;
+  flupsyId: number;
+  row: string | null;
+  position: number | null;
+  state: string;
+  currentCycleId: number | null;
+  [key: string]: any; // per eventuali altre proprietà
+}
+
+interface Flupsy {
+  id: number;
+  name: string;
+  location: string;
+  [key: string]: any; // per eventuali altre proprietà
+}
+
+interface Operation {
+  id: number;
+  basketId: number;
+  cycleId: number | null;
+  date: string;
+  type: string;
+  animalsPerKg: number | null;
+  averageWeight: number | null;
+  sizeId: number | null;
+  [key: string]: any; // per eventuali altre proprietà
+}
+
+interface Cycle {
+  id: number;
+  basketId: number;
+  startDate: string;
+  endDate: string | null;
+  state: 'active' | 'closed';
+  [key: string]: any; // per eventuali altre proprietà
+}
+
+interface Size {
+  id: number;
+  code: string;
+  name: string;
+  sizeMm: number | null;
+  minAnimalsPerKg: number | null;
+  maxAnimalsPerKg: number | null;
+  color?: string;
+  [key: string]: any; // per eventuali altre proprietà
+}
+
+interface Sgr {
+  id: number;
+  month: string;
+  percentage: number;
+  [key: string]: any; // per eventuali altre proprietà
+}
+
+interface TimelineItem {
+  size: string;
+  name: string;
+  days: number | null;
+  date: Date | null;
+  color: string;
+}
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,27 +113,27 @@ export default function FlupsyComparison() {
   const [targetSizeCode, setTargetSizeCode] = useState<string>("T5");
 
   // Fetch dei dati necessari
-  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
+  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
   });
   
-  const { data: baskets, isLoading: isLoadingBaskets } = useQuery({
+  const { data: baskets, isLoading: isLoadingBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
   });
   
-  const { data: operations } = useQuery({
+  const { data: operations } = useQuery<Operation[]>({
     queryKey: ['/api/operations'],
   });
   
-  const { data: cycles } = useQuery({
+  const { data: cycles } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles'],
   });
 
-  const { data: sizes } = useQuery({
+  const { data: sizes } = useQuery<Size[]>({
     queryKey: ['/api/sizes'],
   });
 
-  const { data: sgrs } = useQuery({
+  const { data: sgrs } = useQuery<Sgr[]>({
     queryKey: ['/api/sgrs'],
   });
 
@@ -260,7 +325,7 @@ export default function FlupsyComparison() {
   }, [baskets, selectedFlupsyId]);
 
   // Renderizza un cestello per la visualizzazione attuale
-  const renderCurrentBasket = (basket) => {
+  const renderCurrentBasket = (basket: Basket | null) => {
     if (!basket) return (
       <TooltipProvider>
         <Tooltip>
@@ -766,11 +831,42 @@ export default function FlupsyComparison() {
               </TabsList>
               
               <TabsContent value="data-futuro">
-                {/* Qui inserire il contenuto esistente per la vista "data futura" */}
+                <div>
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm">Proiezione a:</span>
+                    <Badge>{daysInFuture} giorni</Badge>
+                  </div>
+                  <Slider
+                    value={[daysInFuture]}
+                    min={10}
+                    max={120}
+                    step={10}
+                    onValueChange={(value) => setDaysInFuture(value[0])}
+                  />
+                  <div className="text-xs text-muted-foreground mt-2 text-center">
+                    {format(new Date(), 'dd/MM/yyyy')} 
+                    <ArrowRight className="inline mx-2 w-3 h-3" /> 
+                    {format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')}
+                  </div>
+                </div>
               </TabsContent>
               
               <TabsContent value="taglia-target">
-                {/* Qui inserire il contenuto esistente per la vista "taglia target" */}
+                <Select 
+                  value={targetSizeCode} 
+                  onValueChange={setTargetSizeCode}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Seleziona taglia target" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sizes && sizes.map((size: any) => (
+                      <SelectItem key={size.id} value={size.code}>
+                        {size.code} - {size.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </TabsContent>
               
               <TabsContent value="timeline-taglie" className="space-y-4 pt-4">
@@ -932,45 +1028,17 @@ export default function FlupsyComparison() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-md">
-              {currentTabId === 'data-futuro' ? 'Giorni nel futuro' : 'Taglia target'}
+              {currentTabId === 'data-futuro' ? 'Giorni nel futuro' : 
+               currentTabId === 'taglia-target' ? 'Taglia target' : 
+               'Timeline proiezione'}
             </CardTitle>
           </CardHeader>
           <CardContent>
-            {currentTabId === 'data-futuro' ? (
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm">Proiezione a:</span>
-                  <Badge>{daysInFuture} giorni</Badge>
-                </div>
-                <Slider
-                  value={[daysInFuture]}
-                  min={10}
-                  max={120}
-                  step={10}
-                  onValueChange={(value) => setDaysInFuture(value[0])}
-                />
-                <div className="text-xs text-muted-foreground mt-2 text-center">
-                  {format(new Date(), 'dd/MM/yyyy')} 
-                  <ArrowRight className="inline mx-2 w-3 h-3" /> 
-                  {format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')}
-                </div>
+            {/* La gestione delle impostazioni è stata spostata all'interno dei rispettivi TabsContent */}
+            {currentTabId === 'timeline-taglie' && (
+              <div className="text-xs text-muted-foreground mt-2 text-center">
+                Visualizzazione delle taglie raggiungibili entro i prossimi {daysInFuture} giorni.
               </div>
-            ) : (
-              <Select 
-                value={targetSizeCode} 
-                onValueChange={setTargetSizeCode}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona taglia target" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sizes && sizes.map((size) => (
-                    <SelectItem key={size.id} value={size.code}>
-                      {size.code} - {size.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
             )}
           </CardContent>
         </Card>
