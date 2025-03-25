@@ -190,7 +190,9 @@ export default function DraggableFlupsyVisualizer() {
   // Initialize selected FLUPSYs on data load
   useEffect(() => {
     if (flupsys && flupsys.length > 0 && selectedFlupsyIds.length === 0) {
-      setSelectedFlupsyIds([flupsys[0].id]);
+      // Seleziona tutti i flupsy disponibili invece di solo il primo
+      const allFlupsyIds = flupsys.map((flupsy: any) => flupsy.id);
+      setSelectedFlupsyIds(allFlupsyIds);
     }
   }, [flupsys, selectedFlupsyIds]);
 
