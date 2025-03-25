@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { format, addDays, differenceInWeeks } from 'date-fns';
 import { Calendar, Clock, ArrowRight, Info } from 'lucide-react';
-import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor } from '@/lib/utils';
+import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor, monthlyToDaily } from '@/lib/utils';
 import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
 // Componente personalizzato per il tooltip che garantisce alta leggibilità
@@ -150,7 +150,8 @@ export default function FlupsyComparison() {
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
         if (monthSgr) {
-          dailyRate = monthSgr.percentage; // Diretta, è già il valore giornaliero
+          // Converte il valore mensile in giornaliero
+          dailyRate = monthlyToDaily(monthSgr.percentage);
         }
       }
       
@@ -234,7 +235,8 @@ export default function FlupsyComparison() {
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
         if (monthSgr) {
-          dailyRate = monthSgr.percentage; // Diretta, è già il valore giornaliero
+          // Converte il valore mensile in giornaliero
+          dailyRate = monthlyToDaily(monthSgr.percentage);
         }
       }
       

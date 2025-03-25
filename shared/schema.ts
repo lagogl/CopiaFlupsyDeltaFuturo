@@ -80,8 +80,7 @@ export const sizes = pgTable("sizes", {
 export const sgr = pgTable("sgr", {
   id: serial("id").primaryKey(),
   month: text("month").notNull(), // e.g., January, February...
-  percentage: real("percentage").notNull(), // e.g., 0.5%
-  dailyPercentage: real("daily_percentage"), // Valore giornaliero calcolato dal sistema
+  percentage: real("percentage").notNull(), // e.g., 0.5% (valore mensile)
   calculatedFromReal: boolean("calculated_from_real").default(false), // Indica se è stato calcolato da dati reali
 });
 
@@ -159,7 +158,6 @@ export const insertSizeSchema = createInsertSchema(sizes).omit({
 
 export const insertSgrSchema = createInsertSchema(sgr).omit({ 
   id: true,
-  dailyPercentage: true,
   calculatedFromReal: true
 });
 

@@ -28,7 +28,7 @@ import {
   Area,
   ComposedChart,
 } from "recharts";
-import { calculateSizeTimeline } from "@/lib/utils";
+import { calculateSizeTimeline, monthlyToDaily } from "@/lib/utils";
 
 interface BasketData {
   id: number;
@@ -67,7 +67,6 @@ interface SgrRate {
   id: number;
   month: string;
   percentage: number;
-  dailyPercentage: number | null;
   calculatedFromReal: boolean | null;
 }
 
@@ -159,7 +158,7 @@ const SalesTimeline: React.FC<SalesTimelineProps> = ({
       return 0.01; // 1% come valore di default se non ci sono dati SGR
     }
     const sgr = sgrRates.find(s => s.month === month);
-    return sgr ? (sgr.dailyPercentage || sgr.percentage / 30) : 0.01; // 1% come valore di default
+    return sgr ? monthlyToDaily(sgr.percentage) : 0.01; // 1% come valore di default
   };
 
   const getMortalityRateForSizeAndDate = (sizeCode: string, date: Date): number => {

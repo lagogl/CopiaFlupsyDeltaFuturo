@@ -957,7 +957,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Parse and validate the update data
       const updateSchema = z.object({
         percentage: z.number().optional(),
-        dailyPercentage: z.number().nullable().optional(),
         calculatedFromReal: z.boolean().nullable().optional()
       });
 

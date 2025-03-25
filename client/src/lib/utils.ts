@@ -6,6 +6,16 @@ export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
 
+/**
+ * Converti percentuale SGR mensile in percentuale giornaliera
+ * Formula: dailyRate = ((1 + monthlyRate/100)^(1/30) - 1) * 100
+ * @param monthlyPercentage - Percentuale mensile da convertire
+ * @returns Percentuale giornaliera equivalente
+ */
+export function monthlyToDaily(monthlyPercentage: number): number {
+  return ((Math.pow(1 + monthlyPercentage/100, 1/30) - 1) * 100);
+}
+
 export function formatNumberWithCommas(value: number): string {
   // Gestisci i casi in cui value è undefined o null
   if (value === undefined || value === null) {
@@ -410,21 +420,19 @@ export function calculateSizeTimeline(
   const getDailySgrRate = (date: Date): number => {
     if (!sgrRates || sgrRates.length === 0) {
       // Fallback se non abbiamo dati SGR specifici
-      return sgrMonthlyPercentage / 30 / 100;
+      return monthlyToDaily(sgrMonthlyPercentage) / 100;
     }
     
     const monthName = getMonthNameIT(date);
     const monthSgr = sgrRates.find(sgr => sgr.month === monthName);
     
     if (monthSgr) {
-      // Usa il valore giornaliero se presente, altrimenti calcola dal mensile
-      return monthSgr.dailyPercentage 
-        ? monthSgr.dailyPercentage / 100 
-        : (monthSgr.percentage / 100) / 30;
+      // Calcola il valore giornaliero dal valore percentuale mensile
+      return monthlyToDaily(monthSgr.percentage) / 100;
     }
     
     // Fallback se non troviamo il mese
-    return sgrMonthlyPercentage / 30 / 100;
+    return monthlyToDaily(sgrMonthlyPercentage) / 100;
   };
   
   // Trova la taglia attuale - usa le taglie del database se disponibili
@@ -609,7 +617,7 @@ export function getSgrDailyPercentageForDate(
   targetDate: Date,
   defaultPercentage: number = 1.0
 ): number {
-  if (!sgrs || sgrs.length === 0) return defaultPercentage;
+  if (!sgrs || sgrs.length === 0) return monthlyToDaily(defaultPercentage);
   
   // Ottieni il mese della data target
   const month = format(targetDate, 'MMMM').toLowerCase();
@@ -617,11 +625,12 @@ export function getSgrDailyPercentageForDate(
   // Trova il tasso SGR per questo mese
   const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
   if (monthSgr && monthSgr.percentage !== null) {
-    return monthSgr.percentage; // È già il valore giornaliero
+    return monthlyToDaily(monthSgr.percentage);
   }
   
-  // Se non trovi un valore specifico, usa la media
-  return sgrs.reduce((acc, sgr) => acc + (sgr.percentage || 0), 0) / sgrs.length || defaultPercentage;
+  // Se non trovi un valore specifico, usa la media dei valori mensili e converti
+  const avgMonthlyPercentage = sgrs.reduce((acc, sgr) => acc + (sgr.percentage || 0), 0) / sgrs.length || defaultPercentage;
+  return monthlyToDaily(avgMonthlyPercentage);
 }
 
 /**
