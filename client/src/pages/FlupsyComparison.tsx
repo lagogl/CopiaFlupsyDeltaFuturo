@@ -401,7 +401,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} h-16 w-40 flex flex-col justify-between cursor-pointer`}
+              className={`basket-card p-2 rounded border-2 ${colorClass} h-20 w-48 flex flex-col justify-between cursor-pointer`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -443,7 +443,7 @@ export default function FlupsyComparison() {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-16 w-40 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
+            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-20 w-48 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
               Vuoto
             </div>
           </TooltipTrigger>
@@ -526,7 +526,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} h-16 w-40 flex flex-col justify-between cursor-pointer`}
+              className={`basket-card p-2 rounded border-2 ${colorClass} h-20 w-48 flex flex-col justify-between cursor-pointer`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -572,7 +572,7 @@ export default function FlupsyComparison() {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-16 w-40 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
+            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-20 w-48 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
               Vuoto
             </div>
           </TooltipTrigger>
@@ -673,7 +673,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} h-16 w-40 flex flex-col justify-between ${!willReach ? 'opacity-40' : ''} cursor-pointer`}
+              className={`basket-card p-2 rounded border-2 ${colorClass} h-20 w-48 flex flex-col justify-between ${!willReach ? 'opacity-40' : ''} cursor-pointer`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
