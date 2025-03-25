@@ -277,16 +277,19 @@ export default function FlupsyComparison() {
     if (currentWeight >= targetWeight) return 0;
     
     // Ottieni la percentuale SGR giornaliera
-    let sgrDailyPercentage = 2.0; // Valore di default (2% al giorno per crescita più realistica)
+    let sgrDailyPercentage = 0.067; // Valore di default (2% mensile = ~0.067% al giorno)
     if (sgrs && sgrs.length > 0) {
       // Usa il valore SGR del mese corrente se disponibile
       const currentMonth = format(new Date(), 'MMMM').toLowerCase();
       const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
       if (currentSgr) {
-        sgrDailyPercentage = currentSgr.percentage; // Diretta, già valore giornaliero
+        // Converti da percentuale mensile a giornaliera
+        const monthlyRate = currentSgr.percentage;
+        sgrDailyPercentage = ((Math.pow(1 + monthlyRate/100, 1/30) - 1) * 100);
       } else {
-        // Altrimenti usa il valore medio delle percentuali giornaliere
-        sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
+        // Altrimenti usa il valore medio delle percentuali mensili e convertilo
+        const avgMonthlyRate = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
+        sgrDailyPercentage = ((Math.pow(1 + avgMonthlyRate/100, 1/30) - 1) * 100);
       }
     }
     
