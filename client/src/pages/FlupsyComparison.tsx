@@ -437,7 +437,7 @@ export default function FlupsyComparison() {
   };
 
   // Renderizza un cestello per la visualizzazione futura (per data)
-  const renderFutureBasketByDate = (basket) => {
+  const renderFutureBasketByDate = (basket: Basket | null) => {
     if (!basket) return (
       <TooltipProvider>
         <Tooltip>
@@ -566,7 +566,7 @@ export default function FlupsyComparison() {
   };
 
   // Renderizza un cestello per la visualizzazione futura (per taglia target)
-  const renderFutureBasketBySize = (basket) => {
+  const renderFutureBasketBySize = (basket: Basket | null) => {
     if (!basket) return (
       <TooltipProvider>
         <Tooltip>
@@ -717,7 +717,7 @@ export default function FlupsyComparison() {
   };
 
   // Renderizza la griglia del FLUPSY
-  const renderFlupsy = (renderBasketFn) => {
+  const renderFlupsy = (renderBasketFn: (basket: Basket | null) => React.ReactNode) => {
     if (!selectedFlupsy || fluspyBaskets.length === 0) return null;
     
     // Trova il numero massimo di posizioni nella griglia
@@ -736,7 +736,7 @@ export default function FlupsyComparison() {
             <div className="flex flex-col gap-2">
               {Array.from({ length: maxPosition }).map((_, idx) => {
                 const position = idx + 1;
-                const basket = fluspyBaskets.find(b => b.row === 'SX' && b.position === position);
+                const basket = fluspyBaskets.find(b => b.row === 'SX' && b.position === position) || null;
                 return (
                   <div key={`SX-${position}`} className="relative">
                     <div className="position-number absolute -left-5 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
@@ -757,7 +757,7 @@ export default function FlupsyComparison() {
             <div className="flex flex-col gap-2">
               {Array.from({ length: maxPosition }).map((_, idx) => {
                 const position = idx + 1;
-                const basket = fluspyBaskets.find(b => b.row === 'DX' && b.position === position);
+                const basket = fluspyBaskets.find(b => b.row === 'DX' && b.position === position) || null;
                 return (
                   <div key={`DX-${position}`} className="relative">
                     <div className="position-number absolute -left-5 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
@@ -860,7 +860,7 @@ export default function FlupsyComparison() {
                     <SelectValue placeholder="Seleziona taglia target" />
                   </SelectTrigger>
                   <SelectContent>
-                    {sizes && sizes.map((size: any) => (
+                    {sizes && sizes.map((size: Size) => (
                       <SelectItem key={size.id} value={size.code}>
                         {size.code} - {size.name}
                       </SelectItem>
