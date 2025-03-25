@@ -780,7 +780,11 @@ export default function FlupsyComparison() {
         <Card>
           <CardHeader className="pb-3">
             <CardTitle className="text-md">
-              {currentTabId === 'data-futuro' ? 'Giorni nel futuro' : 'Taglia target'}
+              {currentTabId === 'data-futuro' 
+                ? 'Giorni nel futuro' 
+                : currentTabId === 'taglia-target' 
+                  ? 'Taglia target'
+                  : 'Proiezione a giorni futuri'}
             </CardTitle>
           </CardHeader>
           <CardContent>
@@ -803,7 +807,7 @@ export default function FlupsyComparison() {
                   {format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')}
                 </div>
               </div>
-            ) : (
+            ) : currentTabId === 'taglia-target' ? (
               <Select 
                 value={targetSizeCode} 
                 onValueChange={setTargetSizeCode}
@@ -819,6 +823,25 @@ export default function FlupsyComparison() {
                   ))}
                 </SelectContent>
               </Select>
+            ) : (
+              <div>
+                <div className="flex justify-between mb-2">
+                  <span className="text-sm">Proiezione a:</span>
+                  <Badge>{daysInFuture} giorni</Badge>
+                </div>
+                <Slider
+                  value={[daysInFuture]}
+                  min={10}
+                  max={180}
+                  step={10}
+                  onValueChange={(value) => setDaysInFuture(value[0])}
+                />
+                <div className="text-xs text-muted-foreground mt-2 text-center">
+                  {format(new Date(), 'dd/MM/yyyy')} 
+                  <ArrowRight className="inline mx-2 w-3 h-3" /> 
+                  {format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')}
+                </div>
+              </div>
             )}
           </CardContent>
         </Card>
@@ -849,17 +872,75 @@ export default function FlupsyComparison() {
             <CardTitle>
               {currentTabId === 'data-futuro' 
                 ? `Stato futuro (${format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')})` 
-                : `Vongole che raggiungeranno la taglia ${targetSizeCode}`}
+                : currentTabId === 'taglia-target'
+                  ? `Vongole che raggiungeranno la taglia ${targetSizeCode}`
+                  : `Timeline di crescita e taglie future`}
             </CardTitle>
             <CardDescription>
               {currentTabId === 'data-futuro' 
                 ? `Proiezione a ${daysInFuture} giorni da oggi` 
-                : `Tempistica prevista per raggiungere la taglia ${targetSizeCode}`}
+                : currentTabId === 'taglia-target'
+                  ? `Tempistica prevista per raggiungere la taglia ${targetSizeCode}`
+                  : `Visualizzazione delle taglie future nel tempo`}
             </CardDescription>
           </CardHeader>
           <CardContent>
             {isLoadingBaskets || isLoadingFlupsys ? (
               <div className="text-center py-4">Caricamento...</div>
+            ) : currentTabId === 'timeline-taglie' ? (
+              // Timeline taglie
+              <div className="space-y-4">
+                {fluspyBaskets.filter(b => {
+                  // Prendi solo cestelli con operazioni valide
+                  const latestOp = getLatestOperationForBasket(b.id);
+                  return latestOp && latestOp.animalsPerKg;
+                }).map(basket => {
+                  const latestOperation = getLatestOperationForBasket(basket.id);
+                  const cycle = getCycleForBasket(basket.id);
+                  
+                  // Calcola il peso medio attuale
+                  const currentWeight = latestOperation && latestOperation.animalsPerKg 
+                    ? Math.round(1000000 / latestOperation.animalsPerKg) 
+                    : null;
+                  
+                  // Ottieni la percentuale SGR mensile
+                  let sgrMonthlyPercentage = 30.0; // Valore di default (30% al mese)
+                  if (sgrs && sgrs.length > 0) {
+                    // Calcola la percentuale mensile (circa 30 giorni * percentuale giornaliera)
+                    sgrMonthlyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage * 30, 0) / sgrs.length;
+                  }
+                  
+                  return currentWeight ? (
+                    <div key={basket.id} className="border rounded-lg p-4">
+                      <div className="flex justify-between items-center mb-4">
+                        <div className="font-bold">Cestello #{basket.physicalNumber}</div>
+                        <Badge>
+                          {latestOperation ? format(new Date(latestOperation.date), 'dd/MM/yyyy') : ''}
+                        </Badge>
+                      </div>
+                      <SizeGrowthTimeline 
+                        currentWeight={currentWeight}
+                        measurementDate={latestOperation ? new Date(latestOperation.date) : new Date()}
+                        sgrMonthlyPercentage={sgrMonthlyPercentage}
+                        cycleId={cycle?.id}
+                        basketId={basket.id}
+                      />
+                    </div>
+                  ) : null;
+                })}
+                
+                {/* Messaggio se non ci sono dati da visualizzare */}
+                {fluspyBaskets.filter(b => {
+                  const latestOp = getLatestOperationForBasket(b.id);
+                  return latestOp && latestOp.animalsPerKg;
+                }).length === 0 && (
+                  <div className="text-center py-8 text-muted-foreground">
+                    Nessun dato disponibile per la visualizzazione della timeline taglie.
+                    <br />
+                    Assicurati di avere almeno un cestello con misurazioni valide.
+                  </div>
+                )}
+              </div>
             ) : (
               renderFlupsy(
                 currentTabId === 'data-futuro' 

@@ -13,11 +13,17 @@ import {
   calculateSizeTimeline,
   getFutureWeightAtDate,
   getTargetSizeForWeight,
+  getSizeColor,
   SizeTimeline,
   TargetSize,
   TARGET_SIZES
 } from '@/lib/utils';
 import { useQuery } from '@tanstack/react-query';
+
+// Funzione per ottenere il colore di default per una taglia
+function getDefaultColorForSize(code: string): string {
+  return getSizeColor(code);
+}
 
 interface SizeGrowthTimelineProps {
   currentWeight: number;
