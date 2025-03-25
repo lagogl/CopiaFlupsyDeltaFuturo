@@ -219,7 +219,9 @@ export default function FlupsyComparison() {
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
         if (monthSgr) {
-          dailyRate = monthSgr.percentage; // Diretta, è già il valore giornaliero
+          // Converti da percentuale mensile a giornaliera
+          const monthlyRate = monthSgr.percentage;
+          dailyRate = ((Math.pow(1 + monthlyRate/100, 1/30) - 1) * 100);
         }
       }
       
@@ -308,7 +310,9 @@ export default function FlupsyComparison() {
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
         if (monthSgr) {
-          dailyRate = monthSgr.percentage; // Diretta, è già il valore giornaliero
+          // Converti da percentuale mensile a giornaliera
+          const monthlyRate = monthSgr.percentage;
+          dailyRate = ((Math.pow(1 + monthlyRate/100, 1/30) - 1) * 100);
         }
       }
       
