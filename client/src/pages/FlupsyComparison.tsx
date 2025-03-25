@@ -331,7 +331,7 @@ export default function FlupsyComparison() {
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-16 w-40 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
+            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-20 w-48 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
               Vuoto
             </div>
           </TooltipTrigger>
