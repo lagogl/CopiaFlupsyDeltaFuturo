@@ -879,6 +879,25 @@ export default function FlupsyComparison() {
                     ))}
                   </SelectContent>
                 </Select>
+                
+                <div className="mt-4">
+                  <div className="flex justify-between mb-2">
+                    <span className="text-sm font-medium">Proiezione a giorni futuri:</span>
+                    <Badge>{daysInFuture} giorni</Badge>
+                  </div>
+                  <Slider
+                    value={[daysInFuture]}
+                    min={10}
+                    max={120}
+                    step={10}
+                    onValueChange={(value) => setDaysInFuture(value[0])}
+                  />
+                  <div className="text-xs text-muted-foreground mt-2 text-center">
+                    {format(new Date(), 'dd/MM/yyyy')} 
+                    <ArrowRight className="inline mx-2 w-3 h-3" /> 
+                    {format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')}
+                  </div>
+                </div>
               </div>
             )}
             
