@@ -15,6 +15,7 @@ import {
 import { format, addDays, differenceInWeeks } from 'date-fns';
 import { Calendar, Clock, ArrowRight, Info } from 'lucide-react';
 import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor } from '@/lib/utils';
+import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
 // Componente personalizzato per il tooltip che garantisce alta leggibilità
 const HighContrastTooltip = ({ children, className = "" }) => (
@@ -765,6 +766,10 @@ export default function FlupsyComparison() {
                 <TabsTrigger value="taglia-target" className="flex-1 flex items-center justify-center">
                   <Clock className="w-4 h-4 mr-2" />
                   Taglia target
+                </TabsTrigger>
+                <TabsTrigger value="timeline-taglie" className="flex-1 flex items-center justify-center">
+                  <ArrowRight className="w-4 h-4 mr-2" />
+                  Timeline taglie
                 </TabsTrigger>
               </TabsList>
             </Tabs>
