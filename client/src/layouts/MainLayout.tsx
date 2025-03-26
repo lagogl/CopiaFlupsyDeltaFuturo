@@ -1,22 +1,38 @@
-import { useState, ReactNode } from "react";
+import { useState, ReactNode, useEffect } from "react";
 import { useLocation, Link } from "wouter";
 import { 
   Home, Package, FileText, RefreshCw, Package2, BarChart2, 
   Scale, TrendingUp, Settings as SettingsIcon, Menu, Bell, 
   User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
-  Scan, Smartphone
+  Scan, Smartphone, X as CloseIcon
 } from "lucide-react";
+import { useIsMobile } from "@/hooks/use-mobile";
 
 interface MainLayoutProps {
   children: ReactNode;
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  const [sidebarOpen, setSidebarOpen] = useState(true);
-  const [location] = useLocation();
+  const isMobile = useIsMobile();
+  const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
+  const [location, setLocation] = useLocation();
+
+  // Effetto per chiudere automaticamente la sidebar su dispositivi mobili quando cambia la pagina
+  useEffect(() => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+  }, [location, isMobile]);
 
   const isActive = (path: string) => {
     return location === path;
+  };
+  
+  const handleNavClick = (path: string) => {
+    if (isMobile) {
+      setSidebarOpen(false);
+    }
+    setLocation(path);
   };
   
   const navItems = [
@@ -66,30 +82,55 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </div>
       </header>
 
-      <div className="flex flex-1 overflow-hidden">
+      <div className="flex flex-1 overflow-hidden relative">
+        {/* Overlay su mobile quando il menu è aperto */}
+        {isMobile && sidebarOpen && (
+          <div 
+            className="fixed inset-0 bg-black bg-opacity-50 z-30 md:hidden transition-opacity duration-300"
+            onClick={() => setSidebarOpen(false)}
+          />
+        )}
+        
         {/* Sidebar */}
         <aside
-          className={`bg-white w-64 shadow-lg transition-all duration-300 ease-in-out overflow-y-auto scrollbar-hide ${
+          className={`bg-white w-80 md:w-64 shadow-lg transition-all duration-300 ease-in-out overflow-y-auto scrollbar-hide ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           } fixed md:static h-[calc(100vh-60px)] z-40`}>
+          <div className="flex justify-between items-center p-4 border-b">
+            <h2 className="font-semibold text-lg">Menu</h2>
+            {isMobile && (
+              <button 
+                onClick={() => setSidebarOpen(false)}
+                className="p-1 rounded-md hover:bg-gray-100 focus:outline-none"
+              >
+                <CloseIcon className="h-5 w-5" />
+              </button>
+            )}
+          </div>
           <nav className="p-4 space-y-1">
             {navItems.map((item) => (
-              <Link
+              <a
                 key={item.path}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleNavClick(item.path);
+                }}
                 href={item.path}
-                className={`flex items-center p-3 rounded-lg hover:bg-gray-100 transition-colors ${
+                className={`flex items-center p-3 rounded-lg hover:bg-gray-100 transition-colors cursor-pointer ${
                   isActive(item.path) ? "bg-primary-light/10 text-primary" : "text-gray-700"
                 }`}>
                 {item.icon}
                 <span>{item.label}</span>
-              </Link>
+              </a>
             ))}
           </nav>
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-100 p-6">
-          {children}
+        <main className="flex-1 overflow-y-auto bg-gray-100 p-3 md:p-6 w-full">
+          <div className={`transition-all duration-300 ${isMobile && sidebarOpen ? 'opacity-50' : 'opacity-100'}`}>
+            {children}
+          </div>
         </main>
       </div>
     </div>
