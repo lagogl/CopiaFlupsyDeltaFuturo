@@ -130,6 +130,19 @@ export const mortalityRates = pgTable("mortality_rates", {
   notes: text("notes"),
 });
 
+// Target Size Annotations (Annotazioni per ceste che raggiungono la taglia target)
+export const targetSizeAnnotations = pgTable("target_size_annotations", {
+  id: serial("id").primaryKey(),
+  basketId: integer("basket_id").notNull(), // reference to the basket
+  targetSizeId: integer("target_size_id").notNull(), // reference to the target size (es. TP-3000)
+  predictedDate: date("predicted_date").notNull(), // Data prevista di raggiungimento della taglia
+  status: text("status").notNull().default("pending"), // pending, reached, missed
+  reachedDate: date("reached_date"), // Data effettiva di raggiungimento (se raggiunta)
+  notes: text("notes"), // Note opzionali
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data di creazione dell'annotazione
+  updatedAt: timestamp("updated_at"), // Data di aggiornamento dell'annotazione
+});
+
 // Insert schemas
 export const insertFlupsySchema = createInsertSchema(flupsys).omit({
   id: true
@@ -179,6 +192,13 @@ export const insertMortalityRateSchema = createInsertSchema(mortalityRates).omit
   id: true
 });
 
+export const insertTargetSizeAnnotationSchema = createInsertSchema(targetSizeAnnotations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true
+});
+
 // Types
 export type Flupsy = typeof flupsys.$inferSelect;
 export type InsertFlupsy = z.infer<typeof insertFlupsySchema>;
@@ -211,6 +231,9 @@ export type InsertBasketPositionHistory = z.infer<typeof insertBasketPositionHis
 export type MortalityRate = typeof mortalityRates.$inferSelect;
 export type InsertMortalityRate = z.infer<typeof insertMortalityRateSchema>;
 
+export type TargetSizeAnnotation = typeof targetSizeAnnotations.$inferSelect;
+export type InsertTargetSizeAnnotation = z.infer<typeof insertTargetSizeAnnotationSchema>;
+
 // Extended schemas for validation
 export const operationSchema = insertOperationSchema.extend({
   date: z.coerce.date()
@@ -234,4 +257,9 @@ export const sgrGiornalieriSchema = insertSgrGiornalieriSchema.extend({
 
 export const mortalityRateSchema = insertMortalityRateSchema.extend({
   // Validation rules if needed
+});
+
+export const targetSizeAnnotationSchema = insertTargetSizeAnnotationSchema.extend({
+  predictedDate: z.coerce.date(),
+  reachedDate: z.coerce.date().optional()
 });
