@@ -140,10 +140,13 @@ export default function FlupsyComparison() {
     // Calcolo manuale del peso futuro
     const days = Math.floor((targetDate.getTime() - measurementDate.getTime()) / (1000 * 60 * 60 * 24));
     let simulatedWeight = currentWeight;
+    let currentDate = new Date(measurementDate);
     
     for (let i = 0; i < days; i++) {
-      // Per ogni giorno, calcoliamo il mese corrispondente per usare il tasso SGR appropriato
-      const currentDate = addDays(measurementDate, i);
+      // Aggiorniamo la data corrente aggiungendo un giorno ogni volta
+      if (i > 0) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
       const month = format(currentDate, 'MMMM').toLowerCase();
       
       // Trova il tasso SGR per questo mese
@@ -236,7 +239,7 @@ export default function FlupsyComparison() {
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
         if (monthSgr) {
-          // Converte il valore mensile in giornaliero
+          // Ottiene il valore giornaliero
           dailyRate = monthlyToDaily(monthSgr.percentage);
         }
       }
@@ -244,7 +247,9 @@ export default function FlupsyComparison() {
       // Applica la crescita giornaliera
       simulationWeight = simulationWeight * (1 + dailyRate / 100);
       days++;
-      currentDate = addDays(currentDate, 1);
+      
+      // Aggiorna la data corrente per il giorno successivo
+      currentDate.setDate(currentDate.getDate() + 1);
     }
     
     return days < 365 ? days : null;
