@@ -112,6 +112,10 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     error: basketError
   } = useQuery<BasketDetails>({
     queryKey: ['/api/baskets/details', scannedBasketId],
+    queryFn: async () => {
+      if (!scannedBasketId) throw new Error("ID cestello non specificato");
+      return await apiRequest('GET', `/api/baskets/details/${scannedBasketId}`);
+    },
     enabled: scannedBasketId !== null,
   });
   
