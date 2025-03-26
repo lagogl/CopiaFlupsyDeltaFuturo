@@ -143,8 +143,16 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   // Gestisce l'avvio della scansione NFC
   const startScan = () => {
     // Reset dei valori iniziali
+    console.log("Avvio scansione NFC");
     setIsScanning(true);
     setScanError(null);
+    
+    // Aggiungiamo log per debug
+    if ('NDEFReader' in window) {
+      console.log("Il browser SUPPORTA l'API Web NFC");
+    } else {
+      console.log("Il browser NON supporta l'API Web NFC");
+    }
   };
   
   // Gestisce l'interruzione della scansione NFC
@@ -339,6 +347,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                     onRead={handleNFCRead}
                     onError={handleNFCError}
                     onAbort={handleNFCAbort}
+                    forceSimulation={!isMobile} // Forza simulazione su desktop
                   />
                 )}
               </>
@@ -381,9 +390,9 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                 {!isMobile && (
                   <Alert className="mt-6">
                     <InfoIcon className="h-4 w-4" />
-                    <AlertTitle>Modalità desktop</AlertTitle>
+                    <AlertTitle>Modalità simulazione</AlertTitle>
                     <AlertDescription>
-                      Stai utilizzando un dispositivo desktop. La scansione NFC è disponibile solo su dispositivi mobili compatibili con NFC.
+                      Stai utilizzando un dispositivo desktop. Per test, verrà simulata la lettura del cestello n.2 (ID 3).
                     </AlertDescription>
                   </Alert>
                 )}

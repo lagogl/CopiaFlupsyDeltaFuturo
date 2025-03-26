@@ -5,16 +5,47 @@ interface NFCReaderProps {
   onRead: (message: any) => void;
   onError: (error: string) => void;
   onAbort: () => void;
+  forceSimulation?: boolean; // Nuovo parametro per forzare la simulazione
 }
 
-export default function NFCReader({ onRead, onError, onAbort }: NFCReaderProps) {
+export default function NFCReader({ onRead, onError, onAbort, forceSimulation = false }: NFCReaderProps) {
   const isMobile = useIsMobile();
   
   useEffect(() => {
+    console.log("NFCReader attivato");
+    
+    // Se forceSimulation è true, eseguiamo sempre la simulazione per test
+    if (forceSimulation) {
+      console.log("MODALITÀ SIMULAZIONE FORZATA ATTIVA");
+      const timer = setTimeout(() => {
+        const simulatedData = [
+          {
+            recordType: 'text',
+            mediaType: null,
+            data: JSON.stringify({
+              id: 3,
+              number: 2,
+              serialNumber: "SIMULATED-NFC-TAG",
+              redirectTo: "/nfc-scan/basket/3",
+              timestamp: new Date().toISOString()
+            })
+          }
+        ];
+        
+        onRead(simulatedData);
+      }, 2000);
+      
+      return () => {
+        clearTimeout(timer);
+        onAbort();
+      };
+    }
     
     // Check if the browser supports the Web NFC API
     if (typeof window !== 'undefined' && 'NDEFReader' in window) {
       let aborted = false;
+      
+      console.log("Browser supporta NFC, avvio scanner...");
       
       const startNFCReader = async () => {
         try {
@@ -95,15 +126,23 @@ export default function NFCReader({ onRead, onError, onAbort }: NFCReaderProps) 
       // Clean up function
       return () => {
         aborted = true;
+        console.log("Pulizia scanner NFC");
         onAbort();
       };
     } else {
-      // Browser doesn't support NFC, ma lo gestiamo solo se siamo su mobile
+      // Browser doesn't support NFC
+      console.log("Browser non supporta NFC", { isMobile });
+      
+      // Se siamo su mobile, mostriamo un errore
       if (isMobile) {
         onError('Il tuo browser non supporta la tecnologia NFC. Prova con Chrome su Android.');
+      } else {
+        // Su desktop, invoca direttamente onAbort senza mostrare errori
+        // perché è normale che un desktop non supporti NFC
+        onAbort();
       }
     }
-  }, [onRead, onError, onAbort, isMobile]);
+  }, [onRead, onError, onAbort, isMobile, forceSimulation]);
   
   // No visible UI, this is just a functional component
   return null;
