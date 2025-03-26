@@ -58,16 +58,17 @@ export default function GrowthPredictionChart({
     }).format(date);
   };
   
-  // Gestiamo il valore SGR (già percentuale giornaliera)
+  // Gestiamo il valore SGR (già percentuale giornaliera espressa come decimale)
   const safeTheoreticalSgr = theoreticalSgrMonthlyPercentage || 0;
-  const dailySgr = safeTheoreticalSgr / 100; // Converti da percentuale a decimale
+  // Non dividiamo per 100 perché il valore è già espresso come tasso decimale
+  const dailySgr = safeTheoreticalSgr;
   
   // Calcola i valori giornalieri per scenari migliori/peggiori
   const bestDailySgr = dailySgr * (1 + variationPercentages.best / 100);
   const worstDailySgr = dailySgr * (1 - variationPercentages.worst / 100);
   
   // Calcola la SGR giornaliera reale se disponibile
-  const realDailySgr = realSgrMonthlyPercentage ? realSgrMonthlyPercentage / 100 : undefined;
+  const realDailySgr = realSgrMonthlyPercentage;
 
   // Genera i dati per il grafico
   const data: any[] = [];

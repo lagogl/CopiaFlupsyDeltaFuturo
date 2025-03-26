@@ -80,8 +80,8 @@ function FutureSizeAtDate({
   
   // Se non abbiamo trovato nulla di utile, interpoliamo
   if (closestEntry.date.getTime() < targetDateMs) {
-    // Calcola il tasso di crescita giornaliero
-    const dailyGrowthRate = sgrPercentage / 30 / 100;
+    // Calcola il tasso di crescita giornaliero (il tasso è già in formato decimale)
+    const dailyGrowthRate = sgrPercentage / 30;
     
     // Calcola il numero di giorni tra la data dell'entry e la data target
     const diffDays = Math.ceil(
