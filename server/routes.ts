@@ -14,7 +14,9 @@ import {
   lotSchema, 
   operationTypes,
   mortalityRateSchema,
-  insertMortalityRateSchema
+  insertMortalityRateSchema,
+  targetSizeAnnotationSchema,
+  insertTargetSizeAnnotationSchema
 } from "@shared/schema";
 import { format, addDays } from "date-fns";
 import { z } from "zod";
@@ -1924,6 +1926,248 @@ export async function registerRoutes(app: Express): Promise<Server> {
         message: "Errore durante l'azzeramento dei dati operativi",
         error: error instanceof Error ? error.message : "Errore sconosciuto"
       });
+    }
+  });
+
+  // === Target Size Annotations routes ===
+  app.get("/api/target-size-annotations", async (req, res) => {
+    try {
+      // Controlla se ci sono filtri
+      const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : null;
+      const targetSizeId = req.query.targetSizeId ? parseInt(req.query.targetSizeId as string) : null;
+      const status = req.query.status as string || null;
+      const withinDays = req.query.withinDays ? parseInt(req.query.withinDays as string) : null;
+      
+      let annotations;
+      
+      // Applica i filtri appropriati
+      if (basketId) {
+        console.log(`Recupero annotazioni per la cesta ID: ${basketId}`);
+        annotations = await storage.getTargetSizeAnnotationsByBasket(basketId);
+      } else if (targetSizeId && withinDays) {
+        console.log(`Recupero annotazioni per la taglia ID: ${targetSizeId} entro ${withinDays} giorni`);
+        annotations = await storage.getBasketsPredictedToReachSize(targetSizeId, withinDays);
+      } else if (targetSizeId) {
+        console.log(`Recupero annotazioni per la taglia ID: ${targetSizeId}`);
+        annotations = await storage.getTargetSizeAnnotationsByTargetSize(targetSizeId);
+      } else if (status === 'pending') {
+        console.log(`Recupero annotazioni con stato: ${status}`);
+        annotations = await storage.getPendingTargetSizeAnnotations();
+      } else {
+        console.log('Recupero tutte le annotazioni');
+        annotations = await storage.getTargetSizeAnnotations();
+      }
+      
+      // Arricchisci le annotazioni con dati correlati
+      const enrichedAnnotations = await Promise.all(
+        annotations.map(async (anno) => {
+          const basket = await storage.getBasket(anno.basketId);
+          const size = await storage.getSize(anno.targetSizeId);
+          
+          return {
+            ...anno,
+            basket,
+            targetSize: size
+          };
+        })
+      );
+      
+      res.json(enrichedAnnotations);
+    } catch (error) {
+      console.error("Errore nel recupero delle annotazioni di taglia:", error);
+      res.status(500).json({ message: "Errore nel recupero delle annotazioni di taglia" });
+    }
+  });
+  
+  app.get("/api/target-size-annotations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID annotazione non valido" });
+      }
+      
+      const annotation = await storage.getTargetSizeAnnotation(id);
+      if (!annotation) {
+        return res.status(404).json({ message: "Annotazione non trovata" });
+      }
+      
+      // Arricchisci con dati correlati
+      const basket = await storage.getBasket(annotation.basketId);
+      const size = await storage.getSize(annotation.targetSizeId);
+      
+      res.json({
+        ...annotation,
+        basket,
+        targetSize: size
+      });
+    } catch (error) {
+      console.error("Errore nel recupero dell'annotazione di taglia:", error);
+      res.status(500).json({ message: "Errore nel recupero dell'annotazione di taglia" });
+    }
+  });
+  
+  app.post("/api/target-size-annotations", async (req, res) => {
+    try {
+      const parsedData = insertTargetSizeAnnotationSchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+      
+      // Verifica che il cestello esista
+      const basket = await storage.getBasket(parsedData.data.basketId);
+      if (!basket) {
+        return res.status(404).json({ message: "Cestello non trovato" });
+      }
+      
+      // Verifica che la taglia target esista
+      const targetSize = await storage.getSize(parsedData.data.targetSizeId);
+      if (!targetSize) {
+        return res.status(404).json({ message: "Taglia target non trovata" });
+      }
+      
+      // Crea l'annotazione
+      const newAnnotation = await storage.createTargetSizeAnnotation(parsedData.data);
+      
+      // Restituisci il risultato con i dati aggiuntivi
+      res.status(201).json({
+        ...newAnnotation,
+        basket,
+        targetSize
+      });
+    } catch (error) {
+      console.error("Errore nella creazione dell'annotazione di taglia:", error);
+      res.status(500).json({ message: "Errore nella creazione dell'annotazione di taglia" });
+    }
+  });
+  
+  app.patch("/api/target-size-annotations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID annotazione non valido" });
+      }
+      
+      // Controlla se l'annotazione esiste
+      const currentAnnotation = await storage.getTargetSizeAnnotation(id);
+      if (!currentAnnotation) {
+        return res.status(404).json({ message: "Annotazione non trovata" });
+      }
+      
+      // Valida i dati di aggiornamento
+      const updateSchema = z.object({
+        status: z.enum(['pending', 'reached', 'canceled']).optional(),
+        notes: z.string().nullable().optional(),
+        predictedDate: z.string().optional(), // Formato ISO YYYY-MM-DD
+        reachedDate: z.string().nullable().optional(), // Formato ISO YYYY-MM-DD
+      });
+      
+      const parsedData = updateSchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+      
+      // Imposta automaticamente reachedDate quando lo stato viene impostato a "reached"
+      if (parsedData.data.status === 'reached' && !parsedData.data.reachedDate) {
+        parsedData.data.reachedDate = new Date().toISOString().split('T')[0];
+      }
+      
+      // Aggiorna l'annotazione
+      const updatedAnnotation = await storage.updateTargetSizeAnnotation(id, parsedData.data);
+      
+      // Arricchisci con dati correlati
+      const basket = await storage.getBasket(updatedAnnotation!.basketId);
+      const size = await storage.getSize(updatedAnnotation!.targetSizeId);
+      
+      res.json({
+        ...updatedAnnotation,
+        basket,
+        targetSize: size
+      });
+    } catch (error) {
+      console.error("Errore nell'aggiornamento dell'annotazione di taglia:", error);
+      res.status(500).json({ message: "Errore nell'aggiornamento dell'annotazione di taglia" });
+    }
+  });
+  
+  app.delete("/api/target-size-annotations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "ID annotazione non valido" });
+      }
+      
+      // Controlla se l'annotazione esiste
+      const annotation = await storage.getTargetSizeAnnotation(id);
+      if (!annotation) {
+        return res.status(404).json({ message: "Annotazione non trovata" });
+      }
+      
+      // Elimina l'annotazione
+      const result = await storage.deleteTargetSizeAnnotation(id);
+      
+      res.json({
+        success: result,
+        message: result ? "Annotazione eliminata con successo" : "Errore nell'eliminazione dell'annotazione"
+      });
+    } catch (error) {
+      console.error("Errore nell'eliminazione dell'annotazione di taglia:", error);
+      res.status(500).json({ message: "Errore nell'eliminazione dell'annotazione di taglia" });
+    }
+  });
+  
+  // API per cestelli che raggiungono la taglia TP-3000 entro un certo periodo
+  app.get("/api/tp3000-baskets", async (req, res) => {
+    try {
+      // Trova l'ID della taglia TP-3000
+      const tp3000 = await storage.getSizeByCode("TP-3000");
+      if (!tp3000) {
+        return res.status(404).json({ message: "Taglia TP-3000 non trovata nel database" });
+      }
+      
+      // Parametro per il numero di giorni, default 14 (2 settimane)
+      const withinDays = req.query.days ? parseInt(req.query.days as string) : 14;
+      
+      // Recupera le annotazioni pertinenti
+      const annotations = await storage.getBasketsPredictedToReachSize(tp3000.id, withinDays);
+      
+      // Arricchisci con dati correlati
+      const enrichedData = await Promise.all(
+        annotations.map(async (anno) => {
+          const basket = await storage.getBasket(anno.basketId);
+          
+          // Se il cestello ha un ciclo attivo, ottieni l'ultima operazione
+          let lastOperation = null;
+          if (basket && basket.currentCycleId) {
+            const operations = await storage.getOperationsByBasket(basket.id);
+            if (operations.length > 0) {
+              // Ordina per data, più recente prima
+              const sortedOps = operations.sort(
+                (a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()
+              );
+              lastOperation = sortedOps[0];
+            }
+          }
+          
+          // Calcola i giorni rimanenti
+          const today = new Date();
+          const predictedDate = new Date(anno.predictedDate);
+          const daysRemaining = Math.ceil((predictedDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+          
+          return {
+            ...anno,
+            basket,
+            lastOperation,
+            daysRemaining
+          };
+        })
+      );
+      
+      res.json(enrichedData);
+    } catch (error) {
+      console.error("Errore nel recupero delle ceste che raggiungeranno TP-3000:", error);
+      res.status(500).json({ message: "Errore nel recupero delle ceste che raggiungeranno TP-3000" });
     }
   });
 
