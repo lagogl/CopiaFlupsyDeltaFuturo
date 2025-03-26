@@ -1,4 +1,5 @@
 import { useEffect } from 'react';
+import { useIsMobile } from '@/hooks/use-mobile';
 
 interface NFCReaderProps {
   onRead: (message: any) => void;
@@ -7,7 +8,41 @@ interface NFCReaderProps {
 }
 
 export default function NFCReader({ onRead, onError, onAbort }: NFCReaderProps) {
+  const isMobile = useIsMobile();
+  
   useEffect(() => {
+    // Se non siamo su un dispositivo mobile, simula una lettura NFC per test
+    if (!isMobile) {
+      console.log("Non su mobile, simulando lettura NFC per test...");
+      
+      // Simula la lettura di un tag dopo un breve ritardo
+      const simulationTimer = setTimeout(() => {
+        // Crea un oggetto tag NFC simulato
+        const simulatedTagData = [
+          {
+            recordType: 'text',
+            mediaType: null,
+            data: JSON.stringify({
+              id: 3, // ID del cestello (corrispondente al numero fisico 2)
+              number: 2,
+              serialNumber: "04:1d:7d:8a:7a:00:00",
+              redirectTo: "https://flupsy-delta-future-lagogianluigi.replit.app/nfc-scan/basket/3",
+              timestamp: new Date().toISOString()
+            })
+          }
+        ];
+        
+        console.log("Simulazione di tag NFC completata:", simulatedTagData);
+        onRead(simulatedTagData);
+      }, 2000);
+      
+      // Clean up timer
+      return () => {
+        clearTimeout(simulationTimer);
+        onAbort();
+      };
+    }
+    
     // Check if the browser supports the Web NFC API
     if (typeof window !== 'undefined' && 'NDEFReader' in window) {
       let aborted = false;
@@ -94,10 +129,12 @@ export default function NFCReader({ onRead, onError, onAbort }: NFCReaderProps) 
         onAbort();
       };
     } else {
-      // Browser doesn't support NFC
-      onError('Il tuo browser non supporta la tecnologia NFC. Prova con Chrome su Android.');
+      // Browser doesn't support NFC, ma lo gestiamo solo se siamo su mobile
+      if (isMobile) {
+        onError('Il tuo browser non supporta la tecnologia NFC. Prova con Chrome su Android.');
+      }
     }
-  }, [onRead, onError, onAbort]);
+  }, [onRead, onError, onAbort, isMobile]);
   
   // No visible UI, this is just a functional component
   return null;

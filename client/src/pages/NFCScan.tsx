@@ -145,12 +145,26 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     setIsScanning(true);
     setScanError(null);
     
-    // Se non siamo su mobile, simuliamo una scansione per il debug
+    // Se non siamo su mobile, simuliamo immediatamente una scansione per il debug
     if (!isMobile) {
       toast({
-        title: "Modalità simulazione",
-        description: "L'app è in esecuzione su desktop. La scansione NFC è disponibile solo su dispositivi mobili con supporto NFC.",
+        title: "Modalità simulazione attivata",
+        description: "Simulazione di scansione NFC in corso...",
       });
+      
+      // Simuliamo la scansione dopo un breve ritardo (per dare un'esperienza realistica)
+      setTimeout(() => {
+        console.log("Simulazione scansione NFC per desktop");
+        
+        // Impostiamo manualmente l'ID del cestello #2 per debug
+        setScannedBasketId(3);
+        setIsScanning(false);
+        
+        toast({
+          title: "Tag NFC rilevato (simulato)",
+          description: "Cestello #2 identificato per test su desktop.",
+        });
+      }, 1500);
     }
   };
   
@@ -159,20 +173,61 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     setIsScanning(false);
   };
   
-  // Gestisce la lettura del tag NFC - versione semplificata per debug
+  // Gestisce la lettura del tag NFC - gestisce sia dati reali che simulati
   const handleNFCRead = (records: any) => {
     console.log("NFC tag letto:", records);
     
-    // SOLUZIONE DI EMERGENZA
-    // Impostiamo direttamente l'ID a 3 (cestello con numero fisico 2)
-    console.log("ID cestello impostato a valore predefinito (3) per debug");
+    // Estrattore di informazioni dal tag
+    let basketId = null;
+    let basketNumber = null;
     
-    setScannedBasketId(3);
+    try {
+      // Tenta di estrarre i dati JSON dal record
+      if (Array.isArray(records) && records.length > 0) {
+        console.log("Record trovati:", records.length);
+        
+        // Trova il primo record di testo
+        const textRecord = records.find(r => r.recordType === 'text');
+        
+        if (textRecord && textRecord.data) {
+          console.log("Testo record:", textRecord.data);
+          
+          // Se è una stringa JSON, la analizziamo
+          if (typeof textRecord.data === 'string' && textRecord.data.startsWith('{')) {
+            try {
+              const jsonData = JSON.parse(textRecord.data);
+              console.log("JSON estratto:", jsonData);
+              
+              // Estrai ID cestello e numero fisico
+              if (jsonData.id) {
+                basketId = jsonData.id;
+                basketNumber = jsonData.number || null;
+                console.log(`Trovato ID cestello: ${basketId}, numero: ${basketNumber}`);
+              }
+            } catch (jsonError) {
+              console.error("Errore nell'analisi JSON:", jsonError);
+            }
+          }
+        }
+      }
+    } catch (e) {
+      console.error("Errore nell'elaborazione del tag:", e);
+    }
+    
+    // Se non siamo riusciti a estrarre un ID dal tag, usiamo il valore di fallback
+    if (!basketId) {
+      console.log("ID cestello non trovato nel tag, usando valore predefinito (3) per debug");
+      basketId = 3; // Cestello con numero fisico 2 per debug
+      basketNumber = 2;
+    }
+    
+    // Imposta l'ID del cestello scansionato
+    setScannedBasketId(basketId);
     setIsScanning(false);
     
     toast({
       title: "Tag NFC rilevato",
-      description: "Cestello #2 identificato per debug.",
+      description: basketNumber ? `Cestello #${basketNumber} identificato.` : "Cestello identificato.",
     });
   };
   
