@@ -231,27 +231,47 @@ export default function NFCScan() {
   
   return (
     <div className="container mx-auto py-6 px-4 max-w-4xl">
-      <h1 className="text-3xl font-bold mb-6">FlupsyScan Mobile</h1>
+      <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold mb-6 text-center md:text-left`}>
+        {isMobile ? 'FlupsyScan' : 'FlupsyScan Mobile'}
+      </h1>
       
       {!scannedBasketId ? (
         <Card className="mb-6">
           <CardHeader>
             <CardTitle className="text-center">Scansione Tag NFC</CardTitle>
             <CardDescription className="text-center">
-              Avvicina il telefono al tag NFC della cesta per visualizzare i dati
+              {isMobile ? 
+                "Tocca per iniziare e avvicina il telefono al tag" :
+                "Avvicina il telefono al tag NFC della cesta per visualizzare i dati"
+              }
             </CardDescription>
           </CardHeader>
           <CardContent className="flex flex-col items-center justify-center p-6">
             {isScanning ? (
               <>
-                <div className="w-32 h-32 rounded-full bg-primary/10 flex items-center justify-center mb-6 animate-pulse">
-                  <ScanIcon className="h-16 w-16 text-primary" />
+                <div className={`${isMobile ? 'w-40 h-40' : 'w-32 h-32'} rounded-full bg-primary/10 flex items-center justify-center mb-6 animate-pulse relative`}>
+                  <ScanIcon className={`${isMobile ? 'h-20 w-20' : 'h-16 w-16'} text-primary`} />
+                  {isMobile && (
+                    <div className="absolute -bottom-2 w-full flex justify-center">
+                      <span className="inline-block px-3 py-1 rounded-full bg-primary text-white text-xs animate-pulse">
+                        Scansione in corso...
+                      </span>
+                    </div>
+                  )}
                 </div>
                 <p className="text-center text-muted-foreground mb-6">
-                  Avvicina il dispositivo al tag NFC...
+                  {isMobile ? 
+                    "Posiziona il telefono vicino al tag NFC della cesta..." :
+                    "Avvicina il dispositivo al tag NFC..."
+                  }
                 </p>
-                <Button variant="outline" onClick={stopScan}>
-                  <XIcon className="mr-2 h-4 w-4" /> Annulla
+                <Button 
+                  variant="outline" 
+                  onClick={stopScan}
+                  className={isMobile ? "w-full" : ""}
+                  size={isMobile ? "lg" : "default"}
+                >
+                  <XIcon className="mr-2 h-4 w-4" /> Annulla scansione
                 </Button>
                 
                 {/* Componente NFC Reader attivo solo durante la scansione */}
@@ -266,13 +286,27 @@ export default function NFCScan() {
             ) : (
               <>
                 <div 
-                  className="w-48 h-48 rounded-full bg-primary/10 flex items-center justify-center mb-6 cursor-pointer hover:bg-primary/20 transition-colors"
+                  className={`${isMobile ? 'w-60 h-60' : 'w-48 h-48'} rounded-full bg-primary/10 flex items-center justify-center mb-6 cursor-pointer hover:bg-primary/20 transition-colors relative shadow-lg`}
                   onClick={startScan}
                 >
-                  <ScanIcon className="h-24 w-24 text-primary" />
+                  <ScanIcon className={`${isMobile ? 'h-32 w-32' : 'h-24 w-24'} text-primary`} />
+                  
+                  {/* Etichetta visibile solo su mobile */}
+                  {isMobile && (
+                    <div className="absolute -bottom-2 w-full flex justify-center">
+                      <span className="inline-block px-4 py-2 rounded-full bg-primary text-white text-sm">
+                        Tocca per iniziare
+                      </span>
+                    </div>
+                  )}
                 </div>
-                <Button size="lg" onClick={startScan}>
-                  Inizia Scansione
+                
+                <Button 
+                  size="lg" 
+                  onClick={startScan}
+                  className={isMobile ? "w-full py-6 text-lg" : ""}
+                >
+                  {isMobile ? "INIZIA SCANSIONE" : "Inizia Scansione"}
                 </Button>
                 
                 {/* Messaggio di errore visualizzato solo in caso di problemi */}
@@ -326,111 +360,146 @@ export default function NFCScan() {
           {/* Visualizzazione dati cestello */}
           {basketData && (
             <>
-              {/* Intestazione con numero cestello e posizione */}
-              <div className="flex justify-between items-center mb-6">
-                <div>
-                  <h2 className="text-2xl font-bold">
+              {/* Intestazione con numero cestello e posizione - Ottimizzata per mobile */}
+              <div className={`${isMobile ? 'flex flex-col gap-3' : 'flex justify-between items-center'} mb-6`}>
+                <div className={isMobile ? 'flex flex-col items-center text-center' : ''}>
+                  <h2 className={`${isMobile ? 'text-3xl' : 'text-2xl'} font-bold`}>
                     Cestello #{basketData?.physicalNumber}
                   </h2>
+                  {basketData?.flupsy && (
+                    <p className="text-muted-foreground text-sm mt-1">
+                      {basketData.flupsy.name}
+                    </p>
+                  )}
                   {basketData?.row && basketData?.position && (
-                    <Badge variant="outline" className="text-sm">
+                    <Badge variant="outline" className={`text-sm ${isMobile ? 'mt-2' : ''}`}>
                       Posizione: {basketData.row}-{basketData.position}
                     </Badge>
                   )}
                 </div>
-                <Button variant="ghost" onClick={() => setScannedBasketId(null)}>
-                  <ScanIcon className="h-4 w-4 mr-2" /> Nuova scansione
+                <Button 
+                  variant={isMobile ? "default" : "ghost"} 
+                  onClick={() => setScannedBasketId(null)}
+                  className={isMobile ? "w-full mt-2" : ""}
+                  size={isMobile ? "lg" : "default"}
+                >
+                  <ScanIcon className="h-4 w-4 mr-2" /> {isMobile ? "Scansiona nuovo cestello" : "Nuova scansione"}
                 </Button>
               </div>
               
-              {/* Card principale con ultima operazione */}
+              {/* Card principale con ultima operazione - Migliorata per mobile */}
               <Card className="mb-6">
-                <CardHeader>
-                  <CardTitle>Ultima operazione</CardTitle>
-                  <CardDescription>
-                    {basketData?.lastOperation?.date ? (
-                      `Effettuata il ${new Date(basketData.lastOperation.date).toLocaleDateString('it-IT')}`
-                    ) : (
-                      'Nessuna operazione registrata'
+                <CardHeader className={isMobile ? "pb-3" : ""}>
+                  <div className="flex justify-between items-center">
+                    <div>
+                      <CardTitle>Ultima operazione</CardTitle>
+                      <CardDescription>
+                        {basketData?.lastOperation?.date ? (
+                          `${new Date(basketData.lastOperation.date).toLocaleDateString('it-IT')}`
+                        ) : (
+                          'Nessuna operazione registrata'
+                        )}
+                      </CardDescription>
+                    </div>
+                    
+                    {basketData?.lastOperation && (
+                      <Badge className={getOperationTypeColor(basketData.lastOperation.type)}>
+                        {getOperationTypeLabel(basketData.lastOperation.type)}
+                      </Badge>
                     )}
-                  </CardDescription>
+                  </div>
                 </CardHeader>
                 <CardContent>
                   {basketData?.lastOperation ? (
                     <div className="space-y-4">
-                      <div className="flex items-center">
-                        <Badge className={getOperationTypeColor(basketData.lastOperation.type)}>
-                          {getOperationTypeLabel(basketData.lastOperation.type)}
-                        </Badge>
-                      </div>
-                      
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className={`grid ${isMobile ? 'grid-cols-2' : 'grid-cols-2'} gap-4`}>
                         {basketData.lastOperation.animalsPerKg && (
-                          <div>
-                            <p className="text-sm font-medium">Animali per Kg</p>
-                            <p className="text-2xl font-bold">{formatNumberWithCommas(basketData.lastOperation.animalsPerKg)}</p>
+                          <div className={`p-4 rounded-lg ${isMobile ? 'bg-primary/5' : ''}`}>
+                            <p className="text-sm font-medium text-muted-foreground">Animali per Kg</p>
+                            <p className={`${isMobile ? 'text-3xl' : 'text-2xl'} font-bold`}>
+                              {formatNumberWithCommas(basketData.lastOperation.animalsPerKg)}
+                            </p>
                           </div>
                         )}
                         
                         {basketData.lastOperation.averageWeight && (
-                          <div>
-                            <p className="text-sm font-medium">Peso medio</p>
-                            <p className="text-2xl font-bold">{formatNumberWithCommas(basketData.lastOperation.averageWeight)} mg</p>
+                          <div className={`p-4 rounded-lg ${isMobile ? 'bg-primary/5' : ''}`}>
+                            <p className="text-sm font-medium text-muted-foreground">Peso medio</p>
+                            <p className={`${isMobile ? 'text-3xl' : 'text-2xl'} font-bold`}>
+                              {formatNumberWithCommas(basketData.lastOperation.averageWeight)} mg
+                            </p>
                           </div>
                         )}
                         
                         {basketData.lastOperation.sizeId && basketData?.size && (
-                          <div>
-                            <p className="text-sm font-medium">Taglia</p>
-                            <Badge className={`bg-${getSizeColor(basketData.size.code)}-500`}>
-                              {basketData.size.code} - {basketData.size.name}
-                            </Badge>
+                          <div className={`p-4 rounded-lg ${isMobile ? 'bg-primary/5' : ''}`}>
+                            <p className="text-sm font-medium text-muted-foreground">Taglia</p>
+                            <div className="mt-2">
+                              <Badge className={`text-lg py-1 px-3 bg-${getSizeColor(basketData.size.code)}-500`}>
+                                {basketData.size.code} - {basketData.size.name}
+                              </Badge>
+                            </div>
                           </div>
                         )}
                         
                         {basketData.lastOperation.mortalityRate !== null && (
-                          <div>
-                            <p className="text-sm font-medium">Mortalità</p>
-                            <p className="text-lg font-semibold">{basketData.lastOperation.mortalityRate}%</p>
+                          <div className={`p-4 rounded-lg ${isMobile ? 'bg-primary/5' : ''}`}>
+                            <p className="text-sm font-medium text-muted-foreground">Mortalità</p>
+                            <p className={`${isMobile ? 'text-3xl' : 'text-2xl'} font-bold`}>
+                              {basketData.lastOperation.mortalityRate}%
+                            </p>
                           </div>
                         )}
                       </div>
                       
                       {basketData.lastOperation.notes && (
-                        <div>
-                          <p className="text-sm font-medium">Note</p>
-                          <p className="text-sm">{basketData.lastOperation.notes}</p>
+                        <div className={`mt-4 ${isMobile ? 'p-4 border rounded-lg' : ''}`}>
+                          <p className="text-sm font-medium text-muted-foreground">Note</p>
+                          <p className="text-sm mt-1">{basketData.lastOperation.notes}</p>
                         </div>
                       )}
                     </div>
                   ) : (
-                    <div className="text-center py-4 text-muted-foreground">
-                      Nessuna operazione registrata per questo cestello.
+                    <div className="text-center py-8 text-muted-foreground">
+                      <div className="flex flex-col items-center gap-2">
+                        <AlertCircleIcon className="h-8 w-8 text-muted-foreground/50" />
+                        <p>Nessuna operazione registrata per questo cestello.</p>
+                      </div>
                     </div>
                   )}
                 </CardContent>
               </Card>
               
-              {/* Info sul ciclo attivo */}
+              {/* Info sul ciclo attivo - Ottimizzato per mobile */}
               {basketData?.currentCycle && (
                 <Card className="mb-6">
-                  <CardHeader>
-                    <CardTitle>Ciclo attivo</CardTitle>
-                    <CardDescription>
-                      Iniziato il {new Date(basketData.currentCycle.startDate).toLocaleDateString('it-IT')}
-                    </CardDescription>
+                  <CardHeader className={isMobile ? "pb-3" : ""}>
+                    <div className="flex justify-between items-center">
+                      <div>
+                        <CardTitle>Ciclo attivo</CardTitle>
+                        <CardDescription>
+                          Iniziato il {new Date(basketData.currentCycle.startDate).toLocaleDateString('it-IT')}
+                        </CardDescription>
+                      </div>
+                      <Badge variant="outline" className="capitalize">
+                        {basketData.currentCycle.state}
+                      </Badge>
+                    </div>
                   </CardHeader>
                   <CardContent>
-                    <div className="grid grid-cols-2 gap-4">
-                      <div>
-                        <p className="text-sm font-medium">Durata</p>
-                        <p className="text-xl font-bold">
-                          {basketData?.cycleDuration} giorni
-                        </p>
+                    <div className={`grid grid-cols-2 gap-4 ${isMobile ? 'mt-2' : ''}`}>
+                      <div className={`p-4 rounded-lg ${isMobile ? 'bg-primary/5' : ''}`}>
+                        <p className="text-sm font-medium text-muted-foreground">Durata</p>
+                        <div className="flex items-baseline gap-1 mt-1">
+                          <p className={`${isMobile ? 'text-3xl' : 'text-2xl'} font-bold`}>
+                            {basketData?.cycleDuration}
+                          </p>
+                          <p className="text-muted-foreground">giorni</p>
+                        </div>
                       </div>
-                      <div>
-                        <p className="text-sm font-medium">SGR attuale</p>
-                        <p className="text-xl font-bold">
+                      <div className={`p-4 rounded-lg ${isMobile ? 'bg-primary/5' : ''}`}>
+                        <p className="text-sm font-medium text-muted-foreground">SGR attuale</p>
+                        <p className={`${isMobile ? 'text-3xl' : 'text-2xl'} font-bold mt-1`}>
                           {basketData?.growthRate ? `${basketData.growthRate}%` : 'N/D'}
                         </p>
                       </div>
@@ -439,59 +508,104 @@ export default function NFCScan() {
                 </Card>
               )}
               
-              {/* Menu di azioni rapide */}
+              {/* Menu di azioni rapide - Layout ottimizzato per mobile */}
               <Card>
                 <CardHeader>
                   <CardTitle>Azioni rapide</CardTitle>
+                  <CardDescription>Seleziona un'operazione da eseguire</CardDescription>
                 </CardHeader>
-                <CardContent className="grid gap-4">
-                  <Button 
-                    variant="outline" 
-                    className="justify-between"
-                    onClick={goToPositionManagement}
-                  >
-                    <div className="flex items-center">
-                      <MoveIcon className="h-4 w-4 mr-2" />
-                      <span>Gestione posizione</span>
-                    </div>
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="justify-between"
-                    onClick={goToQuickOperations}
-                  >
-                    <div className="flex items-center">
-                      <ClipboardIcon className="h-4 w-4 mr-2" />
-                      <span>Registra operazione</span>
-                    </div>
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="justify-between"
-                    onClick={goToBasketHistory}
-                  >
-                    <div className="flex items-center">
-                      <HistoryIcon className="h-4 w-4 mr-2" />
-                      <span>Cronologia operazioni</span>
-                    </div>
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </Button>
-                  
-                  <Button 
-                    variant="outline" 
-                    className="justify-between"
-                    onClick={goToAnnotations}
-                  >
-                    <div className="flex items-center">
-                      <Target className="h-4 w-4 mr-2" />
-                      <span>Annotazioni taglia</span>
-                    </div>
-                    <ChevronRightIcon className="h-4 w-4" />
-                  </Button>
+                <CardContent className={`${isMobile ? 'grid grid-cols-2 gap-4' : 'grid gap-4'}`}>
+                  {isMobile ? (
+                    <>
+                      {/* Layout per dispositivi mobili con pulsanti a griglia */}
+                      <Button 
+                        variant="outline" 
+                        className="h-24 flex flex-col items-center justify-center space-y-2 p-2"
+                        onClick={goToPositionManagement}
+                      >
+                        <MoveIcon className="h-8 w-8" />
+                        <span className="text-xs text-center">Gestione posizione</span>
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="h-24 flex flex-col items-center justify-center space-y-2 p-2"
+                        onClick={goToQuickOperations}
+                      >
+                        <ClipboardIcon className="h-8 w-8" />
+                        <span className="text-xs text-center">Registra operazione</span>
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="h-24 flex flex-col items-center justify-center space-y-2 p-2"
+                        onClick={goToBasketHistory}
+                      >
+                        <HistoryIcon className="h-8 w-8" />
+                        <span className="text-xs text-center">Cronologia operazioni</span>
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="h-24 flex flex-col items-center justify-center space-y-2 p-2"
+                        onClick={goToAnnotations}
+                      >
+                        <Target className="h-8 w-8" />
+                        <span className="text-xs text-center">Annotazioni taglia</span>
+                      </Button>
+                    </>
+                  ) : (
+                    <>
+                      {/* Layout per desktop con pulsanti orizzontali */}
+                      <Button 
+                        variant="outline" 
+                        className="justify-between"
+                        onClick={goToPositionManagement}
+                      >
+                        <div className="flex items-center">
+                          <MoveIcon className="h-4 w-4 mr-2" />
+                          <span>Gestione posizione</span>
+                        </div>
+                        <ChevronRightIcon className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="justify-between"
+                        onClick={goToQuickOperations}
+                      >
+                        <div className="flex items-center">
+                          <ClipboardIcon className="h-4 w-4 mr-2" />
+                          <span>Registra operazione</span>
+                        </div>
+                        <ChevronRightIcon className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="justify-between"
+                        onClick={goToBasketHistory}
+                      >
+                        <div className="flex items-center">
+                          <HistoryIcon className="h-4 w-4 mr-2" />
+                          <span>Cronologia operazioni</span>
+                        </div>
+                        <ChevronRightIcon className="h-4 w-4" />
+                      </Button>
+                      
+                      <Button 
+                        variant="outline" 
+                        className="justify-between"
+                        onClick={goToAnnotations}
+                      >
+                        <div className="flex items-center">
+                          <Target className="h-4 w-4 mr-2" />
+                          <span>Annotazioni taglia</span>
+                        </div>
+                        <ChevronRightIcon className="h-4 w-4" />
+                      </Button>
+                    </>
+                  )}
                 </CardContent>
               </Card>
             </>
