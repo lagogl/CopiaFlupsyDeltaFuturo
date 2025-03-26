@@ -13,8 +13,15 @@ export function cn(...inputs: ClassValue[]) {
  */
 export function monthlyToDaily(monthlyPercentage: number): number {
   // Converti da percentuale mensile a giornaliera con formula: 
-  // daily% = ((1 + monthly%/100)^(1/30) - 1) * 100
-  return ((Math.pow(1 + monthlyPercentage/100, 1/30) - 1) * 100);
+  // daily_rate = ((1 + monthly_rate)^(1/30) - 1)
+  // Dove monthly_rate è già espresso come decimale (es. 0.37 per 37%)
+  
+  // Assicurati che il valore passato sia trattato come un decimale
+  // se monthlyPercentage è passato come percentuale (es. 37), convertilo in decimale (0.37)
+  const monthlyRate = monthlyPercentage >= 1 ? monthlyPercentage / 100 : monthlyPercentage;
+  
+  // Calcola il tasso giornaliero (che è già un decimale, non serve moltiplicare per 100)
+  return (Math.pow(1 + monthlyRate, 1/30) - 1);
 }
 
 export function formatNumberWithCommas(value: number): string {
@@ -421,7 +428,8 @@ export function calculateSizeTimeline(
   const getDailySgrRate = (date: Date): number => {
     if (!sgrRates || sgrRates.length === 0) {
       // Fallback se non abbiamo dati SGR specifici
-      return sgrMonthlyPercentage / 100;
+      // Non dividiamo per 100 perché il valore è già espresso come tasso decimale
+      return sgrMonthlyPercentage;
     }
     
     const monthName = getMonthNameIT(date);
@@ -429,11 +437,11 @@ export function calculateSizeTimeline(
     
     if (monthSgr) {
       // Il campo percentage ora contiene direttamente il tasso giornaliero
-      return monthSgr.percentage / 100;
+      return monthSgr.percentage;
     }
     
     // Fallback se non troviamo il mese
-    return sgrMonthlyPercentage / 100;
+    return sgrMonthlyPercentage;
   };
   
   // Trova la taglia attuale - usa le taglie del database se disponibili
@@ -511,8 +519,8 @@ export function calculateSizeTimeline(
       // Ottieni il tasso SGR specifico per il giorno
       const dailyGrowthRate = getDailySgrRate(nextDate);
       
-      // Applica il tasso di crescita giornaliero
-      simulationWeight = simulationWeight * (1 + dailyGrowthRate);
+      // Applica il tasso di crescita giornaliero usando la formula corretta: Pf = Pi * e^(SGR*t)
+      simulationWeight = simulationWeight * Math.exp(dailyGrowthRate);
       simulationDate = nextDate;
     }
     
