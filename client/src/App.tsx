@@ -26,6 +26,7 @@ import Inventory from "@/pages/Inventory";
 import TestView from "@/pages/TestView";
 import NFCScan from "@/pages/NFCScan";
 import NFCTagManager from "@/pages/NFCTagManager";
+import GrowJourney from "@/pages/GrowJourney";
 
 function Router() {
   return (
@@ -54,6 +55,7 @@ function Router() {
       <Route path="/nfc-scan" component={NFCScan}/>
       <Route path="/nfc-scan/basket/:id" component={NFCScan}/>
       <Route path="/nfc-tags" component={NFCTagManager}/>
+      <Route path="/grow-journey" component={GrowJourney}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

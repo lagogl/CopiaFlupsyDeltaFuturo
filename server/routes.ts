@@ -1792,6 +1792,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Growth Prediction Endpoints ===
+  
+  // Growth prediction endpoint for a specific cycle
+  app.get("/api/cycles/:id/growth-prediction", async (req, res) => {
+    try {
+      const cycleId = parseInt(req.params.id);
+      if (isNaN(cycleId)) {
+        return res.status(400).json({ message: "Invalid cycle ID" });
+      }
+      
+      // Verifica se il ciclo esiste
+      const cycle = await storage.getCycle(cycleId);
+      if (!cycle) {
+        return res.status(404).json({ message: "Cycle not found" });
+      }
+      
+      // Ottieni operazioni per il ciclo, ordinate per data
+      const operations = await storage.getOperationsByCycle(cycleId);
+      if (!operations || operations.length === 0) {
+        return res.status(404).json({ message: "No operations found for this cycle" });
+      }
+      
+      // Ordina le operazioni per data (dalla più vecchia alla più recente)
+      const sortedOperations = [...operations].sort(
+        (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      );
+      
+      console.log(`DEBUG: Ciclo ID ${cycleId}, numero operazioni trovate: ${sortedOperations.length}`);
+      
+      // Trova l'ultima misurazione disponibile
+      const measurementOps = sortedOperations.filter(op => 
+        (op.type === 'misura' || op.type === 'prima-attivazione') && op.animalsPerKg
+      );
+      
+      if (measurementOps.length === 0) {
+        return res.status(404).json({ 
+          message: "No measurement operations found for this cycle" 
+        });
+      }
+      
+      // Log delle operazioni per debug
+      measurementOps.forEach(op => {
+        console.log(`DEBUG: Operazione ID ${op.id}, tipo: ${op.type}, animalsPerKg: ${op.animalsPerKg}, date: ${op.date}`);
+      });
+      
+      console.log(`DEBUG: Operazioni di misura trovate: ${measurementOps.length}`);
+      
+      // Usa l'ultima misurazione disponibile
+      const lastMeasurement = measurementOps[measurementOps.length - 1];
+      
+      // Calcola il peso medio in mg
+      let currentWeight;
+      if (lastMeasurement.averageWeight) {
+        currentWeight = lastMeasurement.averageWeight;
+        console.log(`DEBUG: Usando campo averageWeight esistente: ${currentWeight} mg`);
+      } else if (lastMeasurement.animalsPerKg) {
+        currentWeight = Math.round(1000000 / lastMeasurement.animalsPerKg);
+        console.log(`DEBUG: Calcolato peso da animalsPerKg: ${currentWeight} mg`);
+      } else {
+        // Fallback se non ci sono dati disponibili
+        currentWeight = 0;
+        console.log(`DEBUG: Nessun dato di peso disponibile`);
+      }
+      
+      // Ottiene il valore SGR dal database o usa un valore predefinito
+      const days = parseInt(req.query.days as string) || 60;
+      
+      // Se l'operazione ha un sgrId specificato, usalo
+      let sgrPercentage = 0.01; // Valore predefinito: 1% al giorno
+      if (lastMeasurement.sgrId) {
+        const sgr = await storage.getSgr(lastMeasurement.sgrId);
+        if (sgr) {
+          sgrPercentage = sgr.percentage;
+        }
+      } else {
+        // Altrimenti, usa un valore predefinito o cerca il valore SGR per il mese corrente
+        const sgrs = await storage.getSgrs();
+        if (sgrs.length > 0) {
+          // Semplificazione: usa il primo SGR disponibile
+          sgrPercentage = sgrs[0].percentage;
+        }
+      }
+      
+      // Calcola la previsione di crescita
+      const measurementDate = new Date(lastMeasurement.date);
+      const prediction = await storage.calculateGrowthPrediction(
+        currentWeight,
+        measurementDate,
+        days,
+        sgrPercentage,
+        { best: 20, worst: 30 } // Variazioni percentuali per scenari ottimistico e pessimistico
+      );
+      
+      res.json(prediction);
+    } catch (error) {
+      console.error("Error calculating growth prediction for cycle:", error);
+      res.status(500).json({ message: "Failed to calculate growth prediction" });
+    }
+  });
+
   // Growth prediction endpoint - Generic version
   app.get("/api/growth-prediction", async (req, res) => {
     try {
