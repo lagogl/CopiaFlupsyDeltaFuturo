@@ -5,10 +5,10 @@ import NFCReader from '@/components/NFCReader';
 import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getSizeColor } from '@/lib/utils';
 
 // UI Components
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Badge } from "@/components/ui/badge";
-import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Alert, AlertTitle, AlertDescription } from '@/components/ui/alert';
 
 // Icons
 import {
@@ -130,12 +130,14 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   
   // Avvia la scansione NFC
   const startScan = () => {
+    console.log("Avvio scansione NFC");
     setIsScanning(true);
     setScanError(null);
   };
   
   // Interrompe la scansione NFC
   const stopScan = () => {
+    console.log("Interruzione scansione NFC");
     setIsScanning(false);
   };
   
