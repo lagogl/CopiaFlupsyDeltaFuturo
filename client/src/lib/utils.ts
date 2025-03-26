@@ -7,14 +7,14 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Questa funzione è stata mantenuta per retrocompatibilità
- * Ora il valore SGR è già in percentuale giornaliera e non richiede conversione
- * @param dailyPercentage - Percentuale giornaliera
- * @returns La stessa percentuale giornaliera senza modifiche
+ * Converti il tasso di crescita SGR da percentuale mensile a percentuale giornaliera
+ * @param monthlyPercentage - Percentuale mensile di crescita
+ * @returns Percentuale giornaliera equivalente
  */
-export function monthlyToDaily(dailyPercentage: number): number {
-  // Restituisce il valore invariato poiché è già giornaliero
-  return dailyPercentage;
+export function monthlyToDaily(monthlyPercentage: number): number {
+  // Converti da percentuale mensile a giornaliera con formula: 
+  // daily% = ((1 + monthly%/100)^(1/30) - 1) * 100
+  return ((Math.pow(1 + monthlyPercentage/100, 1/30) - 1) * 100);
 }
 
 export function formatNumberWithCommas(value: number): string {

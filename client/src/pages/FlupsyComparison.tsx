@@ -210,8 +210,8 @@ export default function FlupsyComparison() {
     // Se il peso corrente è già maggiore del peso target, è già nella taglia target
     if (currentWeight >= targetWeight) return 0;
     
-    // Ottieni la percentuale SGR giornaliera
-    let sgrDailyPercentage = 1.0; // Valore di default (1% al giorno)
+    // Ottieni la percentuale SGR giornaliera (convertita da percentuale mensile)
+    let sgrDailyPercentage = 0.067; // Valore di default (2% mensile = ~0.067% al giorno)
     if (sgrs && sgrs.length > 0) {
       // Usa il valore SGR del mese corrente se disponibile
       const currentMonth = format(new Date(), 'MMMM').toLowerCase();
