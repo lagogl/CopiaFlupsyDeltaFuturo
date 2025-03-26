@@ -376,11 +376,18 @@ export default function FlupsyComparison() {
               </div>
               
               {currentSize && (
-                <div className="flex justify-between items-center w-full">
-                  <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">
-                    {currentSize.code}
-                  </Badge>
-                  <div className="text-[9px] font-medium">{currentWeight} mg</div>
+                <div className="flex flex-col w-full">
+                  <div className="flex justify-between items-center w-full">
+                    <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">
+                      {currentSize.code}
+                    </Badge>
+                    <div className="text-[9px] font-medium">{currentWeight} mg</div>
+                  </div>
+                  {latestOperation?.animalsPerKg && (
+                    <div className="text-[8px] text-gray-600 mt-0.5">
+                      {latestOperation.animalsPerKg} animali/kg
+                    </div>
+                  )}
                 </div>
               )}
               
@@ -505,11 +512,18 @@ export default function FlupsyComparison() {
               </div>
               
               {futureSize && (
-                <div className="flex justify-between items-center w-full">
-                  <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">
-                    {futureSize.code}
-                  </Badge>
-                  <div className="text-[9px] font-medium">{futureWeight} mg</div>
+                <div className="flex flex-col w-full">
+                  <div className="flex justify-between items-center w-full">
+                    <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">
+                      {futureSize.code}
+                    </Badge>
+                    <div className="text-[9px] font-medium">{futureWeight} mg</div>
+                  </div>
+                  {futureWeight && (
+                    <div className="text-[8px] text-gray-600 mt-0.5">
+                      {Math.round(1000000 / futureWeight)} animali/kg
+                    </div>
+                  )}
                 </div>
               )}
               
@@ -655,18 +669,26 @@ export default function FlupsyComparison() {
                 )}
               </div>
               
-              <div className="flex justify-between items-center w-full">
-                {currentSize?.code === targetSizeCode ? (
-                  <Badge className="text-[8px] px-1.5 py-0 h-4 bg-green-500 text-white">Già {targetSizeCode}</Badge>
-                ) : willReach ? (
-                  <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">→{targetSizeCode}</Badge>
-                ) : (
-                  <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 text-gray-500">No {targetSizeCode}</Badge>
-                )}
+              <div className="flex flex-col w-full">
+                <div className="flex justify-between items-center w-full">
+                  {currentSize?.code === targetSizeCode ? (
+                    <Badge className="text-[8px] px-1.5 py-0 h-4 bg-green-500 text-white">Già {targetSizeCode}</Badge>
+                  ) : willReach ? (
+                    <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">→{targetSizeCode}</Badge>
+                  ) : (
+                    <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 text-gray-500">No {targetSizeCode}</Badge>
+                  )}
+                  
+                  {currentSize && (
+                    <div className="text-[9px] font-medium">
+                      {currentWeight} mg
+                    </div>
+                  )}
+                </div>
                 
-                {currentSize && (
-                  <div className="text-[9px] font-medium">
-                    {currentWeight} mg
+                {latestOperation?.animalsPerKg && (
+                  <div className="text-[8px] text-gray-600 mt-0.5">
+                    {latestOperation.animalsPerKg} animali/kg
                   </div>
                 )}
               </div>
