@@ -23,6 +23,7 @@ import FlupsyPositions from "@/pages/FlupsyPositions";
 import FlupsyComparison from "@/pages/FlupsyComparison";
 import Inventory from "@/pages/Inventory";
 import TestView from "@/pages/TestView";
+import NFCScan from "@/pages/NFCScan";
 
 function Router() {
   return (

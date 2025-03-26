@@ -34,6 +34,109 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint per ottenere tutti i dettagli di un cestello incluse le informazioni correlate
+  app.get("/api/baskets/details/:id?", async (req, res) => {
+    try {
+      // Se viene fornito un ID nei parametri, utilizzalo
+      let basketId: number | undefined;
+      
+      if (req.params.id) {
+        basketId = parseInt(req.params.id);
+      } else if (req.query.id) {
+        // Altrimenti cerca l'ID nella query string
+        basketId = parseInt(req.query.id as string);
+      }
+      
+      // Se nessun ID è stato fornito, restituisci un errore
+      if (!basketId || isNaN(basketId)) {
+        return res.status(400).json({ message: "ID cestello non valido o mancante" });
+      }
+      
+      // Ottieni il cestello di base
+      const basket = await storage.getBasket(basketId);
+      if (!basket) {
+        return res.status(404).json({ message: "Cestello non trovato" });
+      }
+      
+      // Ottieni il flupsy associato
+      const flupsy = await storage.getFlupsy(basket.flupsyId);
+      
+      // Ottieni tutte le operazioni del cestello
+      const operations = await storage.getOperationsByBasket(basketId);
+      
+      // Ordina le operazioni per data (la più recente prima)
+      const sortedOperations = operations.sort((a, b) => {
+        return new Date(b.date).getTime() - new Date(a.date).getTime();
+      });
+      
+      // Ultima operazione è la prima dopo l'ordinamento
+      const lastOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
+      
+      // Ottieni il ciclo corrente se presente
+      let currentCycle = null;
+      if (basket.currentCycleId) {
+        currentCycle = await storage.getCycle(basket.currentCycleId);
+      }
+      
+      // Calcola la durata del ciclo in giorni
+      let cycleDuration = null;
+      if (currentCycle) {
+        const startDate = new Date(currentCycle.startDate);
+        const today = new Date();
+        const diffTime = today.getTime() - startDate.getTime();
+        cycleDuration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      }
+      
+      // Ottieni la taglia corrente se presente nell'ultima operazione
+      let size = null;
+      if (lastOperation && lastOperation.sizeId) {
+        size = await storage.getSize(lastOperation.sizeId);
+      }
+      
+      // Ottieni il lotto associato all'ultima operazione se presente
+      let lot = null;
+      if (lastOperation && lastOperation.lotId) {
+        lot = await storage.getLot(lastOperation.lotId);
+      }
+      
+      // Calcola il tasso di crescita (SGR) se ci sono almeno due operazioni con misurazioni
+      let growthRate = null;
+      if (sortedOperations.length >= 2) {
+        // Filtra le operazioni che hanno dati di peso
+        const measurementOperations = sortedOperations.filter(op => 
+          op.animalsPerKg !== null && op.averageWeight !== null
+        );
+        
+        if (measurementOperations.length >= 2) {
+          // Calcola lo SGR effettivo
+          growthRate = await storage.calculateActualSgr(measurementOperations);
+        }
+      }
+      
+      // Ottieni la posizione corrente
+      const currentPosition = await storage.getCurrentBasketPosition(basketId);
+      
+      // Componi i dati completi del cestello
+      const basketDetails = {
+        ...basket,
+        flupsy,
+        lastOperation,
+        currentCycle,
+        cycleDuration,
+        size,
+        lot,
+        growthRate,
+        operations: sortedOperations,
+        currentPosition
+      };
+      
+      res.json(basketDetails);
+    } catch (error) {
+      console.error("Error fetching basket details:", error);
+      res.status(500).json({ message: "Errore nel recupero dei dettagli del cestello" });
+    }
+  });
+  
   app.get("/api/baskets/check-exists", async (req, res) => {
     try {
       const flupsyId = parseInt(req.query.flupsyId as string);
