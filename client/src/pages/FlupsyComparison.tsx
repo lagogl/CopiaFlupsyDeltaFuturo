@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { format, addDays, differenceInWeeks } from 'date-fns';
-import { Calendar, Clock, ArrowRight, Info } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Info, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
 import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor, monthlyToDaily } from '@/lib/utils';
 import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
@@ -54,6 +54,7 @@ export default function FlupsyComparison() {
   const [currentTabId, setCurrentTabId] = useState<string>("data-futuro");
   const [daysInFuture, setDaysInFuture] = useState<number>(30);
   const [targetSizeCode, setTargetSizeCode] = useState<string>("T5");
+  const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = normale, 2 = medio, 3 = grande
 
   // Fetch dei dati necessari
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
@@ -268,14 +269,32 @@ export default function FlupsyComparison() {
         return (a.position || 0) - (b.position || 0);
       });
   }, [baskets, selectedFlupsyId]);
+  
+  // Ottiene le dimensioni delle carte dei cestelli in base al livello di zoom
+  const getBasketCardSize = () => {
+    switch (zoomLevel) {
+      case 1:
+        return { width: 'w-40', height: 'h-16' }; // Default
+      case 2:
+        return { width: 'w-52', height: 'h-20' }; // Medio
+      case 3:
+        return { width: 'w-64', height: 'h-24' }; // Grande
+      default:
+        return { width: 'w-40', height: 'h-16' };
+    }
+  };
 
   // Renderizza un cestello per la visualizzazione attuale
   const renderCurrentBasket = (basket) => {
+    const cardSize = getBasketCardSize();
+    const width = cardSize.width;
+    const height = cardSize.height;
+    
     if (!basket) return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-16 w-40 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
+            <div className={`basket-card p-2 rounded border-2 border-dashed border-gray-300 ${height} ${width} flex items-center justify-center text-gray-400 text-xs cursor-pointer`}>
               Vuoto
             </div>
           </TooltipTrigger>
@@ -345,7 +364,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} h-16 w-40 flex flex-col justify-between cursor-pointer`}
+              className={`basket-card p-2 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -383,11 +402,15 @@ export default function FlupsyComparison() {
 
   // Renderizza un cestello per la visualizzazione futura (per data)
   const renderFutureBasketByDate = (basket) => {
+    const cardSize = getBasketCardSize();
+    const width = cardSize.width;
+    const height = cardSize.height;
+    
     if (!basket) return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-16 w-40 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
+            <div className={`basket-card p-2 rounded border-2 border-dashed border-gray-300 ${height} ${width} flex items-center justify-center text-gray-400 text-xs cursor-pointer`}>
               Vuoto
             </div>
           </TooltipTrigger>
@@ -470,7 +493,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} h-16 w-40 flex flex-col justify-between cursor-pointer`}
+              className={`basket-card p-2 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -512,11 +535,15 @@ export default function FlupsyComparison() {
 
   // Renderizza un cestello per la visualizzazione futura (per taglia target)
   const renderFutureBasketBySize = (basket) => {
+    const cardSize = getBasketCardSize();
+    const width = cardSize.width;
+    const height = cardSize.height;
+    
     if (!basket) return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-16 w-40 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
+            <div className={`basket-card p-2 rounded border-2 border-dashed border-gray-300 ${height} ${width} flex items-center justify-center text-gray-400 text-xs cursor-pointer`}>
               Vuoto
             </div>
           </TooltipTrigger>
@@ -617,7 +644,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} h-20 w-48 flex flex-col justify-between ${!willReach ? 'opacity-40' : ''} cursor-pointer`}
+              className={`basket-card p-2 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between ${!willReach ? 'opacity-40' : ''} cursor-pointer`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -699,6 +726,42 @@ export default function FlupsyComparison() {
     
     return (
       <div className="flupsy-visualizer">
+        <div className="zoom-controls flex justify-center items-center gap-2 mb-4">
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setZoomLevel(Math.max(1, zoomLevel - 1))}
+            disabled={zoomLevel === 1}
+            title="Riduci dimensione delle ceste"
+          >
+            <ZoomOut size={16} />
+          </Button>
+          
+          <div className="text-xs text-gray-600">
+            Zoom {zoomLevel === 1 ? "Piccolo" : zoomLevel === 2 ? "Medio" : "Grande"}
+          </div>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setZoomLevel(Math.min(3, zoomLevel + 1))}
+            disabled={zoomLevel === 3}
+            title="Aumenta dimensione delle ceste"
+          >
+            <ZoomIn size={16} />
+          </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setZoomLevel(1)}
+            disabled={zoomLevel === 1}
+            title="Ripristina dimensione predefinita"
+          >
+            <RefreshCw size={16} />
+          </Button>
+        </div>
+        
         <div className="flupsy-grid flex justify-center gap-6">
           {/* Fila SX */}
           <div className="fila-sx">

@@ -21,6 +21,7 @@ import Flupsys from "@/pages/Flupsys";
 import FlupsyFullView from "@/pages/FlupsyFullView";
 import FlupsyPositions from "@/pages/FlupsyPositions";
 import FlupsyComparison from "@/pages/FlupsyComparison";
+import FlupsyComparisonEnhanced from "@/pages/FlupsyComparisonEnhanced";
 import Inventory from "@/pages/Inventory";
 import TestView from "@/pages/TestView";
 import NFCScan from "@/pages/NFCScan";
@@ -34,6 +35,7 @@ function Router() {
       <Route path="/flupsy-view" component={FlupsyFullView}/>
       <Route path="/flupsy-positions" component={FlupsyPositions}/>
       <Route path="/flupsy-comparison" component={FlupsyComparison}/>
+      <Route path="/flupsy-comparison-enhanced" component={FlupsyComparisonEnhanced}/>
       <Route path="/baskets" component={Baskets}/>
       <Route path="/operations" component={Operations}/>
       <Route path="/operations/:id" component={OperationDetail}/>
