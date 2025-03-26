@@ -173,9 +173,42 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     setIsScanning(false);
   };
   
+  // Riproduce un suono di conferma
+  const playConfirmationSound = () => {
+    try {
+      // Crea un nuovo elemento audio
+      const audio = new Audio();
+      // Imposta l'URL del file audio (beep di conferma)
+      audio.src = "data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..."; // Base64 troncato per brevità
+      
+      // Oppure usa un semplice oscillatore Web Audio API (alternativa più affidabile)
+      const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
+      const oscillator = audioContext.createOscillator();
+      const gainNode = audioContext.createGain();
+      
+      oscillator.type = "sine";
+      oscillator.frequency.value = 1800; // Frequenza in Hz
+      gainNode.gain.value = 0.1; // Volume basso per non disturbare
+      
+      oscillator.connect(gainNode);
+      gainNode.connect(audioContext.destination);
+      
+      oscillator.start();
+      setTimeout(() => {
+        oscillator.stop();
+      }, 150); // Durata del beep in millisecondi
+    } catch (e) {
+      console.error("Errore nella riproduzione dell'audio:", e);
+      // Non blocchiamo il flusso se l'audio fallisce
+    }
+  };
+
   // Gestisce la lettura del tag NFC - gestisce sia dati reali che simulati
   const handleNFCRead = (records: any) => {
     console.log("NFC tag letto:", records);
+    
+    // Riproduce un suono di conferma
+    playConfirmationSound();
     
     // Estrattore di informazioni dal tag
     let basketId = null;
@@ -225,10 +258,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     setScannedBasketId(basketId);
     setIsScanning(false);
     
-    toast({
-      title: "Tag NFC rilevato",
-      description: basketNumber ? `Cestello #${basketNumber} identificato.` : "Cestello identificato.",
-    });
+    // Rimosso il toast di notifica come richiesto
   };
   
   // Gestisce gli errori di scansione NFC
@@ -496,6 +526,17 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                             <p className="text-sm font-medium text-muted-foreground">Mortalità</p>
                             <p className={`${isMobile ? 'text-3xl' : 'text-2xl'} font-bold`}>
                               {basketData.lastOperation.mortalityRate}%
+                            </p>
+                          </div>
+                        )}
+                        
+                        {/* Aggiungiamo il tasso di crescita SGR se disponibile */}
+                        {basketData.growthRate && basketData.operations && basketData.operations.length > 1 && (
+                          <div className={`p-4 rounded-lg ${isMobile ? 'bg-primary/5' : ''}`}>
+                            <p className="text-sm font-medium text-muted-foreground">SGR</p>
+                            <p className={`${isMobile ? 'text-3xl' : 'text-2xl'} font-bold flex items-center`}>
+                              {basketData.growthRate.toFixed(2)}%
+                              <span className="text-xs ml-1 text-muted-foreground">/giorno</span>
                             </p>
                           </div>
                         )}
