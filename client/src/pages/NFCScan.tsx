@@ -356,7 +356,7 @@ export default function NFCScan() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {basketData.lastOperation ? (
+                  {basketData?.lastOperation ? (
                     <div className="space-y-4">
                       <div className="flex items-center">
                         <Badge className={getOperationTypeColor(basketData.lastOperation.type)}>
@@ -379,7 +379,7 @@ export default function NFCScan() {
                           </div>
                         )}
                         
-                        {basketData.lastOperation.sizeId && basketData.size && (
+                        {basketData.lastOperation.sizeId && basketData?.size && (
                           <div>
                             <p className="text-sm font-medium">Taglia</p>
                             <Badge className={`bg-${getSizeColor(basketData.size.code)}-500`}>
@@ -412,7 +412,7 @@ export default function NFCScan() {
               </Card>
               
               {/* Info sul ciclo attivo */}
-              {basketData.currentCycle && (
+              {basketData?.currentCycle && (
                 <Card className="mb-6">
                   <CardHeader>
                     <CardTitle>Ciclo attivo</CardTitle>
@@ -425,13 +425,13 @@ export default function NFCScan() {
                       <div>
                         <p className="text-sm font-medium">Durata</p>
                         <p className="text-xl font-bold">
-                          {basketData.cycleDuration} giorni
+                          {basketData?.cycleDuration} giorni
                         </p>
                       </div>
                       <div>
                         <p className="text-sm font-medium">SGR attuale</p>
                         <p className="text-xl font-bold">
-                          {basketData.growthRate ? `${basketData.growthRate}%` : 'N/D'}
+                          {basketData?.growthRate ? `${basketData.growthRate}%` : 'N/D'}
                         </p>
                       </div>
                     </div>
