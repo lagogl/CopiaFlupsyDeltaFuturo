@@ -356,7 +356,7 @@ export default function NFCScan() {
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
-                  {basketData.lastOperation ? (
+                  {basketData?.lastOperation ? (
                     <div className="space-y-4">
                       <div className="flex items-center">
                         <Badge className={getOperationTypeColor(basketData.lastOperation.type)}>
@@ -365,21 +365,21 @@ export default function NFCScan() {
                       </div>
                       
                       <div className="grid grid-cols-2 gap-4">
-                        {basketData.lastOperation.animalsPerKg && (
+                        {basketData?.lastOperation?.animalsPerKg && (
                           <div>
                             <p className="text-sm font-medium">Animali per Kg</p>
                             <p className="text-2xl font-bold">{formatNumberWithCommas(basketData.lastOperation.animalsPerKg)}</p>
                           </div>
                         )}
                         
-                        {basketData.lastOperation.averageWeight && (
+                        {basketData?.lastOperation?.averageWeight && (
                           <div>
                             <p className="text-sm font-medium">Peso medio</p>
                             <p className="text-2xl font-bold">{formatNumberWithCommas(basketData.lastOperation.averageWeight)} mg</p>
                           </div>
                         )}
                         
-                        {basketData.lastOperation.sizeId && basketData.size && (
+                        {basketData?.lastOperation?.sizeId && basketData?.size && (
                           <div>
                             <p className="text-sm font-medium">Taglia</p>
                             <Badge className={`bg-${getSizeColor(basketData.size.code)}-500`}>
@@ -388,7 +388,7 @@ export default function NFCScan() {
                           </div>
                         )}
                         
-                        {basketData.lastOperation.mortalityRate !== null && (
+                        {basketData?.lastOperation?.mortalityRate !== null && basketData?.lastOperation?.mortalityRate !== undefined && (
                           <div>
                             <p className="text-sm font-medium">Mortalità</p>
                             <p className="text-lg font-semibold">{basketData.lastOperation.mortalityRate}%</p>
@@ -396,7 +396,7 @@ export default function NFCScan() {
                         )}
                       </div>
                       
-                      {basketData.lastOperation.notes && (
+                      {basketData?.lastOperation?.notes && (
                         <div>
                           <p className="text-sm font-medium">Note</p>
                           <p className="text-sm">{basketData.lastOperation.notes}</p>
@@ -412,7 +412,7 @@ export default function NFCScan() {
               </Card>
               
               {/* Info sul ciclo attivo */}
-              {basketData.currentCycle && (
+              {basketData?.currentCycle && (
                 <Card className="mb-6">
                   <CardHeader>
                     <CardTitle>Ciclo attivo</CardTitle>
@@ -425,13 +425,13 @@ export default function NFCScan() {
                       <div>
                         <p className="text-sm font-medium">Durata</p>
                         <p className="text-xl font-bold">
-                          {basketData.cycleDuration} giorni
+                          {basketData?.cycleDuration} giorni
                         </p>
                       </div>
                       <div>
                         <p className="text-sm font-medium">SGR attuale</p>
                         <p className="text-xl font-bold">
-                          {basketData.growthRate ? `${basketData.growthRate}%` : 'N/D'}
+                          {basketData?.growthRate ? `${basketData.growthRate}%` : 'N/D'}
                         </p>
                       </div>
                     </div>
