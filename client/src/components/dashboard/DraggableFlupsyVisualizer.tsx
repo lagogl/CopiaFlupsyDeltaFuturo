@@ -162,19 +162,55 @@ export default function DraggableFlupsyVisualizer() {
   // Update basket position mutation
   const updateBasketPosition = useMutation({
     mutationFn: async ({ basketId, row, position }: { basketId: number; row: string; position: number }) => {
-      return await apiRequest('PATCH', `/api/baskets/${basketId}`, {
+      const response = await apiRequest('PATCH', `/api/baskets/${basketId}`, {
         row,
         position
       });
+      console.log("API Response status:", response.status);
+      console.log("API Response data:", response);
+      
+      // Se la posizione è occupata ma l'API ha risposto 200 con positionOccupied=true,
+      // è un caso di switch potenziale da gestire
+      if (response && response.positionOccupied && response.basketAtPosition) {
+        // Ritorna le informazioni sulla posizione occupata per permettere lo switch
+        return {
+          positionOccupied: true,
+          basketAtPosition: response.basketAtPosition,
+          message: response.message
+        };
+      }
+      
+      return response;
     },
-    onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-      toast({
-        title: "Posizione aggiornata",
-        description: "La posizione della cesta è stata aggiornata con successo.",
-      });
-      setConfirmDialogOpen(false);
-      setPendingBasketMove(null);
+    onSuccess: (data) => {
+      // Controlla se è un caso di posizione occupata
+      if (data && data.positionOccupied && data.basketAtPosition) {
+        // Non completare ancora l'operazione, ma prepara per uno switch
+        const basket1 = baskets?.find((b: any) => b.id === pendingBasketMove?.basketId);
+        if (basket1 && pendingBasketMove) {
+          // Mostra dialogo di conferma speciale per switch
+          setPendingBasketMove({
+            ...pendingBasketMove,
+            isSwitch: true,
+            targetBasketId: data.basketAtPosition.id
+          });
+          
+          toast({
+            title: "Posizione occupata",
+            description: `La posizione è già occupata dalla cesta #${data.basketAtPosition.physicalNumber}. Conferma per effettuare uno switch.`,
+            variant: "warning",
+          });
+        }
+      } else {
+        // Normale successo - aggiornamento posizione completato
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        toast({
+          title: "Posizione aggiornata",
+          description: "La posizione della cesta è stata aggiornata con successo.",
+        });
+        setConfirmDialogOpen(false);
+        setPendingBasketMove(null);
+      }
     },
     onError: (error: any) => {
       toast({

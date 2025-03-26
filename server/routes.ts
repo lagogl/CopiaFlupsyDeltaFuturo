@@ -384,8 +384,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
           );
           
           if (basketAtPosition) {
-            return res.status(400).json({ 
-              message: `Esiste già una cesta (numero ${basketAtPosition.physicalNumber}) in questa posizione` 
+            // Se viene richiesta un'operazione da frontend, restituiamo informazioni
+            // sul cestello occupante per consentire uno switch
+            return res.status(200).json({
+              positionOccupied: true,
+              basketAtPosition: {
+                id: basketAtPosition.id,
+                physicalNumber: basketAtPosition.physicalNumber,
+                flupsyId: basketAtPosition.flupsyId,
+                row: basketAtPosition.row,
+                position: basketAtPosition.position
+              },
+              message: `Esiste già una cesta (numero ${basketAtPosition.physicalNumber}) in questa posizione`
             });
           }
           
