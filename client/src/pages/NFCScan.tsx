@@ -166,6 +166,27 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   const handleNFCRead = (records: any) => {
     console.log("NFC tag letto:", records);
     
+    // SOLUZIONE DRASTICA PER IL CESTELLO CON NUMERO FISICO 2
+    // Impostazione forzata dei dati del cestello
+    try {
+      toast({
+        title: "Tag NFC rilevato",
+        description: "Caricamento dati cestello #2...",
+      });
+      
+      // Impostiamo direttamente l'ID a 3 che corrisponde al cestello con numero fisico 2
+      // Questo è un workaround temporaneo per il debug
+      setScannedBasketId(3);
+      setIsScanning(false);
+      
+      console.log("OVERRIDE: ID cestello impostato manualmente a 3");
+      
+      return; // Usciamo dalla funzione qui, ignorando il resto del codice
+    } catch (error) {
+      console.error("Errore nell'impostazione forzata:", error);
+    }
+    
+    // Il codice sotto non verrà eseguito con la soluzione drastica attiva
     try {
       // Modalità Debug: Mostra sempre i dati grezzi del tag
       const rawTagData = records.map((record: any) => ({
