@@ -44,13 +44,20 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       // Gestisce l'evento di lettura
       ndef.addEventListener("reading", async ({ message, serialNumber }: any) => {
         try {
+          // Prima otteniamo i dettagli del cestello per verificare se ha un ciclo attivo
+          const basketDetails = await apiRequest('GET', `/api/baskets/details/${basketId}`) as any;
+          
           // Prepara i dati da scrivere con tutte le informazioni necessarie
-          // per reindirizzare direttamente alla cesta e al suo ciclo attivo
+          // Se il cestello ha un ciclo attivo, reindirizza direttamente alla pagina del ciclo
+          const redirectPath = basketDetails && basketDetails.currentCycleId 
+            ? `/cycles/${basketDetails.currentCycleId}` 
+            : `/nfc-scan/basket/${basketId}`;
+            
           const basketData = {
             id: basketId,
             number: basketNumber,
             serialNumber: serialNumber,
-            redirectTo: `/nfc-scan/basket/${basketId}`,
+            redirectTo: redirectPath,
             timestamp: new Date().toISOString()
           };
           
