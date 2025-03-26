@@ -247,11 +247,12 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
       console.error("Errore nell'elaborazione del tag:", e);
     }
     
-    // Se non siamo riusciti a estrarre un ID dal tag, usiamo il valore di fallback
+    // Se non siamo riusciti a estrarre un ID dal tag, mostriamo un errore
     if (!basketId) {
-      console.log("ID cestello non trovato nel tag, usando valore predefinito (3) per debug");
-      basketId = 3; // Cestello con numero fisico 2 per debug
-      basketNumber = 2;
+      console.log("ID cestello non trovato nel tag");
+      // Mostra un errore invece di impostare un ID di default
+      setScanError("Tag NFC non valido. Il tag non contiene un ID cestello valido.");
+      return; // Interrompe l'elaborazione
     }
     
     // Imposta l'ID del cestello scansionato

@@ -17,20 +17,22 @@ export default function NFCReader({ onRead, onError, onAbort }: NFCReaderProps) 
       
       // Simula la lettura di un tag dopo un breve ritardo
       const simulationTimer = setTimeout(() => {
-        // Crea un oggetto tag NFC simulato
+        // Crea un oggetto tag NFC simulato per test
         const simulatedTagData = [
           {
             recordType: 'text',
             mediaType: null,
             data: JSON.stringify({
-              id: 3, // ID del cestello (corrispondente al numero fisico 2)
-              number: 2,
-              serialNumber: "04:1d:7d:8a:7a:00:00",
-              redirectTo: "https://flupsy-delta-future-lagogianluigi.replit.app/nfc-scan/basket/3",
+              id: 3, // Esempio di ID cestello per test
+              number: 2, // Esempio di numero fisico per test
+              serialNumber: "SIMULATED-NFC-TAG",
+              redirectTo: "/nfc-scan/basket/3",
               timestamp: new Date().toISOString()
             })
           }
         ];
+        
+        console.log("Per test su altri cestelli, modifica l'ID e il numero nel componente NFCReader");
         
         console.log("Simulazione di tag NFC completata:", simulatedTagData);
         onRead(simulatedTagData);
