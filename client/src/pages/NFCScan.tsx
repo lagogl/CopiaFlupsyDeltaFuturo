@@ -162,13 +162,29 @@ export default function NFCScan() {
         }
         
         if (basketData && basketData.id) {
-          setScannedBasketId(basketData.id);
-          setIsScanning(false);
-          
-          toast({
-            title: "Tag NFC rilevato",
-            description: `Cestello #${basketData.id} identificato con successo.`,
-          });
+          // Verifica se è presente redirectTo per navigazione diretta
+          if (basketData.redirectTo) {
+            setIsScanning(false);
+            
+            toast({
+              title: "Tag NFC rilevato",
+              description: `Cestello #${basketData.number || basketData.id} identificato con successo. Reindirizzamento in corso...`,
+            });
+            
+            // Reindirizza alla pagina specificata dal tag
+            setTimeout(() => {
+              setLocation(basketData.redirectTo);
+            }, 500);
+          } else {
+            // Comportamento standard (visualizzazione in questa pagina)
+            setScannedBasketId(basketData.id);
+            setIsScanning(false);
+            
+            toast({
+              title: "Tag NFC rilevato",
+              description: `Cestello #${basketData.number || basketData.id} identificato con successo.`,
+            });
+          }
         } else {
           throw new Error("Formato tag NFC non valido");
         }

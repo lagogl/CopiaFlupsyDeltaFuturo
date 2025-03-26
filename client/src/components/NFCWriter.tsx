@@ -2,8 +2,7 @@ import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
 import { AlertCircle, CheckCircle, XCircle, WifiIcon } from 'lucide-react';
-import { apiRequest } from '@/lib/queryClient';
-import { queryClient } from '@/lib/queryClient';
+import { apiRequest, queryClient } from '@/lib/queryClient';
 
 interface NFCWriterProps {
   basketId: number;
@@ -45,11 +44,14 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       // Gestisce l'evento di lettura
       ndef.addEventListener("reading", async ({ message, serialNumber }: any) => {
         try {
-          // Prepara i dati da scrivere (ID del cestello)
+          // Prepara i dati da scrivere con tutte le informazioni necessarie
+          // per reindirizzare direttamente alla cesta e al suo ciclo attivo
           const basketData = {
             id: basketId,
             number: basketNumber,
-            serialNumber: serialNumber
+            serialNumber: serialNumber,
+            redirectTo: `/nfc-scan/basket/${basketId}`,
+            timestamp: new Date().toISOString()
           };
           
           // Codifica JSON
@@ -68,7 +70,7 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
           );
           
           // Invalida la cache
-          queryClient.invalidateQueries(['/api/baskets']);
+          queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
           
           // Feedback visivo
           setSuccess(true);
