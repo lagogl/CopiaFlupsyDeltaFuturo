@@ -144,6 +144,39 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     console.log("NFC tag letto:", records);
     
     try {
+      // Modalità Debug: Mostra sempre i dati grezzi del tag
+      const rawTagData = records.map((record: any) => ({
+        type: record.recordType,
+        mediaType: record.mediaType,
+        dataType: typeof record.data,
+        data: record.data,
+        dataPreview: typeof record.data === 'string' ? 
+          (record.data.length > 100 ? record.data.substring(0, 100) + '...' : record.data) : 
+          'Dati non testuali'
+      }));
+      
+      // Mostra dati di debug in un toast
+      toast({
+        title: "Debug NFC",
+        description: "Dati grezzi del tag visualizzati nella console",
+        variant: "default",
+      });
+      
+      console.log("DATI GREZZI DEL TAG NFC:", rawTagData);
+      
+      if (typeof rawTagData[0]?.data === 'string') {
+        console.log("Contenuto testuale del tag:", rawTagData[0].data);
+        
+        try {
+          // Prova a fare il parsing come JSON
+          const jsonData = JSON.parse(rawTagData[0].data);
+          console.log("Contenuto JSON del tag:", jsonData);
+        } catch (e) {
+          console.log("Il contenuto non è in formato JSON valido");
+        }
+      }
+      
+      // Continua con la logica normale
       // Cerca il record contenente l'ID del cestello
       const basketRecord = records.find((record: any) => 
         record.recordType === 'text' || 
@@ -157,15 +190,21 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
         if (typeof basketRecord.data === 'string') {
           try {
             basketData = JSON.parse(basketRecord.data);
+            console.log("JSON parsing riuscito:", basketData);
           } catch (e) {
+            console.error("Errore nel parsing JSON:", e);
             // Se non è JSON, potrebbe essere un ID diretto
             const basketId = parseInt(basketRecord.data);
             if (!isNaN(basketId)) {
               basketData = { id: basketId };
+              console.log("ID numerico trovato:", basketId);
+            } else {
+              console.error("Non è stato possibile interpretare il contenuto del tag");
             }
           }
         } else if (typeof basketRecord.data === 'object') {
           basketData = basketRecord.data;
+          console.log("Dati già in formato oggetto:", basketData);
         }
         
         if (basketData && basketData.id) {
@@ -187,9 +226,11 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
           
           // Non fare nulla con redirectTo, semplicemente mostra i dati dell'operazione
         } else {
-          throw new Error("Formato tag NFC non valido");
+          console.error("I dati del tag non contengono un ID cestello valido:", basketData);
+          throw new Error("Formato tag NFC non valido: manca l'ID del cestello");
         }
       } else {
+        console.error("Nessun record compatibile trovato nel tag:", records);
         throw new Error("Nessun dato cestello trovato nel tag NFC");
       }
     } catch (error) {
