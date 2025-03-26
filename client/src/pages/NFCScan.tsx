@@ -106,43 +106,39 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   const [scanError, setScanError] = useState<string | null>(null);
   
   // Query per ottenere i dati del cestello scansionato
-  const { 
-    data: basketData,
-    isLoading: isLoadingBasket,
-    error: basketError
-  } = useQuery<BasketDetails>({
-    queryKey: [`/api/baskets/details/${scannedBasketId}`],
-    queryFn: async () => {
-      console.log("Tentativo di recupero dati cestello con ID:", scannedBasketId);
-      if (!scannedBasketId) throw new Error("ID cestello non specificato");
+  const [basketData, setBasketData] = useState<BasketDetails | null>(null);
+  const [isLoadingBasket, setIsLoadingBasket] = useState<boolean>(false);
+  const [basketError, setBasketError] = useState<Error | null>(null);
+  
+  // Effetto per caricare i dati del cestello quando cambia lo scannedBasketId
+  useEffect(() => {
+    const fetchBasketData = async () => {
+      if (!scannedBasketId) return;
+      
+      setIsLoadingBasket(true);
+      setBasketError(null);
       
       try {
-        console.log(`Richiesta a: /api/baskets/details/${scannedBasketId}`);
-        const response = await apiRequest('GET', `/api/baskets/details/${scannedBasketId}`);
-        console.log("Risposta ricevuta:", response);
-        return response as unknown as BasketDetails;
-      } catch (error) {
-        console.error("Errore nella richiesta API:", error);
+        console.log(`Richiesta diretta a: /api/baskets/details/${scannedBasketId}`);
+        const response = await fetch(`/api/baskets/details/${scannedBasketId}`);
         
-        // Prova un altro endpoint come fallback
-        console.log("Tentativo di fallback con endpoint alternativo...");
-        try {
-          console.log(`Richiesta alternativa a: /api/baskets/${scannedBasketId}`);
-          const fallbackResponse = await apiRequest('GET', `/api/baskets/${scannedBasketId}`);
-          console.log("Risposta di fallback ricevuta:", fallbackResponse);
-          
-          // Se il fallback ha funzionato, lo usiamo
-          return fallbackResponse as unknown as BasketDetails;
-        } catch (fallbackError) {
-          console.error("Anche l'endpoint di fallback ha fallito:", fallbackError);
-          throw error; // Rilancia l'errore originale
+        if (!response.ok) {
+          throw new Error(`Errore nella richiesta: ${response.status} ${response.statusText}`);
         }
+        
+        const data = await response.json();
+        console.log("DATI RICEVUTI:", data);
+        setBasketData(data);
+      } catch (error) {
+        console.error("Errore nel caricamento dei dati del cestello:", error);
+        setBasketError(error as Error);
+      } finally {
+        setIsLoadingBasket(false);
       }
-    },
-    enabled: scannedBasketId !== null,
-    staleTime: 0, // Non usare mai la cache per questa richiesta
-    retry: 1, // Limita i tentativi a 1 per evitare loop
-  });
+    };
+    
+    fetchBasketData();
+  }, [scannedBasketId]);
   
   // Gestisce l'avvio della scansione NFC
   const startScan = () => {
