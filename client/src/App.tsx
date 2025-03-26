@@ -48,6 +48,7 @@ function Router() {
       <Route path="/sgr" component={Sgr}/>
       <Route path="/settings" component={Settings}/>
       <Route path="/test" component={TestView}/>
+      <Route path="/nfc-scan" component={NFCScan}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

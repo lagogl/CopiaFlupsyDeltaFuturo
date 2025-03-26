@@ -6,6 +6,58 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { apiRequest } from '@/lib/queryClient';
 import NFCReader from '@/components/NFCReader';
 
+// Definizione delle interfacce per i dati del cestello
+interface BasketDetails {
+  id: number;
+  physicalNumber: number;
+  flupsyId: number;
+  row: string | null;
+  position: number | null;
+  state: string;
+  currentCycleId: number | null;
+  nfcData: string | null;
+  cycleCode: string | null;
+  flupsy?: {
+    id: number;
+    name: string;
+    location: string | null;
+  };
+  lastOperation?: {
+    id: number;
+    date: string;
+    type: string;
+    animalsPerKg: number | null;
+    averageWeight: number | null;
+    sizeId: number | null;
+    mortalityRate: number | null;
+    notes: string | null;
+  };
+  currentCycle?: {
+    id: number;
+    startDate: string;
+    endDate: string | null;
+    state: string;
+  };
+  size?: {
+    id: number;
+    code: string;
+    name: string;
+    sizeMm: number | null;
+    minAnimalsPerKg: number | null;
+    maxAnimalsPerKg: number | null;
+  };
+  operations?: any[];
+  cycleDuration?: number;
+  growthRate?: number;
+  currentPosition?: {
+    id: number;
+    row: string;
+    position: number;
+    flupsyId: number;
+    startDate: string;
+  };
+}
+
 import {
   Card,
   CardContent,
@@ -56,7 +108,7 @@ export default function NFCScan() {
     data: basketData,
     isLoading: isLoadingBasket,
     error: basketError
-  } = useQuery({
+  } = useQuery<BasketDetails>({
     queryKey: ['/api/baskets/details', scannedBasketId],
     enabled: scannedBasketId !== null,
   });
@@ -278,9 +330,9 @@ export default function NFCScan() {
               <div className="flex justify-between items-center mb-6">
                 <div>
                   <h2 className="text-2xl font-bold">
-                    Cestello #{basketData.physicalNumber}
+                    Cestello #{basketData?.physicalNumber}
                   </h2>
-                  {basketData.row && basketData.position && (
+                  {basketData?.row && basketData?.position && (
                     <Badge variant="outline" className="text-sm">
                       Posizione: {basketData.row}-{basketData.position}
                     </Badge>
@@ -296,7 +348,7 @@ export default function NFCScan() {
                 <CardHeader>
                   <CardTitle>Ultima operazione</CardTitle>
                   <CardDescription>
-                    {basketData.lastOperation?.date ? (
+                    {basketData?.lastOperation?.date ? (
                       `Effettuata il ${new Date(basketData.lastOperation.date).toLocaleDateString('it-IT')}`
                     ) : (
                       'Nessuna operazione registrata'
