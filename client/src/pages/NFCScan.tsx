@@ -142,6 +142,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   
   // Gestisce l'avvio della scansione NFC
   const startScan = () => {
+    // Reset dei valori iniziali
     setIsScanning(true);
     setScanError(null);
     
@@ -165,6 +166,10 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
           description: "Cestello #2 identificato per test su desktop.",
         });
       }, 1500);
+    } else {
+      // Su mobile, non facciamo nulla qui perché il componente NFCReader 
+      // si attiva automaticamente quando isScanning diventa true
+      console.log("Avvio scansione NFC su mobile...");
     }
   };
   
