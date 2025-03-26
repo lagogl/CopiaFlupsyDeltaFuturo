@@ -171,31 +171,21 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
         if (basketData && basketData.id) {
           console.log("Dati del cestello ottenuti dal tag NFC:", basketData);
           
-          // Verifica se è presente redirectTo per navigazione diretta
+          // Comportamento standard (visualizzazione in questa pagina)
+          setScannedBasketId(basketData.id);
+          setIsScanning(false);
+          
+          toast({
+            title: "Tag NFC rilevato",
+            description: `Cestello #${basketData.number || basketData.id} identificato con successo.`,
+          });
+          
+          // Il reindirizzamento è stato disabilitato come richiesto
           if (basketData.redirectTo) {
-            console.log("Trovato redirectTo nel tag NFC:", basketData.redirectTo);
-            setIsScanning(false);
-            
-            toast({
-              title: "Tag NFC rilevato",
-              description: `Cestello #${basketData.number || basketData.id} identificato con successo. Reindirizzamento in corso...`,
-            });
-            
-            // Reindirizza alla pagina specificata dal tag
-            setTimeout(() => {
-              console.log("Eseguo reindirizzamento a:", basketData.redirectTo);
-              window.location.href = basketData.redirectTo; // Utilizziamo direttamente window.location per maggiore affidabilità
-            }, 1000); // Aumentiamo leggermente il timeout
-          } else {
-            // Comportamento standard (visualizzazione in questa pagina)
-            setScannedBasketId(basketData.id);
-            setIsScanning(false);
-            
-            toast({
-              title: "Tag NFC rilevato",
-              description: `Cestello #${basketData.number || basketData.id} identificato con successo.`,
-            });
+            console.log("Trovato redirectTo nel tag NFC, ma reindirizzamento disabilitato:", basketData.redirectTo);
           }
+          
+          // Non fare nulla con redirectTo, semplicemente mostra i dati dell'operazione
         } else {
           throw new Error("Formato tag NFC non valido");
         }
