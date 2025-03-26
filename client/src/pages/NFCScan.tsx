@@ -111,7 +111,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     isLoading: isLoadingBasket,
     error: basketError
   } = useQuery<BasketDetails>({
-    queryKey: ['/api/baskets/details', scannedBasketId],
+    queryKey: [`/api/baskets/details/${scannedBasketId}`],
     queryFn: async () => {
       console.log("Tentativo di recupero dati cestello con ID:", scannedBasketId);
       if (!scannedBasketId) throw new Error("ID cestello non specificato");
@@ -140,6 +140,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
       }
     },
     enabled: scannedBasketId !== null,
+    staleTime: 0, // Non usare mai la cache per questa richiesta
     retry: 1, // Limita i tentativi a 1 per evitare loop
   });
   
