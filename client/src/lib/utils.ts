@@ -571,9 +571,6 @@ export function getFutureWeightAtDate(
     return currentWeight;
   }
   
-  // Il tasso giornaliero è già espresso come percentuale
-  const dailyGrowthRate = sgrDailyPercentage / 100;
-  
   // Calcola il numero di giorni tra la data di misurazione e la data target
   const diffTime = targetDate.getTime() - new Date(measurementDate).getTime();
   const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
@@ -582,8 +579,9 @@ export function getFutureWeightAtDate(
     return currentWeight;
   }
   
-  // Calcola il peso previsto
-  const futureWeight = currentWeight * Math.pow(1 + dailyGrowthRate, diffDays);
+  // Usa la formula corretta: Pf = Pi * e^(SGR*t)
+  // Dove SGR è il tasso di crescita specifico giornaliero
+  const futureWeight = currentWeight * Math.exp(sgrDailyPercentage * diffDays);
   return Math.round(futureWeight);
 }
 
@@ -664,8 +662,9 @@ export function calculateFutureWeightWithDailySgr(
     // Trova il tasso SGR per questo giorno
     const dailyRate = getSgrDailyPercentageForDate(sgrs, currentDate, defaultSgrPercentage);
     
-    // Applica la crescita giornaliera
-    simulatedWeight = simulatedWeight * (1 + dailyRate / 100);
+    // Applica la crescita giornaliera usando la formula corretta: Pf = Pi * e^(SGR*t)
+    // Utilizziamo e^(SGR) dove SGR è già espresso come tasso decimale
+    simulatedWeight = simulatedWeight * Math.exp(dailyRate);
   }
   
   return Math.round(simulatedWeight);
@@ -702,8 +701,9 @@ export function getDaysToReachWeight(
     // Trova il tasso SGR per questo giorno
     const dailyRate = getSgrDailyPercentageForDate(sgrs, currentDate, defaultSgrPercentage);
     
-    // Applica la crescita giornaliera
-    simulationWeight = simulationWeight * (1 + dailyRate / 100);
+    // Applica la crescita giornaliera usando la formula corretta: Pf = Pi * e^(SGR*t)
+    // Utilizziamo e^(SGR) dove SGR è già espresso come tasso decimale
+    simulationWeight = simulationWeight * Math.exp(dailyRate);
     days++;
     currentDate = addDays(currentDate, 1);
   }
