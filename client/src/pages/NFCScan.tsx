@@ -1,10 +1,27 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
-import { useIsMobile } from '@/hooks/use-mobile';
 import { useToast } from '@/hooks/use-toast';
-import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { apiRequest } from '@/lib/queryClient';
 import NFCReader from '@/components/NFCReader';
+import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getSizeColor } from '@/lib/utils';
+
+// UI Components
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import { Button } from "@/components/ui/button";
+import { Badge } from "@/components/ui/badge";
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+
+// Icons
+import {
+  Scan as ScanIcon,
+  X as XIcon, 
+  AlertCircle as AlertCircleIcon,
+  Info as InfoIcon,
+  Clipboard as ClipboardIcon,
+  History as HistoryIcon,
+  Move as MoveIcon, 
+  ChevronRight as ChevronRightIcon,
+  Target
+} from 'lucide-react';
 
 // Definizione delle interfacce per i dati del cestello
 interface BasketDetails {
@@ -58,79 +75,50 @@ interface BasketDetails {
   };
 }
 
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from '@/components/ui/card';
-import { Button } from '@/components/ui/button';
-import { Badge } from '@/components/ui/badge';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
-import { Separator } from '@/components/ui/separator';
-import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
-
-import {
-  getOperationTypeLabel,
-  getOperationTypeColor,
-  formatNumberWithCommas,
-  calculateAverageWeight,
-  getSizeColor
-} from '@/lib/utils';
-
-import {
-  ScanIcon,
-  InfoIcon,
-  AlertCircleIcon,
-  XIcon,
-  ChevronRightIcon,
-  ArrowRightIcon,
-  MoveIcon,
-  ClipboardIcon,
-  HistoryIcon,
-  Target
-} from 'lucide-react';
-
 export default function NFCScan({ params }: { params?: { id?: string } }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
-  const isMobile = useIsMobile();
-  const queryClient = useQueryClient();
-  
   const [isScanning, setIsScanning] = useState(false);
-  const [scannedBasketId, setScannedBasketId] = useState<number | null>(
-    params?.id ? parseInt(params.id) : null
-  );
   const [scanError, setScanError] = useState<string | null>(null);
-  
-  // Query per ottenere i dati del cestello scansionato
+  const [scannedBasketId, setScannedBasketId] = useState<number | null>(null);
   const [basketData, setBasketData] = useState<BasketDetails | null>(null);
-  const [isLoadingBasket, setIsLoadingBasket] = useState<boolean>(false);
+  const [isLoadingBasket, setIsLoadingBasket] = useState(false);
   const [basketError, setBasketError] = useState<Error | null>(null);
   
-  // Effetto per caricare i dati del cestello quando cambia lo scannedBasketId
+  // Determina se siamo su un dispositivo mobile
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(
+    typeof navigator !== 'undefined' ? navigator.userAgent : ''
+  );
+  
+  // Se c'è un ID nei parametri, carica subito i dettagli del cestello
   useEffect(() => {
+    if (params?.id) {
+      setScannedBasketId(parseInt(params.id));
+    }
+  }, [params]);
+  
+  // Quando viene impostato un ID cestello, carica i dati del cestello
+  useEffect(() => {
+    if (!scannedBasketId) return;
+    
     const fetchBasketData = async () => {
-      if (!scannedBasketId) return;
-      
-      setIsLoadingBasket(true);
-      setBasketError(null);
-      
       try {
-        console.log(`Richiesta diretta a: /api/baskets/details/${scannedBasketId}`);
+        setIsLoadingBasket(true);
+        setBasketError(null);
+        
+        console.log("Richiesta diretta a:", `/api/baskets/details/${scannedBasketId}`);
         const response = await fetch(`/api/baskets/details/${scannedBasketId}`);
         
         if (!response.ok) {
-          throw new Error(`Errore nella richiesta: ${response.status} ${response.statusText}`);
+          throw new Error(`Errore caricamento dati: ${response.status}`);
         }
         
         const data = await response.json();
         console.log("DATI RICEVUTI:", data);
         setBasketData(data);
       } catch (error) {
-        console.error("Errore nel caricamento dei dati del cestello:", error);
+        console.error("Errore caricamento dati cestello:", error);
+        setBasketData(null);
         setBasketError(error as Error);
       } finally {
         setIsLoadingBasket(false);
@@ -140,22 +128,13 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     fetchBasketData();
   }, [scannedBasketId]);
   
-  // Gestisce l'avvio della scansione NFC
+  // Avvia la scansione NFC
   const startScan = () => {
-    // Reset dei valori iniziali
-    console.log("Avvio scansione NFC");
     setIsScanning(true);
     setScanError(null);
-    
-    // Aggiungiamo log per debug
-    if ('NDEFReader' in window) {
-      console.log("Il browser SUPPORTA l'API Web NFC");
-    } else {
-      console.log("Il browser NON supporta l'API Web NFC");
-    }
   };
   
-  // Gestisce l'interruzione della scansione NFC
+  // Interrompe la scansione NFC
   const stopScan = () => {
     setIsScanning(false);
   };
@@ -163,19 +142,14 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   // Riproduce un suono di conferma
   const playConfirmationSound = () => {
     try {
-      // Crea un nuovo elemento audio
-      const audio = new Audio();
-      // Imposta l'URL del file audio (beep di conferma)
-      audio.src = "data:audio/wav;base64,UklGRl9vT19XQVZFZm10IBAAAAABAAEAQB8AAEAfAAABAAgAZGF0YU..."; // Base64 troncato per brevità
-      
-      // Oppure usa un semplice oscillatore Web Audio API (alternativa più affidabile)
+      // Usa un oscillatore Web Audio API
       const audioContext = new (window.AudioContext || (window as any).webkitAudioContext)();
       const oscillator = audioContext.createOscillator();
       const gainNode = audioContext.createGain();
       
       oscillator.type = "sine";
-      oscillator.frequency.value = 1800; // Frequenza in Hz
-      gainNode.gain.value = 0.1; // Volume basso per non disturbare
+      oscillator.frequency.value = 1800;
+      gainNode.gain.value = 0.1;
       
       oscillator.connect(gainNode);
       gainNode.connect(audioContext.destination);
@@ -183,113 +157,85 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
       oscillator.start();
       setTimeout(() => {
         oscillator.stop();
-      }, 150); // Durata del beep in millisecondi
+      }, 150);
     } catch (e) {
-      console.error("Errore nella riproduzione dell'audio:", e);
-      // Non blocchiamo il flusso se l'audio fallisce
+      console.error("Errore audio:", e);
     }
   };
-
-  // Gestisce la lettura del tag NFC - gestisce sia dati reali che simulati
+  
+  // Gestisce la lettura NFC
   const handleNFCRead = (records: any) => {
-    console.log("NFC tag letto:", records);
-    
-    // Riproduce un suono di conferma
+    console.log("Tag NFC letto:", records);
     playConfirmationSound();
     
-    // Estrattore di informazioni dal tag
     let basketId = null;
-    let basketNumber = null;
     
     try {
-      // Tenta di estrarre i dati JSON dal record
       if (Array.isArray(records) && records.length > 0) {
         console.log("Record trovati:", records.length);
         
-        // Trova il primo record di testo
         const textRecord = records.find(r => r.recordType === 'text');
         
         if (textRecord && textRecord.data) {
           console.log("Testo record:", textRecord.data);
           
-          // Se è una stringa JSON, la analizziamo
           if (typeof textRecord.data === 'string' && textRecord.data.startsWith('{')) {
             try {
               const jsonData = JSON.parse(textRecord.data);
               console.log("JSON estratto:", jsonData);
               
-              // Estrai ID cestello e numero fisico
               if (jsonData.id) {
                 basketId = jsonData.id;
-                basketNumber = jsonData.number || null;
-                console.log(`Trovato ID cestello: ${basketId}, numero: ${basketNumber}`);
+                console.log(`Trovato ID cestello: ${basketId}`);
               }
             } catch (jsonError) {
-              console.error("Errore nell'analisi JSON:", jsonError);
+              console.error("Errore parsing JSON:", jsonError);
             }
           }
         }
       }
     } catch (e) {
-      console.error("Errore nell'elaborazione del tag:", e);
+      console.error("Errore elaborazione tag:", e);
     }
     
-    // Se non siamo riusciti a estrarre un ID dal tag, mostriamo un errore
     if (!basketId) {
-      console.log("ID cestello non trovato nel tag");
-      // Mostra un errore invece di impostare un ID di default
       setScanError("Tag NFC non valido. Il tag non contiene un ID cestello valido.");
-      return; // Interrompe l'elaborazione
+      return;
     }
     
-    // Imposta l'ID del cestello scansionato
     setScannedBasketId(basketId);
     setIsScanning(false);
-    
-    // Rimosso il toast di notifica come richiesto
   };
   
-  // Gestisce gli errori di scansione NFC
+  // Gestisce gli errori NFC
   const handleNFCError = (error: string) => {
     console.error("Errore NFC:", error);
     setScanError(error);
     setIsScanning(false);
-    
-    toast({
-      title: "Errore di scansione",
-      description: error,
-      variant: "destructive",
-    });
   };
   
-  // Gestisce l'interruzione della scansione NFC
-  const handleNFCAbort = () => {
-    console.log("Scansione NFC interrotta");
-    setIsScanning(false);
-  };
-  
-  // Naviga alla pagina di gestione posizioni
+  // Naviga a pagina di gestione posizione
   const goToPositionManagement = () => {
     if (scannedBasketId) {
       setLocation(`/flupsy-positions?basketId=${scannedBasketId}`);
     }
   };
   
-  // Naviga alla pagina delle operazioni rapide
+  // Naviga a operazioni rapide
   const goToQuickOperations = () => {
     if (scannedBasketId) {
       setLocation(`/quick-operations?basketId=${scannedBasketId}`);
     }
   };
   
-  // Naviga alla cronologia operazioni
+  // Naviga a cronologia operazioni
   const goToBasketHistory = () => {
     if (scannedBasketId) {
       setLocation(`/operations?basketId=${scannedBasketId}`);
     }
   };
   
-  // Naviga alla pagina delle annotazioni
+  // Naviga a annotazioni
   const goToAnnotations = () => {
     if (scannedBasketId) {
       setLocation(`/inventory?basketId=${scannedBasketId}&tab=annotations`);
@@ -346,8 +292,6 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                   <NFCReader
                     onRead={handleNFCRead}
                     onError={handleNFCError}
-                    onAbort={handleNFCAbort}
-                    forceSimulation={!isMobile} // Forza simulazione su desktop
                   />
                 )}
               </>
@@ -390,9 +334,9 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                 {!isMobile && (
                   <Alert className="mt-6">
                     <InfoIcon className="h-4 w-4" />
-                    <AlertTitle>Modalità simulazione</AlertTitle>
+                    <AlertTitle>Modalità desktop</AlertTitle>
                     <AlertDescription>
-                      Stai utilizzando un dispositivo desktop. Per test, verrà simulata la lettura del cestello n.2 (ID 3).
+                      Stai utilizzando un dispositivo desktop. La scansione NFC è disponibile solo su dispositivi mobili compatibili.
                     </AlertDescription>
                   </Alert>
                 )}
@@ -427,7 +371,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
           {/* Visualizzazione dati cestello */}
           {basketData && (
             <>
-              {/* Intestazione con numero cestello e posizione - Ottimizzata per mobile */}
+              {/* Intestazione con numero cestello e posizione */}
               <div className={`${isMobile ? 'flex flex-col gap-3' : 'flex justify-between items-center'} mb-6`}>
                 <div className={isMobile ? 'flex flex-col items-center text-center' : ''}>
                   <h2 className={`${isMobile ? 'text-3xl' : 'text-2xl'} font-bold`}>
@@ -454,7 +398,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                 </Button>
               </div>
               
-              {/* Card principale con ultima operazione - Migliorata per mobile */}
+              {/* Card principale con ultima operazione */}
               <Card className="mb-6">
                 <CardHeader className={isMobile ? "pb-3" : ""}>
                   <div className="flex justify-between items-center">
@@ -518,7 +462,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                           </div>
                         )}
                         
-                        {/* Aggiungiamo il tasso di crescita SGR se disponibile */}
+                        {/* Tasso di crescita SGR se disponibile */}
                         {basketData.growthRate && basketData.operations && basketData.operations.length > 1 && (
                           <div className={`p-4 rounded-lg ${isMobile ? 'bg-primary/5' : ''}`}>
                             <p className="text-sm font-medium text-muted-foreground">SGR</p>
@@ -548,7 +492,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                 </CardContent>
               </Card>
               
-              {/* Info sul ciclo attivo - Ottimizzato per mobile */}
+              {/* Info sul ciclo attivo */}
               {basketData?.currentCycle && (
                 <Card className="mb-6">
                   <CardHeader className={isMobile ? "pb-3" : ""}>
@@ -586,7 +530,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                 </Card>
               )}
               
-              {/* Menu di azioni rapide - Layout ottimizzato per mobile */}
+              {/* Menu di azioni rapide */}
               <Card>
                 <CardHeader>
                   <CardTitle>Azioni rapide</CardTitle>
@@ -595,7 +539,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                 <CardContent className={`${isMobile ? 'grid grid-cols-2 gap-4' : 'grid gap-4'}`}>
                   {isMobile ? (
                     <>
-                      {/* Layout per dispositivi mobili con pulsanti a griglia */}
+                      {/* Layout per mobile */}
                       <Button 
                         variant="outline" 
                         className="h-24 flex flex-col items-center justify-center space-y-2 p-2"
@@ -634,7 +578,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                     </>
                   ) : (
                     <>
-                      {/* Layout per desktop con pulsanti orizzontali */}
+                      {/* Layout per desktop */}
                       <Button 
                         variant="outline" 
                         className="justify-between"
