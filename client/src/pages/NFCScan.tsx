@@ -207,16 +207,75 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
           console.log("Dati già in formato oggetto:", basketData);
         }
         
-        if (basketData && basketData.id) {
-          console.log("Dati del cestello ottenuti dal tag NFC:", basketData);
+        // MODIFICA: Estrai l'ID da diverse fonti possibili
+        let basketId = null;
+        
+        if (basketData) {
+          // Caso 1: ID direttamente nel campo id
+          if (basketData.id && typeof basketData.id === 'number') {
+            basketId = basketData.id;
+            console.log("ID cestello trovato nel campo 'id':", basketId);
+          }
+          // Caso 2: URL di reindirizzamento che contiene l'ID
+          else if (basketData.redirectTo && typeof basketData.redirectTo === 'string') {
+            console.log("Trovato URL di redirect:", basketData.redirectTo);
+            // Estrai l'ID dalla fine dell'URL di reindirizzamento
+            // Pattern: /nfc-scan/basket/ID o /cycles/ID
+            const basketPattern = /\/basket\/(\d+)$/;
+            const cyclePattern = /\/cycles\/(\d+)$/;
+            
+            let match = basketData.redirectTo.match(basketPattern);
+            if (match && match[1]) {
+              basketId = parseInt(match[1]);
+              console.log("ID cestello estratto dall'URL di redirect:", basketId);
+            } else {
+              match = basketData.redirectTo.match(cyclePattern);
+              if (match && match[1]) {
+                // In questo caso è l'ID del ciclo, ma possiamo usarlo per ottenere il cestello
+                const cycleId = parseInt(match[1]);
+                console.log("ID ciclo trovato, cercheremo il cestello associato:", cycleId);
+                // Non impostiamo l'ID del cestello qui, lo otterremo dalla query
+                // Possiamo impostare il ciclo e gestirlo dopo
+                basketId = null; // Per ora lo impostiamo a null, verrà gestito diversamente
+              }
+            }
+          }
+          // Caso 3: Campo 'number' usato come ID fisico
+          else if (basketData.number && typeof basketData.number === 'number') {
+            // In questo caso abbiamo il numero fisico, non l'ID del database
+            // Dobbiamo fare una query per ottenere l'ID dal numero fisico
+            console.log("Trovato numero fisico del cestello, lo useremo per cercare l'ID:", basketData.number);
+            // non impostiamo basketId qui, verrà gestito successivamente
+            // Usiamo il physicalNumber invece dell'ID
+            setScannedBasketId(0); // ID temporaneo
+            setIsScanning(false);
+            
+            // Imposta il numero fisico del cestello per la ricerca
+            toast({
+              title: "Tag NFC rilevato",
+              description: `Cestello #${basketData.number} identificato, caricamento dati...`,
+            });
+            
+            // In questo caso cercheremo il cestello per numero fisico
+            // L'API attuale supporta solo la ricerca per ID, quindi dobbiamo modificare
+            // temporaneamente il comportamento per trattare il numero fisico come ID
+            // Cercheremo tutti i cestelli e filtreremo per numero fisico
+            // Nota: questo è un workaround, l'ideale sarebbe avere un endpoint specifico
+            basketId = basketData.number;
+            return;
+          }
+        }
+        
+        if (basketId !== null) {
+          console.log("Dati del cestello ottenuti dal tag NFC, ID:", basketId);
           
           // Comportamento standard (visualizzazione in questa pagina)
-          setScannedBasketId(basketData.id);
+          setScannedBasketId(basketId);
           setIsScanning(false);
           
           toast({
             title: "Tag NFC rilevato",
-            description: `Cestello #${basketData.number || basketData.id} identificato con successo.`,
+            description: `Cestello #${basketData.number || basketId} identificato con successo.`,
           });
           
           // Il reindirizzamento è stato disabilitato come richiesto
@@ -226,8 +285,8 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
           
           // Non fare nulla con redirectTo, semplicemente mostra i dati dell'operazione
         } else {
-          console.error("I dati del tag non contengono un ID cestello valido:", basketData);
-          throw new Error("Formato tag NFC non valido: manca l'ID del cestello");
+          console.error("Non è stato possibile determinare l'ID del cestello dai dati:", basketData);
+          throw new Error("Impossibile identificare il cestello dai dati del tag NFC");
         }
       } else {
         console.error("Nessun record compatibile trovato nel tag:", records);
