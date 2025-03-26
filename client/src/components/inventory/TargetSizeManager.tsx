@@ -115,10 +115,7 @@ export function TargetSizeManager() {
   // Mutazione per creare una nuova annotazione
   const createAnnotation = useMutation({
     mutationFn: async (values: CreateAnnotationValues) => {
-      return await apiRequest("/api/target-size-annotations", {
-        method: "POST",
-        body: JSON.stringify(values),
-      });
+      return await apiRequest("POST", "/api/target-size-annotations", values);
     },
     onSuccess: () => {
       toast({
@@ -142,10 +139,7 @@ export function TargetSizeManager() {
   // Mutazione per aggiornare lo stato di un'annotazione
   const updateAnnotationStatus = useMutation({
     mutationFn: async ({ id, status }: { id: number, status: "reached" | "canceled" }) => {
-      return await apiRequest<TargetSizeAnnotation>(`/api/target-size-annotations/${id}`, {
-        method: "PATCH",
-        body: JSON.stringify({ status }),
-      });
+      return await apiRequest("PATCH", `/api/target-size-annotations/${id}`, { status });
     },
     onSuccess: () => {
       toast({
@@ -504,7 +498,7 @@ export function TargetSizeManager() {
                       </TableCell>
                       <TableCell>{formatDateIT(annotation.predictedDate)}</TableCell>
                       <TableCell>
-                        <Badge variant="success">
+                        <Badge className="bg-emerald-500">
                           {annotation.reachedDate ? formatDateIT(annotation.reachedDate) : "N/A"}
                         </Badge>
                       </TableCell>
