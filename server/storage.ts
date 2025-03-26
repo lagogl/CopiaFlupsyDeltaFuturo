@@ -9,6 +9,7 @@ import {
   BasketPositionHistory, InsertBasketPositionHistory,
   SgrGiornaliero, InsertSgrGiornaliero,
   MortalityRate, InsertMortalityRate,
+  TargetSizeAnnotation, InsertTargetSizeAnnotation,
   operationTypes
 } from "@shared/schema";
 
@@ -92,6 +93,17 @@ export interface IStorage {
   createMortalityRate(mortalityRate: InsertMortalityRate): Promise<MortalityRate>;
   updateMortalityRate(id: number, mortalityRate: Partial<MortalityRate>): Promise<MortalityRate | undefined>;
   
+  // Target Size Annotations methods
+  getTargetSizeAnnotations(): Promise<TargetSizeAnnotation[]>;
+  getTargetSizeAnnotation(id: number): Promise<TargetSizeAnnotation | undefined>;
+  getTargetSizeAnnotationsByBasket(basketId: number): Promise<TargetSizeAnnotation[]>;
+  getTargetSizeAnnotationsByTargetSize(targetSizeId: number): Promise<TargetSizeAnnotation[]>;
+  getPendingTargetSizeAnnotations(): Promise<TargetSizeAnnotation[]>;
+  getBasketsPredictedToReachSize(targetSizeId: number, withinDays: number): Promise<TargetSizeAnnotation[]>;
+  createTargetSizeAnnotation(annotation: InsertTargetSizeAnnotation): Promise<TargetSizeAnnotation>;
+  updateTargetSizeAnnotation(id: number, annotation: Partial<TargetSizeAnnotation>): Promise<TargetSizeAnnotation | undefined>;
+  deleteTargetSizeAnnotation(id: number): Promise<boolean>;
+  
   // Growth predictions methods
   calculateActualSgr(operations: Operation[]): Promise<number | null>;
   calculateGrowthPrediction(
@@ -114,6 +126,7 @@ export class MemStorage implements IStorage {
   private basketPositions: Map<number, BasketPositionHistory>;
   private sgrGiornalieri: Map<number, SgrGiornaliero>;
   private mortalityRates: Map<number, MortalityRate>;
+  private targetSizeAnnotations: Map<number, TargetSizeAnnotation>;
   
   private flupsyId: number;
   private basketId: number;
@@ -125,6 +138,7 @@ export class MemStorage implements IStorage {
   private positionHistoryId: number;
   private sgrGiornalieroId: number;
   private mortalityRateId: number;
+  private targetSizeAnnotationId: number;
   
   constructor() {
     this.flupsys = new Map();
@@ -137,6 +151,7 @@ export class MemStorage implements IStorage {
     this.basketPositions = new Map();
     this.sgrGiornalieri = new Map();
     this.mortalityRates = new Map();
+    this.targetSizeAnnotations = new Map();
     
     this.flupsyId = 1;
     this.basketId = 1;
@@ -148,6 +163,7 @@ export class MemStorage implements IStorage {
     this.positionHistoryId = 1;
     this.sgrGiornalieroId = 1;
     this.mortalityRateId = 1;
+    this.targetSizeAnnotationId = 1;
     
     // Initialize with some default sizes
     this.initializeDefaultData();
@@ -730,6 +746,90 @@ export class MemStorage implements IStorage {
     const updatedMortalityRate = { ...currentMortalityRate, ...mortalityRateUpdate };
     this.mortalityRates.set(id, updatedMortalityRate);
     return updatedMortalityRate;
+  }
+  
+  // Target Size Annotations methods
+  async getTargetSizeAnnotations(): Promise<TargetSizeAnnotation[]> {
+    return Array.from(this.targetSizeAnnotations.values());
+  }
+  
+  async getTargetSizeAnnotation(id: number): Promise<TargetSizeAnnotation | undefined> {
+    return this.targetSizeAnnotations.get(id);
+  }
+  
+  async getTargetSizeAnnotationsByBasket(basketId: number): Promise<TargetSizeAnnotation[]> {
+    return Array.from(this.targetSizeAnnotations.values())
+      .filter(annotation => annotation.basketId === basketId)
+      .sort((a, b) => new Date(a.predictedDate).getTime() - new Date(b.predictedDate).getTime());
+  }
+  
+  async getTargetSizeAnnotationsByTargetSize(targetSizeId: number): Promise<TargetSizeAnnotation[]> {
+    return Array.from(this.targetSizeAnnotations.values())
+      .filter(annotation => annotation.targetSizeId === targetSizeId)
+      .sort((a, b) => new Date(a.predictedDate).getTime() - new Date(b.predictedDate).getTime());
+  }
+  
+  async getPendingTargetSizeAnnotations(): Promise<TargetSizeAnnotation[]> {
+    return Array.from(this.targetSizeAnnotations.values())
+      .filter(annotation => annotation.status === 'pending')
+      .sort((a, b) => new Date(a.predictedDate).getTime() - new Date(b.predictedDate).getTime());
+  }
+  
+  async getBasketsPredictedToReachSize(targetSizeId: number, withinDays: number): Promise<TargetSizeAnnotation[]> {
+    const today = new Date();
+    const futureDate = new Date(today);
+    futureDate.setDate(today.getDate() + withinDays);
+    
+    return Array.from(this.targetSizeAnnotations.values())
+      .filter(annotation => {
+        if (annotation.targetSizeId !== targetSizeId || annotation.status !== 'pending') {
+          return false;
+        }
+        
+        const predictedDate = new Date(annotation.predictedDate);
+        return predictedDate >= today && predictedDate <= futureDate;
+      })
+      .sort((a, b) => new Date(a.predictedDate).getTime() - new Date(b.predictedDate).getTime());
+  }
+  
+  async createTargetSizeAnnotation(annotation: InsertTargetSizeAnnotation): Promise<TargetSizeAnnotation> {
+    const id = this.targetSizeAnnotationId++;
+    
+    // Add default values
+    const now = new Date();
+    const newAnnotation: TargetSizeAnnotation = {
+      ...annotation,
+      id,
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.targetSizeAnnotations.set(id, newAnnotation);
+    return newAnnotation;
+  }
+  
+  async updateTargetSizeAnnotation(id: number, annotation: Partial<TargetSizeAnnotation>): Promise<TargetSizeAnnotation | undefined> {
+    const currentAnnotation = this.targetSizeAnnotations.get(id);
+    if (!currentAnnotation) return undefined;
+    
+    const updatedAnnotation = { 
+      ...currentAnnotation, 
+      ...annotation,
+      updatedAt: new Date()
+    };
+    
+    this.targetSizeAnnotations.set(id, updatedAnnotation);
+    return updatedAnnotation;
+  }
+  
+  async deleteTargetSizeAnnotation(id: number): Promise<boolean> {
+    const exists = this.targetSizeAnnotations.has(id);
+    if (exists) {
+      this.targetSizeAnnotations.delete(id);
+      return true;
+    }
+    return false;
   }
   
   // Growth predictions methods

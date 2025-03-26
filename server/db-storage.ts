@@ -5,7 +5,8 @@ import {
   Basket, Cycle, InsertBasket, InsertCycle, InsertLot, InsertOperation, 
   InsertSgr, InsertSize, Lot, Operation, Size, Sgr, baskets, cycles, lots,
   operations, sgr, sizes, basketPositionHistory, BasketPositionHistory, InsertBasketPositionHistory,
-  SgrGiornaliero, InsertSgrGiornaliero, sgrGiornalieri, MortalityRate, InsertMortalityRate, mortalityRates
+  SgrGiornaliero, InsertSgrGiornaliero, sgrGiornalieri, MortalityRate, InsertMortalityRate, mortalityRates,
+  TargetSizeAnnotation, InsertTargetSizeAnnotation, targetSizeAnnotations
 } from '../shared/schema';
 import { IStorage } from './storage';
 
@@ -521,6 +522,115 @@ export class DbStorage implements IStorage {
       .where(eq(mortalityRates.id, id))
       .returning();
     return results[0];
+  }
+  
+  // TARGET SIZE ANNOTATIONS
+  async getTargetSizeAnnotations(): Promise<TargetSizeAnnotation[]> {
+    return await db.select().from(targetSizeAnnotations);
+  }
+  
+  async getTargetSizeAnnotation(id: number): Promise<TargetSizeAnnotation | undefined> {
+    const results = await db.select().from(targetSizeAnnotations).where(eq(targetSizeAnnotations.id, id));
+    return results[0];
+  }
+  
+  async getTargetSizeAnnotationsByBasket(basketId: number): Promise<TargetSizeAnnotation[]> {
+    return await db.select()
+      .from(targetSizeAnnotations)
+      .where(eq(targetSizeAnnotations.basketId, basketId))
+      .orderBy(targetSizeAnnotations.predictedDate);
+  }
+  
+  async getTargetSizeAnnotationsByTargetSize(targetSizeId: number): Promise<TargetSizeAnnotation[]> {
+    return await db.select()
+      .from(targetSizeAnnotations)
+      .where(eq(targetSizeAnnotations.targetSizeId, targetSizeId))
+      .orderBy(targetSizeAnnotations.predictedDate);
+  }
+  
+  async getPendingTargetSizeAnnotations(): Promise<TargetSizeAnnotation[]> {
+    return await db.select()
+      .from(targetSizeAnnotations)
+      .where(eq(targetSizeAnnotations.status, 'pending'))
+      .orderBy(targetSizeAnnotations.predictedDate);
+  }
+  
+  async getBasketsPredictedToReachSize(targetSizeId: number, withinDays: number): Promise<TargetSizeAnnotation[]> {
+    const today = new Date();
+    const futureDate = new Date(today);
+    futureDate.setDate(today.getDate() + withinDays);
+    
+    const todayStr = today.toISOString().split('T')[0];
+    const futureDateStr = futureDate.toISOString().split('T')[0];
+    
+    return await db.select()
+      .from(targetSizeAnnotations)
+      .where(
+        and(
+          eq(targetSizeAnnotations.targetSizeId, targetSizeId),
+          eq(targetSizeAnnotations.status, 'pending'),
+          gte(targetSizeAnnotations.predictedDate, todayStr),
+          lte(targetSizeAnnotations.predictedDate, futureDateStr)
+        )
+      )
+      .orderBy(targetSizeAnnotations.predictedDate);
+  }
+  
+  async createTargetSizeAnnotation(annotation: InsertTargetSizeAnnotation): Promise<TargetSizeAnnotation> {
+    // Convert date strings if they're Date objects
+    const annotationData = { ...annotation };
+    
+    if (annotationData.predictedDate && typeof annotationData.predictedDate === 'object' && 'toISOString' in annotationData.predictedDate) {
+      annotationData.predictedDate = annotationData.predictedDate.toISOString().split('T')[0];
+    }
+    
+    if (annotationData.reachedDate && typeof annotationData.reachedDate === 'object' && 'toISOString' in annotationData.reachedDate) {
+      annotationData.reachedDate = annotationData.reachedDate.toISOString().split('T')[0];
+    }
+    
+    // Set default status and dates
+    const now = new Date();
+    
+    const results = await db.insert(targetSizeAnnotations).values({
+      ...annotationData,
+      status: 'pending',
+      createdAt: now,
+      updatedAt: now,
+      reachedDate: null
+    }).returning();
+    
+    return results[0];
+  }
+  
+  async updateTargetSizeAnnotation(id: number, annotation: Partial<TargetSizeAnnotation>): Promise<TargetSizeAnnotation | undefined> {
+    // Convert date strings if they're Date objects
+    const annotationData = { ...annotation };
+    
+    if (annotationData.predictedDate && typeof annotationData.predictedDate === 'object' && 'toISOString' in annotationData.predictedDate) {
+      annotationData.predictedDate = annotationData.predictedDate.toISOString().split('T')[0];
+    }
+    
+    if (annotationData.reachedDate && typeof annotationData.reachedDate === 'object' && 'toISOString' in annotationData.reachedDate) {
+      annotationData.reachedDate = annotationData.reachedDate.toISOString().split('T')[0];
+    }
+    
+    // Update the updatedAt timestamp
+    annotationData.updatedAt = new Date();
+    
+    const results = await db.update(targetSizeAnnotations)
+      .set(annotationData)
+      .where(eq(targetSizeAnnotations.id, id))
+      .returning();
+      
+    return results[0];
+  }
+  
+  async deleteTargetSizeAnnotation(id: number): Promise<boolean> {
+    const deletedCount = await db.delete(targetSizeAnnotations)
+      .where(eq(targetSizeAnnotations.id, id))
+      .returning({ id: targetSizeAnnotations.id });
+    
+    return deletedCount.length > 0;
   }
   
   // Growth calculations
