@@ -113,6 +113,9 @@ export default function GrowJourney() {
   // Calcola i dati di crescita per il cestello/ciclo selezionato
   const growthPredictionQuery = useQuery({
     queryKey: ['/api/cycles', selectedCycle, 'growth-prediction', { days: projectionDays }],
+    queryFn: () => 
+      fetch(`/api/cycles/${selectedCycle}/growth-prediction?days=${projectionDays}&bestVariation=20&worstVariation=30`)
+        .then(res => res.json()),
     enabled: !!selectedCycle,
     refetchOnWindowFocus: false,
   });
