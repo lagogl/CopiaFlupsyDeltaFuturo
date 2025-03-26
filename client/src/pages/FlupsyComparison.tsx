@@ -135,34 +135,38 @@ export default function FlupsyComparison() {
       }
     }
     
-    // Calcola il peso futuro usando direttamente la percentuale giornaliera
+    // Calcola il peso futuro usando la formula corretta: Pf = Pi * e^(SGR*t)
     const targetDate = addDays(new Date(), daysToAdd);
     
-    // Calcolo manuale del peso futuro
+    // Calcolo dei giorni tra la data di misurazione e la data target
     const days = Math.floor((targetDate.getTime() - measurementDate.getTime()) / (1000 * 60 * 60 * 24));
-    let simulatedWeight = currentWeight;
+    
+    // Usa la formula con e^(SGR*t) considerando i diversi tassi SGR per mese
+    let totalSGREffect = 0;
     let currentDate = new Date(measurementDate);
     
     for (let i = 0; i < days; i++) {
-      // Aggiorniamo la data corrente aggiungendo un giorno ogni volta
+      // Aggiorniamo la data corrente aggiungendo un giorno
       if (i > 0) {
         currentDate.setDate(currentDate.getDate() + 1);
       }
       const month = format(currentDate, 'MMMM').toLowerCase();
       
-      // Trova il tasso SGR per questo mese
+      // Trova il tasso SGR per questo mese (in percentuale)
       let dailyRate = sgrDailyPercentage;
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
         if (monthSgr) {
-          // Usa direttamente il valore giornaliero
           dailyRate = monthSgr.percentage;
         }
       }
       
-      // Applica la crescita giornaliera
-      simulatedWeight = simulatedWeight * (1 + dailyRate / 100);
+      // Converti la percentuale in decimale e aggiungi all'effetto cumulativo
+      totalSGREffect += (dailyRate / 100);
     }
+    
+    // Applica la formula completa: Pf = Pi * e^(SGR*t)
+    const simulatedWeight = currentWeight * Math.exp(totalSGREffect);
     
     return Math.round(simulatedWeight);
   };
@@ -246,8 +250,9 @@ export default function FlupsyComparison() {
         }
       }
       
-      // Applica la crescita giornaliera
-      simulationWeight = simulationWeight * (1 + dailyRate / 100);
+      // Applica la crescita giornaliera usando la formula corretta: Pf = Pi * e^(SGR*t)
+      // Contiamo l'effetto di un giorno con il tasso corrente
+      simulationWeight = simulationWeight * Math.exp(dailyRate / 100);
       days++;
       
       // Aggiorna la data corrente per il giorno successivo
