@@ -5,6 +5,7 @@ import RecentOperations from '@/components/dashboard/RecentOperations';
 import GrowthChart from '@/components/dashboard/GrowthChart';
 import ActiveCycles from '@/components/dashboard/ActiveCycles';
 import FlupsyVisualizer from '@/components/dashboard/BasicFlupsyVisualizer';
+import { TargetSizePredictions } from '@/components/dashboard/TargetSizePredictions';
 import { Basket, Cycle, Operation, Lot } from '@shared/schema';
 
 export default function Dashboard() {
@@ -103,6 +104,11 @@ export default function Dashboard() {
         <GrowthChart />
       </div>
 
+      {/* Target Size Predictions */}
+      <div className="mb-8">
+        <TargetSizePredictions />
+      </div>
+      
       {/* FLUPSY Visualizer */}
       <div className="mb-8">
         <FlupsyVisualizer />

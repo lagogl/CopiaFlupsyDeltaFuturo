@@ -32,6 +32,7 @@ import BasketDetailTable from "@/components/inventory/BasketDetailTable";
 import GrowthPrediction from "@/components/inventory/GrowthPrediction";
 import GrowthComparison from "@/components/inventory/GrowthComparison";
 import SalesTimeline from "@/components/inventory/SalesTimeline";
+import { TargetSizeManager } from "@/components/inventory/TargetSizeManager";
 
 // Interfacce dei dati
 interface SizeInventory {
