@@ -4,7 +4,7 @@ import {
   Home, Package, FileText, RefreshCw, Package2, BarChart2, 
   Scale, TrendingUp, Settings as SettingsIcon, Menu, Bell, 
   User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
-  Scan, Smartphone, Tag, X as CloseIcon
+  Scan, Smartphone, Tag, X as CloseIcon, LineChart
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -52,6 +52,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     { icon: <BarChart2 className="h-5 w-5 mr-2" />, label: "Statistiche", path: "/statistics" },
     { icon: <Scale className="h-5 w-5 mr-2" />, label: "Tabella Taglie", path: "/sizes" },
     { icon: <TrendingUp className="h-5 w-5 mr-2" />, label: "Indici SGR", path: "/sgr" },
+    { icon: <LineChart className="h-5 w-5 mr-2" />, label: "Percorso di Crescita", path: "/grow-journey" },
     { icon: <SettingsIcon className="h-5 w-5 mr-2" />, label: "Impostazioni", path: "/settings" },
   ];
 
