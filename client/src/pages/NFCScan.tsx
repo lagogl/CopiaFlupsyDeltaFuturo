@@ -115,7 +115,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     queryFn: async () => {
       if (!scannedBasketId) throw new Error("ID cestello non specificato");
       const response = await apiRequest('GET', `/api/baskets/details/${scannedBasketId}`);
-      return response as BasketDetails;
+      return response as unknown as BasketDetails;
     },
     enabled: scannedBasketId !== null,
   });
