@@ -14,7 +14,7 @@ import {
 } from "@/components/ui/tooltip";
 import { format, addDays, differenceInWeeks } from 'date-fns';
 import { Calendar, Clock, ArrowRight, Info, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
-import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor, monthlyToDaily } from '@/lib/utils';
+import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor } from '@/lib/utils';
 import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
 // Componente personalizzato per il tooltip che garantisce alta leggibilità
@@ -865,9 +865,9 @@ export default function FlupsyComparison() {
                         {sgrs?.map((sgr) => (
                           <React.Fragment key={sgr.id}>
                             <div>{sgr.month}:</div>
-                            <div>{sgr.percentage}% (mensile)</div>
-                            <div>Giornaliero:</div>
-                            <div>{monthlyToDaily(sgr.percentage).toFixed(4)}%</div>
+                            <div>{sgr.percentage}% (giornaliero)</div>
+                            <div>Mensile (~30gg):</div>
+                            <div>{((Math.pow(1 + sgr.percentage/100, 30) - 1) * 100).toFixed(2)}%</div>
                             <div className="col-span-2 border-t border-gray-200 mt-1 pt-1"></div>
                           </React.Fragment>
                         ))}
