@@ -529,7 +529,7 @@ export default function GrowJourney() {
               </div>
               <div>
                 Peso finale stimato: <span className="font-medium">
-                  {growthData ? formatNumberWithCommas(growthData.summary.finalTheoreticalWeight) : 'N/A'} mg
+                  {growthData && growthData.summary ? formatNumberWithCommas(growthData.summary.finalTheoreticalWeight) : 'N/A'} mg
                 </span>
               </div>
             </CardFooter>
@@ -686,14 +686,14 @@ export default function GrowJourney() {
                                     )}
                                   </div>
                                   <Badge className="ml-2" variant="outline">
-                                    {getTargetSizeForWeight(growthData.summary.finalTheoreticalWeight, sizes)?.code || 'N/A'}
+                                    {growthData && growthData.summary ? getTargetSizeForWeight(growthData.summary.finalTheoreticalWeight, sizes)?.code || 'N/A' : 'N/A'}
                                   </Badge>
                                   <Badge variant="outline" className="ml-2">
                                     Proiezione finale
                                   </Badge>
                                 </div>
                                 <div className="text-sm text-muted-foreground mt-1">
-                                  {formatNumberWithCommas(growthData.summary.finalTheoreticalWeight)} mg (stima)
+                                  {growthData && growthData.summary ? formatNumberWithCommas(growthData.summary.finalTheoreticalWeight) : 'N/A'} mg (stima)
                                 </div>
                                 
                                 {/* Mostra la crescita percentuale totale */}
@@ -702,7 +702,7 @@ export default function GrowJourney() {
                                     <div className="flex items-center">
                                       <ArrowUpRight className="h-3 w-3 text-emerald-500 mr-1" />
                                       <span className="text-emerald-500">
-                                        +{growthData.summary.growthPercentageTheoretical.toFixed(1)}%
+                                        +{growthData && growthData.summary ? growthData.summary.growthPercentageTheoretical.toFixed(1) : '0'}%
                                       </span>
                                     </div>
                                     <span className="text-muted-foreground ml-2">
