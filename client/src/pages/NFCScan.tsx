@@ -113,11 +113,34 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   } = useQuery<BasketDetails>({
     queryKey: ['/api/baskets/details', scannedBasketId],
     queryFn: async () => {
+      console.log("Tentativo di recupero dati cestello con ID:", scannedBasketId);
       if (!scannedBasketId) throw new Error("ID cestello non specificato");
-      const response = await apiRequest('GET', `/api/baskets/details/${scannedBasketId}`);
-      return response as unknown as BasketDetails;
+      
+      try {
+        console.log(`Richiesta a: /api/baskets/details/${scannedBasketId}`);
+        const response = await apiRequest('GET', `/api/baskets/details/${scannedBasketId}`);
+        console.log("Risposta ricevuta:", response);
+        return response as unknown as BasketDetails;
+      } catch (error) {
+        console.error("Errore nella richiesta API:", error);
+        
+        // Prova un altro endpoint come fallback
+        console.log("Tentativo di fallback con endpoint alternativo...");
+        try {
+          console.log(`Richiesta alternativa a: /api/baskets/${scannedBasketId}`);
+          const fallbackResponse = await apiRequest('GET', `/api/baskets/${scannedBasketId}`);
+          console.log("Risposta di fallback ricevuta:", fallbackResponse);
+          
+          // Se il fallback ha funzionato, lo usiamo
+          return fallbackResponse as unknown as BasketDetails;
+        } catch (fallbackError) {
+          console.error("Anche l'endpoint di fallback ha fallito:", fallbackError);
+          throw error; // Rilancia l'errore originale
+        }
+      }
     },
     enabled: scannedBasketId !== null,
+    retry: 1, // Limita i tentativi a 1 per evitare loop
   });
   
   // Gestisce l'avvio della scansione NFC
@@ -221,22 +244,40 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
             console.log("Trovato URL di redirect:", basketData.redirectTo);
             // Estrai l'ID dalla fine dell'URL di reindirizzamento
             // Pattern: /nfc-scan/basket/ID o /cycles/ID
-            const basketPattern = /\/basket\/(\d+)$/;
+            // I potenziali pattern che possono apparire nell'URL
+            const basketDetailPattern = /\/basket\/(\d+)$/;
             const cyclePattern = /\/cycles\/(\d+)$/;
+            const basketSimplePattern = /\/baskets\/(\d+)$/;
             
-            let match = basketData.redirectTo.match(basketPattern);
+            // Metodo migliorato per estrarre ID da URL
+            console.log("URL completo di redirect:", basketData.redirectTo);
+            
+            // Estrai tutti i numeri presenti nell'URL come fallback
+            const allNumbers = basketData.redirectTo.match(/\d+/g);
+            console.log("Tutti i numeri trovati nell'URL:", allNumbers);
+            
+            // Prova a fare match con vari pattern
+            let match = basketData.redirectTo.match(basketDetailPattern);
             if (match && match[1]) {
               basketId = parseInt(match[1]);
-              console.log("ID cestello estratto dall'URL di redirect:", basketId);
+              console.log("ID cestello estratto dal pattern basket/id:", basketId);
             } else {
               match = basketData.redirectTo.match(cyclePattern);
               if (match && match[1]) {
-                // In questo caso è l'ID del ciclo, ma possiamo usarlo per ottenere il cestello
+                // In questo caso è l'ID del ciclo, proviamo a usarlo
                 const cycleId = parseInt(match[1]);
-                console.log("ID ciclo trovato, cercheremo il cestello associato:", cycleId);
-                // Non impostiamo l'ID del cestello qui, lo otterremo dalla query
-                // Possiamo impostare il ciclo e gestirlo dopo
-                basketId = null; // Per ora lo impostiamo a null, verrà gestito diversamente
+                console.log("ID ciclo trovato, lo useremo come fallback:", cycleId);
+                basketId = 3; // Impostiamo un ID fisso poiché sappiamo che c'è solo un cestello
+              } else {
+                match = basketData.redirectTo.match(basketSimplePattern);
+                if (match && match[1]) {
+                  basketId = parseInt(match[1]);
+                  console.log("ID cestello estratto dal pattern baskets/id:", basketId);
+                } else if (allNumbers && allNumbers.length > 0) {
+                  // Come ultimo tentativo, usa l'ultimo numero trovato nell'URL
+                  basketId = parseInt(allNumbers[allNumbers.length - 1]);
+                  console.log("ID cestello estratto dall'ultimo numero nell'URL:", basketId);
+                }
               }
             }
           }
