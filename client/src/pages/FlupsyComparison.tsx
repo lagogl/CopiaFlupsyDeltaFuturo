@@ -376,18 +376,25 @@ export default function FlupsyComparison() {
               </div>
               
               {currentSize && (
-                <div className="flex flex-col w-full">
-                  <div className="flex justify-between items-center w-full">
+                <div className="flex flex-col w-full space-y-1 mt-1">
+                  <div className="flex items-center justify-center">
                     <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">
                       {currentSize.code}
                     </Badge>
-                    <div className="text-[9px] font-medium">{currentWeight} mg</div>
                   </div>
-                  {latestOperation?.animalsPerKg && (
-                    <div className="text-[8px] text-gray-600 mt-0.5">
-                      {latestOperation.animalsPerKg} animali/kg
+                  
+                  <div className="grid grid-cols-2 gap-1 text-center">
+                    <div>
+                      <div className="text-[8px] text-gray-500">Peso</div>
+                      <div className="text-[9px] font-medium">{currentWeight} mg</div>
                     </div>
-                  )}
+                    {latestOperation?.animalsPerKg && (
+                      <div>
+                        <div className="text-[8px] text-gray-500">Animali</div>
+                        <div className="text-[9px] font-medium">{latestOperation.animalsPerKg}/kg</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               
@@ -512,18 +519,25 @@ export default function FlupsyComparison() {
               </div>
               
               {futureSize && (
-                <div className="flex flex-col w-full">
-                  <div className="flex justify-between items-center w-full">
+                <div className="flex flex-col w-full space-y-1 mt-1">
+                  <div className="flex items-center justify-center">
                     <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">
                       {futureSize.code}
                     </Badge>
-                    <div className="text-[9px] font-medium">{futureWeight} mg</div>
                   </div>
-                  {futureWeight && (
-                    <div className="text-[8px] text-gray-600 mt-0.5">
-                      {Math.round(1000000 / futureWeight)} animali/kg
+                  
+                  <div className="grid grid-cols-2 gap-1 text-center">
+                    <div>
+                      <div className="text-[8px] text-gray-500">Peso</div>
+                      <div className="text-[9px] font-medium">{futureWeight} mg</div>
                     </div>
-                  )}
+                    {futureWeight && (
+                      <div>
+                        <div className="text-[8px] text-gray-500">Animali</div>
+                        <div className="text-[9px] font-medium">{Math.round(1000000 / futureWeight)}/kg</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
               
@@ -669,8 +683,8 @@ export default function FlupsyComparison() {
                 )}
               </div>
               
-              <div className="flex flex-col w-full">
-                <div className="flex justify-between items-center w-full">
+              <div className="flex flex-col w-full space-y-1 mt-1">
+                <div className="flex items-center justify-center">
                   {currentSize?.code === targetSizeCode ? (
                     <Badge className="text-[8px] px-1.5 py-0 h-4 bg-green-500 text-white">Già {targetSizeCode}</Badge>
                   ) : willReach ? (
@@ -678,19 +692,22 @@ export default function FlupsyComparison() {
                   ) : (
                     <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4 text-gray-500">No {targetSizeCode}</Badge>
                   )}
-                  
+                </div>
+                
+                <div className="grid grid-cols-2 gap-1 text-center">
                   {currentSize && (
-                    <div className="text-[9px] font-medium">
-                      {currentWeight} mg
+                    <div>
+                      <div className="text-[8px] text-gray-500">Peso</div>
+                      <div className="text-[9px] font-medium">{currentWeight} mg</div>
+                    </div>
+                  )}
+                  {latestOperation?.animalsPerKg && (
+                    <div>
+                      <div className="text-[8px] text-gray-500">Animali</div>
+                      <div className="text-[9px] font-medium">{latestOperation.animalsPerKg}/kg</div>
                     </div>
                   )}
                 </div>
-                
-                {latestOperation?.animalsPerKg && (
-                  <div className="text-[8px] text-gray-600 mt-0.5">
-                    {latestOperation.animalsPerKg} animali/kg
-                  </div>
-                )}
               </div>
               
               {/* Mostra la data prevista con il peso previsto */}
