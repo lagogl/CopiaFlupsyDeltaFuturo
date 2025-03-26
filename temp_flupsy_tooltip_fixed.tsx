@@ -13,8 +13,9 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { format, addDays, differenceInWeeks } from 'date-fns';
-import { Calendar, Clock, ArrowRight, Info } from 'lucide-react';
-import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor } from '@/lib/utils';
+import { Calendar, Clock, ArrowRight, Info, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
+import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor, monthlyToDaily } from '@/lib/utils';
+import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
 // Componente personalizzato per il tooltip che garantisce alta leggibilità
 const HighContrastTooltip = ({ children, className = "" }) => (
@@ -53,6 +54,7 @@ export default function FlupsyComparison() {
   const [currentTabId, setCurrentTabId] = useState<string>("data-futuro");
   const [daysInFuture, setDaysInFuture] = useState<number>(30);
   const [targetSizeCode, setTargetSizeCode] = useState<string>("T5");
+  const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = normale, 2 = medio, 3 = grande
 
   // Fetch dei dati necessari
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
@@ -118,17 +120,20 @@ export default function FlupsyComparison() {
     const currentWeight = latestOperation.animalsPerKg ? 1000000 / latestOperation.animalsPerKg : 0;
     const measurementDate = new Date(latestOperation.date);
     
-    // Ottieni la percentuale SGR giornaliera (percentage è già la crescita giornaliera)
-    let sgrDailyPercentage = 1.0; // Valore di default (1% al giorno)
+    // Ottieni la percentuale SGR giornaliera (convertita da percentuale mensile)
+    let sgrDailyPercentage = 0.067; // Valore di default (2% mensile = ~0.067% al giorno)
     if (sgrs && sgrs.length > 0) {
       // Usa il valore SGR del mese corrente se disponibile
       const currentMonth = format(new Date(), 'MMMM').toLowerCase();
       const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
       if (currentSgr) {
-        sgrDailyPercentage = currentSgr.percentage; // Diretta, già valore giornaliero
+        // Converti da percentuale mensile a giornaliera
+        const monthlyRate = currentSgr.percentage; 
+        sgrDailyPercentage = ((Math.pow(1 + monthlyRate/100, 1/30) - 1) * 100);
       } else {
-        // Altrimenti usa il valore medio delle percentuali giornaliere
-        sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
+        // Altrimenti usa il valore medio delle percentuali mensili convertito in giornaliero
+        const averageMonthlyRate = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
+        sgrDailyPercentage = ((Math.pow(1 + averageMonthlyRate/100, 1/30) - 1) * 100);
       }
     }
     
@@ -138,10 +143,13 @@ export default function FlupsyComparison() {
     // Calcolo manuale del peso futuro
     const days = Math.floor((targetDate.getTime() - measurementDate.getTime()) / (1000 * 60 * 60 * 24));
     let simulatedWeight = currentWeight;
+    let currentDate = new Date(measurementDate);
     
     for (let i = 0; i < days; i++) {
-      // Per ogni giorno, calcoliamo il mese corrispondente per usare il tasso SGR appropriato
-      const currentDate = addDays(measurementDate, i);
+      // Aggiorniamo la data corrente aggiungendo un giorno ogni volta
+      if (i > 0) {
+        currentDate.setDate(currentDate.getDate() + 1);
+      }
       const month = format(currentDate, 'MMMM').toLowerCase();
       
       // Trova il tasso SGR per questo mese
@@ -149,7 +157,8 @@ export default function FlupsyComparison() {
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
         if (monthSgr) {
-          dailyRate = monthSgr.percentage; // Diretta, è già il valore giornaliero
+          // Converte il valore mensile in giornaliero
+          dailyRate = monthlyToDaily(monthSgr.percentage);
         }
       }
       
@@ -204,17 +213,20 @@ export default function FlupsyComparison() {
     // Se il peso corrente è già maggiore del peso target, è già nella taglia target
     if (currentWeight >= targetWeight) return 0;
     
-    // Ottieni la percentuale SGR giornaliera
-    let sgrDailyPercentage = 1.0; // Valore di default (1% al giorno)
+    // Ottieni la percentuale SGR giornaliera (convertita da percentuale mensile)
+    let sgrDailyPercentage = 0.067; // Valore di default (2% mensile = ~0.067% al giorno)
     if (sgrs && sgrs.length > 0) {
       // Usa il valore SGR del mese corrente se disponibile
       const currentMonth = format(new Date(), 'MMMM').toLowerCase();
       const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
       if (currentSgr) {
-        sgrDailyPercentage = currentSgr.percentage; // Diretta, già valore giornaliero
+        // Converti da percentuale mensile a giornaliera
+        const monthlyRate = currentSgr.percentage;
+        sgrDailyPercentage = ((Math.pow(1 + monthlyRate/100, 1/30) - 1) * 100);
       } else {
-        // Altrimenti usa il valore medio delle percentuali giornaliere
-        sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
+        // Altrimenti usa il valore medio delle percentuali mensili convertito in giornaliero
+        const averageMonthlyRate = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
+        sgrDailyPercentage = ((Math.pow(1 + averageMonthlyRate/100, 1/30) - 1) * 100);
       }
     }
     
@@ -233,14 +245,17 @@ export default function FlupsyComparison() {
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
         if (monthSgr) {
-          dailyRate = monthSgr.percentage; // Diretta, è già il valore giornaliero
+          // Ottiene il valore giornaliero
+          dailyRate = monthlyToDaily(monthSgr.percentage);
         }
       }
       
       // Applica la crescita giornaliera
       simulationWeight = simulationWeight * (1 + dailyRate / 100);
       days++;
-      currentDate = addDays(currentDate, 1);
+      
+      // Aggiorna la data corrente per il giorno successivo
+      currentDate.setDate(currentDate.getDate() + 1);
     }
     
     return days < 365 ? days : null;
@@ -265,14 +280,32 @@ export default function FlupsyComparison() {
         return (a.position || 0) - (b.position || 0);
       });
   }, [baskets, selectedFlupsyId]);
+  
+  // Ottiene le dimensioni delle carte dei cestelli in base al livello di zoom
+  const getBasketCardSize = () => {
+    switch (zoomLevel) {
+      case 1:
+        return { width: 'w-40', height: 'h-16' }; // Default
+      case 2:
+        return { width: 'w-52', height: 'h-20' }; // Medio
+      case 3:
+        return { width: 'w-64', height: 'h-24' }; // Grande
+      default:
+        return { width: 'w-40', height: 'h-16' };
+    }
+  };
 
   // Renderizza un cestello per la visualizzazione attuale
   const renderCurrentBasket = (basket) => {
+    const cardSize = getBasketCardSize();
+    const width = cardSize.width;
+    const height = cardSize.height;
+    
     if (!basket) return (
       <TooltipProvider>
         <Tooltip>
           <TooltipTrigger asChild>
-            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-16 w-40 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
+            <div className={`basket-card p-2 rounded border-2 border-dashed border-gray-300 ${height} ${width} flex items-center justify-center text-gray-400 text-xs cursor-pointer`}>
               Vuoto
             </div>
           </TooltipTrigger>
@@ -342,7 +375,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} h-16 w-40 flex flex-col justify-between cursor-pointer`}
+              className={`basket-card p-2 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -354,18 +387,25 @@ export default function FlupsyComparison() {
               </div>
               
               {currentSize && (
-                <div className="flex justify-between items-center w-full">
-                  <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">
-                    {currentSize.code}
-                  </Badge>
-                  <div className="text-[9px] font-medium">{currentWeight} mg</div>
-                </div>
-              )}
-              
-              {latestOperation && (
-                <div className="mt-auto text-[9px] flex justify-between items-center w-full">
-                  <div>{format(new Date(latestOperation.date), 'dd/MM')}</div>
-                  <div className="opacity-75 font-medium">{latestOperation.type}</div>
+                <div className="flex flex-col w-full space-y-1 mt-1">
+                  <div className="flex items-center justify-center">
+                    <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">
+                      {currentSize.code}
+                    </Badge>
+                  </div>
+                  
+                  <div className="grid grid-cols-2 gap-1 text-center">
+                    <div>
+                      <div className="text-[8px] text-gray-500">Peso</div>
+                      <div className="text-[9px] font-medium">{currentWeight} mg</div>
+                    </div>
+                    {latestOperation?.animalsPerKg && (
+                      <div>
+                        <div className="text-[8px] text-gray-500">Animali/kg</div>
+                        <div className="text-[9px] font-medium">{latestOperation.animalsPerKg}</div>
+                      </div>
+                    )}
+                  </div>
                 </div>
               )}
             </div>
@@ -378,85 +418,87 @@ export default function FlupsyComparison() {
     );
   };
 
-  // Renderizza un cestello per la visualizzazione futura (per data)
-  const renderFutureBasketByDate = (basket) => {
-    if (!basket) return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-16 w-40 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
-              Vuoto
-            </div>
-          </TooltipTrigger>
-          <HighContrastTooltip>
-            <div className="p-2 max-w-xs">
-              <div className="font-medium text-gray-700 mb-1">Posizione non assegnata</div>
-              <div className="text-sm text-gray-600">
-                Nessun cestello presente in questa posizione.
-              </div>
-            </div>
-          </HighContrastTooltip>
-        </Tooltip>
-      </TooltipProvider>
-    );
+  // Renderizza un cestello per la visualizzazione futura
+  const renderFutureBasket = (basket) => {
+    const cardSize = getBasketCardSize();
+    const width = cardSize.width;
+    const height = cardSize.height;
+    
+    if (!basket) return renderCurrentBasket(null);
     
     const latestOperation = getLatestOperationForBasket(basket.id);
     const cycle = getCycleForBasket(basket.id);
     
-    // Calcola il peso medio attuale
-    const currentWeight = latestOperation?.animalsPerKg 
-      ? Math.round(1000000 / latestOperation.animalsPerKg) 
-      : null;
+    if (!latestOperation || latestOperation.animalsPerKg === null) {
+      return renderCurrentBasket(basket);
+    }
     
-    // Calcola il peso futuro
-    const futureWeight = currentWeight 
-      ? calculateFutureWeight(basket.id, daysInFuture) 
-      : null;
+    // Calcola il peso futuro in mg
+    const futureWeight = calculateFutureWeight(basket.id, daysInFuture);
+    if (!futureWeight) return renderCurrentBasket(basket);
     
     // Determina la taglia futura
-    const futureSize = futureWeight 
-      ? getTargetSizeForWeight(futureWeight, sizes) 
-      : null;
+    const futureSize = getTargetSizeForWeight(futureWeight, sizes);
     
-    // Classe CSS per il colore del cestello futuro
+    // Calcola il numero attuale di animali per kg
+    const currentAnimalsPerKg = latestOperation.animalsPerKg;
+    
+    // Calcola il numero futuro di animali per kg
+    const futureAnimalsPerKg = Math.round(1000000 / futureWeight);
+    
+    // Classe CSS per il colore del cestello
     const colorClass = futureSize?.code 
       ? getSizeColorWithBorder(futureSize.code) 
       : 'bg-gray-100 text-gray-800 border-gray-300';
     
-    // Calcola la percentuale di crescita
-    const growthPercentage = currentWeight && futureWeight 
-      ? Math.round((futureWeight - currentWeight) / currentWeight * 100) 
-      : null;
+    // Calcolo della percentuale di crescita
+    const currentWeight = currentAnimalsPerKg ? 1000000 / currentAnimalsPerKg : 0;
+    const growthPercentage = currentWeight > 0 
+      ? Math.round((futureWeight / currentWeight - 1) * 100) 
+      : 0;
     
     // Prepara i dati per il tooltip
     const tooltipContent = () => {
-      const currentSize = currentWeight ? getTargetSizeForWeight(currentWeight, sizes) : null;
-      const futureDate = addDays(new Date(), daysInFuture);
+      const operationDate = latestOperation ? new Date(latestOperation.date) : null;
+      const targetDate = operationDate ? addDays(new Date(), daysInFuture) : null;
+      const weeksPassed = operationDate && targetDate 
+        ? differenceInWeeks(targetDate, operationDate) 
+        : null;
+      
+      const currentSize = getTargetSizeForWeight(currentWeight, sizes);
       
       return (
         <div className="p-2 max-w-xs">
-          <div className="font-bold mb-1">Cestello #{basket.physicalNumber}</div>
+          <div className="font-bold mb-1">Cestello #{basket.physicalNumber} tra {daysInFuture} giorni</div>
           <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+            <div className="font-medium mb-1 col-span-2 flex items-center">
+              <Calendar className="h-4 w-4 mr-1" />
+              {targetDate ? format(targetDate, 'dd/MM/yyyy') : 'N/A'}
+              {weeksPassed !== null && ` (${weeksPassed} settimane)`}
+            </div>
+            
+            <div className="text-gray-500">Taglia attuale:</div>
+            <div>{currentSize?.code} - {currentSize?.name || 'N/A'}</div>
+            
+            <div className="text-gray-500">Taglia futura:</div>
+            <div>{futureSize?.code} - {futureSize?.name || 'N/A'}</div>
+            
             <div className="text-gray-500">Peso attuale:</div>
-            <div>{currentWeight} mg ({currentSize?.code || 'N/A'})</div>
+            <div>{Math.round(currentWeight)} mg</div>
+            
             <div className="text-gray-500">Peso futuro:</div>
-            <div>{futureWeight} mg ({futureSize?.code || 'N/A'})</div>
-            {growthPercentage !== null && (
-              <>
-                <div className="text-gray-500">Crescita:</div>
-                <div className={growthPercentage > 20 ? "text-green-600 font-medium" : ""}>+{growthPercentage}%</div>
-              </>
-            )}
-            <div className="text-gray-500">Data futura:</div>
-            <div>{format(futureDate, 'dd/MM/yyyy')}</div>
-            <div className="text-gray-500">Giorni previsti:</div>
-            <div>{daysInFuture}</div>
-            {cycle && (
-              <>
-                <div className="text-gray-500">Ciclo:</div>
-                <div>#{cycle.id} (dal {format(new Date(cycle.startDate), 'dd/MM/yyyy')})</div>
-              </>
-            )}
+            <div>{futureWeight} mg</div>
+            
+            <div className="text-gray-500">Crescita:</div>
+            <div className={`font-medium ${growthPercentage > 0 ? 'text-green-600' : 'text-red-600'}`}>
+              {growthPercentage > 0 ? '+' : ''}{growthPercentage}%
+            </div>
+            
+            <div className="text-gray-500">Animali/kg attuale:</div>
+            <div>{currentAnimalsPerKg}</div>
+            
+            <div className="text-gray-500">Animali/kg futuro:</div>
+            <div>{futureAnimalsPerKg}</div>
           </div>
         </div>
       );
@@ -467,7 +509,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} h-16 w-40 flex flex-col justify-between cursor-pointer`}
+              className={`basket-card p-2 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer relative`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -478,25 +520,31 @@ export default function FlupsyComparison() {
                 )}
               </div>
               
-              {futureSize && (
-                <div className="flex justify-between items-center w-full">
-                  <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">
-                    {futureSize.code}
+              <div className="flex flex-col w-full space-y-1 mt-1">
+                <div className="flex items-center justify-center">
+                  <Badge className="text-[8px] px-1.5 py-0 h-4">
+                    {futureSize?.code || '?'}
                   </Badge>
-                  <div className="text-[9px] font-medium">{futureWeight} mg</div>
                 </div>
-              )}
-              
-              {growthPercentage !== null && (
-                <div className="mt-auto flex justify-between items-center w-full">
-                  <Badge className={`text-[8px] px-1.5 py-0 h-4 ${growthPercentage > 20 ? "bg-green-500 text-white" : "bg-gray-200"}`}>
-                    +{growthPercentage}%
-                  </Badge>
-                  <div className="opacity-75 text-[9px] font-medium">
-                    {format(addDays(new Date(), daysInFuture), 'dd/MM')}
+                
+                <div className="grid grid-cols-2 gap-1 text-center">
+                  <div>
+                    <div className="text-[8px] text-gray-500">Peso</div>
+                    <div className="text-[9px] font-medium">{futureWeight} mg</div>
+                  </div>
+                  <div>
+                    <div className="text-[8px] text-gray-500">Animali/kg</div>
+                    <div className="text-[9px] font-medium">{futureAnimalsPerKg}</div>
                   </div>
                 </div>
-              )}
+              </div>
+              
+              {/* Indicatore di crescita */}
+              <div className="absolute top-0 right-0 transform translate-x-1/3 -translate-y-1/3">
+                <Badge className={`text-[8px] px-1 py-0 h-4 ${growthPercentage >= 0 ? 'bg-green-500' : 'bg-red-500'} text-white rounded-full`}>
+                  {growthPercentage >= 0 ? '+' : ''}{growthPercentage}%
+                </Badge>
+              </div>
             </div>
           </TooltipTrigger>
           <HighContrastTooltip>
@@ -507,101 +555,115 @@ export default function FlupsyComparison() {
     );
   };
 
-  // Renderizza un cestello per la visualizzazione futura (per taglia target)
-  const renderFutureBasketBySize = (basket) => {
-    if (!basket) return (
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="basket-card p-2 rounded border-2 border-dashed border-gray-300 h-16 w-40 flex items-center justify-center text-gray-400 text-xs cursor-pointer">
-              Vuoto
-            </div>
-          </TooltipTrigger>
-          <HighContrastTooltip>
-            <div className="p-2 max-w-xs">
-              <div className="font-medium text-gray-700 mb-1">Posizione non assegnata</div>
-              <div className="text-sm text-gray-600">
-                Nessun cestello presente in questa posizione.
-              </div>
-            </div>
-          </HighContrastTooltip>
-        </Tooltip>
-      </TooltipProvider>
-    );
+  // Renderizza un cestello per la visualizzazione di raggiungimento taglia
+  const renderTargetSizeBasket = (basket) => {
+    const cardSize = getBasketCardSize();
+    const width = cardSize.width;
+    const height = cardSize.height;
+    
+    if (!basket) return renderCurrentBasket(null);
     
     const latestOperation = getLatestOperationForBasket(basket.id);
     const cycle = getCycleForBasket(basket.id);
     
-    // Calcola il peso medio attuale
-    const currentWeight = latestOperation?.animalsPerKg 
-      ? Math.round(1000000 / latestOperation.animalsPerKg) 
-      : null;
+    if (!latestOperation || latestOperation.animalsPerKg === null) {
+      return renderCurrentBasket(basket);
+    }
+    
+    // Calcola il peso attuale in mg
+    const currentWeight = latestOperation.animalsPerKg ? 1000000 / latestOperation.animalsPerKg : 0;
+    
+    // Calcola il numero di giorni per raggiungere la taglia target
+    const daysToTarget = getDaysToReachTargetSize(basket.id, targetSizeCode);
     
     // Determina la taglia attuale
-    const currentSize = currentWeight 
-      ? getTargetSizeForWeight(currentWeight, sizes) 
-      : null;
+    const currentSize = getTargetSizeForWeight(currentWeight, sizes);
     
-    // Calcola i giorni necessari per raggiungere la taglia target
-    const daysToReach = getDaysToReachTargetSize(basket.id, targetSizeCode);
+    // Ottiene l'oggetto taglia target
+    const targetSize = sizes ? sizes.find(s => s.code === targetSizeCode) : null;
     
-    // Determina se raggiungerà la taglia target
+    // Verifica se raggiungerà la taglia target entro 180 giorni
     const willReach = willReachTargetSize(basket.id, targetSizeCode);
-    
-    // Ottieni l'oggetto taglia target
-    const targetSizeObj = sizes ? sizes.find(s => s.code === targetSizeCode) : null;
     
     // Classe CSS per il colore del cestello
     let colorClass = 'bg-gray-100 text-gray-800 border-gray-300';
+    
+    // Se ha già raggiunto la taglia target, usa il colore della taglia
     if (currentSize?.code === targetSizeCode) {
-      // È già nella taglia target
       colorClass = getSizeColorWithBorder(targetSizeCode);
-    } else if (willReach) {
-      // Raggiungerà la taglia target (colore più tenue)
-      colorClass = getSizeColorWithBorder(targetSizeCode).replace('-500', '-400');
+    } 
+    // Se non raggiungerà la taglia target, usa un colore rosso
+    else if (!willReach) {
+      colorClass = 'bg-red-100 text-red-800 border-red-300';
+    } 
+    // Se raggiungerà la taglia target, usa un bordo del colore target ma sfondo più chiaro
+    else {
+      switch (targetSizeCode) {
+        case 'T1':
+          colorClass = 'bg-blue-50 text-blue-800 border-blue-500 border-dashed';
+          break;
+        case 'T2':
+          colorClass = 'bg-cyan-50 text-cyan-800 border-cyan-500 border-dashed';
+          break;
+        case 'T3':
+          colorClass = 'bg-teal-50 text-teal-800 border-teal-500 border-dashed';
+          break;
+        case 'T4':
+          colorClass = 'bg-green-50 text-green-800 border-green-500 border-dashed';
+          break;
+        case 'T5':
+          colorClass = 'bg-lime-50 text-lime-800 border-lime-500 border-dashed';
+          break;
+        case 'T6':
+          colorClass = 'bg-amber-50 text-amber-800 border-amber-500 border-dashed';
+          break;
+        case 'T7':
+          colorClass = 'bg-orange-50 text-orange-800 border-orange-500 border-dashed';
+          break;
+        default:
+          colorClass = 'bg-gray-50 text-gray-800 border-gray-300 border-dashed';
+      }
     }
     
     // Prepara i dati per il tooltip
     const tooltipContent = () => {
-      const reachStatus = currentSize?.code === targetSizeCode 
-        ? "Già raggiunta" 
-        : willReach 
-          ? `Raggiungerà in ${daysToReach} giorni` 
-          : "Non raggiungerà nel periodo";
+      const operationDate = latestOperation ? new Date(latestOperation.date) : null;
+      const targetDate = daysToTarget !== null && operationDate 
+        ? addDays(operationDate, daysToTarget) 
+        : null;
       
       return (
         <div className="p-2 max-w-xs">
-          <div className="font-bold mb-1">Cestello #{basket.physicalNumber}</div>
+          <div className="font-bold mb-1">
+            Cestello #{basket.physicalNumber} 
+            {targetSize && ` - Taglia ${targetSize.code} (${targetSize.name})`}
+          </div>
           <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
             <div className="text-gray-500">Taglia attuale:</div>
-            <div>
-              {currentSize?.code || 'N/A'} 
-              ({currentWeight} mg)
-            </div>
-            <div className="text-gray-500">Taglia target:</div>
-            <div className={currentSize?.code === targetSizeCode ? "text-green-600 font-medium" : ""}>
-              {targetSizeCode} ({targetSizeObj?.name || 'N/A'})
-            </div>
-            <div className="text-gray-500">Stato:</div>
-            <div className={willReach ? (currentSize?.code === targetSizeCode ? "text-green-600" : "text-blue-600") : "text-red-600"}>
-              {reachStatus}
-            </div>
-            {daysToReach !== null && daysToReach > 0 && (
+            <div>{currentSize?.code} - {currentSize?.name || 'N/A'}</div>
+            
+            <div className="text-gray-500">Peso attuale:</div>
+            <div>{Math.round(currentWeight)} mg</div>
+            
+            {currentSize?.code === targetSizeCode ? (
+              <div className="col-span-2 mt-1 text-green-600 font-medium">
+                Ha già raggiunto la taglia target!
+              </div>
+            ) : daysToTarget === null ? (
+              <div className="col-span-2 mt-1 text-red-600 font-medium">
+                Non raggiungerà la taglia target entro 365 giorni.
+              </div>
+            ) : (
               <>
-                <div className="text-gray-500">Data prevista:</div>
-                <div>{format(addDays(new Date(), daysToReach), 'dd/MM/yyyy')}</div>
-              </>
-            )}
-            {cycle && (
-              <>
-                <div className="text-gray-500">Ciclo:</div>
-                <div>#{cycle.id} (dal {format(new Date(cycle.startDate), 'dd/MM/yyyy')})</div>
-              </>
-            )}
-            {latestOperation && (
-              <>
-                <div className="text-gray-500">Ultima misurazione:</div>
-                <div>{format(new Date(latestOperation.date), 'dd/MM/yyyy')}</div>
+                <div className="text-gray-500">Giorni necessari:</div>
+                <div className="font-medium">{daysToTarget} giorni</div>
+                
+                {targetDate && (
+                  <>
+                    <div className="text-gray-500">Data prevista:</div>
+                    <div className="font-medium">{format(targetDate, 'dd/MM/yyyy')}</div>
+                  </>
+                )}
               </>
             )}
           </div>
@@ -614,7 +676,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} h-16 w-40 flex flex-col justify-between ${!willReach ? 'opacity-40' : ''} cursor-pointer`}
+              className={`basket-card p-2 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer relative`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -625,29 +687,29 @@ export default function FlupsyComparison() {
                 )}
               </div>
               
-              <div className="flex justify-between items-center w-full">
+              <div className="flex flex-col w-full items-center justify-center space-y-1">
                 {currentSize?.code === targetSizeCode ? (
-                  <Badge className="text-[8px] px-1.5 py-0 h-4 bg-green-500 text-white">Già {targetSizeCode}</Badge>
-                ) : willReach ? (
-                  <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">→{targetSizeCode}</Badge>
-                ) : (
-                  <Badge variant="outline" className="text-[8px] px-1.5 py-0 h-4">No</Badge>
-                )}
-                
-                {daysToReach !== null && daysToReach > 0 && (
-                  <div className="text-[9px] font-medium">
-                    {daysToReach}g
+                  <div className="flex items-center justify-center text-[10px] font-medium text-green-600">
+                    Taglia raggiunta
                   </div>
+                ) : daysToTarget === null ? (
+                  <div className="flex items-center justify-center text-[10px] font-medium text-red-600">
+                    Non raggiungibile
+                  </div>
+                ) : (
+                  <>
+                    <div className="flex items-center text-[10px]">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {daysToTarget} giorni
+                    </div>
+                    <div className="flex items-center text-[9px] text-gray-500">
+                      {currentSize?.code || '?'} 
+                      <ArrowRight className="h-3 w-3 mx-0.5" /> 
+                      {targetSizeCode}
+                    </div>
+                  </>
                 )}
               </div>
-              
-              {daysToReach !== null && daysToReach > 0 && (
-                <div className="mt-auto flex justify-between items-center w-full">
-                  <div className="opacity-75 text-[9px] font-medium">
-                    {format(addDays(new Date(), daysToReach), 'dd/MM')}
-                  </div>
-                </div>
-              )}
             </div>
           </TooltipTrigger>
           <HighContrastTooltip>
@@ -658,215 +720,282 @@ export default function FlupsyComparison() {
     );
   };
 
-  // Renderizza la griglia del FLUPSY
-  const renderFlupsy = (renderBasketFn) => {
-    if (!selectedFlupsy || fluspyBaskets.length === 0) return null;
-    
-    // Trova il numero massimo di posizioni nella griglia
-    const maxPositionSX = Math.max(...fluspyBaskets.filter(b => b.row === 'SX').map(b => b.position || 0));
-    const maxPositionDX = Math.max(...fluspyBaskets.filter(b => b.row === 'DX').map(b => b.position || 0));
-    const maxPosition = Math.max(maxPositionSX, maxPositionDX, 10); // Minimo 10 posizioni
-    
-    return (
-      <div className="flupsy-visualizer">
-        <div className="flupsy-grid flex justify-center gap-6">
-          {/* Fila SX */}
-          <div className="fila-sx">
-            <div className="text-center mb-4">
-              <h3 className="text-sm font-semibold">FILA SX</h3>
-            </div>
-            <div className="flex flex-col gap-2">
-              {Array.from({ length: maxPosition }).map((_, idx) => {
-                const position = idx + 1;
-                const basket = fluspyBaskets.find(b => b.row === 'SX' && b.position === position);
-                return (
-                  <div key={`SX-${position}`} className="relative">
-                    <div className="position-number absolute -left-5 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
-                      {position}
-                    </div>
-                    {renderBasketFn(basket)}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-          
-          {/* Fila DX */}
-          <div className="fila-dx">
-            <div className="text-center mb-4">
-              <h3 className="text-sm font-semibold">FILA DX</h3>
-            </div>
-            <div className="flex flex-col gap-2">
-              {Array.from({ length: maxPosition }).map((_, idx) => {
-                const position = idx + 1;
-                const basket = fluspyBaskets.find(b => b.row === 'DX' && b.position === position);
-                return (
-                  <div key={`DX-${position}`} className="relative">
-                    <div className="position-number absolute -left-5 top-1/2 transform -translate-y-1/2 text-xs text-gray-500">
-                      {position}
-                    </div>
-                    {renderBasketFn(basket)}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  };
-
+  // Render principale del componente
   return (
-    <div className="container mx-auto">
-      <div className="mb-6">
-        <h1 className="text-2xl font-bold">Confronto FLUPSY: Attuale vs Futuro</h1>
-        <p className="text-muted-foreground">
-          Confronta lo stato attuale con lo stato futuro delle vongole in base alla crescita prevista
-        </p>
-      </div>
-      
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
-        {/* Card selezione FLUPSY */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-md">Seleziona Unità FLUPSY</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Select 
-              value={selectedFlupsyId?.toString() || ''} 
-              onValueChange={(value) => setSelectedFlupsyId(parseInt(value, 10))}
-            >
-              <SelectTrigger>
-                <SelectValue placeholder="Seleziona FLUPSY" />
-              </SelectTrigger>
-              <SelectContent>
-                {flupsys && flupsys.map((flupsy) => (
-                  <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
-                    {flupsy.name}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
-          </CardContent>
-        </Card>
-        
-        {/* Card visualizzazione */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-md">Tipo di confronto</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <Tabs value={currentTabId} onValueChange={setCurrentTabId} className="w-full">
-              <TabsList className="w-full">
-                <TabsTrigger value="data-futuro" className="flex-1 flex items-center justify-center">
-                  <Calendar className="w-4 h-4 mr-2" />
-                  Data futura
-                </TabsTrigger>
-                <TabsTrigger value="taglia-target" className="flex-1 flex items-center justify-center">
-                  <Clock className="w-4 h-4 mr-2" />
-                  Taglia target
-                </TabsTrigger>
-              </TabsList>
-            </Tabs>
-          </CardContent>
-        </Card>
-        
-        {/* Card impostazioni */}
-        <Card>
-          <CardHeader className="pb-3">
-            <CardTitle className="text-md">
-              {currentTabId === 'data-futuro' ? 'Giorni nel futuro' : 'Taglia target'}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            {currentTabId === 'data-futuro' ? (
-              <div>
-                <div className="flex justify-between mb-2">
-                  <span className="text-sm">Proiezione a:</span>
-                  <Badge>{daysInFuture} giorni</Badge>
-                </div>
-                <Slider
-                  value={[daysInFuture]}
-                  min={10}
-                  max={120}
-                  step={10}
-                  onValueChange={(value) => setDaysInFuture(value[0])}
-                />
-                <div className="text-xs text-muted-foreground mt-2 text-center">
-                  {format(new Date(), 'dd/MM/yyyy')} 
-                  <ArrowRight className="inline mx-2 w-3 h-3" /> 
-                  {format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')}
-                </div>
-              </div>
-            ) : (
-              <Select 
-                value={targetSizeCode} 
-                onValueChange={setTargetSizeCode}
+    <div className="container mx-auto py-6">
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center justify-between">
+            <div>Confronto Flupsy</div>
+            <div className="flex items-center space-x-2">
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-7 px-2" 
+                onClick={() => setZoomLevel(prev => Math.max(1, prev - 1))}
+                disabled={zoomLevel <= 1}
               >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona taglia target" />
-                </SelectTrigger>
-                <SelectContent>
-                  {sizes && sizes.map((size) => (
-                    <SelectItem key={size.id} value={size.code}>
-                      {size.code} - {size.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      
-      {/* Visualizzazione principale */}
-      <div className="grid grid-cols-1 md:grid-cols-2 gap-8 mb-8">
-        {/* Stato attuale */}
-        <Card>
-          <CardHeader>
-            <CardTitle>Stato attuale</CardTitle>
-            <CardDescription>
-              Visualizzazione corrente del FLUPSY {selectedFlupsy?.name}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingBaskets || isLoadingFlupsys ? (
-              <div className="text-center py-4">Caricamento...</div>
-            ) : (
-              renderFlupsy(renderCurrentBasket)
-            )}
-          </CardContent>
-        </Card>
-        
-        {/* Stato futuro */}
-        <Card>
-          <CardHeader>
-            <CardTitle>
-              {currentTabId === 'data-futuro' 
-                ? `Stato futuro (${format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')})` 
-                : `Vongole che raggiungeranno la taglia ${targetSizeCode}`}
-            </CardTitle>
-            <CardDescription>
-              {currentTabId === 'data-futuro' 
-                ? `Proiezione a ${daysInFuture} giorni da oggi` 
-                : `Tempistica prevista per raggiungere la taglia ${targetSizeCode}`}
-            </CardDescription>
-          </CardHeader>
-          <CardContent>
-            {isLoadingBaskets || isLoadingFlupsys ? (
-              <div className="text-center py-4">Caricamento...</div>
-            ) : (
-              renderFlupsy(
-                currentTabId === 'data-futuro' 
-                  ? renderFutureBasketByDate 
-                  : renderFutureBasketBySize
-              )
-            )}
-          </CardContent>
-        </Card>
-      </div>
-      
-
+                <ZoomOut className="h-4 w-4" />
+              </Button>
+              <Button 
+                size="sm" 
+                variant="outline" 
+                className="h-7 px-2" 
+                onClick={() => setZoomLevel(prev => Math.min(3, prev + 1))}
+                disabled={zoomLevel >= 3}
+              >
+                <ZoomIn className="h-4 w-4" />
+              </Button>
+              <Button
+                size="sm"
+                variant="outline"
+                className="h-7 px-2"
+                onClick={() => {
+                  // Forza il re-render dei dati
+                  location.reload();
+                }}
+              >
+                <RefreshCw className="h-4 w-4" />
+              </Button>
+            </div>
+          </CardTitle>
+          <CardDescription>
+            Visualizza lo stato attuale e futuro dei flupsy e delle cestine
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row md:items-start md:space-x-4 space-y-4 md:space-y-0">
+            <div className="w-full md:w-56 space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-500 mb-1">
+                  Seleziona Flupsy
+                </label>
+                <Select
+                  value={selectedFlupsyId?.toString() || ''}
+                  onValueChange={(value) => setSelectedFlupsyId(parseInt(value))}
+                  disabled={isLoadingFlupsys}
+                >
+                  <SelectTrigger className="w-full">
+                    <SelectValue placeholder="Seleziona un Flupsy" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {flupsys?.map((flupsy) => (
+                      <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                        {flupsy.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <Tabs value={currentTabId} onValueChange={setCurrentTabId} className="w-full">
+                <TabsList className="grid w-full grid-cols-2">
+                  <TabsTrigger value="data-futuro">Data futura</TabsTrigger>
+                  <TabsTrigger value="taglia-target">Taglia target</TabsTrigger>
+                </TabsList>
+                
+                <TabsContent value="data-futuro" className="space-y-4 mt-4">
+                  <div>
+                    <label className="flex justify-between text-sm mb-1">
+                      <span className="font-medium text-gray-500">Giorni nel futuro</span>
+                      <span className="text-gray-500">{daysInFuture} giorni</span>
+                    </label>
+                    <Slider
+                      value={[daysInFuture]}
+                      min={1}
+                      max={180}
+                      step={1}
+                      onValueChange={(value) => setDaysInFuture(value[0])}
+                    />
+                    <div className="flex justify-between text-xs text-gray-500 mt-1">
+                      <span>1 giorno</span>
+                      <span>6 mesi</span>
+                    </div>
+                  </div>
+                </TabsContent>
+                
+                <TabsContent value="taglia-target" className="space-y-4 mt-4">
+                  <div>
+                    <label className="block text-sm font-medium text-gray-500 mb-1">
+                      Taglia target
+                    </label>
+                    <Select
+                      value={targetSizeCode}
+                      onValueChange={setTargetSizeCode}
+                    >
+                      <SelectTrigger className="w-full">
+                        <SelectValue placeholder="Seleziona taglia target" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {sizes?.map((size) => (
+                          <SelectItem key={size.id} value={size.code}>
+                            {size.code} - {size.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                </TabsContent>
+              </Tabs>
+              
+              {/* Informazioni sul flupsy selezionato */}
+              {selectedFlupsy && (
+                <Card className="mt-4">
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base">{selectedFlupsy.name}</CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2 px-4 pb-4">
+                    <div className="text-sm">
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+                        <div className="text-gray-500">Località:</div>
+                        <div>{selectedFlupsy.location || 'N/A'}</div>
+                        <div className="text-gray-500">Cestelli:</div>
+                        <div>{fluspyBaskets.length}</div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+              
+              {/* Dettagli SGR per debug */}
+              {process.env.NODE_ENV === 'development' && (
+                <Card className="mt-4">
+                  <CardHeader className="py-3 px-4">
+                    <CardTitle className="text-base">Debug SGR</CardTitle>
+                  </CardHeader>
+                  <CardContent className="py-2 px-4 pb-4">
+                    <div className="text-sm">
+                      <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-xs">
+                        {sgrs?.map((sgr) => (
+                          <React.Fragment key={sgr.id}>
+                            <div>{sgr.month}:</div>
+                            <div>{sgr.percentage}% (mensile)</div>
+                            <div>Giornaliero:</div>
+                            <div>{monthlyToDaily(sgr.percentage).toFixed(4)}%</div>
+                            <div className="col-span-2 border-t border-gray-200 mt-1 pt-1"></div>
+                          </React.Fragment>
+                        ))}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+            
+            <div className="flex-1">
+              {isLoadingBaskets ? (
+                <div className="flex items-center justify-center h-80 text-gray-400">
+                  Caricamento in corso...
+                </div>
+              ) : fluspyBaskets.length === 0 ? (
+                <div className="flex items-center justify-center h-80 text-gray-400">
+                  Nessun cestello trovato per questo flupsy
+                </div>
+              ) : (
+                <div>
+                  {/* Mostra dettagli sul turno di visualizzazione */}
+                  <div className="mb-4 flex items-center justify-between">
+                    <div className="flex items-center">
+                      <span className="text-sm font-medium mr-2">
+                        {currentTabId === 'data-futuro' ? 
+                          `Visualizzazione a ${daysInFuture} giorni (${format(addDays(new Date(), daysInFuture), 'dd/MM/yyyy')})` :
+                          `Visualizzazione crescita fino a taglia ${targetSizeCode}`
+                        }
+                      </span>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <Info className="h-4 w-4 text-gray-400 cursor-help" />
+                          </TooltipTrigger>
+                          <HighContrastTooltip>
+                            {currentTabId === 'data-futuro' ?
+                              'Questa visualizzazione mostra come sarà il flupsy nella data futura specificata.' :
+                              'Questa visualizzazione indica quali cestelli raggiungeranno la taglia target e in quanto tempo.'
+                            }
+                          </HighContrastTooltip>
+                        </Tooltip>
+                      </TooltipProvider>
+                    </div>
+                  </div>
+                  
+                  {/* Estrai le righe (es. SX, DX) disponibili */}
+                  {(() => {
+                    // Converti i cestelli in una matrice per riga/posizione
+                    const rows = [...new Set(fluspyBaskets.map(b => b.row))].filter(Boolean).sort();
+                    
+                    // Calcola il numero massimo di posizioni tra tutte le righe
+                    const maxPosition = Math.max(
+                      ...fluspyBaskets.map(b => b.position || 0), 
+                      8 // Minimo 8 posizioni per visualizzazione
+                    );
+                    
+                    // Crea una matrice di cestelli
+                    const basketMatrix = {};
+                    rows.forEach(row => {
+                      basketMatrix[row] = Array(maxPosition).fill(null);
+                    });
+                    
+                    // Riempi la matrice con i cestelli
+                    fluspyBaskets.forEach(basket => {
+                      if (basket.row && basket.position !== null) {
+                        basketMatrix[basket.row][basket.position - 1] = basket;
+                      }
+                    });
+                    
+                    return (
+                      <div className="space-y-6">
+                        {rows.map(row => (
+                          <div key={row} className="rounded-md">
+                            <div className="flex items-center mb-2">
+                              <div className="text-sm font-medium bg-gray-100 px-2 py-1 rounded">
+                                Fila {row}
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-2">
+                              {basketMatrix[row].map((basket, position) => (
+                                <div key={position} className="flex items-center justify-center">
+                                  {currentTabId === 'data-futuro' ? 
+                                    renderFutureBasket(basket) : 
+                                    renderTargetSizeBasket(basket)
+                                  }
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {/* Cestelli senza posizione */}
+                        {fluspyBaskets.filter(b => !b.row || b.position === null).length > 0 && (
+                          <div className="rounded-md">
+                            <div className="flex items-center mb-2">
+                              <div className="text-sm font-medium bg-gray-100 px-2 py-1 rounded">
+                                Cestelli senza posizione
+                              </div>
+                            </div>
+                            <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-2">
+                              {fluspyBaskets
+                                .filter(b => !b.row || b.position === null)
+                                .map(basket => (
+                                  <div key={basket.id} className="flex items-center justify-center">
+                                    {currentTabId === 'data-futuro' ? 
+                                      renderFutureBasket(basket) : 
+                                      renderTargetSizeBasket(basket)
+                                    }
+                                  </div>
+                                ))
+                              }
+                            </div>
+                          </div>
+                        )}
+                      </div>
+                    );
+                  })()}
+                </div>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
     </div>
   );
 }
