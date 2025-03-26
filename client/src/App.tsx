@@ -24,6 +24,7 @@ import FlupsyComparison from "@/pages/FlupsyComparison";
 import Inventory from "@/pages/Inventory";
 import TestView from "@/pages/TestView";
 import NFCScan from "@/pages/NFCScan";
+import NFCTagManager from "@/pages/NFCTagManager";
 
 function Router() {
   return (
@@ -49,6 +50,7 @@ function Router() {
       <Route path="/settings" component={Settings}/>
       <Route path="/test" component={TestView}/>
       <Route path="/nfc-scan" component={NFCScan}/>
+      <Route path="/nfc-tags" component={NFCTagManager}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

@@ -4,7 +4,7 @@ import {
   Home, Package, FileText, RefreshCw, Package2, BarChart2, 
   Scale, TrendingUp, Settings as SettingsIcon, Menu, Bell, 
   User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
-  Scan, Smartphone, X as CloseIcon
+  Scan, Smartphone, Tag, X as CloseIcon
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -42,6 +42,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     { icon: <GitCompare className="h-5 w-5 mr-2" />, label: "Confronto FLUPSY", path: "/flupsy-comparison" },
     { icon: <Package className="h-5 w-5 mr-2" />, label: "Gestione Ceste", path: "/baskets" },
     { icon: <Scan className="h-5 w-5 mr-2" />, label: "FlupsyScan Mobile", path: "/nfc-scan" },
+    { icon: <Tag className="h-5 w-5 mr-2" />, label: "Gestione Tag NFC", path: "/nfc-tags" },
     { icon: <FileText className="h-5 w-5 mr-2" />, label: "Operazioni", path: "/operations" },
     { icon: <Zap className="h-5 w-5 mr-2" />, label: "Operazioni Rapide", path: "/quick-operations" },
     { icon: <GripHorizontal className="h-5 w-5 mr-2" />, label: "Operazioni Drag&Drop", path: "/operations-drag-drop" },
