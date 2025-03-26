@@ -127,13 +127,11 @@ export default function FlupsyComparison() {
       const currentMonth = format(new Date(), 'MMMM').toLowerCase();
       const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
       if (currentSgr) {
-        // Converti da percentuale mensile a giornaliera
-        const monthlyRate = currentSgr.percentage; 
-        sgrDailyPercentage = ((Math.pow(1 + monthlyRate/100, 1/30) - 1) * 100);
+        // Usa direttamente il valore giornaliero
+        sgrDailyPercentage = currentSgr.percentage;
       } else {
-        // Altrimenti usa il valore medio delle percentuali mensili convertito in giornaliero
-        const averageMonthlyRate = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
-        sgrDailyPercentage = ((Math.pow(1 + averageMonthlyRate/100, 1/30) - 1) * 100);
+        // Altrimenti usa il valore medio delle percentuali giornaliere
+        sgrDailyPercentage = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
       }
     }
     
@@ -157,8 +155,8 @@ export default function FlupsyComparison() {
       if (sgrs) {
         const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
         if (monthSgr) {
-          // Converte il valore mensile in giornaliero
-          dailyRate = monthlyToDaily(monthSgr.percentage);
+          // Usa direttamente il valore giornaliero
+          dailyRate = monthSgr.percentage;
         }
       }
       
