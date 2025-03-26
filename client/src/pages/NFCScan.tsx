@@ -93,14 +93,16 @@ import {
   Target
 } from 'lucide-react';
 
-export default function NFCScan() {
+export default function NFCScan({ params }: { params?: { id?: string } }) {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
   const isMobile = useIsMobile();
   const queryClient = useQueryClient();
   
   const [isScanning, setIsScanning] = useState(false);
-  const [scannedBasketId, setScannedBasketId] = useState<number | null>(null);
+  const [scannedBasketId, setScannedBasketId] = useState<number | null>(
+    params?.id ? parseInt(params.id) : null
+  );
   const [scanError, setScanError] = useState<string | null>(null);
   
   // Query per ottenere i dati del cestello scansionato

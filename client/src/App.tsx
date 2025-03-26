@@ -50,6 +50,7 @@ function Router() {
       <Route path="/settings" component={Settings}/>
       <Route path="/test" component={TestView}/>
       <Route path="/nfc-scan" component={NFCScan}/>
+      <Route path="/nfc-scan/basket/:id" component={NFCScan}/>
       <Route path="/nfc-tags" component={NFCTagManager}/>
       
       {/* Fallback to 404 */}
