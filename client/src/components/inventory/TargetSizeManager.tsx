@@ -89,13 +89,13 @@ export function TargetSizeManager() {
   // Recupera le annotazioni di taglia
   const { data: annotations, isLoading } = useQuery({
     queryKey: ['/api/target-size-annotations'],
-    queryFn: getQueryFn<TargetSizeAnnotation[]>({ on401: "throw" }),
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // Recupera le taglie
   const { data: sizes } = useQuery({
     queryKey: ['/api/sizes'],
-    queryFn: getQueryFn<Size[]>({ on401: "throw" }),
+    queryFn: getQueryFn({ on401: "throw" }),
   });
 
   // Recupera i cestelli con cicli attivi
@@ -115,7 +115,7 @@ export function TargetSizeManager() {
   // Mutazione per creare una nuova annotazione
   const createAnnotation = useMutation({
     mutationFn: async (values: CreateAnnotationValues) => {
-      return await apiRequest<TargetSizeAnnotation>("/api/target-size-annotations", {
+      return await apiRequest("/api/target-size-annotations", {
         method: "POST",
         body: JSON.stringify(values),
       });

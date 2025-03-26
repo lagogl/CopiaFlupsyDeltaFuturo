@@ -775,7 +775,7 @@ export default function Inventory() {
         </div>
         
         <Tabs defaultValue="summary" className="w-full">
-          <TabsList className="grid w-full grid-cols-5 bg-gradient-to-r from-slate-50 to-white border border-slate-200 p-1 rounded-xl shadow-sm mb-6">
+          <TabsList className="grid w-full grid-cols-6 bg-gradient-to-r from-slate-50 to-white border border-slate-200 p-1 rounded-xl shadow-sm mb-6">
             <TabsTrigger value="summary" className="rounded-lg border-0 data-[state=active]:border-0 data-[state=active]:bg-blue-500 data-[state=active]:text-white text-slate-700 shadow-none data-[state=active]:shadow-sm">
               <LineChart className="h-4 w-4 mr-2" />
               Riepilogo
@@ -795,6 +795,10 @@ export default function Inventory() {
             <TabsTrigger value="timeline" className="rounded-lg border-0 data-[state=active]:border-0 data-[state=active]:bg-amber-500 data-[state=active]:text-white text-slate-700 shadow-none data-[state=active]:shadow-sm">
               <CalendarIcon className="h-4 w-4 mr-2" />
               Timeline Vendite
+            </TabsTrigger>
+            <TabsTrigger value="annotations" className="rounded-lg border-0 data-[state=active]:border-0 data-[state=active]:bg-pink-500 data-[state=active]:text-white text-slate-700 shadow-none data-[state=active]:shadow-sm">
+              <Scale className="h-4 w-4 mr-2" />
+              Annotazioni Taglia
             </TabsTrigger>
           </TabsList>
           
@@ -1216,6 +1220,23 @@ export default function Inventory() {
                     formatDateIT={formatDateIT}
                   />
                 </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+
+          <TabsContent value="annotations">
+            <Card className="border border-pink-100 shadow-md">
+              <CardHeader className="bg-gradient-to-r from-pink-50 to-white border-b border-pink-100">
+                <CardTitle className="text-pink-800 flex items-center gap-2">
+                  <Scale className="h-5 w-5 text-pink-500" />
+                  Gestione Annotazioni Taglia
+                </CardTitle>
+                <CardDescription className="text-pink-600">
+                  Monitora e gestisci le previsioni di raggiungimento delle taglie commerciali
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="p-5">
+                <TargetSizeManager />
               </CardContent>
             </Card>
           </TabsContent>
