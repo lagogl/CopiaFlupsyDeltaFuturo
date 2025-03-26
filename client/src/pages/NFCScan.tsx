@@ -142,7 +142,6 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   
   // Gestisce l'avvio della scansione NFC
   const startScan = () => {
-    console.log("Avvio scansione NFC...");
     // Reset dei valori iniziali
     setIsScanning(true);
     setScanError(null);
@@ -382,10 +381,9 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                 {!isMobile && (
                   <Alert className="mt-6">
                     <InfoIcon className="h-4 w-4" />
-                    <AlertTitle>Modalità simulazione</AlertTitle>
+                    <AlertTitle>Modalità desktop</AlertTitle>
                     <AlertDescription>
-                      Stai utilizzando un dispositivo desktop. La scansione NFC è disponibile solo su dispositivi mobili compatibili.
-                      Usa il bottone sopra per simulare una scansione a scopo di test.
+                      Stai utilizzando un dispositivo desktop. La scansione NFC è disponibile solo su dispositivi mobili compatibili con NFC.
                     </AlertDescription>
                   </Alert>
                 )}
