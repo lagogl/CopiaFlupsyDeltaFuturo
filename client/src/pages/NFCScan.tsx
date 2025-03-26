@@ -142,35 +142,10 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   
   // Gestisce l'avvio della scansione NFC
   const startScan = () => {
+    console.log("Avvio scansione NFC...");
     // Reset dei valori iniziali
     setIsScanning(true);
     setScanError(null);
-    
-    // Se non siamo su mobile, simuliamo immediatamente una scansione per il debug
-    if (!isMobile) {
-      toast({
-        title: "Modalità simulazione attivata",
-        description: "Simulazione di scansione NFC in corso...",
-      });
-      
-      // Simuliamo la scansione dopo un breve ritardo (per dare un'esperienza realistica)
-      setTimeout(() => {
-        console.log("Simulazione scansione NFC per desktop");
-        
-        // Impostiamo manualmente l'ID del cestello #2 per debug
-        setScannedBasketId(3);
-        setIsScanning(false);
-        
-        toast({
-          title: "Tag NFC rilevato (simulato)",
-          description: "Cestello #2 identificato per test su desktop.",
-        });
-      }, 1500);
-    } else {
-      // Su mobile, non facciamo nulla qui perché il componente NFCReader 
-      // si attiva automaticamente quando isScanning diventa true
-      console.log("Avvio scansione NFC su mobile...");
-    }
   };
   
   // Gestisce l'interruzione della scansione NFC

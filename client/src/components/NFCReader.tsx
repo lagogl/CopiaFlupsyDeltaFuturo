@@ -13,8 +13,32 @@ export default function NFCReader({ onRead, onError, onAbort }: NFCReaderProps) 
   useEffect(() => {
     console.log("NFCReader attivato, isMobile:", isMobile);
     
-    // Nota: la simulazione desktop è ora gestita in NFCScan.tsx
-    // Qui ci concentriamo solo sul flusso NFC reale su dispositivi mobili
+    // Per desktop, simuliamo un tag NFC per scopi di test
+    if (!isMobile) {
+      console.log("Simulazione desktop attivata");
+      const timer = setTimeout(() => {
+        const simulatedData = [
+          {
+            recordType: 'text',
+            mediaType: null,
+            data: JSON.stringify({
+              id: 3,
+              number: 2,
+              serialNumber: "SIMULATED-TAG",
+              redirectTo: "/nfc-scan/basket/3",
+              timestamp: new Date().toISOString()
+            })
+          }
+        ];
+        
+        onRead(simulatedData);
+      }, 2000);
+      
+      return () => {
+        clearTimeout(timer);
+        onAbort();
+      };
+    }
     
     // Check if the browser supports the Web NFC API
     if (typeof window !== 'undefined' && 'NDEFReader' in window) {
