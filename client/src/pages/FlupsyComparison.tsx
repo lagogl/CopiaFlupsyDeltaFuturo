@@ -161,8 +161,8 @@ export default function FlupsyComparison() {
         }
       }
       
-      // Converti la percentuale in decimale e aggiungi all'effetto cumulativo
-      totalSGREffect += (dailyRate / 100);
+      // Aggiungi il tasso SGR all'effetto cumulativo (è già in decimale)
+      totalSGREffect += dailyRate;
     }
     
     // Applica la formula completa: Pf = Pi * e^(SGR*t)
@@ -251,8 +251,8 @@ export default function FlupsyComparison() {
       }
       
       // Applica la crescita giornaliera usando la formula corretta: Pf = Pi * e^(SGR*t)
-      // Contiamo l'effetto di un giorno con il tasso corrente
-      simulationWeight = simulationWeight * Math.exp(dailyRate / 100);
+      // Contiamo l'effetto di un giorno con il tasso corrente (già in decimale)
+      simulationWeight = simulationWeight * Math.exp(dailyRate);
       days++;
       
       // Aggiorna la data corrente per il giorno successivo
