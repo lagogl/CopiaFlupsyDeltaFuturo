@@ -45,13 +45,24 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       ndef.addEventListener("reading", async ({ message, serialNumber }: any) => {
         try {
           // Prima otteniamo i dettagli del cestello per verificare se ha un ciclo attivo
+          console.log("Recupero dettagli cestello per ID:", basketId);
           const basketDetails = await apiRequest('GET', `/api/baskets/details/${basketId}`) as any;
+          console.log("Dettagli cestello ricevuti:", basketDetails);
           
           // Prepara i dati da scrivere con tutte le informazioni necessarie
           // Se il cestello ha un ciclo attivo, reindirizza direttamente alla pagina del ciclo
-          const redirectPath = basketDetails && basketDetails.currentCycleId 
-            ? `/cycles/${basketDetails.currentCycleId}` 
-            : `/nfc-scan/basket/${basketId}`;
+          let redirectPath;
+          // Ottiene l'URL base dell'applicazione senza il percorso
+          const baseUrl = window.location.origin;
+          console.log("URL base dell'applicazione:", baseUrl);
+          
+          if (basketDetails && basketDetails.currentCycleId) {
+            redirectPath = `${baseUrl}/cycles/${basketDetails.currentCycleId}`;
+            console.log("Cestello ha ciclo attivo, redirectPath completo impostato a:", redirectPath);
+          } else {
+            redirectPath = `${baseUrl}/nfc-scan/basket/${basketId}`;
+            console.log("Cestello senza ciclo attivo, redirectPath completo impostato a:", redirectPath);
+          }
             
           const basketData = {
             id: basketId,
@@ -63,11 +74,14 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
           
           // Codifica JSON
           const jsonData = JSON.stringify(basketData);
+          console.log("Dati JSON da scrivere sul tag:", jsonData);
           
           // Scrivi i dati sul tag NFC
+          console.log("Scrittura dati su tag NFC in corso...");
           await ndef.write({ 
             records: [{ recordType: "text", data: jsonData }] 
           });
+          console.log("Scrittura tag NFC completata con successo");
           
           // Aggiorna il cestello nel database per salvare il numero di serie NFC
           await apiRequest(

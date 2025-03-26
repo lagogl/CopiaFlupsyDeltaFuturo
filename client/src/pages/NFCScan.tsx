@@ -169,8 +169,11 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
         }
         
         if (basketData && basketData.id) {
+          console.log("Dati del cestello ottenuti dal tag NFC:", basketData);
+          
           // Verifica se è presente redirectTo per navigazione diretta
           if (basketData.redirectTo) {
+            console.log("Trovato redirectTo nel tag NFC:", basketData.redirectTo);
             setIsScanning(false);
             
             toast({
@@ -180,8 +183,9 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
             
             // Reindirizza alla pagina specificata dal tag
             setTimeout(() => {
-              setLocation(basketData.redirectTo);
-            }, 500);
+              console.log("Eseguo reindirizzamento a:", basketData.redirectTo);
+              window.location.href = basketData.redirectTo; // Utilizziamo direttamente window.location per maggiore affidabilità
+            }, 1000); // Aumentiamo leggermente il timeout
           } else {
             // Comportamento standard (visualizzazione in questa pagina)
             setScannedBasketId(basketData.id);
