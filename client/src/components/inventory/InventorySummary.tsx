@@ -18,8 +18,34 @@ import { Badge } from "@/components/ui/badge";
 import { 
   PieChart, Pie, Cell, BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, 
   Legend, ResponsiveContainer, ScatterChart, Scatter, ZAxis, 
-  LabelList, Line, ComposedChart, Area, RadialBarChart, RadialBar
+  LabelList, Line, ComposedChart, Area, RadialBarChart, RadialBar,
+  Treemap
 } from "recharts";
+
+// Colori consistenti e vivaci per taglie di diverse dimensioni
+const sizeColorMap: Record<string, string> = {
+  'TP-180': '#ef4444', // rosso - taglie più piccole
+  'TP-200': '#f87171',
+  'TP-315': '#fb923c',
+  'TP-450': '#f59e0b',
+  'TP-500': '#fbbf24',
+  'TP-600': '#facc15',
+  'TP-700': '#a3e635',
+  'TP-800': '#84cc16',
+  'TP-1000': '#65a30d',
+  'TP-1140': '#10b981',
+  'TP-1260': '#14b8a6',
+  'TP-1500': '#06b6d4',
+  'TP-1800': '#0ea5e9',
+  'TP-2000': '#3b82f6',
+  'TP-2500': '#6366f1',
+  'TP-3000': '#8b5cf6',
+  'TP-4000': '#a855f7',
+  'TP-5000': '#d946ef',
+  'TP-6000': '#ec4899',
+  'TP-8000': '#f43f5e',
+  'TP-10000': '#1e293b', // blu scuro - taglie più grandi
+};
 
 // Colori fallback da usare quando i colori dai dati non sono disponibili
 const fallbackColors = [
@@ -65,59 +91,95 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
   formatNumberEU, 
   formatDecimalEU 
 }) => {
-  // Prepara i dati per i grafici con colori predefiniti se non disponibili
-  // Colori di fallback per varie taglie
-  const fallbackColors = [
-    '#f87171', // red-400
-    '#fb923c', // orange-400
-    '#facc15', // yellow-400
-    '#a3e635', // lime-400
-    '#4ade80', // green-400
-    '#2dd4bf', // teal-400
-    '#60a5fa', // blue-400
-    '#818cf8', // indigo-400
-    '#a78bfa', // violet-400
-    '#e879f9', // purple-400
-    '#f472b6', // pink-400
-    '#fb7185'  // rose-400
-  ];
+  // Preparazione dei dati con colori consistenti per tutte le taglie
+  const prepareDataWithColors = (sizeData: SizeInventory[]) => {
+    return sizeData.map(size => {
+      // Usa la mappa dei colori definita o un fallback
+      const color = sizeColorMap[size.sizeCode as keyof typeof sizeColorMap] || 
+                     size.color || 
+                     fallbackColors[sizeData.indexOf(size) % fallbackColors.length];
+      return {
+        ...size,
+        color
+      };
+    }).sort((a, b) => {
+      // Estrai il numero dalla taglia (es. TP-500 -> 500)
+      const getNumericSize = (code: string) => {
+        const match = code.match(/\d+/);
+        return match ? parseInt(match[0]) : 0;
+      };
+      
+      return getNumericSize(a.sizeCode) - getNumericSize(b.sizeCode);
+    });
+  };
   
-  // Assicurati che ogni taglia abbia un colore
-  const pieChartData = inventoryStats.sizeDistribution.map((size, index) => ({
+  // Dati con colori consistenti e ordinati per dimensione numerica della taglia
+  const enhancedSizeData = prepareDataWithColors(inventoryStats.sizeDistribution);
+  
+  // Dati per il grafico a torta delle ceste per taglia
+  const pieChartData = enhancedSizeData.map(size => ({
     name: size.sizeCode,
     value: size.count,
-    color: size.color || fallbackColors[index % fallbackColors.length],
+    color: size.color,
     totalAnimals: size.totalAnimals,
     sizeName: size.sizeName,
-    animalsPerKg: size.averageAnimalsPerKg
+    animalsPerKg: size.averageAnimalsPerKg,
+    percentuale: inventoryStats.totalBaskets ? (size.count / inventoryStats.totalBaskets * 100).toFixed(1) + '%' : '0%'
   }));
 
-  const barChartData = inventoryStats.sizeDistribution.map((size, index) => ({
+  // Dati per il grafico a barre degli animali
+  const barChartData = enhancedSizeData.map(size => ({
     name: size.sizeCode,
     Ceste: size.count,
     Animali: size.totalAnimals,
     "Peso medio (mg)": size.averageWeight,
     AnimaliPerKg: size.averageAnimalsPerKg,
-    color: size.color || fallbackColors[index % fallbackColors.length],
+    color: size.color,
     sizeName: size.sizeName
   }));
   
-  // Dati per il grafico composto
-  const combinedChartData = inventoryStats.sizeDistribution.map((size, index) => ({
+  // Dati per il grafico di crescita
+  const growthChartData = enhancedSizeData.map(size => ({
     name: size.sizeCode,
     "Peso (mg)": size.averageWeight,
-    "Densità": size.averageAnimalsPerKg / 1000, // Diviso per 1000 per scalare
-    "Animali": size.totalAnimals / 100000, // Diviso per 100000 per scalare
-    color: size.color || fallbackColors[index % fallbackColors.length]
+    "Animali/kg": size.averageAnimalsPerKg,
+    color: size.color,
+    sizeName: size.sizeName
   }));
   
-  // Dati per Radial Bar chart
-  const radialData = inventoryStats.sizeDistribution.map((size, index) => ({
-    name: size.sizeCode,
-    uv: size.averageWeight,
-    pv: 100 - (index * (100 / Math.max(inventoryStats.sizeDistribution.length, 1))),
-    fill: size.color || fallbackColors[index % fallbackColors.length],
-  }));
+  // Dati per il treemap che mostra la distribuzione degli animali
+  const treemapData = [{
+    name: 'Animali',
+    children: enhancedSizeData.map(size => ({
+      name: size.sizeCode,
+      size: size.totalAnimals,
+      color: size.color,
+      sizeName: size.sizeName,
+      animaliPerKg: size.averageAnimalsPerKg,
+      pesoMedio: size.averageWeight,
+      ceste: size.count
+    }))
+  }];
+  
+  // Dati per la visualizzazione scatter
+  const scatterDataEnhanced = scatterData.map(item => {
+    // Trova il colore corrispondente alla taglia se presente
+    let color = '#4f46e5'; // Colore predefinito
+    if (item.size && sizeColorMap[item.size as keyof typeof sizeColorMap]) {
+      color = sizeColorMap[item.size as keyof typeof sizeColorMap];
+    } else if (item.size) {
+      // Cerca nella lista delle taglie per trovare il colore
+      const sizeEntry = enhancedSizeData.find(s => s.sizeCode === item.size);
+      if (sizeEntry && sizeEntry.color) {
+        color = sizeEntry.color;
+      }
+    }
+    
+    return {
+      ...item,
+      fill: color
+    };
+  });
 
   return (
     <div className="space-y-8">
@@ -128,74 +190,109 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
               <div className="h-6 w-6 rounded-full bg-blue-100 flex items-center justify-center">
                 <div className="h-3 w-3 rounded-full bg-blue-500"></div>
               </div>
-              Distribuzione delle Ceste per Taglia
+              Distribuzione degli Animali per Taglia
             </CardTitle>
             <CardDescription className="text-blue-600">
-              Distribuzione delle ceste attive per ciascuna taglia commerciale
+              Mappa ad albero che mostra la distribuzione proporzionale degli animali per taglia
             </CardDescription>
           </CardHeader>
           <CardContent className="p-5">
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <RadialBarChart 
-                  innerRadius="20%" 
-                  outerRadius="90%" 
-                  data={pieChartData} 
-                  startAngle={180} 
-                  endAngle={0}
-                  barSize={20}
+                <Treemap
+                  data={treemapData[0].children}
+                  dataKey="size"
+                  ratio={4/3}
+                  stroke="#fff"
+                  fill="#8884d8"
+                  animationDuration={1000}
                 >
-                  <RadialBar
-                    label={{
-                      fill: '#666',
-                      position: 'insideStart',
-                      formatter: (entry: any) => `${entry.name}: ${formatNumberEU(entry.value)}`,
-                    }}
-                    background={{ fill: '#f9fafb' }}
-                    dataKey="value"
-                  >
-                    {pieChartData.map((entry, index) => (
-                      <Cell 
-                        key={`cell-${index}`} 
-                        fill={entry.color || fallbackColors[index % fallbackColors.length]}
-                        stroke={entry.color || fallbackColors[index % fallbackColors.length]}
-                        strokeWidth={1}
-                      />
-                    ))}
-                  </RadialBar>
-                  <Legend
-                    iconSize={10}
-                    verticalAlign="bottom"
-                    align="center"
-                    wrapperStyle={{ paddingTop: "20px" }}
-                    formatter={(value, entry: any, index) => (
-                      <span style={{ color: '#333', fontWeight: 500 }}>
-                        {entry.payload.name}: {formatNumberEU(entry.payload.value)} ceste
-                      </span>
-                    )}
-                  />
+                  {
+                    (props) => {
+                      const { x, y, width, height, name, size, color } = props;
+                      return (
+                        <g>
+                          <rect
+                            x={x}
+                            y={y}
+                            width={width}
+                            height={height}
+                            style={{
+                              fill: color,
+                              stroke: '#fff',
+                              strokeWidth: 2,
+                              strokeOpacity: 1,
+                              fillOpacity: 0.9,
+                            }}
+                          />
+                          {width > 60 && height > 25 && (
+                            <text
+                              x={x + width / 2}
+                              y={y + height / 2 - 12}
+                              textAnchor="middle"
+                              fill="#fff"
+                              fontSize={14}
+                              fontWeight="bold"
+                              style={{
+                                textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                                pointerEvents: 'none'
+                              }}
+                            >
+                              {name}
+                            </text>
+                          )}
+                          {width > 60 && height > 25 && (
+                            <text
+                              x={x + width / 2}
+                              y={y + height / 2 + 10}
+                              textAnchor="middle"
+                              fill="#fff"
+                              fontSize={11}
+                              style={{
+                                textShadow: '0 1px 2px rgba(0,0,0,0.6)',
+                                pointerEvents: 'none'
+                              }}
+                            >
+                              {formatNumberEU(Number(size))} animali
+                            </text>
+                          )}
+                        </g>
+                      );
+                    }
+                  }
                   <Tooltip
-                    formatter={(value, name, props) => {
-                      const data = props.payload;
-                      return [
-                        <div className="space-y-1">
-                          <div className="font-semibold">{formatNumberEU(Number(value))} ceste</div>
-                          <div className="text-xs">Animali: {formatNumberEU(data.totalAnimals)}</div>
-                          <div className="text-xs">Densità media: {formatNumberEU(data.animalsPerKg)}/kg</div>
-                        </div>,
-                        data.sizeName
-                      ];
-                    }}
-                    contentStyle={{ 
-                      border: '1px solid #e2e8f0', 
-                      borderRadius: '8px', 
-                      backgroundColor: 'white',
-                      boxShadow: '0 4px 12px rgba(0,0,0,0.1)',
-                      padding: '8px 12px'
+                    content={({ active, payload }) => {
+                      if (active && payload && payload.length) {
+                        const data = payload[0].payload;
+                        return (
+                          <div className="bg-white p-3 border border-blue-100 rounded-md shadow-lg max-w-xs">
+                            <div className="font-bold text-blue-800 border-b border-blue-100 pb-1 mb-2">
+                              {data.name} - {data.sizeName}
+                            </div>
+                            <div className="grid grid-cols-2 gap-1 text-sm">
+                              <span className="text-slate-600">Totale animali:</span>
+                              <span className="font-medium text-blue-700 text-right">{formatNumberEU(data.size)}</span>
+                              
+                              <span className="text-slate-600">Animali/kg:</span>
+                              <span className="font-medium text-blue-700 text-right">{formatNumberEU(data.animaliPerKg)}</span>
+                              
+                              <span className="text-slate-600">Peso medio:</span>
+                              <span className="font-medium text-blue-700 text-right">{formatDecimalEU(data.pesoMedio)} mg</span>
+                              
+                              <span className="text-slate-600">Numero ceste:</span>
+                              <span className="font-medium text-blue-700 text-right">{formatNumberEU(data.ceste)}</span>
+                            </div>
+                          </div>
+                        );
+                      }
+                      return null;
                     }}
                   />
-                </RadialBarChart>
+                </Treemap>
               </ResponsiveContainer>
+            </div>
+            <div className="mt-3 text-xs text-gray-500 border-t border-gray-100 pt-2">
+              <p className="italic font-medium">Nota: La dimensione di ciascun blocco rappresenta la quantità di animali per taglia, permettendo di visualizzare facilmente la distribuzione dell'inventario.</p>
             </div>
           </CardContent>
         </Card>
@@ -237,23 +334,26 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                   />
                   <YAxis 
                     tick={{ fill: '#555' }} 
-                    tickFormatter={(value) => value >= 1000000 ? `${(value/1000000).toFixed(1)}M` : value >= 1000 ? `${(value/1000).toFixed(0)}k` : value}
+                    tickFormatter={(value) => value >= 1000000 ? `${(value/1000000).toFixed(1)}M` : value >= 1000 ? `${(value/1000).toFixed(0)}k` : value.toString()}
                     tickLine={{ stroke: '#ccc' }}
                     axisLine={{ stroke: '#ccc' }}
                   />
                   <Tooltip 
-                    formatter={(value, name, props) => {
+                    formatter={(value: any, name: any, props: any) => {
                       const data = props.payload;
-                      return [
-                        <div className="space-y-1">
-                          <div className="font-semibold text-lg text-green-700">{formatNumberEU(Number(value))}</div>
-                          <div className="text-sm text-gray-500">
-                            {data.sizeName} <br/>
-                            {formatNumberEU(data.AnimaliPerKg)} animali/kg
-                          </div>
-                        </div>,
-                        "Animali"
-                      ];
+                      if (name === "Animali") {
+                        return [
+                          <div className="space-y-1">
+                            <div className="font-semibold text-lg text-green-700">{formatNumberEU(Number(value))}</div>
+                            <div className="text-sm text-gray-500">
+                              {data.sizeName} <br/>
+                              {formatNumberEU(data.AnimaliPerKg)} animali/kg
+                            </div>
+                          </div>,
+                          "Animali" as "Animali"
+                        ];
+                      }
+                      return [value, name];
                     }}
                     contentStyle={{ 
                       border: '1px solid #e2e8f0', 
@@ -285,7 +385,7 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                     <LabelList 
                       dataKey="Animali" 
                       position="top" 
-                      formatter={(value) => formatNumberEU(Number(value))}
+                      formatter={(value: any) => formatNumberEU(Number(value))}
                       style={{ 
                         fill: '#444', 
                         fontSize: 11, 
@@ -360,7 +460,7 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                     }}
                   />
                   <Tooltip 
-                    formatter={(value, name, props) => {
+                    formatter={(value: any, name: any, props: any) => {
                       const data = props.payload;
                       return [
                         <div className="space-y-2">
@@ -418,133 +518,78 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
           </CardContent>
         </Card>
         
-        <Card className="border-indigo-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
-          <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
-            <CardTitle className="text-indigo-800 flex items-center gap-2">
-              <div className="h-6 w-6 rounded-full bg-indigo-100 flex items-center justify-center">
-                <div className="h-3 w-3 rounded-full bg-indigo-500"></div>
+        <Card className="border-purple-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
+          <CardHeader className="bg-gradient-to-r from-purple-50 to-white border-b border-purple-100">
+            <CardTitle className="text-purple-800 flex items-center gap-2">
+              <div className="h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center">
+                <div className="h-3 w-3 rounded-full bg-purple-500"></div>
               </div>
-              Distribuzione Peso-Densità
+              Distribuzione Peso e Densità
             </CardTitle>
-            <CardDescription className="text-indigo-600">
-              Mappa interattiva delle relazioni tra peso medio, animali per kg e quantità totale
+            <CardDescription className="text-purple-600">
+              Visualizzazione interattiva della relazione tra peso e densità per ogni taglia
             </CardDescription>
           </CardHeader>
           <CardContent className="p-5">
             <div className="h-80">
               <ResponsiveContainer width="100%" height="100%">
-                <ScatterChart 
+                <ScatterChart
                   margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
                 >
-                  <defs>
-                    <linearGradient id="scatterBackground" x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor="#e0e7ff" stopOpacity={0.4}/>
-                      <stop offset="95%" stopColor="#f3f4f6" stopOpacity={0.1}/>
-                    </linearGradient>
-                    <filter id="dropShadow" height="130%">
-                      <feGaussianBlur in="SourceAlpha" stdDeviation="3"/>
-                      <feOffset dx="2" dy="2" result="offsetblur"/>
-                      <feComponentTransfer>
-                        <feFuncA type="linear" slope="0.2"/>
-                      </feComponentTransfer>
-                      <feMerge> 
-                        <feMergeNode/>
-                        <feMergeNode in="SourceGraphic"/> 
-                      </feMerge>
-                    </filter>
-                  </defs>
-                  <rect x="0" y="0" width="100%" height="100%" fill="url(#scatterBackground)"/>
-                  <CartesianGrid strokeDasharray="3 3" stroke="#d1d5db" />
+                  <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
                   <XAxis 
                     type="number" 
-                    dataKey="x" 
+                    dataKey="Peso medio (mg)" 
                     name="Peso medio" 
-                    unit=" mg" 
-                    domain={['auto', 'auto']}
-                    tickFormatter={(value) => formatDecimalEU(value)}
-                    tick={{ fill: '#555' }}
-                    axisLine={{ stroke: '#ccc' }}
-                    tickLine={{ stroke: '#ccc' }}
+                    unit="mg"
                     label={{ 
                       value: 'Peso medio (mg)', 
-                      position: 'bottom', 
-                      fill: '#4f46e5', 
-                      fontSize: 13, 
-                      fontWeight: 'bold',
-                      dy: 15 
+                      position: 'insideBottomRight', 
+                      offset: -5,
+                      style: { textAnchor: 'middle', fill: '#555', fontWeight: 500 } 
                     }}
+                    tickFormatter={(value) => formatDecimalEU(value)}
                   />
                   <YAxis 
                     type="number" 
-                    dataKey="y" 
-                    name="Animali/kg" 
-                    domain={['auto', 'auto']}
-                    tickFormatter={(value) => formatNumberEU(value)}
-                    tick={{ fill: '#555' }}
-                    axisLine={{ stroke: '#ccc' }}
-                    tickLine={{ stroke: '#ccc' }}
+                    dataKey="AnimaliPerKg" 
+                    name="Animali per kg"
                     label={{ 
-                      value: 'Animali/kg', 
+                      value: 'Animali per kg', 
                       angle: -90, 
-                      position: 'insideLeft', 
-                      fill: '#4f46e5', 
-                      fontSize: 13, 
-                      fontWeight: 'bold',
-                      dx: -15 
+                      position: 'insideLeft',
+                      style: { textAnchor: 'middle', fill: '#555', fontWeight: 500 } 
                     }}
+                    tickFormatter={(value) => formatNumberEU(value)}
                   />
                   <ZAxis 
                     type="number" 
-                    dataKey="z" 
-                    range={[60, 500]} 
-                    name="Animali totali" 
+                    dataKey="Animali" 
+                    range={[50, 400]} 
+                    name="Totale animali" 
                   />
                   <Tooltip 
-                    cursor={{ 
-                      strokeDasharray: '5 5',
-                      stroke: '#6366f1',
-                      strokeWidth: 1.5,
-                      opacity: 0.7
-                    }}
-                    contentStyle={{ 
-                      border: '1px solid #c7d2fe', 
-                      borderRadius: '12px', 
-                      backgroundColor: 'white',
-                      boxShadow: '0 10px 25px rgba(79, 70, 229, 0.2)',
-                      padding: '12px 16px'
-                    }}
+                    cursor={{ strokeDasharray: '3 3' }}
                     content={({ active, payload }) => {
                       if (active && payload && payload.length) {
                         const data = payload[0].payload;
                         return (
-                          <div className="bg-white p-3 border border-indigo-200 rounded-xl shadow-lg">
-                            <div className="font-bold text-indigo-800 border-b border-indigo-100 pb-2 mb-2 flex items-center">
-                              <span className="inline-block w-3 h-3 rounded-full bg-indigo-500 mr-2"></span>
-                              Cesta {data.basket} - {data.flupsy}
+                          <div className="bg-white p-3 border border-purple-100 rounded-md shadow-lg max-w-xs">
+                            <div className="font-bold text-purple-800 border-b border-purple-100 pb-1 mb-2">
+                              {data.name} - {data.sizeName}
                             </div>
-                            <div className="space-y-2">
-                              <div className="grid grid-cols-2 gap-1">
-                                <span className="text-slate-500 text-sm">Taglia:</span> 
-                                <span className="font-medium text-indigo-700 text-sm text-right">{data.size}</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-1">
-                                <span className="text-slate-500 text-sm">Peso medio:</span> 
-                                <span className="font-medium text-indigo-700 text-sm text-right">{formatDecimalEU(data.x)} mg</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-1">
-                                <span className="text-slate-500 text-sm">Animali/kg:</span> 
-                                <span className="font-medium text-indigo-700 text-sm text-right">{formatNumberEU(data.y)}</span>
-                              </div>
-                              <div className="grid grid-cols-2 gap-1">
-                                <span className="text-slate-500 text-sm">Animali totali:</span> 
-                                <span className="font-medium text-indigo-700 text-sm text-right">{formatNumberEU(data.z)}</span>
-                              </div>
-                              {data.cycleDuration > 0 && (
-                                <div className="grid grid-cols-2 gap-1">
-                                  <span className="text-slate-500 text-sm">Giorni ciclo:</span> 
-                                  <span className="font-medium text-indigo-700 text-sm text-right">{data.cycleDuration}</span>
-                                </div>
-                              )}
+                            <div className="grid grid-cols-2 gap-1 text-sm">
+                              <span className="text-slate-600">Peso medio:</span>
+                              <span className="font-medium text-purple-700 text-right">{formatDecimalEU(data["Peso medio (mg)"])} mg</span>
+                              
+                              <span className="text-slate-600">Animali/kg:</span>
+                              <span className="font-medium text-purple-700 text-right">{formatNumberEU(data.AnimaliPerKg)}</span>
+                              
+                              <span className="text-slate-600">Totale animali:</span>
+                              <span className="font-medium text-purple-700 text-right">{formatNumberEU(data.Animali)}</span>
+                              
+                              <span className="text-slate-600">Numero ceste:</span>
+                              <span className="font-medium text-purple-700 text-right">{formatNumberEU(data.Ceste)}</span>
                             </div>
                           </div>
                         );
@@ -553,296 +598,47 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                     }}
                   />
                   <Legend 
+                    wrapperStyle={{
+                      paddingTop: 15,
+                      paddingBottom: 15,
+                      fontSize: 12,
+                      fontWeight: 500
+                    }}
                     align="center"
-                    verticalAlign="top"
-                    height={36}
-                    wrapperStyle={{ paddingBottom: '10px' }}
-                    formatter={() => (
-                      <span className="text-indigo-900 font-medium">Distribuzione delle ceste</span>
-                    )}
+                    iconType="circle"
+                    payload={[
+                      { 
+                        value: 'Dimensione dei punti = Numero totale di animali', 
+                        type: 'circle', 
+                        color: '#a855f7' 
+                      }
+                    ]}
                   />
                   <Scatter 
-                    name="Ceste" 
-                    data={scatterData} 
-                    fill="#4f46e5"
-                    stroke="#fff"
-                    shape={(props: any) => {
-                      const { cx, cy, fill, payload } = props;
-                      
-                      // Determine color based on the size code
-                      let pointColor = fill;
-                      if (payload && payload.size) {
-                        // Try to find the corresponding size in the distribution
-                        const sizeEntry = inventoryStats.sizeDistribution.find(s => s.sizeCode === payload.size);
-                        if (sizeEntry) {
-                          pointColor = sizeEntry.color || fallbackColors[inventoryStats.sizeDistribution.indexOf(sizeEntry) % fallbackColors.length];
-                        }
-                      }
-                      
-                      // Rendi più visibile e definito il punto
-                      return (
-                        <>
-                          {/* Effetto alone esterno */}
-                          <circle 
-                            filter="url(#dropShadow)"
-                            cx={cx} 
-                            cy={cy} 
-                            r={15}
-                            fill={pointColor} 
-                            fillOpacity={0.15}
-                          />
-                          {/* Cerchio medio per effetto profondità */}
-                          <circle 
-                            cx={cx} 
-                            cy={cy} 
-                            r={10}
-                            fill={pointColor} 
-                            fillOpacity={0.4}
-                            stroke={pointColor}
-                            strokeWidth={1}
-                          />
-                          {/* Cerchio interno principale */}
-                          <circle 
-                            cx={cx} 
-                            cy={cy} 
-                            r={6}
-                            stroke="#fff"
-                            strokeWidth={1.5}
-                            fill={pointColor} 
-                            fillOpacity={0.9}
-                          />
-                        </>
-                      );
-                    }}
-                  />
+                    name="Taglie Commerciali" 
+                    data={barChartData} 
+                    fill="#a855f7"
+                  >
+                    {barChartData.map((entry, index) => (
+                      <Cell 
+                        key={`scatter-cell-${index}`} 
+                        fill={entry.color || '#a855f7'} 
+                      />
+                    ))}
+                  </Scatter>
                 </ScatterChart>
               </ResponsiveContainer>
+            </div>
+            <div className="mt-4 border-t border-purple-100 pt-4 text-sm text-purple-700">
+              <p className="text-center leading-relaxed">
+                <span className="font-semibold">Grafico di Dispersione:</span> Ogni punto rappresenta una taglia commerciale. 
+                La posizione orizzontale indica il peso medio, quella verticale la densità degli animali (animali per kg). 
+                La dimensione del punto rappresenta la quantità totale di animali in quella taglia.
+              </p>
             </div>
           </CardContent>
         </Card>
       </div>
-      
-      <Card className="border-purple-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-purple-50 to-white border-b border-purple-100">
-          <CardTitle className="text-purple-800 flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-purple-100 flex items-center justify-center">
-              <div className="h-3 w-3 rounded-full bg-purple-500"></div>
-            </div>
-            Dettaglio Giacenze per Taglia
-          </CardTitle>
-          <CardDescription className="text-purple-600">
-            Panoramica dettagliata delle giacenze suddivise per taglia
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5">
-          <div className="rounded-lg overflow-hidden border border-gray-100">
-            <Table>
-              <TableHeader>
-                <TableRow className="bg-purple-50">
-                  <TableHead className="text-purple-700">Taglia</TableHead>
-                  <TableHead className="text-purple-700">Nome</TableHead>
-                  <TableHead className="text-right text-purple-700">Range (animali/kg)</TableHead>
-                  <TableHead className="text-right text-purple-700">Ceste</TableHead>
-                  <TableHead className="text-right text-purple-700">Animali Totali</TableHead>
-                  <TableHead className="text-right text-purple-700">Animali/Kg (Media)</TableHead>
-                  <TableHead className="text-right text-purple-700">Peso Medio (mg)</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {inventoryStats.sizeDistribution.map((size, index) => (
-                  <TableRow key={size.sizeCode} className={index % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                    <TableCell>
-                      <Badge
-                        className="font-medium shadow-sm"
-                        style={{ 
-                          backgroundColor: size.color,
-                          color: parseInt(size.sizeCode.replace('T', '')) <= 3 ? 'white' : 'black'
-                        }}
-                      >
-                        {size.sizeCode}
-                      </Badge>
-                    </TableCell>
-                    <TableCell className="font-medium">{size.sizeName}</TableCell>
-                    <TableCell className="text-right">
-                      {size.minAnimalsPerKg !== null && size.maxAnimalsPerKg !== null ? (
-                        <span className="px-2 py-1 bg-purple-50 text-purple-700 rounded-md text-xs">
-                          {formatNumberEU(size.minAnimalsPerKg)} - {formatNumberEU(size.maxAnimalsPerKg)}
-                        </span>
-                      ) : 'N/D'}
-                    </TableCell>
-                    <TableCell className="text-right font-medium">{formatNumberEU(size.count)}</TableCell>
-                    <TableCell className="text-right">{formatNumberEU(size.totalAnimals)}</TableCell>
-                    <TableCell className="text-right">{formatNumberEU(size.averageAnimalsPerKg)}</TableCell>
-                    <TableCell className="text-right">{formatDecimalEU(size.averageWeight)}</TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-            {inventoryStats.sizeDistribution.length === 0 && (
-              <div className="py-8 text-center text-muted-foreground bg-gray-50">
-                <div className="inline-flex items-center justify-center w-12 h-12 rounded-full bg-gray-100 mb-3">
-                  <div className="h-6 w-6 text-gray-400">!</div>
-                </div>
-                <p className="text-gray-500">Nessun dato disponibile</p>
-              </div>
-            )}
-          </div>
-        </CardContent>
-      </Card>
-      
-      <Card className="border-teal-100 shadow-sm hover:shadow-md transition-all overflow-hidden">
-        <CardHeader className="bg-gradient-to-r from-teal-50 to-white border-b border-teal-100">
-          <CardTitle className="text-teal-800 flex items-center gap-2">
-            <div className="h-6 w-6 rounded-full bg-teal-100 flex items-center justify-center">
-              <div className="h-3 w-3 rounded-full bg-teal-500"></div>
-            </div>
-            Analisi Integrata dell'Inventario
-          </CardTitle>
-          <CardDescription className="text-teal-600">
-            Visualizzazione integrata di tutte le metriche chiave dell'inventario corrente
-          </CardDescription>
-        </CardHeader>
-        <CardContent className="p-5">
-          <div className="h-96">
-            <ResponsiveContainer width="100%" height="100%">
-              <ComposedChart 
-                data={combinedChartData} 
-                margin={{ top: 20, right: 30, left: 20, bottom: 15 }}
-              >
-                <defs>
-                  {barChartData.map((entry, index) => (
-                    <linearGradient key={`areaGradient-${index}`} id={`colorPesoIntegrato-${index}`} x1="0" y1="0" x2="0" y2="1">
-                      <stop offset="5%" stopColor={entry.color || '#4ade80'} stopOpacity={0.8}/>
-                      <stop offset="95%" stopColor={entry.color || '#4ade80'} stopOpacity={0.1}/>
-                    </linearGradient>
-                  ))}
-                </defs>
-                <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" />
-                <XAxis 
-                  dataKey="name" 
-                  tick={{ fill: '#555' }} 
-                  axisLine={{ stroke: '#ccc' }}
-                />
-                <YAxis 
-                  yAxisId="left"
-                  tick={{ fill: '#555' }} 
-                  axisLine={{ stroke: '#ccc' }}
-                  tickFormatter={(value) => formatDecimalEU(value)}
-                  domain={['auto', 'auto']}
-                  label={{ 
-                    value: 'Peso medio (mg)', 
-                    angle: -90, 
-                    position: 'insideLeft',
-                    style: { fill: '#14b8a6', fontWeight: 500 } 
-                  }}
-                />
-                <YAxis 
-                  yAxisId="right"
-                  orientation="right"
-                  tick={{ fill: '#555' }} 
-                  axisLine={{ stroke: '#ccc' }}
-                  tickFormatter={(value) => `${formatNumberEU(value * 1000)}`}
-                  domain={['auto', 'auto']}
-                  label={{ 
-                    value: 'Densità (animali/kg)', 
-                    angle: 90, 
-                    position: 'insideRight',
-                    style: { fill: '#8b5cf6', fontWeight: 500 } 
-                  }}
-                />
-                <Tooltip 
-                  formatter={(value, name, props) => {
-                    const data = props.payload;
-                    if (name === "Peso (mg)") {
-                      return [formatDecimalEU(Number(value)), "Peso medio (mg)"];
-                    } else if (name === "Densità") {
-                      return [formatNumberEU(Number(value) * 1000), "Animali/kg"];
-                    } else if (name === "Animali") {
-                      return [formatNumberEU(Number(value) * 100000), "Animali totali"];
-                    }
-                    return [value, name];
-                  }}
-                  labelFormatter={(label) => {
-                    const item = combinedChartData.find(item => item.name === label);
-                    return (
-                      <span className="font-semibold text-teal-800">
-                        Taglia {label} <small className="font-normal">({item ? item.name : ''})</small>
-                      </span>
-                    );
-                  }}
-                  contentStyle={{ 
-                    border: '1px solid #99f6e4', 
-                    borderRadius: '12px', 
-                    backgroundColor: 'white',
-                    boxShadow: '0 10px 15px rgba(20, 184, 166, 0.1)',
-                    padding: '10px 14px'
-                  }}
-                />
-                <Legend 
-                  wrapperStyle={{
-                    paddingTop: 10,
-                    paddingBottom: 10,
-                    fontSize: 12,
-                    fontWeight: 500
-                  }}
-                  payload={[
-                    { value: 'Peso medio (mg)', type: 'rect', color: '#14b8a6' },
-                    { value: 'Animali/kg', type: 'line', color: '#8b5cf6' },
-                    { value: 'Animali totali', type: 'rect', color: '#3b82f6' }
-                  ]}
-                />
-                {combinedChartData.map((entry, index) => (
-                  <Area 
-                    key={`area-${index}`}
-                    type="monotone" 
-                    dataKey="Peso (mg)" 
-                    fill={`url(#colorPesoIntegrato-${index})`}
-                    stroke={entry.color || '#14b8a6'}
-                    fillOpacity={0.6}
-                    strokeWidth={2}
-                    yAxisId="left"
-                    dot={{ stroke: entry.color || '#14b8a6', fill: '#fff', strokeWidth: 2, r: 4 }}
-                    activeDot={{ r: 8, strokeWidth: 2 }}
-                  />
-                ))}
-                <Line
-                  type="monotone"
-                  dataKey="Densità"
-                  stroke="#8b5cf6"
-                  strokeWidth={3}
-                  yAxisId="right"
-                  dot={{ stroke: '#8b5cf6', fill: '#fff', strokeWidth: 2, r: 6 }}
-                  activeDot={{ r: 10, strokeWidth: 2 }}
-                />
-                <Bar 
-                  dataKey="Animali" 
-                  fill="#3b82f6" 
-                  yAxisId="right"
-                  barSize={30}
-                  fillOpacity={0.5}
-                  stroke="#3b82f6"
-                  strokeWidth={1}
-                  radius={[4, 4, 0, 0]}
-                >
-                  {combinedChartData.map((entry, index) => (
-                    <Cell 
-                      key={`cell-${index}`} 
-                      fill={entry.color || '#3b82f6'} 
-                    />
-                  ))}
-                </Bar>
-              </ComposedChart>
-            </ResponsiveContainer>
-          </div>
-          <div className="mt-4 border-t border-teal-100 pt-4 text-sm text-teal-700">
-            <ul className="list-disc pl-6 space-y-1">
-              <li>Le aree colorate rappresentano il peso medio degli animali per ciascuna taglia (scala a sinistra)</li>
-              <li>La linea viola mostra la densità espressa in animali per kg (scala a destra)</li>
-              <li>Le barre rappresentano il numero totale di animali per taglia (scala a destra)</li>
-            </ul>
-          </div>
-        </CardContent>
-      </Card>
     </div>
   );
 };
