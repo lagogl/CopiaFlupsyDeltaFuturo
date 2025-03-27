@@ -129,7 +129,6 @@ export default function Inventory() {
   // Stato per i filtri delle previsioni
   const [targetSize, setTargetSize] = useState<string>("");
   const [targetDate, setTargetDate] = useState<Date | undefined>(addMonths(new Date(), 3));
-  const [sgr, setSgr] = useState<number>(0.05); // Tasso di crescita giornaliero predefinito (5% al giorno = 0.05 come coefficiente)
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [sizeFilter, setSizeFilter] = useState<string>("");
   const [flupsyFilter, setFlupsyFilter] = useState<string>("");
@@ -210,7 +209,7 @@ export default function Inventory() {
     if (basketsData.length > 0) {
       calculateGrowthPredictions();
     }
-  }, [basketsData, targetSize, targetDate, sgr, projectionMonths]);
+  }, [basketsData, targetSize, targetDate, projectionMonths]);
 
   // Funzione per calcolare le statistiche di inventario
   const calculateInventoryStats = () => {
@@ -428,6 +427,27 @@ export default function Inventory() {
     setBasketsData(basketsDataArray);
   };
   
+  // Ottiene l'SGR giornaliero dal database SGR in base al mese corrente
+  const getSgrDailyRateFromDatabase = (date: Date = new Date()): number => {
+    if (!sgrs || !(sgrs as any[]).length) {
+      return 0.02; // Valore predefinito se non ci sono dati SGR (2% mensile = circa 0.067% al giorno)
+    }
+    
+    // Ottieni il nome del mese in italiano
+    const monthName = format(date, 'MMMM', { locale: it }).toLowerCase();
+    
+    // Trova l'SGR per il mese corrente
+    const monthSgr = (sgrs as any[]).find(sgr => sgr.month.toLowerCase() === monthName);
+    
+    if (monthSgr) {
+      // I valori nel database sono già percentuali giornaliere, convertili in coefficienti (es. 0.0X)
+      return monthSgr.percentage / 100;
+    } else {
+      // Se non troviamo il mese, usa la media dei tassi SGR
+      return (sgrs as any[]).reduce((acc, sgr) => acc + sgr.percentage, 0) / (sgrs as any[]).length / 100;
+    }
+  };
+
   // Funzione per calcolare le previsioni di crescita
   const calculateGrowthPredictions = () => {
     if (!targetDate && !targetSize) return;
@@ -444,8 +464,9 @@ export default function Inventory() {
     basketsData.forEach(basket => {
       if (!basket.averageWeight || !basket.animalsPerKg) return;
       
-      // Usa il tasso di crescita specifico della cesta se disponibile, altrimenti usa quello generale
-      const growthRateToUse = basket.growthRate !== null ? basket.growthRate : sgr;
+      // Usa il tasso di crescita specifico della cesta se disponibile, altrimenti usa quello dal database
+      const sgrDaily = getSgrDailyRateFromDatabase();
+      const growthRateToUse = basket.growthRate !== null ? basket.growthRate : (sgrDaily * 100);
       
       let predictedWeight, predictedAnimalsPerKg, daysToTarget = null, targetReachDate = null;
       let predictedSizeCode = null, predictedSizeName = null;
@@ -738,18 +759,23 @@ export default function Inventory() {
                       <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center">
                         <TrendingUp className="h-3 w-3 text-blue-600" />
                       </div>
-                      <span>SGR giornaliero</span>
+                      <span>SGR mensile</span>
                     </div>
-                    <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">{(sgr * 100).toFixed(2)}%</span>
+                    <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">
+                      {!sgrs || !(sgrs as any[]).length 
+                        ? "N/D" 
+                        : `${(
+                            (sgrs as any[]).find(s => 
+                              s.month.toLowerCase() === format(new Date(), 'MMMM', { locale: it }).toLowerCase()
+                            )?.percentage || 
+                            (sgrs as any[]).reduce((acc, sgr) => acc + sgr.percentage, 0) / (sgrs as any[]).length
+                          ).toFixed(2)}%`
+                      }
+                    </span>
                   </div>
-                  <Slider
-                    defaultValue={[sgr * 100]}
-                    min={0.5}
-                    max={10}
-                    step={0.1}
-                    onValueChange={(values) => setSgr(values[0] / 100)}
-                    className="w-48 relative z-10"
-                  />
+                  <div className="text-xs text-gray-500 pl-1 pt-1">
+                    Valore automatico dalla tabella SGR
+                  </div>
                 </div>
                 
                 <Select value={targetSize} onValueChange={setTargetSize}>
@@ -1115,17 +1141,22 @@ export default function Inventory() {
                       </div>
                       
                       <div className="border border-emerald-100 rounded-lg p-4 bg-emerald-50/40 w-full md:w-auto">
-                        <h4 className="text-sm font-medium text-emerald-700 mb-2">SGR giornaliero (%)</h4>
-                        <div className="pt-2 pb-4">
-                          <Slider
-                            value={[sgr * 100]}
-                            onValueChange={(values) => setSgr(values[0] / 100)}
-                            min={0.5}
-                            max={10}
-                            step={0.1}
-                            className="w-full"
-                          />
-                          <div className="text-center mt-2 font-medium">{(sgr * 100).toFixed(2)}%</div>
+                        <h4 className="text-sm font-medium text-emerald-700 mb-2">SGR mensile dal database</h4>
+                        <div className="p-4 flex flex-col items-center justify-center">
+                          <div className="text-2xl font-semibold text-emerald-700">
+                            {!sgrs || !(sgrs as any[]).length 
+                              ? "N/D" 
+                              : `${(
+                                  (sgrs as any[]).find(s => 
+                                    s.month.toLowerCase() === format(new Date(), 'MMMM', { locale: it }).toLowerCase()
+                                  )?.percentage || 
+                                  (sgrs as any[]).reduce((acc, sgr) => acc + sgr.percentage, 0) / (sgrs as any[]).length
+                                ).toFixed(2)}%`
+                            }
+                          </div>
+                          <div className="text-xs text-emerald-600 mt-2">
+                            Valore per {format(new Date(), 'MMMM', { locale: it })}
+                          </div>
                         </div>
                       </div>
                     </div>
@@ -1151,7 +1182,7 @@ export default function Inventory() {
                   <GrowthComparison 
                     basketsData={basketsData}
                     inventoryStats={inventoryStats}
-                    sgr={sgr}
+                    sgr={getSgrDailyRateFromDatabase()}
                     sizes={sizes as Size[]}
                     formatNumberEU={formatNumberEU}
                     formatDecimalEU={formatDecimalEU}
@@ -1191,24 +1222,25 @@ export default function Inventory() {
                   </div>
                   
                   <div className="flex-grow sm:flex-grow-0">
-                    <Select 
-                      value={(sgr * 100).toString()} 
-                      onValueChange={(val) => setSgr(parseFloat(val) / 100)}
-                    >
-                      <SelectTrigger className="w-full sm:w-[220px] border-amber-100">
-                        <div className="flex items-center gap-2">
-                          <div className="w-3 h-3 rounded-full bg-amber-100"></div>
-                          <SelectValue placeholder="SGR Giornaliero" />
+                    <div className="border border-amber-100 rounded-md bg-white p-3 flex items-center gap-3">
+                      <div className="h-5 w-5 rounded-full bg-amber-100 flex items-center justify-center">
+                        <TrendingUp className="h-3 w-3 text-amber-600" />
+                      </div>
+                      <div>
+                        <div className="text-xs text-amber-700 font-medium">SGR mensile dal database</div>
+                        <div className="text-sm font-semibold">
+                          {!sgrs || !(sgrs as any[]).length 
+                            ? "N/D" 
+                            : `${(
+                                (sgrs as any[]).find(s => 
+                                  s.month.toLowerCase() === format(new Date(), 'MMMM', { locale: it }).toLowerCase()
+                                )?.percentage || 
+                                (sgrs as any[]).reduce((acc, sgr) => acc + sgr.percentage, 0) / (sgrs as any[]).length
+                              ).toFixed(2)}%`
+                          }
                         </div>
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="1">1% - Crescita molto lenta</SelectItem>
-                        <SelectItem value="2">2% - Crescita lenta</SelectItem>
-                        <SelectItem value="5">5% - Crescita media (Default)</SelectItem>
-                        <SelectItem value="7">7% - Crescita veloce</SelectItem>
-                        <SelectItem value="10">10% - Crescita molto veloce</SelectItem>
-                      </SelectContent>
-                    </Select>
+                      </div>
+                    </div>
                   </div>
                 </div>
               </CardHeader>
