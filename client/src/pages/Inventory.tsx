@@ -129,7 +129,7 @@ export default function Inventory() {
   // Stato per i filtri delle previsioni
   const [targetSize, setTargetSize] = useState<string>("");
   const [targetDate, setTargetDate] = useState<Date | undefined>(addMonths(new Date(), 3));
-  const [sgr, setSgr] = useState<number>(5); // Tasso di crescita mensile predefinito (%)
+  const [sgr, setSgr] = useState<number>(0.05); // Tasso di crescita giornaliero predefinito (5% al giorno = 0.05 come coefficiente)
   const [searchTerm, setSearchTerm] = useState<string>("");
   const [sizeFilter, setSizeFilter] = useState<string>("");
   const [flupsyFilter, setFlupsyFilter] = useState<string>("");
@@ -452,10 +452,13 @@ export default function Inventory() {
       
       if (targetDate) {
         // Calcola il peso previsto alla data target
+        // growthRateToUse deve essere convertito da percentuale a coefficiente
+        // se è maggiore di 0.1 (10%), è probabilmente una percentuale e va divisa per 100
+        const sgrCoefficient = growthRateToUse > 0.1 ? growthRateToUse / 100 : growthRateToUse;
         predictedWeight = getFutureWeightAtDate(
           basket.averageWeight,
           new Date(basket.lastOperationDate || new Date()),
-          growthRateToUse,
+          sgrCoefficient,
           targetDate
         );
         
@@ -478,10 +481,13 @@ export default function Inventory() {
           const targetWeight = 1000000 / targetAnimalsPerKg;
           
           // Calcola la data prevista per raggiungere la taglia target
+          // growthRateToUse deve essere convertito da percentuale a coefficiente
+          // se è maggiore di 0.1 (10%), è probabilmente una percentuale e va divisa per 100
+          const sgrCoefficient = growthRateToUse > 0.1 ? growthRateToUse / 100 : growthRateToUse;
           const result = getTargetSizeReachDate(
             basket.averageWeight,
             new Date(basket.lastOperationDate || new Date()),
-            growthRateToUse,
+            sgrCoefficient,
             targetSizeObj.code
           );
           
@@ -732,16 +738,16 @@ export default function Inventory() {
                       <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center">
                         <TrendingUp className="h-3 w-3 text-blue-600" />
                       </div>
-                      <span>SGR mensile</span>
+                      <span>SGR giornaliero</span>
                     </div>
-                    <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">{sgr}%</span>
+                    <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">{(sgr * 100).toFixed(2)}%</span>
                   </div>
                   <Slider
-                    defaultValue={[sgr]}
-                    min={1}
-                    max={20}
-                    step={0.5}
-                    onValueChange={(values) => setSgr(values[0])}
+                    defaultValue={[sgr * 100]}
+                    min={0.5}
+                    max={10}
+                    step={0.1}
+                    onValueChange={(values) => setSgr(values[0] / 100)}
                     className="w-48 relative z-10"
                   />
                 </div>
@@ -1109,17 +1115,17 @@ export default function Inventory() {
                       </div>
                       
                       <div className="border border-emerald-100 rounded-lg p-4 bg-emerald-50/40 w-full md:w-auto">
-                        <h4 className="text-sm font-medium text-emerald-700 mb-2">SGR mensile (%)</h4>
+                        <h4 className="text-sm font-medium text-emerald-700 mb-2">SGR giornaliero (%)</h4>
                         <div className="pt-2 pb-4">
                           <Slider
-                            value={[sgr]}
-                            onValueChange={(values) => setSgr(values[0])}
-                            min={0}
-                            max={20}
-                            step={0.5}
+                            value={[sgr * 100]}
+                            onValueChange={(values) => setSgr(values[0] / 100)}
+                            min={0.5}
+                            max={10}
+                            step={0.1}
                             className="w-full"
                           />
-                          <div className="text-center mt-2 font-medium">{sgr}%</div>
+                          <div className="text-center mt-2 font-medium">{(sgr * 100).toFixed(2)}%</div>
                         </div>
                       </div>
                     </div>
@@ -1186,18 +1192,18 @@ export default function Inventory() {
                   
                   <div className="flex-grow sm:flex-grow-0">
                     <Select 
-                      value={sgr.toString()} 
-                      onValueChange={(val) => setSgr(parseFloat(val))}
+                      value={(sgr * 100).toString()} 
+                      onValueChange={(val) => setSgr(parseFloat(val) / 100)}
                     >
                       <SelectTrigger className="w-full sm:w-[220px] border-amber-100">
                         <div className="flex items-center gap-2">
                           <div className="w-3 h-3 rounded-full bg-amber-100"></div>
-                          <SelectValue placeholder="SGR Mensile" />
+                          <SelectValue placeholder="SGR Giornaliero" />
                         </div>
                       </SelectTrigger>
                       <SelectContent>
                         <SelectItem value="1">1% - Crescita molto lenta</SelectItem>
-                        <SelectItem value="3">3% - Crescita lenta</SelectItem>
+                        <SelectItem value="2">2% - Crescita lenta</SelectItem>
                         <SelectItem value="5">5% - Crescita media (Default)</SelectItem>
                         <SelectItem value="7">7% - Crescita veloce</SelectItem>
                         <SelectItem value="10">10% - Crescita molto veloce</SelectItem>

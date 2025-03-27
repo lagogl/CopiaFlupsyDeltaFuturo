@@ -401,6 +401,8 @@ export function calculateSizeTimeline(
     if (!sgrRates || sgrRates.length === 0) {
       // Fallback se non abbiamo dati SGR specifici
       // Convertiamo la percentuale SGR in tasso decimale per la formula esponenziale
+      // I valori SGR nel database sono già giornalieri come percentuale (es. 3.7%)
+      // Dividiamo per 100 per convertirli in coefficienti (0.037)
       return sgrMonthlyPercentage / 100;
     }
     
@@ -408,7 +410,9 @@ export function calculateSizeTimeline(
     const monthSgr = sgrRates.find(sgr => sgr.month === monthName);
     
     if (monthSgr) {
-      // Convertiamo la percentuale mensile SGR in tasso decimale per la formula esponenziale
+      // Convertiamo la percentuale giornaliera SGR in tasso decimale per la formula esponenziale
+      // I valori SGR nel database sono già giornalieri come percentuale (es. 3.7%)
+      // Dividiamo per 100 per convertirli in coefficienti (0.037)
       return monthSgr.percentage / 100;
     }
     
@@ -560,7 +564,10 @@ export function getFutureWeightAtDate(
   
   // Usa la formula corretta: Pf = Pi * e^(SGR*t)
   // Dove SGR è il tasso di crescita specifico giornaliero
-  const futureWeight = currentWeight * Math.exp(sgrDailyPercentage * diffDays);
+  // sgrDailyPercentage deve essere già in forma di coefficiente (es. 0.037 per 3.7%)
+  // In getSgrDailyPercentageForDate viene già fatto questo calcolo, ma controlliamo per sicurezza
+  const sgrCoefficient = sgrDailyPercentage > 0.1 ? sgrDailyPercentage / 100 : sgrDailyPercentage;
+  const futureWeight = currentWeight * Math.exp(sgrCoefficient * diffDays);
   return Math.round(futureWeight);
 }
 
