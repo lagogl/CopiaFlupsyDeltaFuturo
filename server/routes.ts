@@ -2319,6 +2319,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `Taglia ${targetSizeCode} non trovata nel database` 
         });
       }
+
+      // Recupera tutte le taglie disponibili
+      const allSizes = await storage.getSizes();
+      
+      // Filtriamo le taglie che sono uguali o superiori alla taglia target
+      // Le taglie superiori hanno minAnimalsPerKg minore o uguale alla taglia target
+      const validSizes = allSizes.filter(size => {
+        // Se non abbiamo un valore minAnimalsPerKg, non possiamo fare un confronto
+        if (!size.minAnimalsPerKg || !targetSize.minAnimalsPerKg) return false;
+        
+        // Consideriamo tutte le taglie con minAnimalsPerKg <= alla taglia target
+        // (minore numero di animali/kg = maggiore peso individuale = taglia superiore)
+        return size.minAnimalsPerKg <= targetSize.minAnimalsPerKg;
+      });
+      
+      if (validSizes.length === 0) {
+        return res.json([]);
+      }
       
       // Recupera tutti i cicli attivi
       const activeCycles = await storage.getActiveCycles();
@@ -2405,12 +2423,76 @@ export async function registerRoutes(app: Express): Promise<Server> {
             };
           }
           
+          // Se non ha raggiunto la taglia target, controllo se raggiunge una taglia superiore
+          // entro il periodo specificato
+          for (const size of validSizes) {
+            // Salta la taglia target, già controllata
+            if (size.id === targetSize.id) continue;
+            
+            // Calcola il peso della taglia superiore in mg
+            const sizeWeight = size.minAnimalsPerKg ? 1000000 / size.minAnimalsPerKg : 0;
+            if (sizeWeight <= 0) continue;
+            
+            // Salta questa taglia se il suo peso è minore del target 
+            // (ovvero se è una taglia inferiore con più animali/kg)
+            if (sizeWeight < targetWeight) continue;
+            
+            // Se il peso è già uguale o superiore a questa taglia, la cesta è già in questa taglia
+            if (currentWeight >= sizeWeight) {
+              return {
+                id: -Date.now() - basket.id - size.id, // ID temporaneo negativo
+                basketId: basket.id,
+                targetSizeId: size.id,
+                status: "pending",
+                predictedDate: new Date().toISOString(),
+                basket,
+                lastOperation,
+                daysRemaining: 0,
+                currentWeight,
+                targetWeight: sizeWeight,
+                actualSize: size,
+                requestedSize: targetSize
+              };
+            }
+            
+            // Calcola il tempo necessario per raggiungere questa taglia superiore
+            const daysToReachThisSize = Math.ceil(Math.log(sizeWeight / currentWeight) / sgrDaily);
+            
+            // Se il numero di giorni è entro il periodo specificato, includi nella previsione
+            if (daysToReachThisSize <= withinDays) {
+              // Calcola la data prevista
+              const predictedDate = new Date();
+              predictedDate.setDate(predictedDate.getDate() + daysToReachThisSize);
+              
+              return {
+                id: -Date.now() - basket.id - size.id, // ID temporaneo negativo
+                basketId: basket.id,
+                targetSizeId: size.id,
+                status: "pending",
+                predictedDate: predictedDate.toISOString(),
+                basket,
+                lastOperation,
+                daysRemaining: daysToReachThisSize,
+                currentWeight,
+                targetWeight: sizeWeight,
+                actualSize: size,
+                requestedSize: targetSize
+              };
+            }
+          }
+          
           return null;
         })
       );
       
       // Filtra i valori null e restituisci le previsioni valide
       const validPredictions = predictions.filter(Boolean);
+      
+      // Ordina prima per giorni rimanenti (urgenza)
+      // L'operatore "!" assicura TypeScript che a e b non sono null
+      // (li abbiamo già filtrati con filter(Boolean))
+      validPredictions.sort((a, b) => a!.daysRemaining - b!.daysRemaining);
+      
       res.json(validPredictions);
     } catch (error) {
       console.error("Errore nel calcolo delle previsioni di crescita:", error);

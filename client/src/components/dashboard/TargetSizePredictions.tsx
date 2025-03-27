@@ -33,6 +33,10 @@ interface TargetSizePrediction {
   daysRemaining: number;
   currentWeight?: number;
   targetWeight?: number;
+  // Taglia effettiva che verrà raggiunta (potrebbe essere la target o una superiore)
+  actualSize?: Size;
+  // Taglia richiesta nella query
+  requestedSize?: Size;
 }
 
 interface Size {
@@ -184,6 +188,16 @@ export function TargetSizePredictions() {
                     {getDaysMessage(prediction.daysRemaining)}
                   </Badge>
                 </div>
+                
+                {/* Se raggiungerà una taglia superiore a quella richiesta, lo evidenziamo */}
+                {prediction.actualSize && prediction.requestedSize && 
+                 prediction.actualSize.id !== prediction.requestedSize.id && (
+                  <div className="mb-2">
+                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
+                      Raggiungerà {prediction.actualSize.code}
+                    </Badge>
+                  </div>
+                )}
                 
                 <div className="flex items-center text-sm text-gray-600">
                   <CalendarIcon size={16} className="mr-1" />
