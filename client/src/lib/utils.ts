@@ -428,20 +428,20 @@ export function calculateSizeTimeline(
   const getDailySgrRate = (date: Date): number => {
     if (!sgrRates || sgrRates.length === 0) {
       // Fallback se non abbiamo dati SGR specifici
-      // Non dividiamo per 100 perché il valore è già espresso come tasso decimale
-      return sgrMonthlyPercentage;
+      // Convertiamo la percentuale SGR in tasso decimale per la formula esponenziale
+      return sgrMonthlyPercentage / 100;
     }
     
     const monthName = getMonthNameIT(date);
     const monthSgr = sgrRates.find(sgr => sgr.month === monthName);
     
     if (monthSgr) {
-      // Il campo percentage ora contiene direttamente il tasso giornaliero
-      return monthSgr.percentage;
+      // Convertiamo la percentuale mensile SGR in tasso decimale per la formula esponenziale
+      return monthSgr.percentage / 100;
     }
     
     // Fallback se non troviamo il mese
-    return sgrMonthlyPercentage;
+    return sgrMonthlyPercentage / 100;
   };
   
   // Trova la taglia attuale - usa le taglie del database se disponibili
@@ -624,7 +624,7 @@ export function getSgrDailyPercentageForDate(
   targetDate: Date,
   defaultPercentage: number = 1.0
 ): number {
-  if (!sgrs || sgrs.length === 0) return defaultPercentage;
+  if (!sgrs || sgrs.length === 0) return defaultPercentage / 100; // Converti in forma decimale
   
   // Ottieni il mese della data target
   const month = format(targetDate, 'MMMM').toLowerCase();
@@ -632,12 +632,14 @@ export function getSgrDailyPercentageForDate(
   // Trova il tasso SGR per questo mese
   const monthSgr = sgrs.find(sgr => sgr.month.toLowerCase() === month);
   if (monthSgr && monthSgr.percentage !== null) {
-    return monthSgr.percentage;
+    // Converti da percentuale a forma decimale per la formula esponenziale
+    return monthSgr.percentage / 100;
   }
   
   // Se non trovi un valore specifico, usa la media dei valori mensili
-  const avgDailyPercentage = sgrs.reduce((acc, sgr) => acc + (sgr.percentage || 0), 0) / sgrs.length || defaultPercentage;
-  return avgDailyPercentage;
+  const avgMonthlyPercentage = sgrs.reduce((acc, sgr) => acc + (sgr.percentage || 0), 0) / sgrs.length || defaultPercentage;
+  // Converti da percentuale a forma decimale per la formula esponenziale
+  return avgMonthlyPercentage / 100;
 }
 
 /**
