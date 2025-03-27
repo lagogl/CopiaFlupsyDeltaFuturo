@@ -78,7 +78,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
       items: [
         { icon: <Home className="h-5 w-5 mr-2 text-blue-600" />, label: "Dashboard", path: "/" },
         { icon: <Zap className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Rapide", path: "/quick-operations" },
-        { icon: <Scan className="h-5 w-5 mr-2 text-blue-600" />, label: "FlupsyScan Mobile", path: "/nfc-scan" }
+        { icon: <Scan className="h-5 w-5 mr-2 text-blue-600" />, label: "FlupsyScan Mobile", path: "/nfc-scan" },
+        { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Posizioni", path: "/flupsy-positions" },
+        { icon: <Package className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Ceste", path: "/baskets" },
+        { icon: <Package2 className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Lotti", path: "/lots" },
+        { icon: <FileText className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni", path: "/operations" },
+        { icon: <GripHorizontal className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Drag&Drop", path: "/operations-drag-drop" }
       ]
     },
     {
@@ -88,7 +93,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
       color: 'text-green-600',
       items: [
         { icon: <Waves className="h-5 w-5 mr-2 text-green-600" />, label: "Unità FLUPSY", path: "/flupsys" },
-        { icon: <Move className="h-5 w-5 mr-2 text-green-600" />, label: "Gestione Posizioni", path: "/flupsy-positions" },
         { icon: <GitCompare className="h-5 w-5 mr-2 text-green-600" />, label: "Confronto FLUPSY", path: "/flupsy-comparison" },
         { icon: <LineChart className="h-5 w-5 mr-2 text-green-600" />, label: "Percorso di Crescita", path: "/grow-journey" }
       ]
@@ -99,9 +103,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       icon: <Boxes className="h-5 w-5" />,
       color: 'text-orange-600',
       items: [
-        { icon: <Package className="h-5 w-5 mr-2 text-orange-600" />, label: "Gestione Ceste", path: "/baskets" },
         { icon: <RefreshCw className="h-5 w-5 mr-2 text-orange-600" />, label: "Cicli Produttivi", path: "/cycles" },
-        { icon: <Package2 className="h-5 w-5 mr-2 text-orange-600" />, label: "Gestione Lotti", path: "/lots" },
         { icon: <Scale className="h-5 w-5 mr-2 text-orange-600" />, label: "Tabella Taglie", path: "/sizes" },
         { icon: <Boxes className="h-5 w-5 mr-2 text-orange-600" />, label: "Inventario Giacenze", path: "/inventory" }
       ]
@@ -113,9 +115,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       color: 'text-purple-600',
       items: [
         { icon: <BarChart className="h-5 w-5 mr-2 text-purple-600" />, label: "Statistiche", path: "/statistics" },
-        { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: "Indici SGR", path: "/sgr" },
-        { icon: <FileText className="h-5 w-5 mr-2 text-purple-600" />, label: "Operazioni", path: "/operations" },
-        { icon: <GripHorizontal className="h-5 w-5 mr-2 text-purple-600" />, label: "Operazioni Drag&Drop", path: "/operations-drag-drop" }
+        { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: "Indici SGR", path: "/sgr" }
       ]
     },
     {
