@@ -93,64 +93,8 @@ export type TargetSize = {
   color: string;  // Colore Tailwind per la visualizzazione
 };
 
-export const TARGET_SIZES: TargetSize[] = [
-  {
-    code: 'T0',
-    name: 'Seme',
-    minWeight: 0,
-    maxWeight: 10,
-    color: 'bg-slate-200 border-slate-300'
-  },
-  {
-    code: 'T1',
-    name: 'Nursery',
-    minWeight: 10,
-    maxWeight: 50,
-    color: 'bg-sky-100 border-sky-300'
-  },
-  {
-    code: 'T2',
-    name: 'Pre-ingrasso',
-    minWeight: 50,
-    maxWeight: 200,
-    color: 'bg-blue-100 border-blue-300'
-  },
-  {
-    code: 'T3',
-    name: 'Ingrasso iniziale',
-    minWeight: 200,
-    maxWeight: 500,
-    color: 'bg-teal-100 border-teal-300'
-  },
-  {
-    code: 'T4',
-    name: 'Ingrasso avanzato',
-    minWeight: 500,
-    maxWeight: 1000,
-    color: 'bg-green-100 border-green-300'
-  },
-  {
-    code: 'T5',
-    name: 'Pre-vendita',
-    minWeight: 1000,
-    maxWeight: 2000,
-    color: 'bg-lime-100 border-lime-300'
-  },
-  {
-    code: 'T6',
-    name: 'Commerciale',
-    minWeight: 2000,
-    maxWeight: 5000,
-    color: 'bg-amber-100 border-amber-300'
-  },
-  {
-    code: 'T7',
-    name: 'Premium',
-    minWeight: 5000,
-    maxWeight: 10000,
-    color: 'bg-orange-100 border-orange-300'
-  }
-];
+// Non usiamo più taglie predefinite, utilizzando solo quelle presenti nel database (sizes table)
+export const TARGET_SIZES: TargetSize[] = [];
 
 export function getTargetSizeForWeight(weight: number, availableSizes?: any[]): TargetSize | null {
   if (!weight || weight <= 0) return null;
@@ -255,16 +199,28 @@ export function getSizeFromAnimalsPerKg(animalsPerKg: number, availableSizes?: a
 export function getSizeColor(sizeCode: string): string {
   if (!sizeCode) return 'bg-gray-100 text-gray-800';
   
-  if (sizeCode.startsWith('T')) {
-    // Trova la taglia target corrispondente
-    const targetSize = TARGET_SIZES.find(size => size.code === sizeCode);
-    if (targetSize) {
-      // Restituisci il colore di sfondo in base alla taglia target
-      // Usa il colore ma assicurati che sia un bg-* e non text-* o border-*
-      const baseColor = targetSize.color.replace('border-', '').replace('text-', '');
-      return `bg-${baseColor} text-white`;
+  // Colore per le taglie TP-XXXX
+  if (sizeCode.startsWith('TP-')) {
+    // Verifica il numero presente nel codice
+    const numStr = sizeCode.substring(3);
+    const num = parseInt(numStr);
+    
+    if (num <= 500) {
+      return 'bg-red-600 text-white';
+    } else if (num <= 1000) {
+      return 'bg-red-500 text-white';
+    } else if (num <= 2000) {
+      return 'bg-amber-500 text-white';
+    } else if (num <= 3000) {
+      return 'bg-yellow-500 text-white';
+    } else if (num <= 6000) {
+      return 'bg-green-500 text-white';
+    } else if (num <= 10000) {
+      return 'bg-blue-500 text-white';
+    } else {
+      // Per +TP-10000
+      return 'bg-black text-white';
     }
-    return 'bg-yellow-500 text-white';
   } else if (sizeCode.startsWith('M')) {
     return 'bg-green-500 text-white';
   }
@@ -385,9 +341,9 @@ export function formatAnimalCount(animalsPerKg: number | null, weight: number | 
 export function getBasketColorBySize(targetSizeCode: string | null): string {
   if (!targetSizeCode) return 'bg-slate-100 border border-slate-200';
   
-  const targetSize = TARGET_SIZES.find(size => size.code === targetSizeCode);
-  if (targetSize) {
-    return `${targetSize.color} border`;
+  // Se è una taglia TP-XXXX
+  if (targetSizeCode.startsWith('TP-')) {
+    return `${getDefaultColorForSize(targetSizeCode)} border`;
   }
   
   return 'bg-slate-100 border border-slate-200';
@@ -498,10 +454,9 @@ export function calculateSizeTimeline(
       };
     });
   } else {
-    // Fallback alle taglie hardcoded
-    futureTargetSizes = TARGET_SIZES
-      .filter(size => size.minWeight > currentWeight)
-      .sort((a, b) => a.minWeight - b.minWeight);
+    // Non ci sono taglie disponibili dal database e non usiamo più le taglie hardcoded
+    // Ritorna un array vuoto in questo caso, il che indicherà che non ci sono taglie future da raggiungere
+    futureTargetSizes = [];
   }
   
   if (futureTargetSizes.length === 0) {

@@ -121,8 +121,24 @@ export default function Sizes() {
                 filteredSizes.map((size) => {
                   // Determine badge color based on size code
                   let badgeColor = 'bg-blue-100 text-blue-800';
-                  if (size.code.startsWith('T')) {
-                    badgeColor = 'bg-yellow-100 text-yellow-800';
+                  
+                  // Tutte le taglie ora dovrebbero essere TP-XXX
+                  if (size.code.startsWith('TP-')) {
+                    // Estrai il numero dalla taglia TP-XXX
+                    const numStr = size.code.substring(3);
+                    const num = parseInt(numStr);
+                    
+                    if (num <= 1000) {
+                      badgeColor = 'bg-red-100 text-red-800';
+                    } else if (num <= 3000) {
+                      badgeColor = 'bg-orange-100 text-orange-800';
+                    } else if (num <= 6000) {
+                      badgeColor = 'bg-yellow-100 text-yellow-800';
+                    } else if (num <= 10000) {
+                      badgeColor = 'bg-green-100 text-green-800';
+                    } else {
+                      badgeColor = 'bg-black text-white';
+                    }
                   } else if (size.code.startsWith('M')) {
                     badgeColor = 'bg-green-100 text-green-800';
                   }

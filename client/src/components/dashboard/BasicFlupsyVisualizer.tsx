@@ -15,6 +15,36 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 
+// Importa esplicitamente la funzione getDefaultColorForSize per usarla nel componente
+function getDefaultColorForSize(code: string): string {
+  // TP-XXXX dove XXXX è il numero di animali per kg
+  if (code.startsWith('TP-')) {
+    const numStr = code.substring(3);
+    const num = parseInt(numStr);
+    
+    if (num >= 6000) {
+      return 'bg-red-50 border-red-600 border-4';
+    } else if (num >= 4000) {
+      return 'bg-red-50 border-red-500 border-3';
+    } else if (num >= 3000) {
+      return 'bg-orange-50 border-orange-500 border-2';
+    } else if (num >= 2000) {
+      return 'bg-yellow-50 border-yellow-500 border-2';
+    } else if (num >= 1500) {
+      return 'bg-green-50 border-green-600 border-2';
+    } else if (num >= 1000) {
+      return 'bg-sky-50 border-sky-500 border-2';
+    } else if (num >= 500) {
+      return 'bg-sky-50 border-sky-400 border-2';
+    } else {
+      return 'bg-indigo-50 border-indigo-400 border-2';
+    }
+  }
+  
+  // Se non è una taglia TP-XXX, usa il blu di default
+  return 'bg-blue-50 border-blue-500 border-2';
+}
+
 export default function BasicFlupsyVisualizer() {
   const [, navigate] = useLocation();
   
@@ -203,32 +233,27 @@ export default function BasicFlupsyVisualizer() {
           }
         } else if (latestOperation.animalsPerKg) {
           // Fallback utilizzando animalsPerKg se non c'è size
-          const targetSize = getSizeFromAnimalsPerKg(latestOperation.animalsPerKg);
+          const { data: allSizes } = useQuery({ queryKey: ['/api/sizes'] });
+          const targetSize = getSizeFromAnimalsPerKg(latestOperation.animalsPerKg, allSizes);
           
           if (targetSize) {
+            // Usa il colore assegnato alla taglia
             const fallbackSizeCode = targetSize.code;
             
-            if (fallbackSizeCode === 'T7') {
-              borderClass = 'border-red-600 border-4';
-              bgClass = 'bg-red-50';
-            } else if (fallbackSizeCode === 'T6') {
-              borderClass = 'border-red-500 border-3';
-              bgClass = 'bg-red-50';
-            } else if (fallbackSizeCode === 'T5') {
-              borderClass = 'border-orange-500 border-2';
-              bgClass = 'bg-orange-50';
-            } else if (fallbackSizeCode === 'T4') {
-              borderClass = 'border-yellow-500 border-2';
-              bgClass = 'bg-yellow-50';
-            } else if (fallbackSizeCode === 'T3') {
-              borderClass = 'border-green-600 border-2';
-              bgClass = 'bg-green-50';
-            } else if (fallbackSizeCode === 'T2') {
-              borderClass = 'border-sky-500 border-2';
-              bgClass = 'bg-sky-50';
-            } else if (fallbackSizeCode === 'T1') {
-              borderClass = 'border-sky-400 border-2';
-              bgClass = 'bg-sky-50';
+            // Imposta le classi in base al codice TP-XXX
+            if (fallbackSizeCode.startsWith('TP-')) {
+              const classes = getDefaultColorForSize(fallbackSizeCode).split(' ');
+              // Estrai la classe del bordo
+              const borderColorClass = classes.find(c => c.startsWith('border-'));
+              // Estrai la classe di sfondo
+              const bgColorClass = classes.find(c => c.startsWith('bg-'));
+              
+              if (borderColorClass) {
+                borderClass = `${borderColorClass} border-2`;
+              }
+              if (bgColorClass) {
+                bgClass = bgColorClass;
+              }
             }
           }
         }
