@@ -564,6 +564,15 @@ export default function FlupsyComparison() {
               </div>
               
               <div className="flex flex-col w-full space-y-1 mt-1">
+                {/* Numero totale di animali in formato europeo */}
+                {latestOperation?.animalCount && (
+                  <div className="flex items-center justify-center mb-1">
+                    <div className="text-[10px] font-medium">
+                      {latestOperation.animalCount.toLocaleString('it-IT')}
+                    </div>
+                  </div>
+                )}
+
                 <div className="flex items-center justify-center">
                   {/* Gestione speciale per taglie TP-10000+ con sfondo nero e testo bianco */}
                   {futureSize?.code && futureSize.code.startsWith('TP-') && parseInt(futureSize.code.replace('TP-', '')) >= 10000 ? (
@@ -809,8 +818,8 @@ export default function FlupsyComparison() {
                 size="sm" 
                 variant="outline" 
                 className="h-7 px-2" 
-                onClick={() => setZoomLevel(prev => Math.min(3, prev + 1))}
-                disabled={zoomLevel >= 3}
+                onClick={() => setZoomLevel(prev => Math.min(4, prev + 1))}
+                disabled={zoomLevel >= 4}
               >
                 <ZoomIn className="h-4 w-4" />
               </Button>

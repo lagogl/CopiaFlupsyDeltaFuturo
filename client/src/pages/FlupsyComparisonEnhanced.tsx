@@ -909,8 +909,8 @@ export default function FlupsyComparison() {
               <Button 
                 variant="outline" 
                 size="icon" 
-                onClick={() => setZoomLevel(Math.min(3, zoomLevel + 0.5))}
-                disabled={zoomLevel >= 3}
+                onClick={() => setZoomLevel(Math.min(4, zoomLevel + 0.5))}
+                disabled={zoomLevel >= 4}
               >
                 <ZoomIn className="h-4 w-4" />
               </Button>
@@ -929,7 +929,7 @@ export default function FlupsyComparison() {
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setZoomLevel(3)}
+              onClick={() => setZoomLevel(4)}
               className="text-xs"
             >
               <Maximize2 className="h-3 w-3 mr-1" />
