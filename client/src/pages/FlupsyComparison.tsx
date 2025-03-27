@@ -286,13 +286,13 @@ export default function FlupsyComparison() {
   const getBasketCardSize = () => {
     switch (zoomLevel) {
       case 1:
-        return { width: 'w-40', height: 'h-16' }; // Default
+        return { width: 'w-44', height: 'h-20' }; // Default (aumentato)
       case 2:
-        return { width: 'w-52', height: 'h-20' }; // Medio
+        return { width: 'w-56', height: 'h-24' }; // Medio (aumentato)
       case 3:
-        return { width: 'w-64', height: 'h-24' }; // Grande
+        return { width: 'w-68', height: 'h-28' }; // Grande (aumentato)
       default:
-        return { width: 'w-40', height: 'h-16' };
+        return { width: 'w-44', height: 'h-20' };
     }
   };
 
@@ -376,7 +376,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer`}
+              className={`basket-card p-3 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer overflow-hidden`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>

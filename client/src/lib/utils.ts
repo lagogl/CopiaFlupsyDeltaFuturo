@@ -295,12 +295,20 @@ export function getBorderThicknessByWeight(weight: number | null): string {
 export function getBorderColorByAnimalsPerKg(animalsPerKg: number | null): string {
   if (!animalsPerKg || animalsPerKg <= 0) return 'border-slate-200';
   
-  // Se la taglia è TP-3000 o superiore (animalsPerKg <= 32000), bordo rosso
-  if (animalsPerKg <= 32000) {
-    return 'border-red-500';
+  // Colorazione progressiva in base alla taglia
+  if (animalsPerKg <= 19000) {
+    return 'border-red-600'; // TP-1000 e inferiori - rosso intenso
+  } else if (animalsPerKg <= 32000) {
+    return 'border-red-500'; // TP-3000 - rosso standard
+  } else if (animalsPerKg <= 45000) {
+    return 'border-amber-500'; // TP-4000 - ambra/arancio
+  } else if (animalsPerKg <= 60000) {
+    return 'border-yellow-500'; // TP-5000 - giallo
+  } else if (animalsPerKg <= 80000) {
+    return 'border-green-500'; // TP-6000 - verde
   }
   
-  return 'border-slate-200'; // Colore predefinito per taglie inferiori
+  return 'border-slate-200'; // Taglie più piccole (seme)
 }
 
 /**
@@ -312,17 +320,25 @@ export function getBorderColorByAnimalsPerKg(animalsPerKg: number | null): strin
 export function getBasketBorderClass(animalsPerKg: number | null): string {
   if (!animalsPerKg || animalsPerKg <= 0) return 'border';
   
-  // Se la taglia è TP-3000 o superiore (animalsPerKg <= 32000), bordo rosso più spesso
-  if (animalsPerKg <= 32000) {
+  // Stile del bordo progressivo in base alla taglia
+  if (animalsPerKg <= 19000) {
+    // TP-1000 e inferiori - bordo rosso intenso, spesso, con ring per evidenziare
+    return 'border-red-600 border-[5px] ring-2 ring-red-500 ring-offset-1 shadow-md';
+  } else if (animalsPerKg <= 32000) {
+    // TP-3000 - bordo rosso, con ring
     return 'border-red-600 border-[4px] ring-2 ring-red-500 ring-offset-1';
+  } else if (animalsPerKg <= 45000) {
+    // TP-4000 - bordo ambra/arancio più spesso
+    return 'border-amber-500 border-[3px]';
+  } else if (animalsPerKg <= 60000) {
+    // TP-5000 - bordo giallo medio
+    return 'border-yellow-500 border-2';
+  } else if (animalsPerKg <= 80000) {
+    // TP-6000 - bordo verde
+    return 'border-green-500 border-2';
   }
   
-  // Per taglie medie, bordo più spesso
-  if (animalsPerKg <= 80000) {
-    return 'border-2';
-  }
-  
-  // Per taglie piccole, bordo normale
+  // Per taglie più piccole (seme), bordo normale
   return 'border';
 }
 
