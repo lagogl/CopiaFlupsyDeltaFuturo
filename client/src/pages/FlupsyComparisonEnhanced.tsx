@@ -16,7 +16,7 @@ import {
 } from "@/components/ui/tooltip";
 import { Separator } from "@/components/ui/separator";
 import { format, addDays, differenceInWeeks } from 'date-fns';
-import { Calendar, Clock, ArrowRight, Info, ZoomIn, ZoomOut, Maximize2, Minimize2 } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Info, ZoomIn, ZoomOut, Maximize2, Minimize2, Fan } from 'lucide-react';
 import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor, monthlyToDaily } from '@/lib/utils';
 import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
@@ -944,7 +944,21 @@ export default function FlupsyComparison() {
         {/* Stato attuale */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle>Stato attuale</CardTitle>
+            <CardTitle className="flex items-center">
+              Stato attuale
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="ml-2 text-blue-500 flex items-center justify-center">
+                      <Fan className="h-4 w-4" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Direzione elica del FLUPSY</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </CardTitle>
             <CardDescription>
               Visualizzazione corrente del FLUPSY {selectedFlupsy?.name}
             </CardDescription>
@@ -988,11 +1002,23 @@ export default function FlupsyComparison() {
         {/* Stato futuro */}
         <Card>
           <CardHeader className="pb-3">
-            <CardTitle>
+            <CardTitle className="flex items-center">
               Stato futuro {comparisonType === 'date' 
                 ? `(${format(targetDate, 'dd/MM/yyyy')})` 
                 : `(Taglia ${targetSize})`
               }
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="ml-2 text-blue-500 flex items-center justify-center">
+                      <Fan className="h-4 w-4" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Direzione elica del FLUPSY</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
             </CardTitle>
             <CardDescription>
               {comparisonType === 'date' 
