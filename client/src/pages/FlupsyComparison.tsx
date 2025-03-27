@@ -26,19 +26,16 @@ const HighContrastTooltip = ({ children, className = "" }) => (
 
 // Helper function per ottenere il colore di una taglia
 /**
+ * Definizione colori per taglia:
+ * La colorazione delle taglie si basa esclusivamente sui dati dalla tabella 'sizes' del database.
+ * 
  * Sequenza di colori per taglia:
- * - T1 (più piccola): Blu
- * - T2: Ciano
- * - T3: Verde acqua
- * - T4: Verde
- * - T5: Verde lime
- * - T6: Ambra
- * - T7 (più grande in T): Arancione
- * - TP-3000: Rosso (19.001-32.000/kg)
- * - TP-2000: Rosa scuro (12.001-19.000/kg)
- * - TP-1000: Rosa (6.001-12.000/kg)
- * - TP-500: Viola (1-6.000/kg)
- * - TP-10000+ o taglie superiori: Nero con testo bianco
+ * - TP-500 e inferiori (es. TP-180, TP-200): Viola
+ * - TP-1000 e similari: Rosa
+ * - TP-2000 e similari: Rosa scuro
+ * - TP-3000 e similari: Rosso
+ * - TP-3500 - TP-8000: Progressione di colori (arancione, verde, ciano, blu)
+ * - TP-10000 o superiori: Nero con testo bianco (visualizzato come +TP-10000)
  */
 const getSizeColorWithBorder = (sizeCode: string): string => {
   // Funzione locale che restituisce colori con contrasto adeguato per la visualizzazione
@@ -49,32 +46,34 @@ const getSizeColorWithBorder = (sizeCode: string): string => {
     return 'bg-black !text-white !border-gray-800';
   }
   
-  switch (sizeCode) {
-    case 'T1':
-      return 'bg-blue-500 !text-white !border-blue-700';
-    case 'T2':
-      return 'bg-cyan-500 !text-white !border-cyan-700';
-    case 'T3':
-      return 'bg-teal-500 !text-white !border-teal-700';
-    case 'T4':
-      return 'bg-green-500 !text-white !border-green-700';
-    case 'T5':
-      return 'bg-lime-500 !text-white !border-lime-700';
-    case 'T6':
-      return 'bg-amber-500 !text-white !border-amber-700';
-    case 'T7':
-      return 'bg-orange-500 !text-white !border-orange-700';
-    case 'TP-3000':
-      return 'bg-red-500 !text-white !border-red-700';
-    case 'TP-2000':
-      return 'bg-rose-500 !text-white !border-rose-700';
-    case 'TP-1000':
-      return 'bg-pink-500 !text-white !border-pink-700';
-    case 'TP-500':
-      return 'bg-purple-500 !text-white !border-purple-700';
-    default:
-      return 'bg-gray-200 !text-gray-800 !border-gray-400';
+  // Per le altre taglie TP, determina il colore in base al numero
+  if (sizeCode.startsWith('TP-')) {
+    // Estrai il numero dalla taglia
+    const sizeNum = parseInt(sizeCode.replace('TP-', ''));
+    
+    if (sizeNum <= 500) {
+      return 'bg-purple-500 !text-white !border-purple-700'; // TP-500 e inferiori
+    } else if (sizeNum <= 1000) {
+      return 'bg-pink-500 !text-white !border-pink-700';     // TP-1000 e similari
+    } else if (sizeNum <= 2000) {  
+      return 'bg-rose-500 !text-white !border-rose-700';     // TP-2000 e similari
+    } else if (sizeNum <= 3000) {
+      return 'bg-red-500 !text-white !border-red-700';       // TP-3000 e similari
+    } else if (sizeNum <= 4000) {
+      return 'bg-orange-500 !text-white !border-orange-700'; // TP-4000 e similari
+    } else if (sizeNum <= 6000) {
+      return 'bg-amber-500 !text-white !border-amber-700';   // TP-5000/6000
+    } else if (sizeNum <= 7000) {
+      return 'bg-lime-500 !text-white !border-lime-700';     // TP-7000
+    } else if (sizeNum <= 8000) {
+      return 'bg-green-500 !text-white !border-green-700';   // TP-8000
+    } else if (sizeNum <= 9000) {
+      return 'bg-teal-500 !text-white !border-teal-700';     // TP-9000
+    }
   }
+  
+  // Default per taglie non riconosciute
+  return 'bg-gray-200 !text-gray-800 !border-gray-400';
 };
 
 // Questo componente visualizza il confronto tra lo stato attuale e futuro del FLUPSY
@@ -89,7 +88,7 @@ export default function FlupsyComparison() {
     if (daysInFuture < 5) setDaysInFuture(5);
     if (daysInFuture > 180) setDaysInFuture(180);
   }, [daysInFuture]);
-  const [targetSizeCode, setTargetSizeCode] = useState<string>("T5");
+  const [targetSizeCode, setTargetSizeCode] = useState<string>("TP-3000");
   const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = normale, 2 = medio, 3 = grande
 
   // Fetch dei dati necessari
@@ -649,30 +648,43 @@ export default function FlupsyComparison() {
     } 
     // Se raggiungerà la taglia target, usa un bordo del colore target ma sfondo più chiaro
     else {
-      switch (targetSizeCode) {
-        case 'T1':
-          colorClass = 'bg-blue-50 text-blue-800 border-blue-500 border-dashed';
-          break;
-        case 'T2':
-          colorClass = 'bg-cyan-50 text-cyan-800 border-cyan-500 border-dashed';
-          break;
-        case 'T3':
-          colorClass = 'bg-teal-50 text-teal-800 border-teal-500 border-dashed';
-          break;
-        case 'T4':
-          colorClass = 'bg-green-50 text-green-800 border-green-500 border-dashed';
-          break;
-        case 'T5':
-          colorClass = 'bg-lime-50 text-lime-800 border-lime-500 border-dashed';
-          break;
-        case 'T6':
-          colorClass = 'bg-amber-50 text-amber-800 border-amber-500 border-dashed';
-          break;
-        case 'T7':
-          colorClass = 'bg-orange-50 text-orange-800 border-orange-500 border-dashed';
-          break;
-        default:
-          colorClass = 'bg-gray-50 text-gray-800 border-gray-300 border-dashed';
+      // Estrai il colore di base dalla taglia
+      let baseColor = '';
+      
+      // Per le taglie TP, determina il colore in base al numero
+      if (targetSizeCode.startsWith('TP-')) {
+        // Estrai il numero dalla taglia
+        const sizeNum = parseInt(targetSizeCode.replace('TP-', ''));
+        
+        if (sizeNum >= 10000) {
+          colorClass = 'bg-gray-100 text-gray-800 border-black border-dashed';
+          return; // Esci in anticipo per TP-10000+
+        } else if (sizeNum <= 500) {
+          baseColor = 'purple';
+        } else if (sizeNum <= 1000) {
+          baseColor = 'pink';
+        } else if (sizeNum <= 2000) {
+          baseColor = 'rose';
+        } else if (sizeNum <= 3000) {
+          baseColor = 'red';
+        } else if (sizeNum <= 4000) {
+          baseColor = 'orange';
+        } else if (sizeNum <= 6000) {
+          baseColor = 'amber';
+        } else if (sizeNum <= 7000) {
+          baseColor = 'lime';
+        } else if (sizeNum <= 8000) {
+          baseColor = 'green';
+        } else if (sizeNum <= 9000) {
+          baseColor = 'teal';
+        } else {
+          baseColor = 'blue';
+        }
+        
+        colorClass = `bg-${baseColor}-50 text-${baseColor}-800 border-${baseColor}-500 border-dashed`;
+      } else {
+        // Default per taglie non riconosciute
+        colorClass = 'bg-gray-50 text-gray-800 border-gray-300 border-dashed';
       }
     }
     

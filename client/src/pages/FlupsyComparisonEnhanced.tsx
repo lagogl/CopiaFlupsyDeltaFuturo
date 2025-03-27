@@ -30,24 +30,40 @@ const HighContrastTooltip = ({ children, className = "" }: { children: React.Rea
 // Helper function per ottenere il colore di una taglia
 const getSizeColorWithBorder = (sizeCode: string): string => {
   // Funzione locale che restituisce colori con contrasto adeguato per la visualizzazione
-  switch (sizeCode) {
-    case 'T1':
-      return 'bg-blue-500 text-white border-blue-700';
-    case 'T2':
-      return 'bg-cyan-500 text-white border-cyan-700';
-    case 'T3':
-      return 'bg-teal-500 text-white border-teal-700';
-    case 'T4':
-      return 'bg-green-500 text-white border-green-700';
-    case 'T5':
-      return 'bg-lime-500 text-white border-lime-700';
-    case 'T6':
-      return 'bg-amber-500 text-white border-amber-700';
-    case 'T7':
-      return 'bg-orange-500 text-white border-orange-700';
-    default:
-      return 'bg-gray-100 text-gray-800 border-gray-300';
+  
+  // Verifica se il codice della taglia è TP-10000 o superiore
+  if (sizeCode.startsWith('TP-') && parseInt(sizeCode.replace('TP-', '')) >= 10000) {
+    return 'bg-black text-white border-gray-800';
   }
+  
+  // Per le altre taglie TP, determina il colore in base al numero
+  if (sizeCode.startsWith('TP-')) {
+    // Estrai il numero dalla taglia
+    const sizeNum = parseInt(sizeCode.replace('TP-', ''));
+    
+    if (sizeNum <= 500) {
+      return 'bg-purple-500 text-white border-purple-700'; // TP-500 e inferiori
+    } else if (sizeNum <= 1000) {
+      return 'bg-pink-500 text-white border-pink-700';     // TP-1000 e similari
+    } else if (sizeNum <= 2000) {  
+      return 'bg-rose-500 text-white border-rose-700';     // TP-2000 e similari
+    } else if (sizeNum <= 3000) {
+      return 'bg-red-500 text-white border-red-700';       // TP-3000 e similari
+    } else if (sizeNum <= 4000) {
+      return 'bg-orange-500 text-white border-orange-700'; // TP-4000 e similari
+    } else if (sizeNum <= 6000) {
+      return 'bg-amber-500 text-white border-amber-700';   // TP-5000/6000
+    } else if (sizeNum <= 7000) {
+      return 'bg-lime-500 text-white border-lime-700';     // TP-7000
+    } else if (sizeNum <= 8000) {
+      return 'bg-green-500 text-white border-green-700';   // TP-8000
+    } else if (sizeNum <= 9000) {
+      return 'bg-teal-500 text-white border-teal-700';     // TP-9000
+    }
+  }
+  
+  // Default per taglie non riconosciute
+  return 'bg-gray-100 text-gray-800 border-gray-300';
 };
 
 // Questo componente visualizza il confronto tra lo stato attuale e futuro del FLUPSY
@@ -58,7 +74,7 @@ export default function FlupsyComparison() {
   // State per modalità di confronto e data target
   const [comparisonType, setComparisonType] = useState<'date' | 'target-size'>('date');
   const [targetDate, setTargetDate] = useState<Date>(addDays(new Date(), 30));
-  const [targetSize, setTargetSize] = useState<string>('T3');
+  const [targetSize, setTargetSize] = useState<string>('TP-3000');
   
   // State per lo zoom delle ceste
   const [zoomEnabled, setZoomEnabled] = useState(false);
