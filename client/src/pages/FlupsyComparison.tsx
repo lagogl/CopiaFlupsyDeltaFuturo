@@ -27,23 +27,32 @@ const HighContrastTooltip = ({ children, className = "" }) => (
 // Helper function per ottenere il colore di una taglia
 const getSizeColorWithBorder = (sizeCode: string): string => {
   // Funzione locale che restituisce colori con contrasto adeguato per la visualizzazione
+  // Usando !important (in Tailwind con '!') per assicurare che i colori non vengano sovrascritti
   switch (sizeCode) {
     case 'T1':
-      return 'bg-blue-500 text-white border-blue-700';
+      return 'bg-blue-500 !text-white !border-blue-700';
     case 'T2':
-      return 'bg-cyan-500 text-white border-cyan-700';
+      return 'bg-cyan-500 !text-white !border-cyan-700';
     case 'T3':
-      return 'bg-teal-500 text-white border-teal-700';
+      return 'bg-teal-500 !text-white !border-teal-700';
     case 'T4':
-      return 'bg-green-500 text-white border-green-700';
+      return 'bg-green-500 !text-white !border-green-700';
     case 'T5':
-      return 'bg-lime-500 text-white border-lime-700';
+      return 'bg-lime-500 !text-white !border-lime-700';
     case 'T6':
-      return 'bg-amber-500 text-white border-amber-700';
+      return 'bg-amber-500 !text-white !border-amber-700';
     case 'T7':
-      return 'bg-orange-500 text-white border-orange-700';
+      return 'bg-orange-500 !text-white !border-orange-700';
+    case 'TP-3000':
+      return 'bg-red-500 !text-white !border-red-700';
+    case 'TP-2000':
+      return 'bg-rose-500 !text-white !border-rose-700';
+    case 'TP-1000':
+      return 'bg-pink-500 !text-white !border-pink-700';
+    case 'TP-500':
+      return 'bg-purple-500 !text-white !border-purple-700';
     default:
-      return 'bg-gray-100 text-gray-800 border-gray-300';
+      return 'bg-gray-200 !text-gray-800 !border-gray-400';
   }
 };
 
@@ -510,7 +519,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer relative`}
+              className={`basket-card p-3 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer relative overflow-hidden`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
@@ -677,7 +686,7 @@ export default function FlupsyComparison() {
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer relative`}
+              className={`basket-card p-3 rounded border-2 ${colorClass} ${height} ${width} flex flex-col justify-between cursor-pointer relative overflow-hidden`}
             >
               <div className="flex justify-between items-start w-full">
                 <span className="font-bold text-xs">#{basket.physicalNumber}</span>
