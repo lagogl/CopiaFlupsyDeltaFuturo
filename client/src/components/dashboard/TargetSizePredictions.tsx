@@ -37,7 +37,7 @@ export function TargetSizePredictions() {
   
   // Recupera le previsioni per la taglia TP-3000
   const { data: predictions, isLoading, isError, refetch } = useQuery({
-    queryKey: ['/api/tp3000-baskets', days],
+    queryKey: [`/api/tp3000-baskets?days=${days}`, days],
     queryFn: getQueryFn<TargetSizePrediction[]>({ on401: "throw" }),
   });
 
@@ -97,6 +97,13 @@ export function TargetSizePredictions() {
               onClick={() => setDays(30)}
             >
               30 giorni
+            </Button>
+            <Button 
+              variant={days === 90 ? "default" : "outline"} 
+              size="sm" 
+              onClick={() => setDays(90)}
+            >
+              90 giorni
             </Button>
           </div>
         </div>
