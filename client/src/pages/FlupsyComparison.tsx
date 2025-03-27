@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -25,6 +25,20 @@ const HighContrastTooltip = ({ children, className = "" }) => (
 );
 
 // Helper function per ottenere il colore di una taglia
+/**
+ * Sequenza di colori per taglia:
+ * - T1 (più piccola): Blu
+ * - T2: Ciano
+ * - T3: Verde acqua
+ * - T4: Verde
+ * - T5: Verde lime
+ * - T6: Ambra
+ * - T7 (più grande in T): Arancione
+ * - TP-3000: Rosso (19.001-32.000/kg)
+ * - TP-2000: Rosa scuro (12.001-19.000/kg)
+ * - TP-1000: Rosa (6.001-12.000/kg)
+ * - TP-500: Viola (1-6.000/kg)
+ */
 const getSizeColorWithBorder = (sizeCode: string): string => {
   // Funzione locale che restituisce colori con contrasto adeguato per la visualizzazione
   // Usando !important (in Tailwind con '!') per assicurare che i colori non vengano sovrascritti
@@ -62,6 +76,12 @@ export default function FlupsyComparison() {
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(null);
   const [currentTabId, setCurrentTabId] = useState<string>("data-futuro");
   const [daysInFuture, setDaysInFuture] = useState<number>(30);
+  
+  // Verifica che il valore sia compreso tra 5 e 180
+  useEffect(() => {
+    if (daysInFuture < 5) setDaysInFuture(5);
+    if (daysInFuture > 180) setDaysInFuture(180);
+  }, [daysInFuture]);
   const [targetSizeCode, setTargetSizeCode] = useState<string>("T5");
   const [zoomLevel, setZoomLevel] = useState<number>(1); // 1 = normale, 2 = medio, 3 = grande
 
@@ -295,13 +315,13 @@ export default function FlupsyComparison() {
   const getBasketCardSize = () => {
     switch (zoomLevel) {
       case 1:
-        return { width: 'w-44', height: 'h-20' }; // Default (aumentato)
+        return { width: 'w-44', height: 'h-22' }; // Default (aumentato)
       case 2:
-        return { width: 'w-56', height: 'h-24' }; // Medio (aumentato)
+        return { width: 'w-56', height: 'h-28' }; // Medio (aumentato)
       case 3:
-        return { width: 'w-68', height: 'h-28' }; // Grande (aumentato)
+        return { width: 'w-72', height: 'h-32' }; // Grande (aumentato ulteriormente)
       default:
-        return { width: 'w-44', height: 'h-20' };
+        return { width: 'w-44', height: 'h-22' };
     }
   };
 
@@ -808,18 +828,18 @@ export default function FlupsyComparison() {
                   <div>
                     <label className="flex justify-between text-sm mb-1">
                       <span className="font-medium text-gray-500">Giorni nel futuro</span>
-                      <span className="text-gray-500">{daysInFuture} giorni</span>
+                      <span className="text-gray-500">{daysInFuture} giorni ({Math.round(daysInFuture/30 * 10) / 10} mesi)</span>
                     </label>
                     <Slider
                       value={[daysInFuture]}
-                      min={1}
+                      min={5}
                       max={180}
-                      step={1}
+                      step={5}
                       onValueChange={(value) => setDaysInFuture(value[0])}
                     />
                     <div className="flex justify-between text-xs text-gray-500 mt-1">
-                      <span>1 giorno</span>
-                      <span>6 mesi</span>
+                      <span>5 giorni</span>
+                      <span>180 giorni (6 mesi)</span>
                     </div>
                   </div>
                 </TabsContent>
