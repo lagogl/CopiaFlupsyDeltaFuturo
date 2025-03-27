@@ -137,13 +137,18 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                       position: 'insideStart',
                       formatter: (entry: any) => `${entry.name}: ${formatNumberEU(entry.value)}`,
                     }}
-                    background
+                    background={{ fill: '#f9fafb' }} // Colore di sfondo più chiaro
                     dataKey="value"
+                    // Assicurati che il riempimento abbia opacità sufficiente
+                    fill="#8884d8"
                   >
                     {pieChartData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
                         fill={entry.color}
+                        stroke={entry.color}
+                        strokeWidth={1}
+                        cornerRadius={4}
                       />
                     ))}
                   </RadialBar>
@@ -207,8 +212,8 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                   <defs>
                     {barChartData.map((entry, index) => (
                       <linearGradient key={`gradient-${index}`} id={`colorAnimali-${index}`} x1="0" y1="0" x2="0" y2="1">
-                        <stop offset="5%" stopColor={entry.color || '#82ca9d'} stopOpacity={0.9}/>
-                        <stop offset="95%" stopColor={entry.color || '#82ca9d'} stopOpacity={0.6}/>
+                        <stop offset="5%" stopColor={entry.color} stopOpacity={0.9}/>
+                        <stop offset="95%" stopColor={entry.color} stopOpacity={0.6}/>
                       </linearGradient>
                     ))}
                   </defs>
@@ -256,12 +261,13 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                     dataKey="Animali" 
                     radius={[6, 6, 0, 0]} 
                     animationDuration={1500}
+                    // Colore predefinito rimosso per permettere ai colori delle celle di essere visibili
                   >
                     {barChartData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={`url(#colorAnimali-${index})`}
-                        stroke={entry.color || '#82ca9d'} 
+                        fill={entry.color} // Usa direttamente il colore invece del gradiente
+                        stroke={entry.color} 
                         strokeWidth={1}
                       />
                     ))}
@@ -558,28 +564,41 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                         // Try to find the corresponding size in the distribution
                         const sizeEntry = inventoryStats.sizeDistribution.find(s => s.sizeCode === payload.size);
                         if (sizeEntry) {
-                          pointColor = sizeEntry.color;
+                          pointColor = sizeEntry.color || pointColor;  // Usa il colore dalla dimensione o il default se non definito
                         }
                       }
                       
+                      // Rendi più visibile e definito il punto
                       return (
                         <>
+                          {/* Effetto alone esterno */}
                           <circle 
                             filter="url(#dropShadow)"
                             cx={cx} 
                             cy={cy} 
-                            r={12}
+                            r={15}
                             fill={pointColor} 
-                            fillOpacity={0.1}
+                            fillOpacity={0.15}
                           />
+                          {/* Cerchio medio per effetto profondità */}
                           <circle 
                             cx={cx} 
                             cy={cy} 
-                            r={8}
-                            stroke="#fff"
-                            strokeWidth={2}
+                            r={10}
                             fill={pointColor} 
-                            fillOpacity={0.8}
+                            fillOpacity={0.4}
+                            stroke={pointColor}
+                            strokeWidth={1}
+                          />
+                          {/* Cerchio interno principale */}
+                          <circle 
+                            cx={cx} 
+                            cy={cy} 
+                            r={6}
+                            stroke="#fff"
+                            strokeWidth={1.5}
+                            fill={pointColor} 
+                            fillOpacity={0.9}
                           />
                         </>
                       );
