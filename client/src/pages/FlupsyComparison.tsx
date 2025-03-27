@@ -13,7 +13,7 @@ import {
   TooltipTrigger,
 } from "@/components/ui/tooltip";
 import { format, addDays, differenceInWeeks } from 'date-fns';
-import { Calendar, Clock, ArrowRight, Info, ZoomIn, ZoomOut, RefreshCw } from 'lucide-react';
+import { Calendar, Clock, ArrowRight, Info, ZoomIn, ZoomOut, RefreshCw, Fan } from 'lucide-react';
 import { getTargetSizeForWeight, getFutureWeightAtDate, getSizeColor } from '@/lib/utils';
 import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
@@ -803,7 +803,21 @@ export default function FlupsyComparison() {
       <Card>
         <CardHeader>
           <CardTitle className="flex items-center justify-between">
-            <div>Confronto Flupsy</div>
+            <div className="flex items-center">
+              Confronto Flupsy
+              <TooltipProvider>
+                <Tooltip>
+                  <TooltipTrigger>
+                    <div className="ml-2 text-blue-500 flex items-center justify-center">
+                      <Fan className="h-4 w-4" />
+                    </div>
+                  </TooltipTrigger>
+                  <TooltipContent>
+                    <p>Direzione elica del FLUPSY</p>
+                  </TooltipContent>
+                </Tooltip>
+              </TooltipProvider>
+            </div>
             <div className="flex items-center space-x-2">
               <Button 
                 size="sm" 
