@@ -74,6 +74,7 @@ export const sizes = pgTable("sizes", {
   minAnimalsPerKg: integer("min_animals_per_kg"), 
   maxAnimalsPerKg: integer("max_animals_per_kg"),
   notes: text("notes"),
+  color: text("color"), // colore HEX per visualizzazione grafica
 });
 
 // SGR (Indici di Crescita)

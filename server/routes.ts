@@ -956,7 +956,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sizes", async (req, res) => {
     try {
       const sizes = await storage.getSizes();
-      res.json(sizes);
+      
+      // Mappa di colori per le taglie se il colore manca nel database
+      const colorMap = {
+        'TP-180': '#a78bfa', // violet-400
+        'TP-200': '#818cf8', // indigo-400
+        'TP-315': '#60a5fa', // blue-400
+        'TP-450': '#2dd4bf', // teal-400
+        'TP-500': '#8b5cf6', // purple-500
+        'TP-600': '#4ade80', // green-400
+        'TP-700': '#a3e635', // lime-400
+        'TP-800': '#facc15', // yellow-400
+        'TP-1000': '#fb923c', // orange-400
+        'TP-1140': '#f87171', // red-400
+        'TP-1260': '#f472b6', // pink-400
+        'TP-1500': '#e879f9', // fuchsia-400
+        'TP-1800': '#c084fc', // purple-400
+        'TP-1900': '#93c5fd', // blue-300
+        'TP-2000': '#67e8f9', // cyan-400
+        'TP-2200': '#86efac', // green-300
+        'TP-2500': '#fde047', // yellow-300
+        'TP-2800': '#fdba74', // orange-300
+        'TP-3000': '#fca5a5', // red-300
+        'TP-3500': '#f9a8d4', // pink-300
+        'TP-4000': '#d8b4fe', // purple-300
+        'TP-5000': '#bfdbfe', // blue-200
+        'TP-6000': '#a5f3fc', // cyan-200
+        'TP-7000': '#bbf7d0', // green-200
+        'TP-8000': '#fef08a', // yellow-200
+        'TP-9000': '#fed7aa', // orange-200
+        'TP-10000': '#fecaca', // red-200
+      };
+      
+      // Assicura che ogni taglia abbia un colore
+      const sizesWithColors = sizes.map(size => ({
+        ...size,
+        color: size.color || colorMap[size.code] || '#6366f1' // indigo-500 (default)
+      }));
+      
+      res.json(sizesWithColors);
     } catch (error) {
       console.error("Error fetching sizes:", error);
       res.status(500).json({ message: "Failed to fetch sizes" });
@@ -974,8 +1012,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!size) {
         return res.status(404).json({ message: "Size not found" });
       }
+      
+      // Mappa di colori per le taglie se il colore manca
+      const colorMap = {
+        'TP-180': '#a78bfa', // violet-400
+        'TP-200': '#818cf8', // indigo-400
+        'TP-315': '#60a5fa', // blue-400
+        'TP-450': '#2dd4bf', // teal-400
+        'TP-500': '#8b5cf6', // purple-500
+        'TP-600': '#4ade80', // green-400
+        'TP-700': '#a3e635', // lime-400
+        'TP-800': '#facc15', // yellow-400
+        'TP-1000': '#fb923c', // orange-400
+        'TP-1140': '#f87171', // red-400
+        'TP-1260': '#f472b6', // pink-400
+        'TP-1500': '#e879f9', // fuchsia-400
+        'TP-1800': '#c084fc', // purple-400
+        'TP-1900': '#93c5fd', // blue-300
+        'TP-2000': '#67e8f9', // cyan-400
+        'TP-2200': '#86efac', // green-300
+        'TP-2500': '#fde047', // yellow-300
+        'TP-2800': '#fdba74', // orange-300
+        'TP-3000': '#fca5a5', // red-300
+        'TP-3500': '#f9a8d4', // pink-300
+        'TP-4000': '#d8b4fe', // purple-300
+        'TP-5000': '#bfdbfe', // blue-200
+        'TP-6000': '#a5f3fc', // cyan-200
+        'TP-7000': '#bbf7d0', // green-200
+        'TP-8000': '#fef08a', // yellow-200
+        'TP-9000': '#fed7aa', // orange-200
+        'TP-10000': '#fecaca', // red-200
+      };
+      
+      // Assicura che la taglia abbia un colore
+      const sizeWithColor = {
+        ...size,
+        color: size.color || colorMap[size.code] || '#6366f1' // indigo-500 (default)
+      };
 
-      res.json(size);
+      res.json(sizeWithColor);
     } catch (error) {
       console.error("Error fetching size:", error);
       res.status(500).json({ message: "Failed to fetch size" });
