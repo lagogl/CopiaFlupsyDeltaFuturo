@@ -5,6 +5,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/com
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
 import { Button } from "@/components/ui/button";
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { CheckCircle2Icon, CalendarIcon, AlertCircleIcon } from "lucide-react";
 import { format, addDays } from "date-fns";
 import { it } from "date-fns/locale";
@@ -30,14 +31,31 @@ interface TargetSizePrediction {
     averageWeight: number | null;
   } | null;
   daysRemaining: number;
+  currentWeight?: number;
+  targetWeight?: number;
+}
+
+interface Size {
+  id: number;
+  code: string;
+  name: string;
+  minAnimalsPerKg?: number;
+  maxAnimalsPerKg?: number;
 }
 
 export function TargetSizePredictions() {
   const [days, setDays] = useState(14); // Default: 2 settimane
+  const [targetSize, setTargetSize] = useState("TP-3000"); // Default: TP-3000
   
-  // Recupera le previsioni per la taglia TP-3000
+  // Recupera tutte le taglie disponibili
+  const { data: sizes } = useQuery({
+    queryKey: ['/api/sizes'],
+    queryFn: getQueryFn<Size[]>({ on401: "throw" }),
+  });
+  
+  // Recupera le previsioni usando il nuovo endpoint che supporta diverse taglie
   const { data: predictions, isLoading, isError, refetch } = useQuery({
-    queryKey: [`/api/tp3000-baskets?days=${days}`, days],
+    queryKey: [`/api/size-predictions?size=${targetSize}&days=${days}`, targetSize, days],
     queryFn: getQueryFn<TargetSizePrediction[]>({ on401: "throw" }),
   });
 
@@ -70,41 +88,63 @@ export function TargetSizePredictions() {
       <CardHeader className="pb-2">
         <div className="flex items-center justify-between">
           <div>
-            <CardTitle className="text-xl font-bold">Ceste in arrivo a TP-3000</CardTitle>
+            <CardTitle className="text-xl font-bold">Ceste in arrivo a {targetSize}</CardTitle>
             <CardDescription>
-              Previsioni di crescita verso la taglia commerciale TP-3000 
+              Previsioni di crescita verso la taglia commerciale {targetSize} 
               {days === 14 ? " (prossime 2 settimane)" : ` (prossimi ${days} giorni)`}
             </CardDescription>
           </div>
-          <div className="space-x-2">
-            <Button 
-              variant={days === 7 ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => setDays(7)}
-            >
-              7 giorni
-            </Button>
-            <Button 
-              variant={days === 14 ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => setDays(14)}
-            >
-              14 giorni
-            </Button>
-            <Button 
-              variant={days === 30 ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => setDays(30)}
-            >
-              30 giorni
-            </Button>
-            <Button 
-              variant={days === 90 ? "default" : "outline"} 
-              size="sm" 
-              onClick={() => setDays(90)}
-            >
-              90 giorni
-            </Button>
+          <div className="flex items-center space-x-4">
+            {/* Selezione della taglia target */}
+            <div className="w-40">
+              <Select
+                value={targetSize}
+                onValueChange={setTargetSize}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Taglia target" />
+                </SelectTrigger>
+                <SelectContent>
+                  {sizes?.map(size => (
+                    <SelectItem key={size.id} value={size.code}>
+                      {size.code} - {size.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+            
+            {/* Pulsanti per la durata */}
+            <div className="space-x-2">
+              <Button 
+                variant={days === 7 ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setDays(7)}
+              >
+                7 giorni
+              </Button>
+              <Button 
+                variant={days === 14 ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setDays(14)}
+              >
+                14 giorni
+              </Button>
+              <Button 
+                variant={days === 30 ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setDays(30)}
+              >
+                30 giorni
+              </Button>
+              <Button 
+                variant={days === 90 ? "default" : "outline"} 
+                size="sm" 
+                onClick={() => setDays(90)}
+              >
+                90 giorni
+              </Button>
+            </div>
           </div>
         </div>
       </CardHeader>
@@ -121,7 +161,7 @@ export function TargetSizePredictions() {
         ) : predictions?.length === 0 ? (
           <div className="flex flex-col items-center justify-center p-8 text-gray-500">
             <CheckCircle2Icon size={48} className="mb-2 text-emerald-500" />
-            <p className="text-center">Nessuna cesta raggiungerà la taglia TP-3000 nei prossimi {days} giorni</p>
+            <p className="text-center">Nessuna cesta raggiungerà la taglia {targetSize} nei prossimi {days} giorni</p>
           </div>
         ) : (
           <div className="space-y-3">
@@ -173,6 +213,27 @@ export function TargetSizePredictions() {
                         </div>
                       )}
                     </div>
+                    
+                    {/* Mostra dettagli di crescita se disponibili */}
+                    {prediction.currentWeight && prediction.targetWeight && (
+                      <div className="mt-2">
+                        <Separator className="my-1" />
+                        <div className="grid grid-cols-3 gap-2 mt-1">
+                          <div>
+                            <div className="text-gray-500">Peso attuale</div>
+                            <div>{Math.round(prediction.currentWeight).toLocaleString('it-IT')} mg</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Peso target</div>
+                            <div>{Math.round(prediction.targetWeight).toLocaleString('it-IT')} mg</div>
+                          </div>
+                          <div>
+                            <div className="text-gray-500">Incremento</div>
+                            <div>{Math.round((prediction.targetWeight / prediction.currentWeight - 1) * 100)}%</div>
+                          </div>
+                        </div>
+                      </div>
+                    )}
                   </div>
                 )}
               </div>
