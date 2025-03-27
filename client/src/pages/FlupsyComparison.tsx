@@ -38,10 +38,17 @@ const HighContrastTooltip = ({ children, className = "" }) => (
  * - TP-2000: Rosa scuro (12.001-19.000/kg)
  * - TP-1000: Rosa (6.001-12.000/kg)
  * - TP-500: Viola (1-6.000/kg)
+ * - TP-10000+ o taglie superiori: Nero con testo bianco
  */
 const getSizeColorWithBorder = (sizeCode: string): string => {
   // Funzione locale che restituisce colori con contrasto adeguato per la visualizzazione
   // Usando !important (in Tailwind con '!') per assicurare che i colori non vengano sovrascritti
+  
+  // Verifica se il codice della taglia è TP-10000 o superiore
+  if (sizeCode.startsWith('TP-') && parseInt(sizeCode.replace('TP-', '')) >= 10000) {
+    return 'bg-black !text-white !border-gray-800';
+  }
+  
   switch (sizeCode) {
     case 'T1':
       return 'bg-blue-500 !text-white !border-blue-700';
@@ -419,9 +426,16 @@ export default function FlupsyComparison() {
               {currentSize && (
                 <div className="flex flex-col w-full space-y-1 mt-1">
                   <div className="flex items-center justify-center">
-                    <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white">
-                      {currentSize.code}
-                    </Badge>
+                    {/* Gestione speciale per taglie TP-10000+ con sfondo nero e testo bianco */}
+                    {currentSize.code.startsWith('TP-') && parseInt(currentSize.code.replace('TP-', '')) >= 10000 ? (
+                      <Badge className="text-[8px] px-1.5 py-0 h-4 bg-black text-white whitespace-nowrap max-w-full overflow-hidden">
+                        +TP-10000
+                      </Badge>
+                    ) : (
+                      <Badge className="text-[8px] px-1.5 py-0 h-4 bg-blue-500 text-white whitespace-nowrap max-w-full overflow-hidden">
+                        {currentSize.code}
+                      </Badge>
+                    )}
                   </div>
                   
                   <div className="grid grid-cols-2 gap-1 text-center">
@@ -552,9 +566,16 @@ export default function FlupsyComparison() {
               
               <div className="flex flex-col w-full space-y-1 mt-1">
                 <div className="flex items-center justify-center">
-                  <Badge className="text-[8px] px-1.5 py-0 h-4">
-                    {futureSize?.code || '?'}
-                  </Badge>
+                  {/* Gestione speciale per taglie TP-10000+ con sfondo nero e testo bianco */}
+                  {futureSize?.code && futureSize.code.startsWith('TP-') && parseInt(futureSize.code.replace('TP-', '')) >= 10000 ? (
+                    <Badge className="text-[8px] px-1.5 py-0 h-4 bg-black text-white whitespace-nowrap max-w-full overflow-hidden">
+                      +TP-10000
+                    </Badge>
+                  ) : (
+                    <Badge className="text-[8px] px-1.5 py-0 h-4 whitespace-nowrap max-w-full overflow-hidden">
+                      {futureSize?.code || '?'}
+                    </Badge>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-1 text-center">
@@ -732,9 +753,14 @@ export default function FlupsyComparison() {
                       <Clock className="h-3 w-3 mr-1" />
                       {daysToTarget} giorni
                     </div>
-                    <div className="flex items-center text-[9px] text-gray-500">
-                      {currentSize?.code || '?'} 
-                      <ArrowRight className="h-3 w-3 mx-0.5" /> 
+                    <div className="flex items-center text-[9px] text-gray-500 whitespace-nowrap max-w-full overflow-hidden">
+                      {/* Gestione speciale per taglie TP-10000+ con visualizzazione speciale */}
+                      {currentSize?.code && currentSize.code.startsWith('TP-') && parseInt(currentSize.code.replace('TP-', '')) >= 10000 ? (
+                        <>+TP-10000</>
+                      ) : (
+                        <>{currentSize?.code || '?'}</>
+                      )}
+                      <ArrowRight className="h-3 w-3 mx-0.5 flex-shrink-0" /> 
                       {targetSizeCode}
                     </div>
                   </>
