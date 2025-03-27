@@ -2217,11 +2217,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         let sgrDaily = 0.067; // Valore di default: ~2% al mese, circa 0.067% al giorno
         const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
         if (currentSgr) {
-          // Usa direttamente il valore giornaliero
-          sgrDaily = currentSgr.percentage;
+          // Usa il valore SGR del database che è già in percentuale giornaliera
+          // Esempio: 3.7% è 0.037 come coefficiente di crescita giornaliero
+          sgrDaily = currentSgr.percentage / 100;
         } else if (sgrs.length > 0) {
-          // Calcola la media degli SGR disponibili
-          sgrDaily = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
+          // Calcola la media degli SGR disponibili (convertendo da percentuale a coefficiente)
+          sgrDaily = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length / 100;
         }
         
         // Per ogni ciclo attivo, controlla se il cestello raggiunge TP-3000 entro il periodo specificato
@@ -2349,11 +2350,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       let sgrDaily = 0.067; // Valore di default: ~2% al mese, circa 0.067% al giorno
       const currentSgr = sgrs.find(sgr => sgr.month.toLowerCase() === currentMonth);
       if (currentSgr) {
-        // Usa direttamente il valore giornaliero
-        sgrDaily = currentSgr.percentage;
+        // Usa il valore SGR del database che è già in percentuale giornaliera
+        // Esempio: 3.7% è 0.037 come coefficiente di crescita giornaliero
+        sgrDaily = currentSgr.percentage / 100;
       } else if (sgrs.length > 0) {
-        // Calcola la media degli SGR disponibili
-        sgrDaily = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length;
+        // Calcola la media degli SGR disponibili (convertendo da percentuale a coefficiente)
+        sgrDaily = sgrs.reduce((acc, sgr) => acc + sgr.percentage, 0) / sgrs.length / 100;
       }
       
       // Per ogni ciclo attivo, controlla se il cestello raggiunge la taglia target entro il periodo specificato
