@@ -21,6 +21,20 @@ import {
   LabelList, Line, ComposedChart, Area, RadialBarChart, RadialBar
 } from "recharts";
 
+// Colori fallback da usare quando i colori dai dati non sono disponibili
+const fallbackColors = [
+  "#4f46e5", // indigo-600
+  "#0ea5e9", // sky-500 
+  "#10b981", // emerald-500
+  "#f59e0b", // amber-500
+  "#ef4444", // red-500
+  "#8b5cf6", // violet-500
+  "#ec4899", // pink-500
+  "#14b8a6", // teal-500
+  "#f97316", // orange-500
+  "#6366f1", // indigo-500
+];
+
 interface SizeInventory {
   sizeCode: string;
   sizeName: string;
@@ -137,18 +151,15 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                       position: 'insideStart',
                       formatter: (entry: any) => `${entry.name}: ${formatNumberEU(entry.value)}`,
                     }}
-                    background={{ fill: '#f9fafb' }} // Colore di sfondo più chiaro
+                    background={{ fill: '#f9fafb' }}
                     dataKey="value"
-                    // Assicurati che il riempimento abbia opacità sufficiente
-                    fill="#8884d8"
                   >
                     {pieChartData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={entry.color}
-                        stroke={entry.color}
+                        fill={entry.color || fallbackColors[index % fallbackColors.length]}
+                        stroke={entry.color || fallbackColors[index % fallbackColors.length]}
                         strokeWidth={1}
-                        cornerRadius={4}
                       />
                     ))}
                   </RadialBar>
@@ -261,13 +272,13 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                     dataKey="Animali" 
                     radius={[6, 6, 0, 0]} 
                     animationDuration={1500}
-                    // Colore predefinito rimosso per permettere ai colori delle celle di essere visibili
+                    fill="#82ca9d" // Setta un colore default che verrà sovrascritto
                   >
                     {barChartData.map((entry, index) => (
                       <Cell 
                         key={`cell-${index}`} 
-                        fill={entry.color} // Usa direttamente il colore invece del gradiente
-                        stroke={entry.color} 
+                        fill={entry.color || fallbackColors[index % fallbackColors.length]}
+                        stroke={entry.color || fallbackColors[index % fallbackColors.length]}
                         strokeWidth={1}
                       />
                     ))}
@@ -564,7 +575,7 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                         // Try to find the corresponding size in the distribution
                         const sizeEntry = inventoryStats.sizeDistribution.find(s => s.sizeCode === payload.size);
                         if (sizeEntry) {
-                          pointColor = sizeEntry.color || pointColor;  // Usa il colore dalla dimensione o il default se non definito
+                          pointColor = sizeEntry.color || fallbackColors[inventoryStats.sizeDistribution.indexOf(sizeEntry) % fallbackColors.length];
                         }
                       }
                       
