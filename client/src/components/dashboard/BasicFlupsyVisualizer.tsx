@@ -525,8 +525,10 @@ export default function BasicFlupsyVisualizer() {
             <TooltipTrigger asChild>
               <div 
                 onClick={() => handleBasketClick(basket)}
-                className={`${borderClass} rounded-md p-1.5 text-center ${zoomLevel >= 2 ? 'text-base' : 'text-sm'} ${zoomLevel >= 2 ? 'h-56' : 'h-44'} overflow-hidden
-                  cursor-pointer hover:shadow-md transition-shadow ${bgClass}`}
+                className={`${borderClass} rounded-md p-1.5 text-center 
+                  ${zoomLevel === 4 ? 'text-lg' : zoomLevel === 3 ? 'text-base' : zoomLevel === 2 ? 'text-sm' : 'text-xs'} 
+                  ${zoomLevel === 4 ? 'h-72' : zoomLevel === 3 ? 'h-56' : zoomLevel === 2 ? 'h-48' : 'h-44'} 
+                  overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${bgClass}`}
               >
                 {basketContent}
               </div>
@@ -544,7 +546,10 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`}
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-1.5 text-center ${zoomLevel >= 2 ? 'text-base' : 'text-sm'} ${zoomLevel >= 2 ? 'h-56' : 'h-44'} overflow-hidden
+        className={`${borderClass} rounded-md p-1.5 text-center 
+          ${zoomLevel === 4 ? 'text-lg' : zoomLevel === 3 ? 'text-base' : zoomLevel === 2 ? 'text-sm' : 'text-xs'} 
+          ${zoomLevel === 4 ? 'h-72' : zoomLevel === 3 ? 'h-56' : zoomLevel === 2 ? 'h-48' : 'h-44'} 
+          overflow-hidden
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basketContent}
@@ -697,7 +702,7 @@ export default function BasicFlupsyVisualizer() {
               type="range"
               id="zoomLevel"
               min="1"
-              max="3"
+              max="4"
               step="1"
               value={zoomLevel}
               onChange={(e) => setZoomLevel(parseInt(e.target.value))}
