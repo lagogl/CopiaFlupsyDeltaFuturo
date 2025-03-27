@@ -51,33 +51,50 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
   formatNumberEU, 
   formatDecimalEU 
 }) => {
-  // Prepara i dati per i grafici
-  const pieChartData = inventoryStats.sizeDistribution.map(size => ({
+  // Prepara i dati per i grafici con colori predefiniti se non disponibili
+  // Colori di fallback per varie taglie
+  const fallbackColors = [
+    '#f87171', // red-400
+    '#fb923c', // orange-400
+    '#facc15', // yellow-400
+    '#a3e635', // lime-400
+    '#4ade80', // green-400
+    '#2dd4bf', // teal-400
+    '#60a5fa', // blue-400
+    '#818cf8', // indigo-400
+    '#a78bfa', // violet-400
+    '#e879f9', // purple-400
+    '#f472b6', // pink-400
+    '#fb7185'  // rose-400
+  ];
+  
+  // Assicurati che ogni taglia abbia un colore
+  const pieChartData = inventoryStats.sizeDistribution.map((size, index) => ({
     name: size.sizeCode,
     value: size.count,
-    color: size.color,
+    color: size.color || fallbackColors[index % fallbackColors.length],
     totalAnimals: size.totalAnimals,
     sizeName: size.sizeName,
     animalsPerKg: size.averageAnimalsPerKg
   }));
 
-  const barChartData = inventoryStats.sizeDistribution.map(size => ({
+  const barChartData = inventoryStats.sizeDistribution.map((size, index) => ({
     name: size.sizeCode,
     Ceste: size.count,
     Animali: size.totalAnimals,
     "Peso medio (mg)": size.averageWeight,
     AnimaliPerKg: size.averageAnimalsPerKg,
-    color: size.color,
+    color: size.color || fallbackColors[index % fallbackColors.length],
     sizeName: size.sizeName
   }));
   
   // Dati per il grafico composto
-  const combinedChartData = inventoryStats.sizeDistribution.map(size => ({
+  const combinedChartData = inventoryStats.sizeDistribution.map((size, index) => ({
     name: size.sizeCode,
     "Peso (mg)": size.averageWeight,
     "Densità": size.averageAnimalsPerKg / 1000, // Diviso per 1000 per scalare
     "Animali": size.totalAnimals / 100000, // Diviso per 100000 per scalare
-    color: size.color
+    color: size.color || fallbackColors[index % fallbackColors.length]
   }));
   
   // Dati per Radial Bar chart
@@ -85,7 +102,7 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
     name: size.sizeCode,
     uv: size.averageWeight,
     pv: 100 - (index * (100 / Math.max(inventoryStats.sizeDistribution.length, 1))),
-    fill: size.color,
+    fill: size.color || fallbackColors[index % fallbackColors.length],
   }));
 
   return (
@@ -739,9 +756,9 @@ const InventorySummary: React.FC<InventorySummaryProps> = ({
                     fontWeight: 500
                   }}
                   payload={[
-                    { value: 'Peso medio (mg)', type: 'area', color: '#14b8a6' },
+                    { value: 'Peso medio (mg)', type: 'rect', color: '#14b8a6' },
                     { value: 'Animali/kg', type: 'line', color: '#8b5cf6' },
-                    { value: 'Animali totali', type: 'bar', color: '#3b82f6' }
+                    { value: 'Animali totali', type: 'rect', color: '#3b82f6' }
                   ]}
                 />
                 {combinedChartData.map((entry, index) => (
