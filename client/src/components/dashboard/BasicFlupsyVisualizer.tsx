@@ -48,6 +48,9 @@ function getDefaultColorForSize(code: string): string {
 export default function BasicFlupsyVisualizer() {
   const [, navigate] = useLocation();
   
+  // Stato per il livello di zoom
+  const [zoomLevel, setZoomLevel] = React.useState(1); // 1 = normale, 2 = ingrandito, 3 = molto ingrandito
+  
   // Stato per il numero di badge da mostrare per categoria
   const [badgeCounts, setBadgeCounts] = React.useState({
     topSgr: 3,       // Prime 3 ceste con il miglior tasso di crescita
@@ -316,24 +319,24 @@ export default function BasicFlupsyVisualizer() {
             
             {/* Taglia */}
             <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-              <div className="text-[10px] font-medium text-slate-500">Taglia:</div>
-              <div className="text-[12px] font-bold">
+              <div className={`${zoomLevel >= 2 ? 'text-[12px]' : 'text-[10px]'} font-medium text-slate-500`}>Taglia:</div>
+              <div className={`${zoomLevel >= 2 ? 'text-[14px]' : 'text-[12px]'} font-bold whitespace-nowrap overflow-hidden text-ellipsis`}>
                 {latestOperation.size?.code || getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}
               </div>
             </div>
             
             {/* Quantità animali per kg formattata con separatori */}
             <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-              <div className="text-[10px] font-medium text-slate-500">Q.tà:</div>
-              <div className="text-[11px]">
+              <div className={`${zoomLevel >= 2 ? 'text-[12px]' : 'text-[10px]'} font-medium text-slate-500`}>Q.tà:</div>
+              <div className={`${zoomLevel >= 2 ? 'text-[13px]' : 'text-[11px]'}`}>
                 {latestOperation.animalsPerKg.toLocaleString('it-IT')}/kg
               </div>
             </div>
             
             {/* Numero totale di animali dalla tabella operations */}
             <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-              <div className="text-[10px] font-medium text-slate-500">Tot:</div>
-              <div className="text-[11px]">
+              <div className={`${zoomLevel >= 2 ? 'text-[12px]' : 'text-[10px]'} font-medium text-slate-500`}>Tot:</div>
+              <div className={`${zoomLevel >= 2 ? 'text-[13px]' : 'text-[11px]'}`}>
                 {latestOperation.animalCount 
                   ? latestOperation.animalCount.toLocaleString('it-IT') 
                   : "N/D"} animali
@@ -389,10 +392,10 @@ export default function BasicFlupsyVisualizer() {
               
               return (
                 <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
-                  <div className="text-[10px] font-medium text-slate-500">SGR:</div>
+                  <div className={`${zoomLevel >= 2 ? 'text-[12px]' : 'text-[10px]'} font-medium text-slate-500`}>SGR:</div>
                   <div className={`flex items-center ${colorClass} ${bgColorClass} px-1 py-0.5 rounded-md`}>
                     {icon}
-                    <span className="text-[10px] ml-0.5 font-medium">
+                    <span className={`${zoomLevel >= 2 ? 'text-[11px]' : 'text-[10px]'} ml-0.5 font-medium`}>
                       {sgr.value.toFixed(1).replace('.', ',')}%
                     </span>
                   </div>
@@ -401,15 +404,15 @@ export default function BasicFlupsyVisualizer() {
             })()}
             
             {/* Data e ciclo */}
-            <div className="flex justify-between items-center border-t border-slate-100 pt-0.5 mt-0.5 text-[9px]">
+            <div className="flex justify-between items-center border-t border-slate-100 pt-0.5 mt-0.5">
               <div>
-                <span className="text-slate-500">Op:</span>
-                <span className="font-medium ml-0.5">
+                <span className={`${zoomLevel >= 2 ? 'text-[10px]' : 'text-[9px]'} text-slate-500`}>Op:</span>
+                <span className={`${zoomLevel >= 2 ? 'text-[10px]' : 'text-[9px]'} font-medium ml-0.5`}>
                   {latestOperation.type.slice(0, 3)} {format(new Date(latestOperation.date), 'dd/MM', { locale: it })}
                 </span>
               </div>
               <div className="bg-blue-100 text-blue-800 font-semibold px-1 rounded">
-                C{basket.currentCycleId}
+                <span className={`${zoomLevel >= 2 ? 'text-[11px]' : 'text-[9px]'}`}>C{basket.currentCycleId}</span>
               </div>
             </div>
           </div>
@@ -522,7 +525,7 @@ export default function BasicFlupsyVisualizer() {
             <TooltipTrigger asChild>
               <div 
                 onClick={() => handleBasketClick(basket)}
-                className={`${borderClass} rounded-md p-1.5 text-center text-sm h-44 overflow-hidden
+                className={`${borderClass} rounded-md p-1.5 text-center ${zoomLevel >= 2 ? 'text-base' : 'text-sm'} ${zoomLevel >= 2 ? 'h-56' : 'h-44'} overflow-hidden
                   cursor-pointer hover:shadow-md transition-shadow ${bgClass}`}
               >
                 {basketContent}
@@ -541,7 +544,7 @@ export default function BasicFlupsyVisualizer() {
       <div 
         key={`${flupsyId}-${row}-${position}`}
         onClick={() => basket && basket.state === 'active' && basket.currentCycleId && handleBasketClick(basket)}
-        className={`${borderClass} rounded-md p-1.5 text-center text-sm h-44 overflow-hidden
+        className={`${borderClass} rounded-md p-1.5 text-center ${zoomLevel >= 2 ? 'text-base' : 'text-sm'} ${zoomLevel >= 2 ? 'h-56' : 'h-44'} overflow-hidden
           ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
       >
         {basketContent}
@@ -677,6 +680,31 @@ export default function BasicFlupsyVisualizer() {
         
         {/* Selettori per il numero di badge da mostrare */}
         <div className="flex flex-wrap gap-4 mt-3 p-3 bg-slate-50 rounded-lg border border-slate-200">
+          {/* Controllo zoom */}
+          <div className="flex flex-col border-r pr-4 mr-4">
+            <label htmlFor="zoomLevel" className="text-sm font-medium mb-1 flex items-center">
+              <div className="h-4 w-4 rounded-full bg-indigo-500 mr-1.5 flex items-center justify-center text-white">
+                <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <circle cx="11" cy="11" r="8"></circle>
+                  <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+                  <line x1="11" y1="8" x2="11" y2="14"></line>
+                  <line x1="8" y1="11" x2="14" y2="11"></line>
+                </svg>
+              </div>
+              Livello zoom: {zoomLevel}
+            </label>
+            <input
+              type="range"
+              id="zoomLevel"
+              min="1"
+              max="3"
+              step="1"
+              value={zoomLevel}
+              onChange={(e) => setZoomLevel(parseInt(e.target.value))}
+              className="w-36"
+            />
+          </div>
+          
           <div className="flex flex-col">
             <label htmlFor="topSgr" className="text-sm font-medium mb-1 flex items-center">
               <div className="h-4 w-4 rounded-full bg-amber-400 mr-1.5 flex items-center justify-center text-white">
