@@ -16,6 +16,7 @@ interface MisurazioneDirectFormProps {
   defaultAnimalsPerKg?: number | null;
   defaultAverageWeight?: number | null;
   defaultAnimalCount?: number | null;
+  lastOperationDate?: string | null; // Data dell'ultima operazione per verificare la validità della nuova data
   onSuccess: () => void;
   onCancel: () => void;
 }
@@ -30,6 +31,7 @@ export default function MisurazioneDirectForm({
   defaultAnimalsPerKg = null,
   defaultAverageWeight = null,
   defaultAnimalCount = null,
+  lastOperationDate = null,
   onSuccess,
   onCancel
 }: MisurazioneDirectFormProps) {
@@ -37,6 +39,7 @@ export default function MisurazioneDirectForm({
   const [isLoading, setIsLoading] = useState(false);
   
   // Valori di input del campione
+  const [operationDate, setOperationDate] = useState<string>(new Date().toISOString().split('T')[0]);
   const [sampleWeight, setSampleWeight] = useState<number | null>(null);
   const [animalsCount, setAnimalsCount] = useState<number | null>(null);
   const [samplePercentage, setSamplePercentage] = useState<number>(100);
@@ -159,10 +162,26 @@ export default function MisurazioneDirectForm({
       // Converti il peso totale da kg a grammi per il salvataggio nel database
       const totalWeightInGrams = totalWeight ? Math.round(totalWeight * 1000) : null;
       
+      // Verifica validità data
+      if (lastOperationDate) {
+        const lastDate = new Date(lastOperationDate);
+        const selectedDate = new Date(operationDate);
+        
+        if (selectedDate < lastDate) {
+          toast({
+            variant: "destructive",
+            title: "Data non valida",
+            description: "La data dell'operazione deve essere successiva all'ultima operazione registrata per questa cesta.",
+          });
+          setIsLoading(false);
+          return;
+        }
+      }
+      
       // Prepara i dati dell'operazione
       const operationData = {
         type: 'misura',
-        date: new Date().toISOString(),
+        date: new Date(`${operationDate}T10:00:00.000Z`).toISOString(), // Impostiamo un orario fisso (mezzogiorno)
         basketId,
         cycleId,
         sizeId,
@@ -260,6 +279,20 @@ export default function MisurazioneDirectForm({
         </div>
         
         <div className="space-y-4">
+          {/* Data operazione */}
+          <div>
+            <label className="block text-sm font-medium mb-1">Data operazione</label>
+            <Input
+              type="date"
+              value={operationDate}
+              onChange={(e) => setOperationDate(e.target.value)}
+              className="w-full"
+            />
+            <p className="text-xs text-slate-500 mt-1">
+              Data dell'operazione (deve essere successiva all'ultima operazione)
+            </p>
+          </div>
+          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Peso del campione (g)</label>

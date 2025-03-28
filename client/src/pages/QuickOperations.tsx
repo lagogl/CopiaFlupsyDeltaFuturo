@@ -674,6 +674,7 @@ export default function QuickOperations() {
                   defaultAnimalsPerKg={lastOperation?.animalsPerKg || null}
                   defaultAverageWeight={lastOperation?.averageWeight || null}
                   defaultAnimalCount={lastOperation?.animalCount || null}
+                  lastOperationDate={lastOperation?.date || null}
                   onSuccess={() => {
                     setShowMisurazioneForm(false);
                     // Invalida la cache delle operazioni per ricaricare i dati
