@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { format, addDays } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator, Scale as ScaleIcon, TrendingUp, TrendingDown } from 'lucide-react';
+import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator, Scale as ScaleIcon, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -762,28 +762,48 @@ export default function QuickOperations() {
                   {/* Data operazione */}
                   <div className="mb-4">
                     <label className="block text-sm font-medium mb-2">Data operazione</label>
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        id="peso-date"
-                        type="date"
-                        defaultValue={format(new Date(), 'yyyy-MM-dd')}
-                        min={
-                          // Data minima: data dell'ultima operazione + 1 giorno
-                          lastOperation?.date 
-                            ? format(addDays(new Date(lastOperation.date), 1), 'yyyy-MM-dd') 
-                            : undefined
-                        }
-                        max={format(new Date(), 'yyyy-MM-dd')}  // Data massima: oggi
-                        onChange={(e) => {
-                          // Salva la data selezionata nell'oggetto pesoFormData
-                          const selectedDate = new Date(e.target.value + 'T12:00:00');
-                          setPesoFormData({
-                            ...pesoFormData,
-                            date: selectedDate.toISOString()
-                          });
-                        }}
-                        className="flex-1"
-                      />
+                    <div className="flex flex-col space-y-2">
+                      <div className="flex items-center space-x-2 border rounded-md p-2 cursor-pointer" 
+                           onClick={() => {
+                             // Apre manualmente il selettore di data nativo
+                             const dateInput = document.getElementById('peso-date');
+                             if (dateInput) {
+                               (dateInput as HTMLInputElement).showPicker();
+                             }
+                           }}>
+                        <Calendar className="h-4 w-4 text-gray-500" />
+                        <span className="text-sm">
+                          {pesoFormData.date 
+                            ? format(new Date(pesoFormData.date), 'dd/MM/yyyy')
+                            : format(new Date(), 'dd/MM/yyyy')
+                          }
+                        </span>
+                        
+                        <input
+                          id="peso-date"
+                          type="date"
+                          className="sr-only" // Nascosto ma funzionale
+                          defaultValue={format(new Date(), 'yyyy-MM-dd')}
+                          min={
+                            // Data minima: data dell'ultima operazione + 1 giorno
+                            lastOperation?.date 
+                              ? format(addDays(new Date(lastOperation.date), 1), 'yyyy-MM-dd') 
+                              : undefined
+                          }
+                          max={format(new Date(), 'yyyy-MM-dd')}  // Data massima: oggi
+                          onChange={(e) => {
+                            // Esplicitamente settiamo la data e rirendiamo
+                            if (e.target.value) {
+                              const selectedDate = new Date(e.target.value + 'T12:00:00');
+                              console.log("Data selezionata:", selectedDate);
+                              setPesoFormData({
+                                ...pesoFormData,
+                                date: selectedDate.toISOString()
+                              });
+                            }
+                          }}
+                        />
+                      </div>
                     </div>
                     <p className="text-xs text-muted-foreground mt-1">
                       Seleziona la data dell'operazione (non può essere anteriore all'ultima operazione)
