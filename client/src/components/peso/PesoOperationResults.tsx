@@ -4,10 +4,10 @@ import { TrendingDown, TrendingUp } from "lucide-react";
 interface PesoOperationResultsProps {
   currentOperation: {
     formData: {
-      animalsPerKg: number;
-      averageWeight: number;
-      animalCount: number;
-      totalWeight: number;
+      animalsPerKg: number | null;
+      averageWeight: number | null;
+      animalCount: number | null;
+      totalWeight: number | null;
     }
   };
   previousOperationData: {

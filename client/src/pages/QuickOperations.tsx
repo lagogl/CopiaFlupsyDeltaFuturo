@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator, Scale as ScaleIcon } from 'lucide-react';
+import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator, Scale as ScaleIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -18,6 +18,7 @@ import { useToast } from '@/hooks/use-toast';
 import { type SampleCalculatorResult } from '@/components/SampleCalculator';
 import IntegratedSampleCalculator from '@/components/IntegratedSampleCalculator';
 import MisurazioneDirectForm from '@/components/MisurazioneDirectForm';
+import { PesoOperationResults } from '@/components/peso/PesoOperationResults';
 
 // Tipi che useremo 
 interface Basket {
@@ -436,8 +437,20 @@ export default function QuickOperations() {
     }
   });
 
-  // Stato per il form di misurazione diretta
+  // Stati per i form operazione diretti
   const [showMisurazioneForm, setShowMisurazioneForm] = useState(false);
+  const [showPesoForm, setShowPesoForm] = useState(false);
+  const [pesoFormData, setPesoFormData] = useState<{
+    animalsPerKg: number | null;
+    averageWeight: number | null;
+    animalCount: number | null;
+    totalWeight: number | null;
+  }>({
+    animalsPerKg: null,
+    averageWeight: null,
+    animalCount: null,
+    totalWeight: null
+  });
   
   // Gestisce click su operazione rapida
   const handleQuickOperation = (basketId: number, operationType: string) => {
@@ -457,6 +470,30 @@ export default function QuickOperations() {
     if (operationType === 'misura') {
       setSelectedBasketId(basketId);
       setShowMisurazioneForm(true);
+      // Non apriamo il dialogo classico
+      return;
+    }
+    
+    // Se è un'operazione di peso, usiamo il form diretto
+    if (operationType === 'peso') {
+      if (!lastOperation?.animalsPerKg || !lastOperation?.animalCount) {
+        toast({
+          title: "Dati insufficienti",
+          description: "Per l'operazione Peso sono necessari i valori di animali/kg e conteggio totale. Esegui prima un'operazione di Misurazione.",
+          variant: "destructive"
+        });
+        return;
+      }
+      
+      setSelectedBasketId(basketId);
+      // Prepariamo i dati per il form di pesatura
+      setPesoFormData({
+        animalsPerKg: lastOperation.animalsPerKg,
+        averageWeight: lastOperation.averageWeight,
+        animalCount: lastOperation.animalCount,
+        totalWeight: null
+      });
+      setShowPesoForm(true);
       // Non apriamo il dialogo classico
       return;
     }
@@ -645,6 +682,185 @@ export default function QuickOperations() {
                   }}
                   onCancel={() => setShowMisurazioneForm(false)}
                 />
+              );
+            })()}
+          </div>
+        </div>
+      )}
+      
+      {/* Form di pesatura diretta */}
+      {showPesoForm && selectedBasketId && (
+        <div className="mb-8">
+          <div className="bg-white p-4 rounded-lg shadow-sm mb-4">
+            <div className="flex justify-between items-center mb-4">
+              <h3 className="text-lg font-semibold">Nuova Operazione Peso</h3>
+              <Button 
+                variant="ghost" 
+                size="sm" 
+                onClick={() => setShowPesoForm(false)}
+              >
+                Chiudi
+              </Button>
+            </div>
+            
+            {(() => {
+              const basket = baskets?.find((b: Basket) => b.id === selectedBasketId);
+              const cycle = cycles?.find((c: Cycle) => c.id === basket?.currentCycleId);
+              if (!basket || !cycle) return <div>Errore: cesta o ciclo non trovati</div>;
+              
+              // Recuperiamo l'ultima operazione per ottenere i dati di base
+              const basketOperations = operations 
+                ? operations.filter((op: Operation) => op.basketId === selectedBasketId) 
+                : [];
+              const sortedOps = [...basketOperations].sort((a, b) => 
+                new Date(b.date).getTime() - new Date(a.date).getTime()
+              );
+              const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
+              
+              if (!lastOperation) {
+                return <div>Errore: non ci sono operazioni precedenti per questa cesta</div>;
+              }
+              
+              // Valori precedenti per mostrare la comparazione
+              const previousOperationData = {
+                animalsPerKg: lastOperation.animalsPerKg || 0,
+                averageWeight: lastOperation.averageWeight || 0,
+                animalCount: lastOperation.animalCount || 0
+              };
+              
+              return (
+                <div className="space-y-6">
+                  {/* Sezione dati precedenti */}
+                  <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mb-4">
+                    <h4 className="text-sm font-medium text-blue-800 mb-2">Dati precedenti:</h4>
+                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                      <div>
+                        <span className="text-blue-600 font-medium">Cesta #:</span> {basket.physicalNumber}
+                      </div>
+                      <div>
+                        <span className="text-blue-600 font-medium">Animali/kg:</span> {formatNumberWithCommas(previousOperationData.animalsPerKg)}
+                      </div>
+                      <div>
+                        <span className="text-blue-600 font-medium">Peso medio (mg):</span> {formatNumberWithCommas(previousOperationData.averageWeight)}
+                      </div>
+                      <div>
+                        <span className="text-blue-600 font-medium">Numero animali:</span> {formatNumberWithCommas(previousOperationData.animalCount)}
+                      </div>
+                      <div>
+                        <span className="text-blue-600 font-medium">Peso totale (kg):</span> {
+                          previousOperationData.animalCount && previousOperationData.averageWeight 
+                            ? ((previousOperationData.animalCount * previousOperationData.averageWeight) / 1000000).toLocaleString('it-IT', {maximumFractionDigits: 3})
+                            : "N/D"
+                        }
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Form per inserire il nuovo peso totale */}
+                  <div>
+                    <label className="block text-sm font-medium mb-2">Peso totale della cesta (kg)</label>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        id="peso-totale-kg"
+                        type="number"
+                        step="0.001"
+                        placeholder="Inserisci il peso in kg"
+                        value={pesoFormData.totalWeight?.toString() || ''}
+                        onChange={e => {
+                          const value = parseFloat(e.target.value);
+                          if (!isNaN(value) && value > 0) {
+                            // Calcola i nuovi valori in base al peso totale e al numero di animali
+                            const totalWeightKg = value;
+                            const animalCount = pesoFormData.animalCount || 0;
+                            const animalsPerKg = Math.round(animalCount / totalWeightKg);
+                            const averageWeight = 1000000 / animalsPerKg;
+                            
+                            setPesoFormData({
+                              totalWeight: totalWeightKg,
+                              animalCount,
+                              animalsPerKg,
+                              averageWeight
+                            });
+                          } else {
+                            setPesoFormData({
+                              ...pesoFormData,
+                              totalWeight: null,
+                              animalsPerKg: pesoFormData.animalCount ? null : pesoFormData.animalsPerKg,
+                              averageWeight: pesoFormData.animalCount ? null : pesoFormData.averageWeight
+                            });
+                          }
+                        }}
+                        className="flex-1"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Inserisci il peso totale in kilogrammi (kg)
+                    </p>
+                  </div>
+                  
+                  {/* Mostra i risultati calcolati */}
+                  {pesoFormData.totalWeight && pesoFormData.animalsPerKg && (
+                    <PesoOperationResults 
+                      currentOperation={{
+                        formData: pesoFormData
+                      }}
+                      previousOperationData={previousOperationData}
+                    />
+                  )}
+                  
+                  {/* Note aggiuntive */}
+                  <div>
+                    <label className="block text-sm font-medium mb-1">Note</label>
+                    <Textarea 
+                      id="peso-notes"
+                      placeholder="Note opzionali sull'operazione"
+                      className="h-20"
+                    />
+                  </div>
+                  
+                  {/* Pulsanti azione */}
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button 
+                      variant="outline" 
+                      onClick={() => setShowPesoForm(false)}
+                    >
+                      Annulla
+                    </Button>
+                    <Button 
+                      type="button"
+                      disabled={!pesoFormData.totalWeight}
+                      onClick={() => {
+                        // Recuperiamo la textarea in modo sicuro
+                        const textareaElem = document.getElementById('peso-notes') as HTMLTextAreaElement;
+                        const note = textareaElem?.value || '';
+                        
+                        // Prepara i dati dell'operazione
+                        const operationData = {
+                          type: 'peso',
+                          date: new Date().toISOString(),
+                          basketId: selectedBasketId,
+                          cycleId: cycle.id,
+                          sizeId: lastOperation.sizeId,
+                          lotId: lastOperation.lotId,
+                          sgrId: null,
+                          animalsPerKg: pesoFormData.animalsPerKg,
+                          averageWeight: pesoFormData.averageWeight,
+                          animalCount: pesoFormData.animalCount,
+                          totalWeight: pesoFormData.totalWeight ? pesoFormData.totalWeight * 1000 : null, // Converti in grammi
+                          notes: note
+                        };
+                        
+                        // Esegui la mutazione
+                        createOperationMutation.mutate(operationData);
+                        
+                        // Chiudi il form
+                        setShowPesoForm(false);
+                      }}
+                    >
+                      Salva
+                    </Button>
+                  </div>
+                </div>
               );
             })()}
           </div>
