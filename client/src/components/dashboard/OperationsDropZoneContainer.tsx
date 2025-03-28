@@ -383,13 +383,17 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
             // Se abbiamo una percentuale di mortalità, calcoliamo il numero totale di animali
             // considerando la stessa proporzione di morti
             if (updatedFormData.mortalityRate !== undefined && updatedFormData.mortalityRate > 0) {
-              // Formula: animali_vivi = animali_totali * (1 - tasso_mortalità)
-              // Quindi: animali_totali = animali_vivi / (1 - tasso_mortalità)
+              // Calcolo corretto del tasso di mortalità dal campione
               const mortalityRate = updatedFormData.mortalityRate;
-              const estimatedTotalCount = Math.round(estimatedLiveCount / (1 - mortalityRate));
-              const estimatedDeadCount = estimatedTotalCount - estimatedLiveCount;
               
-              // Salviamo solo gli animali vivi, escludendo i morti
+              // Calcolo diretto del numero di animali morti basato sul tasso di mortalità
+              // Dato che ora sappiamo che il campione contiene sia animali vivi che morti
+              const estimatedDeadCount = Math.round((mortalityRate * estimatedLiveCount) / (1 - mortalityRate));
+              
+              // Calcolo del totale come somma di vivi + morti
+              const estimatedTotalCount = estimatedLiveCount + estimatedDeadCount;
+              
+              // Salviamo solo gli animali vivi nel database, escludendo i morti
               updatedFormData.animalCount = estimatedLiveCount;
               updatedFormData.estimatedTotalCount = estimatedTotalCount;
               updatedFormData.estimatedDeadCount = estimatedDeadCount;
