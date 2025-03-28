@@ -377,18 +377,18 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
     
     // Calcoli automatici per l'operazione di peso
     if (currentOperation.type === 'peso' && field === 'totalWeight') {
-      const totalWeightGrams = parseFloat(value);
+      const totalWeightKg = parseFloat(value);
       
       // Se abbiamo il numero di animali dall'operazione precedente, ricalcoliamo il peso medio
-      if (previousOperationData?.animalCount && !isNaN(totalWeightGrams) && totalWeightGrams > 0) {
+      if (previousOperationData?.animalCount && !isNaN(totalWeightKg) && totalWeightKg > 0) {
         const animalCount = previousOperationData.animalCount;
         
-        // Calcola nuovo peso medio in mg
-        const newAverageWeight = Math.round((totalWeightGrams * 1000) / animalCount);
+        // Calcola nuovo peso medio in mg (moltiplica kg per 1.000.000 per ottenere mg)
+        const newAverageWeight = Math.round((totalWeightKg * 1000000) / animalCount);
         updatedFormData.averageWeight = newAverageWeight;
         
-        // Calcola nuovo animali per kg
-        const newAnimalsPerKg = Math.round((animalCount * 1000) / totalWeightGrams);
+        // Calcola nuovo animali per kg (direttamente, dato che il peso è già in kg)
+        const newAnimalsPerKg = Math.round(animalCount / totalWeightKg);
         updatedFormData.animalsPerKg = newAnimalsPerKg;
         
         // Mantieni lo stesso conteggio di animali dell'operazione precedente
@@ -430,12 +430,12 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
     
     // Verifica che i campi necessari siano compilati per l'operazione di peso
     if (currentOperation.type === 'peso') {
-      const { totalWeight, animalsPerKg, averageWeight } = currentOperation.formData;
+      const { totalWeight } = currentOperation.formData;
       
-      if (!totalWeight || !animalsPerKg || !averageWeight) {
+      if (!totalWeight) {
         toast({
           title: "Dati incompleti",
-          description: "È necessario inserire almeno il peso totale",
+          description: "È necessario inserire il peso totale in kg",
           variant: "destructive",
         });
         return;
@@ -606,13 +606,13 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
               {/* Form fields specifici per l'operazione di pesatura */}
               {currentOperation?.type === 'peso' && (
                 <div className="col-span-2">
-                  <Label htmlFor="totalWeight">Peso totale (g)</Label>
+                  <Label htmlFor="totalWeight">Peso totale (kg)</Label>
                   <Input
                     id="totalWeight"
                     type="number"
-                    step="0.01"
+                    step="0.001"
                     min="0"
-                    placeholder="Inserisci il peso totale in grammi"
+                    placeholder="Inserisci il peso totale in chilogrammi"
                     value={currentOperation.formData.totalWeight || ''}
                     onChange={(e) => handleFormChange('totalWeight', e.target.value)}
                   />
