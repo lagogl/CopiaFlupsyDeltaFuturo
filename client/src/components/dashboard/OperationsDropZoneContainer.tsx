@@ -606,7 +606,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
               {/* Se ci sono operazioni precedenti, mostriamo i dati precedenti */}
               {previousOperationData && (previousOperationData.animalsPerKg || previousOperationData.averageWeight) && (
                 <div className="col-span-2">
-                  <Card className="bg-gray-50">
+                  <Card className="bg-blue-50">
                     <CardContent className="p-3">
                       <h4 className="text-sm font-medium mb-2 text-slate-700">Dati precedenti</h4>
                       <div className="grid grid-cols-4 gap-3">
