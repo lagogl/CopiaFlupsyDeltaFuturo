@@ -148,7 +148,7 @@ function BasketCard({
   let cumulativeMortality = null;
   let cumulativeDeadCount = null;
   
-  if (firstOperation && lastOperation && firstOperation.id !== lastOperation.id) {
+  if (firstOperation && lastOperation) {
     // Ordiniamo le operazioni cronologicamente dall'inizio del ciclo
     const cycleOperations = basketOperations.filter((op: Operation) => 
       op.cycleId === cycle?.id && new Date(op.date) >= new Date(firstOperation.date)
@@ -162,12 +162,18 @@ function BasketCard({
       }
     });
     
-    // Se abbiamo morti, calcoliamo la percentuale cumulativa
-    if (totalDeadCount > 0 && firstOperation.animalCount) {
-      cumulativeDeadCount = totalDeadCount;
-      // La percentuale è calcolata sul numero iniziale + morti totali
-      cumulativeMortality = (totalDeadCount / (firstOperation.animalCount + totalDeadCount)) * 100;
-      cumulativeMortality = Math.round(cumulativeMortality * 10) / 10; // Arrotondato a 1 decimale
+    // Mostriamo sempre il conteggio anche se è 0
+    cumulativeDeadCount = totalDeadCount;
+    
+    // Calcoliamo la percentuale cumulativa solo se abbiamo un valore di popolazione iniziale
+    if (firstOperation.animalCount && firstOperation.animalCount > 0) {
+      // La percentuale è calcolata sul numero iniziale rispetto al numero totale di morti
+      if (totalDeadCount > 0) {
+        cumulativeMortality = (totalDeadCount / firstOperation.animalCount) * 100;
+        cumulativeMortality = Math.round(cumulativeMortality * 10) / 10; // Arrotondato a 1 decimale
+      } else {
+        cumulativeMortality = 0;
+      }
     }
   }
   const positionText = basket.row && basket.position 
@@ -285,13 +291,14 @@ function BasketCard({
               )}
               
               {/* Mortalità cumulativa dall'inizio del ciclo */}
-              {cumulativeMortality !== null && cumulativeDeadCount !== null && (
+              {cumulativeDeadCount !== null && (
                 <div className="flex items-center bg-amber-50 p-1 rounded-sm">
                   <span className="font-medium text-amber-800">Mortalità cumulativa:</span>{' '}
                   <span className="ml-1 text-amber-800">
-                    {cumulativeMortality}% ({cumulativeDeadCount} morti totali)
+                    {cumulativeDeadCount} morti totali
+                    {cumulativeMortality !== null && ` (${cumulativeMortality}% della popolazione iniziale)`}
                   </span>
-                  {cumulativeMortality > 10 && (
+                  {cumulativeMortality !== null && cumulativeMortality > 10 && (
                     <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0">Critica</Badge>
                   )}
                 </div>
