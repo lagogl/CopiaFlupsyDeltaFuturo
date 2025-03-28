@@ -5,6 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatNumberWithCommas } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { format } from 'date-fns';
+import { Clock } from 'lucide-react';
 
 interface MisurazioneDirectFormProps {
   basketId: number;
@@ -35,6 +37,12 @@ export default function MisurazioneDirectForm({
 }: MisurazioneDirectFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Creiamo una data di ieri per evitare conflitti
+  const today = new Date();
+  const yesterday = new Date(today);
+  yesterday.setDate(yesterday.getDate() - 1);
+  const [operationDate, setOperationDate] = useState<Date>(yesterday);
   
   // Valori di input del campione
   const [sampleWeight, setSampleWeight] = useState<number | null>(null);
@@ -162,7 +170,7 @@ export default function MisurazioneDirectForm({
       // Prepara i dati dell'operazione
       const operationData = {
         type: 'misura',
-        date: new Date().toISOString(),
+        date: operationDate.toISOString(),
         basketId,
         cycleId,
         sizeId,
@@ -249,6 +257,23 @@ export default function MisurazioneDirectForm({
         </div>
         
         <div className="space-y-4">
+          <div>
+            <label className="block text-sm font-medium mb-1">Data operazione</label>
+            <Input 
+              type="date" 
+              defaultValue={format(yesterday, 'yyyy-MM-dd')}
+              onChange={(e) => {
+                const date = new Date(e.target.value);
+                setOperationDate(date);
+              }}
+              className="h-9"
+            />
+            <div className="flex items-center mt-1 text-xs text-amber-600">
+              <Clock className="w-3 h-3 mr-1" />
+              Preimpostata a ieri per evitare conflitti con altre operazioni di oggi
+            </div>
+          </div>
+          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Peso del campione (g)</label>
