@@ -839,25 +839,25 @@ export default function QuickOperations() {
                 
                 // Se è duplicazione, mostriamo i dati dell'ultima operazione
                 if (selectedOperationType === 'duplicate' && lastOperation) {
-                  // Verifichiamo se esiste già un'operazione per oggi per questa cesta
+                  // Verifichiamo se esiste già un'operazione dello stesso tipo per oggi per questa cesta
                   const today = new Date();
                   const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
                   
-                  // Cerca operazioni di oggi per questa cesta
+                  // Cerca operazioni dello stesso tipo di oggi per questa cesta
                   const hasOperationToday = basketOperations.some(op => {
                     const opDate = new Date(op.date).toISOString().split('T')[0];
-                    return opDate === todayString;
+                    return opDate === todayString && op.type === lastOperation.type;
                   });
                   
-                  // Se esiste già un'operazione oggi, mostra un avviso
+                  // Se esiste già un'operazione dello stesso tipo oggi, mostra un avviso
                   if (hasOperationToday) {
                     return (
                       <div>
                         <div className="bg-amber-50 border border-amber-200 rounded p-4 mb-4">
                           <AlertCircle className="h-5 w-5 text-amber-500 inline mr-2" />
                           <span className="text-amber-800">
-                            Attenzione: è già presente un'operazione registrata oggi per questa cesta.
-                            Non è possibile registrare più di un'operazione al giorno per la stessa cesta.
+                            Attenzione: è già presente un'operazione di tipo "{getOperationTypeLabel(lastOperation.type)}" registrata oggi per questa cesta.
+                            Non è possibile registrare più di un'operazione dello stesso tipo al giorno per la stessa cesta.
                           </span>
                         </div>
                         <div className="flex justify-between items-center">

@@ -151,6 +151,35 @@ export default function MisurazioneDirectForm({
       return;
     }
     
+    // Ottieni tutte le operazioni per questa cesta e verificare se esiste già un'operazione
+    // dello stesso tipo alla stessa data
+    try {
+      const response = await apiRequest('GET', `/api/operations?basketId=${basketId}`);
+      if (response.ok) {
+        const existingOperations = await response.json();
+        
+        // Verifica se esiste già un'operazione dello stesso tipo alla stessa data
+        const operationFormattedDate = format(operationDate, 'yyyy-MM-dd');
+        
+        const operationOnSameDate = existingOperations.find((op: any) => {
+          const opDate = format(new Date(op.date), 'yyyy-MM-dd');
+          return opDate === operationFormattedDate && op.type === 'misura';
+        });
+        
+        if (operationOnSameDate) {
+          toast({
+            title: "Operazione duplicata",
+            description: `Esiste già un'operazione di misurazione per questa cesta alla data ${format(operationDate, 'dd/MM/yyyy')}. Modifica la data per continuare.`,
+            variant: "destructive"
+          });
+          return;
+        }
+      }
+    } catch (error) {
+      console.error("Errore durante la verifica delle operazioni esistenti:", error);
+      // Continuiamo comunque, il server farà un'ulteriore verifica
+    }
+    
     setIsLoading(true);
     
     try {
