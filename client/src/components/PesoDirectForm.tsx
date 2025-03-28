@@ -157,7 +157,10 @@ export default function PesoDirectForm({
       }
       
       // Confronta con la data odierna
-      if (selectedDate > new Date()) {
+      const today = new Date();
+      today.setHours(23, 59, 59, 999); // Fine della giornata
+      
+      if (selectedDate > today) {
         toast({
           variant: "destructive",
           title: "Data non valida",
