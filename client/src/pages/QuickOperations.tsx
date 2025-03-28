@@ -104,6 +104,21 @@ interface BasketCardProps {
 }
 
 // Componente card per singola cesta
+// Funzione per collegare il componente BasketCard al contesto globale
+function BasketCardContainer(props: BasketCardProps) {
+  // Accedi ai dati necessari dal contesto globale
+  const { data: operations } = useQuery({
+    queryKey: ['/api/operations'],
+  });
+  
+  const { data: sizes } = useQuery({
+    queryKey: ['/api/sizes'],
+  });
+  
+  // Passa i dati al componente presentazionale
+  return <BasketCard {...props} _operations={operations} _sizes={sizes} />;
+}
+
 function BasketCard({ 
   basket, 
   flupsy, 
@@ -113,32 +128,68 @@ function BasketCard({
   selected,
   onSelect,
   onQuickOperation,
-  onDeleteOperation
-}: BasketCardProps) {
+  onDeleteOperation,
+  _operations,
+  _sizes
+}: BasketCardProps & { 
+  _operations?: any[],
+  _sizes?: any[]
+}) {
+  // Ottieni tutte le operazioni per questa cesta
+  const basketOperations = _operations ? _operations.filter((op: Operation) => op.basketId === basket.id) : [];
+  
+  // Trova l'operazione di prima attivazione per questo ciclo
+  const firstOperation = cycle ? basketOperations.find((op: Operation) => 
+    op.cycleId === cycle.id && 
+    (op.type === 'prima-attivazione' || op.type === 'attivazione')
+  ) : null;
+  
+  // Calcola mortalità cumulativa dall'inizio del ciclo fino all'ultima operazione
+  let cumulativeMortality = null;
+  let cumulativeDeadCount = null;
+  
+  if (firstOperation && lastOperation && firstOperation.id !== lastOperation.id) {
+    // Ordiniamo le operazioni cronologicamente dall'inizio del ciclo
+    const cycleOperations = basketOperations.filter((op: Operation) => 
+      op.cycleId === cycle?.id && new Date(op.date) >= new Date(firstOperation.date)
+    ).sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    
+    // Calcola la somma totale dei morti
+    let totalDeadCount = 0;
+    cycleOperations.forEach((op: Operation) => {
+      if (op.deadCount) {
+        totalDeadCount += op.deadCount;
+      }
+    });
+    
+    // Se abbiamo morti, calcoliamo la percentuale cumulativa
+    if (totalDeadCount > 0 && firstOperation.animalCount) {
+      cumulativeDeadCount = totalDeadCount;
+      // La percentuale è calcolata sul numero iniziale + morti totali
+      cumulativeMortality = (totalDeadCount / (firstOperation.animalCount + totalDeadCount)) * 100;
+      cumulativeMortality = Math.round(cumulativeMortality * 10) / 10; // Arrotondato a 1 decimale
+    }
+  }
   const positionText = basket.row && basket.position 
     ? `${basket.row} - Pos. ${basket.position}` 
     : 'Posizione non definita';
-    
-  const daysActive = cycle 
+  
+  // Calcola correttamente i giorni di attività del ciclo
+  const daysActive = cycle && cycle.startDate
     ? Math.floor((new Date().getTime() - new Date(cycle.startDate).getTime()) / (1000 * 3600 * 24))
     : 0;
-    
+  
+  // Recupera la taglia utilizzando l'ID della taglia dall'ultima operazione
   let sizeIndicator = '';
   let colorClass = 'bg-gray-200';
   
-  if (lastOperation?.averageWeight) {
-    // Indicatore dimensione basato sul peso medio
-    const avgWeightMg = lastOperation.averageWeight;
-    if (avgWeightMg < 50) sizeIndicator = 'T0';
-    else if (avgWeightMg < 100) sizeIndicator = 'T1';
-    else if (avgWeightMg < 200) sizeIndicator = 'T2';
-    else if (avgWeightMg < 300) sizeIndicator = 'T3';
-    else if (avgWeightMg < 500) sizeIndicator = 'T4';
-    else if (avgWeightMg < 800) sizeIndicator = 'T5';
-    else if (avgWeightMg < 1000) sizeIndicator = 'T6';
-    else sizeIndicator = 'T7';
-    
-    colorClass = getBasketColorBySize(sizeIndicator);
+  // Cerchiamo la taglia nell'elenco delle taglie utilizzando l'ID della taglia
+  if (lastOperation?.sizeId) {
+    const size = _sizes?.find(s => s.id === lastOperation.sizeId);
+    if (size) {
+      sizeIndicator = size.code; // Usa il codice della taglia (es. TP-500)
+      colorClass = getBasketColorBySize(sizeIndicator);
+    }
   }
   
   // Calcola i giorni dall'ultima operazione
@@ -229,6 +280,19 @@ function BasketCard({
                   </span>
                   {lastOperation.mortalityRate && lastOperation.mortalityRate > 5 && (
                     <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0">Alta</Badge>
+                  )}
+                </div>
+              )}
+              
+              {/* Mortalità cumulativa dall'inizio del ciclo */}
+              {cumulativeMortality !== null && cumulativeDeadCount !== null && (
+                <div className="flex items-center bg-amber-50 p-1 rounded-sm">
+                  <span className="font-medium text-amber-800">Mortalità cumulativa:</span>{' '}
+                  <span className="ml-1 text-amber-800">
+                    {cumulativeMortality}% ({cumulativeDeadCount} morti totali)
+                  </span>
+                  {cumulativeMortality > 10 && (
+                    <Badge variant="destructive" className="ml-1 text-[10px] px-1 py-0">Critica</Badge>
                   )}
                 </div>
               )}
@@ -574,11 +638,24 @@ export default function QuickOperations() {
     );
     const lastOperation = sortedOps.length > 0 ? sortedOps[0] : undefined;
     
+    // Trova l'operazione di prima attivazione per questo ciclo
     const cycle = cycles?.find((c: Cycle) => c.id === basket.currentCycleId);
+    let firstOperation;
+    
+    if (cycle) {
+      // Trova l'operazione di prima attivazione per questo ciclo
+      firstOperation = basketOperations.find(op => 
+        op.cycleId === cycle.id && 
+        (op.type === 'prima-attivazione' || op.type === 'attivazione')
+      );
+    }
     
     const lot = lastOperation?.lotId ? lots?.find((l: Lot) => l.id === lastOperation.lotId) : undefined;
     
-    return { basket, flupsy, lastOperation, cycle, lot };
+    // Trova la taglia dell'ultima operazione
+    const size = lastOperation?.sizeId ? sizes?.find(s => s.id === lastOperation.sizeId) : undefined;
+    
+    return { basket, flupsy, lastOperation, cycle, lot, firstOperation, size };
   };
   
   const isLoading = basketsLoading || flupsysLoading || operationsLoading || cyclesLoading || lotsLoading || sizesLoading;
@@ -876,7 +953,7 @@ export default function QuickOperations() {
           {filteredBaskets.map((basket: Basket) => {
             const { flupsy, lastOperation, cycle, lot } = getBasketData(basket.id);
             return (
-              <BasketCard
+              <BasketCardContainer
                 key={basket.id}
                 basket={basket}
                 flupsy={flupsy}
