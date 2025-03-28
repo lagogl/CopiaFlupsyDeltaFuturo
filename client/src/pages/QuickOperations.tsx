@@ -1138,19 +1138,19 @@ export default function QuickOperations() {
                                   type="button"
                                   onClick={() => {
                                     // Verifichiamo prima se la data è valida
-                                    const operationSelectedDate = new Date(operationData.date);
-                                    const operationDateString = operationSelectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                                    const operationFormCalculateDate = new Date(operationData.date);
+                                    const operationFormCalculateDateString = operationFormCalculateDate.toISOString().split('T')[0]; // YYYY-MM-DD
                                     
                                     // Cerca operazioni alla stessa data per questa cesta
                                     const hasOperationOnSameDate = basketOperations.some(op => {
                                       const opDate = new Date(op.date).toISOString().split('T')[0];
-                                      return opDate === operationDateString && op.type === operationData.type;
+                                      return opDate === operationFormCalculateDateString && op.type === operationData.type;
                                     });
                                     
                                     if (hasOperationOnSameDate) {
                                       toast({
                                         title: "Attenzione",
-                                        description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(operationSelectedDate, 'dd/MM/yyyy')}. Modifica la data prima di calcolare.`,
+                                        description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(operationFormCalculateDate, 'dd/MM/yyyy')}. Modifica la data prima di calcolare.`,
                                         variant: "destructive"
                                       });
                                       return;
