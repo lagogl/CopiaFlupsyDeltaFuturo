@@ -393,6 +393,10 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
         
         // Mantieni lo stesso conteggio di animali dell'operazione precedente
         updatedFormData.animalCount = animalCount;
+        
+        // Converti il peso totale da kg a grammi per il salvataggio nel database
+        updatedFormData.totalWeight = totalWeightKg * 1000;
+        console.log("Peso totale convertito da kg a grammi per il database:", updatedFormData.totalWeight);
       }
     }
     
@@ -460,6 +464,17 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       sizeId: currentOperation.formData.sizeId,
       notes: currentOperation.formData.notes || ""
     };
+    
+    // Assicuriamoci che per l'operazione di tipo 'peso', il peso totale sia già in grammi
+    // dato che l'input utente è in kg ma nel database viene salvato in grammi
+    if (currentOperation.type === 'peso' && operationData.totalWeight) {
+      // Se totalWeight è già stato convertito in grammi durante handleFormChange, avrà un valore elevato
+      // altrimenti è ancora in kg e deve essere convertito
+      if (operationData.totalWeight < 1000) {
+        operationData.totalWeight = operationData.totalWeight * 1000;
+      }
+      console.log("Invio operazione di peso con totalWeight in grammi:", operationData.totalWeight);
+    }
     
     createOperationMutation.mutate(operationData);
   };

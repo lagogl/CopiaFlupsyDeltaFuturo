@@ -26,9 +26,14 @@ export function PesoOperationResults({ currentOperation, previousOperationData }
     : null;
   
   // Converti il peso totale corrente da grammi a kg
-  const currentTotalWeightKg = currentOperation.formData.totalWeight 
-    ? currentOperation.formData.totalWeight / 1000 
+  // L'input utente è in kg, ma potrebbe essere già stato convertito in grammi per il database
+  // Controlliamo il valore e convertiamo solo se necessario
+  const currentTotalWeightValue = currentOperation.formData.totalWeight;
+  const currentTotalWeightKg = currentTotalWeightValue 
+    ? (currentTotalWeightValue > 1000 ? currentTotalWeightValue / 1000 : currentTotalWeightValue)
     : null;
+  
+  console.log("Peso totale originale:", currentTotalWeightValue, "Peso totale in kg:", currentTotalWeightKg);
   
   return (
     <Card className="shadow-sm overflow-hidden col-span-2">
