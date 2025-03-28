@@ -193,8 +193,8 @@ export default function PesoDirectForm({
         if (error.response.data.message.includes("Non è possibile registrare più di un'operazione al giorno")) {
           toast({
             variant: "destructive",
-            title: "Operazione non permessa",
-            description: "Esiste già un'operazione registrata per questa cesta nella data selezionata. Scegli una data diversa.",
+            title: "Data già utilizzata",
+            description: "Per ogni cesta è consentita una sola operazione al giorno. Per la data selezionata esiste già un'operazione. Seleziona una data differente.",
           });
         } else {
           // Altri errori dal server

@@ -766,8 +766,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
           
-          // Semplice messaggio di errore con solo l'informazione essenziale
-          let message = `Non è possibile registrare più di un'operazione al giorno per lo stesso cestello.`;
+          // Messaggio di errore dettagliato per operazioni nella stessa data
+          let message = `Per ogni cesta è consentita una sola operazione al giorno. Per la data selezionata esiste già un'operazione registrata.`;
           
           return res.status(400).json({ message });
         }
