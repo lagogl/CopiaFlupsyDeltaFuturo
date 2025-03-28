@@ -984,12 +984,12 @@ export default function QuickOperations() {
                               const selectedDateString = selectedDate.toISOString().split("T")[0];
                               const hasOperationOnSameDate = basketOperations.some(op => {
                                 const opDate = new Date(op.date).toISOString().split("T")[0];
-                                return opDate === selectedDateString;
+                                return opDate === selectedDateString && op.type === operationData.type;
                               });
                               if (hasOperationOnSameDate) {
                                 toast({
                                   title: "Attenzione",
-                                  description: "È già presente un'operazione per questa cesta alla data selezionata. Modifica la data prima di salvare.",
+                                  description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(selectedDate, 'dd/MM/yyyy')}. Modifica la data prima di salvare.`,
                                   variant: "destructive"
                                 });
                                 return;
@@ -1135,13 +1135,13 @@ export default function QuickOperations() {
                                     // Cerca operazioni alla stessa data per questa cesta
                                     const hasOperationOnSameDate = basketOperations.some(op => {
                                       const opDate = new Date(op.date).toISOString().split('T')[0];
-                                      return opDate === selectedDateString;
+                                      return opDate === selectedDateString && op.type === operationData.type;
                                     });
                                     
                                     if (hasOperationOnSameDate) {
                                       toast({
                                         title: "Attenzione",
-                                        description: "È già presente un'operazione per questa cesta alla data selezionata. Modifica la data prima di calcolare.",
+                                        description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(selectedDate, 'dd/MM/yyyy')}. Modifica la data prima di calcolare.`,
                                         variant: "destructive"
                                       });
                                       return;
@@ -1400,12 +1400,12 @@ export default function QuickOperations() {
                               const selectedDateString = selectedDate.toISOString().split("T")[0];
                               const hasOperationOnSameDate = basketOperations.some(op => {
                                 const opDate = new Date(op.date).toISOString().split("T")[0];
-                                return opDate === selectedDateString;
+                                return opDate === selectedDateString && op.type === operationData.type;
                               });
                               if (hasOperationOnSameDate) {
                                 toast({
                                   title: "Attenzione",
-                                  description: "È già presente un'operazione per questa cesta alla data selezionata. Modifica la data prima di salvare.",
+                                  description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(selectedDate, 'dd/MM/yyyy')}. Modifica la data prima di salvare.`,
                                   variant: "destructive"
                                 });
                                 return;
