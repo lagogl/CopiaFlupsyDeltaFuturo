@@ -299,24 +299,14 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       // Trova la cesta
       const basket = (baskets && Array.isArray(baskets)) ? baskets.find((b: any) => b.id === basketId) : undefined;
       
-      // Se la cesta è in stato "available", può essere utilizzata solo per operazioni di prima misurazione
+      // Se la cesta è in stato "available", bisogna reindirizzare l'utente alla pagina Operazioni per la prima attivazione
       if (basket && basket.state === 'available') {
-        if (operationType !== 'misura') {
-          toast({
-            title: "Operazione non valida",
-            description: "Per una cesta disponibile è possibile eseguire solo operazioni di misurazione per avviare un nuovo ciclo",
-            variant: "destructive",
-          });
-          return;
-        }
-        
-        // Per ceste disponibili, dobbiamo creare un nuovo ciclo
         toast({
-          title: "Cesta disponibile",
-          description: "Stai per avviare un nuovo ciclo su questa cesta. Completa i dati richiesti.",
+          title: "Operazione non permessa",
+          description: "Per questa cesta è necessario eseguire prima un'operazione di 'Prima Attivazione' nella sezione Operazioni del menu principale",
+          variant: "destructive",
         });
-        
-        // Continua con l'operazione (creeremo il ciclo in backend quando salviamo l'operazione)
+        return;
       } 
       // Se la cesta non ha un ciclo attivo e non è disponibile, non possiamo fare operazioni
       else if (!basket || (basket.state !== 'active' && basket.currentCycleId === null)) {
