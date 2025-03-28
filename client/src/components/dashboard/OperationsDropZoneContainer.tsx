@@ -635,7 +635,8 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
               {currentOperation?.formData.animalCount && (
                 <p className="mt-2">
                   Registrerai {currentOperation.formData.animalCount.toLocaleString('it-IT')} animali 
-                  con peso medio di {currentOperation.formData.averageWeight?.toLocaleString('it-IT')} mg.
+                  con peso medio di {currentOperation.formData.averageWeight?.toLocaleString('it-IT')} mg
+                  e {currentOperation.formData.animalsPerKg?.toLocaleString('it-IT')} animali per kg.
                 </p>
               )}
             </AlertDialogDescription>
