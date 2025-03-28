@@ -1221,27 +1221,7 @@ export default function Inventory() {
                     </div>
                   </div>
                   
-                  <div className="flex-grow sm:flex-grow-0">
-                    <div className="border border-amber-100 rounded-md bg-white p-3 flex items-center gap-3">
-                      <div className="h-5 w-5 rounded-full bg-amber-100 flex items-center justify-center">
-                        <TrendingUp className="h-3 w-3 text-amber-600" />
-                      </div>
-                      <div>
-                        <div className="text-xs text-amber-700 font-medium">SGR mensile dal database</div>
-                        <div className="text-sm font-semibold">
-                          {!sgrs || !(sgrs as any[]).length 
-                            ? "N/D" 
-                            : `${(
-                                (sgrs as any[]).find(s => 
-                                  s.month.toLowerCase() === format(new Date(), 'MMMM', { locale: it }).toLowerCase()
-                                )?.percentage || 
-                                (sgrs as any[]).reduce((acc, sgr) => acc + sgr.percentage, 0) / (sgrs as any[]).length
-                              ).toFixed(2)}%`
-                          }
-                        </div>
-                      </div>
-                    </div>
-                  </div>
+
                 </div>
               </CardHeader>
               <CardContent className="p-5">
