@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator, Scale as ScaleIcon } from 'lucide-react';
+import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator, Scale as ScaleIcon, Clock } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
@@ -886,12 +886,16 @@ export default function QuickOperations() {
                           <label className="block text-sm font-medium mb-1">Data</label>
                           <Input 
                             type="date" 
-                            defaultValue={format(today, 'yyyy-MM-dd')}
+                            defaultValue={format(yesterday, 'yyyy-MM-dd')}
                             onChange={(e) => {
                               operationData.date = new Date(e.target.value).toISOString();
                             }}
                             className="h-9"
                           />
+                          <div className="flex items-center mt-1 text-xs text-amber-600">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Cambia la data se hai già operazioni per oggi
+                          </div>
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">Animali/kg</label>
@@ -1025,9 +1029,13 @@ export default function QuickOperations() {
                     );
                   }
                   
+                  // Creiamo una data di ieri per evitare conflitti 
+                  const yesterday = new Date(today);
+                  yesterday.setDate(yesterday.getDate() - 1);
+                  
                   const operationData: CurrentOperationData = {
                     type: selectedOperationType,
-                    date: today.toISOString(),
+                    date: yesterday.toISOString(),
                     basketId: selectedBasketId,
                     cycleId: cycle.id,
                     // Per misura e peso, manteniamo i dati precedenti
@@ -1067,12 +1075,16 @@ export default function QuickOperations() {
                           <label className="block text-sm font-medium mb-1">Data</label>
                           <Input 
                             type="date" 
-                            defaultValue={format(today, 'yyyy-MM-dd')}
+                            defaultValue={format(yesterday, 'yyyy-MM-dd')}
                             onChange={(e) => {
                               operationData.date = new Date(e.target.value).toISOString();
                             }}
                             className="h-9"
                           />
+                          <div className="flex items-center mt-1 text-xs text-amber-600">
+                            <Clock className="w-3 h-3 mr-1" />
+                            Cambia la data se hai già operazioni per oggi
+                          </div>
                         </div>
                         
                         {operationData.type === 'misura' && (
