@@ -156,18 +156,7 @@ export default function PesoDirectForm({
         return;
       }
       
-      // Confronta con la data odierna
-      const today = new Date();
-      today.setHours(23, 59, 59, 999); // Fine della giornata
-      
-      if (selectedDate > today) {
-        toast({
-          variant: "destructive",
-          title: "Data non valida",
-          description: "La data non può essere nel futuro.",
-        });
-        return;
-      }
+      // Rimuovere la validazione delle date future come richiesto
       
       // Prepara l'oggetto operazione
       const operationData = {
@@ -233,7 +222,7 @@ export default function PesoDirectForm({
             className="w-full"
           />
           <p className="text-xs text-slate-500 mt-1">
-            Data dell'operazione (verrà validata al salvataggio)
+            Data dell'operazione (deve essere successiva all'ultima operazione)
           </p>
         </div>
         
