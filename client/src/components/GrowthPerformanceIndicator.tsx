@@ -95,9 +95,8 @@ export default function GrowthPerformanceIndicator({
   const actualGrowthFormatted = actualGrowthPercent.toFixed(1);
   const targetGrowthFormatted = targetGrowthPercent.toFixed(1);
   
-  // Limita il rapporto di performance a un massimo di 1000% (10 volte il target)
-  const cappedPerformanceRatio = Math.min(performanceRatio, 10);
-  const performancePercentFormatted = (cappedPerformanceRatio * 100).toFixed(0);
+  // Mostra il valore reale senza limiti
+  const performancePercentFormatted = (performanceRatio * 100).toFixed(0);
   
   return (
     <div className={`rounded-md p-3 ${bgColor} border ${borderColor} mb-2`}>
