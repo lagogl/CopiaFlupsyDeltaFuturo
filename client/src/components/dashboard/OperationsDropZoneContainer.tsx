@@ -27,6 +27,7 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from "@/components/ui/card";
 import { useToast } from "@/hooks/use-toast";
+import { PesoOperationResults } from "@/components/peso/PesoOperationResults";
 import { 
   Scale,
   Scissors,
@@ -44,6 +45,7 @@ import {
   TrendingDown
 } from "lucide-react";
 import { calculateAverageWeight, getOperationTypeLabel } from "@/lib/utils";
+import { useDrag, useDrop } from 'react-dnd';
 
 // Definiamo i tipi di operazione che possono essere trascinati
 type DraggableOperationType = 
@@ -431,382 +433,324 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       if (!totalWeight || !animalsPerKg || !averageWeight) {
         toast({
           title: "Dati incompleti",
-          description: "È necessario inserire il peso totale degli animali",
+          description: "È necessario inserire almeno il peso totale",
           variant: "destructive",
         });
         return;
       }
     }
     
-    setConfirmDialogOpen(true);
-  };
-
-  // Gestisce la conferma dell'operazione
-  const handleConfirmOperation = () => {
-    if (!currentOperation) return;
-    
-    // Prepara i dati per l'API
+    // Prepara i dati da inviare
     const operationData = {
-      ...currentOperation.formData,
+      date: currentOperation.formData.date,
+      basketId: currentOperation.formData.basketId,
+      cycleId: currentOperation.formData.cycleId,
+      type: currentOperation.formData.type,
       sampleWeight: currentOperation.formData.sampleWeight ? parseFloat(currentOperation.formData.sampleWeight) : null,
       sampleCount: currentOperation.formData.sampleCount ? parseInt(currentOperation.formData.sampleCount) : null,
       totalWeight: currentOperation.formData.totalWeight ? parseFloat(currentOperation.formData.totalWeight) : null,
       deadCount: currentOperation.formData.deadCount ? parseInt(currentOperation.formData.deadCount) : null,
-      // Assicurati che tutti i valori numerici siano effettivamente numeri
-      animalsPerKg: currentOperation.formData.animalsPerKg ? parseInt(currentOperation.formData.animalsPerKg) : null,
-      averageWeight: currentOperation.formData.averageWeight ? parseFloat(currentOperation.formData.averageWeight) : null,
-      animalCount: currentOperation.formData.animalCount ? parseInt(currentOperation.formData.animalCount) : null,
+      mortalityRate: currentOperation.formData.mortalityRate ? parseFloat(currentOperation.formData.mortalityRate) : null,
+      animalsPerKg: currentOperation.formData.animalsPerKg,
+      averageWeight: currentOperation.formData.averageWeight,
+      animalCount: currentOperation.formData.animalCount,
+      lotId: currentOperation.formData.lotId,
+      sizeId: currentOperation.formData.sizeId,
+      notes: currentOperation.formData.notes || ""
     };
     
-    // Invia la richiesta
     createOperationMutation.mutate(operationData);
+  };
+
+  // Gestisce la conferma dell'operazione di cessazione
+  const handleTerminationConfirm = () => {
+    handleFormSubmit();
     setConfirmDialogOpen(false);
   };
 
-  // Lista delle operazioni disponibili
+  // Definisce le operazioni disponibili
   const operationItems: { type: DraggableOperationType; icon: React.ReactNode; label: string }[] = [
-    { type: 'misura', icon: <Ruler className="h-8 w-8" />, label: 'Misura' },
-    { type: 'peso', icon: <Scale className="h-8 w-8" />, label: 'Peso' },
-    { type: 'selezione', icon: <Scissors className="h-8 w-8" />, label: 'Selezione' },
-    { type: 'vendita', icon: <ShoppingBag className="h-8 w-8" />, label: 'Vendita' },
-    { type: 'selezione-vendita', icon: <PanelLeft className="h-8 w-8" />, label: 'Selezione/Vendita' },
-    { type: 'pulizia', icon: <Brush className="h-8 w-8" />, label: 'Pulizia' },
-    { type: 'trattamento', icon: <Droplets className="h-8 w-8" />, label: 'Trattamento' },
-    { type: 'cessazione', icon: <Trash2 className="h-8 w-8" />, label: 'Cessazione' }
+    { type: "misura", icon: <Ruler size={24} />, label: "Misurazione" },
+    { type: "peso", icon: <Scale size={24} />, label: "Pesatura" },
+    { type: "selezione", icon: <Scissors size={24} />, label: "Selezione" },
+    { type: "vendita", icon: <ShoppingBag size={24} />, label: "Vendita" },
+    { type: "selezione-vendita", icon: <Tag size={24} />, label: "Selezione Vendita" },
+    { type: "pulizia", icon: <Brush size={24} />, label: "Pulizia" },
+    { type: "trattamento", icon: <Droplets size={24} />, label: "Trattamento" },
+    { type: "cessazione", icon: <Trash2 size={24} />, label: "Cessazione" }
   ];
 
   return (
-    <div className="space-y-6">
-      {/* Pannello delle operazioni trascinabili */}
-      <div className="bg-gradient-to-r from-slate-100 to-blue-50 p-4 rounded-lg border shadow-sm">
-        <div className="flex items-center justify-between mb-4">
-          <h3 className="font-medium text-slate-800">
-            <span className="inline-block mr-2">🖌️</span>
-            Operazioni disponibili
-          </h3>
-          <div className="text-xs text-slate-500 italic">Trascina l'operazione sulla cesta desiderata</div>
+    <div className="h-full flex flex-col">
+      <DndProvider backend={HTML5Backend}>
+        <div className="mb-4 bg-gradient-to-b from-white to-slate-50 p-4 rounded-lg shadow border">
+          <h2 className="text-lg font-semibold mb-3 text-slate-800">Operazioni disponibili</h2>
+          <p className="text-sm text-slate-600 mb-4">
+            Seleziona un'operazione e trascinala sulla cesta desiderata per registrarla
+          </p>
+          
+          <div className="grid grid-cols-2 sm:grid-cols-4 md:grid-cols-8 gap-2">
+            {operationItems.map((item) => (
+              <DraggableOperationItem
+                key={item.type}
+                type={item.type}
+                icon={item.icon}
+                label={item.label}
+              />
+            ))}
+          </div>
         </div>
-        <div className="grid grid-cols-4 sm:grid-cols-8 gap-3">
-          {operationItems.map((item) => (
-            <DraggableOperationItem
-              key={item.type}
-              type={item.type}
-              icon={item.icon}
-              label={item.label}
-            />
-          ))}
+        
+        <div className="flex-1 overflow-auto">
+          <h2 className="text-lg font-semibold mb-3 text-slate-800">Ceste nel FLUPSY</h2>
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+            {filteredBaskets.map((basket: any) => (
+              <DropTargetBasket
+                key={basket.id}
+                basket={basket}
+                operations={operations}
+                onOperationDrop={handleOperationDrop}
+              />
+            ))}
+          </div>
         </div>
-      </div>
-
-      {/* Griglia delle ceste */}
-      <div>
-        <h3 className="font-medium mb-3">Ceste del FLUPSY</h3>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
-          {filteredBaskets.map((basket: any) => (
-            <DropTargetBasket
-              key={basket.id}
-              basket={basket}
-              operations={operations}
-              onOperationDrop={handleOperationDrop}
-            />
-          ))}
-        </div>
-      </div>
-
-      {/* Dialog per inserire i dati dell'operazione */}
-      <Dialog open={operationDialogOpen} onOpenChange={(open) => {
-        setOperationDialogOpen(open);
-        // Pulisci i dati precedenti quando si chiude il dialog
-        if (!open) {
-          setPreviousOperationData(null);
-        }
-      }}>
-        <DialogContent className="sm:max-w-lg">
+      </DndProvider>
+      
+      {/* Dialog per l'inserimento di dati */}
+      <Dialog open={operationDialogOpen} onOpenChange={setOperationDialogOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
           <DialogHeader>
-            <DialogTitle>
-              {currentOperation && getOperationTypeLabel(currentOperation.type)}
+            <DialogTitle className="flex items-center gap-2">
+              {currentOperation?.type === 'misura' && <Ruler size={20} className="text-blue-500" />}
+              {currentOperation?.type === 'peso' && <Scale size={20} className="text-green-500" />}
+              {currentOperation?.type === 'selezione' && <Scissors size={20} className="text-yellow-500" />}
+              {currentOperation?.type === 'vendita' && <ShoppingBag size={20} className="text-red-500" />}
+              {currentOperation?.type === 'selezione-vendita' && <Tag size={20} className="text-indigo-500" />}
+              {currentOperation?.type === 'pulizia' && <Brush size={20} className="text-cyan-500" />}
+              {currentOperation?.type === 'trattamento' && <Droplets size={20} className="text-teal-500" />}
+              {currentOperation?.type === 'cessazione' && <Trash2 size={20} className="text-gray-500" />}
+              {getOperationTypeLabel(currentOperation?.type || 'misura')}
+              {currentOperation && (
+                <span className="ml-2 text-sm font-normal text-slate-500">
+                  (Cesta #{baskets?.find((b: any) => b.id === currentOperation.basketId)?.physicalNumber})
+                </span>
+              )}
             </DialogTitle>
             <DialogDescription>
-              Inserisci i dati richiesti per completare l'operazione
+              Inserisci i dati relativi all'operazione selezionata
             </DialogDescription>
           </DialogHeader>
 
-          {currentOperation && currentOperation.type === 'misura' && (
-            <div className="grid gap-4 py-4">
-              {/* Dati precedenti dell'operazione */}
-              {previousOperationData && previousOperationData.animalsPerKg && (
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-2">
-                  <h4 className="text-sm font-medium text-blue-800 mb-1">Dati precedenti</h4>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                      <span className="text-blue-600 font-medium">Animali per kg:</span>
-                      <span className="ml-1 text-blue-900">{previousOperationData.animalsPerKg.toLocaleString('it-IT')}</span>
-                    </div>
-                    <div>
-                      <span className="text-blue-600 font-medium">Peso medio:</span>
-                      <span className="ml-1 text-blue-900">{previousOperationData.averageWeight?.toLocaleString('it-IT') || '-'} mg</span>
-                    </div>
-                    <div>
-                      <span className="text-blue-600 font-medium">Tot. animali:</span>
-                      <span className="ml-1 text-blue-900">{previousOperationData.animalCount?.toLocaleString('it-IT') || '-'}</span>
-                    </div>
-                  </div>
-                  {previousOperationData.lotId && (
-                    <div className="mt-2 bg-blue-100 p-2 rounded text-xs">
-                      <div className="flex items-center mb-1">
-                        <Tag className="h-3 w-3 mr-1" />
-                        <span className="text-blue-600 font-medium">Lotto ID:</span>
-                        <span className="ml-1 text-blue-900">{previousOperationData.lotId}</span>
-                      </div>
-                      <div className="flex items-center">
-                        <span className="text-xs text-blue-600 font-medium">Fornitore:</span>
-                        <span className="ml-1 text-xs text-blue-900">
-                          {lots && Array.isArray(lots) 
-                            ? lots.find((l: any) => l.id === previousOperationData.lotId)?.supplier || "-"
-                            : "-"}
-                        </span>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-              
-              {/* Form per la nuova misurazione */}
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <div className="p-4 border rounded-lg bg-gray-50">
-                  <h4 className="text-sm font-medium mb-3">Campione</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="sampleWeight" className="text-xs">Peso campione (g)</Label>
-                      <Input
-                        id="sampleWeight"
-                        type="number"
-                        step="0.01"
-                        placeholder="Inserisci il peso in grammi"
-                        value={currentOperation.formData.sampleWeight || ''}
-                        onChange={(e) => handleFormChange('sampleWeight', e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="sampleCount" className="text-xs">Numero animali nel campione</Label>
-                      <Input
-                        id="sampleCount"
-                        type="number"
-                        placeholder="Inserisci il numero contato"
-                        value={currentOperation.formData.sampleCount || ''}
-                        onChange={(e) => handleFormChange('sampleCount', e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-                
-                <div className="p-4 border rounded-lg bg-green-50">
-                  <h4 className="text-sm font-medium mb-3">Dati totali</h4>
-                  <div className="space-y-3">
-                    <div>
-                      <Label htmlFor="totalWeight" className="text-xs">Peso totale degli animali (g)</Label>
-                      <Input
-                        id="totalWeight"
-                        type="number"
-                        step="0.01"
-                        placeholder="Inserisci il peso totale in grammi"
-                        value={currentOperation.formData.totalWeight || ''}
-                        onChange={(e) => handleFormChange('totalWeight', e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                    <div>
-                      <Label htmlFor="deadCount" className="text-xs">Numero animali morti</Label>
-                      <Input
-                        id="deadCount"
-                        type="number"
-                        placeholder="Animali trovati morti"
-                        value={currentOperation.formData.deadCount || ''}
-                        onChange={(e) => handleFormChange('deadCount', e.target.value)}
-                        className="mt-1"
-                      />
-                    </div>
-                  </div>
-                </div>
-              </div>
-
+          <div className="grid gap-4 py-4">
+            <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="notes">Note</Label>
-                <Textarea
-                  id="notes"
-                  placeholder="Inserisci eventuali note sulla misurazione"
-                  value={currentOperation.formData.notes || ''}
-                  onChange={(e) => handleFormChange('notes', e.target.value)}
+                <Label htmlFor="date">Data</Label>
+                <Input
+                  id="date"
+                  type="date"
+                  value={currentOperation?.formData.date || ''}
+                  onChange={(e) => handleFormChange('date', e.target.value)}
                 />
               </div>
-
-              {/* Risultati calcolati */}
-              {currentOperation.formData.animalsPerKg && (
-                <Card className="shadow-sm bg-gradient-to-r from-slate-50 to-blue-50 overflow-hidden">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium mb-3 text-slate-700">Risultati calcolati</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-3 bg-white rounded-md shadow-sm">
-                        <p className="text-xs text-gray-500 mb-1">Animali per kg</p>
-                        <p className="font-bold text-lg text-slate-900">
-                          {currentOperation.formData.animalsPerKg.toLocaleString('it-IT')}
-                        </p>
+              
+              {/* Se ci sono operazioni precedenti, mostriamo i dati precedenti */}
+              {previousOperationData && (previousOperationData.animalsPerKg || previousOperationData.averageWeight) && (
+                <div className="col-span-2">
+                  <Card className="bg-gray-50">
+                    <CardContent className="p-3">
+                      <h4 className="text-sm font-medium mb-2 text-slate-700">Dati precedenti</h4>
+                      <div className="grid grid-cols-3 gap-3">
+                        {previousOperationData.animalsPerKg && (
+                          <div className="p-2 bg-white rounded shadow-sm">
+                            <p className="text-xs text-gray-500">Animali per kg</p>
+                            <p className="font-medium text-slate-900">
+                              {previousOperationData.animalsPerKg.toLocaleString('it-IT')}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {previousOperationData.averageWeight && (
+                          <div className="p-2 bg-white rounded shadow-sm">
+                            <p className="text-xs text-gray-500">Peso medio (mg)</p>
+                            <p className="font-medium text-slate-900">
+                              {previousOperationData.averageWeight.toLocaleString('it-IT')}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {previousOperationData.animalCount && (
+                          <div className="p-2 bg-white rounded shadow-sm">
+                            <p className="text-xs text-gray-500">Numero animali</p>
+                            <p className="font-medium text-slate-900">
+                              {previousOperationData.animalCount.toLocaleString('it-IT')}
+                            </p>
+                          </div>
+                        )}
                       </div>
-                      <div className="p-3 bg-white rounded-md shadow-sm">
-                        <p className="text-xs text-gray-500 mb-1">Peso medio (mg)</p>
-                        <p className="font-bold text-lg text-slate-900">
-                          {currentOperation.formData.averageWeight?.toLocaleString('it-IT') || '-'}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-white rounded-md shadow-sm">
-                        <p className="text-xs text-gray-500 mb-1">Numero totale animali</p>
-                        <p className="font-bold text-lg text-slate-900">
-                          {currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
-              )}
-            </div>
-          )}
-          
-          {currentOperation && currentOperation.type === 'peso' && (
-            <div className="grid gap-4 py-4">
-              {/* Dati precedenti dell'operazione */}
-              {previousOperationData && previousOperationData.animalsPerKg && (
-                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-2">
-                  <h4 className="text-sm font-medium text-blue-800 mb-1">Dati precedenti</h4>
-                  <div className="grid grid-cols-3 gap-2 text-xs">
-                    <div>
-                      <span className="text-blue-600 font-medium">Animali per kg:</span>
-                      <span className="ml-1 text-blue-900">{previousOperationData.animalsPerKg.toLocaleString('it-IT')}</span>
-                    </div>
-                    <div>
-                      <span className="text-blue-600 font-medium">Peso medio:</span>
-                      <span className="ml-1 text-blue-900">{previousOperationData.averageWeight?.toLocaleString('it-IT') || '-'} mg</span>
-                    </div>
-                    <div>
-                      <span className="text-blue-600 font-medium">Tot. animali:</span>
-                      <span className="ml-1 text-blue-900">{previousOperationData.animalCount?.toLocaleString('it-IT') || '-'}</span>
-                    </div>
-                  </div>
+                    </CardContent>
+                  </Card>
                 </div>
               )}
               
-              {/* Form per l'operazione di peso */}
-              <div className="p-4 border rounded-lg bg-green-50">
-                <h4 className="text-sm font-medium mb-3">Dati dell'operazione di peso</h4>
-                <div className="space-y-3">
+              {/* Form fields specifici per l'operazione di pesatura */}
+              {currentOperation?.type === 'peso' && (
+                <div className="col-span-2">
+                  <Label htmlFor="totalWeight">Peso totale (g)</Label>
+                  <Input
+                    id="totalWeight"
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    placeholder="Inserisci il peso totale in grammi"
+                    value={currentOperation.formData.totalWeight || ''}
+                    onChange={(e) => handleFormChange('totalWeight', e.target.value)}
+                  />
+                </div>
+              )}
+              
+              {/* Form fields specifici per l'operazione di misurazione */}
+              {currentOperation?.type === 'misura' && (
+                <>
                   <div>
-                    <Label htmlFor="date" className="text-xs">Data dell'operazione</Label>
+                    <Label htmlFor="sampleWeight">Peso del campione (g)</Label>
                     <Input
-                      id="date"
-                      type="date"
-                      value={currentOperation.formData.date || ''}
-                      onChange={(e) => handleFormChange('date', e.target.value)}
-                      className="mt-1"
+                      id="sampleWeight"
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Peso del campione in grammi"
+                      value={currentOperation.formData.sampleWeight || ''}
+                      onChange={(e) => handleFormChange('sampleWeight', e.target.value)}
                     />
                   </div>
-                  
                   <div>
-                    <Label htmlFor="totalWeight" className="text-xs">Peso totale degli animali (g)</Label>
+                    <Label htmlFor="sampleCount">Numero animali nel campione</Label>
+                    <Input
+                      id="sampleCount"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="Numero di animali nel campione"
+                      value={currentOperation.formData.sampleCount || ''}
+                      onChange={(e) => handleFormChange('sampleCount', e.target.value)}
+                    />
+                  </div>
+                  <div className="col-span-2">
+                    <Label htmlFor="totalWeight">Peso totale in grammi</Label>
                     <Input
                       id="totalWeight"
                       type="number"
                       step="0.01"
-                      placeholder="Inserisci il peso totale in grammi"
+                      min="0"
+                      placeholder="Peso totale in grammi"
                       value={currentOperation.formData.totalWeight || ''}
                       onChange={(e) => handleFormChange('totalWeight', e.target.value)}
-                      className="mt-1"
                     />
-                    <p className="text-xs mt-1 text-green-700">
-                      <Info className="inline h-3 w-3 mr-1" />
-                      Inserendo il peso totale, verranno ricalcolati automaticamente il peso medio e gli animali per kg
-                    </p>
                   </div>
-                </div>
-              </div>
-
-              <div>
+                </>
+              )}
+              
+              {/* Campi comuni per tutte le operazioni */}
+              <div className="col-span-2">
                 <Label htmlFor="notes">Note</Label>
                 <Textarea
                   id="notes"
                   placeholder="Inserisci eventuali note sull'operazione"
-                  value={currentOperation.formData.notes || ''}
+                  value={currentOperation?.formData.notes || ''}
                   onChange={(e) => handleFormChange('notes', e.target.value)}
                 />
               </div>
 
               {/* Risultati calcolati */}
-              {currentOperation.formData.animalsPerKg && (
-                <Card className="shadow-sm bg-gradient-to-r from-slate-50 to-blue-50 overflow-hidden">
-                  <CardContent className="p-4">
-                    <h4 className="font-medium mb-3 text-slate-700">Risultati calcolati</h4>
-                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                      <div className="p-3 bg-white rounded-md shadow-sm">
-                        <p className="text-xs text-gray-500 mb-1">Animali per kg</p>
-                        <p className="font-bold text-lg text-slate-900">
-                          {currentOperation.formData.animalsPerKg.toLocaleString('it-IT')}
-                        </p>
+              {currentOperation?.type === 'peso' && currentOperation.formData.animalsPerKg ? (
+                <PesoOperationResults
+                  currentOperation={currentOperation}
+                  previousOperationData={previousOperationData}
+                />
+              ) : (
+                currentOperation?.formData.animalsPerKg && (
+                  <Card className="shadow-sm bg-gradient-to-r from-slate-50 to-blue-50 overflow-hidden col-span-2">
+                    <CardContent className="p-4">
+                      <h4 className="font-medium mb-3 text-slate-700">Risultati calcolati</h4>
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="p-3 bg-white rounded-md shadow-sm">
+                          <p className="text-xs text-gray-500 mb-1">Animali per kg</p>
+                          <p className="font-bold text-lg text-slate-900">
+                            {currentOperation.formData.animalsPerKg.toLocaleString('it-IT')}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-white rounded-md shadow-sm">
+                          <p className="text-xs text-gray-500 mb-1">Peso medio (mg)</p>
+                          <p className="font-bold text-lg text-slate-900">
+                            {currentOperation.formData.averageWeight?.toLocaleString('it-IT') || '-'}
+                          </p>
+                        </div>
+                        <div className="p-3 bg-white rounded-md shadow-sm">
+                          <p className="text-xs text-gray-500 mb-1">Numero totale animali</p>
+                          <p className="font-bold text-lg text-slate-900">
+                            {currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}
+                          </p>
+                        </div>
                       </div>
-                      <div className="p-3 bg-white rounded-md shadow-sm">
-                        <p className="text-xs text-gray-500 mb-1">Peso medio (mg)</p>
-                        <p className="font-bold text-lg text-slate-900">
-                          {currentOperation.formData.averageWeight?.toLocaleString('it-IT') || '-'}
-                        </p>
-                      </div>
-                      <div className="p-3 bg-white rounded-md shadow-sm">
-                        <p className="text-xs text-gray-500 mb-1">Numero totale animali</p>
-                        <p className="font-bold text-lg text-slate-900">
-                          {currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}
-                        </p>
-                      </div>
-                    </div>
-                  </CardContent>
-                </Card>
+                    </CardContent>
+                  </Card>
+                )
               )}
             </div>
-          )}
+          </div>
 
           <DialogFooter>
-            <Button variant="outline" onClick={() => setOperationDialogOpen(false)}>
+            <Button 
+              variant="outline" 
+              onClick={() => setOperationDialogOpen(false)}
+            >
               Annulla
             </Button>
-            <Button type="submit" onClick={handleFormSubmit}>
-              Conferma
-            </Button>
+            
+            {currentOperation?.type === 'cessazione' ? (
+              <Button 
+                onClick={() => setConfirmDialogOpen(true)}
+                variant="destructive"
+              >
+                Conferma cessazione
+              </Button>
+            ) : (
+              <Button 
+                onClick={handleFormSubmit}
+                disabled={createOperationMutation.isPending}
+              >
+                {createOperationMutation.isPending ? (
+                  <span className="flex items-center gap-2">
+                    <div className="animate-spin h-4 w-4 border-2 border-white border-t-transparent rounded-full"></div>
+                    Salvataggio...
+                  </span>
+                ) : (
+                  'Salva operazione'
+                )}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
-      {/* Dialog di conferma */}
+      
+      {/* Dialog di conferma per la cessazione */}
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
-            <AlertDialogTitle>Conferma operazione</AlertDialogTitle>
+            <AlertDialogTitle>Conferma cessazione del ciclo</AlertDialogTitle>
             <AlertDialogDescription>
-              Sei sicuro di voler registrare questa operazione? 
-              {currentOperation?.formData.animalCount && (
-                <p className="mt-2">
-                  Registrerai {currentOperation.formData.animalCount.toLocaleString('it-IT')} animali 
-                  con peso medio di {currentOperation.formData.averageWeight?.toLocaleString('it-IT')} mg
-                  e {currentOperation.formData.animalsPerKg?.toLocaleString('it-IT')} animali per kg.
-                </p>
-              )}
+              Questa operazione terminerà il ciclo attivo per la cesta selezionata. 
+              L'operazione non può essere annullata. Vuoi continuare?
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annulla</AlertDialogCancel>
-            <AlertDialogAction onClick={handleConfirmOperation}>Conferma</AlertDialogAction>
+            <AlertDialogAction onClick={handleTerminationConfirm} className="bg-red-600 hover:bg-red-700">
+              Conferma cessazione
+            </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
     </div>
   );
 }
-
-// Importa gli hook di react-dnd
-import { useDrag, useDrop } from 'react-dnd';
