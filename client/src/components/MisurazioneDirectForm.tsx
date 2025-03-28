@@ -38,11 +38,9 @@ export default function MisurazioneDirectForm({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
-  // Creiamo una data di ieri per evitare conflitti
+  // Inizializziamo con la data di oggi ma permettiamo la modifica
   const today = new Date();
-  const yesterday = new Date(today);
-  yesterday.setDate(yesterday.getDate() - 1);
-  const [operationDate, setOperationDate] = useState<Date>(yesterday);
+  const [operationDate, setOperationDate] = useState<Date>(today);
   
   // Valori di input del campione
   const [sampleWeight, setSampleWeight] = useState<number | null>(null);
@@ -261,7 +259,7 @@ export default function MisurazioneDirectForm({
             <label className="block text-sm font-medium mb-1">Data operazione</label>
             <Input 
               type="date" 
-              defaultValue={format(yesterday, 'yyyy-MM-dd')}
+              defaultValue={format(today, 'yyyy-MM-dd')}
               onChange={(e) => {
                 const date = new Date(e.target.value);
                 setOperationDate(date);
@@ -270,7 +268,7 @@ export default function MisurazioneDirectForm({
             />
             <div className="flex items-center mt-1 text-xs text-amber-600">
               <Clock className="w-3 h-3 mr-1" />
-              Preimpostata a ieri per evitare conflitti con altre operazioni di oggi
+              Modifica la data se hai già registrato un'operazione oggi
             </div>
           </div>
           
