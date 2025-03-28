@@ -227,9 +227,9 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
     formData: any;
   } | null>(null);
   const [previousOperationData, setPreviousOperationData] = useState<{
-    animalsPerKg: number | null;
-    averageWeight: number | null;
-    animalCount: number | null;
+    animalsPerKg: number;
+    averageWeight: number;
+    animalCount: number;
     lotId: number | null;
   } | null>(null);
 
@@ -308,12 +308,14 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       const lastOperation = basketOperations.length > 0 ? basketOperations[0] : null;
 
       // Salva una copia dei dati precedenti che non cambierà
-      setPreviousOperationData({
-        animalsPerKg: lastOperation?.animalsPerKg || null,
-        averageWeight: lastOperation?.averageWeight || null,
-        animalCount: lastOperation?.animalCount || null,
-        lotId: lastOperation?.lotId || null
-      });
+      if (lastOperation?.animalsPerKg && lastOperation?.averageWeight && lastOperation?.animalCount) {
+        setPreviousOperationData({
+          animalsPerKg: lastOperation.animalsPerKg,
+          averageWeight: lastOperation.averageWeight,
+          animalCount: lastOperation.animalCount,
+          lotId: lastOperation?.lotId || null
+        });
+      }
       
       // Prepara i dati iniziali per il form
       const initialFormData = {
@@ -559,7 +561,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                   <Card className="bg-gray-50">
                     <CardContent className="p-3">
                       <h4 className="text-sm font-medium mb-2 text-slate-700">Dati precedenti</h4>
-                      <div className="grid grid-cols-3 gap-3">
+                      <div className="grid grid-cols-4 gap-3">
                         {previousOperationData.animalsPerKg && (
                           <div className="p-2 bg-white rounded shadow-sm">
                             <p className="text-xs text-gray-500">Animali per kg</p>
@@ -583,6 +585,15 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                             <p className="text-xs text-gray-500">Numero animali</p>
                             <p className="font-medium text-slate-900">
                               {previousOperationData.animalCount.toLocaleString('it-IT')}
+                            </p>
+                          </div>
+                        )}
+                        
+                        {previousOperationData.animalCount && previousOperationData.averageWeight && (
+                          <div className="p-2 bg-white rounded shadow-sm">
+                            <p className="text-xs text-gray-500">Peso totale (kg)</p>
+                            <p className="font-medium text-slate-900">
+                              {((previousOperationData.animalCount * previousOperationData.averageWeight) / 1000000).toLocaleString('it-IT', {maximumFractionDigits: 3})}
                             </p>
                           </div>
                         )}
