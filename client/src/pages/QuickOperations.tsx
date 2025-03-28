@@ -417,7 +417,11 @@ export default function QuickOperations() {
   const createOperationMutation = useMutation({
     mutationFn: (operationData: any) => {
       // Utilizziamo la funzione ausiliaria per assicurarci che i dati siano completi
-      const preparedData = preparePesoOperationData(operationData);
+      // Assicuriamoci che la data sia corretta prima di inviare al server
+      const selectedDate = operationData.date instanceof Date ? operationData.date : new Date(operationData.date);
+      const dataWithCorrectDate = { ...operationData, date: selectedDate };
+      
+      const preparedData = preparePesoOperationData(dataWithCorrectDate);
       console.log("Dati operazione inviati al server:", preparedData);
       return apiRequest('POST', '/api/operations', preparedData);
     },
@@ -985,16 +989,16 @@ export default function QuickOperations() {
                           </Button>
                           <Button 
                             onClick={() => {
-                              const selectedDate = new Date(operationData.date);
-                              const selectedDateString = selectedDate.toISOString().split("T")[0];
+                              const operationFormSaveDate = new Date(operationData.date);
+                              const operationFormSaveDateString = operationFormSaveDate.toISOString().split("T")[0];
                               const hasOperationOnSameDate = basketOperations.some(op => {
                                 const opDate = new Date(op.date).toISOString().split("T")[0];
-                                return opDate === selectedDateString && op.type === operationData.type;
+                                return opDate === operationFormSaveDateString && op.type === operationData.type;
                               });
                               if (hasOperationOnSameDate) {
                                 toast({
                                   title: "Attenzione",
-                                  description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(selectedDate, 'dd/MM/yyyy')}. Modifica la data prima di salvare.`,
+                                  description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(operationFormSaveDate, 'dd/MM/yyyy')}. Modifica la data prima di salvare.`,
                                   variant: "destructive"
                                 });
                                 return;
@@ -1134,19 +1138,19 @@ export default function QuickOperations() {
                                   type="button"
                                   onClick={() => {
                                     // Verifichiamo prima se la data è valida
-                                    const selectedDate = new Date(operationData.date);
-                                    const selectedDateString = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                                    const operationSelectedDate = new Date(operationData.date);
+                                    const operationDateString = operationSelectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
                                     
                                     // Cerca operazioni alla stessa data per questa cesta
                                     const hasOperationOnSameDate = basketOperations.some(op => {
                                       const opDate = new Date(op.date).toISOString().split('T')[0];
-                                      return opDate === selectedDateString && op.type === operationData.type;
+                                      return opDate === operationDateString && op.type === operationData.type;
                                     });
                                     
                                     if (hasOperationOnSameDate) {
                                       toast({
                                         title: "Attenzione",
-                                        description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(selectedDate, 'dd/MM/yyyy')}. Modifica la data prima di calcolare.`,
+                                        description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(operationSelectedDate, 'dd/MM/yyyy')}. Modifica la data prima di calcolare.`,
                                         variant: "destructive"
                                       });
                                       return;
@@ -1228,6 +1232,9 @@ export default function QuickOperations() {
                                       
                                     console.log("SizeId determinato:", sizeId);
                                     
+                                    // Assicuriamoci che la data rimanga quella scelta dall'utente
+                                    const operationDate = operationData.date instanceof Date ? operationData.date : new Date(operationData.date);
+                                    
                                     // Aggiorna i dati dell'operazione
                                     const updatedData = { 
                                       ...operationData,
@@ -1235,7 +1242,8 @@ export default function QuickOperations() {
                                       animalsPerKg,
                                       averageWeight,
                                       animalCount,
-                                      sizeId // Aggiorna l'ID della taglia
+                                      sizeId, // Aggiorna l'ID della taglia
+                                      date: operationDate // Assicuriamoci che la data rimanga quella scelta dall'utente
                                     };
                                     
                                     console.log("Dati operazione peso calcolati:", updatedData);
@@ -1401,16 +1409,16 @@ export default function QuickOperations() {
                           </Button>
                           <Button 
                             onClick={() => {
-                              const selectedDate = new Date(operationData.date);
-                              const selectedDateString = selectedDate.toISOString().split("T")[0];
+                              const operationFormSaveDate = new Date(operationData.date);
+                              const operationFormSaveDateString = operationFormSaveDate.toISOString().split("T")[0];
                               const hasOperationOnSameDate = basketOperations.some(op => {
                                 const opDate = new Date(op.date).toISOString().split("T")[0];
-                                return opDate === selectedDateString && op.type === operationData.type;
+                                return opDate === operationFormSaveDateString && op.type === operationData.type;
                               });
                               if (hasOperationOnSameDate) {
                                 toast({
                                   title: "Attenzione",
-                                  description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(selectedDate, 'dd/MM/yyyy')}. Modifica la data prima di salvare.`,
+                                  description: `È già presente un'operazione di tipo ${getOperationTypeLabel(operationData.type)} per questa cesta alla data ${format(operationFormSaveDate, 'dd/MM/yyyy')}. Modifica la data prima di salvare.`,
                                   variant: "destructive"
                                 });
                                 return;
