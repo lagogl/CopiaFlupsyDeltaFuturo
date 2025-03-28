@@ -979,7 +979,23 @@ export default function QuickOperations() {
                             Annulla
                           </Button>
                           <Button 
-                            onClick={() => createOperationMutation.mutate(operationData)}
+                            onClick={() => {
+                              const selectedDate = new Date(operationData.date);
+                              const selectedDateString = selectedDate.toISOString().split("T")[0];
+                              const hasOperationOnSameDate = basketOperations.some(op => {
+                                const opDate = new Date(op.date).toISOString().split("T")[0];
+                                return opDate === selectedDateString;
+                              });
+                              if (hasOperationOnSameDate) {
+                                toast({
+                                  title: "Attenzione",
+                                  description: "È già presente un'operazione per questa cesta alla data selezionata. Modifica la data prima di salvare.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              createOperationMutation.mutate(operationData);
+                            }}
                             disabled={createOperationMutation.isPending}
                           >
                             {createOperationMutation.isPending ? (
@@ -995,41 +1011,13 @@ export default function QuickOperations() {
                   );
                 } else if (selectedOperationType === 'misura' || selectedOperationType === 'peso') {
                   // Per operazioni di peso o misura semplici
-                  // Verifichiamo se esiste già un'operazione per oggi per questa cesta
                   const today = new Date();
-                  const todayString = today.toISOString().split('T')[0]; // YYYY-MM-DD
                   
                   // Ordinare le operazioni per data (più recenti prima)
                   const sortedOps = [...basketOperations].sort((a, b) => 
                     new Date(b.date).getTime() - new Date(a.date).getTime()
                   );
                   const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
-                  
-                  // Cerca operazioni di oggi per questa cesta
-                  const hasOperationToday = basketOperations.some(op => {
-                    const opDate = new Date(op.date).toISOString().split('T')[0];
-                    return opDate === todayString;
-                  });
-                  
-                  // Se esiste già un'operazione oggi, mostra un avviso
-                  if (hasOperationToday) {
-                    return (
-                      <div>
-                        <div className="bg-amber-50 border border-amber-200 rounded p-4 mb-4">
-                          <AlertCircle className="h-5 w-5 text-amber-500 inline mr-2" />
-                          <span className="text-amber-800">
-                            Attenzione: è già presente un'operazione registrata oggi per questa cesta.
-                            Non è possibile registrare più di un'operazione al giorno per la stessa cesta.
-                          </span>
-                        </div>
-                        <div className="flex justify-between items-center">
-                          <Button variant="outline" onClick={() => setOperationDialogOpen(false)}>
-                            Chiudi
-                          </Button>
-                        </div>
-                      </div>
-                    );
-                  }
                   
                   // Inizializziamo con la data di oggi
                   const operationData: CurrentOperationData = {
@@ -1140,7 +1128,26 @@ export default function QuickOperations() {
                                 <Button 
                                   type="button"
                                   onClick={() => {
-                                    // Leggiamo direttamente il valore dal campo input
+                                    // Verifichiamo prima se la data è valida
+                                    const selectedDate = new Date(operationData.date);
+                                    const selectedDateString = selectedDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                                    
+                                    // Cerca operazioni alla stessa data per questa cesta
+                                    const hasOperationOnSameDate = basketOperations.some(op => {
+                                      const opDate = new Date(op.date).toISOString().split('T')[0];
+                                      return opDate === selectedDateString;
+                                    });
+                                    
+                                    if (hasOperationOnSameDate) {
+                                      toast({
+                                        title: "Attenzione",
+                                        description: "È già presente un'operazione per questa cesta alla data selezionata. Modifica la data prima di calcolare.",
+                                        variant: "destructive"
+                                      });
+                                      return;
+                                    }
+                                    
+                                    // Se la data è valida, procediamo con la validazione dell'input
                                     const input = document.getElementById('peso-totale-kg') as HTMLInputElement;
                                     if (!input || !input.value) {
                                       toast({
@@ -1388,7 +1395,23 @@ export default function QuickOperations() {
                             Annulla
                           </Button>
                           <Button 
-                            onClick={() => createOperationMutation.mutate(operationData)}
+                            onClick={() => {
+                              const selectedDate = new Date(operationData.date);
+                              const selectedDateString = selectedDate.toISOString().split("T")[0];
+                              const hasOperationOnSameDate = basketOperations.some(op => {
+                                const opDate = new Date(op.date).toISOString().split("T")[0];
+                                return opDate === selectedDateString;
+                              });
+                              if (hasOperationOnSameDate) {
+                                toast({
+                                  title: "Attenzione",
+                                  description: "È già presente un'operazione per questa cesta alla data selezionata. Modifica la data prima di salvare.",
+                                  variant: "destructive"
+                                });
+                                return;
+                              }
+                              createOperationMutation.mutate(operationData);
+                            }}
                             disabled={createOperationMutation.isPending}
                           >
                             {createOperationMutation.isPending ? (
