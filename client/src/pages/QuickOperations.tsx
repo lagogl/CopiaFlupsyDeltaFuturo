@@ -1,7 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
-import { format } from 'date-fns';
+import { format, addDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator, Scale as ScaleIcon, TrendingUp, TrendingDown } from 'lucide-react';
 import { Button } from '@/components/ui/button';
@@ -756,6 +756,29 @@ export default function QuickOperations() {
                     </div>
                   </div>
                   
+                  {/* Data operazione */}
+                  <div className="mb-4">
+                    <label className="block text-sm font-medium mb-2">Data operazione</label>
+                    <div className="flex items-center space-x-2">
+                      <Input
+                        id="peso-date"
+                        type="date"
+                        defaultValue={format(new Date(), 'yyyy-MM-dd')}
+                        min={
+                          // Data minima: data dell'ultima operazione + 1 giorno
+                          lastOperation?.date 
+                            ? format(addDays(new Date(lastOperation.date), 1), 'yyyy-MM-dd') 
+                            : undefined
+                        }
+                        max={format(new Date(), 'yyyy-MM-dd')}  // Data massima: oggi
+                        className="flex-1"
+                      />
+                    </div>
+                    <p className="text-xs text-muted-foreground mt-1">
+                      Seleziona la data dell'operazione (non può essere anteriore all'ultima operazione)
+                    </p>
+                  </div>
+                    
                   {/* Form per inserire il nuovo peso totale */}
                   <div>
                     <label className="block text-sm font-medium mb-2">Peso totale della cesta (kg)</label>
@@ -834,10 +857,16 @@ export default function QuickOperations() {
                         const textareaElem = document.getElementById('peso-notes') as HTMLTextAreaElement;
                         const note = textareaElem?.value || '';
                         
+                        // Recupera la data selezionata o usa oggi
+                        const dateInput = document.getElementById('peso-date') as HTMLInputElement;
+                        const selectedDate = dateInput?.value 
+                          ? new Date(dateInput.value + 'T12:00:00') // Aggiungi l'ora per evitare problemi di timezone
+                          : new Date();
+                          
                         // Prepara i dati dell'operazione
                         const operationData = {
                           type: 'peso',
-                          date: new Date().toISOString(),
+                          date: selectedDate.toISOString(),
                           basketId: selectedBasketId,
                           cycleId: cycle.id,
                           sizeId: lastOperation.sizeId,
@@ -1103,11 +1132,23 @@ export default function QuickOperations() {
                           <Input 
                             type="date" 
                             defaultValue={format(today, 'yyyy-MM-dd')}
+                            min={
+                              // Data minima: data dell'ultima operazione + 1 giorno
+                              lastOperation?.date 
+                                ? format(addDays(new Date(lastOperation.date), 1), 'yyyy-MM-dd') 
+                                : undefined
+                            }
+                            max={format(new Date(), 'yyyy-MM-dd')}  // Data massima: oggi
                             onChange={(e) => {
-                              operationData.date = new Date(e.target.value).toISOString();
+                              // Validazione della data
+                              const selectedDate = new Date(e.target.value + 'T12:00:00');
+                              operationData.date = selectedDate.toISOString();
                             }}
                             className="h-9"
                           />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Non può essere anteriore all'ultima operazione
+                          </p>
                         </div>
                         <div>
                           <label className="block text-sm font-medium mb-1">Animali/kg</label>
@@ -1284,11 +1325,23 @@ export default function QuickOperations() {
                           <Input 
                             type="date" 
                             defaultValue={format(today, 'yyyy-MM-dd')}
+                            min={
+                              // Data minima: data dell'ultima operazione + 1 giorno
+                              lastOperation?.date 
+                                ? format(addDays(new Date(lastOperation.date), 1), 'yyyy-MM-dd') 
+                                : undefined
+                            }
+                            max={format(new Date(), 'yyyy-MM-dd')}  // Data massima: oggi
                             onChange={(e) => {
-                              operationData.date = new Date(e.target.value).toISOString();
+                              // Validazione della data
+                              const selectedDate = new Date(e.target.value + 'T12:00:00');
+                              operationData.date = selectedDate.toISOString();
                             }}
                             className="h-9"
                           />
+                          <p className="text-xs text-muted-foreground mt-1">
+                            Non può essere anteriore all'ultima operazione
+                          </p>
                         </div>
                         
                         {operationData.type === 'misura' && (
