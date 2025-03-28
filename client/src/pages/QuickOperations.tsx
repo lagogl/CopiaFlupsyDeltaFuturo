@@ -19,6 +19,7 @@ import { type SampleCalculatorResult } from '@/components/SampleCalculator';
 import IntegratedSampleCalculator from '@/components/IntegratedSampleCalculator';
 import MisurazioneDirectForm from '@/components/MisurazioneDirectForm';
 import { PesoOperationResults } from '@/components/peso/PesoOperationResults';
+import PesoDirectForm from '@/components/PesoDirectForm';
 
 // Tipi che useremo 
 interface Basket {
@@ -724,197 +725,30 @@ export default function QuickOperations() {
                 return <div>Errore: non ci sono operazioni precedenti per questa cesta</div>;
               }
               
-              // Valori precedenti per mostrare la comparazione
-              const previousOperationData = {
-                animalsPerKg: lastOperation.animalsPerKg || 0,
-                averageWeight: lastOperation.averageWeight || 0,
-                animalCount: lastOperation.animalCount || 0
-              };
+              // Ottieni le informazioni sul lotto se disponibile
+              const lotInfo = lastOperation.lotId 
+                ? lots?.find((l: Lot) => l.id === lastOperation.lotId)?.supplier 
+                : null;
               
               return (
-                <div className="space-y-6">
-                  {/* Sezione dati precedenti */}
-                  <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mb-4">
-                    <h4 className="text-sm font-medium text-blue-800 mb-2">Dati precedenti:</h4>
-                    <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
-                      <div>
-                        <span className="text-blue-600 font-medium">Cesta #:</span> {basket.physicalNumber}
-                      </div>
-                      <div>
-                        <span className="text-blue-600 font-medium">Animali/kg:</span> {formatNumberWithCommas(previousOperationData.animalsPerKg)}
-                      </div>
-                      <div>
-                        <span className="text-blue-600 font-medium">Peso medio (mg):</span> {formatNumberWithCommas(previousOperationData.averageWeight)}
-                      </div>
-                      <div>
-                        <span className="text-blue-600 font-medium">Numero animali:</span> {formatNumberWithCommas(previousOperationData.animalCount)}
-                      </div>
-                      <div>
-                        <span className="text-blue-600 font-medium">Peso totale (kg):</span> {
-                          previousOperationData.animalCount && previousOperationData.averageWeight 
-                            ? ((previousOperationData.animalCount * previousOperationData.averageWeight) / 1000000).toLocaleString('it-IT', {maximumFractionDigits: 3})
-                            : "N/D"
-                        }
-                      </div>
-                    </div>
-                  </div>
-                  
-                  {/* Data operazione */}
-                  <div className="mb-4">
-                    <label className="block text-sm font-medium mb-2">Data operazione</label>
-                    <div className="flex flex-col space-y-2">
-                      <Input
-                        id="peso-date"
-                        type="date"
-                        className="flex-1"
-                        defaultValue={format(new Date(), 'yyyy-MM-dd')}
-                        min={
-                          // Data minima: data dell'ultima operazione + 1 giorno
-                          lastOperation?.date 
-                            ? format(addDays(new Date(lastOperation.date), 1), 'yyyy-MM-dd') 
-                            : undefined
-                        }
-                        max={format(new Date(), 'yyyy-MM-dd')}  // Data massima: oggi
-                        onChange={(e) => {
-                          // Esplicitamente settiamo la data e rirendiamo
-                          if (e.target.value) {
-                            const selectedDate = new Date(e.target.value + 'T12:00:00');
-                            console.log("Data selezionata:", selectedDate);
-                            setPesoFormData({
-                              ...pesoFormData,
-                              date: selectedDate.toISOString()
-                            });
-                          }
-                        }}
-                      />
-                      <div className="flex items-center text-xs text-gray-500 mt-1">
-                        <Calendar className="h-3 w-3 mr-1" />
-                        <span>
-                          Data selezionata: {pesoFormData.date 
-                            ? format(new Date(pesoFormData.date), 'dd/MM/yyyy')
-                            : format(new Date(), 'dd/MM/yyyy')
-                          }
-                        </span>
-                      </div>
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Seleziona la data dell'operazione (non può essere anteriore all'ultima operazione)
-                    </p>
-                  </div>
-                    
-                  {/* Form per inserire il nuovo peso totale */}
-                  <div>
-                    <label className="block text-sm font-medium mb-2">Peso totale della cesta (kg)</label>
-                    <div className="flex items-center space-x-2">
-                      <Input
-                        id="peso-totale-kg"
-                        type="number"
-                        step="0.001"
-                        placeholder="Inserisci il peso in kg"
-                        value={pesoFormData.totalWeight?.toString() || ''}
-                        onChange={e => {
-                          const value = parseFloat(e.target.value);
-                          if (!isNaN(value) && value > 0) {
-                            // Calcola i nuovi valori in base al peso totale e al numero di animali
-                            const totalWeightKg = value;
-                            const animalCount = pesoFormData.animalCount || 0;
-                            const animalsPerKg = Math.round(animalCount / totalWeightKg);
-                            const averageWeight = 1000000 / animalsPerKg;
-                            
-                            setPesoFormData({
-                              totalWeight: totalWeightKg,
-                              animalCount,
-                              animalsPerKg,
-                              averageWeight,
-                              date: pesoFormData.date
-                            });
-                          } else {
-                            setPesoFormData({
-                              ...pesoFormData,
-                              totalWeight: null,
-                              animalsPerKg: pesoFormData.animalCount ? null : pesoFormData.animalsPerKg,
-                              averageWeight: pesoFormData.animalCount ? null : pesoFormData.averageWeight,
-                              date: pesoFormData.date
-                            });
-                          }
-                        }}
-                        className="flex-1"
-                      />
-                    </div>
-                    <p className="text-xs text-muted-foreground mt-1">
-                      Inserisci il peso totale in kilogrammi (kg)
-                    </p>
-                  </div>
-                  
-                  {/* Mostra i risultati calcolati */}
-                  {pesoFormData.totalWeight && pesoFormData.animalsPerKg && (
-                    <PesoOperationResults 
-                      currentOperation={{
-                        formData: pesoFormData
-                      }}
-                      previousOperationData={previousOperationData}
-                    />
-                  )}
-                  
-                  {/* Note aggiuntive */}
-                  <div>
-                    <label className="block text-sm font-medium mb-1">Note</label>
-                    <Textarea 
-                      id="peso-notes"
-                      placeholder="Note opzionali sull'operazione"
-                      className="h-20"
-                    />
-                  </div>
-                  
-                  {/* Pulsanti azione */}
-                  <div className="flex justify-end space-x-2 pt-4">
-                    <Button 
-                      variant="outline" 
-                      onClick={() => setShowPesoForm(false)}
-                    >
-                      Annulla
-                    </Button>
-                    <Button 
-                      type="button"
-                      disabled={!pesoFormData.totalWeight}
-                      onClick={() => {
-                        // Recuperiamo la textarea in modo sicuro
-                        const textareaElem = document.getElementById('peso-notes') as HTMLTextAreaElement;
-                        const note = textareaElem?.value || '';
-                        
-                        // Recupera la data selezionata o usa oggi
-                        const dateInput = document.getElementById('peso-date') as HTMLInputElement;
-                        const selectedDate = dateInput?.value 
-                          ? new Date(dateInput.value + 'T12:00:00') // Aggiungi l'ora per evitare problemi di timezone
-                          : new Date();
-                          
-                        // Prepara i dati dell'operazione
-                        const operationData = {
-                          type: 'peso',
-                          date: pesoFormData.date || selectedDate.toISOString(),
-                          basketId: selectedBasketId,
-                          cycleId: cycle.id,
-                          sizeId: lastOperation.sizeId,
-                          lotId: lastOperation.lotId,
-                          sgrId: null,
-                          animalsPerKg: pesoFormData.animalsPerKg,
-                          averageWeight: pesoFormData.averageWeight,
-                          animalCount: pesoFormData.animalCount,
-                          totalWeight: pesoFormData.totalWeight ? pesoFormData.totalWeight * 1000 : null, // Converti in grammi
-                          notes: note
-                        };
-                        
-                        // Esegui la mutazione
-                        createOperationMutation.mutate(operationData);
-                        
-                        // Chiudi il form
-                        setShowPesoForm(false);
-                      }}
-                    >
-                      Salva
-                    </Button>
-                  </div>
-                </div>
+                <PesoDirectForm
+                  basketId={selectedBasketId}
+                  cycleId={cycle.id}
+                  sizeId={lastOperation.sizeId}
+                  lotId={lastOperation.lotId}
+                  lottoInfo={lotInfo}
+                  basketNumber={basket.physicalNumber}
+                  defaultAnimalsPerKg={lastOperation.animalsPerKg}
+                  defaultAverageWeight={lastOperation.averageWeight}
+                  defaultAnimalCount={lastOperation.animalCount}
+                  lastOperationDate={lastOperation.date}
+                  onSuccess={() => {
+                    setShowPesoForm(false);
+                    // Invalidare le query per ricaricare i dati
+                    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+                  }}
+                  onCancel={() => setShowPesoForm(false)}
+                />
               );
             })()}
           </div>
