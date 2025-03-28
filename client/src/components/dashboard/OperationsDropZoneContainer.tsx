@@ -367,9 +367,9 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
         
         // Se c'è anche il peso totale, aggiorna il conteggio stimato
         if (updatedFormData.totalWeight) {
-          const totalWeightGrams = parseFloat(updatedFormData.totalWeight);
-          if (!isNaN(totalWeightGrams) && totalWeightGrams > 0) {
-            updatedFormData.animalCount = Math.round((animalsPerKg * totalWeightGrams) / 1000);
+          const totalWeightKg = parseFloat(updatedFormData.totalWeight);
+          if (!isNaN(totalWeightKg) && totalWeightKg > 0) {
+            updatedFormData.animalCount = Math.round(animalsPerKg * totalWeightKg);
           }
         }
       }
@@ -398,9 +398,9 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
     
     // Aggiorna il peso totale e calcola il numero di animali per altre operazioni
     if (field === 'totalWeight' && updatedFormData.animalsPerKg && currentOperation.type !== 'peso') {
-      const totalWeightGrams = parseFloat(value);
-      if (!isNaN(totalWeightGrams) && totalWeightGrams > 0) {
-        updatedFormData.animalCount = Math.round((updatedFormData.animalsPerKg * totalWeightGrams) / 1000);
+      const totalWeightKg = parseFloat(value);
+      if (!isNaN(totalWeightKg) && totalWeightKg > 0) {
+        updatedFormData.animalCount = Math.round(updatedFormData.animalsPerKg * totalWeightKg);
       }
     }
 
@@ -647,13 +647,13 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                     />
                   </div>
                   <div className="col-span-2">
-                    <Label htmlFor="totalWeight">Peso totale in grammi</Label>
+                    <Label htmlFor="totalWeight">Peso totale (kg)</Label>
                     <Input
                       id="totalWeight"
                       type="number"
-                      step="0.01"
+                      step="0.001"
                       min="0"
-                      placeholder="Peso totale in grammi"
+                      placeholder="Inserisci il peso totale in chilogrammi"
                       value={currentOperation.formData.totalWeight || ''}
                       onChange={(e) => handleFormChange('totalWeight', e.target.value)}
                     />
