@@ -445,11 +445,13 @@ export default function QuickOperations() {
     averageWeight: number | null;
     animalCount: number | null;
     totalWeight: number | null;
+    date: string | null;
   }>({
     animalsPerKg: null,
     averageWeight: null,
     animalCount: null,
-    totalWeight: null
+    totalWeight: null,
+    date: new Date().toISOString() // Default alla data odierna
   });
   
   // Gestisce click su operazione rapida
@@ -491,7 +493,8 @@ export default function QuickOperations() {
         animalsPerKg: lastOperation.animalsPerKg,
         averageWeight: lastOperation.averageWeight,
         animalCount: lastOperation.animalCount,
-        totalWeight: null
+        totalWeight: null,
+        date: new Date().toISOString() // Impostiamo la data odierna come default
       });
       setShowPesoForm(true);
       // Non apriamo il dialogo classico
@@ -771,6 +774,14 @@ export default function QuickOperations() {
                             : undefined
                         }
                         max={format(new Date(), 'yyyy-MM-dd')}  // Data massima: oggi
+                        onChange={(e) => {
+                          // Salva la data selezionata nell'oggetto pesoFormData
+                          const selectedDate = new Date(e.target.value + 'T12:00:00');
+                          setPesoFormData({
+                            ...pesoFormData,
+                            date: selectedDate.toISOString()
+                          });
+                        }}
                         className="flex-1"
                       />
                     </div>
@@ -802,14 +813,16 @@ export default function QuickOperations() {
                               totalWeight: totalWeightKg,
                               animalCount,
                               animalsPerKg,
-                              averageWeight
+                              averageWeight,
+                              date: pesoFormData.date
                             });
                           } else {
                             setPesoFormData({
                               ...pesoFormData,
                               totalWeight: null,
                               animalsPerKg: pesoFormData.animalCount ? null : pesoFormData.animalsPerKg,
-                              averageWeight: pesoFormData.animalCount ? null : pesoFormData.averageWeight
+                              averageWeight: pesoFormData.animalCount ? null : pesoFormData.averageWeight,
+                              date: pesoFormData.date
                             });
                           }
                         }}
@@ -866,7 +879,7 @@ export default function QuickOperations() {
                         // Prepara i dati dell'operazione
                         const operationData = {
                           type: 'peso',
-                          date: selectedDate.toISOString(),
+                          date: pesoFormData.date || selectedDate.toISOString(),
                           basketId: selectedBasketId,
                           cycleId: cycle.id,
                           sizeId: lastOperation.sizeId,
