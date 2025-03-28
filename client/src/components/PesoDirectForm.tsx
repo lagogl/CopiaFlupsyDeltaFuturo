@@ -95,14 +95,8 @@ export default function PesoDirectForm({
   
   // Funzione per aggiornare il formData e calcolare i valori
   const handleChange = (field: string, value: string) => {
-    console.log(`Cambiamento del campo ${field} al valore:`, value);
-    
     // Crea una copia dello stato attuale
     const updatedFormData = { ...formData, [field]: value };
-    
-    // Se stiamo aggiornando la data, assicuriamoci che sia valida
-    // Non è necessaria la validazione del formato come prima visto che usiamo il Select
-    // e tutte le date nell'array allowedDates sono già valide
     
     // Se stiamo aggiornando il peso totale, calcola i valori derivati
     if (field === 'totalWeight' && value && !isNaN(parseFloat(value))) {
@@ -121,10 +115,9 @@ export default function PesoDirectForm({
     }
     
     // Aggiorna lo stato
-    console.log('Form data aggiornato:', updatedFormData);
     setFormData(updatedFormData);
     
-    // Verifica se il form è valido
+    // Verifica se il form è valido (solo per abilitare il pulsante Salva)
     setIsFormValid(
       !!updatedFormData.date && 
       !!updatedFormData.totalWeight && 
@@ -137,10 +130,46 @@ export default function PesoDirectForm({
     if (!isFormValid) return;
     
     try {
+      // Valida la data prima di procedere
+      const selectedDate = new Date(formData.date + 'T12:00:00');
+      
+      // Determina la data minima (ultima operazione + 1 giorno)
+      let minDate = new Date();
+      if (lastOperationDate) {
+        const lastOpDate = new Date(lastOperationDate);
+        const nextDay = new Date(lastOpDate);
+        nextDay.setDate(nextDay.getDate() + 1);
+        
+        // Se la data successiva all'ultima operazione è anteriore ad oggi, è la data minima
+        if (nextDay <= new Date()) {
+          minDate = nextDay;
+        }
+      }
+      
+      // Confronta la data selezionata con minDate
+      if (selectedDate < minDate) {
+        toast({
+          variant: "destructive",
+          title: "Data non valida",
+          description: `La data deve essere successiva all'ultima operazione (${format(minDate, 'dd/MM/yyyy')}).`,
+        });
+        return;
+      }
+      
+      // Confronta con la data odierna
+      if (selectedDate > new Date()) {
+        toast({
+          variant: "destructive",
+          title: "Data non valida",
+          description: "La data non può essere nel futuro.",
+        });
+        return;
+      }
+      
       // Prepara l'oggetto operazione
       const operationData = {
         type: 'peso',
-        date: new Date(formData.date + 'T12:00:00').toISOString(), // Aggiungi l'ora per standardizzare
+        date: selectedDate.toISOString(), // Usa la data validata
         basketId,
         cycleId,
         sizeId,
@@ -194,28 +223,14 @@ export default function PesoDirectForm({
         {/* Data operazione */}
         <div>
           <label className="block text-sm font-medium mb-1">Data operazione</label>
-          <Select 
-            value={formData.date} 
-            onValueChange={(value) => handleChange('date', value)}
-          >
-            <SelectTrigger className="w-full">
-              <SelectValue placeholder="Seleziona una data" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectGroup>
-                {allowedDates.map((date) => (
-                  <SelectItem 
-                    key={date.value} 
-                    value={date.value}
-                  >
-                    {date.label}
-                  </SelectItem>
-                ))}
-              </SelectGroup>
-            </SelectContent>
-          </Select>
+          <Input
+            type="date"
+            value={formData.date}
+            onChange={(e) => handleChange('date', e.target.value)}
+            className="w-full"
+          />
           <p className="text-xs text-slate-500 mt-1">
-            Data dell'operazione (non può essere anteriore all'ultima operazione)
+            Data dell'operazione (verrà validata al salvataggio)
           </p>
         </div>
         
