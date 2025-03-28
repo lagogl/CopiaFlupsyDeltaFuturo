@@ -40,19 +40,31 @@ export default function PesoDirectForm({
 }: PesoDirectFormProps) {
   const { toast } = useToast();
   
-  // Determina la data minima (ultima operazione + 1 giorno o oggi)
+  // Calcola le date
   const today = new Date();
-  const minDate = lastOperationDate 
-    ? new Date(new Date(lastOperationDate).getTime() + 86400000) // +1 giorno in millisecondi
-    : today;
-  
-  // Formatta le date per l'input type="date"
   const todayStr = format(today, 'yyyy-MM-dd');
-  const minDateStr = format(minDate > today ? today : minDate, 'yyyy-MM-dd');
+  
+  // Se c'è un'ultima operazione, calcola minDate come il giorno successivo
+  let minDate = new Date();
+  let minDateStr = todayStr;
+  if (lastOperationDate) {
+    // Converti la data dell'ultima operazione in oggetto Date
+    const lastOpDate = new Date(lastOperationDate);
+    // Aggiungi un giorno
+    minDate = new Date(lastOpDate.getTime() + 86400000); // +1 giorno in millisecondi
+    // Se minDate è nel futuro, usa oggi come data minima
+    if (minDate > today) {
+      minDate = today;
+    }
+    minDateStr = format(minDate, 'yyyy-MM-dd');
+  }
+  
+  // Determina la data iniziale (oggi o minima consentita)
+  const initialDate = minDateStr <= todayStr ? todayStr : minDateStr;
   
   // Stato per il form
   const [formData, setFormData] = useState({
-    date: todayStr,
+    date: initialDate,
     totalWeight: '',
     notes: '',
     // Valori calcolati
@@ -66,8 +78,35 @@ export default function PesoDirectForm({
   
   // Funzione per aggiornare il formData e calcolare i valori
   const handleChange = (field: string, value: string) => {
+    console.log(`Cambiamento del campo ${field} al valore:`, value);
+    
     // Crea una copia dello stato attuale
     const updatedFormData = { ...formData, [field]: value };
+    
+    // Se stiamo aggiornando la data, verifica che sia valida
+    if (field === 'date') {
+      // Controlla che la data sia nel formato corretto yyyy-MM-dd
+      const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+      if (!dateRegex.test(value)) {
+        console.warn('Formato data non valido:', value);
+        return; // Non aggiornare lo stato con una data non valida
+      }
+      
+      // Verifica che la data sia compresa tra minDate e today
+      const selectedDate = new Date(value + 'T12:00:00');
+      const minDateObj = new Date(minDateStr + 'T12:00:00');
+      const todayObj = new Date(todayStr + 'T12:00:00');
+      
+      if (selectedDate < minDateObj) {
+        console.warn('Data selezionata precedente alla data minima consentita');
+        // Usa la data minima invece
+        updatedFormData.date = minDateStr;
+      } else if (selectedDate > todayObj) {
+        console.warn('Data selezionata successiva alla data odierna');
+        // Usa la data odierna invece
+        updatedFormData.date = todayStr;
+      }
+    }
     
     // Se stiamo aggiornando il peso totale, calcola i valori derivati
     if (field === 'totalWeight' && value && !isNaN(parseFloat(value))) {
@@ -86,6 +125,7 @@ export default function PesoDirectForm({
     }
     
     // Aggiorna lo stato
+    console.log('Form data aggiornato:', updatedFormData);
     setFormData(updatedFormData);
     
     // Verifica se il form è valido
@@ -158,15 +198,54 @@ export default function PesoDirectForm({
         {/* Data operazione */}
         <div>
           <label className="block text-sm font-medium mb-1">Data operazione</label>
-          <Input
-            type="date"
-            id="operation-date"
-            value={formData.date}
-            min={minDateStr}
-            max={todayStr}
-            onChange={(e) => handleChange('date', e.target.value)}
-            className="w-full"
-          />
+          <div className="relative">
+            <Input
+              type="date"
+              id="operation-date"
+              value={formData.date}
+              min={minDateStr}
+              max={todayStr}
+              onChange={(e) => handleChange('date', e.target.value)}
+              className="w-full"
+              onFocus={(e) => {
+                // Assicuriamoci che il campo sia editabile quando riceve il focus
+                const input = e.target;
+                // A volte è necessario un breve timeout per garantire l'accesso
+                setTimeout(() => {
+                  try {
+                    input.showPicker();
+                  } catch (err) {
+                    console.log('Picker non supportato in questo browser');
+                  }
+                }, 100);
+              }}
+            />
+            <div className="absolute right-2 top-2">
+              <button 
+                type="button"
+                onClick={() => {
+                  const input = document.getElementById('operation-date') as HTMLInputElement;
+                  if (input) {
+                    try {
+                      input.showPicker();
+                    } catch (err) {
+                      console.log('Picker non supportato in questo browser');
+                      // Fallback: focus standard
+                      input.focus();
+                    }
+                  }
+                }}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <rect x="3" y="4" width="18" height="18" rx="2" ry="2"></rect>
+                  <line x1="16" y1="2" x2="16" y2="6"></line>
+                  <line x1="8" y1="2" x2="8" y2="6"></line>
+                  <line x1="3" y1="10" x2="21" y2="10"></line>
+                </svg>
+              </button>
+            </div>
+          </div>
           <p className="text-xs text-slate-500 mt-1">
             Data dell'operazione (non può essere anteriore all'ultima operazione)
           </p>
