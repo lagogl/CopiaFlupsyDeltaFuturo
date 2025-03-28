@@ -389,13 +389,13 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
               const estimatedTotalCount = Math.round(estimatedLiveCount / (1 - mortalityRate));
               const estimatedDeadCount = estimatedTotalCount - estimatedLiveCount;
               
-              // Salviamo il numero totale di animali includendo i morti
-              updatedFormData.animalCount = estimatedTotalCount;
-              updatedFormData.estimatedLiveCount = estimatedLiveCount;
+              // Salviamo solo gli animali vivi, escludendo i morti
+              updatedFormData.animalCount = estimatedLiveCount;
+              updatedFormData.estimatedTotalCount = estimatedTotalCount;
               updatedFormData.estimatedDeadCount = estimatedDeadCount;
             } else {
               updatedFormData.animalCount = estimatedLiveCount;
-              updatedFormData.estimatedLiveCount = estimatedLiveCount;
+              updatedFormData.estimatedTotalCount = estimatedLiveCount;
               updatedFormData.estimatedDeadCount = 0;
             }
           }
@@ -745,14 +745,14 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                           </div>
                         )}
                         <div className="p-3 bg-white rounded-md shadow-sm">
-                          <p className="text-xs text-gray-500 mb-1">Numero totale animali</p>
+                          <p className="text-xs text-gray-500 mb-1">Animali vivi</p>
                           <p className="font-bold text-lg text-slate-900">
                             {currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}
                           </p>
-                          {currentOperation.formData.estimatedLiveCount !== undefined && currentOperation.formData.estimatedDeadCount > 0 && (
+                          {currentOperation.formData.estimatedTotalCount !== undefined && currentOperation.formData.estimatedDeadCount > 0 && (
                             <div className="mt-1 text-xs">
-                              <span className="text-green-600">
-                                Vivi: {Math.round(currentOperation.formData.estimatedLiveCount || 0).toLocaleString('it-IT')}
+                              <span className="text-blue-600">
+                                Totali: {Math.round(currentOperation.formData.estimatedTotalCount || 0).toLocaleString('it-IT')}
                               </span>
                               <span className="mx-1">|</span>
                               <span className="text-red-500">
