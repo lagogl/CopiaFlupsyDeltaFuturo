@@ -794,7 +794,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Create the operation first
           const operationData = {
             ...parsedData.data,
-            date: format(parsedData.data.date, 'yyyy-MM-dd')
+            date: format(parsedData.data.date, 'yyyy-MM-dd'),
+            // Manteniamo il conteggio originale degli animali (inclusi i morti)
+            animalCount: parsedData.data.animalCount
           };
           const newOperation = await storage.createOperation(operationData);
           
@@ -828,7 +830,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Create the operation - Formatta la data nel formato corretto per il database
         const operationData = {
           ...parsedData.data,
-          date: format(parsedData.data.date, 'yyyy-MM-dd')
+          date: format(parsedData.data.date, 'yyyy-MM-dd'),
+          // Manteniamo il conteggio originale degli animali (inclusi i morti)
+          animalCount: parsedData.data.animalCount
         };
         const newOperation = await storage.createOperation(operationData);
         

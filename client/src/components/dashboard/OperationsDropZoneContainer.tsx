@@ -389,10 +389,13 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
               const estimatedTotalCount = Math.round(estimatedLiveCount / (1 - mortalityRate));
               const estimatedDeadCount = estimatedTotalCount - estimatedLiveCount;
               
-              updatedFormData.animalCount = estimatedLiveCount;
+              // Salviamo il numero totale di animali includendo i morti
+              updatedFormData.animalCount = estimatedTotalCount;
+              updatedFormData.estimatedLiveCount = estimatedLiveCount;
               updatedFormData.estimatedDeadCount = estimatedDeadCount;
             } else {
               updatedFormData.animalCount = estimatedLiveCount;
+              updatedFormData.estimatedLiveCount = estimatedLiveCount;
               updatedFormData.estimatedDeadCount = 0;
             }
           }
@@ -746,10 +749,14 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                           <p className="font-bold text-lg text-slate-900">
                             {currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}
                           </p>
-                          {currentOperation.formData.deadCount > 0 && (
-                            <div className="mt-1 text-xs text-gray-500">
+                          {currentOperation.formData.estimatedLiveCount !== undefined && currentOperation.formData.estimatedDeadCount > 0 && (
+                            <div className="mt-1 text-xs">
+                              <span className="text-green-600">
+                                Vivi: {Math.round(currentOperation.formData.estimatedLiveCount || 0).toLocaleString('it-IT')}
+                              </span>
+                              <span className="mx-1">|</span>
                               <span className="text-red-500">
-                                Morti stimati: {Math.round(currentOperation.formData.estimatedDeadCount || 0).toLocaleString('it-IT')}
+                                Morti: {Math.round(currentOperation.formData.estimatedDeadCount || 0).toLocaleString('it-IT')}
                               </span>
                             </div>
                           )}
