@@ -1,235 +1,260 @@
 import React, { useState } from 'react';
-import {
-  Tabs,
-  TabsContent,
-  TabsList,
-  TabsTrigger,
-} from "@/components/ui/tabs";
-import { 
-  Card, 
-  CardContent, 
-  CardDescription, 
-  CardHeader, 
-  CardTitle 
-} from '@/components/ui/card';
-import { Separator } from '@/components/ui/separator';
-import { 
-  Rocket, 
-  Info, 
-  MapPin, 
-  HelpCircle
-} from 'lucide-react';
-import {
-  Table,
-  TableBody,
-  TableCaption,
-  TableCell,
-  TableHead,
-  TableHeader,
-  TableRow,
-} from "@/components/ui/table";
-import { nfcSimulator, NfcTag } from '../utils/nfcSimulator';
+import { Helmet } from 'react-helmet';
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Wifi, Tag, Database, HelpCircle, Smartphone, QrCode } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import NfcController from '../components/NfcController';
+import { useNfc } from '../hooks/useNfc';
+import { NfcTag } from '../utils/nfcSimulator';
+import { toast } from '@/hooks/use-toast';
+import { useQuery } from '@tanstack/react-query';
 
 const NfcManagerPage: React.FC = () => {
-  const [scannedTags, setScannedTags] = useState<NfcTag[]>([]);
+  const [activeTab, setActiveTab] = useState<string>('scanner');
+  const [selectedBasketId, setSelectedBasketId] = useState<string>('');
+  const [tagData, setTagData] = useState<any>({});
+  
+  const { writeTag, isSimulationMode } = useNfc();
 
-  // Quando un tag viene scansionato, lo aggiungiamo alla lista
+  // Query per ottenere tutte le ceste disponibili
+  const { data: baskets, isLoading } = useQuery({
+    queryKey: ['/api/baskets'],
+    queryFn: async () => {
+      const response = await fetch('/api/baskets');
+      if (!response.ok) throw new Error('Errore nel recupero delle ceste');
+      return response.json();
+    },
+  });
+
+  // Gestione della scrittura di un tag
+  const handleWriteTag = async () => {
+    if (!selectedBasketId) {
+      toast({
+        title: "Seleziona una cesta",
+        description: "Devi selezionare una cesta valida prima di scrivere il tag",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Prepara i dati da scrivere sul tag
+    const basketId = parseInt(selectedBasketId, 10);
+    const basket = baskets?.find((b: any) => b.id === basketId);
+    
+    if (!basket) {
+      toast({
+        title: "Cesta non trovata",
+        description: "La cesta selezionata non esiste nel sistema",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Dati da scrivere sul tag
+    const dataToWrite = {
+      basketId,
+      flupsy: basket.flupsyName || 'N/D',
+      position: basket.position || 'N/D',
+      sizeClass: basket.sizeClass || 'N/D',
+      lastWeight: basket.lastWeight || 0,
+      count: basket.animalCount || 0,
+      timestamp: Date.now(),
+      type: 'basket-tag'
+    };
+
+    // Memorizza i dati per riferimento futuro
+    setTagData(dataToWrite);
+
+    // Scrivi i dati sul tag
+    const success = await writeTag(dataToWrite);
+    
+    if (success) {
+      toast({
+        title: "Tag scritto con successo",
+        description: `Il tag è stato programmato per la cesta #${basketId}`,
+      });
+    }
+  };
+
+  // Gestione del tag scansionato
   const handleTagScanned = (tag: NfcTag) => {
-    setScannedTags(prev => {
-      // Se il tag è già nella lista, lo sostituiamo
-      const exists = prev.some(t => t.id === tag.id);
-      if (exists) {
-        return prev.map(t => t.id === tag.id ? tag : t);
-      }
-      // Altrimenti lo aggiungiamo all'inizio
-      return [tag, ...prev];
+    toast({
+      title: "Tag NFC rilevato",
+      description: tag.basketId 
+        ? `Cesta associata: #${tag.basketId}` 
+        : "Nessuna cesta associata a questo tag",
     });
   };
 
-  // Formatta la data del timestamp
-  const formatTimestamp = (timestamp: number) => {
-    return new Date(timestamp).toLocaleString();
-  };
-
   return (
-    <div className="container mx-auto py-6 max-w-5xl">
-      <h1 className="text-3xl font-bold tracking-tight">Gestione NFC</h1>
-      <p className="text-muted-foreground mt-2">
-        Questa pagina permette di gestire e testare le funzionalità NFC per le ceste FLUPSY.
-      </p>
+    <>
+      <Helmet>
+        <title>NFC Manager | FLUPSY Delta Futuro</title>
+      </Helmet>
 
-      <Separator className="my-6" />
+      <div className="container mx-auto py-6">
+        <div className="flex items-center justify-between mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">NFC Manager</h1>
+            <p className="text-muted-foreground">Gestisci i tag NFC per le ceste e le unità FLUPSY</p>
+          </div>
+        </div>
 
-      <Tabs defaultValue="scanner" className="w-full">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="scanner">
-            <Rocket className="h-4 w-4 mr-2" />
-            Scanner NFC
-          </TabsTrigger>
-          <TabsTrigger value="history">
-            <MapPin className="h-4 w-4 mr-2" />
-            Cronologia Scansioni
-          </TabsTrigger>
-          <TabsTrigger value="settings">
-            <Info className="h-4 w-4 mr-2" />
-            Informazioni
-          </TabsTrigger>
-          <TabsTrigger value="help">
-            <HelpCircle className="h-4 w-4 mr-2" />
-            Aiuto
-          </TabsTrigger>
-        </TabsList>
+        <Tabs defaultValue="scanner" value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+          <TabsList className="grid grid-cols-3 mb-4">
+            <TabsTrigger value="scanner" className="flex items-center">
+              <Smartphone className="h-4 w-4 mr-2" />
+              Scanner NFC
+            </TabsTrigger>
+            <TabsTrigger value="writer" className="flex items-center">
+              <Tag className="h-4 w-4 mr-2" />
+              Programmazione Tag
+            </TabsTrigger>
+            <TabsTrigger value="help" className="flex items-center">
+              <HelpCircle className="h-4 w-4 mr-2" />
+              Aiuto
+            </TabsTrigger>
+          </TabsList>
 
-        <TabsContent value="scanner" className="mt-6">
-          <NfcController onTagScanned={handleTagScanned} />
-        </TabsContent>
+          {/* Scanner Tab */}
+          <TabsContent value="scanner" className="space-y-4">
+            <NfcController onTagScanned={handleTagScanned} />
+          </TabsContent>
 
-        <TabsContent value="history" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Cronologia Scansioni</CardTitle>
-              <CardDescription>
-                Elenco degli ultimi tag NFC scansionati in questa sessione
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              {scannedTags.length > 0 ? (
-                <Table>
-                  <TableCaption>Elenco dei tag NFC scansionati</TableCaption>
-                  <TableHeader>
-                    <TableRow>
-                      <TableHead className="w-[100px]">ID Tag</TableHead>
-                      <TableHead>Cesta #</TableHead>
-                      <TableHead>Ultima Operazione</TableHead>
-                      <TableHead className="text-right">Scansionato</TableHead>
-                    </TableRow>
-                  </TableHeader>
-                  <TableBody>
-                    {scannedTags.map((tag) => (
-                      <TableRow key={tag.id + tag.timestamp}>
-                        <TableCell className="font-mono text-xs">
-                          {tag.id.substring(0, 10)}...
-                        </TableCell>
-                        <TableCell className="font-medium">#{tag.basketId || "N/D"}</TableCell>
-                        <TableCell>
-                          {tag.lastOperation ? (
-                            <span className="capitalize">{tag.lastOperation.type}</span>
-                          ) : (
-                            <span className="text-muted-foreground text-sm">Nessuna</span>
-                          )}
-                        </TableCell>
-                        <TableCell className="text-right">
-                          {formatTimestamp(tag.timestamp)}
-                        </TableCell>
-                      </TableRow>
-                    ))}
-                  </TableBody>
-                </Table>
-              ) : (
-                <div className="text-center py-8 text-muted-foreground">
-                  Nessun tag NFC scansionato in questa sessione
+          {/* Writer Tab */}
+          <TabsContent value="writer" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <Tag className="h-5 w-5 mr-2" />
+                  Programmazione Tag NFC
+                </CardTitle>
+                <CardDescription>
+                  Seleziona una cesta e programma un tag NFC da associare ad essa
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                {!isSimulationMode && (
+                  <Alert variant="default" className="bg-amber-50 border-amber-200 text-amber-800">
+                    <Wifi className="h-4 w-4" />
+                    <AlertTitle>Attiva la scansione</AlertTitle>
+                    <AlertDescription>
+                      Prima di programmare un tag, assicurati di aver attivato la scansione NFC nella scheda Scanner.
+                    </AlertDescription>
+                  </Alert>
+                )}
+
+                <div className="space-y-3">
+                  <div className="space-y-1">
+                    <Label htmlFor="basketId">Seleziona Cesta</Label>
+                    <Select 
+                      value={selectedBasketId} 
+                      onValueChange={setSelectedBasketId}
+                      disabled={isLoading}
+                    >
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona una cesta..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {baskets?.map((basket: any) => (
+                          <SelectItem key={basket.id} value={basket.id.toString()}>
+                            Cesta #{basket.id} - {basket.flupsyName} {basket.position ? `(${basket.position})` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                  </div>
+
+                  <Button 
+                    onClick={handleWriteTag} 
+                    disabled={!selectedBasketId}
+                    className="w-full"
+                  >
+                    Programma Tag NFC
+                  </Button>
+
+                  {Object.keys(tagData).length > 0 && (
+                    <div className="mt-4 p-3 bg-muted rounded-md">
+                      <h4 className="text-sm font-medium mb-2">Dati da scrivere sul tag:</h4>
+                      <pre className="text-xs overflow-auto max-h-40">
+                        {JSON.stringify(tagData, null, 2)}
+                      </pre>
+                    </div>
+                  )}
                 </div>
-              )}
-            </CardContent>
-          </Card>
-        </TabsContent>
+              </CardContent>
+            </Card>
+          </TabsContent>
 
-        <TabsContent value="settings" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Informazioni</CardTitle>
-              <CardDescription>
-                Informazioni sulle funzionalità NFC
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-4">
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Compatibilità</h3>
-                <p className="text-muted-foreground">
-                  Il supporto NFC è disponibile sui seguenti browser e dispositivi:
-                </p>
-                <ul className="list-disc list-inside mt-2 space-y-1 text-sm">
-                  <li>Chrome 89+ su Android</li>
-                  <li>Edge 89+ su Android</li>
-                  <li>Samsung Internet 14.0+ su Android</li>
-                  <li>Chrome 89+ su Chrome OS</li>
-                  <li>iOS 16+ Safari (limitato)</li>
-                </ul>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Utilizzo Tag NFC</h3>
-                <p className="text-muted-foreground">
-                  I tag NFC utilizzati per le ceste FLUPSY devono essere compatibili con NDEF e avere una capacità di almeno 144 byte.
-                  Si consiglia l'utilizzo di tag NFC di tipo NTAG213 o superiori per garantire la compatibilità.
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Sicurezza</h3>
-                <p className="text-muted-foreground">
-                  Le letture NFC sono possibili solo quando la pagina è attiva e l'utente ha dato il permesso.
-                  La scrittura sui tag NFC richiede un'interazione esplicita dell'utente.
-                </p>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Modalità Offline</h3>
-                <p className="text-muted-foreground">
-                  Le operazioni NFC possono essere eseguite in modalità offline. I dati verranno sincronizzati
-                  automaticamente quando la connessione Internet sarà disponibile.
-                </p>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
+          {/* Help Tab */}
+          <TabsContent value="help" className="space-y-4">
+            <Card>
+              <CardHeader>
+                <CardTitle className="flex items-center">
+                  <HelpCircle className="h-5 w-5 mr-2" />
+                  Guida all'utilizzo dell'NFC Manager
+                </CardTitle>
+                <CardDescription>
+                  Informazioni e suggerimenti per l'uso ottimale della funzionalità NFC
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-4">
+                  <div className="p-4 rounded-md bg-blue-50 border border-blue-100">
+                    <h3 className="text-lg font-semibold flex items-center mb-2">
+                      <Smartphone className="h-5 w-5 mr-2 text-blue-600" />
+                      Requisiti di sistema
+                    </h3>
+                    <p className="text-sm mb-2">
+                      Per utilizzare la funzionalità NFC è necessario:
+                    </p>
+                    <ul className="list-disc pl-5 text-sm space-y-1">
+                      <li>Dispositivo con supporto NFC (la maggior parte degli smartphone moderni)</li>
+                      <li>Browser compatibile con Web NFC API (Chrome su Android è consigliato)</li>
+                      <li>Accesso ai permessi NFC sul dispositivo</li>
+                    </ul>
+                  </div>
 
-        <TabsContent value="help" className="mt-6">
-          <Card>
-            <CardHeader>
-              <CardTitle>Aiuto</CardTitle>
-              <CardDescription>
-                Come utilizzare le funzionalità NFC
-              </CardDescription>
-            </CardHeader>
-            <CardContent className="space-y-6">
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Come scansionare un tag NFC</h3>
-                <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                  <li>Attiva la scansione NFC cliccando su "Avvia Scansione"</li>
-                  <li>Avvicina il dispositivo al tag NFC della cesta</li>
-                  <li>Mantieni il dispositivo vicino al tag finché non viene rilevato</li>
-                  <li>Il tag verrà letto e verranno mostrate le azioni rapide disponibili</li>
-                </ol>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Modalità Simulazione</h3>
-                <p className="text-muted-foreground">
-                  Se il tuo dispositivo non supporta NFC o vuoi testare la funzionalità:
-                </p>
-                <ol className="list-decimal list-inside space-y-2 text-muted-foreground">
-                  <li>Attiva la "Modalità Simulazione" utilizzando l'interruttore</li>
-                  <li>Clicca su "Avvia Scansione"</li>
-                  <li>Clicca su "Simula Scansione" per simulare la lettura di un tag NFC</li>
-                  <li>Verranno mostrate le stesse funzionalità disponibili con un tag reale</li>
-                </ol>
-              </div>
-              
-              <div>
-                <h3 className="font-semibold text-lg mb-2">Risoluzione Problemi</h3>
-                <ul className="list-disc list-inside space-y-2 text-muted-foreground">
-                  <li><strong>Il tag non viene rilevato</strong> - Assicurati che il tag sia posizionato correttamente. L'antenna NFC si trova solitamente nella parte superiore o centrale del dispositivo.</li>
-                  <li><strong>Errore di permesso</strong> - Assicurati di aver dato il permesso al browser di accedere al sensore NFC.</li>
-                  <li><strong>Impossibile avviare la scansione</strong> - Verifica che il tuo dispositivo supporti NFC e che sia abilitato nelle impostazioni.</li>
-                </ul>
-              </div>
-            </CardContent>
-          </Card>
-        </TabsContent>
-      </Tabs>
-    </div>
+                  <div className="p-4 rounded-md bg-green-50 border border-green-100">
+                    <h3 className="text-lg font-semibold flex items-center mb-2">
+                      <Database className="h-5 w-5 mr-2 text-green-600" />
+                      Contenuto dei tag
+                    </h3>
+                    <p className="text-sm mb-2">
+                      I tag NFC contengono le seguenti informazioni:
+                    </p>
+                    <ul className="list-disc pl-5 text-sm space-y-1">
+                      <li>ID della cesta associata</li>
+                      <li>Unità FLUPSY e posizione</li>
+                      <li>Taglia e peso attuale</li>
+                      <li>Numero di animali</li>
+                      <li>Timestamp dell'ultima operazione</li>
+                    </ul>
+                  </div>
+
+                  <div className="p-4 rounded-md bg-purple-50 border border-purple-100">
+                    <h3 className="text-lg font-semibold flex items-center mb-2">
+                      <QrCode className="h-5 w-5 mr-2 text-purple-600" />
+                      Modalità simulazione
+                    </h3>
+                    <p className="text-sm">
+                      La modalità simulazione ti permette di testare la funzionalità NFC anche su dispositivi
+                      che non supportano NFC. Attiva questa modalità nella scheda Scanner e utilizza il pulsante
+                      "Simula Scansione" per generare eventi di scansione simulati.
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </>
   );
 };
 

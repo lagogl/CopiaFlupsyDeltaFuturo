@@ -15,7 +15,7 @@ import {
 } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { NfcTag } from '../utils/nfcSimulator';
-import NfcQuickActions from './NfcQuickActions';
+import NfcQuickActions from '@/nfc-features/components/NfcQuickActions';
 
 interface NfcControllerProps {
   onTagScanned?: (tag: NfcTag) => void;

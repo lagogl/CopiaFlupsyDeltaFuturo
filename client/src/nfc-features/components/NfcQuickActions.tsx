@@ -1,215 +1,210 @@
-import React, { useState } from 'react';
-import { NfcTag } from '../utils/nfcSimulator';
+import React from 'react';
+import { useLocation } from 'wouter';
+import { useQuery } from '@tanstack/react-query';
 import { Button } from '@/components/ui/button';
 import { 
+  FileText, 
+  BarChart, 
+  Package, 
+  BookOpen, 
+  Edit, 
   Scale, 
-  Ruler, 
-  ClipboardList, 
-  BarChart2, 
-  AlertTriangle,
-  Tag,
-  Clock,
-  FileText,
-  ChevronRight
+  RefreshCw,
+  Check,
+  AlertCircle,
+  Loader2
 } from 'lucide-react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipProvider,
-  TooltipTrigger,
-} from "@/components/ui/tooltip";
-import {
-  Accordion,
-  AccordionContent,
-  AccordionItem,
-  AccordionTrigger,
-} from "@/components/ui/accordion";
-import { format } from 'date-fns';
-import { it } from 'date-fns/locale';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import type { NfcTag } from '../utils/nfcSimulator';
 import { toast } from '@/hooks/use-toast';
 
 interface NfcQuickActionsProps {
   tag: NfcTag;
 }
 
+/**
+ * Componente che mostra azioni rapide per interagire con un tag NFC scansionato
+ */
 const NfcQuickActions: React.FC<NfcQuickActionsProps> = ({ tag }) => {
-  // Potremmo fare un redirect alla pagina di operazione, ma per ora
-  // simula l'apertura dell'operazione
-  const handleOperation = (operationType: string) => {
-    toast({
-      title: `Operazione ${operationType}`,
-      description: `Hai avviato un'operazione di tipo "${operationType}" per la cesta #${tag.basketId || 'N/D'}`,
-    });
-  };
+  const [, navigate] = useLocation();
+  const basketId = tag.basketId || tag.data?.basketId;
 
-  // Genera una classe di colore basata sul tipo di operazione
-  const getOperationTypeClass = (type: string) => {
-    switch (type) {
-      case 'misura':
-        return 'bg-blue-100 text-blue-700 border-blue-300 hover:bg-blue-200';
+  // Query per ottenere i dettagli della cesta
+  const { data: basket, isLoading, error } = useQuery({
+    queryKey: ['/api/baskets', basketId],
+    queryFn: async () => {
+      if (!basketId) return null;
+      const response = await fetch(`/api/baskets/${basketId}`);
+      if (!response.ok) throw new Error('Errore nel recupero dei dati della cesta');
+      return response.json();
+    },
+    enabled: !!basketId, // Esegui la query solo se abbiamo un basketId
+    staleTime: 1000 * 60 * 5, // 5 minuti
+  });
+
+  // Verifica se il tag è associato a una cesta attiva
+  const isLinkedToBasket = !!basketId && !!basket;
+
+  // Gestione delle azioni
+  const handleAction = (action: string) => {
+    if (!basketId) {
+      toast({
+        title: "Azione non disponibile",
+        description: "Questo tag NFC non è associato a nessuna cesta",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    switch (action) {
+      case 'view':
+        navigate(`/baskets/${basketId}`);
+        break;
+      case 'stats':
+        navigate(`/flupsy-comparison?basketId=${basketId}`);
+        break;
+      case 'operations':
+        navigate(`/operations?basketId=${basketId}`);
+        break;
       case 'peso':
-        return 'bg-green-100 text-green-700 border-green-300 hover:bg-green-200';
-      case 'prima-attivazione':
-        return 'bg-purple-100 text-purple-700 border-purple-300 hover:bg-purple-200';
+        navigate(`/quick-operations?operation=peso&basketId=${basketId}`);
+        break;
+      case 'misurazione':
+        navigate(`/quick-operations?operation=misura&basketId=${basketId}`);
+        break;
+      case 'cycle':
+        if (basket && basket.activeBasketId && basket.cycleId) {
+          navigate(`/cycles/${basket.cycleId}`);
+        } else {
+          toast({
+            title: "Ciclo non disponibile",
+            description: "Questa cesta non è associata a nessun ciclo attivo",
+            variant: "destructive"
+          });
+        }
+        break;
       default:
-        return 'bg-gray-100 text-gray-700 border-gray-300 hover:bg-gray-200';
+        toast({
+          title: "Azione non implementata",
+          description: `L'azione '${action}' non è ancora disponibile`
+        });
     }
   };
 
-  // Funzione per ottenere l'icona in base al tipo di operazione
-  const getOperationIcon = (type: string) => {
-    switch (type) {
-      case 'misura':
-        return <Ruler className="h-4 w-4" />;
-      case 'peso':
-        return <Scale className="h-4 w-4" />;
-      case 'prima-attivazione':
-        return <Tag className="h-4 w-4" />;
-      default:
-        return <FileText className="h-4 w-4" />;
-    }
-  };
+  if (isLoading) {
+    return (
+      <div className="flex justify-center items-center py-4">
+        <Loader2 className="h-6 w-6 animate-spin text-primary" />
+        <span className="ml-2">Caricamento informazioni cesta...</span>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <Alert variant="destructive" className="mt-2">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Errore</AlertTitle>
+        <AlertDescription>
+          Non è stato possibile recuperare le informazioni sulla cesta.
+          {error instanceof Error ? ` ${error.message}` : ''}
+        </AlertDescription>
+      </Alert>
+    );
+  }
+
+  if (!isLinkedToBasket) {
+    return (
+      <Alert variant="default" className="mt-2 bg-amber-50 border-amber-200 text-amber-800">
+        <AlertCircle className="h-4 w-4" />
+        <AlertTitle>Tag non associato</AlertTitle>
+        <AlertDescription>
+          Questo tag NFC non è associato a nessuna cesta attiva nel sistema.
+        </AlertDescription>
+      </Alert>
+    );
+  }
 
   return (
-    <div className="space-y-3">
-      {/* Azioni Principali */}
+    <div className="space-y-4">
+      {/* Informazioni sulla cesta */}
+      {basket && (
+        <div className="bg-blue-50 p-3 rounded-md border border-blue-100">
+          <div className="flex items-center">
+            <Check className="h-4 w-4 text-green-600 mr-2" />
+            <span className="text-sm font-medium">Tag collegato a cesta attiva</span>
+          </div>
+          <div className="mt-1 grid grid-cols-2 gap-2 text-xs text-gray-600">
+            <div>Flupsy: <span className="font-medium">{basket.flupsyName}</span></div>
+            <div>Posizione: <span className="font-medium">{basket.position || 'N/D'}</span></div>
+            <div>Animali: <span className="font-medium">{basket.animalCount?.toLocaleString('it-IT') || 'N/D'}</span></div>
+            <div>Taglia: <span className="font-medium">{basket.sizeClass || 'N/D'}</span></div>
+          </div>
+        </div>
+      )}
+
+      {/* Azioni rapide */}
       <div className="grid grid-cols-2 gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                className="w-full py-6 flex flex-col items-center justify-center gap-2 bg-blue-50 text-blue-700 hover:bg-blue-100 border border-blue-200"
-                variant="outline"
-                onClick={() => handleOperation('misura')}
-              >
-                <Ruler className="h-5 w-5" />
-                <span>Misura</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">Avvia un'operazione di misurazione per questa cesta</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center justify-start"
+          onClick={() => handleAction('view')}
+        >
+          <Package className="h-4 w-4 mr-2 text-blue-600" />
+          Dettagli Cesta
+        </Button>
+        
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center justify-start"
+          onClick={() => handleAction('operations')}
+        >
+          <FileText className="h-4 w-4 mr-2 text-green-600" />
+          Operazioni
+        </Button>
 
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                className="w-full py-6 flex flex-col items-center justify-center gap-2 bg-green-50 text-green-700 hover:bg-green-100 border border-green-200"
-                variant="outline"
-                onClick={() => handleOperation('peso')}
-              >
-                <Scale className="h-5 w-5" />
-                <span>Peso</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">Avvia un'operazione di peso per questa cesta</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center justify-start"
+          onClick={() => handleAction('peso')}
+        >
+          <Scale className="h-4 w-4 mr-2 text-orange-600" />
+          Operazione Peso
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center justify-start"
+          onClick={() => handleAction('misurazione')}
+        >
+          <Edit className="h-4 w-4 mr-2 text-orange-600" />
+          Misurazione
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center justify-start"
+          onClick={() => handleAction('stats')}
+        >
+          <BarChart className="h-4 w-4 mr-2 text-purple-600" />
+          Statistiche
+        </Button>
+
+        <Button
+          variant="outline"
+          size="sm"
+          className="flex items-center justify-start"
+          onClick={() => handleAction('cycle')}
+        >
+          <RefreshCw className="h-4 w-4 mr-2 text-blue-600" />
+          Ciclo Produttivo
+        </Button>
       </div>
-
-      {/* Azioni Secondarie */}
-      <div className="grid grid-cols-3 gap-2">
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                className="py-2 flex flex-col items-center justify-center gap-1"
-                variant="outline"
-                size="sm"
-                onClick={() => handleOperation('cronologia')}
-              >
-                <ClipboardList className="h-4 w-4" />
-                <span className="text-xs">Cronologia</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">Visualizza la cronologia delle operazioni</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                className="py-2 flex flex-col items-center justify-center gap-1"
-                variant="outline"
-                size="sm"
-                onClick={() => handleOperation('statistiche')}
-              >
-                <BarChart2 className="h-4 w-4" />
-                <span className="text-xs">Statistiche</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">Visualizza le statistiche di crescita</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button 
-                className="py-2 flex flex-col items-center justify-center gap-1"
-                variant="outline"
-                size="sm"
-                onClick={() => handleOperation('mortalita')}
-              >
-                <AlertTriangle className="h-4 w-4" />
-                <span className="text-xs">Mortalità</span>
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="bottom">
-              <p className="text-xs">Registra un'operazione di mortalità</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
-
-      {/* Dettagli Operazioni */}
-      <Accordion type="single" collapsible className="border rounded-md">
-        <AccordionItem value="operations">
-          <AccordionTrigger className="px-4 text-sm hover:no-underline hover:bg-gray-50">
-            Ultime Operazioni
-          </AccordionTrigger>
-          <AccordionContent className="px-0">
-            <div className="divide-y">
-              {/* Se ci sono operazioni le mostriamo (usiamo un mock qui) */}
-              {tag.lastOperation ? (
-                <div className="px-4 py-2 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    {getOperationIcon(tag.lastOperation.type)}
-                    <div>
-                      <div className="font-medium text-sm">
-                        {tag.lastOperation.type.charAt(0).toUpperCase() + tag.lastOperation.type.slice(1)}
-                      </div>
-                      <div className="text-xs text-muted-foreground flex items-center">
-                        <Clock className="h-3 w-3 mr-1" />
-                        {tag.lastOperation.date ? 
-                          format(new Date(tag.lastOperation.date), 'dd/MM/yyyy', { locale: it }) :
-                          'Data non disponibile'
-                        }
-                      </div>
-                    </div>
-                  </div>
-                  <Button variant="ghost" size="icon" className="h-8 w-8">
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </div>
-              ) : (
-                <div className="px-4 py-3 text-sm text-muted-foreground text-center">
-                  Nessuna operazione registrata
-                </div>
-              )}
-            </div>
-          </AccordionContent>
-        </AccordionItem>
-      </Accordion>
     </div>
   );
 };
