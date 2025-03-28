@@ -353,23 +353,48 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
     const updatedFormData = { ...currentOperation.formData, [field]: value };
     
     // Calcoli automatici per l'operazione di misura
-    if (currentOperation.type === 'misura' && field === 'sampleWeight' || field === 'sampleCount') {
-      const sampleWeight = field === 'sampleWeight' ? parseFloat(value) : parseFloat(currentOperation.formData.sampleWeight);
-      const sampleCount = field === 'sampleCount' ? parseInt(value) : parseInt(currentOperation.formData.sampleCount);
+    if (currentOperation.type === 'misura' && (field === 'sampleWeight' || field === 'sampleCount' || field === 'deadCount' || field === 'totalWeight')) {
+      const sampleWeight = field === 'sampleWeight' ? parseFloat(value) : parseFloat(currentOperation.formData.sampleWeight || '0');
+      const liveSampleCount = field === 'sampleCount' ? parseInt(value) : parseInt(currentOperation.formData.sampleCount || '0');
+      const deadCount = field === 'deadCount' ? parseInt(value) : parseInt(currentOperation.formData.deadCount || '0');
+      const totalSampleCount = liveSampleCount + deadCount;
       
-      if (!isNaN(sampleWeight) && !isNaN(sampleCount) && sampleWeight > 0 && sampleCount > 0) {
-        // Calcola animali per kg (proporzionale: sampleCount:sampleWeight = x:1000)
-        const animalsPerKg = Math.round((sampleCount * 1000) / sampleWeight);
+      // Calcola la percentuale di mortalità nel campione
+      if (totalSampleCount > 0) {
+        const mortalityRate = deadCount / totalSampleCount;
+        updatedFormData.mortalityRate = mortalityRate;
+      }
+      
+      if (!isNaN(sampleWeight) && !isNaN(liveSampleCount) && sampleWeight > 0 && liveSampleCount > 0) {
+        // Calcola animali per kg basato SOLO sugli animali vivi (proporzionale: liveSampleCount:sampleWeight = x:1000)
+        const animalsPerKg = Math.round((liveSampleCount * 1000) / sampleWeight);
         updatedFormData.animalsPerKg = animalsPerKg;
         
-        // Calcola peso medio in mg
-        updatedFormData.averageWeight = Math.round((sampleWeight * 1000) / sampleCount);
+        // Calcola peso medio in mg (basato sugli animali vivi)
+        updatedFormData.averageWeight = Math.round((sampleWeight * 1000) / liveSampleCount);
         
         // Se c'è anche il peso totale, aggiorna il conteggio stimato
         if (updatedFormData.totalWeight) {
           const totalWeightKg = parseFloat(updatedFormData.totalWeight);
           if (!isNaN(totalWeightKg) && totalWeightKg > 0) {
-            updatedFormData.animalCount = Math.round(animalsPerKg * totalWeightKg);
+            // Numero di animali vivi stimato in base al peso totale
+            const estimatedLiveCount = Math.round(animalsPerKg * totalWeightKg);
+            
+            // Se abbiamo una percentuale di mortalità, calcoliamo il numero totale di animali
+            // considerando la stessa proporzione di morti
+            if (updatedFormData.mortalityRate !== undefined && updatedFormData.mortalityRate > 0) {
+              // Formula: animali_vivi = animali_totali * (1 - tasso_mortalità)
+              // Quindi: animali_totali = animali_vivi / (1 - tasso_mortalità)
+              const mortalityRate = updatedFormData.mortalityRate;
+              const estimatedTotalCount = Math.round(estimatedLiveCount / (1 - mortalityRate));
+              const estimatedDeadCount = estimatedTotalCount - estimatedLiveCount;
+              
+              updatedFormData.animalCount = estimatedLiveCount;
+              updatedFormData.estimatedDeadCount = estimatedDeadCount;
+            } else {
+              updatedFormData.animalCount = estimatedLiveCount;
+              updatedFormData.estimatedDeadCount = 0;
+            }
           }
         }
       }
@@ -635,18 +660,30 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                     />
                   </div>
                   <div>
-                    <Label htmlFor="sampleCount">Numero animali nel campione</Label>
+                    <Label htmlFor="sampleCount">Numero animali vivi nel campione</Label>
                     <Input
                       id="sampleCount"
                       type="number"
                       step="1"
                       min="0"
-                      placeholder="Numero di animali nel campione"
+                      placeholder="Numero di animali vivi nel campione"
                       value={currentOperation.formData.sampleCount || ''}
                       onChange={(e) => handleFormChange('sampleCount', e.target.value)}
                     />
                   </div>
-                  <div className="col-span-2">
+                  <div>
+                    <Label htmlFor="deadCount">Numero animali morti nel campione</Label>
+                    <Input
+                      id="deadCount"
+                      type="number"
+                      step="1"
+                      min="0"
+                      placeholder="Numero di animali morti nel campione"
+                      value={currentOperation.formData.deadCount || ''}
+                      onChange={(e) => handleFormChange('deadCount', e.target.value)}
+                    />
+                  </div>
+                  <div>
                     <Label htmlFor="totalWeight">Peso totale (kg)</Label>
                     <Input
                       id="totalWeight"
@@ -683,7 +720,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                   <Card className="shadow-sm bg-gradient-to-r from-slate-50 to-blue-50 overflow-hidden col-span-2">
                     <CardContent className="p-4">
                       <h4 className="font-medium mb-3 text-slate-700">Risultati calcolati</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
                         <div className="p-3 bg-white rounded-md shadow-sm">
                           <p className="text-xs text-gray-500 mb-1">Animali per kg</p>
                           <p className="font-bold text-lg text-slate-900">
@@ -696,11 +733,26 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                             {currentOperation.formData.averageWeight?.toLocaleString('it-IT') || '-'}
                           </p>
                         </div>
+                        {currentOperation.formData.mortalityRate !== undefined && (
+                          <div className="p-3 bg-white rounded-md shadow-sm">
+                            <p className="text-xs text-gray-500 mb-1">Tasso di mortalità</p>
+                            <p className="font-bold text-lg text-slate-900">
+                              {(currentOperation.formData.mortalityRate * 100).toFixed(1)}%
+                            </p>
+                          </div>
+                        )}
                         <div className="p-3 bg-white rounded-md shadow-sm">
                           <p className="text-xs text-gray-500 mb-1">Numero totale animali</p>
                           <p className="font-bold text-lg text-slate-900">
                             {currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}
                           </p>
+                          {currentOperation.formData.deadCount > 0 && (
+                            <div className="mt-1 text-xs text-gray-500">
+                              <span className="text-red-500">
+                                Morti stimati: {Math.round(currentOperation.formData.estimatedDeadCount || 0).toLocaleString('it-IT')}
+                              </span>
+                            </div>
+                          )}
                         </div>
                       </div>
                     </CardContent>
