@@ -193,13 +193,24 @@ export default function MisurazioneDirectForm({
         const errorData = await response.json();
         throw new Error(errorData.message || "Errore durante il salvataggio dell'operazione");
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error("Errore durante il salvataggio:", error);
-      toast({
-        title: "Errore",
-        description: error instanceof Error ? error.message : "Si è verificato un errore durante il salvataggio",
-        variant: "destructive"
-      });
+      
+      // Controlla se l'errore contiene un messaggio dal server
+      if (error.message && error.message.includes("Non è possibile registrare più di un'operazione al giorno")) {
+        toast({
+          variant: "destructive",
+          title: "Operazione non permessa",
+          description: "Esiste già un'operazione registrata per questa cesta nella data selezionata. Scegli una data diversa.",
+        });
+      } else {
+        // Errore generico
+        toast({
+          title: "Errore",
+          description: error instanceof Error ? error.message : "Si è verificato un errore durante il salvataggio",
+          variant: "destructive"
+        });
+      }
     } finally {
       setIsLoading(false);
     }

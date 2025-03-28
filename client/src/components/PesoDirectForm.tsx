@@ -184,13 +184,34 @@ export default function PesoDirectForm({
       
       // Callback di successo
       onSuccess();
-    } catch (error) {
+    } catch (error: any) {
       console.error('Errore durante la registrazione dell\'operazione:', error);
-      toast({
-        variant: "destructive",
-        title: "Errore",
-        description: "Si è verificato un errore durante la registrazione dell'operazione.",
-      });
+      
+      // Controlla se l'errore contiene un messaggio dal server
+      if (error.response?.data?.message) {
+        // Gestisci il caso specifico di operazione doppia nella stessa giornata
+        if (error.response.data.message.includes("Non è possibile registrare più di un'operazione al giorno")) {
+          toast({
+            variant: "destructive",
+            title: "Operazione non permessa",
+            description: "Esiste già un'operazione registrata per questa cesta nella data selezionata. Scegli una data diversa.",
+          });
+        } else {
+          // Altri errori dal server
+          toast({
+            variant: "destructive",
+            title: "Errore",
+            description: error.response.data.message,
+          });
+        }
+      } else {
+        // Errore generico
+        toast({
+          variant: "destructive",
+          title: "Errore",
+          description: "Si è verificato un errore durante la registrazione dell'operazione.",
+        });
+      }
     }
   };
   
