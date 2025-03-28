@@ -224,7 +224,7 @@ function BasketCard({
         <CardTitle className="text-lg flex items-center justify-between">
           <span>Cesta #{basket.physicalNumber}</span>
           {sizeIndicator && (
-            <Badge className={`${colorClass} hover:${colorClass}`}>{sizeIndicator}</Badge>
+            <Badge className={`${colorClass} hover:${colorClass} text-black font-medium`}>{sizeIndicator}</Badge>
           )}
         </CardTitle>
         <CardDescription>
