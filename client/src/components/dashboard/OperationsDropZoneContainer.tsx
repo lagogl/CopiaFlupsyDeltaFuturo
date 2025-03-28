@@ -103,7 +103,9 @@ const DraggableOperationItem = ({ type, icon, label }: DraggableOperationItemPro
 // Componente per il target (cesta) dove rilasciare l'operazione
 const DropTargetBasket = ({ basket, operations, onOperationDrop }: any) => {
   // Verifica diretta se la cesta è disponibile per le operazioni
-  const isBasketAvailable = basket.state === 'active' && basket.currentCycleId !== null;
+  // Una cesta è disponibile se è attiva con un ciclo, oppure se è disponibile per un nuovo ciclo
+  const isBasketAvailable = (basket.state === 'active' && basket.currentCycleId !== null) || 
+                           (basket.state === 'available');
   
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: 'OPERATION',
@@ -294,12 +296,33 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
     (basketId: number, operationType: DraggableOperationType) => {
       if (!baskets || !operations) return;
       
-      // Trova il ciclo attivo per questa cesta
+      // Trova la cesta
       const basket = (baskets && Array.isArray(baskets)) ? baskets.find((b: any) => b.id === basketId) : undefined;
-      if (!basket || basket.currentCycleId === null) {
+      
+      // Se la cesta è in stato "available", può essere utilizzata solo per operazioni di prima misurazione
+      if (basket && basket.state === 'available') {
+        if (operationType !== 'misura') {
+          toast({
+            title: "Operazione non valida",
+            description: "Per una cesta disponibile è possibile eseguire solo operazioni di misurazione per avviare un nuovo ciclo",
+            variant: "destructive",
+          });
+          return;
+        }
+        
+        // Per ceste disponibili, dobbiamo creare un nuovo ciclo
+        toast({
+          title: "Cesta disponibile",
+          description: "Stai per avviare un nuovo ciclo su questa cesta. Completa i dati richiesti.",
+        });
+        
+        // Continua con l'operazione (creeremo il ciclo in backend quando salviamo l'operazione)
+      } 
+      // Se la cesta non ha un ciclo attivo e non è disponibile, non possiamo fare operazioni
+      else if (!basket || (basket.state !== 'active' && basket.currentCycleId === null)) {
         toast({
           title: "Impossibile eseguire l'operazione",
-          description: "La cesta non ha un ciclo attivo",
+          description: "La cesta non è attiva o non ha un ciclo disponibile",
           variant: "destructive",
         });
         return;
