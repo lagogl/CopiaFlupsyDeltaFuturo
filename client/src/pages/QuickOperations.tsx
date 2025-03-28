@@ -399,12 +399,17 @@ export default function QuickOperations() {
       averageWeight = 1000000 / animalsPerKg;
     }
     
+    // Verifichiamo che la data nel payload sia effettivamente quella selezionata dall'utente
+    // e non la data corrente (per evitare sostituzioni indesiderate)
+    const selectedDate = data.date instanceof Date ? data.date : new Date(data.date);
+    
     // Creiamo una copia arricchita dei dati
     return {
       ...data,
       totalWeight: totalWeightGrams,
       animalsPerKg,
-      averageWeight
+      averageWeight,
+      date: selectedDate // Assicuriamoci che sia la data selezionata dall'utente
     };
   };
   
