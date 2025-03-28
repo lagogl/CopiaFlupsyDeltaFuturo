@@ -103,9 +103,7 @@ const DraggableOperationItem = ({ type, icon, label }: DraggableOperationItemPro
 // Componente per il target (cesta) dove rilasciare l'operazione
 const DropTargetBasket = ({ basket, operations, onOperationDrop }: any) => {
   // Verifica diretta se la cesta è disponibile per le operazioni
-  // Una cesta è disponibile se è attiva con un ciclo, oppure se è disponibile per un nuovo ciclo
-  const isBasketAvailable = (basket.state === 'active' && basket.currentCycleId !== null) || 
-                           (basket.state === 'available');
+  const isBasketAvailable = basket.state === 'active' && basket.currentCycleId !== null;
   
   const [{ isOver, canDrop }, drop] = useDrop({
     accept: 'OPERATION',
@@ -284,35 +282,18 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
   const filteredBaskets = baskets && Array.isArray(baskets)
     ? baskets.filter((basket: any) => basket.flupsyId === flupsyId)
     : [];
-    
-  // Debug log
-  console.log(`Flupsy ID selezionato: ${flupsyId}`);
-  console.log(`Totale ceste: ${baskets?.length || 0}, Ceste filtrate: ${filteredBaskets.length}`);
-  console.log("Ceste disponibili:", baskets);
-  console.log("Ceste filtrate:", filteredBaskets);
 
   // Gestisce il rilascio di un'operazione su una cesta
   const handleOperationDrop = useCallback(
     (basketId: number, operationType: DraggableOperationType) => {
       if (!baskets || !operations) return;
       
-      // Trova la cesta
+      // Trova il ciclo attivo per questa cesta
       const basket = (baskets && Array.isArray(baskets)) ? baskets.find((b: any) => b.id === basketId) : undefined;
-      
-      // Se la cesta è in stato "available", bisogna reindirizzare l'utente alla pagina Operazioni per la prima attivazione
-      if (basket && basket.state === 'available') {
-        toast({
-          title: "Operazione non permessa",
-          description: "Per questa cesta è necessario eseguire prima un'operazione di 'Prima Attivazione' nella sezione Operazioni del menu principale",
-          variant: "destructive",
-        });
-        return;
-      } 
-      // Se la cesta non ha un ciclo attivo e non è disponibile, non possiamo fare operazioni
-      else if (!basket || (basket.state !== 'active' && basket.currentCycleId === null)) {
+      if (!basket || basket.currentCycleId === null) {
         toast({
           title: "Impossibile eseguire l'operazione",
-          description: "La cesta non è attiva o non ha un ciclo disponibile",
+          description: "La cesta non ha un ciclo attivo",
           variant: "destructive",
         });
         return;
@@ -386,16 +367,9 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
         
         // Se c'è anche il peso totale, aggiorna il conteggio stimato
         if (updatedFormData.totalWeight) {
-          // Il peso totale è inserito in kg, quindi va moltiplicato per 1000 per il calcolo in grammi
-          const totalWeightKg = parseFloat(updatedFormData.totalWeight);
-          if (!isNaN(totalWeightKg) && totalWeightKg > 0) {
-            // Per calcolare il numero di animali moltiplichiamo direttamente i kg per animali per kg
-            updatedFormData.animalCount = Math.round(animalsPerKg * totalWeightKg);
-            
-            // Memorizziamo temporaneamente il valore in kg per mantenerlo visibile nell'interfaccia,
-            // il valore verrà convertito in grammi solo al momento del salvataggio
-            console.log("Peso totale in kg:", totalWeightKg);
-            console.log("Animali calcolati:", updatedFormData.animalCount);
+          const totalWeightGrams = parseFloat(updatedFormData.totalWeight);
+          if (!isNaN(totalWeightGrams) && totalWeightGrams > 0) {
+            updatedFormData.animalCount = Math.round((animalsPerKg * totalWeightGrams) / 1000);
           }
         }
       }
@@ -419,10 +393,6 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
         
         // Mantieni lo stesso conteggio di animali dell'operazione precedente
         updatedFormData.animalCount = animalCount;
-        
-        // Converti il peso totale da kg a grammi per il salvataggio nel database
-        updatedFormData.totalWeight = totalWeightKg * 1000;
-        console.log("Peso totale convertito da kg a grammi per il database:", updatedFormData.totalWeight);
       }
     }
     
@@ -490,17 +460,6 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       sizeId: currentOperation.formData.sizeId,
       notes: currentOperation.formData.notes || ""
     };
-    
-    // Assicuriamoci che per qualsiasi operazione che utilizza il peso totale, il valore sia convertito in grammi
-    // dato che l'input utente è in kg ma nel database viene sempre salvato in grammi
-    if (operationData.totalWeight) {
-      // Se totalWeight è già stato convertito in grammi, avrà un valore elevato
-      // altrimenti è ancora in kg e deve essere convertito
-      if (operationData.totalWeight < 1000) {
-        operationData.totalWeight = operationData.totalWeight * 1000;
-      }
-      console.log(`Invio operazione di ${currentOperation.type} con totalWeight in grammi:`, operationData.totalWeight);
-    }
     
     createOperationMutation.mutate(operationData);
   };
@@ -688,14 +647,14 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                     />
                   </div>
                   <div className="col-span-2">
-                    <Label htmlFor="totalWeight">Peso totale (kg)</Label>
+                    <Label htmlFor="totalWeight">Peso totale in grammi</Label>
                     <Input
                       id="totalWeight"
                       type="number"
-                      step="0.001"
+                      step="0.01"
                       min="0"
-                      placeholder="Inserisci il peso totale in chilogrammi"
-                      value={currentOperation.formData.totalWeight < 1000 ? currentOperation.formData.totalWeight : (currentOperation.formData.totalWeight / 1000) || ''}
+                      placeholder="Peso totale in grammi"
+                      value={currentOperation.formData.totalWeight || ''}
                       onChange={(e) => handleFormChange('totalWeight', e.target.value)}
                     />
                   </div>
@@ -724,7 +683,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                   <Card className="shadow-sm bg-gradient-to-r from-slate-50 to-blue-50 overflow-hidden col-span-2">
                     <CardContent className="p-4">
                       <h4 className="font-medium mb-3 text-slate-700">Risultati calcolati</h4>
-                      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                         <div className="p-3 bg-white rounded-md shadow-sm">
                           <p className="text-xs text-gray-500 mb-1">Animali per kg</p>
                           <p className="font-bold text-lg text-slate-900">
@@ -741,17 +700,6 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                           <p className="text-xs text-gray-500 mb-1">Numero totale animali</p>
                           <p className="font-bold text-lg text-slate-900">
                             {currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}
-                          </p>
-                        </div>
-                        <div className="p-3 bg-white rounded-md shadow-sm">
-                          <p className="text-xs text-gray-500 mb-1">Peso totale (kg)</p>
-                          <p className="font-bold text-lg text-slate-900">
-                            {currentOperation.formData.totalWeight ? 
-                              (currentOperation.formData.totalWeight > 1000 
-                                ? (currentOperation.formData.totalWeight / 1000).toLocaleString('it-IT', {maximumFractionDigits: 3})
-                                : currentOperation.formData.totalWeight.toLocaleString('it-IT', {maximumFractionDigits: 3})
-                              ) : '-'
-                            }
                           </p>
                         </div>
                       </div>

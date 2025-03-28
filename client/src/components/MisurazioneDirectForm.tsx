@@ -5,8 +5,6 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatNumberWithCommas } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
-import { format } from 'date-fns';
-import { Clock } from 'lucide-react';
 
 interface MisurazioneDirectFormProps {
   basketId: number;
@@ -37,10 +35,6 @@ export default function MisurazioneDirectForm({
 }: MisurazioneDirectFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Inizializziamo con la data di oggi ma permettiamo la modifica
-  const today = new Date();
-  const [operationDate, setOperationDate] = useState<Date>(today);
   
   // Valori di input del campione
   const [sampleWeight, setSampleWeight] = useState<number | null>(null);
@@ -151,35 +145,6 @@ export default function MisurazioneDirectForm({
       return;
     }
     
-    // Ottieni tutte le operazioni per questa cesta e verificare se esiste già un'operazione
-    // dello stesso tipo alla stessa data
-    try {
-      const response = await apiRequest('GET', `/api/operations?basketId=${basketId}`);
-      if (response.ok) {
-        const existingOperations = await response.json();
-        
-        // Verifica se esiste già un'operazione dello stesso tipo alla stessa data
-        const operationFormattedDate = format(operationDate, 'yyyy-MM-dd');
-        
-        const operationOnSameDate = existingOperations.find((op: any) => {
-          const opDate = format(new Date(op.date), 'yyyy-MM-dd');
-          return opDate === operationFormattedDate && op.type === 'misura';
-        });
-        
-        if (operationOnSameDate) {
-          toast({
-            title: "Operazione duplicata",
-            description: `Esiste già un'operazione di misurazione per questa cesta alla data ${format(operationDate, 'dd/MM/yyyy')}. Modifica la data per continuare.`,
-            variant: "destructive"
-          });
-          return;
-        }
-      }
-    } catch (error) {
-      console.error("Errore durante la verifica delle operazioni esistenti:", error);
-      // Continuiamo comunque, il server farà un'ulteriore verifica
-    }
-    
     setIsLoading(true);
     
     try {
@@ -197,7 +162,7 @@ export default function MisurazioneDirectForm({
       // Prepara i dati dell'operazione
       const operationData = {
         type: 'misura',
-        date: operationDate.toISOString(),
+        date: new Date().toISOString(),
         basketId,
         cycleId,
         sizeId,
@@ -284,23 +249,6 @@ export default function MisurazioneDirectForm({
         </div>
         
         <div className="space-y-4">
-          <div>
-            <label className="block text-sm font-medium mb-1">Data operazione</label>
-            <Input 
-              type="date" 
-              defaultValue={format(today, 'yyyy-MM-dd')}
-              onChange={(e) => {
-                const date = new Date(e.target.value);
-                setOperationDate(date);
-              }}
-              className="h-9"
-            />
-            <div className="flex items-center mt-1 text-xs text-amber-600">
-              <Clock className="w-3 h-3 mr-1" />
-              Modifica la data se hai già registrato un'operazione oggi
-            </div>
-          </div>
-          
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">Peso del campione (g)</label>
@@ -313,7 +261,7 @@ export default function MisurazioneDirectForm({
                 className="h-9"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Peso degli animali nel campione (in grammi)
+                Peso totale degli animali nel campione
               </p>
             </div>
             <div>
@@ -337,13 +285,13 @@ export default function MisurazioneDirectForm({
               <Input 
                 type="number" 
                 placeholder="Peso totale in kg"
-                step="0.01"
+                step="0.1"
                 value={totalWeight?.toString() || ''}
                 onChange={e => setTotalWeight(parseFloat(e.target.value) || null)}
                 className="h-9"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Peso totale degli animali (in kg)
+                Peso totale degli animali nella cesta (opzionale)
               </p>
             </div>
           </div>
@@ -460,7 +408,7 @@ export default function MisurazioneDirectForm({
               <div>
                 <label className="block text-xs text-muted-foreground">Peso totale stimato (kg):</label>
                 <div className="font-semibold text-md">
-                  {calculatedValues.totalWeight ? calculatedValues.totalWeight.toFixed(2) : '-'}
+                  {calculatedValues.totalWeight}
                 </div>
               </div>
             )}

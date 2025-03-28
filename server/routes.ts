@@ -736,10 +736,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Check if there's already an operation for this basket on the given date
         const existingOperations = await storage.getOperationsByBasket(basketId);
-        
-        // Verifichiamo se c'è già un'operazione dello stesso tipo per questa data
         const operationOnSameDate = existingOperations.find(op => 
-          format(new Date(op.date), 'yyyy-MM-dd') === formattedDate && op.type === type
+          format(new Date(op.date), 'yyyy-MM-dd') === formattedDate
         );
 
         if (operationOnSameDate) {
@@ -750,8 +748,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
             .map(word => word.charAt(0).toUpperCase() + word.slice(1))
             .join(' ');
           
-          // Messaggio di errore più specifico
-          let message = `Non è possibile registrare più di un'operazione di tipo "${existingTypeLabel}" nella stessa giornata per lo stesso cestello.`;
+          // Semplice messaggio di errore con solo l'informazione essenziale
+          let message = `Non è possibile registrare più di un'operazione al giorno per lo stesso cestello.`;
           
           return res.status(400).json({ message });
         }
