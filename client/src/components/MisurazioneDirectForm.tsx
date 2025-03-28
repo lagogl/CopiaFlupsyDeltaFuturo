@@ -313,7 +313,7 @@ export default function MisurazioneDirectForm({
                 className="h-9"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Peso totale degli animali nel campione
+                Peso degli animali nel campione (in grammi)
               </p>
             </div>
             <div>
@@ -337,13 +337,13 @@ export default function MisurazioneDirectForm({
               <Input 
                 type="number" 
                 placeholder="Peso totale in kg"
-                step="0.1"
+                step="0.01"
                 value={totalWeight?.toString() || ''}
                 onChange={e => setTotalWeight(parseFloat(e.target.value) || null)}
                 className="h-9"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Peso totale degli animali nella cesta (opzionale)
+                Peso totale degli animali (in kg)
               </p>
             </div>
           </div>
@@ -460,7 +460,7 @@ export default function MisurazioneDirectForm({
               <div>
                 <label className="block text-xs text-muted-foreground">Peso totale stimato (kg):</label>
                 <div className="font-semibold text-md">
-                  {calculatedValues.totalWeight}
+                  {calculatedValues.totalWeight ? calculatedValues.totalWeight.toFixed(2) : '-'}
                 </div>
               </div>
             )}

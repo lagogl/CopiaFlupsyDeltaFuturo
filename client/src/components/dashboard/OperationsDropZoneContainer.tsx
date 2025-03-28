@@ -389,12 +389,12 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
           // Il peso totale è inserito in kg, quindi va moltiplicato per 1000 per il calcolo in grammi
           const totalWeightKg = parseFloat(updatedFormData.totalWeight);
           if (!isNaN(totalWeightKg) && totalWeightKg > 0) {
-            const totalWeightGrams = totalWeightKg * 1000;
-            updatedFormData.animalCount = Math.round((animalsPerKg * totalWeightGrams) / 1000);
+            // Per calcolare il numero di animali moltiplichiamo direttamente i kg per animali per kg
+            updatedFormData.animalCount = Math.round(animalsPerKg * totalWeightKg);
             
-            // Assicuriamoci che totalWeight resti in grammi internamente per coerenza con il database
-            updatedFormData.totalWeight = totalWeightGrams;
-            console.log("Peso totale convertito da kg a grammi:", totalWeightGrams);
+            // Memorizziamo temporaneamente il valore in kg per mantenerlo visibile nell'interfaccia,
+            // il valore verrà convertito in grammi solo al momento del salvataggio
+            console.log("Peso totale in kg:", totalWeightKg);
             console.log("Animali calcolati:", updatedFormData.animalCount);
           }
         }
@@ -491,15 +491,15 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       notes: currentOperation.formData.notes || ""
     };
     
-    // Assicuriamoci che per l'operazione di tipo 'peso', il peso totale sia già in grammi
-    // dato che l'input utente è in kg ma nel database viene salvato in grammi
-    if (currentOperation.type === 'peso' && operationData.totalWeight) {
-      // Se totalWeight è già stato convertito in grammi durante handleFormChange, avrà un valore elevato
+    // Assicuriamoci che per qualsiasi operazione che utilizza il peso totale, il valore sia convertito in grammi
+    // dato che l'input utente è in kg ma nel database viene sempre salvato in grammi
+    if (operationData.totalWeight) {
+      // Se totalWeight è già stato convertito in grammi, avrà un valore elevato
       // altrimenti è ancora in kg e deve essere convertito
       if (operationData.totalWeight < 1000) {
         operationData.totalWeight = operationData.totalWeight * 1000;
       }
-      console.log("Invio operazione di peso con totalWeight in grammi:", operationData.totalWeight);
+      console.log(`Invio operazione di ${currentOperation.type} con totalWeight in grammi:`, operationData.totalWeight);
     }
     
     createOperationMutation.mutate(operationData);
