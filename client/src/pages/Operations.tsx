@@ -259,16 +259,19 @@ export default function Operations() {
     const sgrInfo = getSgrForMonth(date);
     if (!sgrInfo) return null;
     
-    // Convertiamo la percentuale SGR mensile in giornaliera
-    const dailyPercentage = monthlyToDaily(sgrInfo.percentage);
+    // I valori SGR dal database sono già percentuali giornaliere
+    // Li convertiamo in decimale per la formula di crescita (da % a decimale)
+    const dailyRate = sgrInfo.percentage / 100;
     
-    // Calcola la percentuale di crescita teorica per il numero di giorni
-    const theoreticalGrowthPercent = dailyPercentage * days;
+    // Calcola la crescita teorica usando la formula corretta: Pf = Pi * e^(SGR*t)
+    // Poiché calcoliamo la percentuale di crescita, iniziamo con Pi = 1
+    // Formula: (Pf/Pi - 1) * 100 = (e^(SGR*t) - 1) * 100
+    const theoreticalGrowthPercent = (Math.exp(dailyRate * days) - 1) * 100;
     
     return {
       sgrMonth: sgrInfo.month,
       sgrPercentage: sgrInfo.percentage,
-      sgrDailyPercentage: dailyPercentage,
+      sgrDailyPercentage: sgrInfo.percentage, // Già in percentuale giornaliera
       theoreticalGrowthPercent
     };
   };

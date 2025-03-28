@@ -8,20 +8,20 @@ export function cn(...inputs: ClassValue[]) {
 
 /**
  * Converti il tasso di crescita SGR da percentuale mensile a percentuale giornaliera
+ * NOTA: Questa funzione è deprecata poiché i valori SGR del database sono già percentuali giornaliere.
+ * È mantenuta solo per compatibilità con il codice esistente.
  * @param monthlyPercentage - Percentuale mensile di crescita
  * @returns Percentuale giornaliera equivalente
+ * @deprecated I valori SGR del database sono già percentuali giornaliere, non è necessaria conversione.
  */
 export function monthlyToDaily(monthlyPercentage: number): number {
-  // Converti da percentuale mensile a giornaliera con formula: 
-  // daily_rate = ((1 + monthly_rate)^(1/30) - 1)
-  // Dove monthly_rate è già espresso come decimale (es. 0.37 per 37%)
-  
-  // Assicurati che il valore passato sia trattato come un decimale
-  // se monthlyPercentage è passato come percentuale (es. 37), convertilo in decimale (0.37)
-  const monthlyRate = monthlyPercentage >= 1 ? monthlyPercentage / 100 : monthlyPercentage;
-  
-  // Calcola il tasso giornaliero (che è già un decimale, non serve moltiplicare per 100)
-  return (Math.pow(1 + monthlyRate, 1/30) - 1);
+  // NOTA: Questa funzione è deprecata.
+  // I valori SGR dal database sono già espressi come percentuali giornaliere.
+  // Nei componenti che utilizzano questa funzione, usa direttamente il valore 
+  // dalla tabella SGR senza conversione.
+
+  // Per compatibilità, restituisce il valore originale
+  return monthlyPercentage;
 }
 
 export function formatNumberWithCommas(value: number): string {
