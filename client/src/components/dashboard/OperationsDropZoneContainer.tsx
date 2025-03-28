@@ -282,6 +282,12 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
   const filteredBaskets = baskets && Array.isArray(baskets)
     ? baskets.filter((basket: any) => basket.flupsyId === flupsyId)
     : [];
+    
+  // Debug log
+  console.log(`Flupsy ID selezionato: ${flupsyId}`);
+  console.log(`Totale ceste: ${baskets?.length || 0}, Ceste filtrate: ${filteredBaskets.length}`);
+  console.log("Ceste disponibili:", baskets);
+  console.log("Ceste filtrate:", filteredBaskets);
 
   // Gestisce il rilascio di un'operazione su una cesta
   const handleOperationDrop = useCallback(
