@@ -221,6 +221,12 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
     type: DraggableOperationType;
     formData: any;
   } | null>(null);
+  const [previousOperationData, setPreviousOperationData] = useState<{
+    animalsPerKg: number | null;
+    averageWeight: number | null;
+    animalCount: number | null;
+    lotId: number | null;
+  } | null>(null);
 
   // Carica dati delle ceste, operazioni, cicli e lotti
   const { data: baskets } = useQuery({
@@ -256,6 +262,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       });
       setOperationDialogOpen(false);
       setCurrentOperation(null);
+      setPreviousOperationData(null);
     },
     onError: (error: any) => {
       toast({
@@ -295,6 +302,14 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       
       const lastOperation = basketOperations.length > 0 ? basketOperations[0] : null;
 
+      // Salva una copia dei dati precedenti che non cambierà
+      setPreviousOperationData({
+        animalsPerKg: lastOperation?.animalsPerKg || null,
+        averageWeight: lastOperation?.averageWeight || null,
+        animalCount: lastOperation?.animalCount || null,
+        lotId: lastOperation?.lotId || null
+      });
+      
       // Prepara i dati iniziali per il form
       const initialFormData = {
         date: new Date().toISOString().split('T')[0],
@@ -461,7 +476,13 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       </div>
 
       {/* Dialog per inserire i dati dell'operazione */}
-      <Dialog open={operationDialogOpen} onOpenChange={setOperationDialogOpen}>
+      <Dialog open={operationDialogOpen} onOpenChange={(open) => {
+        setOperationDialogOpen(open);
+        // Pulisci i dati precedenti quando si chiude il dialog
+        if (!open) {
+          setPreviousOperationData(null);
+        }
+      }}>
         <DialogContent className="sm:max-w-lg">
           <DialogHeader>
             <DialogTitle>
@@ -475,35 +496,35 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
           {currentOperation && currentOperation.type === 'misura' && (
             <div className="grid gap-4 py-4">
               {/* Dati precedenti dell'operazione */}
-              {currentOperation.formData.animalsPerKg && (
+              {previousOperationData && previousOperationData.animalsPerKg && (
                 <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-2">
                   <h4 className="text-sm font-medium text-blue-800 mb-1">Dati precedenti</h4>
                   <div className="grid grid-cols-3 gap-2 text-xs">
                     <div>
                       <span className="text-blue-600 font-medium">Animali per kg:</span>
-                      <span className="ml-1 text-blue-900">{currentOperation.formData.animalsPerKg.toLocaleString('it-IT')}</span>
+                      <span className="ml-1 text-blue-900">{previousOperationData.animalsPerKg.toLocaleString('it-IT')}</span>
                     </div>
                     <div>
                       <span className="text-blue-600 font-medium">Peso medio:</span>
-                      <span className="ml-1 text-blue-900">{currentOperation.formData.averageWeight?.toLocaleString('it-IT') || '-'} mg</span>
+                      <span className="ml-1 text-blue-900">{previousOperationData.averageWeight?.toLocaleString('it-IT') || '-'} mg</span>
                     </div>
                     <div>
                       <span className="text-blue-600 font-medium">Tot. animali:</span>
-                      <span className="ml-1 text-blue-900">{currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}</span>
+                      <span className="ml-1 text-blue-900">{previousOperationData.animalCount?.toLocaleString('it-IT') || '-'}</span>
                     </div>
                   </div>
-                  {currentOperation.formData.lotId && (
+                  {previousOperationData.lotId && (
                     <div className="mt-2 bg-blue-100 p-2 rounded text-xs">
                       <div className="flex items-center mb-1">
                         <Tag className="h-3 w-3 mr-1" />
                         <span className="text-blue-600 font-medium">Lotto ID:</span>
-                        <span className="ml-1 text-blue-900">{currentOperation.formData.lotId}</span>
+                        <span className="ml-1 text-blue-900">{previousOperationData.lotId}</span>
                       </div>
                       <div className="flex items-center">
                         <span className="text-xs text-blue-600 font-medium">Fornitore:</span>
                         <span className="ml-1 text-xs text-blue-900">
                           {lots && Array.isArray(lots) 
-                            ? lots.find((l: any) => l.id === currentOperation.formData.lotId)?.supplier || "-"
+                            ? lots.find((l: any) => l.id === previousOperationData.lotId)?.supplier || "-"
                             : "-"}
                         </span>
                       </div>
