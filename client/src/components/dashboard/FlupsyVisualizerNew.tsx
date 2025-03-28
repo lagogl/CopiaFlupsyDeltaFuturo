@@ -159,21 +159,19 @@ export default function FlupsyVisualizerNew() {
     const sgrInfo = getSgrForMonth(date);
     if (!sgrInfo) return null;
     
-    // Convertiamo la percentuale SGR mensile in giornaliera (come decimale, es. 0.00267)
-    const dailyRate = monthlyToDaily(sgrInfo.percentage);
+    // I valori SGR dal database sono già percentuali giornaliere
+    // Li convertiamo in decimale per la formula di crescita (da % a decimale)
+    const dailyRate = sgrInfo.percentage / 100;
     
     // Calcola la crescita teorica usando la formula corretta: Pf = Pi * e^(SGR*t)
     // Poiché calcoliamo la percentuale di crescita, iniziamo con Pi = 1
     // Formula: (Pf/Pi - 1) * 100 = (e^(SGR*t) - 1) * 100
     const theoreticalGrowthPercent = (Math.exp(dailyRate * days) - 1) * 100;
     
-    // Per visualizzazione, convertiamo dailyRate in percentuale giornaliera
-    const dailyPercentage = dailyRate * 100;
-    
     return {
       sgrMonth: sgrInfo.month,
       sgrPercentage: sgrInfo.percentage,
-      sgrDailyPercentage: dailyPercentage,
+      sgrDailyPercentage: sgrInfo.percentage, // Già in percentuale giornaliera
       theoreticalGrowthPercent
     };
   };
