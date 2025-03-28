@@ -27,6 +27,9 @@ import TestView from "@/pages/TestView";
 import NFCScan from "@/pages/NFCScan";
 import NFCTagManager from "@/pages/NFCTagManager";
 import GrowJourney from "@/pages/GrowJourney";
+import { initializeWebSocket } from "./lib/websocket";
+import { useEffect } from "react";
+import { WebSocketIndicator } from "@/components/WebSocketIndicator";
 
 function Router() {
   return (
@@ -63,12 +66,32 @@ function Router() {
   );
 }
 
+// Componente WebSocketListener che semplicemente inizializza il WebSocket
+function WebSocketListener() {
+  useEffect(() => {
+    // Inizializza il WebSocket quando il componente viene montato
+    initializeWebSocket();
+    
+    // Non è necessario fare pulizia perché vogliamo mantenere la connessione
+    // aperta per tutta la durata dell'applicazione
+  }, []);
+  
+  return null; // Questo componente non renderizza nulla
+}
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
+      {/* Inizializza il WebSocket all'avvio dell'app */}
+      <WebSocketListener />
+      
       <MainLayout>
         <Router />
       </MainLayout>
+      
+      {/* Indicatore di stato della connessione WebSocket */}
+      <WebSocketIndicator />
+      
       <Toaster />
     </QueryClientProvider>
   );

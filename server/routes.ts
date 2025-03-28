@@ -21,6 +21,7 @@ import {
 import { format, addDays } from "date-fns";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
+import { WebSocketServer, WebSocket } from "ws";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // === Basket routes ===
@@ -327,6 +328,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      // Broadcast basket creation event via WebSockets
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('basket_created', {
+          basket: newBasket,
+          message: `Nuovo cestello ${newBasket.physicalNumber} creato`
+        });
+      }
+      
       res.status(201).json(newBasket);
     } catch (error) {
       console.error("Error creating basket:", error);
@@ -421,6 +430,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Update the basket
       const updatedBasket = await storage.updateBasket(id, parsedData.data);
+      
+      // Broadcast basket update event via WebSockets
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('basket_updated', {
+          basket: updatedBasket,
+          message: `Cestello ${updatedBasket.physicalNumber} aggiornato`
+        });
+      }
+      
       res.json(updatedBasket);
     } catch (error) {
       console.error("Error updating basket:", error);
@@ -790,6 +808,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
             cycleCode: null
           });
           
+          // Broadcast operation and cycle closure events via WebSockets
+          if (typeof (global as any).broadcastUpdate === 'function') {
+            (global as any).broadcastUpdate('operation_created', {
+              operation: newOperation,
+              message: `Nuova operazione di tipo ${newOperation.type} registrata`
+            });
+            
+            (global as any).broadcastUpdate('cycle_closed', {
+              cycleId,
+              basketId,
+              message: `Ciclo ${cycleId} chiuso per il cestello ${basketId}`
+            });
+          }
+          
           return res.status(201).json(newOperation);
         }
 
@@ -799,6 +831,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           date: format(parsedData.data.date, 'yyyy-MM-dd')
         };
         const newOperation = await storage.createOperation(operationData);
+        
+        // Broadcast operation created event via WebSockets
+        if (typeof (global as any).broadcastUpdate === 'function') {
+          (global as any).broadcastUpdate('operation_created', {
+            operation: newOperation,
+            message: `Nuova operazione di tipo ${newOperation.type} registrata`
+          });
+        }
+        
         res.status(201).json(newOperation);
       }
     } catch (error) {
@@ -2579,5 +2620,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Create HTTP server
   const httpServer = createServer(app);
+  
+  // Create WebSocket server on a different path to avoid conflicts with Vite HMR
+  const wss = new WebSocketServer({ 
+    server: httpServer, 
+    path: '/ws'
+  });
+  
+  // Store active connections
+  const clients = new Set<WebSocket>();
+
+  // WebSocket server event handlers
+  wss.on('connection', (ws) => {
+    console.log('WebSocket client connected');
+    
+    // Add client to the set
+    clients.add(ws);
+    
+    // Send initial connected message
+    ws.send(JSON.stringify({ 
+      type: 'connection', 
+      message: 'Connesso al server in tempo reale'
+    }));
+    
+    // Handle incoming messages
+    ws.on('message', (message) => {
+      try {
+        console.log(`Received message: ${message}`);
+      } catch (error) {
+        console.error('Error handling WebSocket message:', error);
+      }
+    });
+    
+    // Handle disconnection
+    ws.on('close', () => {
+      console.log('WebSocket client disconnected');
+      clients.delete(ws);
+    });
+
+    // Handle errors
+    ws.on('error', (error) => {
+      console.error('WebSocket error:', error);
+      clients.delete(ws);
+    });
+  });
+  
+  // Helper function to broadcast messages to all connected clients
+  const broadcastMessage = (type: string, data: any) => {
+    const message = JSON.stringify({ type, data });
+    clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN) {
+        client.send(message);
+      }
+    });
+  };
+
+  // Broadcast update events after operations
+  // This will be called after operations to notify clients of data changes
+  (global as any).broadcastUpdate = (type: string, data: any) => {
+    broadcastMessage(type, data);
+  };
+  
   return httpServer;
 }
