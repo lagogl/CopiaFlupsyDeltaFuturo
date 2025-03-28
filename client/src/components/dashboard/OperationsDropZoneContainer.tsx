@@ -368,8 +368,29 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       }
     }
     
-    // Aggiorna il peso totale e calcola il numero di animali
-    if (field === 'totalWeight' && updatedFormData.animalsPerKg) {
+    // Calcoli automatici per l'operazione di peso
+    if (currentOperation.type === 'peso' && field === 'totalWeight') {
+      const totalWeightGrams = parseFloat(value);
+      
+      // Se abbiamo il numero di animali dall'operazione precedente, ricalcoliamo il peso medio
+      if (previousOperationData?.animalCount && !isNaN(totalWeightGrams) && totalWeightGrams > 0) {
+        const animalCount = previousOperationData.animalCount;
+        
+        // Calcola nuovo peso medio in mg
+        const newAverageWeight = Math.round((totalWeightGrams * 1000) / animalCount);
+        updatedFormData.averageWeight = newAverageWeight;
+        
+        // Calcola nuovo animali per kg
+        const newAnimalsPerKg = Math.round((animalCount * 1000) / totalWeightGrams);
+        updatedFormData.animalsPerKg = newAnimalsPerKg;
+        
+        // Mantieni lo stesso conteggio di animali dell'operazione precedente
+        updatedFormData.animalCount = animalCount;
+      }
+    }
+    
+    // Aggiorna il peso totale e calcola il numero di animali per altre operazioni
+    if (field === 'totalWeight' && updatedFormData.animalsPerKg && currentOperation.type !== 'peso') {
       const totalWeightGrams = parseFloat(value);
       if (!isNaN(totalWeightGrams) && totalWeightGrams > 0) {
         updatedFormData.animalCount = Math.round((updatedFormData.animalsPerKg * totalWeightGrams) / 1000);
@@ -394,6 +415,20 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
         toast({
           title: "Dati incompleti",
           description: "Compila tutti i campi richiesti",
+          variant: "destructive",
+        });
+        return;
+      }
+    }
+    
+    // Verifica che i campi necessari siano compilati per l'operazione di peso
+    if (currentOperation.type === 'peso') {
+      const { totalWeight, animalsPerKg, averageWeight } = currentOperation.formData;
+      
+      if (!totalWeight || !animalsPerKg || !averageWeight) {
+        toast({
+          title: "Dati incompleti",
+          description: "È necessario inserire il peso totale degli animali",
           variant: "destructive",
         });
         return;
@@ -599,6 +634,104 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                 <Textarea
                   id="notes"
                   placeholder="Inserisci eventuali note sulla misurazione"
+                  value={currentOperation.formData.notes || ''}
+                  onChange={(e) => handleFormChange('notes', e.target.value)}
+                />
+              </div>
+
+              {/* Risultati calcolati */}
+              {currentOperation.formData.animalsPerKg && (
+                <Card className="shadow-sm bg-gradient-to-r from-slate-50 to-blue-50 overflow-hidden">
+                  <CardContent className="p-4">
+                    <h4 className="font-medium mb-3 text-slate-700">Risultati calcolati</h4>
+                    <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                      <div className="p-3 bg-white rounded-md shadow-sm">
+                        <p className="text-xs text-gray-500 mb-1">Animali per kg</p>
+                        <p className="font-bold text-lg text-slate-900">
+                          {currentOperation.formData.animalsPerKg.toLocaleString('it-IT')}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-white rounded-md shadow-sm">
+                        <p className="text-xs text-gray-500 mb-1">Peso medio (mg)</p>
+                        <p className="font-bold text-lg text-slate-900">
+                          {currentOperation.formData.averageWeight?.toLocaleString('it-IT') || '-'}
+                        </p>
+                      </div>
+                      <div className="p-3 bg-white rounded-md shadow-sm">
+                        <p className="text-xs text-gray-500 mb-1">Numero totale animali</p>
+                        <p className="font-bold text-lg text-slate-900">
+                          {currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}
+                        </p>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              )}
+            </div>
+          )}
+          
+          {currentOperation && currentOperation.type === 'peso' && (
+            <div className="grid gap-4 py-4">
+              {/* Dati precedenti dell'operazione */}
+              {previousOperationData && previousOperationData.animalsPerKg && (
+                <div className="bg-blue-50 p-3 rounded-lg border border-blue-200 mb-2">
+                  <h4 className="text-sm font-medium text-blue-800 mb-1">Dati precedenti</h4>
+                  <div className="grid grid-cols-3 gap-2 text-xs">
+                    <div>
+                      <span className="text-blue-600 font-medium">Animali per kg:</span>
+                      <span className="ml-1 text-blue-900">{previousOperationData.animalsPerKg.toLocaleString('it-IT')}</span>
+                    </div>
+                    <div>
+                      <span className="text-blue-600 font-medium">Peso medio:</span>
+                      <span className="ml-1 text-blue-900">{previousOperationData.averageWeight?.toLocaleString('it-IT') || '-'} mg</span>
+                    </div>
+                    <div>
+                      <span className="text-blue-600 font-medium">Tot. animali:</span>
+                      <span className="ml-1 text-blue-900">{previousOperationData.animalCount?.toLocaleString('it-IT') || '-'}</span>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Form per l'operazione di peso */}
+              <div className="p-4 border rounded-lg bg-green-50">
+                <h4 className="text-sm font-medium mb-3">Dati dell'operazione di peso</h4>
+                <div className="space-y-3">
+                  <div>
+                    <Label htmlFor="date" className="text-xs">Data dell'operazione</Label>
+                    <Input
+                      id="date"
+                      type="date"
+                      value={currentOperation.formData.date || ''}
+                      onChange={(e) => handleFormChange('date', e.target.value)}
+                      className="mt-1"
+                    />
+                  </div>
+                  
+                  <div>
+                    <Label htmlFor="totalWeight" className="text-xs">Peso totale degli animali (g)</Label>
+                    <Input
+                      id="totalWeight"
+                      type="number"
+                      step="0.01"
+                      placeholder="Inserisci il peso totale in grammi"
+                      value={currentOperation.formData.totalWeight || ''}
+                      onChange={(e) => handleFormChange('totalWeight', e.target.value)}
+                      className="mt-1"
+                    />
+                    <p className="text-xs mt-1 text-green-700">
+                      <Info className="inline h-3 w-3 mr-1" />
+                      Inserendo il peso totale, verranno ricalcolati automaticamente il peso medio e gli animali per kg
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div>
+                <Label htmlFor="notes">Note</Label>
+                <Textarea
+                  id="notes"
+                  placeholder="Inserisci eventuali note sull'operazione"
                   value={currentOperation.formData.notes || ''}
                   onChange={(e) => handleFormChange('notes', e.target.value)}
                 />
