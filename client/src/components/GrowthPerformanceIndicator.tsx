@@ -94,7 +94,10 @@ export default function GrowthPerformanceIndicator({
   // Arrotonda le percentuali per la visualizzazione
   const actualGrowthFormatted = actualGrowthPercent.toFixed(1);
   const targetGrowthFormatted = targetGrowthPercent.toFixed(1);
-  const performancePercentFormatted = (performanceRatio * 100).toFixed(0);
+  
+  // Limita il rapporto di performance a un massimo di 1000% (10 volte il target)
+  const cappedPerformanceRatio = Math.min(performanceRatio, 10);
+  const performancePercentFormatted = (cappedPerformanceRatio * 100).toFixed(0);
   
   return (
     <div className={`rounded-md p-3 ${bgColor} border ${borderColor} mb-2`}>
@@ -136,6 +139,7 @@ export default function GrowthPerformanceIndicator({
                       <p><strong>Crescita target (SGR):</strong> {targetGrowthFormatted}%</p>
                       {sgrMonth && <p><strong>SGR di riferimento:</strong> {sgrMonth} ({sgrDailyPercentage}% al giorno)</p>}
                       <p><strong>Performance:</strong> {performancePercentFormatted}% del target</p>
+                      <p><strong>Rapporto di crescita reale:</strong> {performanceRatio.toFixed(2)}x</p>
                       {currentAverageWeight && previousAverageWeight && (
                         <>
                           <p><strong>Peso precedente:</strong> {formatNumberWithCommas(previousAverageWeight)} mg</p>
