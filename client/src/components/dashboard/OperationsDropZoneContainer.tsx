@@ -366,12 +366,28 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       }
       
       if (!isNaN(sampleWeight) && !isNaN(liveSampleCount) && sampleWeight > 0 && liveSampleCount > 0) {
-        // Calcola animali per kg basato SOLO sugli animali vivi (proporzionale: liveSampleCount:sampleWeight = x:1000)
-        const animalsPerKg = Math.round((liveSampleCount * 1000) / sampleWeight);
+        // Il peso del campione include sia animali vivi che morti
+        // Per calcolare il peso effettivo degli animali vivi, stimiamo il peso medio per animale
+        // e moltiplichiamo per il numero di animali vivi
+        
+        // Se non ci sono animali morti, il peso totale è già il peso degli animali vivi
+        let liveWeight = sampleWeight;
+        
+        // Se ci sono anche animali morti, calcola il peso proporzionale degli animali vivi
+        if (totalSampleCount > 0 && totalSampleCount > liveSampleCount) {
+          // Peso medio stimato per animale nel campione (sia vivi che morti)
+          const averageWeightPerAnimal = sampleWeight / totalSampleCount;
+          
+          // Peso stimato della parte viva del campione
+          liveWeight = liveSampleCount * averageWeightPerAnimal;
+        }
+        
+        // Calcola animali per kg basato SOLO sugli animali vivi
+        const animalsPerKg = Math.round((liveSampleCount * 1000) / liveWeight);
         updatedFormData.animalsPerKg = animalsPerKg;
         
         // Calcola peso medio in mg (basato sugli animali vivi)
-        updatedFormData.averageWeight = Math.round((sampleWeight * 1000) / liveSampleCount);
+        updatedFormData.averageWeight = Math.round((liveWeight * 1000) / liveSampleCount);
         
         // Se c'è anche il peso totale, aggiorna il conteggio stimato
         if (updatedFormData.totalWeight) {
