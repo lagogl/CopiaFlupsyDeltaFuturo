@@ -1,0 +1,7 @@
+id,date,type,basket_id,cycle_id,size_id,sgr_id,lot_id,animal_count,total_weight,animals_per_kg,average_weight,notes,dead_count,mortality_rate
+1,2025-03-26,prima-attivazione,3,1,16,,1,250000,3846.1538,65000,15.384615,,,
+2,2025-03-26,prima-attivazione,1,2,13,,1,650000,5200,125000,8,,,
+3,2025-04-06,misura,3,1,17,3,1,250000,5000,50000,20,"",,
+4,2025-04-10,misura,1,2,15,3,1,650000,8125,80000,12.5,"",,
+5,2025-03-27,prima-attivazione,4,3,19,,1,357000,14280,25000,40,,,
+6,2025-04-04,misura,4,3,19,3,1,357000,16604.65,21500,46.511627,"",,

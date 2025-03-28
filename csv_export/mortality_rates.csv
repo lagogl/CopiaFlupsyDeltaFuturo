@@ -1,0 +1,37 @@
+id,size_id,month,percentage,notes
+1,1,gennaio,2.5,Mortalità più alta in inverno per taglie piccole
+2,1,febbraio,2.3,Mortalità ancora elevata ma in diminuzione
+3,1,marzo,2,Mortalità in diminuzione con temperature in aumento
+4,1,aprile,1.8,Mortalità in diminuzione
+5,1,maggio,1.5,Mortalità media
+6,1,giugno,1.3,Mortalità in diminuzione in estate
+7,1,luglio,1,Mortalità bassa con acque calde
+8,1,agosto,1.2,Leggero aumento per temperature troppo alte
+9,1,settembre,1.4,Leggero aumento con cambio stagione
+10,1,ottobre,1.7,Aumento con temperature in diminuzione
+11,1,novembre,2,Aumento con inizio inverno
+12,1,dicembre,2.3,Alta mortalità in inverno
+13,8,gennaio,1.8,Mortalità media in inverno per taglie medie
+14,8,febbraio,1.7,Mortalità media
+15,8,marzo,1.5,Mortalità in diminuzione
+16,8,aprile,1.3,Mortalità bassa con temperature ottimali
+17,8,maggio,1.1,Mortalità bassa
+18,8,giugno,1,Mortalità minima in estate
+19,8,luglio,0.8,Mortalità molto bassa con acque calde
+20,8,agosto,0.9,Leggero aumento per temperature troppo alte
+21,8,settembre,1,Mortalità bassa
+22,8,ottobre,1.2,Leggero aumento con temperature in diminuzione
+23,8,novembre,1.5,Aumento con inizio inverno
+24,8,dicembre,1.7,Mortalità media in inverno
+25,12,gennaio,1.2,Mortalità bassa in inverno per taglie grandi
+26,12,febbraio,1.1,Mortalità bassa
+27,12,marzo,1,Mortalità bassa
+28,12,aprile,0.9,Mortalità molto bassa
+29,12,maggio,0.8,Mortalità molto bassa con temperature ottimali
+30,12,giugno,0.7,Mortalità minima in estate
+31,12,luglio,0.6,Mortalità minima con acque calde
+32,12,agosto,0.7,Leggero aumento per temperature troppo alte
+33,12,settembre,0.8,Mortalità molto bassa
+34,12,ottobre,0.9,Leggero aumento con temperature in diminuzione
+35,12,novembre,1,Mortalità bassa
+36,12,dicembre,1.1,Mortalità bassa in inverno

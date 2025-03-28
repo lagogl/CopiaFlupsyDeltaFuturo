@@ -1,0 +1,3 @@
+id,arrival_date,supplier,quality,animal_count,weight,size_id,notes,state
+2,2025-03-22,Ecotapes Zeeland,buonissima,5000000,5250,4,,active
+1,2025-03-19,Taylor,buona,8500000,,1,Non troppo buona,active

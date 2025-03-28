@@ -1,0 +1,13 @@
+id,month,percentage,calculated_from_real
+1,gennaio,0.8,f
+2,febbraio,1.2,f
+3,marzo,3.4,f
+4,aprile,3.7,f
+5,maggio,5.7,f
+6,giugno,7,f
+7,luglio,7.9,f
+8,agosto,8.3,f
+9,settembre,5.7,f
+10,ottobre,4.1,f
+11,novembre,1.6,f
+12,dicembre,0.8,f
