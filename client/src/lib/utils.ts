@@ -24,20 +24,23 @@ export function monthlyToDaily(monthlyPercentage: number): number {
   return monthlyPercentage;
 }
 
-export function formatNumberWithCommas(value: number): string {
+export function formatNumberWithCommas(value: number, decimals: number = 0): string {
   // Gestisci i casi in cui value è undefined o null
   if (value === undefined || value === null) {
     return "0";
   }
   
+  // Arrotonda il valore al numero di decimali specificato
+  const roundedValue = decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString();
+  
   // Formato europeo: 1.000,00 (punto come separatore delle migliaia, virgola per i decimali)
-  const [integerPart, decimalPart] = value.toString().split(".");
+  const [integerPart, decimalPart] = roundedValue.split(".");
   
   // Formatta la parte intera con punti ogni 3 cifre
   const formattedIntegerPart = integerPart.replace(/\B(?=(\d{3})+(?!\d))/g, ".");
   
-  // Se esiste una parte decimale, restituisci l'intero con la virgola e i decimali
-  if (decimalPart) {
+  // Se esiste una parte decimale e decimals > 0, restituisci l'intero con la virgola e i decimali
+  if (decimalPart && decimals > 0) {
     return `${formattedIntegerPart},${decimalPart}`;
   }
   

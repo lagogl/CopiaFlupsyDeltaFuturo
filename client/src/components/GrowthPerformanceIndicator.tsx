@@ -141,9 +141,9 @@ export default function GrowthPerformanceIndicator({
                       <p><strong>Rapporto di crescita reale:</strong> {performanceRatio.toFixed(2)}x</p>
                       {currentAverageWeight && previousAverageWeight && (
                         <>
-                          <p><strong>Peso precedente:</strong> {formatNumberWithCommas(previousAverageWeight)} mg</p>
-                          <p><strong>Peso attuale:</strong> {formatNumberWithCommas(currentAverageWeight)} mg</p>
-                          <p><strong>Incremento:</strong> {formatNumberWithCommas(currentAverageWeight - previousAverageWeight)} mg</p>
+                          <p><strong>Peso precedente:</strong> {formatNumberWithCommas(previousAverageWeight, 0)} mg</p>
+                          <p><strong>Peso attuale:</strong> {formatNumberWithCommas(currentAverageWeight, 0)} mg</p>
+                          <p><strong>Incremento:</strong> {formatNumberWithCommas(currentAverageWeight - previousAverageWeight, 0)} mg</p>
                         </>
                       )}
                     </div>
