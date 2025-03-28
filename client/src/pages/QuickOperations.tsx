@@ -418,11 +418,19 @@ export default function QuickOperations() {
     mutationFn: (operationData: any) => {
       // Utilizziamo la funzione ausiliaria per assicurarci che i dati siano completi
       // Assicuriamoci che la data sia corretta prima di inviare al server
-      const selectedDate = operationData.date instanceof Date ? operationData.date : new Date(operationData.date);
-      const dataWithCorrectDate = { ...operationData, date: selectedDate };
+      const operationFormSubmitDate = operationData.date instanceof Date ? operationData.date : new Date(operationData.date);
       
+      // Trasformiamo la data in formato UTC
+      const dataWithCorrectDate = { 
+        ...operationData, 
+        date: operationFormSubmitDate
+      };
+      
+      // Prepariamo i dati se necessario (ad es. per operazioni di peso)
       const preparedData = preparePesoOperationData(dataWithCorrectDate);
       console.log("Dati operazione inviati al server:", preparedData);
+      
+      // Inviamo i dati al server
       return apiRequest('POST', '/api/operations', preparedData);
     },
     onSuccess: () => {
