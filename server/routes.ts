@@ -951,6 +951,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch active cycles" });
     }
   });
+  
+  // New endpoint for screening module
+  app.get("/api/cycles/active-with-details", async (req, res) => {
+    try {
+      const cycles = await storage.getActiveCycles();
+      
+      // Fetch complete details for each cycle including basket, flupsy, lot and size
+      const activeCyclesWithDetails = await Promise.all(
+        cycles.map(async (cycle) => {
+          // Get basket details
+          const basket = await storage.getBasket(cycle.basketId);
+          if (!basket) {
+            throw new Error(`Basket not found for cycle ${cycle.id}`);
+          }
+          
+          // Get operations for the cycle
+          const operations = await storage.getOperationsByCycle(cycle.id);
+          
+          // Sort operations by date (newest first) and get the latest one
+          operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          const lastOperation = operations.length > 0 ? operations[0] : null;
+          
+          // Get flupsy details
+          let flupsy = null;
+          if (basket.flupsyId) {
+            flupsy = await storage.getFlupsy(basket.flupsyId);
+          }
+          
+          // Get size from the latest operation
+          let size = null;
+          if (lastOperation && lastOperation.sizeId) {
+            size = await storage.getSize(lastOperation.sizeId);
+          }
+          
+          // Get lot information if available
+          // Find the first operation (seeding or activation) that might have lot information
+          const firstOperation = operations
+            .filter(op => op.type === "prima-attivazione")
+            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+          
+          let lot = null;
+          if (firstOperation && firstOperation.lotId) {
+            lot = await storage.getLot(firstOperation.lotId);
+          }
+          
+          return {
+            id: cycle.id,
+            basketId: cycle.basketId,
+            startDate: cycle.startDate,
+            endDate: cycle.endDate,
+            state: cycle.state,
+            basket,
+            flupsy,
+            size,
+            lot,
+            lastOperation
+          };
+        })
+      );
+      
+      res.json(activeCyclesWithDetails);
+    } catch (error) {
+      console.error("Error fetching active cycles with details:", error);
+      res.status(400).json({ message: error.message || "Error fetching active cycles with details" });
+    }
+  });
 
   app.get("/api/cycles/:id", async (req, res) => {
     try {
