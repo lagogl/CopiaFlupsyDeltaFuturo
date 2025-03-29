@@ -369,7 +369,7 @@ export default function BasketSelection() {
       };
       
       // Calcola il numero attuale di animali
-      const animalCount = lastOperation?.animalsNumber || 0;
+      const animalCount = lastOperation?.animalCount || 0;
       
       // Mortalità
       const mortalityRate = mortalityRates?.find(m => 
