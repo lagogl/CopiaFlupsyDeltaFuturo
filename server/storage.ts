@@ -248,6 +248,13 @@ export class MemStorage implements IStorage {
     this.operationId = 1;
     this.cycleId = 1;
     this.sizeId = 1;
+    
+    // Inizializzazione degli ID per il modulo di vagliatura
+    this.screeningOperationId = 1;
+    this.screeningSourceBasketId = 1;
+    this.screeningDestinationBasketId = 1;
+    this.screeningBasketHistoryId = 1;
+    this.screeningLotReferenceId = 1;
     this.sgrId = 1;
     this.lotId = 1;
     this.positionHistoryId = 1;
@@ -1033,11 +1040,28 @@ export class MemStorage implements IStorage {
       id,
       status: "draft",
       createdAt: now,
-      updatedAt: now
+      updatedAt: now,
+      notes: operation.notes || null,
+      purpose: operation.purpose || null
     };
     
     this.screeningOperations.set(id, newOperation);
     return newOperation;
+  }
+  
+  // Funzione per verificare se una posizione FLUPSY è disponibile
+  async isPositionAvailable(flupsyId: number, row: string, position: number): Promise<boolean> {
+    // Verifica nelle posizioni attive nei cicli
+    const activePositions = Array.from(this.basketPositions.values())
+      .filter(pos => pos.endDate === null && pos.flupsyId === flupsyId && 
+              pos.row === row && pos.position === position);
+    
+    // Controlla anche nelle ceste di destinazione della vagliatura con posizioni assegnate
+    const occupiedByScreening = Array.from(this.screeningDestinationBaskets.values())
+      .filter(basket => basket.flupsyId === flupsyId && basket.row === row && 
+              basket.position === position && basket.positionAssigned);
+    
+    return activePositions.length === 0 && occupiedByScreening.length === 0;
   }
   
   async updateScreeningOperation(id: number, operation: Partial<ScreeningOperation>): Promise<ScreeningOperation | undefined> {
@@ -1260,5 +1284,6 @@ export class MemStorage implements IStorage {
 
 import { DbStorage } from './db-storage';
 
-// Use DbStorage for PostgreSQL database
-export const storage = new DbStorage();
+// Temporaneamente usa MemStorage per il modulo screening finché non viene implementato in DbStorage
+// export const storage = new DbStorage();
+export const storage = new MemStorage();
