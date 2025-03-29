@@ -2625,6 +2625,510 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Create HTTP server
   const httpServer = createServer(app);
   
+  // API routes for the screening (vagliatura) module
+  app.get("/api/screening/operations", async (req, res) => {
+    try {
+      const status = req.query.status as string;
+      let operations: ScreeningOperation[];
+      
+      if (status) {
+        operations = await storage.getScreeningOperationsByStatus(status);
+      } else {
+        operations = await storage.getScreeningOperations();
+      }
+      
+      res.json(operations);
+    } catch (error) {
+      console.error("Error fetching screening operations:", error);
+      res.status(500).json({ error: "Failed to fetch screening operations" });
+    }
+  });
+  
+  app.get("/api/screening/operations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const operation = await storage.getScreeningOperation(id);
+      if (!operation) {
+        return res.status(404).json({ error: "Screening operation not found" });
+      }
+      
+      res.json(operation);
+    } catch (error) {
+      console.error("Error fetching screening operation:", error);
+      res.status(500).json({ error: "Failed to fetch screening operation" });
+    }
+  });
+  
+  app.post("/api/screening/operations", async (req, res) => {
+    try {
+      const validatedData = screeningOperationSchema.safeParse(req.body);
+      
+      if (!validatedData.success) {
+        const validationError = fromZodError(validatedData.error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      const operation = await storage.createScreeningOperation(validatedData.data);
+      res.status(201).json(operation);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_operation_created", operation);
+    } catch (error) {
+      console.error("Error creating screening operation:", error);
+      res.status(500).json({ error: "Failed to create screening operation" });
+    }
+  });
+  
+  app.patch("/api/screening/operations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const operation = await storage.getScreeningOperation(id);
+      if (!operation) {
+        return res.status(404).json({ error: "Screening operation not found" });
+      }
+      
+      const updatedOperation = await storage.updateScreeningOperation(id, req.body);
+      res.json(updatedOperation);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_operation_updated", updatedOperation);
+    } catch (error) {
+      console.error("Error updating screening operation:", error);
+      res.status(500).json({ error: "Failed to update screening operation" });
+    }
+  });
+  
+  app.post("/api/screening/operations/:id/complete", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const operation = await storage.getScreeningOperation(id);
+      if (!operation) {
+        return res.status(404).json({ error: "Screening operation not found" });
+      }
+      
+      try {
+        const completedOperation = await storage.completeScreeningOperation(id);
+        res.json(completedOperation);
+        
+        // Broadcast update
+        (global as any).broadcastUpdate("screening_operation_completed", completedOperation);
+      } catch (error: any) {
+        // Gestire eventuali errori specifici durante il completamento
+        return res.status(400).json({ error: error.message });
+      }
+    } catch (error) {
+      console.error("Error completing screening operation:", error);
+      res.status(500).json({ error: "Failed to complete screening operation" });
+    }
+  });
+  
+  app.post("/api/screening/operations/:id/cancel", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const operation = await storage.getScreeningOperation(id);
+      if (!operation) {
+        return res.status(404).json({ error: "Screening operation not found" });
+      }
+      
+      const cancelledOperation = await storage.cancelScreeningOperation(id);
+      res.json(cancelledOperation);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_operation_cancelled", cancelledOperation);
+    } catch (error) {
+      console.error("Error cancelling screening operation:", error);
+      res.status(500).json({ error: "Failed to cancel screening operation" });
+    }
+  });
+  
+  // Source Baskets API
+  app.get("/api/screening/source-baskets/:screeningId", async (req, res) => {
+    try {
+      const screeningId = parseInt(req.params.screeningId, 10);
+      if (isNaN(screeningId)) {
+        return res.status(400).json({ error: "Invalid screening ID format" });
+      }
+      
+      const sourceBaskets = await storage.getScreeningSourceBasketsByScreening(screeningId);
+      
+      // Aggiungi dettagli aggiuntivi per ogni cesta di origine
+      const sourceBasketDetails = await Promise.all(sourceBaskets.map(async (sb) => {
+        const basket = await storage.getBasket(sb.basketId);
+        const cycle = sb.cycleId ? await storage.getCycle(sb.cycleId) : null;
+        
+        // Ottieni l'ultima operazione per determinare il peso medio
+        let lastOperation = null;
+        if (sb.cycleId) {
+          const operations = await storage.getOperationsByCycle(sb.cycleId);
+          if (operations.length > 0) {
+            // Ordinamento per data (dalla più recente)
+            operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            lastOperation = operations[0];
+          }
+        }
+        
+        return {
+          ...sb,
+          basket,
+          cycle,
+          lastOperation
+        };
+      }));
+      
+      res.json(sourceBasketDetails);
+    } catch (error) {
+      console.error("Error fetching screening source baskets:", error);
+      res.status(500).json({ error: "Failed to fetch screening source baskets" });
+    }
+  });
+  
+  app.post("/api/screening/source-baskets", async (req, res) => {
+    try {
+      const validatedData = screeningSourceBasketSchema.safeParse(req.body);
+      
+      if (!validatedData.success) {
+        const validationError = fromZodError(validatedData.error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      const sourceBasket = await storage.addScreeningSourceBasket(validatedData.data);
+      
+      // Aggiungi dettagli basket e ciclo
+      const basket = await storage.getBasket(sourceBasket.basketId);
+      const cycle = sourceBasket.cycleId ? await storage.getCycle(sourceBasket.cycleId) : null;
+      
+      const sourceBasketWithDetails = {
+        ...sourceBasket,
+        basket,
+        cycle
+      };
+      
+      res.status(201).json(sourceBasketWithDetails);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_source_basket_added", sourceBasketWithDetails);
+    } catch (error) {
+      console.error("Error adding screening source basket:", error);
+      res.status(500).json({ error: "Failed to add screening source basket" });
+    }
+  });
+  
+  app.patch("/api/screening/source-baskets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const updatedSourceBasket = await storage.updateScreeningSourceBasket(id, req.body);
+      if (!updatedSourceBasket) {
+        return res.status(404).json({ error: "Screening source basket not found" });
+      }
+      
+      // Aggiungi dettagli basket e ciclo
+      const basket = await storage.getBasket(updatedSourceBasket.basketId);
+      const cycle = updatedSourceBasket.cycleId ? await storage.getCycle(updatedSourceBasket.cycleId) : null;
+      
+      const sourceBasketWithDetails = {
+        ...updatedSourceBasket,
+        basket,
+        cycle
+      };
+      
+      res.json(sourceBasketWithDetails);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_source_basket_updated", sourceBasketWithDetails);
+    } catch (error) {
+      console.error("Error updating screening source basket:", error);
+      res.status(500).json({ error: "Failed to update screening source basket" });
+    }
+  });
+  
+  app.post("/api/screening/source-baskets/:id/dismiss", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const dismissedSourceBasket = await storage.dismissScreeningSourceBasket(id);
+      if (!dismissedSourceBasket) {
+        return res.status(404).json({ error: "Screening source basket not found" });
+      }
+      
+      // Aggiungi dettagli basket e ciclo
+      const basket = await storage.getBasket(dismissedSourceBasket.basketId);
+      
+      const sourceBasketWithDetails = {
+        ...dismissedSourceBasket,
+        basket
+      };
+      
+      res.json(sourceBasketWithDetails);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_source_basket_dismissed", sourceBasketWithDetails);
+    } catch (error) {
+      console.error("Error dismissing screening source basket:", error);
+      res.status(500).json({ error: "Failed to dismiss screening source basket" });
+    }
+  });
+  
+  app.delete("/api/screening/source-baskets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const result = await storage.removeScreeningSourceBasket(id);
+      if (!result) {
+        return res.status(404).json({ error: "Screening source basket not found" });
+      }
+      
+      res.json({ success: true, id });
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_source_basket_removed", { id });
+    } catch (error) {
+      console.error("Error removing screening source basket:", error);
+      res.status(500).json({ error: "Failed to remove screening source basket" });
+    }
+  });
+  
+  // Destination Baskets API
+  app.get("/api/screening/destination-baskets/:screeningId", async (req, res) => {
+    try {
+      const screeningId = parseInt(req.params.screeningId, 10);
+      if (isNaN(screeningId)) {
+        return res.status(400).json({ error: "Invalid screening ID format" });
+      }
+      
+      const destinationBaskets = await storage.getScreeningDestinationBasketsByScreening(screeningId);
+      
+      // Aggiungi dettagli aggiuntivi per ogni cesta di destinazione
+      const destinationBasketDetails = await Promise.all(destinationBaskets.map(async (db) => {
+        const basket = await storage.getBasket(db.basketId);
+        
+        // Ottieni lo storico e i riferimenti ai lotti
+        const history = await storage.getScreeningBasketHistoryByDestination(db.id);
+        const lotReferences = await storage.getScreeningLotReferencesByDestination(db.id);
+        
+        // Arricchisci i dati dello storico con i dettagli dei cicli di origine
+        const historyWithDetails = await Promise.all(history.map(async (h) => {
+          if (h.sourceCycleId) {
+            const cycle = await storage.getCycle(h.sourceCycleId);
+            return { ...h, cycle };
+          }
+          return h;
+        }));
+        
+        // Arricchisci i riferimenti ai lotti con i dettagli dei lotti
+        const lotReferencesWithDetails = await Promise.all(lotReferences.map(async (lr) => {
+          if (lr.lotId) {
+            const lot = await storage.getLot(lr.lotId);
+            return { ...lr, lot };
+          }
+          return lr;
+        }));
+        
+        return {
+          ...db,
+          basket,
+          history: historyWithDetails,
+          lotReferences: lotReferencesWithDetails
+        };
+      }));
+      
+      res.json(destinationBasketDetails);
+    } catch (error) {
+      console.error("Error fetching screening destination baskets:", error);
+      res.status(500).json({ error: "Failed to fetch screening destination baskets" });
+    }
+  });
+  
+  app.post("/api/screening/destination-baskets", async (req, res) => {
+    try {
+      const validatedData = screeningDestinationBasketSchema.safeParse(req.body);
+      
+      if (!validatedData.success) {
+        const validationError = fromZodError(validatedData.error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      const destinationBasket = await storage.addScreeningDestinationBasket(validatedData.data);
+      
+      // Aggiungi dettagli basket
+      const basket = await storage.getBasket(destinationBasket.basketId);
+      
+      const destinationBasketWithDetails = {
+        ...destinationBasket,
+        basket
+      };
+      
+      res.status(201).json(destinationBasketWithDetails);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_destination_basket_added", destinationBasketWithDetails);
+    } catch (error) {
+      console.error("Error adding screening destination basket:", error);
+      res.status(500).json({ error: "Failed to add screening destination basket" });
+    }
+  });
+  
+  app.patch("/api/screening/destination-baskets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const updatedDestinationBasket = await storage.updateScreeningDestinationBasket(id, req.body);
+      if (!updatedDestinationBasket) {
+        return res.status(404).json({ error: "Screening destination basket not found" });
+      }
+      
+      // Aggiungi dettagli basket
+      const basket = await storage.getBasket(updatedDestinationBasket.basketId);
+      
+      const destinationBasketWithDetails = {
+        ...updatedDestinationBasket,
+        basket
+      };
+      
+      res.json(destinationBasketWithDetails);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_destination_basket_updated", destinationBasketWithDetails);
+    } catch (error) {
+      console.error("Error updating screening destination basket:", error);
+      res.status(500).json({ error: "Failed to update screening destination basket" });
+    }
+  });
+  
+  app.post("/api/screening/destination-baskets/:id/assign-position", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const { flupsyId, row, position } = req.body;
+      
+      if (!flupsyId || !row || isNaN(position)) {
+        return res.status(400).json({ error: "Missing or invalid position data" });
+      }
+      
+      // Verifica se la posizione è disponibile
+      const isAvailable = await storage.isPositionAvailable(flupsyId, row, position);
+      if (!isAvailable) {
+        return res.status(400).json({ error: "Position is already occupied" });
+      }
+      
+      const destinationBasket = await storage.assignPositionToDestinationBasket(id, flupsyId, row, position);
+      if (!destinationBasket) {
+        return res.status(404).json({ error: "Screening destination basket not found" });
+      }
+      
+      // Aggiungi dettagli basket
+      const basket = await storage.getBasket(destinationBasket.basketId);
+      
+      const destinationBasketWithDetails = {
+        ...destinationBasket,
+        basket
+      };
+      
+      res.json(destinationBasketWithDetails);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_destination_basket_position_assigned", destinationBasketWithDetails);
+    } catch (error) {
+      console.error("Error assigning position to screening destination basket:", error);
+      res.status(500).json({ error: "Failed to assign position to screening destination basket" });
+    }
+  });
+  
+  app.delete("/api/screening/destination-baskets/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id, 10);
+      if (isNaN(id)) {
+        return res.status(400).json({ error: "Invalid ID format" });
+      }
+      
+      const result = await storage.removeScreeningDestinationBasket(id);
+      if (!result) {
+        return res.status(404).json({ error: "Screening destination basket not found" });
+      }
+      
+      res.json({ success: true, id });
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_destination_basket_removed", { id });
+    } catch (error) {
+      console.error("Error removing screening destination basket:", error);
+      res.status(500).json({ error: "Failed to remove screening destination basket" });
+    }
+  });
+  
+  // Screening History API
+  app.post("/api/screening/history", async (req, res) => {
+    try {
+      const validatedData = screeningBasketHistorySchema.safeParse(req.body);
+      
+      if (!validatedData.success) {
+        const validationError = fromZodError(validatedData.error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      const history = await storage.createScreeningBasketHistory(validatedData.data);
+      res.status(201).json(history);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_history_created", history);
+    } catch (error) {
+      console.error("Error creating screening history:", error);
+      res.status(500).json({ error: "Failed to create screening history" });
+    }
+  });
+  
+  // Screening Lot Reference API
+  app.post("/api/screening/lot-references", async (req, res) => {
+    try {
+      const validatedData = screeningLotReferenceSchema.safeParse(req.body);
+      
+      if (!validatedData.success) {
+        const validationError = fromZodError(validatedData.error);
+        return res.status(400).json({ error: validationError.message });
+      }
+      
+      const lotReference = await storage.createScreeningLotReference(validatedData.data);
+      res.status(201).json(lotReference);
+      
+      // Broadcast update
+      (global as any).broadcastUpdate("screening_lot_reference_created", lotReference);
+    } catch (error) {
+      console.error("Error creating screening lot reference:", error);
+      res.status(500).json({ error: "Failed to create screening lot reference" });
+    }
+  });
+
   // Create WebSocket server on a different path to avoid conflicts with Vite HMR
   const wss = new WebSocketServer({ 
     server: httpServer, 

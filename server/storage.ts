@@ -10,7 +10,13 @@ import {
   SgrGiornaliero, InsertSgrGiornaliero,
   MortalityRate, InsertMortalityRate,
   TargetSizeAnnotation, InsertTargetSizeAnnotation,
-  operationTypes
+  operationTypes,
+  // Importazioni per il modulo di vagliatura
+  ScreeningOperation, InsertScreeningOperation,
+  ScreeningSourceBasket, InsertScreeningSourceBasket,
+  ScreeningDestinationBasket, InsertScreeningDestinationBasket,
+  ScreeningBasketHistory, InsertScreeningBasketHistory,
+  ScreeningLotReference, InsertScreeningLotReference
 } from "@shared/schema";
 
 export interface IStorage {
@@ -113,6 +119,37 @@ export interface IStorage {
     sgrPercentage: number, 
     variationPercentages: {best: number, worst: number}
   ): Promise<any>;
+  
+  // Screening (Vagliatura) methods
+  getScreeningOperations(): Promise<ScreeningOperation[]>;
+  getScreeningOperation(id: number): Promise<ScreeningOperation | undefined>;
+  getScreeningOperationsByStatus(status: string): Promise<ScreeningOperation[]>;
+  createScreeningOperation(operation: InsertScreeningOperation): Promise<ScreeningOperation>;
+  updateScreeningOperation(id: number, operation: Partial<ScreeningOperation>): Promise<ScreeningOperation | undefined>;
+  completeScreeningOperation(id: number): Promise<ScreeningOperation | undefined>;
+  cancelScreeningOperation(id: number): Promise<ScreeningOperation | undefined>;
+  
+  // Screening Source Baskets methods
+  getScreeningSourceBasketsByScreening(screeningId: number): Promise<ScreeningSourceBasket[]>;
+  addScreeningSourceBasket(sourceBasket: InsertScreeningSourceBasket): Promise<ScreeningSourceBasket>;
+  updateScreeningSourceBasket(id: number, sourceBasket: Partial<ScreeningSourceBasket>): Promise<ScreeningSourceBasket | undefined>;
+  dismissScreeningSourceBasket(id: number): Promise<ScreeningSourceBasket | undefined>;
+  removeScreeningSourceBasket(id: number): Promise<boolean>;
+  
+  // Screening Destination Baskets methods
+  getScreeningDestinationBasketsByScreening(screeningId: number): Promise<ScreeningDestinationBasket[]>;
+  addScreeningDestinationBasket(destinationBasket: InsertScreeningDestinationBasket): Promise<ScreeningDestinationBasket>;
+  updateScreeningDestinationBasket(id: number, destinationBasket: Partial<ScreeningDestinationBasket>): Promise<ScreeningDestinationBasket | undefined>;
+  assignPositionToDestinationBasket(id: number, flupsyId: number, row: string, position: number): Promise<ScreeningDestinationBasket | undefined>;
+  removeScreeningDestinationBasket(id: number): Promise<boolean>;
+  
+  // Screening History methods
+  getScreeningBasketHistoryByDestination(destinationBasketId: number): Promise<ScreeningBasketHistory[]>;
+  createScreeningBasketHistory(history: InsertScreeningBasketHistory): Promise<ScreeningBasketHistory>;
+  
+  // Screening Lot Reference methods
+  getScreeningLotReferencesByDestination(destinationBasketId: number): Promise<ScreeningLotReference[]>;
+  createScreeningLotReference(lotReference: InsertScreeningLotReference): Promise<ScreeningLotReference>;
 }
 
 export class MemStorage implements IStorage {
@@ -128,6 +165,13 @@ export class MemStorage implements IStorage {
   private mortalityRates: Map<number, MortalityRate>;
   private targetSizeAnnotations: Map<number, TargetSizeAnnotation>;
   
+  // Mappe per il modulo di vagliatura
+  private screeningOperations: Map<number, ScreeningOperation>;
+  private screeningSourceBaskets: Map<number, ScreeningSourceBasket>;
+  private screeningDestinationBaskets: Map<number, ScreeningDestinationBasket>;
+  private screeningBasketHistory: Map<number, ScreeningBasketHistory>;
+  private screeningLotReferences: Map<number, ScreeningLotReference>;
+  
   private flupsyId: number;
   private basketId: number;
   private operationId: number;
@@ -139,6 +183,13 @@ export class MemStorage implements IStorage {
   private sgrGiornalieroId: number;
   private mortalityRateId: number;
   private targetSizeAnnotationId: number;
+  
+  // ID per il modulo di vagliatura
+  private screeningOperationId: number;
+  private screeningSourceBasketId: number;
+  private screeningDestinationBasketId: number;
+  private screeningBasketHistoryId: number;
+  private screeningLotReferenceId: number;
   
   constructor() {
     this.flupsys = new Map();
@@ -153,6 +204,13 @@ export class MemStorage implements IStorage {
     this.mortalityRates = new Map();
     this.targetSizeAnnotations = new Map();
     
+    // Inizializzazione delle mappe per il modulo di vagliatura
+    this.screeningOperations = new Map();
+    this.screeningSourceBaskets = new Map();
+    this.screeningDestinationBaskets = new Map();
+    this.screeningBasketHistory = new Map();
+    this.screeningLotReferences = new Map();
+    
     this.flupsyId = 1;
     this.basketId = 1;
     this.operationId = 1;
@@ -164,6 +222,13 @@ export class MemStorage implements IStorage {
     this.sgrGiornalieroId = 1;
     this.mortalityRateId = 1;
     this.targetSizeAnnotationId = 1;
+    
+    // Inizializzazione degli ID per il modulo di vagliatura
+    this.screeningOperationId = 1;
+    this.screeningSourceBasketId = 1;
+    this.screeningDestinationBasketId = 1;
+    this.screeningBasketHistoryId = 1;
+    this.screeningLotReferenceId = 1;
     
     // Initialize with some default sizes
     this.initializeDefaultData();
@@ -908,6 +973,256 @@ export class MemStorage implements IStorage {
       sgrDaily: dailySGR,
       predictions
     };
+  }
+  
+  // Screening (Vagliatura) methods
+  async getScreeningOperations(): Promise<ScreeningOperation[]> {
+    return Array.from(this.screeningOperations.values()).sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+  }
+  
+  async getScreeningOperation(id: number): Promise<ScreeningOperation | undefined> {
+    return this.screeningOperations.get(id);
+  }
+  
+  async getScreeningOperationsByStatus(status: string): Promise<ScreeningOperation[]> {
+    return Array.from(this.screeningOperations.values())
+      .filter(operation => operation.status === status)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+  }
+  
+  async createScreeningOperation(operation: InsertScreeningOperation): Promise<ScreeningOperation> {
+    const id = this.screeningOperationId++;
+    const now = new Date();
+    
+    const newOperation: ScreeningOperation = { 
+      ...operation, 
+      id,
+      status: "draft",
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.screeningOperations.set(id, newOperation);
+    return newOperation;
+  }
+  
+  async updateScreeningOperation(id: number, operation: Partial<ScreeningOperation>): Promise<ScreeningOperation | undefined> {
+    const currentOperation = this.screeningOperations.get(id);
+    if (!currentOperation) return undefined;
+    
+    const updatedOperation = { 
+      ...currentOperation, 
+      ...operation,
+      updatedAt: new Date()
+    };
+    
+    this.screeningOperations.set(id, updatedOperation);
+    return updatedOperation;
+  }
+  
+  async completeScreeningOperation(id: number): Promise<ScreeningOperation | undefined> {
+    const operation = await this.getScreeningOperation(id);
+    if (!operation) return undefined;
+    
+    // Verificare che tutte le ceste di destinazione abbiano una posizione assegnata
+    const destinationBaskets = await this.getScreeningDestinationBasketsByScreening(id);
+    const allPositioned = destinationBaskets.every(basket => basket.positionAssigned);
+    
+    if (!allPositioned) {
+      throw new Error("Non tutte le ceste di destinazione hanno una posizione assegnata");
+    }
+    
+    // Verificare che tutte le ceste di origine abbiano una dismissione registrata
+    const sourceBaskets = await this.getScreeningSourceBasketsByScreening(id);
+    const allDismissed = sourceBaskets.every(basket => basket.dismissed);
+    
+    if (!allDismissed) {
+      throw new Error("Non tutte le ceste di origine sono state dismesse");
+    }
+    
+    // Impostare lo stato dell'operazione a "completed"
+    const updatedOperation = await this.updateScreeningOperation(id, { status: "completed" });
+    
+    return updatedOperation;
+  }
+  
+  async cancelScreeningOperation(id: number): Promise<ScreeningOperation | undefined> {
+    const operation = await this.getScreeningOperation(id);
+    if (!operation) return undefined;
+    
+    // Impostare lo stato dell'operazione a "cancelled"
+    const updatedOperation = await this.updateScreeningOperation(id, { status: "cancelled" });
+    
+    return updatedOperation;
+  }
+  
+  // Screening Source Baskets methods
+  async getScreeningSourceBasketsByScreening(screeningId: number): Promise<ScreeningSourceBasket[]> {
+    return Array.from(this.screeningSourceBaskets.values())
+      .filter(sourceBasket => sourceBasket.screeningId === screeningId);
+  }
+  
+  async addScreeningSourceBasket(sourceBasket: InsertScreeningSourceBasket): Promise<ScreeningSourceBasket> {
+    const id = this.screeningSourceBasketId++;
+    const now = new Date();
+    
+    const newSourceBasket: ScreeningSourceBasket = { 
+      ...sourceBasket, 
+      id,
+      dismissed: false,
+      positionReleased: false,
+      createdAt: now
+    };
+    
+    this.screeningSourceBaskets.set(id, newSourceBasket);
+    return newSourceBasket;
+  }
+  
+  async updateScreeningSourceBasket(id: number, sourceBasket: Partial<ScreeningSourceBasket>): Promise<ScreeningSourceBasket | undefined> {
+    const currentSourceBasket = this.screeningSourceBaskets.get(id);
+    if (!currentSourceBasket) return undefined;
+    
+    const updatedSourceBasket = { 
+      ...currentSourceBasket, 
+      ...sourceBasket
+    };
+    
+    this.screeningSourceBaskets.set(id, updatedSourceBasket);
+    return updatedSourceBasket;
+  }
+  
+  async dismissScreeningSourceBasket(id: number): Promise<ScreeningSourceBasket | undefined> {
+    const sourceBasket = await this.updateScreeningSourceBasket(id, { dismissed: true });
+    if (!sourceBasket) return undefined;
+    
+    // Chiudere il ciclo associato alla cesta
+    if (sourceBasket.cycleId) {
+      await this.closeCycle(sourceBasket.cycleId, new Date());
+      
+      // Aggiornare lo stato della cesta fisica
+      const cycle = await this.getCycle(sourceBasket.cycleId);
+      if (cycle) {
+        await this.updateBasket(cycle.basketId, { 
+          state: "available",
+          currentCycleId: null,
+          nfcData: null
+        });
+      }
+    }
+    
+    return sourceBasket;
+  }
+  
+  async removeScreeningSourceBasket(id: number): Promise<boolean> {
+    const exists = this.screeningSourceBaskets.has(id);
+    if (exists) {
+      this.screeningSourceBaskets.delete(id);
+      return true;
+    }
+    return false;
+  }
+  
+  // Screening Destination Baskets methods
+  async getScreeningDestinationBasketsByScreening(screeningId: number): Promise<ScreeningDestinationBasket[]> {
+    return Array.from(this.screeningDestinationBaskets.values())
+      .filter(destinationBasket => destinationBasket.screeningId === screeningId);
+  }
+  
+  async addScreeningDestinationBasket(destinationBasket: InsertScreeningDestinationBasket): Promise<ScreeningDestinationBasket> {
+    const id = this.screeningDestinationBasketId++;
+    const now = new Date();
+    
+    const newDestinationBasket: ScreeningDestinationBasket = { 
+      ...destinationBasket, 
+      id,
+      cycleId: null,
+      positionAssigned: false,
+      createdAt: now,
+      updatedAt: now
+    };
+    
+    this.screeningDestinationBaskets.set(id, newDestinationBasket);
+    return newDestinationBasket;
+  }
+  
+  async updateScreeningDestinationBasket(id: number, destinationBasket: Partial<ScreeningDestinationBasket>): Promise<ScreeningDestinationBasket | undefined> {
+    const currentDestinationBasket = this.screeningDestinationBaskets.get(id);
+    if (!currentDestinationBasket) return undefined;
+    
+    const updatedDestinationBasket = { 
+      ...currentDestinationBasket, 
+      ...destinationBasket,
+      updatedAt: new Date()
+    };
+    
+    this.screeningDestinationBaskets.set(id, updatedDestinationBasket);
+    return updatedDestinationBasket;
+  }
+  
+  async assignPositionToDestinationBasket(id: number, flupsyId: number, row: string, position: number): Promise<ScreeningDestinationBasket | undefined> {
+    const destinationBasket = this.screeningDestinationBaskets.get(id);
+    if (!destinationBasket) return undefined;
+    
+    // Aggiornare la posizione della cesta di destinazione
+    const updatedDestinationBasket = await this.updateScreeningDestinationBasket(id, {
+      flupsyId,
+      row,
+      position,
+      positionAssigned: true
+    });
+    
+    return updatedDestinationBasket;
+  }
+  
+  async removeScreeningDestinationBasket(id: number): Promise<boolean> {
+    const exists = this.screeningDestinationBaskets.has(id);
+    if (exists) {
+      this.screeningDestinationBaskets.delete(id);
+      return true;
+    }
+    return false;
+  }
+  
+  // Screening History methods
+  async getScreeningBasketHistoryByDestination(destinationBasketId: number): Promise<ScreeningBasketHistory[]> {
+    return Array.from(this.screeningBasketHistory.values())
+      .filter(history => history.destinationBasketId === destinationBasketId);
+  }
+  
+  async createScreeningBasketHistory(history: InsertScreeningBasketHistory): Promise<ScreeningBasketHistory> {
+    const id = this.screeningBasketHistoryId++;
+    const now = new Date();
+    
+    const newHistory: ScreeningBasketHistory = { 
+      ...history, 
+      id,
+      createdAt: now
+    };
+    
+    this.screeningBasketHistory.set(id, newHistory);
+    return newHistory;
+  }
+  
+  // Screening Lot Reference methods
+  async getScreeningLotReferencesByDestination(destinationBasketId: number): Promise<ScreeningLotReference[]> {
+    return Array.from(this.screeningLotReferences.values())
+      .filter(lotReference => lotReference.destinationBasketId === destinationBasketId);
+  }
+  
+  async createScreeningLotReference(lotReference: InsertScreeningLotReference): Promise<ScreeningLotReference> {
+    const id = this.screeningLotReferenceId++;
+    const now = new Date();
+    
+    const newLotReference: ScreeningLotReference = { 
+      ...lotReference, 
+      id,
+      createdAt: now
+    };
+    
+    this.screeningLotReferences.set(id, newLotReference);
+    return newLotReference;
   }
 }
 

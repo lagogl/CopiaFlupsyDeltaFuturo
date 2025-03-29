@@ -37,6 +37,80 @@ export const operationTypes = [
   "peso"
 ] as const;
 
+// Screening (Operazioni di vagliatura)
+export const screeningOperations = pgTable("screening_operations", {
+  id: serial("id").primaryKey(),
+  date: date("date").notNull(), // Data dell'operazione di vagliatura
+  screeningNumber: integer("screening_number").notNull(), // Numero progressivo dell'operazione di vagliatura
+  purpose: text("purpose"), // Scopo della vagliatura
+  referenceSizeId: integer("reference_size_id").notNull(), // Riferimento alla taglia di vagliatura
+  status: text("status").notNull().default("draft"), // draft, completed, cancelled
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento
+  notes: text("notes"), // Note aggiuntive
+});
+
+// Screening Source Baskets (Ceste di origine per la vagliatura)
+export const screeningSourceBaskets = pgTable("screening_source_baskets", {
+  id: serial("id").primaryKey(),
+  screeningId: integer("screening_id").notNull(), // Riferimento all'operazione di vagliatura
+  basketId: integer("basket_id").notNull(), // Riferimento alla cesta di origine
+  cycleId: integer("cycle_id").notNull(), // Riferimento al ciclo attivo della cesta
+  dismissed: boolean("dismissed").notNull().default(false), // Indica se la cesta è stata dismessa
+  positionReleased: boolean("position_released").notNull().default(false), // Indica se la posizione è stata liberata temporaneamente
+  // Dati della cesta di origine al momento della selezione per la vagliatura
+  animalCount: integer("animal_count"), // Numero di animali
+  totalWeight: real("total_weight"), // Peso totale in grammi
+  animalsPerKg: integer("animals_per_kg"), // Animali per kg
+  sizeId: integer("size_id"), // Taglia attuale
+  lotId: integer("lot_id"), // Lotto di origine
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di aggiunta alla vagliatura
+});
+
+// Screening Destination Baskets (Nuove ceste create dalla vagliatura)
+export const screeningDestinationBaskets = pgTable("screening_destination_baskets", {
+  id: serial("id").primaryKey(),
+  screeningId: integer("screening_id").notNull(), // Riferimento all'operazione di vagliatura
+  basketId: integer("basket_id").notNull(), // Riferimento alla nuova cesta
+  cycleId: integer("cycle_id"), // Riferimento al nuovo ciclo (può essere null se non ancora creato)
+  category: text("category").notNull(), // "sopra" o "sotto" vagliatura
+  flupsyId: integer("flupsy_id"), // FLUPSY assegnato
+  row: text("row"), // Fila assegnata
+  position: integer("position"), // Posizione assegnata
+  positionAssigned: boolean("position_assigned").notNull().default(false), // Indica se la posizione è stata assegnata
+  // Dati della nuova cesta
+  animalCount: integer("animal_count"), // Numero di animali stimato
+  liveAnimals: integer("live_animals"), // Numero di animali vivi stimato
+  totalWeight: real("total_weight"), // Peso totale in grammi
+  animalsPerKg: integer("animals_per_kg"), // Animali per kg
+  deadCount: integer("dead_count"), // Conteggio animali morti
+  mortalityRate: real("mortality_rate"), // Tasso di mortalità
+  notes: text("notes"), // Note specifiche per questa cesta
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento
+});
+
+// Screening Basket History (Storico delle relazioni tra ceste di origine e destinazione)
+export const screeningBasketHistory = pgTable("screening_basket_history", {
+  id: serial("id").primaryKey(),
+  screeningId: integer("screening_id").notNull(), // Riferimento all'operazione di vagliatura
+  sourceBasketId: integer("source_basket_id").notNull(), // Riferimento alla cesta di origine
+  sourceCycleId: integer("source_cycle_id").notNull(), // Riferimento al ciclo di origine
+  destinationBasketId: integer("destination_basket_id").notNull(), // Riferimento alla cesta di destinazione
+  destinationCycleId: integer("destination_cycle_id").notNull(), // Riferimento al ciclo di destinazione
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+});
+
+// Screening Lot References (Riferimenti ai lotti per le ceste di destinazione)
+export const screeningLotReferences = pgTable("screening_lot_references", {
+  id: serial("id").primaryKey(),
+  screeningId: integer("screening_id").notNull(), // Riferimento all'operazione di vagliatura
+  destinationBasketId: integer("destination_basket_id").notNull(), // Riferimento alla cesta di destinazione
+  destinationCycleId: integer("destination_cycle_id").notNull(), // Riferimento al ciclo di destinazione
+  lotId: integer("lot_id").notNull(), // Riferimento al lotto
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+});
+
 // Operations (Operazioni)
 export const operations = pgTable("operations", {
   id: serial("id").primaryKey(),
@@ -200,6 +274,39 @@ export const insertTargetSizeAnnotationSchema = createInsertSchema(targetSizeAnn
   status: true
 });
 
+// Schema per il modulo di vagliatura
+export const insertScreeningOperationSchema = createInsertSchema(screeningOperations).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true
+});
+
+export const insertScreeningSourceBasketSchema = createInsertSchema(screeningSourceBaskets).omit({
+  id: true,
+  createdAt: true,
+  dismissed: true,
+  positionReleased: true
+});
+
+export const insertScreeningDestinationBasketSchema = createInsertSchema(screeningDestinationBaskets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  positionAssigned: true,
+  cycleId: true
+});
+
+export const insertScreeningBasketHistorySchema = createInsertSchema(screeningBasketHistory).omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertScreeningLotReferenceSchema = createInsertSchema(screeningLotReferences).omit({
+  id: true,
+  createdAt: true
+});
+
 // Types
 export type Flupsy = typeof flupsys.$inferSelect;
 export type InsertFlupsy = z.infer<typeof insertFlupsySchema>;
@@ -235,6 +342,22 @@ export type InsertMortalityRate = z.infer<typeof insertMortalityRateSchema>;
 export type TargetSizeAnnotation = typeof targetSizeAnnotations.$inferSelect;
 export type InsertTargetSizeAnnotation = z.infer<typeof insertTargetSizeAnnotationSchema>;
 
+// Tipi per il modulo di vagliatura
+export type ScreeningOperation = typeof screeningOperations.$inferSelect;
+export type InsertScreeningOperation = z.infer<typeof insertScreeningOperationSchema>;
+
+export type ScreeningSourceBasket = typeof screeningSourceBaskets.$inferSelect;
+export type InsertScreeningSourceBasket = z.infer<typeof insertScreeningSourceBasketSchema>;
+
+export type ScreeningDestinationBasket = typeof screeningDestinationBaskets.$inferSelect;
+export type InsertScreeningDestinationBasket = z.infer<typeof insertScreeningDestinationBasketSchema>;
+
+export type ScreeningBasketHistory = typeof screeningBasketHistory.$inferSelect;
+export type InsertScreeningBasketHistory = z.infer<typeof insertScreeningBasketHistorySchema>;
+
+export type ScreeningLotReference = typeof screeningLotReferences.$inferSelect;
+export type InsertScreeningLotReference = z.infer<typeof insertScreeningLotReferenceSchema>;
+
 // Extended schemas for validation
 export const operationSchema = insertOperationSchema.extend({
   date: z.coerce.date()
@@ -263,4 +386,25 @@ export const mortalityRateSchema = insertMortalityRateSchema.extend({
 export const targetSizeAnnotationSchema = insertTargetSizeAnnotationSchema.extend({
   predictedDate: z.coerce.date(),
   reachedDate: z.coerce.date().optional()
+});
+
+// Schemi di validazione per il modulo di vagliatura
+export const screeningOperationSchema = insertScreeningOperationSchema.extend({
+  date: z.coerce.date()
+});
+
+export const screeningSourceBasketSchema = insertScreeningSourceBasketSchema.extend({
+  // Regole di validazione se necessarie
+});
+
+export const screeningDestinationBasketSchema = insertScreeningDestinationBasketSchema.extend({
+  // Regole di validazione se necessarie
+});
+
+export const screeningBasketHistorySchema = insertScreeningBasketHistorySchema.extend({
+  // Regole di validazione se necessarie
+});
+
+export const screeningLotReferenceSchema = insertScreeningLotReferenceSchema.extend({
+  // Regole di validazione se necessarie
 });

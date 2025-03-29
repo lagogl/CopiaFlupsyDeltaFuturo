@@ -1,0 +1,52 @@
+Ecco una versione organizzata e comprensibile della descrizione fornita, adattata per un generatore di codice. Ho suddiviso il testo in sezioni logiche, evidenziando i componenti principali e le funzionalità richieste:
+
+Modalità Selezioni
+
+Primo campo: "Ceste di origine"
+Funzionalità : Consente di selezionare tutte le ceste coinvolte nella medesima operazione di vagliatura.
+Caratteristiche :
+Le ceste devono essere selezionabili in modo rapido semplice e chiaro
+Le ceste sono individuate dai rispettivi flupsy originarie.
+Include i seguenti campi:
+Secondo campo Data : Contiene la data odierna o una data selezionabile.
+Terzo campo Numero della vagliatura : Numero progressivo irripetibile proposto in automatico.
+Scopo della vagliatura : Campo libero in cui l'operatore può descrivere il motivo della vagliatura.
+2. Secondo Menù: Informazioni sulla disponibilità spazi sui Flupsy 
+Caratteristiche :
+Mostra gli spazi allocati disponibili per ogni flupsy.
+3. Creazione di Nuove Ceste da selezione
+Funzionalità : Consente la creazione di nuove ceste derivanti dall'evento di selezione.
+
+È presente un tasto "Aggiungi cesta/ciclo" che genera nuove ceste fino a un numero massimo di 10
+Ogni cesta nuova rimane in attesa di conferma e registrazione in una situazione di standby
+
+Posizione nel flupsy
+Totale animali misurati
+Grammi di animali vivi
+Numero di animali vivi
+Taglia
+Chilogrammi cesta
+
+Nuovi campi aggiuntivi :
+Categoria : Indica se la cesta è "sopra vagliatura" o "sotto vagliatura".
+Dismetti questa cesta : Tasto di spunta che permette di dismettere immediatamente la cesta all'atto della creazione.
+Note : Spazio per annotazioni aggiuntive.
+% di mortalità : Percentuale di mortalità registrata.
+Stima sul numero di animali vivi : Stima calcolata automaticamente.
+Menù a tendina : Visualizza tutte le ceste inserite nel menù "Ceste di origine". L'operatore può selezionare e associare solo le ceste che formano effettivamente le nuove ceste.
+4. Gestione delle Associazioni tra Ceste
+Funzionalità : Durante le operazioni di vagliatura, non tutte le ceste di origine contribuiscono necessariamente alla formazione delle nuove ceste.
+Caratteristiche :
+Il macchinario viene svuotato ogni 3 o 4 ceste vagliate, quindi possono esserci differenze e sovrapposizioni.
+È fondamentale mantenere le informazioni relative al lotto e alle cesti originarie associate alle nuove ceste, anche dopo numerose vagliature.
+Queste informazioni devono essere visualizzabili nel menù proprietario della singola cesta.
+5. Salvataggio e Conferma
+Funzionalità : Al termine dell'operazione di vagliatura, il prompt deve includere un tasto "Salva e dismetti" .
+Caratteristiche :
+Quando cliccato, mostra un messaggio di conferma:
+Esempio: "Sono state create le ceste numero 5, 6, 7, 8 e verranno dismesse le ceste numero 1, 2, 3, 4. Continuare?"
+La dismissione delle ceste deve essere automatica .
+I dati inseriti nei menù relativi al campione devono conservare l'ultimo valore inserito, facilitando la registrazione di nuove ceste con dati identici.
+Considerazioni Finali
+Il prompt deve garantire un'esperienza utente fluida e intuitiva.
+Tutte le operazioni devono essere eseguite in tempo reale per evitare errori e garantire coerenza nei dati.
