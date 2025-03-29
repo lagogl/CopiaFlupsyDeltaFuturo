@@ -435,7 +435,9 @@ export default function BasketSelection() {
             variant="outline" 
             style={{
               backgroundColor: isLargerThanTP10000 ? '#000000' : basket.size.colorHex,
-              color: isLargerThanTP10000 ? '#ffffff' : '#000000',
+              color: '#ffffff',
+              fontWeight: 'bold',
+              textShadow: '0px 0px 2px rgba(0,0,0,0.7)',
               borderColor: basket.size.colorHex
             }}
           >
@@ -855,7 +857,9 @@ export default function BasketSelection() {
                                   backgroundColor: field.value?.includes(size.id) 
                                     ? size.colorHex 
                                     : 'transparent',
-                                  color: field.value?.includes(size.id) ? '#000000' : 'inherit',
+                                  color: field.value?.includes(size.id) ? '#ffffff' : 'inherit',
+                                  fontWeight: field.value?.includes(size.id) ? 'bold' : 'normal',
+                                  textShadow: field.value?.includes(size.id) ? '0px 0px 2px rgba(0,0,0,0.7)' : 'none',
                                   borderColor: size.colorHex,
                                   cursor: 'pointer',
                                   opacity: availableSizeIds.has(size.id) ? 1 : 0.5,
@@ -977,7 +981,9 @@ export default function BasketSelection() {
                       key={sizeId}
                       style={{
                         backgroundColor: size.colorHex,
-                        color: '#000000',
+                        color: '#ffffff', // Cambiato a bianco per maggiore leggibilità su tutti i colori
+                        fontWeight: 'bold',
+                        textShadow: '0px 0px 2px rgba(0,0,0,0.7)' // Aggiunto un'ombra per migliore leggibilità
                       }}
                     >
                       {size.code}: {count.toLocaleString('it-IT')}
