@@ -89,7 +89,10 @@ export default function ScreeningDetailPage() {
     queryKey: ['/api/screening/operations', screeningId],
     queryFn: async () => {
       if (!screeningId) return null;
-      return apiRequest<ScreeningOperation>(`/api/screening/operations/${screeningId}`);
+      return apiRequest<ScreeningOperation>({ 
+        url: `/api/screening/operations/${screeningId}`,
+        method: 'GET'
+      });
     },
     enabled: !!screeningId,
   });
@@ -103,7 +106,10 @@ export default function ScreeningDetailPage() {
     queryKey: ['/api/screening/source-baskets', screeningId],
     queryFn: async () => {
       if (!screeningId) return [];
-      return apiRequest<SourceBasketDetail[]>(`/api/screening/source-baskets/${screeningId}`);
+      return apiRequest<SourceBasketDetail[]>({ 
+        url: `/api/screening/source-baskets/${screeningId}`,
+        method: 'GET'
+      });
     },
     enabled: !!screeningId,
   });
@@ -117,7 +123,10 @@ export default function ScreeningDetailPage() {
     queryKey: ['/api/screening/destination-baskets', screeningId],
     queryFn: async () => {
       if (!screeningId) return [];
-      return apiRequest<DestinationBasketDetail[]>(`/api/screening/destination-baskets/${screeningId}`);
+      return apiRequest<DestinationBasketDetail[]>({ 
+        url: `/api/screening/destination-baskets/${screeningId}`,
+        method: 'GET'
+      });
     },
     enabled: !!screeningId,
   });
@@ -126,8 +135,9 @@ export default function ScreeningDetailPage() {
   const completeMutation = useMutation({
     mutationFn: () => {
       if (!screeningId) throw new Error('ID operazione non valido');
-      return apiRequest(`/api/screening/operations/${screeningId}/complete`, {
-        method: 'POST',
+      return apiRequest<any>({
+        url: `/api/screening/operations/${screeningId}/complete`,
+        method: 'POST'
       });
     },
     onSuccess: () => {
@@ -151,8 +161,9 @@ export default function ScreeningDetailPage() {
   const cancelMutation = useMutation({
     mutationFn: () => {
       if (!screeningId) throw new Error('ID operazione non valido');
-      return apiRequest(`/api/screening/operations/${screeningId}/cancel`, {
-        method: 'POST',
+      return apiRequest<any>({
+        url: `/api/screening/operations/${screeningId}/cancel`,
+        method: 'POST'
       });
     },
     onSuccess: () => {
@@ -175,8 +186,9 @@ export default function ScreeningDetailPage() {
   // Mutation per rimuovere una cesta di origine
   const removeSourceBasketMutation = useMutation({
     mutationFn: (id: number) => {
-      return apiRequest(`/api/screening/source-baskets/${id}`, {
-        method: 'DELETE',
+      return apiRequest<any>({
+        url: `/api/screening/source-baskets/${id}`,
+        method: 'DELETE'
       });
     },
     onSuccess: () => {
@@ -198,8 +210,9 @@ export default function ScreeningDetailPage() {
   // Mutation per rimuovere una cesta di destinazione
   const removeDestinationBasketMutation = useMutation({
     mutationFn: (id: number) => {
-      return apiRequest(`/api/screening/destination-baskets/${id}`, {
-        method: 'DELETE',
+      return apiRequest<any>({
+        url: `/api/screening/destination-baskets/${id}`,
+        method: 'DELETE'
       });
     },
     onSuccess: () => {
@@ -221,8 +234,9 @@ export default function ScreeningDetailPage() {
   // Mutation per dismettere una cesta di origine
   const dismissSourceBasketMutation = useMutation({
     mutationFn: (id: number) => {
-      return apiRequest(`/api/screening/source-baskets/${id}/dismiss`, {
-        method: 'POST',
+      return apiRequest<any>({
+        url: `/api/screening/source-baskets/${id}/dismiss`,
+        method: 'POST'
       });
     },
     onSuccess: () => {

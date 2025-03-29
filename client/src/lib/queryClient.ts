@@ -7,19 +7,35 @@ async function throwIfResNotOk(res: Response) {
   }
 }
 
-export async function apiRequest(
-  method: string,
-  url: string,
-  data?: unknown | undefined,
-): Promise<Response> {
-  console.log(`API Request: ${method} ${url}`, data);
+// Funzione apiRequest overload per supportare entrambi i pattern di chiamata
+export async function apiRequest<T = any>(
+  urlOrOptions: string | { url: string; method?: string; body?: any },
+  optionsOrNothing?: RequestInit,
+): Promise<T> {
+  let url: string;
+  let options: RequestInit = optionsOrNothing || {};
+  
+  // Determina se il primo parametro è una stringa URL o un oggetto options
+  if (typeof urlOrOptions === 'string') {
+    url = urlOrOptions;
+  } else {
+    url = urlOrOptions.url;
+    options.method = urlOrOptions.method || 'GET';
+    if (urlOrOptions.body) {
+      options.body = JSON.stringify(urlOrOptions.body);
+      options.headers = {
+        ...options.headers,
+        'Content-Type': 'application/json'
+      };
+    }
+  }
+  
+  console.log(`API Request: ${url}`, options);
   
   try {
     const res = await fetch(url, {
-      method,
-      headers: data ? { "Content-Type": "application/json" } : {},
-      body: data ? JSON.stringify(data) : undefined,
-      credentials: "include",
+      ...options,
+      credentials: "include"
     });
     
     console.log(`API Response status: ${res.status}`);
@@ -39,9 +55,17 @@ export async function apiRequest(
     }
     
     await throwIfResNotOk(res);
-    return res;
+    
+    // Se è una risposta JSON, restituisci il JSON parsato
+    const contentType = res.headers.get('content-type');
+    if (contentType && contentType.includes('application/json')) {
+      return res.json();
+    }
+    
+    // Altrimenti restituisci l'oggetto Response
+    return res as unknown as T;
   } catch (error) {
-    console.error(`API Request failed: ${method} ${url}`, error);
+    console.error(`API Request failed: ${url}`, error);
     throw error;
   }
 }

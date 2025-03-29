@@ -56,16 +56,17 @@ export default function NewScreeningPage() {
   const { data: sizes, isLoading: sizesLoading } = useQuery({
     queryKey: ['/api/sizes'],
     queryFn: async () => {
-      return apiRequest<Size[]>('/api/sizes');
+      return apiRequest<Size[]>({ url: '/api/sizes', method: 'GET' });
     },
   });
 
   // Mutation per creare una nuova operazione di vagliatura
   const createMutation = useMutation({
     mutationFn: (values: ScreeningFormValues) => 
-      apiRequest('/api/screening/operations', {
+      apiRequest<any>({
+        url: '/api/screening/operations',
         method: 'POST',
-        body: JSON.stringify(values),
+        body: values
       }),
     onSuccess: (data) => {
       queryClient.invalidateQueries({ queryKey: ['/api/screening/operations'] });

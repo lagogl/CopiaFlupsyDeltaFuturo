@@ -41,15 +41,16 @@ export default function ScreeningPage() {
       const url = activeTab === 'all' 
         ? '/api/screening/operations'
         : `/api/screening/operations?status=${activeTab}`;
-      return apiRequest<ScreeningOperation[]>(url);
+      return apiRequest<ScreeningOperation[]>({ url, method: 'GET' });
     },
   });
 
   // Mutation per completare un'operazione di vagliatura
   const completeMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest(`/api/screening/operations/${id}/complete`, {
-        method: 'POST',
+      apiRequest({
+        url: `/api/screening/operations/${id}/complete`,
+        method: 'POST'
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/screening/operations'] });
@@ -70,8 +71,9 @@ export default function ScreeningPage() {
   // Mutation per annullare un'operazione di vagliatura
   const cancelMutation = useMutation({
     mutationFn: (id: number) => 
-      apiRequest(`/api/screening/operations/${id}/cancel`, {
-        method: 'POST',
+      apiRequest({
+        url: `/api/screening/operations/${id}/cancel`,
+        method: 'POST'
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/screening/operations'] });
