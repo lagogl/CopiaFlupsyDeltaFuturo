@@ -707,6 +707,10 @@ export default function BasketSelection() {
       flupsys: [],
     });
     setSelectedSizes([]);
+    
+    // Applica immediatamente il reset
+    setTimeout(() => form.handleSubmit(onSubmitFilters)(), 0);
+    
     toast({
       title: "Filtri reimpostati",
       description: "Tutti i filtri sono stati rimossi.",
@@ -842,6 +846,9 @@ export default function BasketSelection() {
                                     ? currentSizes.filter(id => id !== size.id)
                                     : [...currentSizes, size.id];
                                   field.onChange(newSizes);
+                                  
+                                  // Applica i filtri immediatamente senza premere il pulsante
+                                  setTimeout(() => form.handleSubmit(onSubmitFilters)(), 0);
                                 }}
                               >
                                 {size.code}
@@ -849,7 +856,7 @@ export default function BasketSelection() {
                             ))}
                           </div>
                           <FormDescription>
-                            Seleziona le taglie di interesse (nessuna selezione = tutte le taglie)
+                            Seleziona le taglie di interesse (nessuna selezione = nessun risultato)
                           </FormDescription>
                         </FormItem>
                       )}
@@ -879,6 +886,9 @@ export default function BasketSelection() {
                                     ? currentFlupsys.filter(id => id !== flupsy.id)
                                     : [...currentFlupsys, flupsy.id];
                                   field.onChange(newFlupsys);
+                                  
+                                  // Applica i filtri immediatamente senza premere il pulsante
+                                  setTimeout(() => form.handleSubmit(onSubmitFilters)(), 0);
                                 }}
                               >
                                 {flupsy.name}
@@ -886,7 +896,7 @@ export default function BasketSelection() {
                             ))}
                           </div>
                           <FormDescription>
-                            Seleziona i FLUPSY di interesse (nessuna selezione = tutti)
+                            Seleziona i FLUPSY di interesse (nessuna selezione = nessun risultato)
                           </FormDescription>
                         </FormItem>
                       )}
@@ -899,11 +909,7 @@ export default function BasketSelection() {
                         onClick={resetFilters}
                       >
                         <Trash className="mr-2 h-4 w-4" />
-                        Reset
-                      </Button>
-                      <Button type="submit">
-                        <Filter className="mr-2 h-4 w-4" />
-                        Applica filtri
+                        Reset filtri
                       </Button>
                     </div>
                   </div>
