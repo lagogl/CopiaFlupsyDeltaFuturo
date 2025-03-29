@@ -220,7 +220,7 @@ export default function NewScreeningPage() {
                           ) : sizes && sizes.length > 0 ? (
                             sizes.map((size) => (
                               <SelectItem key={size.id} value={size.id.toString()}>
-                                {size.name} (TP-{size.code})
+                                {size.name} ({size.code})
                               </SelectItem>
                             ))
                           ) : (
