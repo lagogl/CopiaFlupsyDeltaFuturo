@@ -16,7 +16,18 @@ import {
   mortalityRateSchema,
   insertMortalityRateSchema,
   targetSizeAnnotationSchema,
-  insertTargetSizeAnnotationSchema
+  insertTargetSizeAnnotationSchema,
+  // Schemi per il modulo di vagliatura
+  insertScreeningOperationSchema,
+  insertScreeningSourceBasketSchema,
+  insertScreeningDestinationBasketSchema,
+  insertScreeningBasketHistorySchema,
+  insertScreeningLotReferenceSchema,
+  ScreeningOperation,
+  ScreeningSourceBasket,
+  ScreeningDestinationBasket,
+  ScreeningBasketHistory,
+  ScreeningLotReference
 } from "@shared/schema";
 import { format, addDays } from "date-fns";
 import { z } from "zod";
@@ -2637,7 +2648,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         operations = await storage.getScreeningOperations();
       }
       
-      res.json(operations);
+      // Aggiungi dettagli sulla taglia di riferimento per ogni operazione
+      const operationsWithDetails = await Promise.all(operations.map(async (op) => {
+        if (op.referenceSizeId) {
+          const size = await storage.getSize(op.referenceSizeId);
+          return { ...op, referenceSize: size };
+        }
+        return op;
+      }));
+      
+      res.json(operationsWithDetails);
     } catch (error) {
       console.error("Error fetching screening operations:", error);
       res.status(500).json({ error: "Failed to fetch screening operations" });
@@ -2656,7 +2676,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Screening operation not found" });
       }
       
-      res.json(operation);
+      // Aggiungi dettagli sulla taglia di riferimento
+      let operationWithDetails = { ...operation };
+      
+      if (operation.referenceSizeId) {
+        const size = await storage.getSize(operation.referenceSizeId);
+        operationWithDetails = { ...operationWithDetails, referenceSize: size };
+      }
+      
+      res.json(operationWithDetails);
     } catch (error) {
       console.error("Error fetching screening operation:", error);
       res.status(500).json({ error: "Failed to fetch screening operation" });
@@ -2665,7 +2693,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/screening/operations", async (req, res) => {
     try {
-      const validatedData = screeningOperationSchema.safeParse(req.body);
+      const validatedData = insertScreeningOperationSchema.safeParse(req.body);
       
       if (!validatedData.success) {
         const validationError = fromZodError(validatedData.error);
@@ -2800,7 +2828,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/screening/source-baskets", async (req, res) => {
     try {
-      const validatedData = screeningSourceBasketSchema.safeParse(req.body);
+      const validatedData = insertScreeningSourceBasketSchema.safeParse(req.body);
       
       if (!validatedData.success) {
         const validationError = fromZodError(validatedData.error);
@@ -2966,7 +2994,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.post("/api/screening/destination-baskets", async (req, res) => {
     try {
-      const validatedData = screeningDestinationBasketSchema.safeParse(req.body);
+      const validatedData = insertScreeningDestinationBasketSchema.safeParse(req.body);
       
       if (!validatedData.success) {
         const validationError = fromZodError(validatedData.error);
@@ -3090,7 +3118,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Screening History API
   app.post("/api/screening/history", async (req, res) => {
     try {
-      const validatedData = screeningBasketHistorySchema.safeParse(req.body);
+      const validatedData = insertScreeningBasketHistorySchema.safeParse(req.body);
       
       if (!validatedData.success) {
         const validationError = fromZodError(validatedData.error);
@@ -3111,7 +3139,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Screening Lot Reference API
   app.post("/api/screening/lot-references", async (req, res) => {
     try {
-      const validatedData = screeningLotReferenceSchema.safeParse(req.body);
+      const validatedData = insertScreeningLotReferenceSchema.safeParse(req.body);
       
       if (!validatedData.success) {
         const validationError = fromZodError(validatedData.error);

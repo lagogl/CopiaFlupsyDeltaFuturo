@@ -46,6 +46,38 @@ export interface IStorage {
   updateOperation(id: number, operation: Partial<Operation>): Promise<Operation | undefined>;
   deleteOperation(id: number): Promise<boolean>;
   
+  // Screening Operation methods
+  getScreeningOperations(): Promise<ScreeningOperation[]>;
+  getScreeningOperationsByStatus(status: string): Promise<ScreeningOperation[]>;
+  getScreeningOperation(id: number): Promise<ScreeningOperation | undefined>;
+  createScreeningOperation(operation: InsertScreeningOperation): Promise<ScreeningOperation>;
+  updateScreeningOperation(id: number, operation: Partial<ScreeningOperation>): Promise<ScreeningOperation | undefined>;
+  completeScreeningOperation(id: number): Promise<ScreeningOperation | undefined>;
+  cancelScreeningOperation(id: number): Promise<ScreeningOperation | undefined>;
+  
+  // Screening Source Basket methods
+  getScreeningSourceBasketsByScreening(screeningId: number): Promise<any[]>;
+  addScreeningSourceBasket(basket: InsertScreeningSourceBasket): Promise<ScreeningSourceBasket>;
+  updateScreeningSourceBasket(id: number, basket: Partial<ScreeningSourceBasket>): Promise<ScreeningSourceBasket | undefined>;
+  dismissScreeningSourceBasket(id: number): Promise<ScreeningSourceBasket | undefined>;
+  removeScreeningSourceBasket(id: number): Promise<boolean>;
+  
+  // Screening Destination Basket methods
+  getScreeningDestinationBasketsByScreening(screeningId: number): Promise<any[]>;
+  addScreeningDestinationBasket(basket: InsertScreeningDestinationBasket): Promise<ScreeningDestinationBasket>;
+  updateScreeningDestinationBasket(id: number, basket: Partial<ScreeningDestinationBasket>): Promise<ScreeningDestinationBasket | undefined>;
+  assignPositionToDestinationBasket(id: number, flupsyId: number, row: string, position: number): Promise<ScreeningDestinationBasket | undefined>;
+  removeScreeningDestinationBasket(id: number): Promise<boolean>;
+  isPositionAvailable(flupsyId: number, row: string, position: number): Promise<boolean>;
+  
+  // Screening Basket History methods
+  getScreeningBasketHistoryByDestination(destinationBasketId: number): Promise<any[]>;
+  createScreeningBasketHistory(history: InsertScreeningBasketHistory): Promise<ScreeningBasketHistory>;
+  
+  // Screening Lot Reference methods
+  getScreeningLotReferencesByDestination(destinationBasketId: number): Promise<any[]>;
+  createScreeningLotReference(reference: InsertScreeningLotReference): Promise<ScreeningLotReference>;
+  
   // Cycle methods
   getCycles(): Promise<Cycle[]>;
   getActiveCycles(): Promise<Cycle[]>;
