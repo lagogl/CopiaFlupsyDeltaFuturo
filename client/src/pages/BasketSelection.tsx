@@ -572,76 +572,79 @@ export default function BasketSelection() {
     // Applica i filtri
     const formValues = form.getValues();
     
+    // Nuovo approccio: crea un array di funzioni filtro e applica solo quelle che hanno valori significativi
+    const filterFunctions = [];
+    
     // Filtro per taglia
     if (formValues.sizes && formValues.sizes.length > 0) {
-      filtered = filtered.filter(basket => 
+      filterFunctions.push((basket: BasketInfo) => 
         basket.size && formValues.sizes && formValues.sizes.includes(basket.size.id)
       );
     }
     
-    // Filtro per numero di animali
-    if (formValues.minAnimals !== undefined) {
-      filtered = filtered.filter(basket => 
-        basket.animalCount >= formValues.minAnimals!
-      );
+    // Filtro per numero di animali (range)
+    if (formValues.minAnimals !== undefined && formValues.minAnimals > 0 || 
+        formValues.maxAnimals !== undefined && formValues.maxAnimals < 1000000) {
+      filterFunctions.push((basket: BasketInfo) => {
+        const min = formValues.minAnimals || 0;
+        const max = formValues.maxAnimals || 1000000;
+        return basket.animalCount >= min && basket.animalCount <= max;
+      });
     }
     
-    if (formValues.maxAnimals !== undefined) {
-      filtered = filtered.filter(basket => 
-        basket.animalCount <= formValues.maxAnimals!
-      );
+    // Filtro per età ciclo (range)
+    if (formValues.minAge !== undefined && formValues.minAge > 0 || 
+        formValues.maxAge !== undefined && formValues.maxAge < 1000) {
+      filterFunctions.push((basket: BasketInfo) => {
+        const min = formValues.minAge || 0;
+        const max = formValues.maxAge || 1000;
+        const duration = basket.cycleDuration || 0;
+        return duration >= min && duration <= max;
+      });
     }
     
-    // Filtro per età ciclo
-    if (formValues.minAge !== undefined) {
-      filtered = filtered.filter(basket => 
-        (basket.cycleDuration || 0) >= formValues.minAge!
-      );
-    }
-    
-    if (formValues.maxAge !== undefined) {
-      filtered = filtered.filter(basket => 
-        (basket.cycleDuration || 0) <= formValues.maxAge!
-      );
-    }
-    
-    // Filtro per ultima operazione
-    if (formValues.minLastOperation !== undefined || formValues.maxLastOperation !== undefined) {
-      filtered = filtered.filter(basket => {
+    // Filtro per ultima operazione (range giorni)
+    if (formValues.minLastOperation !== undefined && formValues.minLastOperation > 0 || 
+        formValues.maxLastOperation !== undefined && formValues.maxLastOperation < 365) {
+      filterFunctions.push((basket: BasketInfo) => {
         if (!basket.lastOperation) return false;
         
         const days = differenceInDays(new Date(), new Date(basket.lastOperation.date));
+        const min = formValues.minLastOperation || 0;
+        const max = formValues.maxLastOperation || 365;
         
-        if (formValues.minLastOperation !== undefined && days < formValues.minLastOperation) {
-          return false;
-        }
-        
-        if (formValues.maxLastOperation !== undefined && days > formValues.maxLastOperation) {
-          return false;
-        }
-        
-        return true;
+        return days >= min && days <= max;
       });
     }
     
     // Filtro per mortalità
-    if (formValues.maxMortality !== undefined) {
-      filtered = filtered.filter(basket => 
+    if (formValues.maxMortality !== undefined && formValues.maxMortality < 100) {
+      filterFunctions.push((basket: BasketInfo) => 
         !basket.mortalityRate || basket.mortalityRate.mortalityPercent <= formValues.maxMortality!
       );
     }
     
     // Filtro per crescita
-    if (formValues.minGrowthRate !== undefined) {
-      filtered = filtered.filter(basket => 
+    if (formValues.minGrowthRate !== undefined && formValues.minGrowthRate > 0) {
+      filterFunctions.push((basket: BasketInfo) => 
         basket.growthRate !== null && basket.growthRate >= formValues.minGrowthRate!
       );
     }
     
     // Filtro per FLUPSY
     if (formValues.flupsys && formValues.flupsys.length > 0) {
-      filtered = filtered.filter(basket => 
+      filterFunctions.push((basket: BasketInfo) => 
         formValues.flupsys && formValues.flupsys.includes(basket.flupsyId)
+      );
+    }
+    
+    // Se non ci sono filtri attivi, mostra tutte le ceste
+    if (filterFunctions.length === 0) {
+      // Nessun filtro, mostra tutto
+    } else {
+      // Applica i filtri con logica OR (basta che soddisfi almeno uno dei criteri)
+      filtered = filtered.filter(basket => 
+        filterFunctions.some(filterFn => filterFn(basket))
       );
     }
     
@@ -672,7 +675,7 @@ export default function BasketSelection() {
     });
     setTotalBySize(totalBySize);
     
-  }, [basketInfos, sortColumn, sortDirection, form.watch()]);
+  }, [basketInfos, sortColumn, sortDirection, form.formState.submitCount]);
   
   // Gestisci aggiornamento dei filtri
   const onSubmitFilters = (data: z.infer<typeof filterSchema>) => {
