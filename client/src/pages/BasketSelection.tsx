@@ -578,7 +578,7 @@ export default function BasketSelection() {
     // Filtro per taglia
     if (formValues.sizes && formValues.sizes.length > 0) {
       filterFunctions.push((basket: BasketInfo) => 
-        basket.size && formValues.sizes && formValues.sizes.includes(basket.size.id)
+        basket.size && formValues.sizes ? formValues.sizes.includes(basket.size.id) : false
       );
     }
     
@@ -633,14 +633,15 @@ export default function BasketSelection() {
     
     // Filtro per FLUPSY
     if (formValues.flupsys && formValues.flupsys.length > 0) {
-      filterFunctions.push((basket: BasketInfo) => 
-        formValues.flupsys && formValues.flupsys.includes(basket.flupsyId)
-      );
+      filterFunctions.push((basket: BasketInfo) => {
+        return formValues.flupsys ? formValues.flupsys.includes(basket.flupsyId) : false;
+      });
     }
     
-    // Se non ci sono filtri attivi, mostra tutte le ceste
+    // Se non ci sono filtri attivi, non mostrare nulla
     if (filterFunctions.length === 0) {
-      // Nessun filtro, mostra tutto
+      // Nessun filtro selezionato, lascia l'elenco vuoto
+      filtered = [];
     } else {
       // Applica i filtri con logica OR (basta che soddisfi almeno uno dei criteri)
       filtered = filtered.filter(basket => 
@@ -1023,18 +1024,38 @@ export default function BasketSelection() {
                       </TableCell>
                     </TableRow>
                   ) : (
-                    filteredBaskets.map(basket => (
-                      <TableRow 
-                        key={basket.id}
-                        className={selectedBaskets.has(basket.id) ? 'bg-muted/50' : ''}
-                      >
-                        {columns.map(column => (
-                          <TableCell key={`${basket.id}-${column.id}`}>
-                            {column.cell(basket)}
-                          </TableCell>
-                        ))}
+                    <>
+                      {/* Riga di totale come prima riga */}
+                      <TableRow className="font-medium bg-muted/30">
+                        <TableCell>
+                          <div className="flex items-center">
+                            <Info className="h-4 w-4 mr-2" />
+                          </div>
+                        </TableCell>
+                        <TableCell>Totale</TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>{totalAnimals.toLocaleString('it-IT')}</TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>-</TableCell>
+                        <TableCell>-</TableCell>
                       </TableRow>
-                    ))
+                      
+                      {/* Righe per ogni cesta */}
+                      {filteredBaskets.map(basket => (
+                        <TableRow 
+                          key={basket.id}
+                          className={selectedBaskets.has(basket.id) ? 'bg-muted/50' : ''}
+                        >
+                          {columns.map(column => (
+                            <TableCell key={`${basket.id}-${column.id}`}>
+                              {column.cell(basket)}
+                            </TableCell>
+                          ))}
+                        </TableRow>
+                      ))}
+                    </>
                   )}
                 </TableBody>
               </Table>
