@@ -280,13 +280,31 @@ export class MemStorage implements IStorage {
       { name: 'FLUPSY 2', location: 'Baia Sud', description: 'Unità secondaria', active: true }
     ];
 
-    // Initialize default sizes
+    // Initialize default sizes based on actual database
     const defaultSizes: InsertSize[] = [
-      { code: 'T0', name: 'Tiny 0', sizeMm: 0.5, minAnimalsPerKg: 8000, maxAnimalsPerKg: 12000, notes: 'Smallest size' },
-      { code: 'T1', name: 'Tiny 1', sizeMm: 1.0, minAnimalsPerKg: 5000, maxAnimalsPerKg: 8000, notes: 'Very small' },
-      { code: 'M1', name: 'Medium 1', sizeMm: 2.0, minAnimalsPerKg: 3000, maxAnimalsPerKg: 5000, notes: 'Small-medium' },
-      { code: 'M2', name: 'Medium 2', sizeMm: 3.0, minAnimalsPerKg: 2000, maxAnimalsPerKg: 3000, notes: 'Medium' },
-      { code: 'M3', name: 'Medium 3', sizeMm: 4.0, minAnimalsPerKg: 1500, maxAnimalsPerKg: 2000, notes: 'Medium-large' }
+      { code: 'TP-50', name: 'TP-50', sizeMm: 1, minAnimalsPerKg: 3400001, maxAnimalsPerKg: 5000000, notes: 'Smallest size' },
+      { code: 'TP-100', name: 'TP-100', sizeMm: null, minAnimalsPerKg: 4200001, maxAnimalsPerKg: 10000000, notes: 'Very small' },
+      { code: 'TP-200', name: 'TP-200', sizeMm: 10, minAnimalsPerKg: 4200001, maxAnimalsPerKg: 4200000, notes: 'Small' },
+      { code: 'TP-315', name: 'TP-315', sizeMm: null, minAnimalsPerKg: 7000001, maxAnimalsPerKg: 10000000, notes: 'Small-medium' },
+      { code: 'TP-450', name: 'TP-450', sizeMm: null, minAnimalsPerKg: 5000001, maxAnimalsPerKg: 7000000, notes: 'Medium-small' },
+      { code: 'TP-600', name: 'TP-600', sizeMm: null, minAnimalsPerKg: 1000001, maxAnimalsPerKg: 3400000, notes: 'Medium' },
+      { code: 'TP-700', name: 'TP-700', sizeMm: null, minAnimalsPerKg: 1500001, maxAnimalsPerKg: 1000000, notes: 'Medium-large' },
+      { code: 'TP-800', name: 'TP-800', sizeMm: 20, minAnimalsPerKg: 1500001, maxAnimalsPerKg: 1500000, notes: 'Large' },
+      { code: 'TP-1000', name: 'TP-1000', sizeMm: null, minAnimalsPerKg: 600001, maxAnimalsPerKg: 800000, notes: 'Large' },
+      { code: 'TP-1140', name: 'TP-1140', sizeMm: null, minAnimalsPerKg: 350001, maxAnimalsPerKg: 600000, notes: 'Very large' },
+      { code: 'TP-1260', name: 'TP-1260', sizeMm: null, minAnimalsPerKg: 300001, maxAnimalsPerKg: 350000, notes: 'Very large' },
+      { code: 'TP-1500', name: 'TP-1500', sizeMm: 30, minAnimalsPerKg: 300001, maxAnimalsPerKg: 300000, notes: 'Extra large' },
+      { code: 'TP-1800', name: 'TP-1800', sizeMm: null, minAnimalsPerKg: 120001, maxAnimalsPerKg: 190000, notes: 'Extra large' },
+      { code: 'TP-1900', name: 'TP-1900', sizeMm: null, minAnimalsPerKg: 97001, maxAnimalsPerKg: 120000, notes: 'Extra large' },
+      { code: 'TP-2000', name: 'TP-2000', sizeMm: null, minAnimalsPerKg: 70001, maxAnimalsPerKg: 97000, notes: 'Extra large' },
+      { code: 'TP-2200', name: 'TP-2200', sizeMm: null, minAnimalsPerKg: 60001, maxAnimalsPerKg: 70000, notes: 'Extra large' },
+      { code: 'TP-2500', name: 'TP-2500', sizeMm: null, minAnimalsPerKg: 40001, maxAnimalsPerKg: 60000, notes: 'Jumbo' },
+      { code: 'TP-2800', name: 'TP-2800', sizeMm: null, minAnimalsPerKg: 32001, maxAnimalsPerKg: 40000, notes: 'Jumbo' },
+      { code: 'TP-3000', name: 'TP-3000', sizeMm: null, minAnimalsPerKg: 19001, maxAnimalsPerKg: 32000, notes: 'Jumbo' },
+      { code: 'TP-3500', name: 'TP-3500', sizeMm: null, minAnimalsPerKg: 12501, maxAnimalsPerKg: 19000, notes: 'Super jumbo' },
+      { code: 'TP-4000', name: 'TP-4000', sizeMm: null, minAnimalsPerKg: 7501, maxAnimalsPerKg: 12500, notes: 'Super jumbo' },
+      { code: 'TP-5000', name: 'TP-5000', sizeMm: null, minAnimalsPerKg: 3901, maxAnimalsPerKg: 7500, notes: 'Ultra jumbo' },
+      { code: 'TP-6000', name: 'TP-6000', sizeMm: null, minAnimalsPerKg: 3001, maxAnimalsPerKg: 3900, notes: 'Ultra jumbo' }
     ];
     
     // Initialize default SGR values
