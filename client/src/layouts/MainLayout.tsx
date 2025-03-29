@@ -94,7 +94,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       items: [
         { icon: <Waves className="h-5 w-5 mr-2 text-green-600" />, label: "Unità FLUPSY", path: "/flupsys" },
         { icon: <GitCompare className="h-5 w-5 mr-2 text-green-600" />, label: "Confronto FLUPSY", path: "/flupsy-comparison" },
-        { icon: <LineChart className="h-5 w-5 mr-2 text-green-600" />, label: "Percorso di Crescita", path: "/grow-journey" }
+        { icon: <LineChart className="h-5 w-5 mr-2 text-green-600" />, label: "Percorso di Crescita", path: "/grow-journey" },
+        { icon: <BarChart2 className="h-5 w-5 mr-2 text-green-600" />, label: "Selezione Avanzata", path: "/basket-selection" }
       ]
     },
     {
