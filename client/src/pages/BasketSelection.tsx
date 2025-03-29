@@ -669,7 +669,7 @@ export default function BasketSelection() {
       }
       
       // Filtra per tasso di mortalità
-      const mortalityRate = latestOp.mortalityRate || 0;
+      const mortalityRate = latestOp.mortalityRate !== null ? latestOp.mortalityRate : 0;
       if (mortalityRate > filters.maxMortality) {
         return false;
       }
@@ -820,7 +820,7 @@ export default function BasketSelection() {
             <div className="text-gray-500">N° animali:</div>
             <div>{typeof animalCount === 'number' ? formatNumber(animalCount) : animalCount}</div>
             
-            {latestOperation?.mortalityRate !== null && (
+            {latestOperation && latestOperation.mortalityRate !== null && (
               <>
                 <div className="text-gray-500">Mortalità:</div>
                 <div>{latestOperation.mortalityRate}%</div>
