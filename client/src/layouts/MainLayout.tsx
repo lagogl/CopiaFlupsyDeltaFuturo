@@ -5,7 +5,8 @@ import {
   Scale, TrendingUp, Settings as SettingsIcon, Menu, Bell, 
   User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
-  ChevronRight, LayoutDashboard, PieChart, BarChart
+  ChevronRight, LayoutDashboard, PieChart, BarChart, 
+  ShoppingCart, PackageCheck, CheckCheck
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -94,7 +95,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       items: [
         { icon: <Waves className="h-5 w-5 mr-2 text-green-600" />, label: "Unità FLUPSY", path: "/flupsys" },
         { icon: <GitCompare className="h-5 w-5 mr-2 text-green-600" />, label: "Confronto FLUPSY", path: "/flupsy-comparison" },
-        { icon: <LineChart className="h-5 w-5 mr-2 text-green-600" />, label: "Percorso di Crescita", path: "/grow-journey" }
+        { icon: <LineChart className="h-5 w-5 mr-2 text-green-600" />, label: "Percorso di Crescita", path: "/grow-journey" },
+        { icon: <ShoppingCart className="h-5 w-5 mr-2 text-green-600" />, label: "Selezione Ceste", path: "/basket-selection" }
       ]
     },
     {

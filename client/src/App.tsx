@@ -27,6 +27,7 @@ import TestView from "@/pages/TestView";
 import NFCScan from "@/pages/NFCScan";
 import NFCTagManager from "@/pages/NFCTagManager";
 import GrowJourney from "@/pages/GrowJourney";
+import BasketSelection from "@/pages/BasketSelection";
 // Importiamo la nuova pagina per la gestione avanzata di NFC
 import NfcManagerPage from "@/nfc-features/pages/NfcManagerPage";
 import { initializeWebSocket } from "./lib/websocket";
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/nfc-tags" component={NFCTagManager}/>
       <Route path="/nfc-manager" component={NfcManagerPage}/>
       <Route path="/grow-journey" component={GrowJourney}/>
+      <Route path="/basket-selection" component={BasketSelection}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
