@@ -1,4 +1,19 @@
 import { useState, useEffect, useMemo } from 'react';
+
+// Funzione per calcolare la luminosità di un colore
+const getLuminance = (hexColor: string): number => {
+  // Rimuovi # se presente
+  const hex = hexColor.replace('#', '');
+  
+  // Converti in RGB
+  const r = parseInt(hex.substr(0, 2), 16) / 255;
+  const g = parseInt(hex.substr(2, 2), 16) / 255;
+  const b = parseInt(hex.substr(4, 2), 16) / 255;
+  
+  // Calcola luminosità percepita con la formula per la luminanza relativa
+  // https://www.w3.org/TR/WCAG20-TECHS/G18.html
+  return 0.2126 * r + 0.7152 * g + 0.0722 * b;
+};
 import { 
   Card, 
   CardContent, 
@@ -859,7 +874,7 @@ export default function BasketSelection() {
                                     : 'transparent',
                                   color: field.value?.includes(size.id) ? '#ffffff' : 'inherit',
                                   fontWeight: field.value?.includes(size.id) ? 'bold' : 'normal',
-                                  textShadow: field.value?.includes(size.id) ? '0px 0px 2px rgba(0,0,0,0.7)' : 'none',
+                                  textShadow: field.value?.includes(size.id) ? '0px 0px 2px rgba(0,0,0,0.8)' : 'none',
                                   borderColor: size.colorHex,
                                   cursor: 'pointer',
                                   opacity: availableSizeIds.has(size.id) ? 1 : 0.5,
@@ -983,7 +998,7 @@ export default function BasketSelection() {
                         backgroundColor: size.colorHex,
                         color: '#ffffff', // Cambiato a bianco per maggiore leggibilità su tutti i colori
                         fontWeight: 'bold',
-                        textShadow: '0px 0px 2px rgba(0,0,0,0.7)' // Aggiunto un'ombra per migliore leggibilità
+                        textShadow: '0px 0px 2px rgba(0,0,0,0.8)' // Aggiunto un'ombra per migliore leggibilità
                       }}
                     >
                       {size.code}: {count.toLocaleString('it-IT')}
@@ -1088,7 +1103,9 @@ export default function BasketSelection() {
                         <TableCell>Totale</TableCell>
                         <TableCell>-</TableCell>
                         <TableCell>-</TableCell>
-                        <TableCell>{totalAnimals.toLocaleString('it-IT')}</TableCell>
+                        <TableCell className="font-bold text-primary">
+                          {totalAnimals.toLocaleString('it-IT')}
+                        </TableCell>
                         <TableCell>-</TableCell>
                         <TableCell>-</TableCell>
                         <TableCell>-</TableCell>
