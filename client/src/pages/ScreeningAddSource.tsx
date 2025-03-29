@@ -222,7 +222,7 @@ export default function ScreeningAddSource() {
         <div>
           <h1 className="text-2xl font-bold">Aggiungi Cesta Origine</h1>
           <p className="text-muted-foreground">
-            Vagliatura #{screeningOperation.screeningNumber} - {screeningOperation.referenceSize?.name}
+            Vagliatura #{screeningOperation.screeningNumber}
           </p>
         </div>
       </div>

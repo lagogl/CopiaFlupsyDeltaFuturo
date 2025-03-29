@@ -288,7 +288,7 @@ export default function ScreeningAddDestination() {
         <div>
           <h1 className="text-2xl font-bold">Aggiungi Cesta Destinazione</h1>
           <p className="text-muted-foreground">
-            Vagliatura #{screeningOperation.screeningNumber} - {screeningOperation.referenceSize?.name}
+            Vagliatura #{screeningOperation.screeningNumber}
           </p>
         </div>
       </div>

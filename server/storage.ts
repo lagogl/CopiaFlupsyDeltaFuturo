@@ -282,7 +282,7 @@ export class MemStorage implements IStorage {
 
     // Initialize default sizes based on actual database
     const defaultSizes: InsertSize[] = [
-      { code: 'TP-50', name: 'TP-50', sizeMm: 1, minAnimalsPerKg: 3400001, maxAnimalsPerKg: 5000000, notes: 'Smallest size' },
+      { code: 'TP-500', name: 'TP-500', sizeMm: 1, minAnimalsPerKg: 3400001, maxAnimalsPerKg: 5000000, notes: 'Smallest size' },
       { code: 'TP-100', name: 'TP-100', sizeMm: null, minAnimalsPerKg: 4200001, maxAnimalsPerKg: 10000000, notes: 'Very small' },
       { code: 'TP-200', name: 'TP-200', sizeMm: 10, minAnimalsPerKg: 4200001, maxAnimalsPerKg: 4200000, notes: 'Small' },
       { code: 'TP-315', name: 'TP-315', sizeMm: null, minAnimalsPerKg: 7000001, maxAnimalsPerKg: 10000000, notes: 'Small-medium' },
