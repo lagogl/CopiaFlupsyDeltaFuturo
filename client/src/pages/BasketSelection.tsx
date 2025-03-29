@@ -194,6 +194,10 @@ export default function BasketSelection() {
   const [totalAnimals, setTotalAnimals] = useState(0);
   const [totalBySize, setTotalBySize] = useState<Record<number, number>>({});
   
+  // Stati per indicatori visivi dei filtri
+  const [availableSizeIds, setAvailableSizeIds] = useState<Set<number>>(new Set());
+  const [availableFlupsyIds, setAvailableFlupsyIds] = useState<Set<number>>(new Set());
+  
   // Queries per caricare i dati
   const { data: baskets, isLoading: basketsLoading } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
@@ -569,6 +573,21 @@ export default function BasketSelection() {
     
     let filtered = [...basketInfos];
     
+    // Raccoglie tutti gli ID di taglie e FLUPSY disponibili
+    const sizeIdsWithBaskets = new Set<number>();
+    const flupsyIdsWithBaskets = new Set<number>();
+    
+    basketInfos.forEach(basket => {
+      if (basket.size) {
+        sizeIdsWithBaskets.add(basket.size.id);
+      }
+      flupsyIdsWithBaskets.add(basket.flupsyId);
+    });
+    
+    // Aggiorna gli stati per gli indicatori visivi
+    setAvailableSizeIds(sizeIdsWithBaskets);
+    setAvailableFlupsyIds(flupsyIdsWithBaskets);
+    
     // Applica i filtri
     const formValues = form.getValues();
     
@@ -838,7 +857,10 @@ export default function BasketSelection() {
                                     : 'transparent',
                                   color: field.value?.includes(size.id) ? '#000000' : 'inherit',
                                   borderColor: size.colorHex,
-                                  cursor: 'pointer'
+                                  cursor: 'pointer',
+                                  opacity: availableSizeIds.has(size.id) ? 1 : 0.5,
+                                  position: 'relative',
+                                  overflow: 'visible'
                                 }}
                                 onClick={() => {
                                   const currentSizes = field.value || [];
@@ -851,12 +873,22 @@ export default function BasketSelection() {
                                   setTimeout(() => form.handleSubmit(onSubmitFilters)(), 0);
                                 }}
                               >
+                                {availableSizeIds.has(size.id) && (
+                                  <span 
+                                    className="w-2 h-2 rounded-full bg-green-500 absolute -top-1 -right-1"
+                                    style={{ boxShadow: '0 0 0 1px white' }}
+                                  />
+                                )}
                                 {size.code}
                               </Badge>
                             ))}
                           </div>
                           <FormDescription>
                             Seleziona le taglie di interesse (nessuna selezione = nessun risultato)
+                            <span className="block mt-1">
+                              <span className="inline-block w-2 h-2 rounded-full bg-green-500 mr-1"></span>
+                              <span className="text-xs">= ceste disponibili</span>
+                            </span>
                           </FormDescription>
                         </FormItem>
                       )}
@@ -878,7 +910,10 @@ export default function BasketSelection() {
                                 key={flupsy.id}
                                 variant={field.value?.includes(flupsy.id) ? "default" : "outline"}
                                 style={{
-                                  cursor: 'pointer'
+                                  cursor: 'pointer',
+                                  opacity: availableFlupsyIds.has(flupsy.id) ? 1 : 0.5,
+                                  position: 'relative',
+                                  overflow: 'visible'
                                 }}
                                 onClick={() => {
                                   const currentFlupsys = field.value || [];
@@ -891,6 +926,12 @@ export default function BasketSelection() {
                                   setTimeout(() => form.handleSubmit(onSubmitFilters)(), 0);
                                 }}
                               >
+                                {availableFlupsyIds.has(flupsy.id) && (
+                                  <span 
+                                    className="w-2 h-2 rounded-full bg-green-500 absolute -top-1 -right-1"
+                                    style={{ boxShadow: '0 0 0 1px white' }}
+                                  />
+                                )}
                                 {flupsy.name}
                               </Badge>
                             ))}
