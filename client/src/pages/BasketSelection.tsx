@@ -573,7 +573,7 @@ export default function BasketSelection() {
     const formValues = form.getValues();
     
     // Nuovo approccio: crea un array di funzioni filtro e applica solo quelle che hanno valori significativi
-    const filterFunctions = [];
+    const filterFunctions: Array<(basket: BasketInfo) => boolean> = [];
     
     // Filtro per taglia
     if (formValues.sizes && formValues.sizes.length > 0) {
@@ -812,9 +812,9 @@ export default function BasketSelection() {
           <CardContent>
             <Form {...form}>
               <form onSubmit={form.handleSubmit(onSubmitFilters)} className="space-y-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Caratteristiche principali</h3>
+                    <h3 className="text-lg font-medium">Filtri principali</h3>
                     
                     <FormField
                       control={form.control}
@@ -853,13 +853,17 @@ export default function BasketSelection() {
                         </FormItem>
                       )}
                     />
+                  </div>
+                  
+                  <div className="space-y-4">
+                    <h3 className="text-lg font-medium">FLUPSY</h3>
                     
                     <FormField
                       control={form.control}
                       name="flupsys"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel>FLUPSY</FormLabel>
+                          <FormLabel>Unità FLUPSY</FormLabel>
                           <div className="flex flex-wrap gap-2">
                             {flupsys?.map(flupsy => (
                               <Badge
@@ -886,192 +890,8 @@ export default function BasketSelection() {
                         </FormItem>
                       )}
                     />
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Quantità e tempo</h3>
                     
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="minAnimals"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Min. animali</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number"
-                                min={0}
-                                placeholder="0" 
-                                {...field}
-                                onChange={e => field.onChange(Number(e.target.value))}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="maxAnimals"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Max. animali</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number"
-                                min={0}
-                                placeholder="1000000" 
-                                {...field}
-                                onChange={e => field.onChange(Number(e.target.value))}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="minAge"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Età min. (giorni)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number"
-                                min={0}
-                                placeholder="0" 
-                                {...field}
-                                onChange={e => field.onChange(Number(e.target.value))}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="maxAge"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Età max. (giorni)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number"
-                                min={0}
-                                placeholder="1000" 
-                                {...field}
-                                onChange={e => field.onChange(Number(e.target.value))}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                    
-                    <div className="grid grid-cols-2 gap-4">
-                      <FormField
-                        control={form.control}
-                        name="minLastOperation"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Op. min. (giorni fa)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number"
-                                min={0}
-                                placeholder="0" 
-                                {...field}
-                                onChange={e => field.onChange(Number(e.target.value))}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                      
-                      <FormField
-                        control={form.control}
-                        name="maxLastOperation"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel>Op. max. (giorni fa)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number"
-                                min={0}
-                                placeholder="365" 
-                                {...field}
-                                onChange={e => field.onChange(Number(e.target.value))}
-                              />
-                            </FormControl>
-                          </FormItem>
-                        )}
-                      />
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-4">
-                    <h3 className="text-lg font-medium">Performance</h3>
-                    
-                    <FormField
-                      control={form.control}
-                      name="maxMortality"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>Mortalità max. (%)</FormLabel>
-                          <FormControl>
-                            <div className="flex flex-col space-y-2">
-                              <Slider
-                                defaultValue={[field.value || 100]}
-                                max={100}
-                                step={1}
-                                onValueChange={(value) => field.onChange(value[0])}
-                              />
-                              <div className="flex justify-between">
-                                <span>0%</span>
-                                <span className="font-medium">{field.value || 100}%</span>
-                                <span>100%</span>
-                              </div>
-                            </div>
-                          </FormControl>
-                          <FormDescription>
-                            Filtra le ceste con tasso di mortalità inferiore al valore selezionato
-                          </FormDescription>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <FormField
-                      control={form.control}
-                      name="minGrowthRate"
-                      render={({ field }) => (
-                        <FormItem>
-                          <FormLabel>SGR min. (%/giorno)</FormLabel>
-                          <FormControl>
-                            <div className="flex flex-col space-y-2">
-                              <Slider
-                                defaultValue={[field.value || 0]}
-                                max={5}
-                                step={0.1}
-                                onValueChange={(value) => field.onChange(value[0])}
-                              />
-                              <div className="flex justify-between">
-                                <span>0%</span>
-                                <span className="font-medium">{field.value || 0}%</span>
-                                <span>5%</span>
-                              </div>
-                            </div>
-                          </FormControl>
-                          <FormDescription>
-                            Filtra le ceste con tasso di crescita superiore al valore selezionato
-                          </FormDescription>
-                        </FormItem>
-                      )}
-                    />
-                    
-                    <div className="flex justify-end space-x-2 pt-4">
+                    <div className="flex justify-end space-x-2 pt-8">
                       <Button 
                         type="button" 
                         variant="outline" 
