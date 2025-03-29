@@ -34,6 +34,8 @@ import NfcManagerPage from "@/nfc-features/pages/NfcManagerPage";
 import Screening from "@/pages/Screening";
 import NewScreening from "@/pages/NewScreening";
 import ScreeningDetail from "@/pages/ScreeningDetail";
+import ScreeningAddSource from "@/pages/ScreeningAddSource";
+import ScreeningAddDestination from "@/pages/ScreeningAddDestination";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -73,6 +75,8 @@ function Router() {
       <Route path="/screening" component={Screening}/>
       <Route path="/screening/new" component={NewScreening}/>
       <Route path="/screening/:id" component={ScreeningDetail}/>
+      <Route path="/screening/:id/add-source" component={ScreeningAddSource}/>
+      <Route path="/screening/:id/add-destination" component={ScreeningAddDestination}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

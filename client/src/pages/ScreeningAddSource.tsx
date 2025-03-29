@@ -1,0 +1,353 @@
+import { useState, useEffect } from 'react';
+import { useRoute, useLocation } from 'wouter';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { ArrowLeft, Plus, Filter, Loader2 } from 'lucide-react';
+
+import { Button } from '@/components/ui/button';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { apiRequest } from '@/lib/queryClient';
+import { ScreeningOperation, Basket, Cycle, InsertScreeningSourceBasket } from '@shared/schema';
+import { Skeleton } from '@/components/ui/skeleton';
+import { useToast } from '@/hooks/use-toast';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
+
+import { Badge } from '@/components/ui/badge';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
+
+export default function ScreeningAddSource() {
+  // Routing
+  const [, navigate] = useLocation();
+  const [, params] = useRoute<{ id: string }>('/screening/:id/add-source');
+  const screeningId = params?.id ? parseInt(params.id) : null;
+
+  // State
+  const [searchTerm, setSearchTerm] = useState('');
+  const [filteredBaskets, setFilteredBaskets] = useState<any[]>([]);
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+
+  // Query per ottenere i dettagli dell'operazione di vagliatura
+  const {
+    data: screeningOperation,
+    isLoading: operationLoading,
+    error: operationError,
+  } = useQuery({
+    queryKey: ['/api/screening/operations', screeningId],
+    queryFn: async () => {
+      if (!screeningId) return null;
+      return apiRequest<ScreeningOperation>({
+        url: `/api/screening/operations/${screeningId}`,
+        method: 'GET'
+      });
+    },
+    enabled: !!screeningId,
+  });
+
+  // Query per ottenere i cestelli attivi
+  const {
+    data: activeCycles,
+    isLoading: cyclesLoading,
+    error: cyclesError
+  } = useQuery({
+    queryKey: ['/api/cycles/active-with-details'],
+    queryFn: async () => {
+      return apiRequest<any[]>({
+        url: '/api/cycles/active-with-details',
+        method: 'GET'
+      });
+    },
+  });
+
+  // Mutation per aggiungere una cesta di origine
+  const addSourceBasketMutation = useMutation({
+    mutationFn: (data: InsertScreeningSourceBasket) =>
+      apiRequest({
+        url: '/api/screening/source-baskets',
+        method: 'POST',
+        body: data
+      }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/screening/source-baskets', screeningId] });
+      queryClient.invalidateQueries({ queryKey: ['/api/screening/operations', screeningId] });
+      
+      toast({
+        title: 'Cesta aggiunta',
+        description: 'La cesta è stata aggiunta con successo alla vagliatura.',
+      });
+      
+      // Ritorna alla pagina di dettaglio dell'operazione
+      navigate(`/screening/${screeningId}`);
+    },
+    onError: (error: any) => {
+      toast({
+        title: 'Errore',
+        description: error.message || 'Si è verificato un errore durante l\'aggiunta della cesta.',
+        variant: 'destructive',
+      });
+    },
+  });
+
+  // Filtra i cestelli in base alla ricerca
+  useEffect(() => {
+    if (!activeCycles) return;
+    
+    const filtered = activeCycles.filter(cycle => {
+      const basket = cycle.basket;
+      const term = searchTerm.toLowerCase();
+      
+      return (
+        (basket.physicalNumber?.toString().includes(term)) ||
+        (basket.cycleCode?.toLowerCase().includes(term)) ||
+        (cycle.lot?.supplier?.toLowerCase().includes(term)) ||
+        (cycle.lot?.notes?.toLowerCase().includes(term)) ||
+        (cycle.size?.name?.toLowerCase().includes(term))
+      );
+    });
+    
+    setFilteredBaskets(filtered);
+  }, [searchTerm, activeCycles]);
+
+  // Handler per aggiungere una cesta di origine
+  const handleAddSourceBasket = (cycleId: number, basketId: number) => {
+    if (!screeningId) return;
+    
+    const cycle = activeCycles?.find(c => c.id === cycleId);
+    if (!cycle) return;
+    
+    // Dati di base per l'aggiunta della cesta
+    const sourceBasketData: InsertScreeningSourceBasket = {
+      screeningId,
+      basketId,
+      cycleId,
+      animalCount: cycle.lastOperation?.animalCount || null,
+      totalWeight: cycle.lastOperation?.totalWeight || null,
+      animalsPerKg: cycle.lastOperation?.animalsPerKg || null,
+      sizeId: cycle.lastOperation?.sizeId || null,
+      lotId: cycle.lot?.id || null
+    };
+    
+    addSourceBasketMutation.mutate(sourceBasketData);
+  };
+
+  if (operationLoading || cyclesLoading) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="flex items-center gap-4 mb-6">
+          <Button variant="outline" onClick={() => navigate(`/screening/${screeningId}`)}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Indietro
+          </Button>
+          <div>
+            <Skeleton className="h-8 w-72" />
+            <Skeleton className="h-4 w-48 mt-2" />
+          </div>
+        </div>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-6 w-48" />
+            <Skeleton className="h-4 w-72 mt-2" />
+          </CardHeader>
+          <CardContent>
+            <Skeleton className="h-10 w-full mb-4" />
+            <div className="space-y-2">
+              {Array.from({ length: 5 }).map((_, i) => (
+                <Skeleton key={i} className="h-16 w-full" />
+              ))}
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
+  if (operationError || cyclesError) {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="p-6 bg-red-50 rounded-lg">
+          <h3 className="text-lg font-semibold text-red-800">Errore</h3>
+          <p className="text-red-600">
+            Si è verificato un errore durante il caricamento dei dati. Riprova più tardi.
+          </p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => navigate(`/screening/${screeningId}`)}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Torna indietro
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  if (!screeningOperation || screeningOperation.status !== 'draft') {
+    return (
+      <div className="container mx-auto p-4">
+        <div className="p-6 bg-yellow-50 rounded-lg">
+          <h3 className="text-lg font-semibold text-yellow-800">Operazione non modificabile</h3>
+          <p className="text-yellow-600">
+            Non è possibile aggiungere ceste a un'operazione di vagliatura che non è in stato di bozza.
+          </p>
+          <Button 
+            variant="outline" 
+            className="mt-4"
+            onClick={() => navigate(`/screening/${screeningId}`)}
+          >
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Torna indietro
+          </Button>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div className="container mx-auto p-4">
+      <div className="flex items-center gap-4 mb-6">
+        <Button variant="outline" onClick={() => navigate(`/screening/${screeningId}`)}>
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Indietro
+        </Button>
+        <div>
+          <h1 className="text-2xl font-bold">Aggiungi Cesta Origine</h1>
+          <p className="text-muted-foreground">
+            Vagliatura #{screeningOperation.screeningNumber} - {screeningOperation.referenceSize?.name}
+          </p>
+        </div>
+      </div>
+
+      <Card>
+        <CardHeader>
+          <CardTitle>Seleziona Cesta</CardTitle>
+          <CardDescription>
+            Seleziona una cesta attiva da aggiungere come cesta di origine per questa vagliatura
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-2 mb-4">
+            <Label htmlFor="search-basket" className="sr-only">
+              Cerca cesta
+            </Label>
+            <Input
+              id="search-basket"
+              placeholder="Cerca per numero, codice ciclo, fornitore..."
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+              className="max-w-md"
+            />
+            <Button variant="outline" className="flex items-center gap-2">
+              <Filter className="h-4 w-4" />
+              Filtri
+            </Button>
+          </div>
+
+          {filteredBaskets?.length === 0 ? (
+            <div className="text-center py-8 text-muted-foreground">
+              {searchTerm ? 'Nessun risultato trovato. Prova con un altro termine di ricerca.' : 'Nessuna cesta attiva disponibile.'}
+            </div>
+          ) : (
+            <Table>
+              <TableHeader>
+                <TableRow>
+                  <TableHead>Cesta</TableHead>
+                  <TableHead>Ciclo</TableHead>
+                  <TableHead>Posizione</TableHead>
+                  <TableHead>Taglia</TableHead>
+                  <TableHead>Lotto</TableHead>
+                  <TableHead>Ultima operazione</TableHead>
+                  <TableHead className="text-right">Azioni</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {filteredBaskets.map((cycle) => (
+                  <TableRow key={cycle.id}>
+                    <TableCell>
+                      <div className="font-medium">#{cycle.basket.physicalNumber}</div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="font-medium">{cycle.basket.cycleCode || '-'}</div>
+                      <div className="text-sm text-muted-foreground">
+                        {format(new Date(cycle.startDate), 'dd/MM/yyyy', { locale: it })}
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      {cycle.basket.flupsyId && (
+                        <Badge variant="outline" className="font-normal">
+                          {cycle.flupsy?.name} - {cycle.basket.row || 'N/D'} - {cycle.basket.position || 'N/D'}
+                        </Badge>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {cycle.size ? (
+                        <Badge variant="secondary" className="font-normal">
+                          {cycle.size.name}
+                        </Badge>
+                      ) : (
+                        <span className="text-muted-foreground">N/D</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {cycle.lot ? (
+                        <div>
+                          <div className="font-medium">{cycle.lot.supplier}</div>
+                          <div className="text-xs text-muted-foreground">
+                            {format(new Date(cycle.lot.arrivalDate), 'dd/MM/yyyy', { locale: it })}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">N/D</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {cycle.lastOperation ? (
+                        <div>
+                          <Badge>
+                            {cycle.lastOperation.type === 'peso' ? 'Peso' : 
+                             cycle.lastOperation.type === 'misura' ? 'Misura' : 
+                             cycle.lastOperation.type === 'prima-attivazione' ? 'Attivazione' : 
+                             cycle.lastOperation.type === 'pulizia' ? 'Pulizia' : 
+                             cycle.lastOperation.type === 'vagliatura' ? 'Vagliatura' : 
+                             cycle.lastOperation.type}
+                          </Badge>
+                          <div className="text-xs text-muted-foreground mt-1">
+                            {format(new Date(cycle.lastOperation.date), 'dd/MM/yyyy', { locale: it })}
+                          </div>
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">N/D</span>
+                      )}
+                    </TableCell>
+                    <TableCell className="text-right">
+                      <Button
+                        onClick={() => handleAddSourceBasket(cycle.id, cycle.basket.id)}
+                        disabled={addSourceBasketMutation.isPending}
+                      >
+                        {addSourceBasketMutation.isPending ? (
+                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                        ) : (
+                          <Plus className="h-4 w-4 mr-2" />
+                        )}
+                        Aggiungi
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          )}
+        </CardContent>
+      </Card>
+    </div>
+  );
+}
