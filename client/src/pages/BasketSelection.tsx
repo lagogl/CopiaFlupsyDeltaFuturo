@@ -1,4 +1,6 @@
 import { useState, useEffect, useMemo } from 'react';
+import { differenceInDays, format } from 'date-fns';
+import { Brush } from 'lucide-react';
 
 // Funzione per calcolare la luminosità di un colore
 const getLuminance = (hexColor: string): number => {
@@ -63,8 +65,7 @@ import { Badge } from '@/components/ui/badge';
 import { Slider } from '@/components/ui/slider';
 import { useToast } from '@/hooks/use-toast';
 import { useQuery } from '@tanstack/react-query';
-import { ArrowUpDown, Fan, Filter, Download, Trash, Info, Activity, Check, LucideIcon } from 'lucide-react';
-import { format, differenceInDays } from 'date-fns';
+import { ArrowUpDown, Fan, Filter, Download, Trash, Info, Activity, Check, Share2, ClipboardCheck, LucideIcon } from 'lucide-react';
 import { ScrollArea } from '@/components/ui/scroll-area';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useForm } from 'react-hook-form';
@@ -822,9 +823,20 @@ export default function BasketSelection() {
   // Dialog per selezione attività
   const [activityDialogOpen, setActivityDialogOpen] = useState(false);
   
+  // Stato per tenere traccia del numero di giorni per il promemoria di pulizia
+  const [cleaningReminderDays, setCleaningReminderDays] = useState(3);
+  
+  // Dialog per configurare e inviare promemoria pulizia
+  const [cleaningReminderDialogOpen, setCleaningReminderDialogOpen] = useState(false);
+  
   // Schema di validazione per il dialog delle attività
   const activitySchema = z.object({
     selectedActivity: z.enum(['Pulizia', 'Selezione per vendita', 'Selezione', 'Dismissione'])
+  });
+  
+  // Schema di validazione per il dialog del promemoria di pulizia
+  const cleaningReminderSchema = z.object({
+    days: z.number().int().min(1).max(30)
   });
   
   // Form per la selezione dell'attività
@@ -832,6 +844,14 @@ export default function BasketSelection() {
     resolver: zodResolver(activitySchema),
     defaultValues: {
       selectedActivity: 'Pulizia'
+    }
+  });
+  
+  // Form per il promemoria di pulizia
+  const cleaningReminderForm = useForm<z.infer<typeof cleaningReminderSchema>>({
+    resolver: zodResolver(cleaningReminderSchema),
+    defaultValues: {
+      days: cleaningReminderDays
     }
   });
   
@@ -1019,6 +1039,120 @@ export default function BasketSelection() {
                 </Button>
                 <Button type="submit">
                   Assegna attività
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog per configurare il promemoria di pulizia */}
+      <Dialog open={cleaningReminderDialogOpen} onOpenChange={setCleaningReminderDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>Promemoria pulizia ceste</DialogTitle>
+            <DialogDescription>
+              Invia un promemoria per la pulizia delle ceste che non hanno ricevuto operazioni da più giorni.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...cleaningReminderForm}>
+            <form onSubmit={cleaningReminderForm.handleSubmit((values) => {
+              // Aggiorna il numero di giorni del promemoria
+              setCleaningReminderDays(values.days);
+              
+              // Trova tutte le ceste che non hanno operazioni da N giorni
+              const now = new Date();
+              const outdatedBaskets = basketInfos.filter(basket => {
+                if (!basket.lastOperation) return true; // Includi quelle senza operazioni
+                
+                const lastOpDate = new Date(basket.lastOperation.date);
+                const daysSinceLastOp = differenceInDays(now, lastOpDate);
+                return daysSinceLastOp >= values.days;
+              });
+              
+              // Chiudi il dialog
+              setCleaningReminderDialogOpen(false);
+              
+              if (outdatedBaskets.length === 0) {
+                toast({
+                  title: "Nessuna cesta da pulire",
+                  description: `Non ci sono ceste che necessitano di pulizia (senza operazioni da ${values.days} giorni).`,
+                });
+                return;
+              }
+              
+              // Crea il messaggio WhatsApp
+              let message = `*PROMEMORIA PULIZIA CESTE - ${format(new Date(), 'dd/MM/yyyy')}*\n\n`;
+              message += `Le seguenti ceste non hanno operazioni registrate da almeno ${values.days} giorni e potrebbero necessitare di pulizia:\n\n`;
+              
+              // Aggiungi le ceste al messaggio
+              outdatedBaskets.forEach((basket, index) => {
+                const lastOpDate = basket.lastOperation 
+                  ? format(new Date(basket.lastOperation.date), 'dd/MM/yyyy')
+                  : 'Nessuna operazione';
+                
+                const daysSinceLastOp = basket.lastOperation
+                  ? differenceInDays(now, new Date(basket.lastOperation.date))
+                  : "--";
+                
+                message += `*Cesta #${basket.physicalNumber}*\n`;
+                message += `🔹 FLUPSY: ${basket.flupsy.name}\n`;
+                message += `🔹 Posizione: ${basket.row}-${basket.position}\n`;
+                message += `🔹 Taglia: ${basket.size?.code || 'N/D'}\n`;
+                message += `🔹 Ultima operazione: ${lastOpDate} (${daysSinceLastOp} giorni fa)\n`;
+                message += `🔹 *Attività: Pulizia*\n`;
+                
+                // Aggiungi una riga vuota tra le ceste tranne che per l'ultima
+                if (index < outdatedBaskets.length - 1) {
+                  message += `\n`;
+                }
+              });
+              
+              // Aggiungi note finali
+              message += `\n\n_Generato da FLUPSY Manager_`;
+              
+              // Condividi su WhatsApp
+              const encodedMessage = encodeURIComponent(message);
+              const whatsappUrl = `https://wa.me/?text=${encodedMessage}`;
+              window.open(whatsappUrl, '_blank');
+              
+              toast({
+                title: "Promemoria pulizia inviato",
+                description: `Creato promemoria per ${outdatedBaskets.length} ceste che necessitano di pulizia.`,
+              });
+            })} 
+            className="space-y-6"
+            >
+              <FormField
+                control={cleaningReminderForm.control}
+                name="days"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Giorni dall'ultima operazione</FormLabel>
+                    <FormDescription>
+                      Seleziona il numero di giorni senza operazioni oltre il quale una cesta dovrebbe essere pulita
+                    </FormDescription>
+                    <FormControl>
+                      <Input 
+                        type="number" 
+                        min={1} 
+                        max={30} 
+                        value={field.value}
+                        onChange={(e) => field.onChange(parseInt(e.target.value))}
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setCleaningReminderDialogOpen(false)}>
+                  Annulla
+                </Button>
+                <Button type="submit">
+                  Invia promemoria
                 </Button>
               </DialogFooter>
             </form>
@@ -1337,12 +1471,18 @@ export default function BasketSelection() {
           <div className="flex gap-2">
             <Button 
               variant="outline"
+              onClick={() => setCleaningReminderDialogOpen(true)}
+            >
+              <Brush className="mr-2 h-4 w-4" />
+              Promemoria pulizia
+            </Button>
+            
+            <Button 
+              variant="outline"
               disabled={selectedBaskets.size === 0}
               onClick={openActivityDialog}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M17.472 14.382c-.297-.149-1.758-.867-2.03-.967-.273-.099-.471-.148-.67.15-.197.297-.767.966-.94 1.164-.173.199-.347.223-.644.075-.297-.15-1.255-.463-2.39-1.475-.883-.788-1.48-1.761-1.653-2.059-.173-.297-.018-.458.13-.606.134-.133.298-.347.446-.52.149-.174.198-.298.298-.497.099-.198.05-.371-.025-.52-.075-.149-.669-1.612-.916-2.207-.242-.579-.487-.5-.669-.51-.173-.008-.371-.01-.57-.01-.198 0-.52.074-.792.372-.272.297-1.04 1.016-1.04 2.479 0 1.462 1.065 2.875 1.213 3.074.149.198 2.096 3.2 5.077 4.487.709.306 1.262.489 1.694.625.712.227 1.36.195 1.871.118.571-.085 1.758-.719 2.006-1.413.248-.694.248-1.289.173-1.413-.074-.124-.272-.198-.57-.347m-5.421 7.403h-.004a9.87 9.87 0 01-5.031-1.378l-.361-.214-3.741.982.998-3.648-.235-.374a9.86 9.86 0 01-1.51-5.26c.001-5.45 4.436-9.884 9.888-9.884 2.64 0 5.122 1.03 6.988 2.898a9.825 9.825 0 012.893 6.994c-.003 5.45-4.437 9.884-9.885 9.884m8.413-18.297A11.815 11.815 0 0012.05 0C5.495 0 .16 5.335.157 11.892c0 2.096.547 4.142 1.588 5.945L.057 24l6.305-1.654a11.882 11.882 0 005.683 1.448h.005c6.554 0 11.89-5.335 11.893-11.893a11.821 11.821 0 00-3.48-8.413z"/>
-              </svg>
+              <ClipboardCheck className="mr-2 h-4 w-4" />
               Assegna attività
             </Button>
             
@@ -1351,9 +1491,7 @@ export default function BasketSelection() {
               disabled={selectedBaskets.size === 0 || Object.keys(basketActivities).length === 0}
               onClick={shareViaWhatsApp}
             >
-              <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 mr-2" viewBox="0 0 24 24" fill="currentColor">
-                <path d="M2.004 22l1.352-4.968A9.954 9.954 0 012 12C2 6.477 6.477 2 12 2s10 4.477 10 10-4.477 10-10 10a9.954 9.954 0 01-5.03-1.355L2.004 22zM8.391 7.308a.961.961 0 00-.371.1 1.293 1.293 0 00-.294.228c-.12.113-.188.211-.261.306A2.729 2.729 0 006.9 9.62c.002.49.13.967.33 1.413.409.902 1.082 1.857 1.971 2.742.214.213.423.427.648.626a9.448 9.448 0 003.84 2.046l.569.087c.185.01.37-.004.556-.013a1.99 1.99 0 00.833-.231c.166-.088.244-.132.383-.22 0 0 .043-.028.125-.09.135-.1.218-.171.33-.288.083-.086.155-.187.21-.302.078-.163.156-.474.188-.733.024-.198.017-.306.014-.373-.004-.107-.093-.218-.19-.265l-.582-.261s-.87-.379-1.401-.621a.498.498 0 00-.177-.041.482.482 0 00-.378.127v-.002c-.005 0-.072.057-.795.933a.35.35 0 01-.368.13 1.416 1.416 0 01-.191-.066c-.124-.052-.167-.072-.252-.109l-.005-.002a6.01 6.01 0 01-1.57-1c-.126-.11-.243-.23-.363-.346a6.296 6.296 0 01-1.02-1.268l-.059-.095a.923.923 0 01-.102-.205c-.038-.147.061-.265.061-.265s.243-.266.356-.41a4.38 4.38 0 00.263-.373c.118-.19.155-.385.093-.536-.28-.684-.57-1.365-.868-2.041-.059-.134-.234-.23-.393-.249-.054-.006-.108-.012-.162-.016a3.385 3.385 0 00-.403.004z" />
-              </svg>
+              <Share2 className="mr-2 h-4 w-4" />
               Invia con WhatsApp
             </Button>
             
