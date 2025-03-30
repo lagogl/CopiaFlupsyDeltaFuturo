@@ -1,111 +1,185 @@
-// This script contains improved WebSocket functionality
-// to ensure proper real-time updates for the FLUPSY management system
+// File: fix_websocket.js
+// Implementazione client WebSocket con riconnessione automatica e gestione degli eventi
 
-// WebSocket client connection configuration
-const configureWebSocket = () => {
-  const protocol = window.location.protocol === "https:" ? "wss:" : "ws:";
+/**
+ * Configura e inizializza una connessione WebSocket al server.
+ * Implementa la riconnessione automatica e genera eventi DOM per una migliore
+ * integrazione con il resto dell'applicazione React.
+ * 
+ * @returns {WebSocket} Istanza del WebSocket configurato
+ */
+function configureWebSocket() {
+  // Determina l'URL del WebSocket basato sull'ambiente
+  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
   const wsUrl = `${protocol}//${window.location.host}/ws`;
   
-  console.log("Configuring WebSocket with URL:", wsUrl);
+  console.log(`Tentativo di connessione WebSocket a ${wsUrl}`);
   
-  const socket = new WebSocket(wsUrl);
+  // Variabili per gestire i tentativi di riconnessione
+  let reconnectInterval = 1000; // Inizia con 1 secondo
+  const maxReconnectInterval = 30000; // Massimo 30 secondi
+  let reconnectAttempts = 0;
+  const maxReconnectAttempts = 50; // Massimo 50 tentativi
   
-  // Connection opened
-  socket.addEventListener('open', (event) => {
-    console.log('WebSocket connection established');
-    document.dispatchEvent(new CustomEvent('ws:connected'));
-  });
-  
-  // Connection closed
-  socket.addEventListener('close', (event) => {
-    console.log('WebSocket disconnected', event.code, event.reason);
-    document.dispatchEvent(new CustomEvent('ws:disconnected'));
-    
-    // Reconnect after delay if not a normal closure
-    if (event.code !== 1000) {
-      console.log('Attempting to reconnect in 3 seconds...');
-      setTimeout(() => {
-        configureWebSocket();
-      }, 3000);
-    }
-  });
-  
-  // Error handler
-  socket.addEventListener('error', (event) => {
-    console.error('WebSocket error:', event);
-    document.dispatchEvent(new CustomEvent('ws:error', { 
-      detail: { message: 'WebSocket connection error' } 
-    }));
-  });
-  
-  // Message handler
-  socket.addEventListener('message', (event) => {
-    try {
-      const data = JSON.parse(event.data);
-      console.log('WebSocket message received:', data);
-      
-      // Dispatch appropriate event based on message type
-      document.dispatchEvent(new CustomEvent(`ws:message:${data.type}`, { 
-        detail: data 
-      }));
-      
-      // Also dispatch general message event
-      document.dispatchEvent(new CustomEvent('ws:message', { 
-        detail: data 
-      }));
-    } catch (error) {
-      console.error('Error parsing WebSocket message:', error);
-    }
-  });
-  
-  // Return the socket for external use
-  return socket;
-};
-
-// Function to send message through WebSocket
-const sendWebSocketMessage = (socket, type, data) => {
-  if (socket && socket.readyState === WebSocket.OPEN) {
-    const message = JSON.stringify({ type, data });
-    socket.send(message);
-    console.log(`Sent WebSocket message:`, { type, data });
-    return true;
+  // Funzione di evento personalizzata per le notifiche
+  function dispatchEvent(type, data) {
+    const event = new CustomEvent(`ws:${type}`, { 
+      detail: data,
+      bubbles: true,
+      cancelable: true 
+    });
+    document.dispatchEvent(event);
   }
-  console.warn('Cannot send message, WebSocket not connected');
-  return false;
-};
-
-// Server-side WebSocket broadcast implementation (to be used in routes.ts)
-const broadcastToClients = (clients, type, data) => {
-  const message = JSON.stringify({ type, data });
-  let sentCount = 0;
   
-  clients.forEach((client) => {
-    if (client.readyState === WebSocket.OPEN) {
-      client.send(message);
-      sentCount++;
+  // Funzione per creare una nuova connessione
+  function createConnection() {
+    const socket = new WebSocket(wsUrl);
+    
+    socket.onopen = () => {
+      console.log('WebSocket connesso');
+      reconnectInterval = 1000; // Reset dell'intervallo di riconnessione
+      reconnectAttempts = 0;     // Reset dei tentativi
+      
+      // Invia evento di connessione
+      dispatchEvent('connected', { timestamp: Date.now() });
+      
+      // Notifica tipo messaggio "connection" agli ascoltatori
+      dispatchEvent('message:connection', { 
+        type: 'connection', 
+        message: 'Connesso al server in tempo reale' 
+      });
+    };
+    
+    socket.onclose = (event) => {
+      console.log('WebSocket disconnesso', event.code, `${event.reason ? event.reason : ''}`);
+      dispatchEvent('disconnected', { 
+        code: event.code, 
+        reason: event.reason,
+        timestamp: Date.now()
+      });
+      
+      // Tenta di riconnettersi se la chiusura non è volontaria (1000 o 1001)
+      if (event.code !== 1000 && event.code !== 1001) {
+        scheduleReconnect(socket);
+      }
+    };
+    
+    socket.onerror = (error) => {
+      console.error('Errore WebSocket:', error);
+      dispatchEvent('error', { 
+        error: error,
+        timestamp: Date.now()
+      });
+    };
+    
+    socket.onmessage = (event) => {
+      try {
+        const data = JSON.parse(event.data);
+        console.log('Ricevuto messaggio WebSocket:', data);
+        
+        // Invia evento generale per tutti i messaggi
+        dispatchEvent('message', data);
+        
+        // Invia evento specifico per tipo di messaggio
+        if (data.type) {
+          dispatchEvent(`message:${data.type}`, data);
+        }
+      } catch (error) {
+        console.error('Errore nel parsing del messaggio WebSocket:', error);
+        dispatchEvent('error', { 
+          error: error,
+          raw: event.data,
+          timestamp: Date.now()
+        });
+      }
+    };
+    
+    return socket;
+  }
+  
+  // Funzione per gestire i tentativi di riconnessione
+  function scheduleReconnect(oldSocket) {
+    reconnectAttempts++;
+    
+    if (reconnectAttempts > maxReconnectAttempts) {
+      console.error(`Tentativi massimi di riconnessione raggiunti (${maxReconnectAttempts}). Abbandono.`);
+      dispatchEvent('maxRetriesReached', { 
+        attempts: reconnectAttempts,
+        timestamp: Date.now()
+      });
+      return;
     }
-  });
+    
+    // Aumento esponenziale del tempo di attesa
+    const delay = Math.min(reconnectInterval * Math.pow(1.5, reconnectAttempts - 1), maxReconnectInterval);
+    
+    console.log(`Tentativo di riconnessione ${reconnectAttempts} tra ${delay}ms`);
+    dispatchEvent('reconnecting', { 
+      attempt: reconnectAttempts,
+      delay: delay,
+      timestamp: Date.now()
+    });
+    
+    setTimeout(() => {
+      // Pulisci il socket precedente se ancora esiste
+      if (oldSocket) {
+        try {
+          oldSocket.onclose = null; // Previene loop di riconnessione
+          oldSocket.onerror = null;
+          oldSocket.onopen = null;
+          oldSocket.onmessage = null;
+          oldSocket.close();
+        } catch (e) {
+          // Ignora errori durante la pulizia
+        }
+      }
+      
+      // Crea una nuova connessione
+      const newSocket = createConnection();
+      window.wsSocket = newSocket; // Aggiorna il riferimento globale
+    }, delay);
+  }
   
-  console.log(`Broadcast message to ${sentCount} clients:`, { type, data });
-  return sentCount;
-};
+  // Inizializza la connessione
+  const socket = createConnection();
+  
+  // Esponi il socket a livello di window per accessi manuali (debug)
+  window.wsSocket = socket;
+  
+  return socket;
+}
 
-// Example of how to listen for WebSocket events in a React component:
-/*
-useEffect(() => {
-  const handleBasketUpdate = (event) => {
-    const { detail } = event;
-    console.log('Basket updated:', detail);
-    // Update your UI based on the new data
-    // e.g., queryClient.invalidateQueries(['baskets'])
-  };
+/**
+ * Invia un messaggio attraverso il WebSocket.
+ * 
+ * @param {WebSocket} socket - L'istanza del WebSocket
+ * @param {string} type - Il tipo di messaggio
+ * @param {any} data - I dati da inviare
+ * @returns {boolean} - true se il messaggio è stato inviato con successo
+ */
+function sendWebSocketMessage(socket, type, data) {
+  if (!socket || socket.readyState !== WebSocket.OPEN) {
+    console.error('WebSocket non connesso. Impossibile inviare il messaggio.');
+    return false;
+  }
   
-  // Listen for basket update events
-  document.addEventListener('ws:message:basket_update', handleBasketUpdate);
-  
-  // Cleanup
-  return () => {
-    document.removeEventListener('ws:message:basket_update', handleBasketUpdate);
-  };
-}, []);
-*/
+  try {
+    const message = JSON.stringify({
+      type,
+      data,
+      timestamp: Date.now()
+    });
+    
+    socket.send(message);
+    return true;
+  } catch (error) {
+    console.error('Errore nell\'invio del messaggio WebSocket:', error);
+    return false;
+  }
+}
+
+// Esporta le funzioni
+module.exports = {
+  configureWebSocket,
+  sendWebSocketMessage
+};

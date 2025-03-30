@@ -1,133 +1,229 @@
-// This script contains improved WebSocket server functionality
-// for the FLUPSY management system server routes.ts file
+// File: fix_websocket_server.js
+// Implementazione robusta del server WebSocket
 
-// Import the WebSocketServer and WebSocket from 'ws'
-const { WebSocketServer, WebSocket } = require('ws');
+const { WebSocketServer } = require('ws');
 
-// Configure WebSocket server
-const configureWebSocketServer = (httpServer) => {
-  // Create WebSocket server on a different path to avoid conflicts with Vite HMR
+/**
+ * Configura e inizializza un server WebSocket su un server HTTP esistente
+ * 
+ * @param {Object} httpServer - Il server HTTP di Express su cui montare il WebSocket Server
+ * @param {string} path - Il percorso su cui montare il WebSocket Server (default: '/ws')
+ * @returns {Object} - Oggetto con utilità del WebSocket Server
+ */
+function configureWebSocketServer(httpServer, path = '/ws') {
+  // Verifica che il server HTTP esista
+  if (!httpServer) {
+    throw new Error("Server HTTP non fornito per la configurazione WebSocket");
+  }
+  
+  // Crea il server WebSocket
   const wss = new WebSocketServer({ 
     server: httpServer, 
-    path: '/ws'
+    path: path 
   });
   
-  console.log('WebSocket server initialized on path: /ws');
+  // Statistiche e stato
+  const stats = {
+    connections: 0,
+    activeConnections: 0,
+    messagesReceived: 0,
+    messagesSent: 0,
+    errors: 0,
+    lastError: null,
+    startTime: new Date(),
+  };
   
-  // Store active connections
-  const clients = new Set();
+  // Gestione eventi globali
+  console.log(`WebSocket server initialized at ${path} path`);
   
-  // Handle new connections
-  wss.on('connection', (ws) => {
-    console.log('WebSocket client connected');
+  // Evento di connessione di un nuovo client
+  wss.on('connection', (ws, req) => {
+    stats.connections++;
+    stats.activeConnections++;
     
-    // Add client to the set
-    clients.add(ws);
+    // Indirizzo IP del client (può essere utile per logging o rate limiting)
+    const clientIp = req.socket.remoteAddress;
+    const connId = Math.random().toString(36).substring(2, 10);
     
-    // Send initial connected message
-    ws.send(JSON.stringify({ 
-      type: 'connection', 
-      message: 'Connesso al server in tempo reale'
-    }));
+    console.log(`WebSocket client connected [${connId}] from ${clientIp}`);
     
-    // Handle incoming messages
-    ws.on('message', (message) => {
+    // Definizione proprietà per gestire lo stato del socket
+    ws.connId = connId;
+    ws.isAlive = true;
+    ws.subscribedTopics = new Set();
+    
+    // Gestione dei ping per mantenere attiva la connessione
+    ws.on('pong', () => {
+      ws.isAlive = true;
+    });
+    
+    // Gestione messaggi dal client
+    ws.on('message', (data) => {
+      stats.messagesReceived++;
+      
       try {
-        const parsedMessage = JSON.parse(message);
-        console.log(`Received message:`, parsedMessage);
+        // Parsa il messaggio JSON
+        const message = JSON.parse(data.toString());
         
-        // Handle specific message types here as needed
-        if (parsedMessage.type === 'ping') {
-          ws.send(JSON.stringify({
-            type: 'pong',
-            timestamp: Date.now()
-          }));
+        // Gestione di diversi tipi di messaggi
+        switch (message.type) {
+          case 'ping':
+            ws.send(JSON.stringify({ type: 'pong', timestamp: Date.now() }));
+            stats.messagesSent++;
+            break;
+            
+          case 'subscribe':
+            if (message.topic) {
+              ws.subscribedTopics.add(message.topic);
+              console.log(`Client ${connId} subscribed to topic: ${message.topic}`);
+              ws.send(JSON.stringify({ 
+                type: 'subscribed', 
+                topic: message.topic,
+                success: true 
+              }));
+              stats.messagesSent++;
+            }
+            break;
+            
+          case 'unsubscribe':
+            if (message.topic && ws.subscribedTopics.has(message.topic)) {
+              ws.subscribedTopics.delete(message.topic);
+              console.log(`Client ${connId} unsubscribed from topic: ${message.topic}`);
+              ws.send(JSON.stringify({ 
+                type: 'unsubscribed', 
+                topic: message.topic,
+                success: true 
+              }));
+              stats.messagesSent++;
+            }
+            break;
+            
+          default:
+            // Puoi anche gestire messaggi custom qui
+            console.log(`Received message from client ${connId}:`, message);
         }
       } catch (error) {
-        console.error('Error handling WebSocket message:', error);
+        console.error(`Error processing message from client ${connId}:`, error);
+        stats.errors++;
+        stats.lastError = {
+          time: new Date(),
+          message: error.message,
+          stack: error.stack
+        };
       }
     });
     
-    // Handle disconnection
+    // Gestione disconnessione
     ws.on('close', () => {
-      console.log('WebSocket client disconnected');
-      clients.delete(ws);
+      stats.activeConnections--;
+      console.log(`WebSocket client disconnected [${connId}]`);
     });
     
-    // Handle errors
+    // Gestione errori
     ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-      clients.delete(ws);
+      stats.errors++;
+      stats.lastError = {
+        time: new Date(),
+        message: error.message,
+        stack: error.stack
+      };
+      console.error(`WebSocket error for client ${connId}:`, error);
     });
+    
+    // Messaggio di benvenuto
+    const welcomeMessage = {
+      type: 'welcome',
+      message: 'Connessione al server WebSocket stabilita',
+      connId: connId,
+      serverTime: new Date().toISOString()
+    };
+    
+    ws.send(JSON.stringify(welcomeMessage));
+    stats.messagesSent++;
   });
   
-  // Helper function to broadcast messages to all connected clients
-  const broadcastMessage = (type, data) => {
-    const message = JSON.stringify({ type, data });
+  // Ping periodico per mantenere attive le connessioni
+  const pingInterval = setInterval(() => {
+    wss.clients.forEach((ws) => {
+      if (ws.isAlive === false) {
+        console.log(`Client ${ws.connId} non risponde, chiusura connessione`);
+        return ws.terminate();
+      }
+      
+      ws.isAlive = false;
+      ws.ping();
+    });
+  }, 30000); // 30 secondi
+  
+  // Gestione chiusura del server
+  wss.on('close', () => {
+    clearInterval(pingInterval);
+    console.log("WebSocket server closed");
+  });
+  
+  // Funzione per inviare messaggi a tutti i client attivi
+  function broadcastMessage(type, data) {
+    const message = JSON.stringify({
+      type,
+      data,
+      timestamp: Date.now()
+    });
+    
     let sentCount = 0;
     
-    clients.forEach((client) => {
+    wss.clients.forEach((client) => {
       if (client.readyState === WebSocket.OPEN) {
         client.send(message);
         sentCount++;
+        stats.messagesSent++;
       }
     });
     
-    console.log(`Broadcast message to ${sentCount} clients:`, { type, data });
-    return sentCount;
-  };
+    console.log(`Broadcast message of type '${type}' sent to ${sentCount} clients`);
+    return sentCount > 0;
+  }
   
-  // Helper function to broadcast to specific clients that match a filter
-  const broadcastFiltered = (type, data, filterFn) => {
-    const message = JSON.stringify({ type, data });
+  // Funzione per inviare messaggi a client abbonati a un topic specifico
+  function broadcastToTopic(topic, type, data) {
+    const message = JSON.stringify({
+      type,
+      topic,
+      data,
+      timestamp: Date.now()
+    });
+    
     let sentCount = 0;
     
-    clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN && filterFn(client)) {
+    wss.clients.forEach((client) => {
+      if (client.readyState === WebSocket.OPEN && 
+          (client.subscribedTopics.has(topic) || client.subscribedTopics.has('*'))) {
         client.send(message);
         sentCount++;
+        stats.messagesSent++;
       }
     });
     
-    console.log(`Broadcast filtered message to ${sentCount} clients:`, { type, data });
-    return sentCount;
-  };
+    console.log(`Topic '${topic}' message of type '${type}' sent to ${sentCount} clients`);
+    return sentCount > 0;
+  }
   
-  // Return the WebSocket server and utilities
+  // Funzione per ottenere le statistiche del server WebSocket
+  function getStats() {
+    return {
+      ...stats,
+      uptime: Math.floor((new Date() - stats.startTime) / 1000), // Uptime in secondi
+      activeConnections: stats.activeConnections
+    };
+  }
+  
+  // Restituisci l'oggetto con tutte le utilità
   return {
     wss,
-    clients,
     broadcastMessage,
-    broadcastFiltered
+    broadcastToTopic,
+    getStats
   };
-};
-
-// Example usage in routes.ts:
-/*
-  // Create HTTP server
-  const httpServer = createServer(app);
-  
-  // Configure WebSocket server
-  const { broadcastMessage } = configureWebSocketServer(httpServer);
-  
-  // After an operation is created, broadcast the update
-  app.post("/api/operations", async (req, res) => {
-    try {
-      // ... existing code to create operation ...
-      
-      // Broadcast that an operation was created
-      broadcastMessage('operation_created', {
-        id: createdOperation.id,
-        type: createdOperation.type,
-        basketId: createdOperation.basketId
-      });
-      
-      res.status(201).json(createdOperation);
-    } catch (error) {
-      // ... error handling ...
-    }
-  });
-*/
+}
 
 module.exports = {
   configureWebSocketServer

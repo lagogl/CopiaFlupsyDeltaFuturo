@@ -972,6 +972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/operations", async (req, res) => {
     try {
+      console.log("===== INIZIO ENDPOINT POST /api/operations =====");
       console.log("POST /api/operations - Request Body:", JSON.stringify(req.body, null, 2));
 
       // Prima verifica se si tratta di un'operazione prima-attivazione che non richiede un cycleId
@@ -1052,10 +1053,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
           date: format(primaAttivSchema.data.date, 'yyyy-MM-dd')
         };
         
-        console.log("Creazione operazione con dati:", operationData);
+        console.log("CREAZIONE OPERAZIONE PRIMA-ATTIVAZIONE - Dati:", JSON.stringify(operationData, null, 2));
         
-        const operation = await storage.createOperation(operationData);
-        return res.status(201).json(operation);
+        try {
+          const operation = await storage.createOperation(operationData);
+          console.log("OPERAZIONE PRIMA-ATTIVAZIONE CREATA CON SUCCESSO:", JSON.stringify(operation, null, 2));
+          
+          // Broadcast operation created event via WebSockets
+          if (typeof (global as any).broadcastUpdate === 'function') {
+            console.log("Invio notifica WebSocket per nuova operazione");
+            (global as any).broadcastUpdate('operation_created', {
+              operation: operation,
+              message: `Nuova operazione di tipo ${operation.type} registrata`
+            });
+            
+            (global as any).broadcastUpdate('cycle_created', {
+              cycle: newCycle,
+              basketId: basketId,
+              message: `Nuovo ciclo ${newCycle.id} creato per il cestello ${basketId}`
+            });
+          }
+          
+          console.log("===== FINE ENDPOINT POST /api/operations (prima-attivazione) - SUCCESSO =====");
+          return res.status(201).json(operation);
+        } catch (error) {
+          console.error("ERRORE DURANTE CREAZIONE OPERAZIONE PRIMA-ATTIVAZIONE:", error);
+          return res.status(500).json({ 
+            message: `Errore durante la creazione dell'operazione di prima attivazione: ${error instanceof Error ? error.message : String(error)}` 
+          });
+        }
       } else {
         // Per le altre operazioni utilizziamo il validator completo
         const parsedData = operationSchema.safeParse(req.body);
@@ -1176,17 +1202,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Manteniamo il conteggio originale degli animali (inclusi i morti)
           animalCount: parsedData.data.animalCount
         };
-        const newOperation = await storage.createOperation(operationData);
         
-        // Broadcast operation created event via WebSockets
-        if (typeof (global as any).broadcastUpdate === 'function') {
-          (global as any).broadcastUpdate('operation_created', {
-            operation: newOperation,
-            message: `Nuova operazione di tipo ${newOperation.type} registrata`
+        console.log("CREAZIONE OPERAZIONE STANDARD - Dati:", JSON.stringify(operationData, null, 2));
+        
+        try {
+          const newOperation = await storage.createOperation(operationData);
+          console.log("OPERAZIONE CREATA CON SUCCESSO:", JSON.stringify(newOperation, null, 2));
+          
+          // Broadcast operation created event via WebSockets
+          if (typeof (global as any).broadcastUpdate === 'function') {
+            console.log("Invio notifica WebSocket per nuova operazione");
+            (global as any).broadcastUpdate('operation_created', {
+              operation: newOperation,
+              message: `Nuova operazione di tipo ${newOperation.type} registrata`
+            });
+          }
+          
+          console.log("===== FINE ENDPOINT POST /api/operations - SUCCESSO =====");
+          return res.status(201).json(newOperation);
+        } catch (error) {
+          console.error("ERRORE DURANTE CREAZIONE OPERAZIONE:", error);
+          return res.status(500).json({ 
+            message: `Errore durante la creazione dell'operazione: ${error instanceof Error ? error.message : String(error)}` 
           });
         }
-        
-        res.status(201).json(newOperation);
       }
     } catch (error) {
       console.error("Error creating operation:", error);
