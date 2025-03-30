@@ -186,7 +186,10 @@ export default function DraggableFlupsyVisualizer() {
       // Controlla se è un caso di posizione occupata
       if (data && data.positionOccupied && data.basketAtPosition) {
         // Non completare ancora l'operazione, ma prepara per uno switch
-        const basket1 = baskets?.find((b: any) => b.id === pendingBasketMove?.basketId);
+        const basket1 = baskets && Array.isArray(baskets) ? 
+          baskets.find((b: any) => b.id === pendingBasketMove?.basketId) : 
+          null;
+        
         if (basket1 && pendingBasketMove) {
           // Mostra dialogo di conferma speciale per switch
           setPendingBasketMove({
@@ -197,8 +200,7 @@ export default function DraggableFlupsyVisualizer() {
           
           toast({
             title: "Posizione occupata",
-            description: `La posizione è già occupata dalla cesta #${data.basketAtPosition.physicalNumber}. Conferma per effettuare uno switch.`,
-            variant: "warning",
+            description: `La posizione è già occupata dalla cesta #${data.basketAtPosition.physicalNumber}. Conferma per effettuare uno switch.`
           });
         }
       } else {
@@ -206,7 +208,7 @@ export default function DraggableFlupsyVisualizer() {
         queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
         toast({
           title: "Posizione aggiornata",
-          description: "La posizione della cesta è stata aggiornata con successo.",
+          description: "La posizione della cesta è stata aggiornata con successo."
         });
         setConfirmDialogOpen(false);
         setPendingBasketMove(null);
@@ -318,22 +320,33 @@ export default function DraggableFlupsyVisualizer() {
     }) => {
       // Per prima cosa, sposta il cestello 2 in una posizione temporanea (null)
       // in modo da liberare la sua posizione
-      await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
+      const clearBasket2 = await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
         row: null,
         position: null
       });
+      console.log("Cestello 2 in posizione temporanea:", clearBasket2);
+      
+      // Piccola pausa per assicurare che il database abbia completato l'operazione precedente
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Ora che la posizione è libera, sposta il cestello 1 nella posizione che era del cestello 2
-      await apiRequest('PATCH', `/api/baskets/${basket1Id}`, {
+      const moveBasket1 = await apiRequest('PATCH', `/api/baskets/${basket1Id}`, {
         row: position2Row,
         position: position2Number
       });
+      console.log("Cestello 1 spostato in nuova posizione:", moveBasket1);
+      
+      // Piccola pausa per assicurare che il database abbia completato l'operazione precedente
+      await new Promise(resolve => setTimeout(resolve, 100));
       
       // Infine, sposta il cestello 2 nella posizione originale del cestello 1
-      return await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
+      const moveBasket2 = await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
         row: position1Row,
         position: position1Number
       });
+      console.log("Cestello 2 spostato in posizione originale del cestello 1:", moveBasket2);
+      
+      return moveBasket2;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });

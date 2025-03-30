@@ -70,11 +70,25 @@ export class DbStorage implements IStorage {
   }
 
   async updateBasket(id: number, basketUpdate: Partial<Basket>): Promise<Basket | undefined> {
-    const results = await db.update(baskets)
-      .set(basketUpdate)
-      .where(eq(baskets.id, id))
-      .returning();
-    return results[0];
+    try {
+      // Aggiorniamo il cestello
+      const results = await db.update(baskets)
+        .set(basketUpdate)
+        .where(eq(baskets.id, id))
+        .returning();
+      
+      // Recuperiamo il cestello completo con una query separata 
+      // per assicurarci di avere tutti i dati aggiornati
+      if (results.length > 0) {
+        const updatedBasket = await this.getBasket(id);
+        return updatedBasket;
+      }
+      
+      return results[0];
+    } catch (error) {
+      console.error("DB Error [updateBasket]:", error);
+      throw error;
+    }
   }
   
   async deleteBasket(id: number): Promise<boolean> {

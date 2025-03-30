@@ -442,15 +442,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Update the basket
       const updatedBasket = await storage.updateBasket(id, parsedData.data);
       
+      // Ottieni il cestello aggiornato completo per assicurarci di avere tutti i dati
+      const completeBasket = await storage.getBasket(id);
+      
       // Broadcast basket update event via WebSockets
-      if (typeof (global as any).broadcastUpdate === 'function') {
+      if (typeof (global as any).broadcastUpdate === 'function' && completeBasket) {
         (global as any).broadcastUpdate('basket_updated', {
-          basket: updatedBasket,
-          message: `Cestello ${updatedBasket.physicalNumber} aggiornato`
+          basket: completeBasket,
+          message: `Cestello ${completeBasket.physicalNumber} aggiornato`
         });
       }
       
-      res.json(updatedBasket);
+      // Restituisci il cestello completo al client
+      res.json(completeBasket || updatedBasket);
     } catch (error) {
       console.error("Error updating basket:", error);
       res.status(500).json({ message: "Failed to update basket" });
