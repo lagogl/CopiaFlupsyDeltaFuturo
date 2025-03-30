@@ -163,28 +163,48 @@ export default function DraggableFlupsyVisualizer() {
   // Update basket position mutation
   const updateBasketPosition = useMutation({
     mutationFn: async ({ basketId, flupsyId, row, position }: { basketId: number; flupsyId: number; row: string; position: number }) => {
+      console.log('SPOSTAMENTO NORMALE:', basketId, 'a', row, position);
       console.log('Sending basket position update with flupsyId:', flupsyId);
-      // Utilizziamo il nuovo endpoint dedicato per lo spostamento dei cestelli
-      const response = await apiRequest('POST', `/api/baskets/${basketId}/move`, {
-        flupsyId,
-        row,
-        position
-      });
-      console.log("API Response status:", response.status);
-      console.log("API Response data:", response);
       
-      // Se la posizione è occupata ma l'API ha risposto 200 con positionOccupied=true,
-      // è un caso di switch potenziale da gestire
-      if (response && response.positionOccupied && response.basketAtPosition) {
-        // Ritorna le informazioni sulla posizione occupata per permettere lo switch
-        return {
-          positionOccupied: true,
-          basketAtPosition: response.basketAtPosition,
-          message: response.message
-        };
+      try {
+        // Utilizziamo il nuovo endpoint dedicato per lo spostamento dei cestelli
+        const response = await apiRequest('POST', `/api/baskets/${basketId}/move`, {
+          flupsyId,
+          row,
+          position
+        });
+        
+        console.log("API Response status:", response.status);
+        if (typeof response === 'object') {
+          console.log("API Response data:", JSON.stringify(response));
+        } else {
+          console.log("API Response data (non-object):", response);
+        }
+        
+        // Se la posizione è occupata ma l'API ha risposto 200 con positionOccupied=true,
+        // è un caso di switch potenziale da gestire
+        if (response && response.positionOccupied && response.basketAtPosition) {
+          // Ritorna le informazioni sulla posizione occupata per permettere lo switch
+          return {
+            positionOccupied: true,
+            basketAtPosition: response.basketAtPosition,
+            message: response.message
+          };
+        }
+        
+        // Se la risposta è vuota ma l'API ha risposto 200, consideriamo lo spostamento riuscito
+        // e aggiorniamo i dati manualmente per evitare problemi di rendering
+        if (response === null || response === undefined || Object.keys(response).length === 0) {
+          console.log("Risposta vuota ma status 200, refresh dei dati...");
+          queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+          return { success: true, message: "Cestello spostato con successo" };
+        }
+        
+        return response;
+      } catch (error) {
+        console.error("Errore durante lo spostamento del cestello:", error);
+        throw error;
       }
-      
-      return response;
     },
     onSuccess: (data) => {
       // Controlla se è un caso di posizione occupata

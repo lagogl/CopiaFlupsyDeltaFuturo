@@ -70,6 +70,8 @@ export class DbStorage implements IStorage {
   }
 
   async updateBasket(id: number, basketUpdate: Partial<Basket>): Promise<Basket | undefined> {
+    console.log(`updateBasket - Inizio aggiornamento cestello ID:${id} con dati:`, JSON.stringify(basketUpdate));
+    
     try {
       // Aggiorniamo il cestello
       const results = await db.update(baskets)
@@ -77,17 +79,30 @@ export class DbStorage implements IStorage {
         .where(eq(baskets.id, id))
         .returning();
       
+      console.log(`updateBasket - Query eseguita, risultati:`, results ? results.length : 0);
+      
       // Recuperiamo il cestello completo con una query separata 
       // per assicurarci di avere tutti i dati aggiornati
-      if (results.length > 0) {
+      if (results && results.length > 0) {
+        console.log(`updateBasket - Cestello aggiornato con successo, recupero dati completi`);
         const updatedBasket = await this.getBasket(id);
+        console.log(`updateBasket - Cestello completo recuperato:`, updatedBasket ? 'OK' : 'Non trovato');
         return updatedBasket;
+      } else {
+        console.warn(`updateBasket - Nessun risultato restituito dall'aggiornamento`);
+        // Se per qualche motivo non abbiamo risultati, proviamo a recuperare comunque il cestello
+        const basket = await this.getBasket(id);
+        if (basket) {
+          console.log(`updateBasket - Cestello trovato nonostante nessun risultato dall'aggiornamento`);
+          return basket;
+        }
       }
       
-      return results[0];
+      console.warn(`updateBasket - Nessun cestello trovato con ID:${id}`);
+      return undefined;
     } catch (error) {
       console.error("DB Error [updateBasket]:", error);
-      throw error;
+      throw new Error(`Errore durante l'aggiornamento del cestello: ${(error as Error).message}`);
     }
   }
   
@@ -434,7 +449,7 @@ export class DbStorage implements IStorage {
     let formattedStartDate: string;
     if (typeof positionHistory.startDate === 'string') {
       formattedStartDate = positionHistory.startDate;
-    } else if (positionHistory.startDate && typeof positionHistory.startDate === 'object' && 'toISOString' in positionHistory.startDate) {
+    } else if (positionHistory.startDate instanceof Date) {
       formattedStartDate = positionHistory.startDate.toISOString().split('T')[0]; 
     } else {
       // Se la data non è fornita, usa la data corrente
@@ -462,6 +477,10 @@ export class DbStorage implements IStorage {
         operationId: positionHistory.operationId || null
       }).returning();
       
+      if (!results || results.length === 0) {
+        throw new Error("Nessun risultato restituito durante la creazione della cronologia di posizione");
+      }
+      
       console.log("createBasketPositionHistory - Record creato con successo:", results[0]);
       return results[0];
     } catch (error) {
@@ -481,7 +500,7 @@ export class DbStorage implements IStorage {
     let endDateStr: string;
     if (typeof endDate === 'string') {
       endDateStr = endDate;
-    } else if (endDate && typeof endDate === 'object' && 'toISOString' in endDate) {
+    } else if (endDate instanceof Date) {
       endDateStr = endDate.toISOString().split('T')[0];
     } else {
       // Se la data non è valida, usa la data corrente
@@ -501,21 +520,26 @@ export class DbStorage implements IStorage {
       
       console.log(`closeBasketPositionHistory - Trovata posizione attiva ID: ${currentPosition.id}, FLUPSY: ${currentPosition.flupsyId}, Riga: ${currentPosition.row}, Posizione: ${currentPosition.position}`);
       
-      // Chiudi la posizione
-      const results = await db.update(basketPositionHistory)
-        .set({
-          endDate: endDateStr
-        })
-        .where(eq(basketPositionHistory.id, currentPosition.id))
-        .returning();
-      
-      if (results.length === 0) {
-        console.error(`closeBasketPositionHistory - Aggiornamento fallito per la posizione ID: ${currentPosition.id}`);
-        throw new Error("Impossibile chiudere la posizione attuale");
+      try {
+        // Chiudi la posizione
+        const results = await db.update(basketPositionHistory)
+          .set({
+            endDate: endDateStr
+          })
+          .where(eq(basketPositionHistory.id, currentPosition.id))
+          .returning();
+        
+        if (!results || results.length === 0) {
+          console.error(`closeBasketPositionHistory - Aggiornamento fallito per la posizione ID: ${currentPosition.id}`);
+          throw new Error("Impossibile chiudere la posizione attuale");
+        }
+        
+        console.log(`closeBasketPositionHistory - Posizione chiusa con successo, ID: ${results[0].id}`);
+        return results[0];
+      } catch (updateError) {
+        console.error("closeBasketPositionHistory - Errore specifico durante l'aggiornamento:", updateError);
+        throw new Error(`Errore durante l'aggiornamento del record: ${(updateError as Error).message}`);
       }
-      
-      console.log(`closeBasketPositionHistory - Posizione chiusa con successo, ID: ${results[0].id}`);
-      return results[0];
     } catch (error) {
       console.error("closeBasketPositionHistory - Errore durante la chiusura della posizione:", error);
       throw new Error(`Errore durante la chiusura della posizione: ${(error as Error).message}`);
