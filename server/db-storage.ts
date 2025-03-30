@@ -139,14 +139,14 @@ export class DbStorage implements IStorage {
     // Logging per debugging
     console.log("DB-STORAGE - createOperation - Received data:", JSON.stringify(operation, null, 2));
     
+    // Crea una copia dei dati per la manipolazione
+    const operationData = { ...operation };
+    
     try {
       // Convert any dates to string format
       if (typeof operation.date === 'object' && operation.date && 'toISOString' in operation.date) {
-        operation.date = operation.date.toISOString().split('T')[0];
+        operationData.date = operation.date.toISOString().split('T')[0];
       }
-      
-      // Crea una copia dei dati per la manipolazione
-      const operationData = { ...operation };
       
       // Log dopo la conversione della data
       console.log("DB-STORAGE - createOperation - After date conversion:", JSON.stringify(operationData, null, 2));
@@ -158,25 +158,26 @@ export class DbStorage implements IStorage {
         operationData.averageWeight = averageWeight;
         console.log(`DB-STORAGE - createOperation - Calculated averageWeight: ${averageWeight} from animalsPerKg: ${operationData.animalsPerKg}`);
       
-      // Se l'operazione include animalsPerKg, assegna automaticamente la taglia corretta
-      // basandosi sui valori min e max del database
-      if (!operationData.sizeId) {
-        console.log(`Determinazione automatica della taglia per animalsPerKg: ${operationData.animalsPerKg}`);
-        
-        // Ottieni tutte le taglie disponibili
-        const allSizes = await this.getSizes();
-        
-        // Trova la taglia corrispondente in base a animalsPerKg
-        const matchingSize = allSizes.find(size => 
-          operationData.animalsPerKg! >= size.minAnimalsPerKg && 
-          operationData.animalsPerKg! <= size.maxAnimalsPerKg
-        );
-        
-        if (matchingSize) {
-          console.log(`Taglia determinata automaticamente: ${matchingSize.code} (ID: ${matchingSize.id})`);
-          operationData.sizeId = matchingSize.id;
-        } else {
-          console.log(`Nessuna taglia trovata per animalsPerKg: ${operationData.animalsPerKg}`);
+        // Se l'operazione include animalsPerKg, assegna automaticamente la taglia corretta
+        // basandosi sui valori min e max del database
+        if (!operationData.sizeId) {
+          console.log(`Determinazione automatica della taglia per animalsPerKg: ${operationData.animalsPerKg}`);
+          
+          // Ottieni tutte le taglie disponibili
+          const allSizes = await this.getSizes();
+          
+          // Trova la taglia corrispondente in base a animalsPerKg
+          const matchingSize = allSizes.find(size => 
+            operationData.animalsPerKg! >= size.minAnimalsPerKg && 
+            operationData.animalsPerKg! <= size.maxAnimalsPerKg
+          );
+          
+          if (matchingSize) {
+            console.log(`Taglia determinata automaticamente: ${matchingSize.code} (ID: ${matchingSize.id})`);
+            operationData.sizeId = matchingSize.id;
+          } else {
+            console.log(`Nessuna taglia trovata per animalsPerKg: ${operationData.animalsPerKg}`);
+          }
         }
       } else {
         // Verifica che la taglia assegnata sia coerente con animalsPerKg
@@ -205,11 +206,10 @@ export class DbStorage implements IStorage {
           }
         }
       }
-    }
-    
-    console.log("==== INSERTING OPERATION IN DATABASE ====");
-    console.log("Operation data:", JSON.stringify(operationData, null, 2));
-    try {
+      
+      console.log("==== INSERTING OPERATION IN DATABASE ====");
+      console.log("Operation data:", JSON.stringify(operationData, null, 2));
+      
       // Verifica che i dati siano validi prima dell'inserimento
       if (!operationData.basketId) {
         throw new Error("basketId è richiesto per creare un'operazione");

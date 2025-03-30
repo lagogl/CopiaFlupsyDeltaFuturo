@@ -32,7 +32,7 @@ import {
 import { format, addDays } from "date-fns";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
-import { WebSocketServer, WebSocket } from "ws";
+import configureWebSocketServer from "./websocket";
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // === Basket routes ===
@@ -3648,62 +3648,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // Create WebSocket server on a different path to avoid conflicts with Vite HMR
-  const wss = new WebSocketServer({ 
-    server: httpServer, 
-    path: '/ws'
-  });
-  
-  // Store active connections
-  const clients = new Set<WebSocket>();
+  // Configure WebSocket server
+  const { 
+    broadcastMessage, 
+    broadcastOperationNotification, 
+    broadcastPositionUpdate,
+    broadcastCycleUpdate,
+    NOTIFICATION_TYPES
+  } = configureWebSocketServer(httpServer);
 
-  // WebSocket server event handlers
-  wss.on('connection', (ws) => {
-    console.log('WebSocket client connected');
-    
-    // Add client to the set
-    clients.add(ws);
-    
-    // Send initial connected message
-    ws.send(JSON.stringify({ 
-      type: 'connection', 
-      message: 'Connesso al server in tempo reale'
-    }));
-    
-    // Handle incoming messages
-    ws.on('message', (message) => {
-      try {
-        console.log(`Received message: ${message}`);
-      } catch (error) {
-        console.error('Error handling WebSocket message:', error);
-      }
-    });
-    
-    // Handle disconnection
-    ws.on('close', () => {
-      console.log('WebSocket client disconnected');
-      clients.delete(ws);
-    });
-
-    // Handle errors
-    ws.on('error', (error) => {
-      console.error('WebSocket error:', error);
-      clients.delete(ws);
-    });
-  });
-  
-  // Helper function to broadcast messages to all connected clients
-  const broadcastMessage = (type: string, data: any) => {
-    const message = JSON.stringify({ type, data });
-    clients.forEach((client) => {
-      if (client.readyState === WebSocket.OPEN) {
-        client.send(message);
-      }
-    });
-  };
-
-  // Broadcast update events after operations
-  // This will be called after operations to notify clients of data changes
+  // Set up global broadcast function for compatibility with existing code
   (global as any).broadcastUpdate = (type: string, data: any) => {
     broadcastMessage(type, data);
   };
