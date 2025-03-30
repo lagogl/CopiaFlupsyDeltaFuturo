@@ -12,6 +12,20 @@ import { apiRequest } from '@/lib/queryClient';
 import { ScreeningOperation, InsertScreeningDestinationBasket } from '@shared/schema';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
+
+// Funzioni di formattazione per numeri in formato europeo
+const formatNumber = (value: number | null): string => {
+  if (value === null) return '';
+  return value.toLocaleString('it-IT');
+};
+
+const parseFormattedNumber = (value: string): number | null => {
+  if (!value) return null;
+  // Rimuove tutti i separatori di migliaia e sostituisce la virgola con il punto
+  const cleanedValue = value.replace(/\./g, '').replace(',', '.');
+  const number = parseFloat(cleanedValue);
+  return isNaN(number) ? null : number;
+};
 import {
   Form,
   FormControl,
@@ -513,12 +527,11 @@ export default function ScreeningAddDestination() {
                       <FormLabel>Numero Animali</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
                           placeholder="Inserisci il numero di animali"
                           {...field}
-                          value={field.value || ''}
+                          value={field.value !== null ? formatNumber(field.value) : ''}
                           onChange={(e) => {
-                            const value = e.target.value === '' ? null : parseInt(e.target.value);
+                            const value = parseFormattedNumber(e.target.value);
                             field.onChange(value);
                             if (value) calculateValues('animalCount', value);
                           }}
@@ -540,13 +553,11 @@ export default function ScreeningAddDestination() {
                       <FormLabel>Peso Totale (kg)</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
-                          step="0.01"
                           placeholder="Inserisci il peso totale in kg"
                           {...field}
-                          value={field.value || ''}
+                          value={field.value !== null ? field.value.toLocaleString('it-IT', {minimumFractionDigits: 1, maximumFractionDigits: 1}) : ''}
                           onChange={(e) => {
-                            const value = e.target.value === '' ? null : parseFloat(e.target.value);
+                            const value = parseFormattedNumber(e.target.value);
                             field.onChange(value);
                             if (value) calculateValues('totalWeight', value);
                           }}
@@ -568,12 +579,11 @@ export default function ScreeningAddDestination() {
                       <FormLabel>Animali per Kg</FormLabel>
                       <FormControl>
                         <Input
-                          type="number"
                           placeholder="Inserisci gli animali per kg"
                           {...field}
-                          value={field.value || ''}
+                          value={field.value !== null ? formatNumber(field.value) : ''}
                           onChange={(e) => {
-                            const value = e.target.value === '' ? null : parseInt(e.target.value);
+                            const value = parseFormattedNumber(e.target.value);
                             field.onChange(value);
                             if (value) calculateValues('animalsPerKg', value);
                           }}
