@@ -168,10 +168,14 @@ export default function DraggableFlupsyVisualizer() {
       
       try {
         // Utilizziamo il nuovo endpoint dedicato per lo spostamento dei cestelli
-        const response = await apiRequest('POST', `/api/baskets/${basketId}/move`, {
-          flupsyId,
-          row,
-          position
+        const response = await apiRequest({
+          url: `/api/baskets/${basketId}/move`,
+          method: 'POST',
+          body: {
+            flupsyId,
+            row,
+            position
+          }
         });
         
         console.log("API Response status:", response.status);
@@ -192,11 +196,16 @@ export default function DraggableFlupsyVisualizer() {
           };
         }
         
-        // Se la risposta è vuota ma l'API ha risposto 200, consideriamo lo spostamento riuscito
-        // e aggiorniamo i dati manualmente per evitare problemi di rendering
-        if (response === null || response === undefined || Object.keys(response).length === 0) {
-          console.log("Risposta vuota ma status 200, refresh dei dati...");
+        // Se la risposta è vuota, success=true, o vuota ma l'API ha risposto 200,
+        // consideriamo lo spostamento riuscito e aggiorniamo i dati
+        if (response === null || 
+            response === undefined || 
+            Object.keys(response).length === 0 || 
+            (response.success === true && Object.keys(response).length === 1)) {
+          console.log("Risposta di successo con dati minimi, refresh dei dati...");
+          // Invalidare tutte le query pertinenti per aggiornare l'interfaccia
           queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
           return { success: true, message: "Cestello spostato con successo" };
         }
         
@@ -363,14 +372,18 @@ export default function DraggableFlupsyVisualizer() {
       
       try {
         // Utilizziamo il nuovo endpoint dedicato per lo scambio di posizione
-        const response = await apiRequest('POST', '/api/baskets/switch-positions', {
-          basket1Id,
-          basket2Id,
-          flupsyId,
-          position1Row,
-          position1Number,
-          position2Row,
-          position2Number
+        const response = await apiRequest({
+          url: '/api/baskets/switch-positions',
+          method: 'POST',
+          body: {
+            basket1Id,
+            basket2Id,
+            flupsyId,
+            position1Row,
+            position1Number,
+            position2Row,
+            position2Number
+          }
         });
         
         console.log("Risultato dell'operazione di scambio:", response);

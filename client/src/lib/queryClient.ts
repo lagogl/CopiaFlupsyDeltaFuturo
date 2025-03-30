@@ -14,13 +14,16 @@ export async function apiRequest<T = any>(
 ): Promise<T> {
   let url: string;
   let options: RequestInit = optionsOrNothing || {};
+  let method = '';
   
   // Determina se il primo parametro è una stringa URL o un oggetto options
   if (typeof urlOrOptions === 'string') {
     url = urlOrOptions;
+    method = options.method || 'GET';
   } else {
     url = urlOrOptions.url;
-    options.method = urlOrOptions.method || 'GET';
+    method = urlOrOptions.method || 'GET';
+    options.method = method;
     if (urlOrOptions.body) {
       options.body = JSON.stringify(urlOrOptions.body);
       options.headers = {
@@ -30,7 +33,7 @@ export async function apiRequest<T = any>(
     }
   }
   
-  console.log(`API Request: ${url}`, options);
+  console.log(`API Request: ${method}`, url);
   
   try {
     const res = await fetch(url, {
@@ -44,22 +47,44 @@ export async function apiRequest<T = any>(
     const resClone = res.clone();
     
     // Log del payload della risposta se è JSON
+    let responseData: any = null;
     try {
       const contentType = res.headers.get('content-type');
       if (contentType && contentType.includes('application/json')) {
-        const responseData = await resClone.json();
-        console.log('API Response data:', responseData);
+        responseData = await resClone.json();
+        console.log('API Response data:', JSON.stringify(responseData));
+      } else {
+        const text = await resClone.text();
+        console.log('API Response data (text):', text || 'Empty response');
+        // Se la risposta è vuota ma lo stato è OK, mappa a un oggetto di successo
+        if (res.ok && (!text || text.trim() === '')) {
+          responseData = { success: true };
+        }
       }
     } catch (error) {
-      console.log('Response is not JSON');
+      console.log('Response processing error:', error);
+      // Se c'è un errore nel parsing ma la risposta è OK, restituisci un oggetto di successo
+      if (res.ok) {
+        responseData = { success: true };
+      }
     }
     
     await throwIfResNotOk(res);
     
+    // Se abbiamo già elaborato i dati della risposta, restituiscili
+    if (responseData !== null) {
+      return responseData as T;
+    }
+    
     // Se è una risposta JSON, restituisci il JSON parsato
     const contentType = res.headers.get('content-type');
     if (contentType && contentType.includes('application/json')) {
-      return res.json();
+      try {
+        return await res.json();
+      } catch (e) {
+        console.warn('Failed to parse JSON response, returning empty object');
+        return {} as T;
+      }
     }
     
     // Altrimenti restituisci l'oggetto Response
