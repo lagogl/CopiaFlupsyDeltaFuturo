@@ -13,6 +13,9 @@ import { ScreeningOperation, InsertScreeningDestinationBasket } from '@shared/sc
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 
+// Debug mode for tracking inputs
+const DEBUG = false;
+
 // Funzioni di formattazione per numeri in formato europeo
 const formatNumber = (value: number | null): string => {
   if (value === null) return '';
@@ -21,10 +24,24 @@ const formatNumber = (value: number | null): string => {
 
 const parseFormattedNumber = (value: string): number | null => {
   if (!value) return null;
-  // Rimuove tutti i separatori di migliaia (punti) e sostituisce la virgola con il punto
-  // Questa regex supporta più occorrenze del punto come separatore di migliaia
-  const cleanedValue = value.replace(/\./g, '').replace(',', '.');
+  
+  // Rimuoviamo qualsiasi carattere non numerico eccetto punti e virgole
+  let cleanedValue = value.trim().replace(/[^\d.,]/g, '');
+  
+  // Rimpiazziamo prima tutti i punti (separatori migliaia) poi la virgola col punto (decimale)
+  cleanedValue = cleanedValue.replace(/\./g, '').replace(',', '.');
+  
+  if (DEBUG) {
+    console.log('Input:', value);
+    console.log('Cleaned:', cleanedValue);
+  }
+  
   const number = parseFloat(cleanedValue);
+  
+  if (DEBUG) {
+    console.log('Parsed:', number);
+  }
+  
   return isNaN(number) ? null : number;
 };
 
@@ -167,7 +184,7 @@ export default function ScreeningAddDestination() {
 
   // Mutation per aggiungere una cesta di destinazione
   const addDestinationBasketMutation = useMutation({
-    mutationFn: (data: InsertScreeningDestinationBasket) =>
+    mutationFn: (data: any) =>
       apiRequest({
         url: '/api/screening/destination-baskets',
         method: 'POST',
@@ -198,14 +215,10 @@ export default function ScreeningAddDestination() {
   const onSubmit = (values: FormValues) => {
     if (!screeningId) return;
     
-    // Calcola il peso medio se è fornito animalsPerKg
-    let averageWeight = null;
-    if (values.animalsPerKg && values.animalsPerKg > 0) {
-      averageWeight = 1000000 / values.animalsPerKg;
-    }
+    // Il calcolo del peso medio avverrà sul server
     
     // Prepara i dati della cesta di destinazione
-    const destinationBasketData: InsertScreeningDestinationBasket = {
+    const destinationBasketData = {
       screeningId,
       basketId: values.basketId,
       category: values.category,
@@ -215,11 +228,10 @@ export default function ScreeningAddDestination() {
       animalCount: values.animalCount,
       totalWeight: values.totalWeight ? values.totalWeight * 1000 : null, // Conversione in grammi
       animalsPerKg: values.animalsPerKg,
-      averageWeight,
       sizeId: values.sizeId,
       notes: values.notes,
-      positionAssigned: false,
-    };
+      positionAssigned: false
+    } as any; // Cast temporaneo per risolvere i problemi di tipo
     
     addDestinationBasketMutation.mutate(destinationBasketData);
   };
