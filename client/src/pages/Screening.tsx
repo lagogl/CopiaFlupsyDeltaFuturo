@@ -78,27 +78,27 @@ export default function ScreeningPage() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/screening/operations'] });
       toast({
-        title: 'Operazione annullata',
-        description: 'L\'operazione di vagliatura è stata annullata.',
+        title: 'Operazione eliminata',
+        description: 'L\'operazione di vagliatura è stata eliminata con successo.',
       });
     },
     onError: (error: any) => {
       toast({
         title: 'Errore',
-        description: error.message || 'Si è verificato un errore durante l\'annullamento dell\'operazione.',
+        description: error.message || 'Si è verificato un errore durante l\'eliminazione dell\'operazione.',
         variant: 'destructive',
       });
     },
   });
 
   const handleComplete = (id: number) => {
-    if (confirm('Sei sicuro di voler completare questa operazione di vagliatura? Questa azione non può essere annullata.')) {
+    if (confirm('Sei sicuro di voler completare questa operazione di vagliatura? Questa azione è irreversibile e finalizzerà i cambiamenti effettuati.')) {
       completeMutation.mutate(id);
     }
   };
 
   const handleCancel = (id: number) => {
-    if (confirm('Sei sicuro di voler annullare questa operazione di vagliatura? Questa azione non può essere annullata.')) {
+    if (confirm('Sei sicuro di voler eliminare definitivamente questa operazione di vagliatura? Questa azione è irreversibile e tutti i dati associati verranno rimossi.')) {
       cancelMutation.mutate(id);
     }
   };
@@ -108,7 +108,7 @@ export default function ScreeningPage() {
       case 'draft':
         return <Badge variant="outline">Bozza</Badge>;
       case 'completed':
-        return <Badge variant="success">Completata</Badge>;
+        return <Badge className="bg-green-500">Completata</Badge>;
       case 'cancelled':
         return <Badge variant="destructive">Annullata</Badge>;
       default:
@@ -213,7 +213,7 @@ export default function ScreeningPage() {
                                   disabled={cancelMutation.isPending}
                                 >
                                   <XCircle className="h-4 w-4 mr-2" />
-                                  Annulla
+                                  Elimina
                                 </Button>
                               </>
                             )}

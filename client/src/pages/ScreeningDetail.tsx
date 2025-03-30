@@ -768,18 +768,18 @@ export default function ScreeningDetailPage() {
             <AlertDialogTitle>
               {confirmAction === 'complete' 
                 ? 'Completa operazione di vagliatura' 
-                : 'Annulla operazione di vagliatura'}
+                : 'Elimina operazione di vagliatura'}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {confirmAction === 'complete' 
                 ? 'Sei sicuro di voler completare questa operazione di vagliatura? Questa azione è irreversibile e finalizzerà i cambiamenti effettuati.' 
-                : 'Sei sicuro di voler annullare questa operazione di vagliatura? Questa azione è irreversibile.'}
+                : 'Sei sicuro di voler eliminare definitivamente questa operazione di vagliatura? Questa azione è irreversibile e tutti i dati associati verranno rimossi.'}
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
             <AlertDialogCancel>Annulla</AlertDialogCancel>
             <AlertDialogAction onClick={handleConfirmAction}>
-              {confirmAction === 'complete' ? 'Completa' : 'Annulla operazione'}
+              {confirmAction === 'complete' ? 'Completa' : 'Elimina'}
             </AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
