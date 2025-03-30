@@ -33,8 +33,12 @@ import { format, addDays } from "date-fns";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import configureWebSocketServer from "./websocket";
+import { implementDirectOperationRoute } from "./direct-operations";
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Registra la route diretta per le operazioni
+  implementDirectOperationRoute(app);
+  
   // === Basket routes ===
   app.get("/api/baskets", async (req, res) => {
     try {
