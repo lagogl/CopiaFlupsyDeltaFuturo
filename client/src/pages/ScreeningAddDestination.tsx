@@ -21,7 +21,8 @@ const formatNumber = (value: number | null): string => {
 
 const parseFormattedNumber = (value: string): number | null => {
   if (!value) return null;
-  // Rimuove tutti i separatori di migliaia e sostituisce la virgola con il punto
+  // Rimuove tutti i separatori di migliaia (punti) e sostituisce la virgola con il punto
+  // Questa regex supporta più occorrenze del punto come separatore di migliaia
   const cleanedValue = value.replace(/\./g, '').replace(',', '.');
   const number = parseFloat(cleanedValue);
   return isNaN(number) ? null : number;
