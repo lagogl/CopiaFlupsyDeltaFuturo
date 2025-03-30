@@ -136,17 +136,27 @@ export class DbStorage implements IStorage {
   }
 
   async createOperation(operation: InsertOperation): Promise<Operation> {
-    // Convert any dates to string format
-    if (typeof operation.date === 'object' && operation.date && 'toISOString' in operation.date) {
-      operation.date = operation.date.toISOString().split('T')[0];
-    }
+    // Logging per debugging
+    console.log("DB-STORAGE - createOperation - Received data:", JSON.stringify(operation, null, 2));
     
-    // Calcola automaticamente averageWeight se animalsPerKg è presente
-    const operationData = { ...operation };
-    if (operationData.animalsPerKg && operationData.animalsPerKg > 0) {
-      // Formula: 1,000,000 mg diviso per animalsPerKg = peso medio in milligrammi
-      const averageWeight = 1000000 / operationData.animalsPerKg;
-      operationData.averageWeight = averageWeight;
+    try {
+      // Convert any dates to string format
+      if (typeof operation.date === 'object' && operation.date && 'toISOString' in operation.date) {
+        operation.date = operation.date.toISOString().split('T')[0];
+      }
+      
+      // Crea una copia dei dati per la manipolazione
+      const operationData = { ...operation };
+      
+      // Log dopo la conversione della data
+      console.log("DB-STORAGE - createOperation - After date conversion:", JSON.stringify(operationData, null, 2));
+      
+      // Calcola automaticamente averageWeight se animalsPerKg è presente
+      if (operationData.animalsPerKg && operationData.animalsPerKg > 0) {
+        // Formula: 1,000,000 mg diviso per animalsPerKg = peso medio in milligrammi
+        const averageWeight = 1000000 / operationData.animalsPerKg;
+        operationData.averageWeight = averageWeight;
+        console.log(`DB-STORAGE - createOperation - Calculated averageWeight: ${averageWeight} from animalsPerKg: ${operationData.animalsPerKg}`);
       
       // Se l'operazione include animalsPerKg, assegna automaticamente la taglia corretta
       // basandosi sui valori min e max del database
@@ -210,9 +220,21 @@ export class DbStorage implements IStorage {
       if (!operationData.type) {
         throw new Error("type è richiesto per creare un'operazione");
       }
+      // Non validiamo cycleId per le operazioni di prima-attivazione
+      // perché viene assegnato subito dopo la creazione del ciclo
+      
+      // Verifica tutti i campi numerici
+      if (operationData.basketId && typeof operationData.basketId !== 'number') {
+        console.log(`Conversione basketId da ${typeof operationData.basketId} a number`);
+        operationData.basketId = Number(operationData.basketId);
+      }
+      if (operationData.cycleId && typeof operationData.cycleId !== 'number') {
+        console.log(`Conversione cycleId da ${typeof operationData.cycleId} a number`);
+        operationData.cycleId = Number(operationData.cycleId);
+      }
       
       // Esecuzione dell'inserimento con gestione degli errori migliorata
-      console.log(`Tentativo di inserimento per operazione di tipo ${operationData.type} sulla cesta ${operationData.basketId}`);
+      console.log(`Tentativo di inserimento per operazione di tipo ${operationData.type} sulla cesta ${operationData.basketId} con ciclo ${operationData.cycleId}`);
       const results = await db.insert(operations).values(operationData).returning();
       
       if (!results || results.length === 0) {
@@ -229,32 +251,42 @@ export class DbStorage implements IStorage {
   }
 
   async updateOperation(id: number, operationUpdate: Partial<Operation>): Promise<Operation | undefined> {
-    // Convert any dates to string format
-    if (operationUpdate.date && typeof operationUpdate.date === 'object' && 'toISOString' in operationUpdate.date) {
-      operationUpdate.date = operationUpdate.date.toISOString().split('T')[0];
+    try {
+      // Convert any dates to string format
+      if (operationUpdate.date && typeof operationUpdate.date === 'object' && 'toISOString' in operationUpdate.date) {
+        operationUpdate.date = operationUpdate.date.toISOString().split('T')[0];
+      }
+      
+      // Calcola automaticamente averageWeight se animalsPerKg è stato aggiornato
+      const updateData = { ...operationUpdate };
+      if (updateData.animalsPerKg && updateData.animalsPerKg > 0) {
+        // Formula: 1,000,000 mg diviso per animalsPerKg = peso medio in milligrammi
+        const averageWeight = 1000000 / updateData.animalsPerKg;
+        updateData.averageWeight = averageWeight;
+      }
+      
+      const results = await db.update(operations)
+        .set(updateData)
+        .where(eq(operations.id, id))
+        .returning();
+      return results[0];
+    } catch (error) {
+      console.error("Error updating operation:", error);
+      throw new Error(`Errore durante l'aggiornamento dell'operazione: ${error instanceof Error ? error.message : String(error)}`);
     }
-    
-    // Calcola automaticamente averageWeight se animalsPerKg è stato aggiornato
-    const updateData = { ...operationUpdate };
-    if (updateData.animalsPerKg && updateData.animalsPerKg > 0) {
-      // Formula: 1,000,000 mg diviso per animalsPerKg = peso medio in milligrammi
-      const averageWeight = 1000000 / updateData.animalsPerKg;
-      updateData.averageWeight = averageWeight;
-    }
-    
-    const results = await db.update(operations)
-      .set(updateData)
-      .where(eq(operations.id, id))
-      .returning();
-    return results[0];
   }
   
   async deleteOperation(id: number): Promise<boolean> {
-    const deletedCount = await db.delete(operations)
-      .where(eq(operations.id, id))
-      .returning({ id: operations.id });
-    
-    return deletedCount.length > 0;
+    try {
+      const deletedCount = await db.delete(operations)
+        .where(eq(operations.id, id))
+        .returning({ id: operations.id });
+      
+      return deletedCount.length > 0;
+    } catch (error) {
+      console.error("Error deleting operation:", error);
+      throw new Error(`Errore durante l'eliminazione dell'operazione: ${error instanceof Error ? error.message : String(error)}`);
+    }
   }
 
   // CYCLES

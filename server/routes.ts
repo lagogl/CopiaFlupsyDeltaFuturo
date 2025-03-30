@@ -972,7 +972,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.post("/api/operations", async (req, res) => {
     try {
-      console.log("POST /api/operations - Request Body:", req.body);
+      console.log("POST /api/operations - Request Body:", JSON.stringify(req.body, null, 2));
 
       // Prima verifica se si tratta di un'operazione prima-attivazione che non richiede un cycleId
       if (req.body.type === 'prima-attivazione') {
@@ -989,8 +989,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           animalCount: z.number().nullable().optional(),
           totalWeight: z.number().nullable().optional(),
           animalsPerKg: z.number().nullable().optional(),
+          averageWeight: z.number().nullable().optional(),
           notes: z.string().nullable().optional()
         }).safeParse(req.body);
+        
+        console.log("VALIDAZIONE PRIMA ATTIVAZIONE - parsed:", JSON.stringify(primaAttivSchema, null, 2));
 
         if (!primaAttivSchema.success) {
           const errorMessage = fromZodError(primaAttivSchema.error).message;
