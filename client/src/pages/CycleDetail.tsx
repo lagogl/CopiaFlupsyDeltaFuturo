@@ -445,7 +445,10 @@ export default function CycleDetail() {
   // Function to handle operation deletion
   const handleDeleteOperation = async (operationId: number) => {
     try {
-      await apiRequest('DELETE', `/api/operations/${operationId}`);
+      await apiRequest({
+        url: `/api/operations/${operationId}`,
+        method: 'DELETE'
+      });
       // Refresh operations data
       refetchOperations();
     } catch (error) {
@@ -566,8 +569,12 @@ export default function CycleDetail() {
               onClick={() => {
                 if (window.confirm('Sei sicuro di voler chiudere questo ciclo? Questa operazione non può essere annullata.')) {
                   // Creare qui l'API call per chiudere il ciclo
-                  apiRequest('POST', `/api/cycles/${cycle.id}/close`, { 
-                    endDate: new Date().toISOString()
+                  apiRequest({
+                    url: `/api/cycles/${cycle.id}/close`,
+                    method: 'POST',
+                    body: {
+                      endDate: new Date().toISOString()
+                    }
                   }).then(() => {
                     // Ricaricare la pagina o aggiornare i dati
                     window.location.reload();

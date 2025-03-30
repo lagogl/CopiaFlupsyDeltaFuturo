@@ -96,7 +96,11 @@ export default function Operations() {
       if (isBasketAvailable && isPrimaAttivazione) {
         // Crea direttamente l'operazione di prima attivazione
         // Il backend si occuperà di creare il ciclo e aggiornare lo stato della cesta
-        createdOperation = await apiRequest('POST', '/api/operations', newOperation);
+        createdOperation = await apiRequest({
+          url: '/api/operations',
+          method: 'POST',
+          body: newOperation
+        });
         
         // Invalida le query per cicli e ceste
         queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
@@ -106,7 +110,11 @@ export default function Operations() {
       else if (isBasketActive && isVendita) {
         // Crea direttamente l'operazione di vendita
         // Il backend si occuperà di chiudere il ciclo e aggiornare lo stato della cesta
-        createdOperation = await apiRequest('POST', '/api/operations', newOperation);
+        createdOperation = await apiRequest({
+          url: '/api/operations',
+          method: 'POST',
+          body: newOperation
+        });
         
         // Invalida le query per cicli e ceste
         queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
@@ -114,7 +122,11 @@ export default function Operations() {
       }
       // 3. Operazioni normali
       else {
-        createdOperation = await apiRequest('POST', '/api/operations', newOperation);
+        createdOperation = await apiRequest({
+          url: '/api/operations',
+          method: 'POST',
+          body: newOperation
+        });
       }
       
       return createdOperation;
@@ -138,7 +150,11 @@ export default function Operations() {
   
   // Update mutation
   const updateOperationMutation = useMutation({
-    mutationFn: (data: any) => apiRequest('PATCH', `/api/operations/${data.id}`, data.operation),
+    mutationFn: (data: any) => apiRequest({
+      url: `/api/operations/${data.id}`,
+      method: 'PATCH',
+      body: data.operation
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       setIsEditDialogOpen(false);
@@ -159,7 +175,10 @@ export default function Operations() {
   
   // Delete mutation
   const deleteOperationMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/operations/${id}`),
+    mutationFn: (id: number) => apiRequest({
+      url: `/api/operations/${id}`,
+      method: 'DELETE'
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       setIsDeleteDialogOpen(false);

@@ -174,7 +174,11 @@ export default function PesoDirectForm({
       };
       
       // Invia al server
-      await apiRequest('POST', '/api/operations', operationData);
+      await apiRequest({
+        url: '/api/operations',
+        method: 'POST',
+        body: operationData
+      });
       
       // Mostra notifica
       toast({
