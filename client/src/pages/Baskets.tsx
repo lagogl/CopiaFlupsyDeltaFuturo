@@ -49,11 +49,7 @@ export default function Baskets() {
 
   // Create mutation
   const createBasketMutation = useMutation({
-    mutationFn: (newBasket: any) => apiRequest({
-      url: '/api/baskets',
-      method: 'POST',
-      body: newBasket
-    }),
+    mutationFn: (newBasket: any) => apiRequest('POST', '/api/baskets', newBasket),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       setIsCreateDialogOpen(false);
@@ -73,11 +69,7 @@ export default function Baskets() {
   
   // Update mutation
   const updateBasketMutation = useMutation({
-    mutationFn: (data: any) => apiRequest({
-      url: `/api/baskets/${data.id}`,
-      method: 'PATCH',
-      body: data.basket
-    }),
+    mutationFn: (data: any) => apiRequest('PATCH', `/api/baskets/${data.id}`, data.basket),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       setIsEditDialogOpen(false);
@@ -98,10 +90,7 @@ export default function Baskets() {
   
   // Delete mutation
   const deleteBasketMutation = useMutation({
-    mutationFn: (id: number) => apiRequest({
-      url: `/api/baskets/${id}`,
-      method: 'DELETE'
-    }),
+    mutationFn: (id: number) => apiRequest('DELETE', `/api/baskets/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       setIsDeleteDialogOpen(false);

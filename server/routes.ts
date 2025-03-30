@@ -1931,67 +1931,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const newFlupsy = await storage.createFlupsy(parsedData.data);
-      
-      // Broadcast per notificare i client della creazione di un nuovo FLUPSY
-      if (typeof (global as any).broadcastUpdate === 'function') {
-        (global as any).broadcastUpdate('flupsy_created', newFlupsy);
-      }
-      
       res.status(201).json(newFlupsy);
     } catch (error) {
       console.error("Error creating FLUPSY:", error);
       res.status(500).json({ message: "Failed to create FLUPSY" });
-    }
-  });
-  
-  // Endpoint per aggiornare un FLUPSY esistente
-  // Usando un percorso specifico per le API per evitare intercettazione da parte di Vite
-  app.post("/api-v1/flupsy-update", async (req, res) => {
-    try {
-      // Richiede id nel body della richiesta
-      const { id, ...updateData } = req.body;
-      
-      // Valida l'ID
-      if (!id || isNaN(parseInt(id))) {
-        return res.status(400).json({ message: "Invalid or missing FLUPSY ID in request body" });
-      }
-      
-      const flupsyId = parseInt(id);
-      
-      // Verifica che il FLUPSY esista
-      const existingFlupsy = await storage.getFlupsy(flupsyId);
-      if (!existingFlupsy) {
-        return res.status(404).json({ message: "FLUPSY not found" });
-      }
-      
-      // Valida i dati di aggiornamento
-      // Nota: utilizziamo .partial() per rendere tutti i campi opzionali in un aggiornamento
-      const parsedData = insertFlupsySchema.partial().safeParse(updateData);
-      if (!parsedData.success) {
-        const errorMessage = fromZodError(parsedData.error).message;
-        return res.status(400).json({ message: errorMessage });
-      }
-      
-      // Se il nome è stato modificato, verifica che non ci siano duplicati
-      if (parsedData.data.name && parsedData.data.name !== existingFlupsy.name) {
-        const flupsyWithSameName = await storage.getFlupsyByName(parsedData.data.name);
-        if (flupsyWithSameName) {
-          return res.status(400).json({ message: "A FLUPSY with this name already exists" });
-        }
-      }
-      
-      // Esegui l'aggiornamento
-      const updatedFlupsy = await storage.updateFlupsy(flupsyId, parsedData.data);
-      
-      // Broadcast per notificare i client dell'aggiornamento
-      if (typeof (global as any).broadcastUpdate === 'function') {
-        (global as any).broadcastUpdate('flupsy_updated', updatedFlupsy);
-      }
-      
-      res.json(updatedFlupsy);
-    } catch (error) {
-      console.error("Error updating FLUPSY:", error);
-      res.status(500).json({ message: "Failed to update FLUPSY" });
     }
   });
 
@@ -3397,64 +3340,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }));
     
     // Handle incoming messages
-    ws.on('message', async (message) => {
+    ws.on('message', (message) => {
       try {
-        const parsedMessage = JSON.parse(message.toString());
-        console.log(`Received message:`, parsedMessage);
-        
-        // Gestisci messaggi in base al tipo
-        if (parsedMessage.type === 'update_flupsy') {
-          const { id, data } = parsedMessage;
-          
-          if (!id || !data) {
-            ws.send(JSON.stringify({
-              type: 'error',
-              message: 'Invalid update request: missing id or data'
-            }));
-            return;
-          }
-          
-          const flupsyId = Number(id);
-          
-          // Verifica che il FLUPSY esista
-          const existingFlupsy = await storage.getFlupsy(flupsyId);
-          if (!existingFlupsy) {
-            ws.send(JSON.stringify({
-              type: 'error',
-              message: 'FLUPSY not found'
-            }));
-            return;
-          }
-          
-          // Valida i dati di aggiornamento
-          const parsedData = insertFlupsySchema.partial().safeParse(data);
-          if (!parsedData.success) {
-            ws.send(JSON.stringify({
-              type: 'error',
-              message: 'Invalid FLUPSY data: ' + fromZodError(parsedData.error).message
-            }));
-            return;
-          }
-          
-          // Aggiorna FLUPSY
-          const updatedFlupsy = await storage.updateFlupsy(flupsyId, parsedData.data);
-          
-          // Invia risposta al client
-          ws.send(JSON.stringify({
-            type: 'flupsy_updated',
-            data: updatedFlupsy,
-            message: `FLUPSY ${updatedFlupsy.name} aggiornato con successo`
-          }));
-          
-          // Broadcast a tutti i client
-          broadcastMessage('flupsy_updated', updatedFlupsy);
-        }
+        console.log(`Received message: ${message}`);
       } catch (error) {
         console.error('Error handling WebSocket message:', error);
-        ws.send(JSON.stringify({
-          type: 'error',
-          message: 'Error processing your request'
-        }));
       }
     });
     

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -79,14 +79,7 @@ interface DropTargetProps {
   children: React.ReactNode;
 }
 
-// DropTarget adesso usa forwardRef per prevenire problemi con SlotClone e react-dnd
-const DropTarget = React.forwardRef<
-  HTMLDivElement, 
-  DropTargetProps & React.RefAttributes<HTMLDivElement>
->(function DropTarget(
-  { flupsyId, row, position, onDrop, isOccupied, children }, 
-  forwardedRef
-) {
+function DropTarget({ flupsyId, row, position, onDrop, isOccupied, children }: DropTargetProps) {
   // Qui la modifica principale: rendiamo la funzione drop consapevole dello stato di occupazione
   // Il problema era che prima il drop veniva sempre eseguito, ma non stavamo passando
   // l'informazione se è un'operazione di switch o uno spostamento normale
@@ -124,32 +117,16 @@ const DropTarget = React.forwardRef<
     }
   }
 
-  // Utilizziamo il callback ref per combinare entrambi i ref
-  const setRef = React.useCallback(
-    (element: HTMLDivElement | null) => {
-      // Inizializza il ref fornito da react-dnd
-      const dropRef = drop(element);
-      
-      // Passa il ref al genitore attraverso forwardedRef
-      if (typeof forwardedRef === 'function') {
-        forwardedRef(element);
-      } else if (forwardedRef) {
-        forwardedRef.current = element;
-      }
-    },
-    [drop, forwardedRef]
-  );
-
   return (
     <div 
-      ref={setRef} 
+      ref={drop} 
       style={{ backgroundColor, border, borderRadius: '0.375rem' }}
       className="transition-colors duration-200"
     >
       {children}
     </div>
   );
-});
+}
 
 // Main component
 export default function DraggableFlupsyVisualizer() {

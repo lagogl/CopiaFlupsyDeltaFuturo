@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
 import { Button } from "@/components/ui/button";
@@ -11,61 +11,16 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Check, Plus, X, Edit, Loader2 } from "lucide-react";
-import { useWebSocketMessage, sendWebSocketMessage } from "@/lib/websocket";
-import { WebSocketIndicator } from "@/components/WebSocketIndicator";
+import { Check, Plus, X } from "lucide-react";
 
 export default function Flupsys() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
-  const [isEditMode, setIsEditMode] = useState(false);
-  const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(null);
-  const [isUpdating, setIsUpdating] = useState(false);
   const [newFlupsy, setNewFlupsy] = useState({
     name: "",
     location: "",
     description: "",
     active: true
   });
-  
-  // Stato per indicare se siamo connessi al WebSocket
-  const [wsConnected, setWsConnected] = useState(false);
-  
-  // Gestisci messaggi WebSocket per gli aggiornamenti
-  const flupsyUpdateHandler = useCallback((data: any) => {
-    // Invalida la query per ricaricare i dati dopo un aggiornamento
-    queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
-    
-    // Se stiamo aggiornando, considera l'operazione completata
-    setIsUpdating(false);
-    
-    // Chiudi il dialog se aperto
-    if (isEditMode && isDialogOpen) {
-      setIsDialogOpen(false);
-      setIsEditMode(false);
-      setSelectedFlupsyId(null);
-    }
-  }, [isEditMode, isDialogOpen]);
-  
-  // Gestisci errori dal WebSocket
-  const errorHandler = useCallback((data: any) => {
-    toast({
-      title: "Errore",
-      description: data?.message || "Si è verificato un errore durante l'aggiornamento",
-      variant: "destructive",
-    });
-    setIsUpdating(false);
-  }, []);
-  
-  // Registrati per messaggi di aggiornamento FLUPSY
-  const { connected } = useWebSocketMessage('flupsy_updated', flupsyUpdateHandler);
-  
-  // Registrati per messaggi di errore
-  useWebSocketMessage('error', errorHandler);
-  
-  // Aggiorna lo stato della connessione WebSocket
-  useEffect(() => {
-    setWsConnected(connected);
-  }, [connected]);
 
   // Fetching FLUPSY units
   const { data: flupsys, isLoading } = useQuery({
@@ -75,11 +30,7 @@ export default function Flupsys() {
 
   // Create FLUPSY mutation
   const createMutation = useMutation({
-    mutationFn: (newFlupsy: any) => apiRequest({
-      url: '/api/flupsys',
-      method: 'POST',
-      body: newFlupsy
-    }),
+    mutationFn: (newFlupsy: any) => apiRequest('POST', '/api/flupsys', newFlupsy),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
       setIsDialogOpen(false);
@@ -103,60 +54,10 @@ export default function Flupsys() {
     }
   });
 
-  // Funzione per aprire il dialog di modifica
-  const openEditDialog = (flupsy: any) => {
-    setIsEditMode(true);
-    setSelectedFlupsyId(flupsy.id);
-    setNewFlupsy({
-      name: flupsy.name || "",
-      location: flupsy.location || "",
-      description: flupsy.description || "",
-      active: flupsy.active
-    });
-    setIsDialogOpen(true);
-  };
-  
-  // Funzione per aggiornare un FLUPSY via WebSocket
-  const handleUpdate = () => {
-    if (!selectedFlupsyId) return;
-    
-    // Verifica la connessione WebSocket
-    if (!wsConnected) {
-      toast({
-        title: "Errore di connessione",
-        description: "Non sei connesso al server in tempo reale. Ricarica la pagina e riprova.",
-        variant: "destructive",
-      });
-      return;
-    }
-    
-    setIsUpdating(true);
-    
-    // Invia l'aggiornamento via WebSocket
-    const success = sendWebSocketMessage('update_flupsy', {
-      id: selectedFlupsyId,
-      data: newFlupsy
-    });
-    
-    if (!success) {
-      toast({
-        title: "Errore di invio",
-        description: "Impossibile inviare l'aggiornamento. Riprova più tardi.",
-        variant: "destructive",
-      });
-      setIsUpdating(false);
-    }
-  };
-
   // Handle form submission
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (isEditMode) {
-      handleUpdate();
-    } else {
-      createMutation.mutate(newFlupsy);
-    }
+    createMutation.mutate(newFlupsy);
   };
 
   // Handle input change
@@ -183,7 +84,6 @@ export default function Flupsys() {
 
   return (
     <div className="container mx-auto py-8">
-      <WebSocketIndicator />
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Unità FLUPSY</h1>
         <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
@@ -195,11 +95,9 @@ export default function Flupsys() {
           <DialogContent className="sm:max-w-[550px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
-                <DialogTitle>{isEditMode ? "Modifica Unità FLUPSY" : "Nuova Unità FLUPSY"}</DialogTitle>
+                <DialogTitle>Nuova Unità FLUPSY</DialogTitle>
                 <DialogDescription>
-                  {isEditMode 
-                    ? "Modifica i dettagli dell'unità FLUPSY selezionata."
-                    : "Aggiungi una nuova unità FLUPSY al sistema."}
+                  Aggiungi una nuova unità FLUPSY al sistema.
                 </DialogDescription>
               </DialogHeader>
               <div className="grid gap-4 py-4">
@@ -256,68 +154,14 @@ export default function Flupsys() {
                     </span>
                   </div>
                 </div>
-                
-                {/* Mostra l'indicatore WebSocket solo in modalità di modifica */}
-                {isEditMode && (
-                  <div className="flex items-center justify-end gap-2 col-span-4 mt-2">
-                    <div className={`w-3 h-3 rounded-full ${wsConnected ? 'bg-green-500' : 'bg-red-500'}`}></div>
-                    <span className="text-xs font-medium">
-                      {wsConnected ? 'Connesso al server' : 'Non connesso al server'}
-                    </span>
-                  </div>
-                )}
               </div>
               <DialogFooter>
-                <Button 
-                  type="button" 
-                  variant="outline" 
-                  onClick={() => {
-                    setIsDialogOpen(false);
-                    if (isEditMode) {
-                      setIsEditMode(false);
-                      setSelectedFlupsyId(null);
-                    }
-                  }}
-                >
+                <Button type="button" variant="outline" onClick={() => setIsDialogOpen(false)}>
                   Annulla
                 </Button>
-                
-                {isEditMode ? (
-                  <Button 
-                    type="submit" 
-                    disabled={isUpdating || !wsConnected}
-                    variant="default"
-                  >
-                    {isUpdating ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" /> 
-                        Aggiornamento...
-                      </>
-                    ) : (
-                      <>
-                        <Check className="h-4 w-4 mr-2" /> 
-                        Salva Modifiche
-                      </>
-                    )}
-                  </Button>
-                ) : (
-                  <Button 
-                    type="submit" 
-                    disabled={createMutation.isPending}
-                  >
-                    {createMutation.isPending ? (
-                      <>
-                        <Loader2 className="h-4 w-4 mr-2 animate-spin" /> 
-                        Creazione...
-                      </>
-                    ) : (
-                      <>
-                        <Plus className="h-4 w-4 mr-2" /> 
-                        Crea FLUPSY
-                      </>
-                    )}
-                  </Button>
-                )}
+                <Button type="submit" disabled={createMutation.isPending}>
+                  {createMutation.isPending ? "Creazione..." : "Crea FLUPSY"}
+                </Button>
               </DialogFooter>
             </form>
           </DialogContent>
@@ -364,13 +208,8 @@ export default function Flupsys() {
                   ID: {flupsy.id}
                 </div>
                 <div className="flex space-x-2">
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="h-8 px-2 flex items-center"
-                    onClick={() => openEditDialog(flupsy)}
-                  >
-                    <Edit className="h-3 w-3 mr-1" /> Modifica
+                  <Button variant="outline" size="sm" className="h-8 px-2">
+                    Modifica
                   </Button>
                 </div>
               </CardFooter>
