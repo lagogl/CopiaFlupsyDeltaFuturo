@@ -341,6 +341,9 @@ export default function Baskets() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Crea Nuova Cesta</DialogTitle>
+            <DialogDescription>
+              Inserisci i dettagli per creare una nuova cesta nel sistema
+            </DialogDescription>
           </DialogHeader>
           <BasketForm 
             onSubmit={(data) => createBasketMutation.mutate(data)} 
@@ -354,6 +357,9 @@ export default function Baskets() {
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Modifica Cesta</DialogTitle>
+            <DialogDescription>
+              Aggiorna i dettagli della cesta selezionata
+            </DialogDescription>
           </DialogHeader>
           {selectedBasket && (
             <BasketForm 
