@@ -804,25 +804,170 @@ export class DbStorage implements IStorage {
   }
 
   async completeScreeningOperation(id: number): Promise<ScreeningOperation | undefined> {
-    const now = new Date();
-    const results = await db.update(screeningOperations)
-      .set({
-        status: 'completed',
-        updatedAt: now
-      })
-      .where(eq(screeningOperations.id, id))
-      .returning();
+    // Recuperiamo tutti i dati necessari
+    const operation = await this.getScreeningOperation(id);
+    if (!operation) return undefined;
     
-    if (results.length === 0) return undefined;
+    // Verificare che tutte le ceste di destinazione abbiano una posizione assegnata
+    const destinationBaskets = await this.getScreeningDestinationBasketsByScreening(id);
+    const allPositioned = destinationBaskets.every(basket => basket.positionAssigned);
     
-    // Aggiungi il riferimento alla taglia
-    const completedOperation = results[0];
-    if (completedOperation.referenceSizeId) {
-      const size = await this.getSize(completedOperation.referenceSizeId);
-      return { ...completedOperation, referenceSize: size };
+    if (!allPositioned) {
+      throw new Error("Non tutte le ceste di destinazione hanno una posizione assegnata");
     }
     
-    return completedOperation;
+    // Data corrente per tutte le nuove operazioni
+    const currentDate = new Date().toISOString().split('T')[0];
+    
+    // 1. Recupera le ceste di origine
+    const sourceBaskets = await this.getScreeningSourceBasketsByScreening(id);
+    
+    // Inizia la transazione per garantire che tutte le operazioni siano completate correttamente
+    try {
+      // 2. Dismettere i cicli delle ceste di origine
+      for (const sourceBasket of sourceBaskets) {
+        if (!sourceBasket.dismissed) {
+          // Aggiorna lo stato della cesta sorgente a "dismissed"
+          await db.update(screeningSourceBaskets)
+            .set({ dismissed: true })
+            .where(eq(screeningSourceBaskets.id, sourceBasket.id))
+            .execute();
+          
+          // Trova il ciclo attivo della cesta e chiudilo
+          const cycle = await this.getCycle(sourceBasket.cycleId);
+          if (cycle && cycle.state === 'active') {
+            // Chiudi il ciclo
+            await db.update(cycles)
+              .set({
+                state: 'closed',
+                endDate: currentDate
+              })
+              .where(eq(cycles.id, sourceBasket.cycleId))
+              .execute();
+            
+            // Registra un'operazione di "cessazione" per questa cesta
+            const newOperation = {
+              basketId: sourceBasket.basketId,
+              type: 'cessazione' as const,
+              date: currentDate,
+              cycleId: sourceBasket.cycleId,
+              animalCount: sourceBasket.animalCount,
+              notes: `Terminato per vagliatura #${operation.screeningNumber}`,
+              averageWeight: null,
+              totalWeight: sourceBasket.totalWeight,
+              animalsPerKg: sourceBasket.animalsPerKg,
+              liveAnimals: null,
+              deadCount: null,
+              mortalityRate: null,
+              sgrId: null
+            };
+            
+            await db.insert(operations).values(newOperation).execute();
+          }
+        }
+      }
+      
+      // 3. Creare nuovi cicli per le ceste di destinazione
+      for (const destBasket of destinationBaskets) {
+        // Otteniamo i dati della cesta fisica
+        const basket = await this.getBasket(destBasket.basketId);
+        if (!basket) continue;
+        
+        // Creiamo un nuovo ciclo per la cesta di destinazione
+        const newCycleResult = await db.insert(cycles)
+          .values({
+            basketId: destBasket.basketId,
+            startDate: currentDate,
+            state: 'active',
+            endDate: null
+          })
+          .returning()
+          .execute();
+          
+        if (newCycleResult.length > 0) {
+          const newCycle = newCycleResult[0];
+          
+          // Aggiorniamo la cesta fisica con il riferimento al nuovo ciclo
+          await db.update(baskets)
+            .set({
+              currentCycleId: newCycle.id,
+              state: 'active',
+              // Aggiorniamo anche la posizione FLUPSY alla posizione assegnata nella vagliatura
+              flupsyId: destBasket.flupsyId || null,
+              row: destBasket.row,
+              position: destBasket.position,
+              // Generiamo un nuovo codice ciclo
+              cycleCode: `${basket.physicalNumber}-${destBasket.flupsyId}-${currentDate.substring(5, 7)}${currentDate.substring(2, 4)}`
+            })
+            .where(eq(baskets.id, destBasket.basketId))
+            .execute();
+          
+          // Aggiorniamo la cesta di destinazione con il riferimento al ciclo
+          await db.update(screeningDestinationBaskets)
+            .set({ cycleId: newCycle.id })
+            .where(eq(screeningDestinationBaskets.id, destBasket.id))
+            .execute();
+          
+          // Registriamo un'operazione di "prima-attivazione" con causale da vagliatura
+          const avgWeight = destBasket.totalWeight && destBasket.animalCount 
+            ? (destBasket.totalWeight / destBasket.animalCount) * 1000 // mg
+            : null;
+            
+          const newOperation = {
+            basketId: destBasket.basketId,
+            type: 'prima-attivazione' as const,
+            date: currentDate,
+            cycleId: newCycle.id,
+            animalCount: destBasket.animalCount,
+            notes: `Attivazione da vagliatura #${operation.screeningNumber}, ${destBasket.category === 'sopravaglio' ? 'Sopravaglio' : 'Sottovaglio'}`,
+            averageWeight: avgWeight,
+            totalWeight: destBasket.totalWeight,
+            animalsPerKg: destBasket.animalsPerKg,
+            liveAnimals: destBasket.liveAnimals,
+            deadCount: destBasket.deadCount,
+            mortalityRate: destBasket.mortalityRate,
+            sgrId: null
+          };
+          
+          await db.insert(operations).values(newOperation).execute();
+          
+          // Aggiungiamo anche una posizione FLUPSY per il nuovo ciclo
+          await db.insert(basketPositions)
+            .values({
+              basketId: destBasket.basketId,
+              flupsyId: destBasket.flupsyId || 0,
+              row: destBasket.row || '',
+              position: destBasket.position || 0,
+              startDate: currentDate,
+              endDate: null,
+              operationId: null
+            })
+            .execute();
+        }
+      }
+      
+      // 4. Aggiorniamo lo stato dell'operazione di vagliatura a "completed"
+      const now = new Date();
+      const results = await db.update(screeningOperations)
+        .set({
+          status: 'completed',
+          updatedAt: now
+        })
+        .where(eq(screeningOperations.id, id))
+        .returning();
+      
+      // Aggiungi il riferimento alla taglia
+      const completedOperation = results[0];
+      if (completedOperation.referenceSizeId) {
+        const size = await this.getSize(completedOperation.referenceSizeId);
+        return { ...completedOperation, referenceSize: size };
+      }
+      
+      return completedOperation;
+    } catch (error) {
+      console.error("Errore durante il completamento dell'operazione di vagliatura:", error);
+      throw new Error("Si è verificato un errore durante il completamento dell'operazione di vagliatura");
+    };
   }
 
   async cancelScreeningOperation(id: number): Promise<ScreeningOperation | undefined> {
