@@ -79,6 +79,11 @@ export default function BasicFlupsyVisualizer() {
     queryKey: ['/api/lots'] 
   });
   
+  // Fetch sizes - moved here from conditional rendering
+  const { data: allSizes } = useQuery({ 
+    queryKey: ['/api/sizes'] 
+  });
+  
   // Handler per aggiornare i contatori dei badge
   const handleBadgeCountChange = (category: 'topSgr' | 'topPopulation' | 'oldestCycles', value: number) => {
     setBadgeCounts(prev => ({
@@ -236,7 +241,7 @@ export default function BasicFlupsyVisualizer() {
           }
         } else if (latestOperation.animalsPerKg) {
           // Fallback utilizzando animalsPerKg se non c'è size
-          const { data: allSizes } = useQuery({ queryKey: ['/api/sizes'] });
+          // Usiamo la variabile allSizes importata dall'hook all'inizio del componente
           const targetSize = getSizeFromAnimalsPerKg(latestOperation.animalsPerKg, allSizes);
           
           if (targetSize) {
