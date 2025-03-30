@@ -302,6 +302,7 @@ export default function ScreeningAddSource() {
                   <TableHead>Ciclo</TableHead>
                   <TableHead>Posizione</TableHead>
                   <TableHead>Taglia</TableHead>
+                  <TableHead>Animali</TableHead>
                   <TableHead>Lotto</TableHead>
                   <TableHead>Ultima operazione</TableHead>
                   <TableHead className="text-right">Azioni</TableHead>
@@ -339,6 +340,20 @@ export default function ScreeningAddSource() {
                             <div className="text-xs text-muted-foreground mt-1">
                               {(cycle.size.minAnimalsPerKg || 0) < (screeningOperation.referenceSize.minAnimalsPerKg || 0)
                                 ? "Taglia maggiore" : "Taglia minore"}
+                            </div>
+                          )}
+                        </div>
+                      ) : (
+                        <span className="text-muted-foreground">N/D</span>
+                      )}
+                    </TableCell>
+                    <TableCell>
+                      {cycle.lastOperation ? (
+                        <div>
+                          <div className="font-medium text-sm">{cycle.lastOperation.animalCount?.toLocaleString() || 'N/D'}</div>
+                          {cycle.lastOperation.animalsPerKg && (
+                            <div className="text-xs text-muted-foreground">
+                              {cycle.lastOperation.animalsPerKg.toLocaleString()} per kg
                             </div>
                           )}
                         </div>
