@@ -61,12 +61,22 @@ type SourceBasketDetail = ScreeningSourceBasket & {
   basket?: any;
   cycle?: any;
   lastOperation?: any;
+  size?: {
+    id: number;
+    name: string;
+    code: string;
+    minAnimalsPerKg?: number | null;
+    maxAnimalsPerKg?: number | null;
+  } | null;
+  animalCount?: number | null;
+  animalsPerKg?: number | null;
 };
 
 type DestinationBasketDetail = ScreeningDestinationBasket & {
   basket?: any;
   history?: any[];
   lotReferences?: any[];
+  averageWeight?: number | null;
 };
 
 export default function ScreeningDetailPage() {
@@ -272,7 +282,7 @@ export default function ScreeningDetailPage() {
       case 'draft':
         return <Badge variant="outline">Bozza</Badge>;
       case 'completed':
-        return <Badge variant="success">Completata</Badge>;
+        return <Badge className="bg-green-500">Completata</Badge>;
       case 'cancelled':
         return <Badge variant="destructive">Annullata</Badge>;
       default:
@@ -558,6 +568,8 @@ export default function ScreeningDetailPage() {
                       <TableHead>ID Cesta</TableHead>
                       <TableHead>Flupsy</TableHead>
                       <TableHead>Codice Ciclo</TableHead>
+                      <TableHead>Taglia</TableHead>
+                      <TableHead>Animali</TableHead>
                       <TableHead>Peso medio</TableHead>
                       <TableHead>Stato</TableHead>
                       <TableHead>Azioni</TableHead>
@@ -580,13 +592,36 @@ export default function ScreeningDetailPage() {
                             : 'N/A'}
                         </TableCell>
                         <TableCell>
+                          {source.size ? (
+                            <Badge variant="outline" className="font-normal">
+                              {source.size.name}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">N/D</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          {source.animalCount ? (
+                            <div>
+                              <div className="font-medium text-sm">{source.animalCount.toLocaleString()}</div>
+                              {source.animalsPerKg && (
+                                <div className="text-xs text-muted-foreground">
+                                  {source.animalsPerKg.toLocaleString()} per kg
+                                </div>
+                              )}
+                            </div>
+                          ) : (
+                            <span className="text-muted-foreground">N/D</span>
+                          )}
+                        </TableCell>
+                        <TableCell>
                           {source.lastOperation?.averageWeight 
                             ? `${source.lastOperation.averageWeight.toFixed(2)} mg` 
                             : 'N/A'}
                         </TableCell>
                         <TableCell>
                           {source.dismissed 
-                            ? <Badge variant="success">Dismessa</Badge> 
+                            ? <Badge className="bg-green-500">Dismessa</Badge> 
                             : <Badge variant="outline">Attiva</Badge>}
                         </TableCell>
                         <TableCell>
@@ -663,8 +698,8 @@ export default function ScreeningDetailPage() {
                         </TableCell>
                         <TableCell>
                           {destination.category === 'above' 
-                            ? <Badge variant="success">Sopra vaglio</Badge> 
-                            : <Badge variant="default">Sotto vaglio</Badge>}
+                            ? <Badge className="bg-green-500">Sopra vaglio</Badge> 
+                            : <Badge>Sotto vaglio</Badge>}
                         </TableCell>
                         <TableCell>
                           {destination.positionAssigned ? (
