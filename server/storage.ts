@@ -1302,6 +1302,5 @@ export class MemStorage implements IStorage {
 
 import { DbStorage } from './db-storage';
 
-// Temporaneamente usa MemStorage per il modulo screening finché non viene implementato in DbStorage
-// export const storage = new DbStorage();
-export const storage = new MemStorage();
+// Utilizziamo DbStorage per accedere ai dati reali nel database PostgreSQL
+export const storage = new DbStorage();

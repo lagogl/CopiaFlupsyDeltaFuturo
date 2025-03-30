@@ -6,7 +6,13 @@ import {
   InsertSgr, InsertSize, Lot, Operation, Size, Sgr, baskets, cycles, lots,
   operations, sgr, sizes, basketPositionHistory, BasketPositionHistory, InsertBasketPositionHistory,
   SgrGiornaliero, InsertSgrGiornaliero, sgrGiornalieri, MortalityRate, InsertMortalityRate, mortalityRates,
-  TargetSizeAnnotation, InsertTargetSizeAnnotation, targetSizeAnnotations
+  TargetSizeAnnotation, InsertTargetSizeAnnotation, targetSizeAnnotations,
+  // Modulo di vagliatura
+  ScreeningOperation, InsertScreeningOperation, screeningOperations,
+  ScreeningSourceBasket, InsertScreeningSourceBasket, screeningSourceBaskets,
+  ScreeningDestinationBasket, InsertScreeningDestinationBasket, screeningDestinationBaskets,
+  ScreeningBasketHistory, InsertScreeningBasketHistory, screeningBasketHistory,
+  ScreeningLotReference, InsertScreeningLotReference, screeningLotReferences
 } from '../shared/schema';
 import { IStorage } from './storage';
 
@@ -724,5 +730,288 @@ export class DbStorage implements IStorage {
       projections,
       lastMeasurementDate: measurementDate.toISOString().split('T')[0] // Aggiunto esplicitamente per evitare confusione
     };
+  }
+
+  // IMPLEMENTAZIONE METODI PER IL MODULO DI VAGLIATURA
+  
+  // Screening Operations
+  async getScreeningOperations(): Promise<ScreeningOperation[]> {
+    return await db.select().from(screeningOperations);
+  }
+
+  async getScreeningOperationsByStatus(status: string): Promise<ScreeningOperation[]> {
+    return await db.select().from(screeningOperations).where(eq(screeningOperations.status, status));
+  }
+
+  async getScreeningOperation(id: number): Promise<ScreeningOperation | undefined> {
+    const results = await db.select().from(screeningOperations).where(eq(screeningOperations.id, id));
+    if (results.length === 0) return undefined;
+    
+    // Aggiungi il riferimento alla taglia
+    const operation = results[0];
+    if (operation.referenceSizeId) {
+      const size = await this.getSize(operation.referenceSizeId);
+      return { ...operation, referenceSize: size };
+    }
+    
+    return operation;
+  }
+
+  async createScreeningOperation(operation: InsertScreeningOperation): Promise<ScreeningOperation> {
+    const now = new Date();
+    const results = await db.insert(screeningOperations)
+      .values({
+        ...operation,
+        status: 'draft',
+        createdAt: now,
+        updatedAt: now
+      })
+      .returning();
+    
+    const newOperation = results[0];
+    // Aggiungi il riferimento alla taglia
+    if (newOperation.referenceSizeId) {
+      const size = await this.getSize(newOperation.referenceSizeId);
+      return { ...newOperation, referenceSize: size };
+    }
+    
+    return newOperation;
+  }
+
+  async updateScreeningOperation(id: number, operationUpdate: Partial<ScreeningOperation>): Promise<ScreeningOperation | undefined> {
+    // Rimuovi referenceSize se presente (non è una colonna nella tabella)
+    const { referenceSize, ...updateData } = operationUpdate as any;
+    
+    const now = new Date();
+    const results = await db.update(screeningOperations)
+      .set({
+        ...updateData,
+        updatedAt: now
+      })
+      .where(eq(screeningOperations.id, id))
+      .returning();
+    
+    if (results.length === 0) return undefined;
+    
+    // Aggiungi il riferimento alla taglia
+    const updatedOperation = results[0];
+    if (updatedOperation.referenceSizeId) {
+      const size = await this.getSize(updatedOperation.referenceSizeId);
+      return { ...updatedOperation, referenceSize: size };
+    }
+    
+    return updatedOperation;
+  }
+
+  async completeScreeningOperation(id: number): Promise<ScreeningOperation | undefined> {
+    const now = new Date();
+    const results = await db.update(screeningOperations)
+      .set({
+        status: 'completed',
+        updatedAt: now
+      })
+      .where(eq(screeningOperations.id, id))
+      .returning();
+    
+    if (results.length === 0) return undefined;
+    
+    // Aggiungi il riferimento alla taglia
+    const completedOperation = results[0];
+    if (completedOperation.referenceSizeId) {
+      const size = await this.getSize(completedOperation.referenceSizeId);
+      return { ...completedOperation, referenceSize: size };
+    }
+    
+    return completedOperation;
+  }
+
+  async cancelScreeningOperation(id: number): Promise<ScreeningOperation | undefined> {
+    const now = new Date();
+    const results = await db.update(screeningOperations)
+      .set({
+        status: 'cancelled',
+        updatedAt: now
+      })
+      .where(eq(screeningOperations.id, id))
+      .returning();
+    
+    if (results.length === 0) return undefined;
+    
+    // Aggiungi il riferimento alla taglia
+    const cancelledOperation = results[0];
+    if (cancelledOperation.referenceSizeId) {
+      const size = await this.getSize(cancelledOperation.referenceSizeId);
+      return { ...cancelledOperation, referenceSize: size };
+    }
+    
+    return cancelledOperation;
+  }
+  
+  // Screening Source Baskets
+  async getScreeningSourceBasketsByScreening(screeningId: number): Promise<any[]> {
+    const sourceBaskets = await db.select().from(screeningSourceBaskets)
+      .where(eq(screeningSourceBaskets.screeningId, screeningId));
+    
+    // Arricchisci i dati aggiungendo informazioni su ceste, cicli e lotti
+    const enrichedBaskets = [];
+    
+    for (const sourceBasket of sourceBaskets) {
+      const basket = await this.getBasket(sourceBasket.basketId);
+      const cycle = await this.getCycle(sourceBasket.cycleId);
+      
+      let lot = null;
+      if (sourceBasket.lotId) {
+        lot = await this.getLot(sourceBasket.lotId);
+      }
+      
+      let size = null;
+      if (sourceBasket.sizeId) {
+        size = await this.getSize(sourceBasket.sizeId);
+      }
+      
+      enrichedBaskets.push({
+        ...sourceBasket,
+        basket,
+        cycle,
+        lot,
+        size
+      });
+    }
+    
+    return enrichedBaskets;
+  }
+  
+  async addScreeningSourceBasket(basket: InsertScreeningSourceBasket): Promise<ScreeningSourceBasket> {
+    const results = await db.insert(screeningSourceBaskets)
+      .values(basket)
+      .returning();
+    
+    return results[0];
+  }
+  
+  async removeScreeningSourceBasket(id: number): Promise<boolean> {
+    const deleted = await db.delete(screeningSourceBaskets)
+      .where(eq(screeningSourceBaskets.id, id))
+      .returning();
+    
+    return deleted.length > 0;
+  }
+  
+  async updateScreeningSourceBasket(id: number, basket: Partial<ScreeningSourceBasket>): Promise<ScreeningSourceBasket | undefined> {
+    const results = await db.update(screeningSourceBaskets)
+      .set(basket)
+      .where(eq(screeningSourceBaskets.id, id))
+      .returning();
+    
+    return results[0];
+  }
+  
+  // Screening Destination Baskets
+  async getScreeningDestinationBasketsByScreening(screeningId: number): Promise<any[]> {
+    const destinationBaskets = await db.select().from(screeningDestinationBaskets)
+      .where(eq(screeningDestinationBaskets.screeningId, screeningId));
+    
+    // Arricchisci i dati aggiungendo informazioni su ceste, cicli e FLUPSY
+    const enrichedBaskets = [];
+    
+    for (const destinationBasket of destinationBaskets) {
+      const basket = await this.getBasket(destinationBasket.basketId);
+      
+      let cycle = null;
+      if (destinationBasket.cycleId) {
+        cycle = await this.getCycle(destinationBasket.cycleId);
+      }
+      
+      let flupsy = null;
+      if (destinationBasket.flupsyId) {
+        flupsy = await this.getFlupsy(destinationBasket.flupsyId);
+      }
+      
+      enrichedBaskets.push({
+        ...destinationBasket,
+        basket,
+        cycle,
+        flupsy
+      });
+    }
+    
+    return enrichedBaskets;
+  }
+  
+  async getScreeningDestinationBasket(id: number): Promise<ScreeningDestinationBasket | undefined> {
+    const results = await db.select().from(screeningDestinationBaskets)
+      .where(eq(screeningDestinationBaskets.id, id));
+    
+    return results[0];
+  }
+  
+  async addScreeningDestinationBasket(basket: InsertScreeningDestinationBasket): Promise<any> {
+    const now = new Date();
+    const results = await db.insert(screeningDestinationBaskets)
+      .values({
+        ...basket,
+        createdAt: now,
+        updatedAt: now
+      })
+      .returning();
+    
+    return results[0];
+  }
+  
+  async updateScreeningDestinationBasket(id: number, basket: Partial<ScreeningDestinationBasket>): Promise<ScreeningDestinationBasket | undefined> {
+    const now = new Date();
+    const results = await db.update(screeningDestinationBaskets)
+      .set({
+        ...basket,
+        updatedAt: now
+      })
+      .where(eq(screeningDestinationBaskets.id, id))
+      .returning();
+    
+    return results[0];
+  }
+  
+  async removeScreeningDestinationBasket(id: number): Promise<boolean> {
+    const deleted = await db.delete(screeningDestinationBaskets)
+      .where(eq(screeningDestinationBaskets.id, id))
+      .returning();
+    
+    return deleted.length > 0;
+  }
+  
+  // Screening History
+  async getScreeningBasketHistoryByDestination(destinationBasketId: number): Promise<ScreeningBasketHistory[]> {
+    return await db.select().from(screeningBasketHistory)
+      .where(eq(screeningBasketHistory.destinationBasketId, destinationBasketId));
+  }
+  
+  async createScreeningBasketHistory(history: InsertScreeningBasketHistory): Promise<ScreeningBasketHistory> {
+    const now = new Date();
+    const results = await db.insert(screeningBasketHistory)
+      .values({
+        ...history,
+        createdAt: now
+      })
+      .returning();
+    
+    return results[0];
+  }
+  
+  // Screening Lot Reference
+  async getScreeningLotReferencesByDestination(destinationBasketId: number): Promise<ScreeningLotReference[]> {
+    return await db.select().from(screeningLotReferences)
+      .where(eq(screeningLotReferences.destinationBasketId, destinationBasketId));
+  }
+  
+  async createScreeningLotReference(lotReference: InsertScreeningLotReference): Promise<ScreeningLotReference> {
+    const now = new Date();
+    const results = await db.insert(screeningLotReferences)
+      .values({
+        ...lotReference,
+        createdAt: now
+      })
+      .returning();
+    
+    return results[0];
   }
 }
