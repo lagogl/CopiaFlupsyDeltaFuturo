@@ -1,7 +1,7 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
-import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
+import { ArrowLeft, Plus, Loader2, Info } from 'lucide-react';
 import { z } from 'zod';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -78,6 +78,38 @@ export default function ScreeningAddDestination() {
     queryFn: async () => {
       return apiRequest<any[]>({
         url: '/api/baskets',
+        method: 'GET'
+      });
+    },
+  });
+  
+  // Query per ottenere le ceste di origine della vagliatura corrente
+  const {
+    data: sourceBaskets,
+    isLoading: sourceBasketLoading,
+    error: sourceBasketError
+  } = useQuery({
+    queryKey: ['/api/screening/source-baskets', screeningId],
+    queryFn: async () => {
+      if (!screeningId) return null;
+      return apiRequest<any[]>({
+        url: `/api/screening/source-baskets/${screeningId}`,
+        method: 'GET'
+      });
+    },
+    enabled: !!screeningId,
+  });
+  
+  // Query per ottenere la configurazione dei FLUPSY
+  const {
+    data: flupsys,
+    isLoading: flupsysLoading,
+    error: flupsysError
+  } = useQuery({
+    queryKey: ['/api/flupsys'],
+    queryFn: async () => {
+      return apiRequest<any[]>({
+        url: '/api/flupsys',
         method: 'GET'
       });
     },
@@ -273,10 +305,53 @@ export default function ScreeningAddDestination() {
     );
   }
 
-  // Filtra le ceste disponibili (non assegnate a cicli attivi)
-  const availableBasketOptions = availableBaskets?.filter(basket => 
-    basket.state === 'available' || basket.state === 'inactive'
-  ) || [];
+  // Calcola il numero di spazi liberi nei FLUPSY
+  const flupsySpacesInfo = useMemo(() => {
+    if (!flupsys) return [];
+    
+    return flupsys.map(flupsy => {
+      // Trova tutte le ceste in quel FLUPSY
+      const basketsInFlupsy = availableBaskets?.filter(b => b.flupsyId === flupsy.id) || [];
+      const occupiedPositions = basketsInFlupsy.filter(b => b.state === 'active').length;
+      const totalPositions = flupsy.capacity || basketsInFlupsy.length || 0;
+      const freePositions = totalPositions - occupiedPositions;
+      
+      return {
+        id: flupsy.id,
+        name: flupsy.name,
+        totalPositions,
+        occupiedPositions,
+        freePositions
+      };
+    });
+  }, [flupsys, availableBaskets]);
+  
+  // Calcola il numero totale di spazi liberi
+  const totalFreePositions = useMemo(() => {
+    return flupsySpacesInfo.reduce((total, flupsy) => total + flupsy.freePositions, 0);
+  }, [flupsySpacesInfo]);
+
+  // Ottieni le ceste di origine per questa vagliatura
+  const sourceBasketIds = useMemo(() => {
+    return sourceBaskets?.map(sb => sb.basketId) || [];
+  }, [sourceBaskets]);
+  
+  // Filtra le ceste disponibili:
+  // 1. Ceste disponibili (state = available o inactive)
+  // 2. Ceste fisiche che sono attualmente usate come fonte per questa vagliatura
+  const availableBasketOptions = useMemo(() => {
+    const regularAvailableBaskets = availableBaskets?.filter(basket => 
+      basket.state === 'available' || basket.state === 'inactive'
+    ) || [];
+    
+    // Ceste che sono usate come fonte per questa vagliatura ma potrebbero essere riutilizzate
+    // come destinazione (in questo caso la cesta fisica è la stessa, ma il ciclo sarà diverso)
+    const sourceBasketPhysicals = availableBaskets?.filter(basket => 
+      sourceBasketIds.includes(basket.id) && (basket.state === 'active')
+    ) || [];
+    
+    return [...regularAvailableBaskets, ...sourceBasketPhysicals];
+  }, [availableBaskets, sourceBasketIds]);
 
   return (
     <div className="container mx-auto p-4">
@@ -292,6 +367,35 @@ export default function ScreeningAddDestination() {
           </p>
         </div>
       </div>
+      
+      {flupsys && (
+        <div className="mb-6">
+          <Card className="bg-blue-50">
+            <CardContent className="pt-6">
+              <div className="flex items-center gap-2 mb-2 text-blue-700">
+                <Info className="h-5 w-5" />
+                <h3 className="font-semibold">Spazi disponibili nei FLUPSY</h3>
+              </div>
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mt-3">
+                {flupsySpacesInfo.map(flupsy => (
+                  <div key={flupsy.id} className="p-3 bg-white rounded-md shadow-sm">
+                    <h4 className="font-medium">{flupsy.name}</h4>
+                    <div className="flex justify-between mt-1 text-sm">
+                      <span>Spazi occupati: {flupsy.occupiedPositions}/{flupsy.totalPositions}</span>
+                      <span className={flupsy.freePositions > 0 ? "text-green-600 font-medium" : "text-red-600 font-medium"}>
+                        {flupsy.freePositions} liberi
+                      </span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+              <p className="text-sm text-blue-600 mt-4">
+                Totale spazi disponibili: <span className="font-semibold">{totalFreePositions}</span>
+              </p>
+            </CardContent>
+          </Card>
+        </div>
+      )}
 
       <Card>
         <CardHeader>
@@ -325,7 +429,8 @@ export default function ScreeningAddDestination() {
                               key={basket.id} 
                               value={basket.id.toString()}
                             >
-                              #{basket.physicalNumber} {basket.cycleCode ? `(${basket.cycleCode})` : ''}
+                              #{basket.physicalNumber} {basket.cycleCode ? `(${basket.cycleCode})` : ''} 
+                              {sourceBasketIds.includes(basket.id) ? " - In vagliatura" : ""}
                             </SelectItem>
                           ))}
                         </SelectContent>
