@@ -43,6 +43,13 @@ export async function apiRequest<T = any>(
     
     console.log(`API Response status: ${res.status}`);
     
+    // Gestione migliore delle risposte
+    if (!res.ok) {
+      // Se la risposta non è OK, lancia un errore
+      const text = await res.text();
+      throw new Error(`${res.status}: ${text || res.statusText}`);
+    }
+    
     // Clona la risposta per poterla ispezionare e poi restituirla
     const resClone = res.clone();
     
@@ -57,21 +64,17 @@ export async function apiRequest<T = any>(
         const text = await resClone.text();
         console.log('API Response data (text):', text || 'Empty response');
         // Se la risposta è vuota ma lo stato è OK, mappa a un oggetto di successo
-        if (res.ok && (!text || text.trim() === '')) {
+        if (!text || text.trim() === '') {
           responseData = { success: true };
         }
       }
     } catch (error) {
       console.log('Response processing error:', error);
       // Se c'è un errore nel parsing ma la risposta è OK, restituisci un oggetto di successo
-      if (res.ok) {
-        responseData = { success: true };
-      }
+      responseData = { success: true };
     }
     
-    await throwIfResNotOk(res);
-    
-    // Se abbiamo già elaborato i dati della risposta, restituiscili
+    // Abbiamo già gestito gli errori in precedenza, qui ritorniamo direttamente i dati elaborati
     if (responseData !== null) {
       return responseData as T;
     }
