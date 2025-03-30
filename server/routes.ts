@@ -410,53 +410,62 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Close the current position if exists
-      const currentPosition = await storage.getCurrentBasketPosition(id);
-      if (currentPosition) {
-        const currentDate = new Date();
-        const formattedDate = currentDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
-        await storage.closeBasketPositionHistory(id, formattedDate);
-      }
-      
-      // Create a new position history entry
-      await storage.createBasketPositionHistory({
-        basketId: id,
-        flupsyId: flupsyId,
-        row: row,
-        position: position,
-        startDate: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
-        operationId: null
-      });
-      
-      // Update the basket with the new position
-      const updateData = {
-        flupsyId,
-        row,
-        position
-      };
-      
-      // Update the basket
-      const updatedBasket = await storage.updateBasket(id, updateData);
-      
-      // Ottieni il cestello aggiornato completo per assicurarci di avere tutti i dati
-      const completeBasket = await storage.getBasket(id);
-      
-      // Logging aggiuntivo per debug
-      console.log("Basket spostato con successo:", completeBasket);
-      
-      // Broadcast basket update event via WebSockets
-      if (typeof (global as any).broadcastUpdate === 'function' && completeBasket) {
-        (global as any).broadcastUpdate('basket_updated', {
-          basket: completeBasket,
-          message: `Cestello ${completeBasket.physicalNumber} spostato`
+      try {
+        // Close the current position if exists
+        const currentPosition = await storage.getCurrentBasketPosition(id);
+        if (currentPosition) {
+          console.log("Chiusura posizione corrente:", currentPosition);
+          const currentDate = new Date();
+          const formattedDate = currentDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+          await storage.closeBasketPositionHistory(id, formattedDate);
+        }
+        
+        // Create a new position history entry
+        console.log("Creazione nuova posizione:", { basketId: id, flupsyId, row, position });
+        const newPosition = await storage.createBasketPositionHistory({
+          basketId: id,
+          flupsyId: flupsyId,
+          row: row,
+          position: position,
+          startDate: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
+          operationId: null
         });
+        
+        console.log("Nuova posizione creata:", newPosition);
+        
+        // Update the basket with the new position
+        const updateData = {
+          flupsyId,
+          row,
+          position
+        };
+        
+        // Update the basket
+        const updatedBasket = await storage.updateBasket(id, updateData);
+        
+        // Ottieni il cestello aggiornato completo per assicurarci di avere tutti i dati
+        const completeBasket = await storage.getBasket(id);
+        
+        // Logging aggiuntivo per debug
+        console.log("Basket spostato con successo:", completeBasket);
+        
+        // Broadcast basket update event via WebSockets
+        if (typeof (global as any).broadcastUpdate === 'function' && completeBasket) {
+          (global as any).broadcastUpdate('basket_updated', {
+            basket: completeBasket,
+            message: `Cestello ${completeBasket.physicalNumber} spostato`
+          });
+        }
+        
+        // Restituisci il cestello completo al client
+        res.json(completeBasket || updatedBasket);
+      } catch (dbError) {
+        console.error("Database error during basket move:", dbError);
+        throw new Error(`Errore durante l'aggiornamento del database: ${dbError.message}`);
       }
-      
-      // Restituisci il cestello completo al client
-      res.json(completeBasket || updatedBasket);
     } catch (error) {
       console.error("Error moving basket:", error);
-      res.status(500).json({ message: "Failed to move basket" });
+      res.status(500).json({ message: `Failed to move basket: ${error.message}` });
     }
   });
   
