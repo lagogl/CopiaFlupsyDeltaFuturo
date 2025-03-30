@@ -29,7 +29,11 @@ export default function Lots() {
 
   // Create mutation
   const createLotMutation = useMutation({
-    mutationFn: (newLot: any) => apiRequest('POST', '/api/lots', newLot),
+    mutationFn: (newLot: any) => apiRequest({
+      url: '/api/lots',
+      method: 'POST',
+      body: newLot
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
       setIsCreateDialogOpen(false);
@@ -49,7 +53,11 @@ export default function Lots() {
 
   // Update mutation
   const updateLotMutation = useMutation({
-    mutationFn: (lotData: any) => apiRequest('PATCH', `/api/lots/${lotData.id}`, lotData),
+    mutationFn: (lotData: any) => apiRequest({
+      url: `/api/lots/${lotData.id}`,
+      method: 'PATCH',
+      body: lotData
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
       setIsEditDialogOpen(false);
@@ -69,7 +77,10 @@ export default function Lots() {
 
   // Delete mutation
   const deleteLotMutation = useMutation({
-    mutationFn: (id: number) => apiRequest('DELETE', `/api/lots/${id}`),
+    mutationFn: (id: number) => apiRequest({
+      url: `/api/lots/${id}`,
+      method: 'DELETE'
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
       setIsDeleteDialogOpen(false);
@@ -90,7 +101,11 @@ export default function Lots() {
   // Update lot state mutation
   const updateLotStateMutation = useMutation({
     mutationFn: ({ id, state }: { id: number, state: string }) => 
-      apiRequest('PATCH', `/api/lots/${id}`, { state }),
+      apiRequest({
+        url: `/api/lots/${id}`,
+        method: 'PATCH',
+        body: { state }
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
       toast({
