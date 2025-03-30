@@ -8,7 +8,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { apiRequest } from '@/lib/queryClient';
-import { ScreeningOperation, Basket, Cycle, InsertScreeningSourceBasket } from '@shared/schema';
+import { ScreeningOperation, Basket, Cycle, InsertScreeningSourceBasket, Size } from '@shared/schema';
 import { Skeleton } from '@/components/ui/skeleton';
 import { useToast } from '@/hooks/use-toast';
 import {
@@ -23,6 +23,13 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+
+// Il backend restituisce i dati sulla taglia di riferimento 
+// anche se non è definito esplicitamente nel tipo ScreeningOperation
+// Definiamo un tipo per gestire questa situazione
+interface ScreeningOperationResponse extends ScreeningOperation {
+  referenceSize?: Size;
+}
 
 export default function ScreeningAddSource() {
   // Routing
@@ -45,7 +52,7 @@ export default function ScreeningAddSource() {
     queryKey: ['/api/screening/operations', screeningId],
     queryFn: async () => {
       if (!screeningId) return null;
-      return apiRequest<ScreeningOperation>({
+      return apiRequest<ScreeningOperationResponse>({
         url: `/api/screening/operations/${screeningId}`,
         method: 'GET'
       });
@@ -97,11 +104,31 @@ export default function ScreeningAddSource() {
     },
   });
 
-  // Filtra i cestelli in base alla ricerca
-  useEffect(() => {
-    if (!activeCycles) return;
+  // Calcola la distanza tra due taglie (più basso è meglio)
+  const calculateSizeDistance = (cycle: any, referenceSize: Size) => {
+    // Se il ciclo non ha una taglia, mettilo in fondo
+    if (!cycle.size) return Number.MAX_SAFE_INTEGER;
     
+    // Se le taglie sono identiche, distanza minima
+    if (cycle.size.id === referenceSize.id) return 0;
+    
+    // Utilizziamo gli animali/kg per determinare la vicinanza tra le taglie
+    const cycleMin = cycle.size.minAnimalsPerKg || 0;
+    const referenceMin = referenceSize.minAnimalsPerKg || 0;
+    
+    // Calcolo della distanza relativa
+    return Math.abs(cycleMin - referenceMin) / (referenceMin || 1);
+  };
+
+  // Filtra e ordina i cestelli in base alla ricerca e alla taglia di riferimento
+  useEffect(() => {
+    if (!activeCycles || !screeningOperation?.referenceSize) return;
+    
+    // Prima filtriamo in base ai termini di ricerca
     const filtered = activeCycles.filter(cycle => {
+      // Se non c'è un termine di ricerca, mostra tutti
+      if (!searchTerm) return true;
+      
       const basket = cycle.basket;
       const term = searchTerm.toLowerCase();
       
@@ -114,8 +141,19 @@ export default function ScreeningAddSource() {
       );
     });
     
-    setFilteredBaskets(filtered);
-  }, [searchTerm, activeCycles]);
+    // Poi ordiniamo in base alla vicinanza della taglia rispetto a quella di riferimento
+    if (screeningOperation.referenceSize) {
+      const sortedBySize = [...filtered].sort((a, b) => {
+        const distanceA = calculateSizeDistance(a, screeningOperation.referenceSize as Size);
+        const distanceB = calculateSizeDistance(b, screeningOperation.referenceSize as Size);
+        return distanceA - distanceB; // Ordine crescente (il più vicino prima)
+      });
+      
+      setFilteredBaskets(sortedBySize);
+    } else {
+      setFilteredBaskets(filtered);
+    }
+  }, [searchTerm, activeCycles, screeningOperation?.referenceSize]);
 
   // Handler per aggiungere una cesta di origine
   const handleAddSourceBasket = (cycleId: number, basketId: number) => {
@@ -289,10 +327,21 @@ export default function ScreeningAddSource() {
                       )}
                     </TableCell>
                     <TableCell>
-                      {cycle.size ? (
-                        <Badge variant="secondary" className="font-normal">
-                          {cycle.size.name}
-                        </Badge>
+                      {cycle.size && screeningOperation?.referenceSize ? (
+                        <div>
+                          <Badge 
+                            variant={cycle.size.id === screeningOperation.referenceSize.id ? "default" : "secondary"} 
+                            className={`font-normal ${cycle.size.id === screeningOperation.referenceSize.id ? "bg-green-500" : ""}`}
+                          >
+                            {cycle.size.name}
+                          </Badge>
+                          {cycle.size.id !== screeningOperation.referenceSize.id && (
+                            <div className="text-xs text-muted-foreground mt-1">
+                              {(cycle.size.minAnimalsPerKg || 0) < (screeningOperation.referenceSize.minAnimalsPerKg || 0)
+                                ? "Taglia maggiore" : "Taglia minore"}
+                            </div>
+                          )}
+                        </div>
                       ) : (
                         <span className="text-muted-foreground">N/D</span>
                       )}
