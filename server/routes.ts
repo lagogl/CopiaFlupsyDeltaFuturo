@@ -2840,11 +2840,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ error: "Screening operation not found" });
       }
       
+      // Verifica se l'operazione è in stato "draft"
+      const isDraft = operation.status === 'draft';
+      
       const cancelledOperation = await storage.cancelScreeningOperation(id);
       res.json(cancelledOperation);
       
-      // Broadcast update
-      (global as any).broadcastUpdate("screening_operation_cancelled", cancelledOperation);
+      // Log e broadcast con dettagli diversi a seconda dell'operazione eseguita
+      if (isDraft) {
+        console.log(`Operazione di vagliatura ID ${id} completamente eliminata dal sistema`);
+        // Broadcast update
+        (global as any).broadcastUpdate("screening_operation_deleted", cancelledOperation);
+      } else {
+        console.log(`Operazione di vagliatura ID ${id} contrassegnata come annullata`);
+        // Broadcast update
+        (global as any).broadcastUpdate("screening_operation_cancelled", cancelledOperation);
+      }
     } catch (error) {
       console.error("Error cancelling screening operation:", error);
       res.status(500).json({ error: "Failed to cancel screening operation" });

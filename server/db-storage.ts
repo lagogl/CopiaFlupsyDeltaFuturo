@@ -826,25 +826,67 @@ export class DbStorage implements IStorage {
   }
 
   async cancelScreeningOperation(id: number): Promise<ScreeningOperation | undefined> {
-    const now = new Date();
-    const results = await db.update(screeningOperations)
-      .set({
-        status: 'cancelled',
-        updatedAt: now
-      })
-      .where(eq(screeningOperations.id, id))
-      .returning();
+    // Prima recuperiamo l'operazione per verificare il suo stato attuale
+    const operation = await this.getScreeningOperation(id);
+    if (!operation) return undefined;
     
-    if (results.length === 0) return undefined;
-    
-    // Aggiungi il riferimento alla taglia
-    const cancelledOperation = results[0];
-    if (cancelledOperation.referenceSizeId) {
-      const size = await this.getSize(cancelledOperation.referenceSizeId);
-      return { ...cancelledOperation, referenceSize: size };
+    // Se l'operazione è in stato "draft", eliminiamo completamente tutti i dati associati
+    if (operation.status === 'draft') {
+      // Eliminiamo tutti i riferimenti nelle tabelle correlate
+      
+      // 1. Eliminiamo i riferimenti ai lotti per le ceste di destinazione
+      await db.delete(screeningLotReferences)
+        .where(eq(screeningLotReferences.screeningId, id));
+      
+      // 2. Eliminiamo lo storico delle relazioni tra ceste di origine e destinazione
+      await db.delete(screeningBasketHistory)
+        .where(eq(screeningBasketHistory.screeningId, id));
+      
+      // 3. Eliminiamo le ceste di destinazione
+      await db.delete(screeningDestinationBaskets)
+        .where(eq(screeningDestinationBaskets.screeningId, id));
+      
+      // 4. Eliminiamo le ceste di origine
+      await db.delete(screeningSourceBaskets)
+        .where(eq(screeningSourceBaskets.screeningId, id));
+      
+      // 5. Infine, eliminiamo l'operazione di vagliatura stessa
+      const deletedResults = await db.delete(screeningOperations)
+        .where(eq(screeningOperations.id, id))
+        .returning();
+      
+      if (deletedResults.length === 0) return undefined;
+      
+      // Aggiungi il riferimento alla taglia all'operazione eliminata
+      const deletedOperation = deletedResults[0];
+      if (deletedOperation.referenceSizeId) {
+        const size = await this.getSize(deletedOperation.referenceSizeId);
+        return { ...deletedOperation, referenceSize: size, status: 'cancelled' };
+      }
+      
+      return { ...deletedOperation, status: 'cancelled' };
+    } else {
+      // Se l'operazione non è in stato "draft", cambiamo solo lo stato a "cancelled"
+      const now = new Date();
+      const results = await db.update(screeningOperations)
+        .set({
+          status: 'cancelled',
+          updatedAt: now
+        })
+        .where(eq(screeningOperations.id, id))
+        .returning();
+      
+      if (results.length === 0) return undefined;
+      
+      // Aggiungi il riferimento alla taglia
+      const cancelledOperation = results[0];
+      if (cancelledOperation.referenceSizeId) {
+        const size = await this.getSize(cancelledOperation.referenceSizeId);
+        return { ...cancelledOperation, referenceSize: size };
+      }
+      
+      return cancelledOperation;
     }
-    
-    return cancelledOperation;
   }
   
   // Screening Source Baskets
