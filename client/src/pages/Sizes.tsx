@@ -20,7 +20,11 @@ export default function Sizes() {
 
   // Create mutation
   const createSizeMutation = useMutation({
-    mutationFn: (newSize: any) => apiRequest('POST', '/api/sizes', newSize),
+    mutationFn: (newSize: any) => apiRequest({
+      url: '/api/sizes',
+      method: 'POST',
+      body: newSize
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/sizes'] });
       setIsCreateDialogOpen(false);
@@ -29,7 +33,11 @@ export default function Sizes() {
 
   // Update mutation
   const updateSizeMutation = useMutation({
-    mutationFn: (size: any) => apiRequest('PATCH', `/api/sizes/${size.id}`, size),
+    mutationFn: (size: any) => apiRequest({
+      url: `/api/sizes/${size.id}`,
+      method: 'PATCH',
+      body: size
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/sizes'] });
       setEditingSize(null);

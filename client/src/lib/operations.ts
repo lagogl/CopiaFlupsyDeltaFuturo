@@ -14,7 +14,11 @@ export async function createDirectOperation(operationData: InsertOperation) {
   console.log("USANDO ROUTE DIRETTA PER OPERAZIONE:", operationData);
   
   // Usiamo la route diretta che bypassa i problemi con cycleId
-  return apiRequest('/api/direct-operations', operationData);
+  return apiRequest({
+    url: '/api/direct-operations',
+    method: 'POST',
+    body: operationData
+  });
 }
 
 /**

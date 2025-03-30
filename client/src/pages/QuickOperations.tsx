@@ -485,7 +485,11 @@ export default function QuickOperations() {
       // Utilizziamo la funzione ausiliaria per assicurarci che i dati siano completi
       const preparedData = preparePesoOperationData(operationData);
       console.log("Dati operazione inviati al server:", preparedData);
-      return apiRequest('POST', '/api/operations', preparedData);
+      return apiRequest({
+        url: '/api/operations',
+        method: 'POST',
+        body: preparedData
+      });
     },
     onSuccess: () => {
       // Invalida la cache delle operazioni per ricaricare i dati
@@ -582,7 +586,10 @@ export default function QuickOperations() {
   // Mutazione per cancellare un'operazione
   const deleteOperationMutation = useMutation({
     mutationFn: (id: number) => {
-      return apiRequest('DELETE', `/api/operations/${id}`);
+      return apiRequest({
+        url: `/api/operations/${id}`,
+        method: 'DELETE'
+      });
     },
     onSuccess: () => {
       // Invalida la cache delle operazioni per ricaricare i dati

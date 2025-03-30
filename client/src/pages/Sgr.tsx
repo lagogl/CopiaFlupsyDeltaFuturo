@@ -48,13 +48,20 @@ export default function Sgr() {
   // Query per le proiezioni di crescita
   const { data: growthPrediction, isLoading: isLoadingPrediction, refetch: refetchPrediction } = useQuery({
     queryKey: ['/api/growth-prediction', currentWeightForPrediction, getCurrentMonthSgr(), projectionDays, bestVariation, worstVariation],
-    queryFn: () => apiRequest('GET', `/api/growth-prediction?currentWeight=${currentWeightForPrediction}&sgrPercentage=${getCurrentMonthSgr()}&days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`),
+    queryFn: () => apiRequest({ 
+      url: `/api/growth-prediction?currentWeight=${currentWeightForPrediction}&sgrPercentage=${getCurrentMonthSgr()}&days=${projectionDays}&bestVariation=${bestVariation}&worstVariation=${worstVariation}`, 
+      method: 'GET' 
+    }),
     enabled: false
   });
 
   // Create SGR mutation
   const createSgrMutation = useMutation({
-    mutationFn: (newSgr: any) => apiRequest('POST', '/api/sgr', newSgr),
+    mutationFn: (newSgr: any) => apiRequest({ 
+      url: '/api/sgr', 
+      method: 'POST', 
+      body: newSgr 
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/sgr'] });
       setIsCreateDialogOpen(false);
@@ -63,7 +70,11 @@ export default function Sgr() {
 
   // Update SGR mutation
   const updateSgrMutation = useMutation({
-    mutationFn: (sgr: any) => apiRequest('PATCH', `/api/sgr/${sgr.id}`, sgr),
+    mutationFn: (sgr: any) => apiRequest({ 
+      url: `/api/sgr/${sgr.id}`, 
+      method: 'PATCH', 
+      body: sgr 
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/sgr'] });
       setEditingSgr(null);
@@ -72,7 +83,11 @@ export default function Sgr() {
 
   // Create SGR Giornaliero mutation
   const createSgrGiornalieroMutation = useMutation({
-    mutationFn: (newSgrGiornaliero: any) => apiRequest('POST', '/api/sgr-giornalieri', newSgrGiornaliero),
+    mutationFn: (newSgrGiornaliero: any) => apiRequest({ 
+      url: '/api/sgr-giornalieri', 
+      method: 'POST', 
+      body: newSgrGiornaliero 
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/sgr-giornalieri'] });
       setIsCreateDailyDialogOpen(false);

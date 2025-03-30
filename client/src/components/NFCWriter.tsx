@@ -46,7 +46,10 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         try {
           // Prima otteniamo i dettagli del cestello per verificare se ha un ciclo attivo
           console.log("Recupero dettagli cestello per ID:", basketId);
-          const basketDetails = await apiRequest('GET', `/api/baskets/details/${basketId}`) as any;
+          const basketDetails = await apiRequest({
+            url: `/api/baskets/details/${basketId}`,
+            method: 'GET'
+          }) as any;
           console.log("Dettagli cestello ricevuti:", basketDetails);
           
           // Prepara i dati da scrivere con tutte le informazioni necessarie
@@ -84,11 +87,11 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
           console.log("Scrittura tag NFC completata con successo");
           
           // Aggiorna il cestello nel database per salvare il numero di serie NFC
-          await apiRequest(
-            'PATCH',
-            `/api/baskets/${basketId}`,
-            { nfcData: serialNumber }
-          );
+          await apiRequest({
+            url: `/api/baskets/${basketId}`,
+            method: 'PATCH',
+            body: { nfcData: serialNumber }
+          });
           
           // Invalida la cache
           queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
