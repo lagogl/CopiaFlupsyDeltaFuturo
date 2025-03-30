@@ -163,6 +163,7 @@ export default function DraggableFlupsyVisualizer() {
   // Update basket position mutation
   const updateBasketPosition = useMutation({
     mutationFn: async ({ basketId, flupsyId, row, position }: { basketId: number; flupsyId: number; row: string; position: number }) => {
+      console.log('Sending basket position update with flupsyId:', flupsyId);
       const response = await apiRequest('PATCH', `/api/baskets/${basketId}`, {
         flupsyId,
         row,

@@ -439,11 +439,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
       
+      // Assicuriamoci che vengano aggiornati tutti i dati di posizione e flupsyId
+      // quando vengono specificati entrambi row e position
+      const updateData = { ...parsedData.data };
+      
+      // Se è un'operazione di spostamento e flupsyId è nel corpo della richiesta,
+      // assicuriamoci che venga impostato nel database
+      if (parsedData.data.row && parsedData.data.position && parsedData.data.flupsyId) {
+        console.log(`Aggiornamento basket ${id} con flupsyId ${parsedData.data.flupsyId}, posizione: ${parsedData.data.row}-${parsedData.data.position}`);
+      }
+      
       // Update the basket
-      const updatedBasket = await storage.updateBasket(id, parsedData.data);
+      const updatedBasket = await storage.updateBasket(id, updateData);
       
       // Ottieni il cestello aggiornato completo per assicurarci di avere tutti i dati
       const completeBasket = await storage.getBasket(id);
+      
+      // Logging aggiuntivo per debug
+      console.log("Basket aggiornato:", completeBasket);
       
       // Broadcast basket update event via WebSockets
       if (typeof (global as any).broadcastUpdate === 'function' && completeBasket) {
