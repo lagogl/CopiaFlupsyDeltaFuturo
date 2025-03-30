@@ -26,6 +26,12 @@ const parseFormattedNumber = (value: string): number | null => {
   const number = parseFloat(cleanedValue);
   return isNaN(number) ? null : number;
 };
+
+// Formattazione per il peso totale (con 1 decimale)
+const formatWeight = (value: number | null): string => {
+  if (value === null) return '';
+  return value.toLocaleString('it-IT', {minimumFractionDigits: 1, maximumFractionDigits: 1});
+};
 import {
   Form,
   FormControl,
@@ -205,7 +211,6 @@ export default function ScreeningAddDestination() {
       position: null,
       flupsyId: null,
       row: null,
-      cycleId: null,
       animalCount: values.animalCount,
       totalWeight: values.totalWeight ? values.totalWeight * 1000 : null, // Conversione in grammi
       animalsPerKg: values.animalsPerKg,
@@ -527,6 +532,7 @@ export default function ScreeningAddDestination() {
                       <FormLabel>Numero Animali</FormLabel>
                       <FormControl>
                         <Input
+                          type="text"
                           placeholder="Inserisci il numero di animali"
                           {...field}
                           value={field.value !== null ? formatNumber(field.value) : ''}
@@ -553,9 +559,10 @@ export default function ScreeningAddDestination() {
                       <FormLabel>Peso Totale (kg)</FormLabel>
                       <FormControl>
                         <Input
+                          type="text"
                           placeholder="Inserisci il peso totale in kg"
                           {...field}
-                          value={field.value !== null ? field.value.toLocaleString('it-IT', {minimumFractionDigits: 1, maximumFractionDigits: 1}) : ''}
+                          value={field.value !== null ? formatWeight(field.value) : ''}
                           onChange={(e) => {
                             const value = parseFormattedNumber(e.target.value);
                             field.onChange(value);
@@ -579,6 +586,7 @@ export default function ScreeningAddDestination() {
                       <FormLabel>Animali per Kg</FormLabel>
                       <FormControl>
                         <Input
+                          type="text"
                           placeholder="Inserisci gli animali per kg"
                           {...field}
                           value={field.value !== null ? formatNumber(field.value) : ''}
