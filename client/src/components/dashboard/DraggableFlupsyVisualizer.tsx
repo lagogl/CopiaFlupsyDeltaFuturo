@@ -164,7 +164,8 @@ export default function DraggableFlupsyVisualizer() {
   const updateBasketPosition = useMutation({
     mutationFn: async ({ basketId, flupsyId, row, position }: { basketId: number; flupsyId: number; row: string; position: number }) => {
       console.log('Sending basket position update with flupsyId:', flupsyId);
-      const response = await apiRequest('PATCH', `/api/baskets/${basketId}`, {
+      // Utilizziamo il nuovo endpoint dedicato per lo spostamento dei cestelli
+      const response = await apiRequest('POST', `/api/baskets/${basketId}/move`, {
         flupsyId,
         row,
         position
@@ -341,49 +342,19 @@ export default function DraggableFlupsyVisualizer() {
       console.log("Cestello 2:", basket2Id, "Posizione:", position2Row, position2Number);
       
       try {
-        // Step 1: Sposta il cestello 2 in una posizione temporanea (null)
-        console.log("STEP 1: Sposto cestello 2 in posizione temporanea");
-        const clearBasket2 = await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
-          flupsyId: flupsyId,
-          row: null,
-          position: null
+        // Utilizziamo il nuovo endpoint dedicato per lo scambio di posizione
+        const response = await apiRequest('POST', '/api/baskets/switch-positions', {
+          basket1Id,
+          basket2Id,
+          flupsyId,
+          position1Row,
+          position1Number,
+          position2Row,
+          position2Number
         });
-        console.log("Risultato step 1:", clearBasket2);
         
-        // Pausa per garantire che l'operazione sia completata
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Step A bis: Invalidare la cache per assicurarsi che i dati siano aggiornati
-        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Step 2: Sposta il cestello 1 nella posizione che era del cestello 2
-        console.log("STEP 2: Sposto cestello 1 nella posizione del cestello 2");
-        const moveBasket1 = await apiRequest('PATCH', `/api/baskets/${basket1Id}`, {
-          flupsyId: flupsyId,
-          row: position2Row,
-          position: position2Number
-        });
-        console.log("Risultato step 2:", moveBasket1);
-        
-        // Pausa per garantire che l'operazione sia completata
-        await new Promise(resolve => setTimeout(resolve, 500));
-        
-        // Step 2 bis: Invalidare la cache per assicurarsi che i dati siano aggiornati
-        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-        await new Promise(resolve => setTimeout(resolve, 300));
-        
-        // Step 3: Sposta il cestello 2 nella posizione originale del cestello 1
-        console.log("STEP 3: Sposto cestello 2 nella posizione originale del cestello 1");
-        const moveBasket2 = await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
-          flupsyId: flupsyId,
-          row: position1Row,
-          position: position1Number
-        });
-        console.log("Risultato step 3:", moveBasket2);
-        
-        console.log("OPERAZIONE DI SCAMBIO COMPLETATA CON SUCCESSO");
-        return moveBasket2;
+        console.log("Risultato dell'operazione di scambio:", response);
+        return response;
       } catch (error) {
         console.error("ERRORE DURANTE LO SCAMBIO:", error);
         throw error;

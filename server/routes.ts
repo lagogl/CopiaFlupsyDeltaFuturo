@@ -354,6 +354,246 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint dedicato per lo spostamento dei cestelli
+  app.post("/api/baskets/:id/move", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid basket ID" });
+      }
+
+      // Verify the basket exists
+      const basket = await storage.getBasket(id);
+      if (!basket) {
+        return res.status(404).json({ message: "Basket not found" });
+      }
+      
+      // Parse and validate the update data
+      const moveSchema = z.object({
+        flupsyId: z.number(),
+        row: z.string(),
+        position: z.number(),
+      });
+
+      const parsedData = moveSchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+      
+      const { flupsyId, row, position } = parsedData.data;
+      
+      console.log(`API - SPOSTAMENTO CESTELLO ${id} in flupsyId=${flupsyId}, row=${row}, position=${position}`);
+      
+      // Get all baskets for this FLUPSY
+      const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
+      
+      // Check if there's already a different basket at this position
+      const basketAtPosition = flupsyBaskets.find(b => 
+        b.id !== id && 
+        b.row === row && 
+        b.position === position
+      );
+      
+      if (basketAtPosition) {
+        // Returning information about the occupying basket to allow for a potential switch
+        return res.status(200).json({
+          positionOccupied: true,
+          basketAtPosition: {
+            id: basketAtPosition.id,
+            physicalNumber: basketAtPosition.physicalNumber,
+            flupsyId: basketAtPosition.flupsyId,
+            row: basketAtPosition.row,
+            position: basketAtPosition.position
+          },
+          message: `Esiste già una cesta (numero ${basketAtPosition.physicalNumber}) in questa posizione`
+        });
+      }
+      
+      // Close the current position if exists
+      const currentPosition = await storage.getCurrentBasketPosition(id);
+      if (currentPosition) {
+        const currentDate = new Date();
+        const formattedDate = currentDate.toISOString().split('T')[0]; // Formato YYYY-MM-DD
+        await storage.closeBasketPositionHistory(id, formattedDate);
+      }
+      
+      // Create a new position history entry
+      await storage.createBasketPositionHistory({
+        basketId: id,
+        flupsyId: flupsyId,
+        row: row,
+        position: position,
+        startDate: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
+        operationId: null
+      });
+      
+      // Update the basket with the new position
+      const updateData = {
+        flupsyId,
+        row,
+        position
+      };
+      
+      // Update the basket
+      const updatedBasket = await storage.updateBasket(id, updateData);
+      
+      // Ottieni il cestello aggiornato completo per assicurarci di avere tutti i dati
+      const completeBasket = await storage.getBasket(id);
+      
+      // Logging aggiuntivo per debug
+      console.log("Basket spostato con successo:", completeBasket);
+      
+      // Broadcast basket update event via WebSockets
+      if (typeof (global as any).broadcastUpdate === 'function' && completeBasket) {
+        (global as any).broadcastUpdate('basket_updated', {
+          basket: completeBasket,
+          message: `Cestello ${completeBasket.physicalNumber} spostato`
+        });
+      }
+      
+      // Restituisci il cestello completo al client
+      res.json(completeBasket || updatedBasket);
+    } catch (error) {
+      console.error("Error moving basket:", error);
+      res.status(500).json({ message: "Failed to move basket" });
+    }
+  });
+  
+  // Endpoint per lo scambio di posizione tra cestelli
+  app.post("/api/baskets/switch-positions", async (req, res) => {
+    try {
+      // Parse and validate the update data
+      const switchSchema = z.object({
+        basket1Id: z.number(),
+        basket2Id: z.number(),
+        flupsyId: z.number(),
+        position1Row: z.string(),
+        position1Number: z.number(),
+        position2Row: z.string(),
+        position2Number: z.number()
+      });
+
+      const parsedData = switchSchema.safeParse(req.body);
+      if (!parsedData.success) {
+        const errorMessage = fromZodError(parsedData.error).message;
+        return res.status(400).json({ message: errorMessage });
+      }
+      
+      const { basket1Id, basket2Id, flupsyId, position1Row, position1Number, position2Row, position2Number } = parsedData.data;
+      
+      console.log(`API - SWITCH CESTELLI: Cestello ${basket1Id} <-> Cestello ${basket2Id}`);
+      
+      // Verifica che entrambi i cestelli esistano
+      const basket1 = await storage.getBasket(basket1Id);
+      if (!basket1) {
+        return res.status(404).json({ message: "Basket 1 not found" });
+      }
+      
+      const basket2 = await storage.getBasket(basket2Id);
+      if (!basket2) {
+        return res.status(404).json({ message: "Basket 2 not found" });
+      }
+      
+      // STEP 1: Sposta il cestello 2 in una posizione temporanea (null)
+      // Prima chiudi la cronologia di posizione attuale
+      const currentPosition2 = await storage.getCurrentBasketPosition(basket2Id);
+      if (currentPosition2) {
+        const currentDate = new Date();
+        const formattedDate = currentDate.toISOString().split('T')[0];
+        await storage.closeBasketPositionHistory(basket2Id, formattedDate);
+      }
+      
+      // Aggiorna il cestello 2 con posizione temporanea null
+      await storage.updateBasket(basket2Id, {
+        flupsyId,
+        row: null,
+        position: null
+      });
+      
+      // STEP 2: Sposta il cestello 1 nella posizione che era del cestello 2
+      // Prima chiudi la cronologia di posizione attuale
+      const currentPosition1 = await storage.getCurrentBasketPosition(basket1Id);
+      if (currentPosition1) {
+        const currentDate = new Date();
+        const formattedDate = currentDate.toISOString().split('T')[0];
+        await storage.closeBasketPositionHistory(basket1Id, formattedDate);
+      }
+      
+      // Crea una nuova voce di cronologia posizione per il cestello 1
+      await storage.createBasketPositionHistory({
+        basketId: basket1Id,
+        flupsyId: flupsyId,
+        row: position2Row,
+        position: position2Number,
+        startDate: new Date().toISOString().split('T')[0],
+        operationId: null
+      });
+      
+      // Aggiorna il cestello 1 con la posizione del cestello 2
+      await storage.updateBasket(basket1Id, {
+        flupsyId,
+        row: position2Row,
+        position: position2Number
+      });
+      
+      // STEP 3: Sposta il cestello 2 nella posizione originale del cestello 1
+      // Crea una nuova voce di cronologia posizione per il cestello 2
+      await storage.createBasketPositionHistory({
+        basketId: basket2Id,
+        flupsyId: flupsyId,
+        row: position1Row,
+        position: position1Number,
+        startDate: new Date().toISOString().split('T')[0],
+        operationId: null
+      });
+      
+      // Aggiorna il cestello 2 con la posizione originale del cestello 1
+      await storage.updateBasket(basket2Id, {
+        flupsyId,
+        row: position1Row,
+        position: position1Number
+      });
+      
+      // Ottieni i cestelli aggiornati completi
+      const updatedBasket1 = await storage.getBasket(basket1Id);
+      const updatedBasket2 = await storage.getBasket(basket2Id);
+      
+      console.log("Switch completato con successo:", {
+        basket1: updatedBasket1,
+        basket2: updatedBasket2
+      });
+      
+      // Broadcast basket update events via WebSockets
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        if (updatedBasket1) {
+          (global as any).broadcastUpdate('basket_updated', {
+            basket: updatedBasket1,
+            message: `Cestello ${updatedBasket1.physicalNumber} spostato`
+          });
+        }
+        
+        if (updatedBasket2) {
+          (global as any).broadcastUpdate('basket_updated', {
+            basket: updatedBasket2,
+            message: `Cestello ${updatedBasket2.physicalNumber} spostato`
+          });
+        }
+      }
+      
+      // Restituisci i cestelli completi al client
+      res.json({
+        basket1: updatedBasket1,
+        basket2: updatedBasket2,
+        message: "Switch completato con successo"
+      });
+      
+    } catch (error) {
+      console.error("Error switching basket positions:", error);
+      res.status(500).json({ message: "Failed to switch basket positions" });
+    }
+  });
+  
   app.patch("/api/baskets/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
