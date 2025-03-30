@@ -932,7 +932,7 @@ export class DbStorage implements IStorage {
           await db.insert(operations).values(newOperation).execute();
           
           // Aggiungiamo anche una posizione FLUPSY per il nuovo ciclo
-          await db.insert(basketPositions)
+          await db.insert(basketPositionHistory)
             .values({
               basketId: destBasket.basketId,
               flupsyId: destBasket.flupsyId || 0,

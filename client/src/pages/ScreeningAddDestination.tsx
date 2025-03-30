@@ -548,7 +548,7 @@ export default function ScreeningAddDestination() {
                           type="text"
                           placeholder="Inserisci il numero di animali"
                           {...field}
-                          value={field.value !== null ? formatNumber(field.value) : ''}
+                          value={field.value !== undefined && field.value !== null ? formatNumber(field.value) : ''}
                           onChange={(e) => {
                             const value = parseFormattedNumber(e.target.value);
                             field.onChange(value);
@@ -575,7 +575,7 @@ export default function ScreeningAddDestination() {
                           type="text"
                           placeholder="Inserisci il peso totale in kg"
                           {...field}
-                          value={field.value !== null ? formatWeight(field.value) : ''}
+                          value={field.value !== undefined && field.value !== null ? formatWeight(field.value) : ''}
                           onChange={(e) => {
                             const value = parseFormattedNumber(e.target.value);
                             field.onChange(value);
@@ -602,7 +602,7 @@ export default function ScreeningAddDestination() {
                           type="text"
                           placeholder="Inserisci gli animali per kg"
                           {...field}
-                          value={field.value !== null ? formatNumber(field.value) : ''}
+                          value={field.value !== undefined && field.value !== null ? formatNumber(field.value) : ''}
                           onChange={(e) => {
                             const value = parseFormattedNumber(e.target.value);
                             field.onChange(value);
