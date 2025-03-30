@@ -906,6 +906,18 @@ export class DbStorage implements IStorage {
     return results[0];
   }
   
+  async dismissScreeningSourceBasket(id: number): Promise<ScreeningSourceBasket | undefined> {
+    // Imposta dismissed a true per marcare la cesta come dismessa
+    const results = await db.update(screeningSourceBaskets)
+      .set({
+        dismissed: true
+      })
+      .where(eq(screeningSourceBaskets.id, id))
+      .returning();
+    
+    return results[0];
+  }
+  
   // Screening Destination Baskets
   async getScreeningDestinationBasketsByScreening(screeningId: number): Promise<any[]> {
     const destinationBaskets = await db.select().from(screeningDestinationBaskets)
@@ -977,6 +989,39 @@ export class DbStorage implements IStorage {
       .returning();
     
     return deleted.length > 0;
+  }
+  
+  async assignPositionToDestinationBasket(id: number, flupsyId: number, row: string, position: number): Promise<ScreeningDestinationBasket | undefined> {
+    const now = new Date();
+    const results = await db.update(screeningDestinationBaskets)
+      .set({
+        flupsyId,
+        row,
+        position,
+        positionAssigned: true,
+        updatedAt: now
+      })
+      .where(eq(screeningDestinationBaskets.id, id))
+      .returning();
+    
+    return results[0];
+  }
+  
+  async isPositionAvailable(flupsyId: number, row: string, position: number): Promise<boolean> {
+    // Verifica se la posizione è già occupata
+    const results = await db.select()
+      .from(baskets)
+      .where(
+        and(
+          eq(baskets.flupsyId, flupsyId),
+          eq(baskets.row, row),
+          eq(baskets.position, position),
+          eq(baskets.state, 'active')
+        )
+      );
+    
+    // La posizione è disponibile se non ci sono ceste attive in questa posizione
+    return results.length === 0;
   }
   
   // Screening History
