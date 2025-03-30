@@ -389,51 +389,137 @@ export class DbStorage implements IStorage {
   }
 
   async getCurrentBasketPosition(basketId: number): Promise<BasketPositionHistory | undefined> {
-    const results = await db.select()
-      .from(basketPositionHistory)
-      .where(and(
-        eq(basketPositionHistory.basketId, basketId),
-        isNull(basketPositionHistory.endDate)
-      ));
-    return results[0];
+    if (!basketId || basketId <= 0) {
+      console.error("getCurrentBasketPosition - ID cesta non valido:", basketId);
+      throw new Error("ID cesta non valido per il recupero della posizione corrente");
+    }
+    
+    console.log(`getCurrentBasketPosition - Ricerca posizione corrente per cesta ID: ${basketId}`);
+    
+    try {
+      const results = await db.select()
+        .from(basketPositionHistory)
+        .where(and(
+          eq(basketPositionHistory.basketId, basketId),
+          isNull(basketPositionHistory.endDate)
+        ))
+        .orderBy(desc(basketPositionHistory.startDate)) // Ordina per data di inizio decrescente
+        .limit(1); // Prendi solo il record più recente
+      
+      if (results.length === 0) {
+        console.log(`getCurrentBasketPosition - Nessuna posizione attiva trovata per la cesta ${basketId}`);
+        return undefined;
+      }
+      
+      console.log(`getCurrentBasketPosition - Trovata posizione attiva per cesta ${basketId}:`, 
+        `ID: ${results[0].id}, FLUPSY: ${results[0].flupsyId}, ` +
+        `Riga: ${results[0].row}, Posizione: ${results[0].position}, ` +
+        `Data inizio: ${results[0].startDate}`);
+      
+      return results[0];
+    } catch (error) {
+      console.error(`getCurrentBasketPosition - Errore durante la ricerca della posizione per la cesta ${basketId}:`, error);
+      throw new Error(`Errore durante il recupero della posizione corrente: ${(error as Error).message}`);
+    }
   }
 
   async createBasketPositionHistory(positionHistory: InsertBasketPositionHistory): Promise<BasketPositionHistory> {
-    // Convert any dates to string format
-    if (positionHistory.startDate && typeof positionHistory.startDate === 'object' && 'toISOString' in positionHistory.startDate) {
-      positionHistory.startDate = positionHistory.startDate.toISOString().split('T')[0];
+    // Assicuriamoci che tutti i campi necessari siano presenti
+    if (!positionHistory.basketId || !positionHistory.flupsyId || !positionHistory.row || positionHistory.position === undefined) {
+      console.error("Dati di posizione incompleti:", positionHistory);
+      throw new Error("Dati di posizione incompleti. Tutti i campi basketId, flupsyId, row e position sono obbligatori.");
+    }
+
+    // Formatta la data se è un oggetto Date
+    let formattedStartDate: string;
+    if (typeof positionHistory.startDate === 'string') {
+      formattedStartDate = positionHistory.startDate;
+    } else if (positionHistory.startDate && typeof positionHistory.startDate === 'object' && 'toISOString' in positionHistory.startDate) {
+      formattedStartDate = positionHistory.startDate.toISOString().split('T')[0]; 
+    } else {
+      // Se la data non è fornita, usa la data corrente
+      formattedStartDate = new Date().toISOString().split('T')[0];
+      console.warn("startDate non fornito, usando la data corrente:", formattedStartDate);
     }
     
-    const results = await db.insert(basketPositionHistory).values({
-      ...positionHistory,
-      endDate: null
-    }).returning();
-    return results[0];
+    console.log("createBasketPositionHistory - Creo nuovo record:", {
+      basketId: positionHistory.basketId,
+      flupsyId: positionHistory.flupsyId,
+      row: positionHistory.row,
+      position: positionHistory.position,
+      startDate: formattedStartDate,
+      operationId: positionHistory.operationId || null
+    });
+    
+    try {
+      const results = await db.insert(basketPositionHistory).values({
+        basketId: positionHistory.basketId,
+        flupsyId: positionHistory.flupsyId, 
+        row: positionHistory.row,
+        position: positionHistory.position,
+        startDate: formattedStartDate,
+        endDate: null,
+        operationId: positionHistory.operationId || null
+      }).returning();
+      
+      console.log("createBasketPositionHistory - Record creato con successo:", results[0]);
+      return results[0];
+    } catch (error) {
+      console.error("createBasketPositionHistory - Errore durante l'inserimento:", error);
+      throw new Error(`Errore durante la creazione della cronologia di posizione: ${(error as Error).message}`);
+    }
   }
 
   async closeBasketPositionHistory(basketId: number, endDate: Date | string): Promise<BasketPositionHistory | undefined> {
-    // Convert date to string format
+    // Verifica che l'ID della cesta sia valido
+    if (!basketId || basketId <= 0) {
+      console.error("closeBasketPositionHistory - ID cesta non valido:", basketId);
+      throw new Error("ID cesta non valido per la chiusura della posizione");
+    }
+
+    // Converti la data in formato stringa
     let endDateStr: string;
     if (typeof endDate === 'string') {
       endDateStr = endDate;
-    } else {
+    } else if (endDate && typeof endDate === 'object' && 'toISOString' in endDate) {
       endDateStr = endDate.toISOString().split('T')[0];
+    } else {
+      // Se la data non è valida, usa la data corrente
+      endDateStr = new Date().toISOString().split('T')[0];
+      console.warn("closeBasketPositionHistory - Data di fine non valida, usando la data corrente:", endDateStr);
     }
     
-    // Get the current active position
-    const currentPosition = await this.getCurrentBasketPosition(basketId);
-    if (!currentPosition) {
-      return undefined;
-    }
+    console.log(`closeBasketPositionHistory - Chiusura posizione per cesta ${basketId} con data fine ${endDateStr}`);
     
-    // Close the position
-    const results = await db.update(basketPositionHistory)
-      .set({
-        endDate: endDateStr
-      })
-      .where(eq(basketPositionHistory.id, currentPosition.id))
-      .returning();
-    return results[0];
+    try {
+      // Ottieni la posizione attuale attiva
+      const currentPosition = await this.getCurrentBasketPosition(basketId);
+      if (!currentPosition) {
+        console.warn(`closeBasketPositionHistory - Nessuna posizione attiva trovata per la cesta ${basketId}`);
+        return undefined;
+      }
+      
+      console.log(`closeBasketPositionHistory - Trovata posizione attiva ID: ${currentPosition.id}, FLUPSY: ${currentPosition.flupsyId}, Riga: ${currentPosition.row}, Posizione: ${currentPosition.position}`);
+      
+      // Chiudi la posizione
+      const results = await db.update(basketPositionHistory)
+        .set({
+          endDate: endDateStr
+        })
+        .where(eq(basketPositionHistory.id, currentPosition.id))
+        .returning();
+      
+      if (results.length === 0) {
+        console.error(`closeBasketPositionHistory - Aggiornamento fallito per la posizione ID: ${currentPosition.id}`);
+        throw new Error("Impossibile chiudere la posizione attuale");
+      }
+      
+      console.log(`closeBasketPositionHistory - Posizione chiusa con successo, ID: ${results[0].id}`);
+      return results[0];
+    } catch (error) {
+      console.error("closeBasketPositionHistory - Errore durante la chiusura della posizione:", error);
+      throw new Error(`Errore durante la chiusura della posizione: ${(error as Error).message}`);
+    }
   }
   
   // SGR Giornalieri methods
