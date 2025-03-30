@@ -198,14 +198,33 @@ export class DbStorage implements IStorage {
     }
     
     console.log("==== INSERTING OPERATION IN DATABASE ====");
-    console.log("Operation data:", operationData);
+    console.log("Operation data:", JSON.stringify(operationData, null, 2));
     try {
+      // Verifica che i dati siano validi prima dell'inserimento
+      if (!operationData.basketId) {
+        throw new Error("basketId è richiesto per creare un'operazione");
+      }
+      if (!operationData.date) {
+        throw new Error("date è richiesto per creare un'operazione");
+      }
+      if (!operationData.type) {
+        throw new Error("type è richiesto per creare un'operazione");
+      }
+      
+      // Esecuzione dell'inserimento con gestione degli errori migliorata
+      console.log(`Tentativo di inserimento per operazione di tipo ${operationData.type} sulla cesta ${operationData.basketId}`);
       const results = await db.insert(operations).values(operationData).returning();
-      console.log("Operation created:", results[0]);
+      
+      if (!results || results.length === 0) {
+        throw new Error("Nessun risultato restituito dall'inserimento dell'operazione");
+      }
+      
+      console.log("Operation created successfully:", JSON.stringify(results[0], null, 2));
       return results[0];
     } catch (error) {
       console.error("ERROR INSERTING OPERATION:", error);
-      throw error;
+      console.error("Stack trace:", error instanceof Error ? error.stack : "No stack trace available");
+      throw new Error(`Errore durante l'inserimento dell'operazione: ${error instanceof Error ? error.message : String(error)}`);
     }
   }
 
