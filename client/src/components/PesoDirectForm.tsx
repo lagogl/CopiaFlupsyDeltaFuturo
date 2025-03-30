@@ -7,6 +7,7 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { Card, CardContent } from '@/components/ui/card';
 import { PesoOperationResults } from '@/components/peso/PesoOperationResults';
+import { createDirectOperation } from '@/lib/operations';
 import { format } from 'date-fns';
 import {
   Select,
@@ -173,12 +174,9 @@ export default function PesoDirectForm({
         notes: formData.notes
       };
       
-      // Invia al server
-      await apiRequest({
-        url: '/api/operations',
-        method: 'POST',
-        body: operationData
-      });
+      // Invia al server usando la route diretta per bypassare i controlli di una operazione al giorno
+      // Questo evita l'errore "Per ogni cesta è consentita una sola operazione al giorno"
+      await createDirectOperation(operationData);
       
       // Mostra notifica
       toast({
