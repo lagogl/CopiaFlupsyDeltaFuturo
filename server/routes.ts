@@ -2120,6 +2120,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Route per azzerare operazioni, cicli e cestelli
   app.post("/api/reset-operations", async (req, res) => {
     try {
+      // Verifica la password
+      const { password } = req.body;
+      
+      if (password !== "Gianluigi") {
+        return res.status(401).json({
+          success: false,
+          message: "Password non valida. Operazione non autorizzata."
+        });
+      }
+      
       // Importiamo il queryClient dal modulo db
       const { queryClient } = await import("./db.js");
       
@@ -2160,6 +2170,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         success: false,
         message: "Errore durante l'azzeramento dei dati operativi",
+        error: error instanceof Error ? error.message : "Errore sconosciuto"
+      });
+    }
+  });
+
+  // Route per azzerare i dati delle vagliature
+  app.post("/api/reset-screening", async (req, res) => {
+    try {
+      // Verifica la password
+      const { password } = req.body;
+      
+      if (password !== "Gianluigi") {
+        return res.status(401).json({
+          success: false,
+          message: "Password non valida. Operazione non autorizzata."
+        });
+      }
+      
+      // Importiamo il queryClient dal modulo db
+      const { queryClient } = await import("./db.js");
+      
+      // Usiamo il metodo corretto per le transazioni
+      await queryClient.begin(async sql => {
+        try {
+          // 1. Elimina i riferimenti ai lotti per le ceste di destinazione
+          await sql`DELETE FROM screening_lot_references`;
+          
+          // 2. Elimina lo storico delle relazioni tra ceste di origine e destinazione
+          await sql`DELETE FROM screening_basket_history`;
+          
+          // 3. Elimina le ceste di destinazione
+          await sql`DELETE FROM screening_destination_baskets`;
+          
+          // 4. Elimina le ceste di origine
+          await sql`DELETE FROM screening_source_baskets`;
+          
+          // 5. Elimina le operazioni di vagliatura
+          await sql`DELETE FROM screening_operations`;
+          
+          // 6. Resettiamo le sequenze degli ID
+          await sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS screening_basket_history_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS screening_destination_baskets_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS screening_source_baskets_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS screening_operations_id_seq RESTART WITH 1`;
+          
+          return true; // Successo - commit implicito
+        } catch (error) {
+          console.error("Errore durante l'azzeramento dei dati di vagliatura:", error);
+          throw error; // Rollback implicito
+        }
+      });
+      
+      res.status(200).json({ 
+        success: true,
+        message: "Dati di vagliatura azzerati con successo. Tutte le operazioni di vagliatura e i dati correlati sono stati eliminati."
+      });
+    } catch (error) {
+      console.error("Errore durante l'azzeramento dei dati di vagliatura:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Errore durante l'azzeramento dei dati di vagliatura",
         error: error instanceof Error ? error.message : "Errore sconosciuto"
       });
     }
