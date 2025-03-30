@@ -9,7 +9,8 @@ import {
   CheckCircle2,
   XCircle,
   MapPin,
-  CheckSquare
+  CheckSquare,
+  MousePointer2
 } from 'lucide-react';
 
 import { Button } from '@/components/ui/button';
@@ -435,6 +436,14 @@ export default function ScreeningDetailPage() {
           </CardContent>
           {isDraft && (
             <CardFooter className="flex justify-end gap-2">
+              <Button
+                variant="outline"
+                onClick={() => navigate(`/screening/${screeningId}/complete`)}
+                className="flex items-center gap-2"
+              >
+                <MousePointer2 className="h-4 w-4" />
+                Completa Graficamente
+              </Button>
               <Button
                 variant="default"
                 onClick={() => {
