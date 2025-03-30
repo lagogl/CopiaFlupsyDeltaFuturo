@@ -38,6 +38,8 @@ import ScreeningAddSource from "@/pages/ScreeningAddSource";
 import ScreeningAddDestination from "@/pages/ScreeningAddDestination";
 import ScreeningAssignPosition from "@/pages/ScreeningAssignPosition";
 import ScreeningComplete from "@/pages/ScreeningComplete";
+// Pagina di test WebSocket
+import WebSocketTestPage from "@/pages/WebSocketTestPage";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -81,6 +83,9 @@ function Router() {
       <Route path="/screening/:id/add-destination" component={ScreeningAddDestination}/>
       <Route path="/screening/:screeningId/position/:destinationId" component={ScreeningAssignPosition}/>
       <Route path="/screening/:screeningId/complete" component={ScreeningComplete}/>
+
+      {/* Pagina di test WebSocket */}
+      <Route path="/websocket-test" component={WebSocketTestPage}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
