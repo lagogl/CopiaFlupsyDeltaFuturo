@@ -1,10 +1,10 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useLocation } from 'wouter';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { z } from 'zod';
-import { ArrowLeft, Calendar } from 'lucide-react';
+import { ArrowLeft, Calendar, Lock } from 'lucide-react';
 
 import {
   Form,
@@ -59,6 +59,14 @@ export default function NewScreeningPage() {
       return apiRequest<Size[]>({ url: '/api/sizes', method: 'GET' });
     },
   });
+  
+  // Query per ottenere il prossimo numero di vagliatura disponibile
+  const { data: nextNumberData, isLoading: isNextNumberLoading } = useQuery({
+    queryKey: ['/api/screening/next-number'],
+    queryFn: async () => {
+      return apiRequest<{ nextNumber: number }>({ url: '/api/screening/next-number', method: 'GET' });
+    },
+  });
 
   // Mutation per creare una nuova operazione di vagliatura
   const createMutation = useMutation({
@@ -90,11 +98,18 @@ export default function NewScreeningPage() {
     resolver: zodResolver(screeningFormSchema),
     defaultValues: {
       date: new Date(),
-      screeningNumber: 1, // Default, potrebbe essere calcolato dal backend
+      screeningNumber: nextNumberData?.nextNumber || 1, // Utilizziamo il numero dal backend
       purpose: null,
       notes: null
     },
   });
+  
+  // Aggiorniamo il campo screeningNumber quando riceviamo i dati dal backend
+  useEffect(() => {
+    if (nextNumberData && nextNumberData.nextNumber) {
+      form.setValue('screeningNumber', nextNumberData.nextNumber);
+    }
+  }, [nextNumberData, form]);
 
   // Handler per l'invio del form
   const onSubmit = (values: ScreeningFormValues) => {
@@ -177,18 +192,20 @@ export default function NewScreeningPage() {
                     <FormItem>
                       <FormLabel>Numero Vagliatura</FormLabel>
                       <FormControl>
-                        <Input
-                          type="number"
-                          placeholder="1"
-                          {...field}
-                          onChange={(e) => {
-                            const value = parseInt(e.target.value, 10);
-                            field.onChange(isNaN(value) ? 1 : value);
-                          }}
-                        />
+                        <div className="relative">
+                          <Input
+                            type="number"
+                            placeholder="1"
+                            {...field}
+                            readOnly
+                            className="pr-10"
+                            value={isNextNumberLoading ? "Caricamento..." : field.value}
+                          />
+                          <Lock className="absolute right-3 top-1/2 transform -translate-y-1/2 h-4 w-4 opacity-50" />
+                        </div>
                       </FormControl>
                       <FormDescription>
-                        Il numero progressivo dell'operazione di vagliatura
+                        Il numero progressivo dell'operazione di vagliatura (generato automaticamente)
                       </FormDescription>
                       <FormMessage />
                     </FormItem>

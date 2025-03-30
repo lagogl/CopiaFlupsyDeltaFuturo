@@ -1,4 +1,4 @@
-import { and, eq, isNull, desc, gte, lte } from 'drizzle-orm';
+import { and, eq, isNull, desc, gte, lte, sql } from 'drizzle-orm';
 import { db } from './db';
 import { 
   Flupsy, InsertFlupsy, flupsys,
@@ -1100,5 +1100,34 @@ export class DbStorage implements IStorage {
       .returning();
     
     return results[0];
+  }
+  
+  async removeScreeningLotReference(id: number): Promise<boolean> {
+    try {
+      await db.delete(screeningLotReferences).where(eq(screeningLotReferences.id, id));
+      return true;
+    } catch (error) {
+      console.error("DB Error [removeScreeningLotReference]:", error);
+      return false;
+    }
+  }
+  
+  // Funzione per ottenere il prossimo numero sequenziale per le vagliature
+  async getNextScreeningNumber(): Promise<number> {
+    try {
+      // Trova il numero di vagliatura più alto attualmente nel database
+      const maxResult = await db.select().from(screeningOperations)
+        .orderBy(desc(screeningOperations.screeningNumber))
+        .limit(1);
+      
+      // Se non ci sono operazioni, restituisci 1 come primo numero
+      const maxNumber = maxResult.length > 0 ? maxResult[0].screeningNumber : 0;
+      
+      // Restituisci il numero successivo
+      return maxNumber + 1;
+    } catch (error) {
+      console.error("DB Error [getNextScreeningNumber]:", error);
+      return 1; // In caso di errore, restituisci 1 come valore predefinito
+    }
   }
 }

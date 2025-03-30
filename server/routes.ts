@@ -2802,6 +2802,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Route per ottenere il prossimo numero di vagliatura disponibile
+  app.get("/api/screening/next-number", async (req, res) => {
+    try {
+      const nextNumber = await storage.getNextScreeningNumber();
+      res.json({ nextNumber });
+    } catch (error) {
+      console.error("Error getting next screening number:", error);
+      res.status(500).json({ error: "Failed to get next screening number" });
+    }
+  });
+  
   app.get("/api/screening/operations/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id, 10);

@@ -1082,6 +1082,23 @@ export class MemStorage implements IStorage {
     return activePositions.length === 0 && occupiedByScreening.length === 0;
   }
   
+  // Funzione per ottenere il prossimo numero sequenziale per le vagliature
+  async getNextScreeningNumber(): Promise<number> {
+    const operations = Array.from(this.screeningOperations.values());
+    
+    if (operations.length === 0) {
+      return 1; // Primo numero è 1
+    }
+    
+    // Trova il numero di vagliatura più alto attualmente in uso
+    const maxNumber = operations.reduce((max, op) => {
+      return op.screeningNumber > max ? op.screeningNumber : max;
+    }, 0);
+    
+    // Restituisce il numero successivo
+    return maxNumber + 1;
+  }
+  
   async updateScreeningOperation(id: number, operation: Partial<ScreeningOperation>): Promise<ScreeningOperation | undefined> {
     const currentOperation = this.screeningOperations.get(id);
     if (!currentOperation) return undefined;
@@ -1297,6 +1314,29 @@ export class MemStorage implements IStorage {
     
     this.screeningLotReferences.set(id, newLotReference);
     return newLotReference;
+  }
+  
+  async removeScreeningLotReference(id: number): Promise<boolean> {
+    if (this.screeningLotReferences.has(id)) {
+      this.screeningLotReferences.delete(id);
+      return true;
+    }
+    return false;
+  }
+  
+  // Funzione per ottenere il prossimo numero sequenziale per le vagliature
+  async getNextScreeningNumber(): Promise<number> {
+    const operations = Array.from(this.screeningOperations.values());
+    
+    if (operations.length === 0) {
+      return 1; // Se non ci sono operazioni, restituisci 1 come primo numero
+    }
+    
+    // Trova il numero di vagliatura più alto
+    const maxNumber = Math.max(...operations.map(op => op.screeningNumber));
+    
+    // Restituisci il numero successivo
+    return maxNumber + 1;
   }
 }
 
