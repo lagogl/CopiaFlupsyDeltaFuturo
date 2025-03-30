@@ -30,7 +30,11 @@ export default function Flupsys() {
 
   // Create FLUPSY mutation
   const createMutation = useMutation({
-    mutationFn: (newFlupsy: any) => apiRequest('POST', '/api/flupsys', newFlupsy),
+    mutationFn: (newFlupsy: any) => apiRequest({
+      url: '/api/flupsys',
+      method: 'POST',
+      body: newFlupsy
+    }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
       setIsDialogOpen(false);
