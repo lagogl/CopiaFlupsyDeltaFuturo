@@ -59,6 +59,22 @@ export default function ScreeningAddSource() {
     },
     enabled: !!screeningId,
   });
+  
+  // Query per ottenere le ceste di origine già aggiunte
+  const {
+    data: sourceBaskets,
+    isLoading: sourceBasketLoading,
+  } = useQuery({
+    queryKey: ['/api/screening/source-baskets', screeningId],
+    queryFn: async () => {
+      if (!screeningId) return [];
+      return apiRequest<any[]>({
+        url: `/api/screening/source-baskets/${screeningId}`,
+        method: 'GET'
+      });
+    },
+    enabled: !!screeningId,
+  });
 
   // Query per ottenere i cestelli attivi
   const {
@@ -393,17 +409,28 @@ export default function ScreeningAddSource() {
                       )}
                     </TableCell>
                     <TableCell className="text-right">
-                      <Button
-                        onClick={() => handleAddSourceBasket(cycle.id, cycle.basket.id)}
-                        disabled={addSourceBasketMutation.isPending}
-                      >
-                        {addSourceBasketMutation.isPending ? (
-                          <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                        ) : (
+                      {sourceBaskets?.some(sb => sb.cycleId === cycle.id) ? (
+                        <Button
+                          disabled={true}
+                          variant="secondary"
+                          className="opacity-50"
+                        >
                           <Plus className="h-4 w-4 mr-2" />
-                        )}
-                        Aggiungi
-                      </Button>
+                          Già aggiunta
+                        </Button>
+                      ) : (
+                        <Button
+                          onClick={() => handleAddSourceBasket(cycle.id, cycle.basket.id)}
+                          disabled={addSourceBasketMutation.isPending}
+                        >
+                          {addSourceBasketMutation.isPending ? (
+                            <Loader2 className="h-4 w-4 mr-2 animate-spin" />
+                          ) : (
+                            <Plus className="h-4 w-4 mr-2" />
+                          )}
+                          Aggiungi
+                        </Button>
+                      )}
                     </TableCell>
                   </TableRow>
                 ))}
