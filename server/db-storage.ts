@@ -197,8 +197,16 @@ export class DbStorage implements IStorage {
       }
     }
     
-    const results = await db.insert(operations).values(operationData).returning();
-    return results[0];
+    console.log("==== INSERTING OPERATION IN DATABASE ====");
+    console.log("Operation data:", operationData);
+    try {
+      const results = await db.insert(operations).values(operationData).returning();
+      console.log("Operation created:", results[0]);
+      return results[0];
+    } catch (error) {
+      console.error("ERROR INSERTING OPERATION:", error);
+      throw error;
+    }
   }
 
   async updateOperation(id: number, operationUpdate: Partial<Operation>): Promise<Operation | undefined> {
