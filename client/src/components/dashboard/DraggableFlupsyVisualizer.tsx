@@ -139,6 +139,7 @@ export default function DraggableFlupsyVisualizer() {
     basketId: number;
     targetRow: string;
     targetPosition: number;
+    flupsyId?: number;
     isSwitch?: boolean;
     targetBasketId?: number;
   } | null>(null);
@@ -161,8 +162,9 @@ export default function DraggableFlupsyVisualizer() {
 
   // Update basket position mutation
   const updateBasketPosition = useMutation({
-    mutationFn: async ({ basketId, row, position }: { basketId: number; row: string; position: number }) => {
+    mutationFn: async ({ basketId, flupsyId, row, position }: { basketId: number; flupsyId: number; row: string; position: number }) => {
       const response = await apiRequest('PATCH', `/api/baskets/${basketId}`, {
+        flupsyId,
         row,
         position
       });
@@ -240,31 +242,42 @@ export default function DraggableFlupsyVisualizer() {
       return; // No change in position
     }
     
-    // Verifico se c'è già un cestello nella posizione target
-    const findTargetBasket = () => {
-      if (!baskets) return null;
-      return baskets.find((b: any) => 
-        b.row === targetRow && 
-        b.position === targetPosition && 
-        b.id !== item.id
-      );
-    };
-    
-    // Otteniamo il cestello che stiamo trascinando
-    const sourceBasket = baskets?.find((b: any) => b.id === item.id);
-    if (!sourceBasket) {
-      console.error("Basket not found:", item.id);
+    // Verifica se i dati dei cestelli sono disponibili
+    if (!baskets || !Array.isArray(baskets)) {
+      console.error("Baskets data not available or not an array");
       return;
     }
     
-    // Cerchiamo se c'è già un cestello nella posizione target (che non sia quello che stiamo spostando)
-    const targetBasket = findTargetBasket();
+    // Otteniamo il cestello che stiamo trascinando
+    const sourceBasket = baskets.find((b: any) => b.id === item.id);
+    if (!sourceBasket) {
+      console.error("Source basket not found:", item.id);
+      return;
+    }
     
-    // Per debug
-    console.log("Dragging basket ID:", item.id, "from", item.sourceRow, item.sourcePosition);
-    console.log("Target position:", targetRow, targetPosition);
-    console.log("Basket at target position:", targetBasket);
-    console.log("Is switch operation:", !!targetBasket);
+    // Verifica attentamente se c'è già un cestello nella posizione target
+    // Deve essere un cestello diverso da quello che stiamo trascinando
+    const targetBasket = baskets.find((b: any) => 
+      b.id !== item.id && 
+      b.row === targetRow && 
+      b.position === targetPosition && 
+      b.flupsyId === sourceBasket.flupsyId // Deve essere nello stesso flupsy
+    );
+    
+    // Log dettagliato
+    console.log("=== OPERAZIONE CESTELLO ===");
+    console.log("Cestello trascinato:", sourceBasket.physicalNumber, "(ID:", item.id, ")");
+    console.log("Da posizione:", item.sourceRow, item.sourcePosition);
+    console.log("A posizione:", targetRow, targetPosition);
+    
+    if (targetBasket) {
+      console.log("Operazione: SCAMBIO con cestello", targetBasket.physicalNumber, "(ID:", targetBasket.id, ")");
+    } else {
+      console.log("Operazione: SPOSTAMENTO in posizione libera")
+    }
+    
+    // Assicuriamoci di avere il flupsyId
+    const flupsyId = sourceBasket.flupsyId;
     
     if (targetBasket) {
       // Se c'è già una cesta nella posizione target, è un'operazione di switch
@@ -275,6 +288,7 @@ export default function DraggableFlupsyVisualizer() {
         basketId: item.id,
         targetRow,
         targetPosition,
+        flupsyId,
         isSwitch: true,
         targetBasketId: targetBasket.id
       });
@@ -286,6 +300,7 @@ export default function DraggableFlupsyVisualizer() {
         basketId: item.id,
         targetRow,
         targetPosition,
+        flupsyId,
         isSwitch: false
       });
     }
@@ -306,6 +321,7 @@ export default function DraggableFlupsyVisualizer() {
     mutationFn: async ({ 
       basket1Id, 
       basket2Id,
+      flupsyId,
       position1Row,
       position1Number, 
       position2Row,
@@ -313,40 +329,64 @@ export default function DraggableFlupsyVisualizer() {
     }: { 
       basket1Id: number;
       basket2Id: number;
+      flupsyId: number;
       position1Row: string;
       position1Number: number;
       position2Row: string;
       position2Number: number;
     }) => {
-      // Per prima cosa, sposta il cestello 2 in una posizione temporanea (null)
-      // in modo da liberare la sua posizione
-      const clearBasket2 = await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
-        row: null,
-        position: null
-      });
-      console.log("Cestello 2 in posizione temporanea:", clearBasket2);
+      console.log("INIZIO OPERAZIONE DI SCAMBIO CESTELLI");
+      console.log("Cestello 1:", basket1Id, "Posizione:", position1Row, position1Number);
+      console.log("Cestello 2:", basket2Id, "Posizione:", position2Row, position2Number);
       
-      // Piccola pausa per assicurare che il database abbia completato l'operazione precedente
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Ora che la posizione è libera, sposta il cestello 1 nella posizione che era del cestello 2
-      const moveBasket1 = await apiRequest('PATCH', `/api/baskets/${basket1Id}`, {
-        row: position2Row,
-        position: position2Number
-      });
-      console.log("Cestello 1 spostato in nuova posizione:", moveBasket1);
-      
-      // Piccola pausa per assicurare che il database abbia completato l'operazione precedente
-      await new Promise(resolve => setTimeout(resolve, 100));
-      
-      // Infine, sposta il cestello 2 nella posizione originale del cestello 1
-      const moveBasket2 = await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
-        row: position1Row,
-        position: position1Number
-      });
-      console.log("Cestello 2 spostato in posizione originale del cestello 1:", moveBasket2);
-      
-      return moveBasket2;
+      try {
+        // Step 1: Sposta il cestello 2 in una posizione temporanea (null)
+        console.log("STEP 1: Sposto cestello 2 in posizione temporanea");
+        const clearBasket2 = await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
+          flupsyId: flupsyId,
+          row: null,
+          position: null
+        });
+        console.log("Risultato step 1:", clearBasket2);
+        
+        // Pausa per garantire che l'operazione sia completata
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Step A bis: Invalidare la cache per assicurarsi che i dati siano aggiornati
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Step 2: Sposta il cestello 1 nella posizione che era del cestello 2
+        console.log("STEP 2: Sposto cestello 1 nella posizione del cestello 2");
+        const moveBasket1 = await apiRequest('PATCH', `/api/baskets/${basket1Id}`, {
+          flupsyId: flupsyId,
+          row: position2Row,
+          position: position2Number
+        });
+        console.log("Risultato step 2:", moveBasket1);
+        
+        // Pausa per garantire che l'operazione sia completata
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Step 2 bis: Invalidare la cache per assicurarsi che i dati siano aggiornati
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        await new Promise(resolve => setTimeout(resolve, 300));
+        
+        // Step 3: Sposta il cestello 2 nella posizione originale del cestello 1
+        console.log("STEP 3: Sposto cestello 2 nella posizione originale del cestello 1");
+        const moveBasket2 = await apiRequest('PATCH', `/api/baskets/${basket2Id}`, {
+          flupsyId: flupsyId,
+          row: position1Row,
+          position: position1Number
+        });
+        console.log("Risultato step 3:", moveBasket2);
+        
+        console.log("OPERAZIONE DI SCAMBIO COMPLETATA CON SUCCESSO");
+        return moveBasket2;
+      } catch (error) {
+        console.error("ERRORE DURANTE LO SCAMBIO:", error);
+        throw error;
+      }
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
@@ -399,10 +439,31 @@ export default function DraggableFlupsyVisualizer() {
         position2Number: basket2.position
       });
       
+      // Assicuriamoci che flupsyId sia disponibile
+      let flupsyId = basket1.flupsyId;
+      
+      // Se per qualche motivo flupsyId non è disponibile, usa un valore di fallback intelligente
+      if (!flupsyId && flupsys && flupsys.length > 0) {
+        flupsyId = flupsys[0].id;
+        console.warn("FlupsyId non trovato nel cestello, usando il primo FLUPSY disponibile:", flupsyId);
+      }
+      
+      if (!flupsyId) {
+        toast({
+          title: "Errore",
+          description: "Impossibile determinare a quale FLUPSY appartengono i cestelli.",
+          variant: "destructive",
+        });
+        setConfirmDialogOpen(false);
+        setPendingBasketMove(null);
+        return;
+      }
+      
       // Eseguiamo lo scambio
       switchBasketPositions.mutate({
         basket1Id: basket1.id,
         basket2Id: basket2.id,
+        flupsyId: flupsyId,
         position1Row: basket1.row || "",
         position1Number: basket1.position || 0,
         position2Row: basket2.row || "",
@@ -410,9 +471,34 @@ export default function DraggableFlupsyVisualizer() {
       });
     } else {
       // Caso normale: sposta un cestello in una posizione vuota
-      console.log("Normal move of basket:", pendingBasketMove.basketId, "to", pendingBasketMove.targetRow, pendingBasketMove.targetPosition);
+      const basket = baskets?.find((b: any) => b.id === pendingBasketMove.basketId);
+      if (!basket) {
+        toast({
+          title: "Errore",
+          description: "Impossibile trovare il cestello da spostare.",
+          variant: "destructive",
+        });
+        setConfirmDialogOpen(false);
+        setPendingBasketMove(null);
+        return;
+      }
+      
+      console.log("SPOSTAMENTO NORMALE:", pendingBasketMove.basketId, "a", pendingBasketMove.targetRow, pendingBasketMove.targetPosition);
+      
+      // Usiamo flupsyId del cestello se disponibile, altrimenti cerchiamo di estrarlo dalla DropTarget
+      let targetFlupsyId = basket.flupsyId;
+      
+      console.log("Spostamento cestello:", {
+        basketId: pendingBasketMove.basketId,
+        flupsyId: targetFlupsyId,
+        row: pendingBasketMove.targetRow,
+        position: pendingBasketMove.targetPosition
+      });
+      
+      // Eseguiamo lo spostamento
       updateBasketPosition.mutate({
         basketId: pendingBasketMove.basketId,
+        flupsyId: targetFlupsyId,
         row: pendingBasketMove.targetRow,
         position: pendingBasketMove.targetPosition
       });
