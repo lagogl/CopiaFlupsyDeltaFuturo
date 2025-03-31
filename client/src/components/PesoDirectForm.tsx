@@ -189,10 +189,21 @@ export default function PesoDirectForm({
     } catch (error: any) {
       console.error('Errore durante la registrazione dell\'operazione:', error);
       
+      // Log dettagliato dell'errore per il debug
+      console.log('Dettagli errore:', {
+        error,
+        response: error.response,
+        data: error.response?.data,
+        statusCode: error.response?.status
+      });
+      
       // Controlla se l'errore contiene un messaggio dal server
-      if (error.response?.data?.message) {
+      if (error.response?.data?.error || error.response?.data?.message) {
+        const errorMessage = error.response.data.error || error.response.data.message;
+        
         // Gestisci il caso specifico di operazione doppia nella stessa giornata
-        if (error.response.data.message.includes("Non è possibile registrare più di un'operazione al giorno")) {
+        if (errorMessage.includes("Non è possibile registrare più di un'operazione al giorno") || 
+            errorMessage.includes("Esiste già un'operazione")) {
           toast({
             variant: "destructive",
             title: "Data già utilizzata",
@@ -202,8 +213,8 @@ export default function PesoDirectForm({
           // Altri errori dal server
           toast({
             variant: "destructive",
-            title: "Errore",
-            description: error.response.data.message,
+            title: "Errore server",
+            description: errorMessage,
           });
         }
       } else {

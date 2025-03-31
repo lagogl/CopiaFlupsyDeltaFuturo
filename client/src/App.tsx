@@ -39,6 +39,9 @@ import ScreeningAddDestination from "@/pages/ScreeningAddDestination";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
+// Importiamo il sistema di tooltip contestuali
+import { TooltipProvider } from "@/contexts/TooltipContext";
+import { ContextualTooltip } from "@/components/ui/contextual-tooltip";
 
 function Router() {
   return (
@@ -103,14 +106,20 @@ function App() {
       {/* Inizializza il WebSocket all'avvio dell'app */}
       <WebSocketListener />
       
-      <MainLayout>
-        <Router />
-      </MainLayout>
-      
-      {/* Indicatore di stato della connessione WebSocket */}
-      <WebSocketIndicator />
-      
-      <Toaster />
+      {/* Provider per i tooltip contestuali personalizzati */}
+      <TooltipProvider>
+        <MainLayout>
+          <Router />
+        </MainLayout>
+        
+        {/* Componente che renderizza i tooltip attivi */}
+        <ContextualTooltip />
+        
+        {/* Indicatore di stato della connessione WebSocket */}
+        <WebSocketIndicator />
+        
+        <Toaster />
+      </TooltipProvider>
     </QueryClientProvider>
   );
 }

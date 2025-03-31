@@ -4,11 +4,12 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { useState } from "react";
-import { AlertCircle, DatabaseBackup, Save, Smartphone, Trash2 } from "lucide-react";
+import { useState, useEffect } from "react";
+import { AlertCircle, DatabaseBackup, Save, Smartphone, Trash2, HelpCircle, RefreshCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import NFCReader from "@/components/NFCReader";
 import { useToast } from "@/hooks/use-toast";
+import { useTooltip } from "@/contexts/TooltipContext";
 import { 
   Dialog,
   DialogContent,
@@ -27,15 +28,16 @@ export default function Settings() {
   const [isResettingScreening, setIsResettingScreening] = useState(false);
   const { toast } = useToast();
   const [resetPassword, setResetPassword] = useState("");
+  const { areTooltipsEnabled, enableAllTooltips, disableAllTooltips, markTooltipAsSeen, setFirstTimeUser } = useTooltip();
   
   // Check NFC support on component mount
-  useState(() => {
+  useEffect(() => {
     if (typeof window !== 'undefined' && 'NDEFReader' in window) {
       setNfcSupported(true);
     } else {
       setNfcSupported(false);
     }
-  });
+  }, []);
 
   // Funzione per azzerare le operazioni e i cicli
   const resetOperationsAndCycles = async () => {
@@ -160,6 +162,83 @@ export default function Settings() {
               </Button>
             </CardContent>
           </Card>
+          
+          {/* Card per i tooltip contestuali */}
+          <Card>
+            <CardHeader>
+              <CardTitle>Suggerimenti e Guide</CardTitle>
+              <CardDescription>
+                Gestisci i suggerimenti contestuali e i tooltip di aiuto
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center space-x-2">
+                  <Switch 
+                    id="tooltips-enabled" 
+                    checked={areTooltipsEnabled}
+                    onCheckedChange={(checked) => {
+                      if (checked) {
+                        enableAllTooltips();
+                      } else {
+                        disableAllTooltips();
+                      }
+                      
+                      toast({
+                        title: checked ? "Suggerimenti abilitati" : "Suggerimenti disabilitati",
+                        description: checked 
+                          ? "I suggerimenti contestuali verranno mostrati durante l'utilizzo dell'applicazione." 
+                          : "I suggerimenti contestuali sono stati disabilitati.",
+                      });
+                    }}
+                  />
+                  <Label htmlFor="tooltips-enabled">Mostra suggerimenti contestuali</Label>
+                </div>
+              </div>
+              
+              <div className="border border-border rounded-lg p-4 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium mb-1">Ripristina guida introduttiva</h3>
+                    <p className="text-sm text-gray-500">
+                      Mostra nuovamente tutti i suggerimenti e le guide come se stessi utilizzando l'applicazione 
+                      per la prima volta. Utile se vuoi rivedere le spiegazioni delle funzionalità.
+                    </p>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    className="whitespace-nowrap ml-4"
+                    onClick={() => {
+                      // Resetta lo stato dell'utente come se fosse nuovo
+                      setFirstTimeUser(true);
+                      
+                      // Rimuovi dal localStorage l'indicazione che l'utente ha già visto i tooltip
+                      localStorage.removeItem('flupsy-seen-tooltips');
+                      
+                      // Mostra un messaggio di conferma
+                      toast({
+                        title: "Guide ripristinate",
+                        description: "I suggerimenti e le guide sono stati ripristinati. Verranno mostrati nuovamente durante l'utilizzo dell'applicazione.",
+                      });
+                    }}
+                  >
+                    <RefreshCw className="h-4 w-4 mr-2" />
+                    Ripristina Guide
+                  </Button>
+                </div>
+              </div>
+              
+              <Alert className="bg-blue-50 border-blue-200 text-blue-800">
+                <HelpCircle className="h-4 w-4" />
+                <AlertTitle>Suggerimento</AlertTitle>
+                <AlertDescription>
+                  I suggerimenti contestuali ti aiutano a comprendere le funzionalità dell'applicazione 
+                  mostrando brevi spiegazioni quando passi con il mouse sopra gli elementi o quando accedi 
+                  a una nuova sezione per la prima volta.
+                </AlertDescription>
+              </Alert>
+            </CardContent>
+          </Card>
         </TabsContent>
         
         <TabsContent value="nfc" className="space-y-4">
@@ -211,7 +290,6 @@ export default function Settings() {
                       alert(`Errore nella lettura: ${error}`);
                       setReadingNfc(false);
                     }}
-                    onAbort={() => setReadingNfc(false)}
                   />
                 )}
               </div>
