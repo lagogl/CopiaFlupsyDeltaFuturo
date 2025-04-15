@@ -89,8 +89,26 @@ export default function BasketPositionCheck({
         <AlertTriangle className="h-4 w-4" /> : 
         <AlertCircle className="h-4 w-4" />
       }
-      <AlertTitle>{warningOnly ? "Attenzione" : "Errore"}</AlertTitle>
-      <AlertDescription>{error}</AlertDescription>
+      <AlertTitle>{warningOnly ? "Attenzione" : "Posizione già occupata"}</AlertTitle>
+      <AlertDescription>
+        {positionQuery.data?.positionTaken ? (
+          <div className="space-y-2">
+            <p>{error}</p>
+            {positionQuery.data.basket && (
+              <div className="text-xs bg-slate-100 p-2 rounded">
+                <span className="font-semibold">Dettagli cesta esistente:</span>
+                <div className="grid grid-cols-2 gap-x-4 mt-1">
+                  <span>Numero: <span className="font-medium">#{positionQuery.data.basket.physicalNumber}</span></span>
+                  <span>Stato: <span className="font-medium">{positionQuery.data.basket.state === 'active' ? 'Attiva' : 'Disponibile'}</span></span>
+                </div>
+              </div>
+            )}
+            <p className="text-xs">Per risolvere, scegli una posizione diversa oppure sposta prima la cesta esistente.</p>
+          </div>
+        ) : (
+          <p>{error}</p>
+        )}
+      </AlertDescription>
     </Alert>
   );
 }
