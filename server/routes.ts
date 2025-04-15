@@ -308,7 +308,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: errorMessage });
       }
 
-      const { flupsyId, physicalNumber } = parsedData.data;
+      const { flupsyId, physicalNumber, row, position } = parsedData.data;
 
       // Get all baskets for this FLUPSY
       const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
@@ -327,12 +327,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `Esiste già una cesta con il numero ${physicalNumber} in questa unità FLUPSY` 
         });
       }
+      
+      // Verifica se esiste già una cesta nella stessa posizione (se fornita)
+      if (row && position) {
+        const existingBasket = flupsyBaskets.find(basket => 
+          basket.row === row && 
+          basket.position === position
+        );
+        
+        if (existingBasket) {
+          return res.status(400).json({
+            message: `La posizione ${row}-${position} è già occupata dalla cesta #${existingBasket.physicalNumber}`,
+            positionTaken: true,
+            basket: existingBasket
+          });
+        }
+      }
 
       // Create the basket
       const newBasket = await storage.createBasket(parsedData.data);
       
       // If basket has position data, record it in the position history
       if (parsedData.data.row && parsedData.data.position) {
+        console.log("createBasketPositionHistory - Creo nuovo record:", {
+          basketId: newBasket.id,
+          flupsyId: newBasket.flupsyId,
+          row: parsedData.data.row,
+          position: parsedData.data.position,
+          startDate: new Date().toISOString().split('T')[0],
+          operationId: null
+        });
+        
         await storage.createBasketPositionHistory({
           basketId: newBasket.id,
           flupsyId: newBasket.flupsyId,
