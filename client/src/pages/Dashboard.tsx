@@ -41,7 +41,7 @@ export default function Dashboard() {
     queryKey: ['/api/lots'],
   });
 
-  // Registrazione dei tooltip
+  // Registrazione dei tooltip solo una volta all'avvio del componente
   useEffect(() => {
     // Registrazione dei tooltip
     registerTooltip({
@@ -51,63 +51,16 @@ export default function Dashboard() {
       delay: 8000,
       persistent: true
     });
-
-    registerTooltip({
-      id: 'baskets-card',
-      content: 'Questo indicatore mostra il numero di ceste attualmente attive nel sistema.',
-      position: 'top',
-      delay: 5000
-    });
-
-    registerTooltip({
-      id: 'cycles-card',
-      content: 'I cicli rappresentano i periodi di crescita degli organismi. Questo è il conteggio dei cicli attualmente in corso.',
-      position: 'top',
-      delay: 5000
-    });
-
-    registerTooltip({
-      id: 'operations-card',
-      content: 'Le operazioni effettuate oggi. Puoi registrare nuove operazioni dalla sezione "Operazioni Rapide".',
-      position: 'top',
-      delay: 5000
-    });
-
-    registerTooltip({
-      id: 'lots-card',
-      content: 'I lotti rappresentano gruppi di animali che condividono caratteristiche comuni come la provenienza o la data di arrivo.',
-      position: 'top',
-      delay: 5000
-    });
-
-    registerTooltip({
-      id: 'recent-operations',
-      content: 'Qui puoi vedere le operazioni più recenti. Clicca su una operazione per vederne i dettagli.',
-      position: 'left',
-      delay: 5000
-    });
-
-    registerTooltip({
-      id: 'growth-chart',
-      content: 'Questo grafico mostra l\'andamento di crescita nel tempo per aiutarti a monitorare lo sviluppo degli organismi.',
-      position: 'right',
-      delay: 5000
-    });
-
-    registerTooltip({
-      id: 'flupsy-visualizer',
-      content: 'Questa visualizzazione mostra lo stato attuale dei tuoi FLUPSY con la relativa occupazione delle ceste.',
-      position: 'top',
-      delay: 5000
-    });
-
+    
     // Mostra il tooltip di benvenuto se è un nuovo utente
     if (isFirstTimeUser && dashboardTitleRef.current) {
-      setTimeout(() => {
+      const timer = setTimeout(() => {
         showTooltip('dashboard-intro', dashboardTitleRef);
       }, 1000);
+      
+      return () => clearTimeout(timer);
     }
-  }, [registerTooltip, isFirstTimeUser, showTooltip]);
+  }, [isFirstTimeUser]); // Rimuoviamo registerTooltip e showTooltip dalle dipendenze
 
   // Calculate dashboard stats
   const activeBaskets = baskets?.filter(b => b.state === 'active') || [];
