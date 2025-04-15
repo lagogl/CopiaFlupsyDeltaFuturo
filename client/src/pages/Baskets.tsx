@@ -63,9 +63,40 @@ export default function Baskets() {
       });
     },
     onError: (error: any) => {
+      // Gestione errori migliorata per messaggi specifici
+      let errorMessage = "Si è verificato un errore durante la creazione della cesta";
+      let errorTitle = "Errore";
+      
+      // Estrai il messaggio di errore JSON se presente
+      if (error.message) {
+        try {
+          // Se il messaggio contiene JSON (come "400: {"message":"La posizione DX-1 è già occupata..."}")
+          if (error.message.includes('{')) {
+            const jsonPart = error.message.substring(error.message.indexOf('{'));
+            const parsedError = JSON.parse(jsonPart);
+            
+            if (parsedError.message) {
+              errorMessage = parsedError.message;
+              
+              // Titoli specifici in base al tipo di errore
+              if (errorMessage.includes("posizione") && errorMessage.includes("occupata")) {
+                errorTitle = "Posizione già occupata";
+              } else if (errorMessage.includes("Esiste già una cesta")) {
+                errorTitle = "Numero cesta duplicato";
+              }
+            }
+          } else {
+            errorMessage = error.message;
+          }
+        } catch (e) {
+          // Se il parsing fallisce, usa il messaggio originale
+          errorMessage = error.message;
+        }
+      }
+      
       toast({
-        title: "Errore",
-        description: error.message || "Si è verificato un errore durante la creazione della cesta",
+        title: errorTitle,
+        description: errorMessage,
         variant: "destructive",
       });
     }
