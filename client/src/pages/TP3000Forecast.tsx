@@ -41,25 +41,29 @@ export default function TP3000Forecast() {
   const [selectedFlupsy, setSelectedFlupsy] = useState<string | null>(null);
   
   // Query per caricare i dati necessari
-  const { data: cycles, isLoading: cyclesLoading } = useQuery({ 
+  const { data: cycles, isLoading: cyclesLoading } = useQuery<any[]>({ 
     queryKey: ['/api/cycles'],
-    select: (data: any) => data.filter((cycle: any) => cycle.status === 'active'),
+    select: (data) => data?.filter((cycle) => cycle.state === 'active') || [],
   });
   
-  const { data: operations, isLoading: operationsLoading } = useQuery({ 
-    queryKey: ['/api/operations']
+  const { data: operations, isLoading: operationsLoading } = useQuery<any[]>({ 
+    queryKey: ['/api/operations'],
+    select: (data) => data || [],
   });
   
-  const { data: flupsys, isLoading: flupsysLoading } = useQuery({ 
-    queryKey: ['/api/flupsys']
+  const { data: flupsys, isLoading: flupsysLoading } = useQuery<any[]>({ 
+    queryKey: ['/api/flupsys'],
+    select: (data) => data || [],
   });
   
-  const { data: baskets, isLoading: basketsLoading } = useQuery({ 
-    queryKey: ['/api/baskets']
+  const { data: baskets, isLoading: basketsLoading } = useQuery<any[]>({ 
+    queryKey: ['/api/baskets'],
+    select: (data) => data || [],
   });
   
-  const { data: sgrs, isLoading: sgrsLoading } = useQuery({ 
-    queryKey: ['/api/sgr']
+  const { data: sgrs, isLoading: sgrsLoading } = useQuery<any[]>({ 
+    queryKey: ['/api/sgr'],
+    select: (data) => data || [],
   });
 
   // Calcola i dati del grafico a bolle quando i dati necessari sono disponibili
@@ -368,7 +372,7 @@ function useBubbleChartData(
     }
     
     // Filtra solo i cicli attivi
-    const activeCycles = cycles.filter(cycle => cycle.status === 'active');
+    const activeCycles = cycles.filter(cycle => cycle.state === 'active');
     
     if (activeCycles.length === 0) {
       setResult({
