@@ -306,8 +306,6 @@ export default function TP3000Forecast() {
                               fill={getBubbleColor(entry.progress)} 
                             />
                           ))}
-                          <LabelList dataKey="value" position="insideRight" fill="#ffffff" formatter={(value: any, entry: any) => 
-                            entry.value.toLocaleString()} />
                         </Bar>
                       </BarChart>
                     </ResponsiveContainer>
@@ -317,52 +315,16 @@ export default function TP3000Forecast() {
                 {/* Visualizzazione ad area impilata */}
                 <TabsContent value="area" className="mt-0">
                   <div className="h-[600px] w-full">
-                    <ResponsiveContainer width="100%" height="100%">
-                      <AreaChart
-                        data={calculatedData.bubbleData}
-                        margin={{ top: 20, right: 30, bottom: 20, left: 30 }}
-                      >
-                        <CartesianGrid strokeDasharray="3 3" />
-                        <XAxis 
-                          dataKey="week"
-                          type="number"
-                          domain={[0, timeRange]}
-                          tickFormatter={(value) => `S${value}`}
-                          label={{ value: 'Settimane', position: 'insideBottom', offset: -5 }}
-                        />
-                        <YAxis 
-                          label={{ value: 'Animali', angle: -90, position: 'insideLeft' }}
-                        />
-                        <Tooltip
-                          content={({ active, payload }) => {
-                            if (active && payload && payload.length) {
-                              const data = payload[0].payload as ForecastBubble;
-                              return (
-                                <div className="bg-white p-3 border rounded shadow-lg">
-                                  <p className="font-medium">{data.weekLabel}</p>
-                                  <p className="text-sm">{data.dateRange}</p>
-                                  <p className="font-medium mt-1">
-                                    {viewOption === "flupsy" ? "FLUPSY:" : "Taglia:"} {data.yValue}
-                                  </p>
-                                  <p className="text-emerald-600 font-bold">
-                                    {data.value.toLocaleString()} animali
-                                  </p>
-                                </div>
-                              );
-                            }
-                            return null;
-                          }}
-                        />
-                        <Area 
-                          type="monotone" 
-                          dataKey="value" 
-                          name="Animali"
-                          stroke="#3B82F6" 
-                          fill="#3B82F6"
-                          stackId="1"
-                        />
-                      </AreaChart>
-                    </ResponsiveContainer>
+                    <div className="flex flex-col items-center justify-center h-full">
+                      <div className="text-center p-4 max-w-md">
+                        <Calendar className="h-12 w-12 mx-auto text-muted-foreground opacity-50 mb-4" />
+                        <h3 className="text-lg font-medium mb-2">Grafico area staccato provvisoriamente</h3>
+                        <p className="text-sm text-muted-foreground">
+                          Per assicurare la stabilità dell'applicazione, questa visualizzazione è stata disattivata temporaneamente. 
+                          Puoi utilizzare gli altri grafici disponibili.
+                        </p>
+                      </div>
+                    </div>
                   </div>
                 </TabsContent>
                 
