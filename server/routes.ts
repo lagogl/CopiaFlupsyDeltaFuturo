@@ -3716,6 +3716,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Endpoint per l'esportazione delle giacenze
+  app.get("/api/export/giacenze", async (req, res) => {
+    try {
+      // Importa il servizio di esportazione on-demand
+      const { generateExportGiacenze } = await import("./export-service");
+      
+      // Recupera i parametri opzionali dalla query
+      const fornitore = req.query.fornitore as string || undefined;
+      const dataEsportazione = req.query.data ? new Date(req.query.data as string) : undefined;
+      
+      // Genera il JSON di esportazione
+      const giacenzeJson = await generateExportGiacenze(storage, {
+        fornitore,
+        dataEsportazione
+      });
+      
+      // Imposta header per il download del file
+      const filename = `giacenze_export_${new Date().toISOString().split('T')[0]}.json`;
+      
+      if (req.query.download === 'true') {
+        res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+        res.setHeader('Content-Type', 'application/json');
+      }
+      
+      // Invia il JSON formattato
+      res.json(giacenzeJson);
+    } catch (error) {
+      console.error("Errore durante l'esportazione delle giacenze:", error);
+      res.status(500).json({ 
+        message: "Si è verificato un errore durante l'esportazione delle giacenze",
+        error: (error as Error).message
+      });
+    }
+  });
+  
   // Configure WebSocket server
   const { 
     broadcastMessage, 
