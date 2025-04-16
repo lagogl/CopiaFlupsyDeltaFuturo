@@ -799,7 +799,7 @@ export default function Operations() {
                             <h3 className="text-lg font-semibold">Ciclo #{cycleId}</h3>
                             <div className="space-y-1">
                               <p className="text-sm">
-                                <span className="text-gray-500">Cesta #{basket?.physicalNumber || '?'}</span>
+                                <span className="text-red-600 font-bold">Cesta #{basket?.physicalNumber || '?'}</span>
                                 {basket?.row && basket?.position && (
                                   <span className="text-indigo-600 ml-1 font-medium">[Pos: {basket.row} - {basket.position}]</span>
                                 )}
