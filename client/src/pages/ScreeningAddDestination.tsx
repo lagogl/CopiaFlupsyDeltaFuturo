@@ -75,10 +75,10 @@ export default function ScreeningAddDestination() {
     isLoading: basketsLoading,
     error: basketsError
   } = useQuery({
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets/with-flupsy-details'],
     queryFn: async () => {
       return apiRequest<any[]>({
-        url: '/api/baskets',
+        url: '/api/baskets/with-flupsy-details',
         method: 'GET'
       });
     },
@@ -341,7 +341,7 @@ export default function ScreeningAddDestination() {
                               key={basket.id} 
                               value={basket.id.toString()}
                             >
-                              #{basket.physicalNumber} {basket.cycleCode ? `(${basket.cycleCode})` : ''}
+                              #{basket.physicalNumber} {basket.flupsyId ? `(Flupsy ${basket.flupsyId})` : ''} {basket.cycleCode ? `- ${basket.cycleCode}` : ''}
                             </SelectItem>
                           ))}
                         </SelectContent>
