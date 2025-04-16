@@ -67,10 +67,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/baskets", async (req, res) => {
     try {
       const baskets = await storage.getBaskets();
-      res.json(baskets);
+      
+      // Ottieni i dettagli completi per ogni cesta
+      const basketsWithDetails = await Promise.all(baskets.map(async (basket) => {
+        // Ottieni il FLUPSY associato
+        const flupsy = await storage.getFlupsy(basket.flupsyId);
+        
+        // Ottieni tutte le operazioni del cestello
+        const operations = await storage.getOperationsByBasket(basket.id);
+        
+        // Ordina le operazioni per data (la più recente prima)
+        const sortedOperations = operations.sort((a, b) => {
+          return new Date(b.date).getTime() - new Date(a.date).getTime();
+        });
+        
+        // Ultima operazione è la prima dopo l'ordinamento
+        const lastOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
+        
+        // Ottieni la taglia corrente se presente nell'ultima operazione
+        let size = null;
+        if (lastOperation && lastOperation.sizeId) {
+          size = await storage.getSize(lastOperation.sizeId);
+        }
+        
+        // Ottieni il ciclo corrente se presente
+        let currentCycle = null;
+        if (basket.currentCycleId) {
+          currentCycle = await storage.getCycle(basket.currentCycleId);
+        }
+        
+        return {
+          ...basket,
+          flupsy: flupsy || null,
+          lastOperation: lastOperation ? {
+            ...lastOperation,
+            type: lastOperation.type, // Causale dell'operazione
+            date: lastOperation.date, // Data dell'operazione
+          } : null,
+          size: size, // Taglia attuale
+          currentCycle: currentCycle ? {
+            ...currentCycle,
+            startDate: currentCycle.startDate // Data di attivazione
+          } : null
+        };
+      }));
+      
+      res.json(basketsWithDetails);
     } catch (error) {
-      console.error("Error fetching baskets:", error);
-      res.status(500).json({ message: "Failed to fetch baskets" });
+      console.error("Error fetching baskets with details:", error);
+      res.status(500).json({ message: "Failed to fetch baskets with details" });
     }
   });
   
