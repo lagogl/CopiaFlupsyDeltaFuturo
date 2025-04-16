@@ -3763,6 +3763,107 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API per Backup e Ripristino del Database
+  // ==============================================================
+  
+  // Crea un nuovo backup
+  app.post("/api/database/backup", async (req, res) => {
+    try {
+      const backup = await createDatabaseBackup();
+      res.json({
+        success: true,
+        backupId: backup.id,
+        timestamp: backup.timestamp,
+        size: backup.size
+      });
+    } catch (error) {
+      console.error("Errore durante la creazione del backup:", error);
+      res.status(500).json({ success: false, message: "Errore durante la creazione del backup" });
+    }
+  });
+  
+  // Lista dei backup disponibili
+  app.get("/api/database/backups", (req, res) => {
+    try {
+      const backups = getAvailableBackups();
+      res.json(backups);
+    } catch (error) {
+      console.error("Errore durante il recupero dei backup:", error);
+      res.status(500).json({ message: "Errore durante il recupero dei backup" });
+    }
+  });
+  
+  // Ripristina da un backup esistente
+  app.post("/api/database/restore/:backupId", async (req, res) => {
+    try {
+      const backupId = req.params.backupId;
+      const result = await restoreDatabaseFromBackup(`${backupId}.sql`);
+      
+      if (result) {
+        res.json({ success: true, message: "Database ripristinato con successo" });
+      } else {
+        throw new Error("Errore durante il ripristino del database");
+      }
+    } catch (error) {
+      console.error("Errore durante il ripristino del database:", error);
+      res.status(500).json({ success: false, message: "Errore durante il ripristino del database" });
+    }
+  });
+  
+  // Scarica un backup
+  app.get("/api/database/download", async (req, res) => {
+    try {
+      // Genera un nuovo dump completo del database
+      const dumpPath = await generateFullDatabaseDump();
+      
+      // Imposta gli header per il download
+      res.setHeader('Content-Disposition', `attachment; filename=database_backup_${new Date().toISOString().split('T')[0]}.sql`);
+      res.setHeader('Content-Type', 'application/octet-stream');
+      
+      // Invia il file
+      res.sendFile(dumpPath, (err) => {
+        if (err) {
+          console.error("Errore durante l'invio del file di backup:", err);
+        }
+        
+        // Elimina il file temporaneo dopo l'invio
+        try {
+          fs.unlinkSync(dumpPath);
+        } catch (err) {
+          console.error("Errore durante l'eliminazione del file temporaneo:", err);
+        }
+      });
+    } catch (error) {
+      console.error("Errore durante il download del backup:", error);
+      res.status(500).json({ message: "Errore durante il download del backup" });
+    }
+  });
+  
+  // Carica e ripristina da un file (implementazione parziale senza multer)
+  app.post("/api/database/restore", async (req, res) => {
+    // Questo endpoint richiederà multer per funzionare correttamente
+    res.status(501).json({
+      message: "Questa funzionalità richiede multer per il caricamento dei file. Per ora, utilizza il ripristino da backup online."
+    });
+  });
+  
+  // Elimina un backup
+  app.delete("/api/database/backups/:backupId", (req, res) => {
+    try {
+      const backupId = req.params.backupId;
+      const result = deleteBackup(backupId);
+      
+      if (result) {
+        res.json({ success: true, message: "Backup eliminato con successo" });
+      } else {
+        res.status(404).json({ success: false, message: "Backup non trovato" });
+      }
+    } catch (error) {
+      console.error("Errore durante l'eliminazione del backup:", error);
+      res.status(500).json({ success: false, message: "Errore durante l'eliminazione del backup" });
+    }
+  });
+  
   // Configure WebSocket server
   const { 
     broadcastMessage, 
