@@ -11,7 +11,7 @@ import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
 import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useToast } from '@/hooks/use-toast';
-import { Loader2, CheckCircle, XCircle, Download, Upload, Trash2, Database, AlertTriangle, ArrowUpDown } from 'lucide-react';
+import { Loader2, CheckCircle, XCircle, Download, Upload, Trash2, Database, AlertTriangle, ArrowUpDown, FileCheck } from 'lucide-react';
 
 import MainLayout from '@/layouts/MainLayout';
 
@@ -24,6 +24,8 @@ interface BackupInfo {
 
 export default function BackupPage() {
   const [activeTab, setActiveTab] = useState('backups');
+  const [selectedFile, setSelectedFile] = useState<File | null>(null);
+  const [isUploading, setIsUploading] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
   
@@ -424,15 +426,101 @@ export default function BackupPage() {
                   <div className="border rounded-lg p-6">
                     <h3 className="text-lg font-medium mb-4">Carica file SQL</h3>
                     
-                    <div className="text-center py-10 border-2 border-dashed rounded-lg">
-                      <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
-                      <p className="mb-2 text-sm text-muted-foreground">
-                        La funzionalità di upload file è temporaneamente disabilitata.
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Si prega di utilizzare il ripristino da backup online.
-                      </p>
+                    <div 
+                      className="text-center py-10 border-2 border-dashed rounded-lg cursor-pointer hover:border-primary"
+                      onClick={() => document.getElementById('sql-file-input')?.click()}
+                    >
+                      <input
+                        id="sql-file-input"
+                        type="file"
+                        accept=".sql"
+                        className="hidden"
+                        onChange={(e) => {
+                          const file = e.target.files?.[0];
+                          if (file) {
+                            setSelectedFile(file);
+                          }
+                        }}
+                      />
+                      {selectedFile ? (
+                        <>
+                          <FileCheck className="h-10 w-10 mx-auto mb-4 text-primary" />
+                          <p className="mb-2 text-sm font-medium">
+                            {selectedFile.name}
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            {formatFileSize(selectedFile.size)} - Clicca per selezionare un altro file
+                          </p>
+                        </>
+                      ) : (
+                        <>
+                          <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+                          <p className="mb-2 text-sm text-muted-foreground">
+                            Clicca per selezionare un file SQL da caricare
+                          </p>
+                          <p className="text-xs text-muted-foreground">
+                            Solo file .sql fino a 20MB
+                          </p>
+                        </>
+                      )}
                     </div>
+                    
+                    {selectedFile && (
+                      <div className="mt-4">
+                        <AlertDialog>
+                          <AlertDialogTrigger asChild>
+                            <Button
+                              disabled={isUploading}
+                              className="w-full bg-yellow-500 hover:bg-yellow-600"
+                            >
+                              {isUploading ? (
+                                <>
+                                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                  Ripristino in corso...
+                                </>
+                              ) : (
+                                <>
+                                  <ArrowUpDown className="mr-2 h-4 w-4" />
+                                  Ripristina database da questo file
+                                </>
+                              )}
+                            </Button>
+                          </AlertDialogTrigger>
+                          <AlertDialogContent>
+                            <AlertDialogHeader>
+                              <AlertDialogTitle>Sei sicuro?</AlertDialogTitle>
+                              <AlertDialogDescription>
+                                Stai per ripristinare il database dal file: <strong>{selectedFile.name}</strong>
+                                <br /><br />
+                                Questa operazione sostituirà tutti i dati attuali con quelli nel file selezionato.
+                                <br /><br />
+                                <strong>Questa operazione non può essere annullata.</strong>
+                              </AlertDialogDescription>
+                            </AlertDialogHeader>
+                            <AlertDialogFooter>
+                              <AlertDialogCancel>Annulla</AlertDialogCancel>
+                              <AlertDialogAction
+                                onClick={() => {
+                                  // Implementa il caricamento del file e il ripristino
+                                  handleFileUpload();
+                                }}
+                                disabled={isUploading}
+                                className="bg-yellow-500 hover:bg-yellow-600"
+                              >
+                                {isUploading ? (
+                                  <>
+                                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                    Ripristino in corso...
+                                  </>
+                                ) : (
+                                  'Sì, ripristina'
+                                )}
+                              </AlertDialogAction>
+                            </AlertDialogFooter>
+                          </AlertDialogContent>
+                        </AlertDialog>
+                      </div>
+                    )}
                   </div>
                   
                   <div className="border rounded-lg p-6">
