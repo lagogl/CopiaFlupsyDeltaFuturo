@@ -45,7 +45,7 @@ export default function Baskets() {
   // Query FLUPSY units for filter
   const { data: flupsys } = useQuery({
     queryKey: ['/api/flupsys'],
-  });
+  }) as { data: any[] };
 
   // Create mutation
   const createBasketMutation = useMutation({
@@ -151,10 +151,14 @@ export default function Baskets() {
     }
   });
 
+  // Prepare baskets array with additional data
+  const basketsArray = Array.isArray(baskets) ? baskets : [];
+  const flupsysArray = Array.isArray(flupsys) ? flupsys : [];
+  
   // Filter baskets
-  const filteredBaskets = (baskets || []).filter((basket: any) => {
+  const filteredBaskets = basketsArray.filter((basket: any) => {
     // Aggiungiamo il nome del FLUPSY per ogni cesta
-    const flupsy = (flupsys || []).find((f: any) => f.id === basket.flupsyId);
+    const flupsy = flupsysArray.find((f: any) => f.id === basket.flupsyId);
     if (flupsy) {
       basket.flupsyName = flupsy.name;
     }
@@ -239,8 +243,8 @@ export default function Baskets() {
               </SelectTrigger>
               <SelectContent>
                 <SelectItem value="all">Tutte le unità</SelectItem>
-                {flupsys && flupsys.length > 0 ? (
-                  flupsys.map((flupsy: any) => (
+                {flupsysArray.length > 0 ? (
+                  flupsysArray.map((flupsy: any) => (
                     <SelectItem key={flupsy.id} value={String(flupsy.id)}>
                       {flupsy.name}
                     </SelectItem>
@@ -513,7 +517,7 @@ export default function Baskets() {
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Unità FLUPSY</p>
                       <p className="font-medium">
-                        {flupsys?.find((f: any) => f.id === selectedBasket.flupsyId)?.name || `#${selectedBasket.flupsyId}`}
+                        {flupsysArray.find((f: any) => f.id === selectedBasket.flupsyId)?.name || `#${selectedBasket.flupsyId}`}
                       </p>
                     </div>
                     
@@ -601,7 +605,7 @@ export default function Baskets() {
                   <div>
                     <p className="text-sm font-medium text-muted-foreground">Unità FLUPSY</p>
                     <p className="font-medium">
-                      {flupsys?.find((f: any) => f.id === selectedBasket.flupsyId)?.name || `#${selectedBasket.flupsyId}`}
+                      {flupsysArray.find((f: any) => f.id === selectedBasket.flupsyId)?.name || `#${selectedBasket.flupsyId}`}
                     </p>
                   </div>
                   {selectedBasket.row && selectedBasket.position && (
