@@ -736,10 +736,18 @@ export default function Operations() {
                     className="bg-white rounded-lg shadow overflow-hidden"
                   >
                     <CollapsibleTrigger asChild>
-                      <div className="p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50">
+                      <div className={`p-4 flex justify-between items-center cursor-pointer hover:bg-gray-50
+                        ${cycle?.state === 'closed' ? 'bg-gray-50 border-l-4 border-red-500' : ''}`}
+                      >
                         <div className="flex items-center space-x-4">
-                          <div className="flex h-10 w-10 rounded-full bg-blue-100 text-blue-700 items-center justify-center">
-                            <RotateCw className="h-5 w-5" />
+                          <div className={`flex h-10 w-10 rounded-full items-center justify-center
+                            ${cycle?.state === 'active' ? 'bg-blue-100 text-blue-700' : 'bg-red-100 text-red-700'}`}
+                          >
+                            {cycle?.state === 'active' ? (
+                              <RotateCw className="h-5 w-5" />
+                            ) : (
+                              <Box className="h-5 w-5" />
+                            )}
                           </div>
                           <div>
                             <h3 className="text-lg font-semibold">Ciclo #{cycleId}</h3>
@@ -749,9 +757,9 @@ export default function Operations() {
                                 <span className="text-indigo-600"> [Pos: {basket.row} - {basket.position}]</span>
                               )} • 
                               {cycle?.state === 'active' ? (
-                                <span className="text-emerald-600"> Attivo</span>
+                                <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-medium">Attivo</Badge>
                               ) : (
-                                <span className="text-gray-500"> Chiuso</span>
+                                <Badge className="bg-red-100 text-red-800 hover:bg-red-200 font-medium">Chiuso</Badge>
                               )} • 
                               {cycle && 
                                 ` Inizio: ${format(new Date(cycle.startDate), 'dd/MM/yyyy')}`
