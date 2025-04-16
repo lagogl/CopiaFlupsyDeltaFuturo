@@ -3809,7 +3809,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/database/restore/:backupId", async (req, res) => {
     try {
       const backupId = req.params.backupId;
-      const result = await restoreDatabaseFromBackup(`${backupId}.sql`);
+      console.log(`Ricerca backup con ID: ${backupId}`);
+      
+      // Ottieni la lista dei backup disponibili
+      const backups = getAvailableBackups();
+      
+      // Trova il backup con l'ID fornito
+      const backup = backups.find(b => b.id === backupId);
+      
+      if (!backup) {
+        console.error(`Backup non trovato con ID: ${backupId}`);
+        return res.status(404).json({ 
+          success: false, 
+          message: "Backup non trovato. Verifica l'ID del backup." 
+        });
+      }
+      
+      console.log(`Backup trovato: ${backup.filename}`);
+      
+      // Ripristina il database dal file di backup
+      const result = await restoreDatabaseFromBackup(backup.filename);
       
       if (result) {
         res.json({ success: true, message: "Database ripristinato con successo" });

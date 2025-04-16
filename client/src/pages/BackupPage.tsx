@@ -192,14 +192,43 @@ export default function BackupPage() {
   
   // Formatta la data in formato leggibile
   const formatDate = (dateString: string): string => {
+    console.log("Formattazione data:", dateString);
+    
+    // Se è una stringa vuota o non definita, restituisci un messaggio di default
+    if (!dateString) {
+      return "Data non disponibile";
+    }
+    
+    // Controlla se è una data ISO standard (formato tipico delle API)
+    if (typeof dateString === 'string' && dateString.includes('T')) {
+      try {
+        const date = new Date(dateString);
+        if (!isNaN(date.getTime())) {
+          return date.toLocaleString('it-IT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          });
+        }
+      } catch (e) {
+        console.error("Errore nel parsing della data ISO:", e);
+      }
+    }
+    
     // Se la data è nel formato unix timestamp o millesimi di secondo,
     // convertila in numero e poi in oggetto Date
     if (!isNaN(Number(dateString))) {
       const timestamp = Number(dateString);
+      console.log("Timestamp numerico rilevato:", timestamp);
+      
       // Controlla se è in secondi (timestamp unix) o millisecondi
       const date = timestamp < 10000000000 
         ? new Date(timestamp * 1000)  // Se è in secondi (formato unix)
         : new Date(timestamp);        // Se è già in millisecondi
+      
+      console.log("Data convertita:", date.toString());
       
       return date.toLocaleString('it-IT', {
         day: '2-digit',
@@ -212,13 +241,17 @@ export default function BackupPage() {
     
     // Altrimenti prova a parsare direttamente la stringa
     try {
+      console.log("Tentativo di parsing diretto della stringa:", dateString);
       const date = new Date(dateString);
+      
       // Verifica che la data sia valida
       if (isNaN(date.getTime())) {
         // Se la data non è valida, mostra la stringa originale
         console.warn(`Data non valida: ${dateString}`);
         return dateString;
       }
+      
+      console.log("Data parsata con successo:", date.toString());
       
       return date.toLocaleString('it-IT', {
         day: '2-digit',
