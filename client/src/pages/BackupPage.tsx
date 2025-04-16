@@ -123,19 +123,32 @@ export default function BackupPage() {
   // Mutation per creare un nuovo backup
   const createBackupMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/database/backup', { method: 'POST' });
+      console.log("Inizio richiesta di backup del database...");
+      const result = await apiRequest('/api/database/backup', { method: 'POST' });
+      console.log("Risposta API backup:", result);
+      return result;
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
       toast({
         title: "Backup creato con successo",
         description: "Il nuovo backup è stato creato e salvato correttamente.",
       });
+      console.log('Backup creato con successo, dati:', data);
       queryClient.invalidateQueries({ queryKey: ['/api/database/backups'] });
     },
-    onError: (error) => {
+    onError: (error: any) => {
+      console.error('Errore dettagliato:', error);
+      let errorMsg = 'Si è verificato un errore';
+      
+      if (error instanceof Error) {
+        errorMsg += `: ${error.message}`;
+      } else if (error?.response?.data?.message) {
+        errorMsg += `: ${error.response.data.message}`;
+      }
+      
       toast({
         title: "Errore durante la creazione del backup",
-        description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        description: errorMsg,
         variant: "destructive"
       });
     }

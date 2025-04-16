@@ -34,6 +34,20 @@ export interface BackupInfo {
  */
 export async function createDatabaseBackup(): Promise<BackupInfo> {
   try {
+    // Creiamo un file temporaneo per testare la connessione al database
+    const testId = randomUUID().substring(0, 8);
+    const testFilePath = path.join(BACKUP_DIR, `test_connection_${testId}.txt`);
+    
+    // Scriviamo un file vuoto per assicurarci di avere i permessi di scrittura
+    fs.writeFileSync(testFilePath, `Test connessione db: ${new Date().toISOString()}`);
+    
+    // Se riusciamo a scrivere, rimuoviamo il file di test
+    if (fs.existsSync(testFilePath)) {
+      fs.unlinkSync(testFilePath);
+      console.log('Test di scrittura nella directory backup completato con successo');
+    }
+    
+    // Procediamo con il backup vero e proprio
     const backupId = randomUUID();
     const timestamp = new Date();
     const formattedDate = timestamp.toISOString().replace(/:/g, '-').replace(/\..+/, '');
@@ -67,7 +81,18 @@ export async function createDatabaseBackup(): Promise<BackupInfo> {
       `-f "${filePath}"`,
       `--format=p`,
       `--no-owner`,
-      `--no-acl`
+      `--no-acl`,
+      `--no-privileges`,
+      `--if-exists`,
+      `--verbose`,
+      `--no-security-labels`,
+      `--no-tablespaces`,
+      `--no-comments`,
+      `--schema=public`,
+      `--no-publications`,
+      `--no-subscriptions`,
+      `--timeout=60`,
+      `--no-sync`
     );
     
     const command = commandParts.join(' ');
