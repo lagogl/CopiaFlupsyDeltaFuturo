@@ -152,11 +152,23 @@ export default function Baskets() {
   });
 
   // Filter baskets
-  const filteredBaskets = baskets?.filter(basket => {
+  const filteredBaskets = (baskets || []).filter((basket: any) => {
+    // Aggiungiamo il nome del FLUPSY per ogni cesta
+    const flupsy = (flupsys || []).find((f: any) => f.id === basket.flupsyId);
+    if (flupsy) {
+      basket.flupsyName = flupsy.name;
+    }
+    
+    // Calcoliamo il numero di animali dall'ultima operazione
+    if (basket.lastOperation && basket.lastOperation.animalCount) {
+      basket.animalCount = basket.lastOperation.animalCount;
+    }
+    
     // Filter by search term
     const matchesSearch = searchTerm === '' || 
       `${basket.physicalNumber}`.includes(searchTerm) || 
-      `${basket.currentCycleId}`.includes(searchTerm);
+      (basket.currentCycleId ? `${basket.currentCycleId}`.includes(searchTerm) : false) ||
+      (basket.flupsyName && basket.flupsyName.toLowerCase().includes(searchTerm.toLowerCase()));
     
     // Filter by state
     const matchesState = stateFilter === 'all' || 
@@ -168,7 +180,7 @@ export default function Baskets() {
       String(basket.flupsyId) === flupsyFilter;
     
     return matchesSearch && matchesState && matchesFlupsy;
-  }) || [];
+  });
 
   return (
     <div>
@@ -255,6 +267,9 @@ export default function Baskets() {
                   </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  FLUPSY
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Codice Ciclo
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -304,6 +319,16 @@ export default function Baskets() {
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                         #{basket.physicalNumber}
                       </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <div className="flex flex-col">
+                          <span>{basket.flupsyName || `FLUPSY #${basket.flupsyId}`}</span>
+                          {basket.row && basket.position && (
+                            <span className="text-xs text-muted-foreground">
+                              Pos: {basket.row}-{basket.position}
+                            </span>
+                          )}
+                        </div>
+                      </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
                         {basket.cycleCode ? basket.cycleCode : '-'}
                       </td>
@@ -314,15 +339,47 @@ export default function Baskets() {
                         {statusBadge}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {/* Last operation would come from a query for specific basket */}
-                        -
+                        {basket.lastOperation ? (
+                          <div className="flex flex-col">
+                            <span>{basket.lastOperation.type}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {new Date(basket.lastOperation.date).toLocaleDateString('it-IT')}
+                            </span>
+                          </div>
+                        ) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className="bg-blue-100 text-blue-800 hover:bg-blue-200">-</Badge>
+                        {basket.size ? (
+                          <div className="flex flex-col">
+                            <Badge 
+                              style={{ 
+                                backgroundColor: basket.size.color ? `${basket.size.color}20` : '#e5e7eb',
+                                color: basket.size.color || '#1f2937',
+                                borderColor: basket.size.color ? `${basket.size.color}70` : '#d1d5db',
+                                borderWidth: '1px'
+                              }}
+                            >
+                              {basket.size.code}
+                            </Badge>
+                            {basket.animalCount && (
+                              <span className="text-xs text-muted-foreground mt-1">
+                                {basket.animalCount.toLocaleString('it-IT')} animali
+                              </span>
+                            )}
+                          </div>
+                        ) : (
+                          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">-</Badge>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {/* Activation date would come from a query for specific basket */}
-                        -
+                        {basket.currentCycle?.startDate ? (
+                          <div className="flex flex-col">
+                            <span>{new Date(basket.currentCycle.startDate).toLocaleDateString('it-IT')}</span>
+                            <span className="text-xs text-muted-foreground">
+                              {Math.floor((new Date().getTime() - new Date(basket.currentCycle.startDate).getTime()) / (1000 * 60 * 60 * 24))} giorni
+                            </span>
+                          </div>
+                        ) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
