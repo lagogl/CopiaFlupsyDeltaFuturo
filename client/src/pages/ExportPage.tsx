@@ -195,7 +195,13 @@ export default function ExportPage() {
                                   </tr>
                                 </thead>
                                 <tbody className="bg-white divide-y divide-gray-200">
-                                  {previewData.giacenze.map((giacenza, index) => (
+                                  {previewData.giacenze.map((giacenza: {
+                                    identificativo: string;
+                                    taglia: string;
+                                    quantita: number;
+                                    data_iniziale: string;
+                                    mg_vongola: number;
+                                  }, index: number) => (
                                     <tr key={index}>
                                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-900">
                                         {giacenza.identificativo}

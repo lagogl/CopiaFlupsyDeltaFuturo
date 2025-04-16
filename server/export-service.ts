@@ -72,6 +72,7 @@ export async function generateExportGiacenze(
       if (!lastOperation) continue;
       
       // Recupera la taglia associata all'operazione
+      if (!lastOperation.sizeId) continue;
       const size = await storage.getSize(lastOperation.sizeId);
       if (!size) continue;
       
@@ -82,13 +83,13 @@ export async function generateExportGiacenze(
       const startDate = format(new Date(cycle.startDate), 'yyyy-MM-dd');
       
       // Calcola il peso medio della vongola in mg
-      const mgVongola = lastOperation.animalsPerKg ? 
+      const mgVongola = lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0 ? 
         Math.round(1000000 / lastOperation.animalsPerKg) : 0;
       
       // Genera identificativo univoco (prefisso flupsy + codice ciclo)
       const prefix = flupsy.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase();
       const identifier = lot ? 
-        `${prefix}-${lot.code || 'L' + lot.id}` : 
+        `${prefix}-${'L' + lot.id}` : 
         `${prefix}-${cycle.id}`;
       
       // Aggiungi all'array delle giacenze

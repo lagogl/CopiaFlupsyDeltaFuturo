@@ -5,7 +5,8 @@ import {
   Scale, TrendingUp, Settings as SettingsIcon, Menu, Bell, 
   User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
-  ChevronRight, LayoutDashboard, PieChart, BarChart, Filter
+  ChevronRight, LayoutDashboard, PieChart, BarChart, Filter,
+  FileJson, Download
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -107,7 +108,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       items: [
         { icon: <RefreshCw className="h-5 w-5 mr-2 text-orange-600" />, label: "Cicli Produttivi", path: "/cycles" },
         { icon: <Scale className="h-5 w-5 mr-2 text-orange-600" />, label: "Tabella Taglie", path: "/sizes" },
-        { icon: <Boxes className="h-5 w-5 mr-2 text-orange-600" />, label: "Inventario Giacenze", path: "/inventory" }
+        { icon: <Boxes className="h-5 w-5 mr-2 text-orange-600" />, label: "Inventario Giacenze", path: "/inventory" },
+        { icon: <FileJson className="h-5 w-5 mr-2 text-orange-600" />, label: "Esportazione", path: "/export" }
       ]
     },
     {
