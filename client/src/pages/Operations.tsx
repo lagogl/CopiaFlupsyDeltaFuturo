@@ -283,18 +283,18 @@ export default function Operations() {
     if (!sgrInfo) return null;
     
     // I valori SGR dal database sono già percentuali giornaliere
-    // Li convertiamo in forma decimale per la formula di crescita (da % a decimale)
-    const dailyRateDecimal = sgrInfo.percentage / 100;
+    // Formula corretta per calcolare l'aumento di peso teorico:
+    // W_t = W_0 * e^((SGR/100) * t)
+    // 
+    // La percentuale di crescita totale sarà: (W_t/W_0 - 1) * 100 = (e^((SGR/100) * t) - 1) * 100
     
-    // Calcola la crescita teorica usando la formula corretta: 
-    // Crescita specifica = (e^(SGR*t) - 1) * 100
-    // dove SGR è il tasso di crescita giornaliero in forma decimale
-    const theoreticalGrowthPercent = (Math.exp(dailyRateDecimal * days) - 1) * 100;
+    const dailySgrPercent = sgrInfo.percentage; // Già una percentuale giornaliera
+    const theoreticalGrowthPercent = (Math.exp((dailySgrPercent / 100) * days) - 1) * 100;
     
     return {
       sgrMonth: sgrInfo.month,
       sgrPercentage: sgrInfo.percentage,
-      sgrDailyPercentage: sgrInfo.percentage, // Già in percentuale giornaliera
+      sgrDailyPercentage: dailySgrPercent, // Già in percentuale giornaliera
       theoreticalGrowthPercent
     };
   };
@@ -1043,11 +1043,11 @@ export default function Operations() {
                                         let dailyGrowthRate = 1.0; // Valore predefinito
                                         
                                         if (monthSgr) {
-                                          dailyGrowthRate = monthSgr.percentage / 100; // Converti in forma decimale
+                                          dailyGrowthRate = monthSgr.percentage; // Usa il valore percentuale direttamente
                                         }
                                         
                                         // Versione corretta che applica l'incremento giornaliero: W1 = W0 * (1 + (SGR/100))
-                                        // dailyGrowthRate è già in forma decimale (es. 0.037 per 3.7%)
+                                        // dailyGrowthRate è in forma percentuale (es. 3.7 per 3.7%)
                                         simulatedWeight = simulatedWeight * (1 + (dailyGrowthRate / 100));
                                         
                                         // Incrementa la data di simulazione di un giorno
@@ -1057,8 +1057,8 @@ export default function Operations() {
                                     } else {
                                       // Fallback se non ci sono dati SGR: usa un tasso fisso di crescita
                                       const fixedDailyRate = 3.7; // 3.7% al giorno
-                                      // Formula logaritmica corretta quando il tasso è in percentuale: ln(W1/W0) / ln(1 + (SGR/100))
-                                      daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / Math.log(1 + (fixedDailyRate/100)));
+                                      // Formula logaritmica corretta: t = ln(W_t/W_0) / (SGR/100)
+                                      daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / (fixedDailyRate/100));
                                     }
                                     
                                     // Calcola la data stimata di raggiungimento
