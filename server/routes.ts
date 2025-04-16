@@ -1,6 +1,18 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
+import multer from 'multer';
+import path from 'path';
+import fs from 'fs';
+import { 
+  createDatabaseBackup, 
+  restoreDatabaseFromBackup, 
+  getAvailableBackups,
+  getBackupFilePath,
+  generateFullDatabaseDump,
+  restoreDatabaseFromUploadedFile,
+  deleteBackup
+} from './database-service';
 import { 
   insertFlupsySchema,
   insertBasketSchema, 
