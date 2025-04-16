@@ -52,7 +52,8 @@ export async function createDatabaseBackup(): Promise<BackupInfo> {
     const command = [
       `PGPASSWORD="${dbPassword}" pg_dump`,
       `-h ${dbHost}`,
-      `-p ${dbPort}`,
+      // Assicurati che la porta sia specificata solo se presente
+      `${dbPort ? `-p ${dbPort}` : ''}`,
       `-U ${dbUser}`,
       `-d ${dbName}`,
       `-f "${filePath}"`,
@@ -106,7 +107,8 @@ export async function restoreDatabaseFromBackup(backupFilename: string): Promise
     const command = [
       `PGPASSWORD="${dbPassword}" psql`,
       `-h ${dbHost}`,
-      `-p ${dbPort}`,
+      // Assicurati che la porta sia specificata solo se presente
+      `${dbPort ? `-p ${dbPort}` : ''}`,
       `-U ${dbUser}`,
       `-d ${dbName}`,
       `-f "${backupPath}"`
@@ -145,7 +147,8 @@ export async function restoreDatabaseFromUploadedFile(filePath: string): Promise
     const command = [
       `PGPASSWORD="${dbPassword}" psql`,
       `-h ${dbHost}`,
-      `-p ${dbPort}`,
+      // Assicurati che la porta sia specificata solo se presente
+      `${dbPort ? `-p ${dbPort}` : ''}`,
       `-U ${dbUser}`,
       `-d ${dbName}`,
       `-f "${filePath}"`
@@ -239,7 +242,8 @@ export async function generateFullDatabaseDump(): Promise<string> {
     const command = [
       `PGPASSWORD="${dbPassword}" pg_dump`,
       `-h ${dbHost}`,
-      `-p ${dbPort}`,
+      // Assicurati che la porta sia specificata solo se presente
+      `${dbPort ? `-p ${dbPort}` : ''}`,
       `-U ${dbUser}`,
       `-d ${dbName}`,
       `-f "${tempFilePath}"`,
