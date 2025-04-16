@@ -136,23 +136,52 @@ export default function BackupPage() {
           </div>
           
           <div className="mt-4 md:mt-0">
-            <Button
-              onClick={() => createBackupMutation.mutate()}
-              disabled={createBackupMutation.isPending}
-              className="bg-primary"
-            >
-              {createBackupMutation.isPending ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Creazione in corso...
-                </>
-              ) : (
-                <>
-                  <Database className="mr-2 h-4 w-4" />
-                  Crea nuovo backup
-                </>
-              )}
-            </Button>
+            <AlertDialog>
+              <AlertDialogTrigger asChild>
+                <Button
+                  disabled={createBackupMutation.isPending}
+                  className="bg-primary"
+                >
+                  {createBackupMutation.isPending ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Creazione in corso...
+                    </>
+                  ) : (
+                    <>
+                      <Database className="mr-2 h-4 w-4" />
+                      Crea nuovo backup
+                    </>
+                  )}
+                </Button>
+              </AlertDialogTrigger>
+              <AlertDialogContent>
+                <AlertDialogHeader>
+                  <AlertDialogTitle>Conferma creazione backup</AlertDialogTitle>
+                  <AlertDialogDescription>
+                    Stai per creare un nuovo backup completo del database. 
+                    Questa operazione potrebbe richiedere alcuni secondi in base alla dimensione del database.
+                  </AlertDialogDescription>
+                </AlertDialogHeader>
+                <AlertDialogFooter>
+                  <AlertDialogCancel>Annulla</AlertDialogCancel>
+                  <AlertDialogAction
+                    onClick={() => createBackupMutation.mutate()}
+                    disabled={createBackupMutation.isPending}
+                    className="bg-primary"
+                  >
+                    {createBackupMutation.isPending ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Creazione in corso...
+                      </>
+                    ) : (
+                      'Sì, crea backup'
+                    )}
+                  </AlertDialogAction>
+                </AlertDialogFooter>
+              </AlertDialogContent>
+            </AlertDialog>
           </div>
         </div>
 
@@ -215,16 +244,36 @@ export default function BackupPage() {
                             <TableCell>{formatFileSize(backup.size)}</TableCell>
                             <TableCell className="text-right">
                               <div className="flex justify-end gap-2">
-                                <a 
-                                  href="/api/database/download" 
-                                  target="_blank" 
-                                  rel="noopener noreferrer"
-                                  className="inline-flex"
-                                >
-                                  <Button size="icon" variant="outline">
-                                    <Download className="h-4 w-4" />
-                                  </Button>
-                                </a>
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="icon" variant="outline">
+                                      <Download className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Scarica backup</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Stai per scaricare questo backup sul tuo dispositivo.
+                                        Il file è in formato SQL e può essere utilizzato per ripristinare il database in futuro.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Annulla</AlertDialogCancel>
+                                      <AlertDialogAction asChild>
+                                        <a 
+                                          href="/api/database/download" 
+                                          target="_blank" 
+                                          rel="noopener noreferrer"
+                                          className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                                        >
+                                          <Download className="mr-2 h-4 w-4" />
+                                          Scarica
+                                        </a>
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
                                 
                                 <AlertDialog>
                                   <AlertDialogTrigger asChild>
@@ -360,12 +409,36 @@ export default function BackupPage() {
                     <p className="mb-4 text-sm text-muted-foreground">
                       Scarica un backup completo del database in formato SQL per conservarlo in locale.
                     </p>
-                    <Button asChild>
-                      <a href="/api/database/download" download>
-                        <Download className="mr-2 h-4 w-4" />
-                        Scarica backup completo
-                      </a>
-                    </Button>
+                    <AlertDialog>
+                      <AlertDialogTrigger asChild>
+                        <Button>
+                          <Download className="mr-2 h-4 w-4" />
+                          Scarica backup completo
+                        </Button>
+                      </AlertDialogTrigger>
+                      <AlertDialogContent>
+                        <AlertDialogHeader>
+                          <AlertDialogTitle>Scarica backup completo</AlertDialogTitle>
+                          <AlertDialogDescription>
+                            Stai per scaricare una copia completa del database in formato SQL.
+                            Questo file contiene tutti i dati dell'applicazione e può essere utilizzato per ripristinare il sistema.
+                          </AlertDialogDescription>
+                        </AlertDialogHeader>
+                        <AlertDialogFooter>
+                          <AlertDialogCancel>Annulla</AlertDialogCancel>
+                          <AlertDialogAction asChild>
+                            <a 
+                              href="/api/database/download" 
+                              download
+                              className="inline-flex items-center justify-center whitespace-nowrap rounded-md text-sm font-medium ring-offset-background transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:pointer-events-none disabled:opacity-50 bg-primary text-primary-foreground hover:bg-primary/90 h-10 px-4 py-2"
+                            >
+                              <Download className="mr-2 h-4 w-4" />
+                              Scarica ora
+                            </a>
+                          </AlertDialogAction>
+                        </AlertDialogFooter>
+                      </AlertDialogContent>
+                    </AlertDialog>
                   </div>
                 </div>
               </CardContent>
