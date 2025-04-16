@@ -1003,12 +1003,15 @@ export default function Operations() {
                                     // Ottieni il peso attuale dall'ultimo dato registrato
                                     const currentWeight = 1000000 / cycleOps[cycleOps.length - 1].animalsPerKg;
                                     
+                                    // Verifica se la taglia corrente è già TP-3000 (dal codice della taglia)
+                                    const currentSizeCode = cycleOps[cycleOps.length - 1].size?.code || '';
+                                    
                                     // TP-3000 significa un range da 19.001 a 32.000 animali/kg
                                     // Scegliamo 19.001 come valore di riferimento (animali più grandi in questa taglia)
                                     const targetWeight = 1000000 / 19001; // ~ 52,63 mg
                                     
-                                    // Se il peso attuale è già superiore al target, non mostrare la proiezione
-                                    if (currentWeight >= targetWeight) {
+                                    // Se il peso attuale è già superiore al target o la taglia è già TP-3000, non mostrare la proiezione
+                                    if (currentWeight >= targetWeight || currentSizeCode === 'TP-3000') {
                                       return (
                                         <div className="bg-emerald-50 p-2 rounded-md mt-1">
                                           <div className="text-emerald-600 flex items-center">
