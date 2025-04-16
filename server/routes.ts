@@ -74,6 +74,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint per ottenere ceste con dettagli completi dei FLUPSY
+  app.get("/api/baskets/with-flupsy-details", async (req, res) => {
+    try {
+      const baskets = await storage.getBaskets();
+      const flupsys = await storage.getFlupsys();
+      
+      // Arricchisce le ceste con i dettagli del FLUPSY
+      const basketsWithFlupsyDetails = baskets.map(basket => {
+        const flupsy = flupsys.find(f => f.id === basket.flupsyId);
+        return {
+          ...basket,
+          flupsyDetails: flupsy || null
+        };
+      });
+      
+      res.json(basketsWithFlupsyDetails);
+    } catch (error) {
+      console.error("Error fetching baskets with flupsy details:", error);
+      res.status(500).json({ message: "Failed to fetch baskets with flupsy details" });
+    }
+  });
+  
   // Endpoint per ottenere tutti i dettagli di un cestello incluse le informazioni correlate
   app.get("/api/baskets/details/:id?", async (req, res) => {
     try {

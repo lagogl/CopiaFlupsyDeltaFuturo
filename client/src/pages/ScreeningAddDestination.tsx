@@ -162,12 +162,6 @@ export default function ScreeningAddDestination() {
   const onSubmit = (values: FormValues) => {
     if (!screeningId) return;
     
-    // Calcola il peso medio se è fornito animalsPerKg
-    let averageWeight = null;
-    if (values.animalsPerKg && values.animalsPerKg > 0) {
-      averageWeight = 1000000 / values.animalsPerKg;
-    }
-    
     // Prepara i dati della cesta di destinazione
     const destinationBasketData: InsertScreeningDestinationBasket = {
       screeningId,
@@ -179,7 +173,6 @@ export default function ScreeningAddDestination() {
       animalCount: values.animalCount,
       totalWeight: values.totalWeight ? values.totalWeight * 1000 : null, // Conversione in grammi
       animalsPerKg: values.animalsPerKg,
-      averageWeight,
       sizeId: values.sizeId,
       notes: values.notes,
       positionAssigned: false,
@@ -336,14 +329,20 @@ export default function ScreeningAddDestination() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {availableBasketOptions.map((basket) => (
-                            <SelectItem 
-                              key={basket.id} 
-                              value={basket.id.toString()}
-                            >
-                              #{basket.physicalNumber} {basket.flupsyId ? `(Flupsy ${basket.flupsyId})` : ''} {basket.cycleCode ? `- ${basket.cycleCode}` : ''}
-                            </SelectItem>
-                          ))}
+                          {availableBasketOptions.map((basket) => {
+                            // Per trovare il nome del FLUPSY corrispondente
+                            const flupsyInfo = flupsys?.find(f => f.id === basket.flupsyId);
+                            const flupsyName = flupsyInfo ? flupsyInfo.name : `Flupsy ${basket.flupsyId}`;
+                            
+                            return (
+                              <SelectItem 
+                                key={basket.id} 
+                                value={basket.id.toString()}
+                              >
+                                #{basket.physicalNumber} {flupsyName ? `(${flupsyName})` : ''} {basket.cycleCode ? `- ${basket.cycleCode}` : ''}
+                              </SelectItem>
+                            );
+                          })}
                         </SelectContent>
                       </Select>
                       <FormDescription>
