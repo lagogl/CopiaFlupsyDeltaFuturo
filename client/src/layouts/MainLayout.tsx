@@ -177,7 +177,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         <aside
           className={`bg-white w-80 md:w-64 shadow-lg transition-all duration-300 ease-in-out overflow-y-auto scrollbar-hide ${
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
-          } fixed md:static h-[calc(100vh-60px)] z-40`}>
+          } fixed md:static h-[calc(100vh-60px)] z-40 ${!sidebarOpen ? "md:hidden" : ""}`}>
           <div className="flex justify-between items-center p-4 border-b">
             <h2 className="font-semibold text-lg">Menu</h2>
             {isMobile && (
@@ -243,7 +243,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </aside>
 
         {/* Main Content */}
-        <main className="flex-1 overflow-y-auto bg-gray-100 p-3 md:p-6 w-full">
+        <main className={`flex-1 overflow-y-auto bg-gray-100 p-3 md:p-6 ${sidebarOpen ? "md:ml-0" : "ml-0"} transition-all duration-300 w-full`}>
           <div className={`transition-all duration-300 ${isMobile && sidebarOpen ? 'opacity-50' : 'opacity-100'}`}>
             {children}
           </div>
