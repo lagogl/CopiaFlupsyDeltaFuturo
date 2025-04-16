@@ -25,7 +25,7 @@ if (!fs.existsSync(BACKUP_DIR)) {
 export interface BackupInfo {
   id: string;
   filename: string;
-  timestamp: Date;
+  timestamp: string; // Modifica: da Date a string (ISO format)
   size: number;
 }
 
@@ -81,7 +81,7 @@ export async function createDatabaseBackup(): Promise<BackupInfo> {
     const backupInfo: BackupInfo = {
       id: backupId,
       filename: filename,
-      timestamp: timestamp,
+      timestamp: timestamp.toISOString(), // Converti in stringa ISO
       size: stats.size
     };
     
@@ -214,17 +214,48 @@ export function getAvailableBackups(): BackupInfo[] {
         
         // Estrai l'ID e la data dal nome del file
         const matches = filename.match(/backup_(.+)_([a-f0-9]{8})\.sql/);
-        const dateStr = matches ? matches[1].replace(/-/g, ':') : '';
-        const id = matches ? matches[2] : randomUUID().substring(0, 8);
+        let id = matches ? matches[2] : randomUUID().substring(0, 8);
+        
+        // Estrai la data dalla stringa del nome file
+        let timestamp = stats.mtime; // Default a mtime
+        
+        if (matches && matches[1]) {
+          try {
+            // Converti il formato della data dal filename
+            // Da: "2025-04-16T12-46-21" a "2025-04-16T12:46:21"
+            const dateStr = matches[1].replace(/-/g, ':');
+            const dateObj = new Date(dateStr);
+            
+            // Verifica che la data sia valida
+            if (!isNaN(dateObj.getTime())) {
+              timestamp = dateObj;
+              console.log(`Data estratta dal filename: ${dateStr} -> ${dateObj.toISOString()}`);
+            } else {
+              console.warn(`Impossibile parsare la data dal filename: ${matches[1]}`);
+            }
+          } catch (e) {
+            console.error(`Errore nel parsing della data: ${e}`);
+          }
+        }
+        
+        // Converti la data in formato ISO per garantire coerenza
+        const isoTimestamp = timestamp.toISOString();
+        
+        console.log(`Backup info: id=${id}, filename=${filename}, timestamp=${isoTimestamp}`);
         
         return {
           id: id,
           filename: filename,
-          timestamp: dateStr ? new Date(dateStr) : stats.mtime,
+          timestamp: isoTimestamp, // Usa stringa ISO per garantire coerenza
           size: stats.size
         };
       })
-      .sort((a, b) => b.timestamp.getTime() - a.timestamp.getTime()); // Ordina per data decrescente
+      .sort((a, b) => {
+        // Converti le date in oggetti Date per il confronto
+        const dateA = new Date(a.timestamp);
+        const dateB = new Date(b.timestamp);
+        return dateB.getTime() - dateA.getTime(); // Ordina per data decrescente
+      });
     
     return backups;
   } catch (error) {
@@ -375,7 +406,9 @@ function cleanupOldBackups(daysToKeep: number): void {
     let deletedCount = 0;
     
     for (const backup of backups) {
-      if (backup.timestamp < cutoffDate) {
+      // Converti la stringa ISO in oggetto Date per il confronto
+      const backupDate = new Date(backup.timestamp);
+      if (backupDate < cutoffDate) {
         const filePath = path.join(BACKUP_DIR, backup.filename);
         fs.unlinkSync(filePath);
         deletedCount++;
