@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { differenceInDays, format } from 'date-fns';
 import { Brush } from 'lucide-react';
+import { getSizeColor } from '@/lib/getSizeColor';
 
 // Funzione per calcolare la luminosità di un colore
 const getLuminance = (hexColor: string): number => {
@@ -454,9 +455,6 @@ export default function BasketSelection() {
       header: 'Taglia',
       cell: (basket) => {
         if (!basket.size) return <span className="text-muted-foreground">-</span>;
-        
-        // Importa la funzione per ottenere il colore
-        const { getSizeColor } = require('@/lib/getSizeColor');
         
         // Ottieni colori basati sul codice taglia
         const colorClasses = getSizeColor(basket.size.code, 'full');
@@ -1327,8 +1325,7 @@ export default function BasketSelection() {
                   const size = sizes?.find(s => s.id === parseInt(sizeId));
                   if (!size) return null;
                   
-                  // Importa una volta sola in alto nel file, qui usalo direttamente
-                  const getSizeColor = require('@/lib/getSizeColor').getSizeColor;
+                  // Usa la funzione importata all'inizio del file
                   const colorClasses = getSizeColor(size.code, 'full');
                   
                   return (
