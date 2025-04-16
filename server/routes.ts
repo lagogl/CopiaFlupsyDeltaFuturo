@@ -1,7 +1,6 @@
 import type { Express, Request, Response } from "express";
 import { createServer, type Server } from "http";
 import { storage } from "./storage";
-import multer from 'multer';
 import path from 'path';
 import fs from 'fs';
 import { 
@@ -46,6 +45,18 @@ import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import configureWebSocketServer from "./websocket";
 import { implementDirectOperationRoute } from "./direct-operations";
+
+// Preparazione per la gestione dei file di backup
+const getBackupUploadDir = () => {
+  const uploadDir = path.join(process.cwd(), 'uploads/backups');
+  
+  // Assicurati che la directory esista
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  
+  return uploadDir;
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // Registra la route diretta per le operazioni
@@ -3841,10 +3852,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Carica e ripristina da un file (implementazione parziale senza multer)
   app.post("/api/database/restore", async (req, res) => {
-    // Questo endpoint richiederà multer per funzionare correttamente
-    res.status(501).json({
-      message: "Questa funzionalità richiede multer per il caricamento dei file. Per ora, utilizza il ripristino da backup online."
-    });
+    // Alternativa a multer per gestire l'upload dei file tramite base64
+    try {
+      const { sqlContent, fileName } = req.body;
+      
+      if (!sqlContent || !fileName) {
+        return res.status(400).json({
+          message: "È necessario fornire sia il contenuto SQL (base64) che il nome del file"
+        });
+      }
+      
+      // Verifica che il nome del file abbia l'estensione .sql
+      if (!fileName.toLowerCase().endsWith('.sql')) {
+        return res.status(400).json({
+          message: "Il file deve avere estensione .sql"
+        });
+      }
+      
+      // Decodifica il contenuto base64
+      const sqlBuffer = Buffer.from(sqlContent, 'base64');
+      
+      // Crea un nome di file univoco
+      const uniqueFilename = `uploaded-${Date.now()}-${Math.round(Math.random() * 1E9)}.sql`;
+      const uploadDir = getBackupUploadDir();
+      const filePath = path.join(uploadDir, uniqueFilename);
+      
+      // Salva il file
+      fs.writeFileSync(filePath, sqlBuffer);
+      
+      console.log(`File SQL caricato e salvato in: ${filePath}`);
+      
+      // Ripristina il database dal file caricato
+      const success = await restoreDatabaseFromUploadedFile(filePath);
+      
+      if (success) {
+        // Rimuovi il file temporaneo dopo il ripristino
+        try {
+          fs.unlinkSync(filePath);
+          console.log(`File temporaneo rimosso: ${filePath}`);
+        } catch (unlinkError) {
+          console.error("Errore durante la rimozione del file temporaneo:", unlinkError);
+        }
+        
+        return res.json({
+          success: true,
+          message: "Database ripristinato con successo dal file caricato"
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Si è verificato un errore durante il ripristino del database"
+        });
+      }
+    } catch (error) {
+      console.error("Errore durante il ripristino dal file caricato:", error);
+      return res.status(500).json({
+        success: false,
+        message: `Errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`
+      });
+    }
   });
   
   // Elimina un backup
