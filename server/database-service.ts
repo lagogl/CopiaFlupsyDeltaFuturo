@@ -49,18 +49,28 @@ export async function createDatabaseBackup(): Promise<BackupInfo> {
     const dbName = dbUrl.pathname.substring(1);
     
     // Comando pg_dump
-    const command = [
+    // Costruiamo le parti del comando solo se i valori sono presenti
+    const commandParts = [
       `PGPASSWORD="${dbPassword}" pg_dump`,
-      `-h ${dbHost}`,
-      // Assicurati che la porta sia specificata solo se presente
-      `${dbPort ? `-p ${dbPort}` : ''}`,
+      `-h ${dbHost}`
+    ];
+    
+    // Aggiungi parametro porta solo se disponibile
+    if (dbPort && dbPort.trim() !== '') {
+      commandParts.push(`-p ${dbPort}`);
+    }
+    
+    // Aggiungi il resto dei parametri
+    commandParts.push(
       `-U ${dbUser}`,
       `-d ${dbName}`,
       `-f "${filePath}"`,
       `--format=p`,
       `--no-owner`,
       `--no-acl`
-    ].join(' ');
+    );
+    
+    const command = commandParts.join(' ');
     
     // Esegui pg_dump
     console.log(`Avvio backup del database in: ${filePath}`);
@@ -104,15 +114,25 @@ export async function restoreDatabaseFromBackup(backupFilename: string): Promise
     const dbName = dbUrl.pathname.substring(1);
     
     // Comando psql
-    const command = [
+    // Costruiamo le parti del comando solo se i valori sono presenti
+    const commandParts = [
       `PGPASSWORD="${dbPassword}" psql`,
-      `-h ${dbHost}`,
-      // Assicurati che la porta sia specificata solo se presente
-      `${dbPort ? `-p ${dbPort}` : ''}`,
+      `-h ${dbHost}`
+    ];
+    
+    // Aggiungi parametro porta solo se disponibile
+    if (dbPort && dbPort.trim() !== '') {
+      commandParts.push(`-p ${dbPort}`);
+    }
+    
+    // Aggiungi il resto dei parametri
+    commandParts.push(
       `-U ${dbUser}`,
       `-d ${dbName}`,
       `-f "${backupPath}"`
-    ].join(' ');
+    );
+    
+    const command = commandParts.join(' ');
     
     console.log(`Avvio ripristino del database da: ${backupPath}`);
     await execPromise(command);
@@ -144,15 +164,25 @@ export async function restoreDatabaseFromUploadedFile(filePath: string): Promise
     const dbName = dbUrl.pathname.substring(1);
     
     // Comando psql
-    const command = [
+    // Costruiamo le parti del comando solo se i valori sono presenti
+    const commandParts = [
       `PGPASSWORD="${dbPassword}" psql`,
-      `-h ${dbHost}`,
-      // Assicurati che la porta sia specificata solo se presente
-      `${dbPort ? `-p ${dbPort}` : ''}`,
+      `-h ${dbHost}`
+    ];
+    
+    // Aggiungi parametro porta solo se disponibile
+    if (dbPort && dbPort.trim() !== '') {
+      commandParts.push(`-p ${dbPort}`);
+    }
+    
+    // Aggiungi il resto dei parametri
+    commandParts.push(
       `-U ${dbUser}`,
       `-d ${dbName}`,
       `-f "${filePath}"`
-    ].join(' ');
+    );
+    
+    const command = commandParts.join(' ');
     
     console.log(`Avvio ripristino del database da file caricato: ${filePath}`);
     await execPromise(command);
@@ -239,18 +269,28 @@ export async function generateFullDatabaseDump(): Promise<string> {
     const dbName = dbUrl.pathname.substring(1);
     
     // Comando pg_dump
-    const command = [
+    // Costruiamo le parti del comando solo se i valori sono presenti
+    const commandParts = [
       `PGPASSWORD="${dbPassword}" pg_dump`,
-      `-h ${dbHost}`,
-      // Assicurati che la porta sia specificata solo se presente
-      `${dbPort ? `-p ${dbPort}` : ''}`,
+      `-h ${dbHost}`
+    ];
+    
+    // Aggiungi parametro porta solo se disponibile
+    if (dbPort && dbPort.trim() !== '') {
+      commandParts.push(`-p ${dbPort}`);
+    }
+    
+    // Aggiungi il resto dei parametri
+    commandParts.push(
       `-U ${dbUser}`,
       `-d ${dbName}`,
       `-f "${tempFilePath}"`,
       `--format=p`,
       `--no-owner`,
       `--no-acl`
-    ].join(' ');
+    );
+    
+    const command = commandParts.join(' ');
     
     // Esegui pg_dump
     console.log(`Generazione dump completo del database in: ${tempFilePath}`);
