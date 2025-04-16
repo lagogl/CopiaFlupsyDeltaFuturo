@@ -31,7 +31,7 @@ export default function BackupPage() {
   // Mutation per ripristinare da file caricato
   const restoreFromFileMutation = useMutation({
     mutationFn: async ({ sqlContent, fileName }: { sqlContent: string, fileName: string }) => {
-      return apiRequest('/api/database/restore', { 
+      return apiRequest('/api/database/restore-file', { 
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'

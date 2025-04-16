@@ -3821,6 +3821,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint per il ripristino da file caricato (base64)
+  app.post("/api/database/restore", async (req, res) => {
+    try {
+      const { sqlContent, fileName } = req.body;
+      
+      if (!sqlContent) {
+        return res.status(400).json({ success: false, message: "Nessun contenuto SQL fornito" });
+      }
+      
+      // Decodifica il contenuto da base64
+      const sqlBuffer = Buffer.from(sqlContent, 'base64');
+      
+      // Crea una directory temporanea per il file SQL se non esiste
+      const uploadDir = path.join(__dirname, '../uploads');
+      if (!fs.existsSync(uploadDir)) {
+        fs.mkdirSync(uploadDir, { recursive: true });
+      }
+      
+      // Crea un nome file unico
+      const timestamp = Date.now();
+      const safeName = fileName.replace(/[^a-zA-Z0-9.-]/g, '_'); // Sanitizza il nome file
+      const filePath = path.join(uploadDir, `${timestamp}-${safeName}`);
+      
+      // Scrivi il file
+      fs.writeFileSync(filePath, sqlBuffer);
+      
+      console.log(`File SQL caricato e salvato in: ${filePath}`);
+      
+      // Ripristina il database dal file caricato usando la funzione esistente
+      const result = await restoreDatabaseFromBackup(filePath);
+      
+      if (result) {
+        // Rimuovi il file temporaneo dopo il ripristino
+        try {
+          fs.unlinkSync(filePath);
+          console.log(`File temporaneo rimosso: ${filePath}`);
+        } catch (unlinkError) {
+          console.error("Errore durante la rimozione del file temporaneo:", unlinkError);
+        }
+        
+        return res.json({
+          success: true,
+          message: "Database ripristinato con successo dal file caricato"
+        });
+      } else {
+        return res.status(500).json({
+          success: false,
+          message: "Si è verificato un errore durante il ripristino del database"
+        });
+      }
+    } catch (error) {
+      console.error("Errore durante il ripristino dal file caricato:", error);
+      return res.status(500).json({
+        success: false,
+        message: `Errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`
+      });
+    }
+  });
+  
   // Scarica un backup
   app.get("/api/database/download", async (req, res) => {
     try {
@@ -3850,8 +3909,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Carica e ripristina da un file (implementazione parziale senza multer)
-  app.post("/api/database/restore", async (req, res) => {
+  // Carica e ripristina da un file
+  app.post("/api/database/restore-file", async (req, res) => {
     // Alternativa a multer per gestire l'upload dei file tramite base64
     try {
       const { sqlContent, fileName } = req.body;
