@@ -5,7 +5,8 @@ import { it } from 'date-fns/locale';
 import { PieChart } from 'lucide-react';
 import { 
   ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, 
-  Legend, ResponsiveContainer, Cell 
+  Legend, ResponsiveContainer, Cell, BarChart, Bar,
+  AreaChart, Area, CartesianGrid, LabelList, Rectangle
 } from 'recharts';
 import {
   Card, CardContent, CardDescription, CardHeader, CardTitle
@@ -17,7 +18,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, FileDown, Calendar } from 'lucide-react';
+import { Loader2, FileDown, Calendar, BarChart2, Grid, LineChart } from 'lucide-react';
 
 // Tipo per i dati delle bolle nel grafico
 type ForecastBubble = {
@@ -233,103 +234,219 @@ export default function TP3000Forecast() {
                 </Card>
               </div>
               
-              {/* Grafico a bolle */}
-              <div className="h-[600px] w-full">
-                <ResponsiveContainer width="100%" height="100%">
-                  <ScatterChart
-                    margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
-                  >
-                    <XAxis 
-                      type="number" 
-                      dataKey="week" 
-                      name="Settimana" 
-                      domain={[0, timeRange]}
-                      tickFormatter={(value) => `S${value}`}
-                      label={{ value: 'Settimane', position: 'insideBottom', offset: -5 }}
-                    />
-                    <YAxis 
-                      type="category" 
-                      dataKey="yValue" 
-                      name={viewOption === "flupsy" ? "FLUPSY" : "Taglia"}
-                      width={120}
-                    />
-                    <ZAxis 
-                      type="number" 
-                      dataKey="value" 
-                      range={[100, 800]} 
-                      name="Animali"
-                    />
-                    <Tooltip 
-                      cursor={{ strokeDasharray: '3 3' }}
-                      content={({ active, payload }) => {
-                        if (active && payload && payload.length) {
-                          const data = payload[0].payload as ForecastBubble;
-                          return (
-                            <div className="bg-white p-3 border rounded shadow-lg">
-                              <p className="font-medium">{data.weekLabel}</p>
-                              <p className="text-sm">{data.dateRange}</p>
-                              <p className="font-medium mt-1">
-                                {viewOption === "flupsy" ? "FLUPSY:" : "Taglia:"} {data.yValue}
-                              </p>
-                              <p className="text-emerald-600 font-bold">
-                                {data.value.toLocaleString()} animali
-                              </p>
-                              <p className="text-sm mt-1">
-                                Progresso: {Math.round(data.progress)}% verso TP-3000
-                              </p>
-                              {data.currentSize && (
-                                <p className="text-xs mt-1">
-                                  Taglia attuale: {data.currentSize}
-                                </p>
-                              )}
-                            </div>
-                          );
-                        }
-                        return null;
-                      }}
-                    />
-                    <Scatter name="Previsione TP-3000" data={calculatedData.bubbleData}>
-                      {calculatedData.bubbleData.map((entry, index) => (
-                        <Cell 
-                          key={`cell-${index}`} 
-                          fill={getBubbleColor(entry.progress)} 
+              {/* Tab con diversi tipi di visualizzazione */}
+              <Tabs defaultValue="bars" className="w-full">
+                <TabsList className="mb-4 grid grid-cols-3 w-auto">
+                  <TabsTrigger value="bars" className="flex items-center">
+                    <BarChart2 className="h-4 w-4 mr-2" />
+                    Barre orizzontali
+                  </TabsTrigger>
+                  <TabsTrigger value="area" className="flex items-center">
+                    <LineChart className="h-4 w-4 mr-2" />
+                    Area impilata
+                  </TabsTrigger>
+                  <TabsTrigger value="heatmap" className="flex items-center">
+                    <Grid className="h-4 w-4 mr-2" />
+                    Mappa di calore
+                  </TabsTrigger>
+                </TabsList>
+                
+                {/* Visualizzazione a barre orizzontali */}
+                <TabsContent value="bars" className="mt-0">
+                  <div className="h-[600px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <BarChart
+                        layout="vertical"
+                        data={calculatedData.bubbleData}
+                        margin={{ top: 20, right: 30, bottom: 20, left: 120 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          type="number"
+                          domain={[0, timeRange]}
+                          label={{ value: 'Settimane', position: 'insideBottom', offset: -5 }}
                         />
-                      ))}
-                    </Scatter>
-                  </ScatterChart>
-                </ResponsiveContainer>
-              </div>
+                        <YAxis 
+                          type="category" 
+                          dataKey="yValue" 
+                          width={120}
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload as ForecastBubble;
+                              return (
+                                <div className="bg-white p-3 border rounded shadow-lg">
+                                  <p className="font-medium">{data.weekLabel}</p>
+                                  <p className="text-sm">{data.dateRange}</p>
+                                  <p className="font-medium mt-1">
+                                    {viewOption === "flupsy" ? "FLUPSY:" : "Taglia:"} {data.yValue}
+                                  </p>
+                                  <p className="text-emerald-600 font-bold">
+                                    {data.value.toLocaleString()} animali
+                                  </p>
+                                  <p className="text-sm mt-1">
+                                    Progresso: {Math.round(data.progress)}% verso TP-3000
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Bar 
+                          dataKey="week"
+                          fill="#3B82F6"
+                          barSize={30}
+                          radius={[0, 4, 4, 0]}
+                        >
+                          {calculatedData.bubbleData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={getBubbleColor(entry.progress)} 
+                            />
+                          ))}
+                          <LabelList dataKey="value" position="insideRight" fill="#ffffff" formatter={(value: any, entry: any) => 
+                            entry.value.toLocaleString()} />
+                        </Bar>
+                      </BarChart>
+                    </ResponsiveContainer>
+                  </div>
+                </TabsContent>
+                
+                {/* Visualizzazione ad area impilata */}
+                <TabsContent value="area" className="mt-0">
+                  <div className="h-[600px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <AreaChart
+                        data={calculatedData.bubbleData}
+                        margin={{ top: 20, right: 30, bottom: 20, left: 30 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          dataKey="week"
+                          type="number"
+                          domain={[0, timeRange]}
+                          tickFormatter={(value) => `S${value}`}
+                          label={{ value: 'Settimane', position: 'insideBottom', offset: -5 }}
+                        />
+                        <YAxis 
+                          label={{ value: 'Animali', angle: -90, position: 'insideLeft' }}
+                        />
+                        <Tooltip
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload as ForecastBubble;
+                              return (
+                                <div className="bg-white p-3 border rounded shadow-lg">
+                                  <p className="font-medium">{data.weekLabel}</p>
+                                  <p className="text-sm">{data.dateRange}</p>
+                                  <p className="font-medium mt-1">
+                                    {viewOption === "flupsy" ? "FLUPSY:" : "Taglia:"} {data.yValue}
+                                  </p>
+                                  <p className="text-emerald-600 font-bold">
+                                    {data.value.toLocaleString()} animali
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Area 
+                          type="monotone" 
+                          dataKey="value" 
+                          name="Animali"
+                          stroke="#3B82F6" 
+                          fill="#3B82F6"
+                          stackId="1"
+                        />
+                      </AreaChart>
+                    </ResponsiveContainer>
+                  </div>
+                </TabsContent>
+                
+                {/* Visualizzazione mappa di calore */}
+                <TabsContent value="heatmap" className="mt-0">
+                  <div className="h-[600px] w-full">
+                    <ResponsiveContainer width="100%" height="100%">
+                      <ScatterChart
+                        margin={{ top: 20, right: 20, bottom: 20, left: 120 }}
+                      >
+                        <CartesianGrid strokeDasharray="3 3" />
+                        <XAxis 
+                          type="number" 
+                          dataKey="week" 
+                          name="Settimana" 
+                          domain={[0, timeRange]}
+                          tickFormatter={(value) => `S${value}`}
+                          label={{ value: 'Settimane', position: 'insideBottom', offset: -5 }}
+                        />
+                        <YAxis 
+                          type="category" 
+                          dataKey="yValue" 
+                          name={viewOption === "flupsy" ? "FLUPSY" : "Taglia"}
+                          width={120}
+                        />
+                        <Tooltip 
+                          cursor={{ strokeDasharray: '3 3' }}
+                          content={({ active, payload }) => {
+                            if (active && payload && payload.length) {
+                              const data = payload[0].payload as ForecastBubble;
+                              return (
+                                <div className="bg-white p-3 border rounded shadow-lg">
+                                  <p className="font-medium">{data.weekLabel}</p>
+                                  <p className="text-sm">{data.dateRange}</p>
+                                  <p className="font-medium mt-1">
+                                    {viewOption === "flupsy" ? "FLUPSY:" : "Taglia:"} {data.yValue}
+                                  </p>
+                                  <p className="text-emerald-600 font-bold">
+                                    {data.value.toLocaleString()} animali
+                                  </p>
+                                  <p className="text-sm mt-1">
+                                    Progresso: {Math.round(data.progress)}% verso TP-3000
+                                  </p>
+                                </div>
+                              );
+                            }
+                            return null;
+                          }}
+                        />
+                        <Scatter 
+                          name="Previsione TP-3000" 
+                          data={calculatedData.bubbleData}
+                          shape={<Rectangle width={50} height={30} />}
+                        >
+                          {calculatedData.bubbleData.map((entry, index) => (
+                            <Cell 
+                              key={`cell-${index}`} 
+                              fill={getHeatMapColor(entry.progress, entry.value)}
+                            />
+                          ))}
+                        </Scatter>
+                      </ScatterChart>
+                    </ResponsiveContainer>
+                  </div>
+                </TabsContent>
+              </Tabs>
               
               {/* Legenda */}
               <div className="flex justify-center items-center space-x-6 py-2">
                 <div className="flex items-center">
-                  <div className="w-4 h-4 rounded-full bg-blue-100 mr-2"></div>
+                  <div className="w-4 h-4 rounded bg-blue-100 mr-2"></div>
                   <span className="text-xs">Lontano da TP-3000</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="w-4 h-4 rounded-full bg-blue-300 mr-2"></div>
+                  <div className="w-4 h-4 rounded bg-blue-300 mr-2"></div>
                   <span className="text-xs">50% del percorso</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="w-4 h-4 rounded-full bg-blue-500 mr-2"></div>
+                  <div className="w-4 h-4 rounded bg-blue-500 mr-2"></div>
                   <span className="text-xs">80% del percorso</span>
                 </div>
                 <div className="flex items-center">
-                  <div className="w-4 h-4 rounded-full bg-blue-700 mr-2"></div>
+                  <div className="w-4 h-4 rounded bg-blue-700 mr-2"></div>
                   <span className="text-xs">Vicino a TP-3000</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="flex items-center justify-center">
-                    <div className="w-6 h-6 rounded-full bg-blue-500"></div>
-                    <div className="w-10 h-10 rounded-full border-2 border-blue-500 absolute"></div>
-                  </div>
-                  <span className="text-xs ml-3">Pochi animali</span>
-                </div>
-                <div className="flex items-center">
-                  <div className="flex items-center justify-center">
-                    <div className="w-16 h-16 rounded-full bg-blue-500"></div>
-                  </div>
-                  <span className="text-xs ml-3">Molti animali</span>
                 </div>
               </div>
             </div>
@@ -347,6 +464,30 @@ function getBubbleColor(progress: number): string {
   if (progress >= 50) return '#60A5FA'; // blu medio
   if (progress >= 20) return '#93C5FD'; // blu chiaro
   return '#DBEAFE'; // blu molto chiaro
+}
+
+// Funzione per ottenere il colore nella mappa di calore in base al progresso e numero di animali
+function getHeatMapColor(progress: number, animalCount: number): string {
+  // Intensità del colore in base al numero di animali (0-1)
+  const countNormalized = Math.min(1, animalCount / 1000000);
+  const alpha = 0.3 + (countNormalized * 0.7); // Tra 0.3 e 1.0
+  
+  // Colore base in base al progresso
+  let r, g, b;
+  if (progress >= 90) {
+    [r, g, b] = [29, 78, 216]; // blu scuro
+  } else if (progress >= 80) {
+    [r, g, b] = [59, 130, 246]; // blu
+  } else if (progress >= 50) {
+    [r, g, b] = [96, 165, 250]; // blu medio
+  } else if (progress >= 20) {
+    [r, g, b] = [147, 197, 253]; // blu chiaro
+  } else {
+    [r, g, b] = [219, 234, 254]; // blu molto chiaro
+  }
+  
+  // Saturazione in base al numero di animali
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 // Custom hook per calcolare i dati del grafico a bolle
