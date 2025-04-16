@@ -173,7 +173,6 @@ export default function ScreeningAddDestination() {
       animalCount: values.animalCount,
       totalWeight: values.totalWeight ? values.totalWeight * 1000 : null, // Conversione in grammi
       animalsPerKg: values.animalsPerKg,
-      sizeId: values.sizeId,
       notes: values.notes,
       positionAssigned: false,
     };
@@ -330,9 +329,8 @@ export default function ScreeningAddDestination() {
                         </FormControl>
                         <SelectContent>
                           {availableBasketOptions.map((basket) => {
-                            // Per trovare il nome del FLUPSY corrispondente
-                            const flupsyInfo = flupsys?.find(f => f.id === basket.flupsyId);
-                            const flupsyName = flupsyInfo ? flupsyInfo.name : `Flupsy ${basket.flupsyId}`;
+                            // Usa i dettagli del FLUPSY incorporati
+                            const flupsyName = basket.flupsyDetails ? basket.flupsyDetails.name : `Flupsy ${basket.flupsyId}`;
                             
                             return (
                               <SelectItem 
