@@ -6,7 +6,7 @@ import {
   User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
   ChevronRight, LayoutDashboard, PieChart, BarChart, Filter,
-  FileJson, Download
+  FileJson, Download, Database
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 
@@ -130,7 +130,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       items: [
         { icon: <Tag className="h-5 w-5 mr-2 text-gray-600" />, label: "Gestione Tag NFC", path: "/nfc-tags" },
         { icon: <Scan className="h-5 w-5 mr-2 text-gray-600" />, label: "NFC Manager", path: "/nfc-manager" },
-        { icon: <SettingsIcon className="h-5 w-5 mr-2 text-gray-600" />, label: "Impostazioni", path: "/settings" }
+        { icon: <SettingsIcon className="h-5 w-5 mr-2 text-gray-600" />, label: "Impostazioni", path: "/settings" },
+        { icon: <Database className="h-5 w-5 mr-2 text-gray-600" />, label: "Backup Database", path: "/backup" }
       ]
     }
   ];

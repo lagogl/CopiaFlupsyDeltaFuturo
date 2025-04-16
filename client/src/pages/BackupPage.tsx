@@ -121,7 +121,7 @@ export default function BackupPage() {
   };
 
   return (
-    <MainLayout activeItem="backup">
+    <MainLayout>
       <Helmet>
         <title>Gestione Backup - Flupsy Manager</title>
       </Helmet>
