@@ -932,20 +932,41 @@ export default function Operations() {
                                           const now = new Date();
                                           const currentMonth = format(now, 'MMMM', { locale: it }).toLowerCase();
                                           
-                                          // Trova l'SGR giornaliero per il mese corrente
-                                          // I valori nel DB sono già percentuali di crescita giornaliera
-                                          let dailyRate = 1.0; // Valore predefinito dell'1% giornaliero
-                                          if (sgrs && sgrs.length > 0) {
-                                            const currentSgr = sgrs.find((sgr: any) => sgr.month.toLowerCase() === currentMonth);
-                                            if (currentSgr) {
-                                              dailyRate = currentSgr.percentage;
-                                            }
-                                          }
+                                          // Utilizziamo un calcolo più preciso che tiene conto dei tassi SGR variabili per mese
+                                          // Simuliamo la crescita giorno per giorno utilizzando il tasso SGR appropriato per ogni mese
+                                          let daysNeeded = 0;
+                                          let simulatedWeight = currentWeight;
+                                          let simulationDate = new Date(); // Data attuale
                                           
-                                          // Calcola i giorni necessari usando la formula corretta
-                                          // Wt = W0 * e^(SGR*t) => t = ln(Wt/W0) / SGR
-                                          // dove SGR è in forma decimale
-                                          const daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / (dailyRate/100));
+                                          // Assicuriamoci che abbiamo i dati SGR
+                                          if (sgrs && sgrs.length > 0) {
+                                            // Simuliamo fino a quando non raggiungiamo il peso target o un anno di simulazione
+                                            while (simulatedWeight < targetWeight && daysNeeded < 365) {
+                                              // Ottieni il mese corrente per la data di simulazione
+                                              const simMonth = format(simulationDate, 'MMMM', { locale: it }).toLowerCase();
+                                              
+                                              // Trova l'SGR per questo mese
+                                              const monthSgr = sgrs.find((sgr: any) => sgr.month.toLowerCase() === simMonth);
+                                              let dailyGrowthRate = 1.0; // Valore predefinito
+                                              
+                                              if (monthSgr) {
+                                                dailyGrowthRate = monthSgr.percentage / 100; // Converti in forma decimale
+                                              }
+                                              
+                                              // Calcola il nuovo peso con la formula: Wt = W0 * e^(SGR*t)
+                                              // Per un singolo giorno: W1 = W0 * e^(SGR*1)
+                                              // Versione semplificata: W1 = W0 * (1 + SGR)
+                                              simulatedWeight = simulatedWeight * (1 + dailyGrowthRate);
+                                              
+                                              // Incrementa la data di simulazione di un giorno
+                                              simulationDate = addDays(simulationDate, 1);
+                                              daysNeeded++;
+                                            }
+                                          } else {
+                                            // Fallback se non ci sono dati SGR: usa un tasso fisso di crescita
+                                            const fixedDailyRate = 0.037; // 3.7% al giorno
+                                            daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / fixedDailyRate);
+                                          }
                                           
                                           // Calcola la data stimata di raggiungimento
                                           const targetDate = addDays(now, daysNeeded);
