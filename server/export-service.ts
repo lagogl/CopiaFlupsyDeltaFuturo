@@ -1,112 +1,116 @@
-import { Lot, Size, Operation, Cycle } from '@shared/schema';
-import { format } from 'date-fns';
 import { IStorage } from './storage';
+import { format } from 'date-fns';
 
-/**
- * Interfaccia per la struttura del JSON di esportazione giacenze
- */
-interface ExportFormatoGiacenze {
+interface ExportOptions {
+  fornitore?: string;
+  dataEsportazione?: Date;
+}
+
+interface GiacenzaItem {
+  identificativo: string;
+  taglia: string;
+  quantita: number;
+  data_iniziale: string;
+  mg_vongola: number;
+}
+
+interface GiacenzeExport {
   data_importazione: string;
   fornitore: string;
-  giacenze: Array<{
-    identificativo: string;
-    taglia: string;
-    quantita: number;
-    data_iniziale: string;
-    mg_vongola: number;
-  }>;
+  giacenze: GiacenzaItem[];
 }
 
 /**
- * Genera un JSON con le giacenze nel formato specificato per l'importazione esterna
- * @param storage - Istanza dello storage per accedere ai dati
- * @param options - Opzioni di esportazione
- * @returns Promise con il JSON formattato per l'esportazione
+ * Genera il JSON per l'esportazione delle giacenze in formato standard
+ * 
+ * @param {IStorage} storage - L'interfaccia per interagire con il database
+ * @param {ExportOptions} options - Opzioni per l'esportazione
+ * @returns {Promise<GiacenzeExport>} JSON con i dati delle giacenze
  */
 export async function generateExportGiacenze(
   storage: IStorage,
-  options: {
-    fornitore?: string;
-    dataEsportazione?: Date;
-  } = {}
-): Promise<ExportFormatoGiacenze> {
-  // Utilizzare la data corrente se non specificata
-  const dataEsportazione = options.dataEsportazione || new Date();
+  options: ExportOptions = {}
+): Promise<GiacenzeExport> {
+  const {
+    fornitore = 'Flupsy Manager',
+    dataEsportazione = new Date()
+  } = options;
+
+  // Formato data YYYY-MM-DD
   const dataFormattata = format(dataEsportazione, 'yyyy-MM-dd');
   
-  // Recupera tutti i lotti attivi
-  const lotti = await storage.getActiveLots();
+  // Array per raccogliere le giacenze
+  const giacenze: GiacenzaItem[] = [];
   
-  // Recupera tutte le taglie disponibili
-  const taglie = await storage.getSizes();
-  
-  // Recupera tutti i cicli attivi
-  const cicli = await storage.getActiveCycles();
-  
-  // Per ogni ciclo attivo, recuperiamo l'ultima operazione per ottenere il peso attuale
-  const giacenze = await Promise.all(
-    cicli.map(async (ciclo) => {
-      // Recupera tutte le operazioni del ciclo
-      const operazioni = await storage.getOperationsByCycle(ciclo.id);
+  try {
+    // Recupera tutti i cicli attivi
+    const activeCycles = await storage.getActiveCycles();
+    
+    // Per ogni ciclo attivo, recupera i dati necessari
+    for (const cycle of activeCycles) {
+      // Recupera il cestello associato al ciclo
+      const basket = await storage.getBasket(cycle.basketId);
+      if (!basket) continue;
+
+      // Recupera il flupsy associato al cestello
+      const flupsy = basket.flupsyId ? await storage.getFlupsy(basket.flupsyId) : null;
+      if (!flupsy) continue;
       
-      // Ordina le operazioni per data (la più recente prima)
-      const operazioniOrdinate = operazioni.sort((a, b) => {
-        return new Date(b.date).getTime() - new Date(a.date).getTime();
-      });
+      // Recupera tutte le operazioni per questo cestello
+      const operations = await storage.getOperationsByBasket(basket.id);
+      if (operations.length === 0) continue;
       
-      // Trova l'ultima operazione che ha dati sul peso (tipo "peso" o "misura")
-      const ultimaOperazionePeso = operazioniOrdinate.find(op => 
-        (op.type === 'peso' || op.type === 'misura') && op.animalsPerKg
+      // Ordina le operazioni per data (più recente prima)
+      const sortedOps = operations.sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
       );
       
-      // Se non troviamo un'operazione con dati sul peso, saltiamo questo ciclo
-      if (!ultimaOperazionePeso || !ultimaOperazionePeso.animalsPerKg) {
-        return null;
-      }
+      // Trova l'ultima operazione con misurazione
+      const lastOperation = sortedOps.find(op => 
+        op.animalsPerKg !== null && op.animalsPerKg > 0
+      );
+      if (!lastOperation) continue;
       
-      // Recupera il lotto associato a questa operazione
-      const lotto = ultimaOperazionePeso.lotId 
-        ? await storage.getLot(ultimaOperazionePeso.lotId)
-        : null;
+      // Recupera la taglia associata all'operazione
+      const size = await storage.getSize(lastOperation.sizeId);
+      if (!size) continue;
       
-      // Se non troviamo il lotto, saltiamo questo ciclo
-      if (!lotto) {
-        return null;
-      }
+      // Recupera il lotto associato all'operazione
+      const lot = lastOperation.lotId ? await storage.getLot(lastOperation.lotId) : null;
       
-      // Recupera la taglia associata a questa operazione
-      const taglia = ultimaOperazionePeso.sizeId 
-        ? await storage.getSize(ultimaOperazionePeso.sizeId)
-        : null;
+      // Data iniziale del ciclo
+      const startDate = format(new Date(cycle.startDate), 'yyyy-MM-dd');
       
-      // Calcoliamo il peso medio in milligrammi
-      const pesoMedioMg = Math.round(1000000 / ultimaOperazionePeso.animalsPerKg);
+      // Calcola il peso medio della vongola in mg
+      const mgVongola = lastOperation.animalsPerKg ? 
+        Math.round(1000000 / lastOperation.animalsPerKg) : 0;
       
-      // Creiamo un identificativo univoco per il lotto
-      const identificativo = `LOTTO-${lotto.id.toString().padStart(3, '0')}`;
+      // Genera identificativo univoco (prefisso flupsy + codice ciclo)
+      const prefix = flupsy.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase();
+      const identifier = lot ? 
+        `${prefix}-${lot.code || 'L' + lot.id}` : 
+        `${prefix}-${cycle.id}`;
       
-      // Utilizziamo la data di arrivo del lotto come data iniziale
-      const dataIniziale = format(new Date(lotto.arrivalDate), 'yyyy-MM-dd');
-      
-      return {
-        identificativo,
-        taglia: taglia ? taglia.code : 'TP-UNKN',
-        quantita: ultimaOperazionePeso.animalCount || 0,
-        data_iniziale: dataIniziale,
-        mg_vongola: pesoMedioMg
-      };
-    })
-  );
-  
-  // Filtra eventuali cicli senza dati validi
-  const giacenzeFiltrate = giacenze.filter(g => g !== null) as Array<ExportFormatoGiacenze['giacenze'][0]>;
-  
-  // Assembla il risultato finale
-  const risultato: ExportFormatoGiacenze = {
-    data_importazione: dataFormattata,
-    fornitore: options.fornitore || 'Flupsy Manager', // Valore predefinito
-    giacenze: giacenzeFiltrate
-  };
-  
-  return risultato;
+      // Aggiungi all'array delle giacenze
+      giacenze.push({
+        identificativo: identifier,
+        taglia: size.code,
+        quantita: lastOperation.animalCount || 0,
+        data_iniziale: startDate,
+        mg_vongola: mgVongola
+      });
+    }
+    
+    // Costruisci l'oggetto finale
+    const result: GiacenzeExport = {
+      data_importazione: dataFormattata,
+      fornitore: fornitore,
+      giacenze: giacenze
+    };
+    
+    return result;
+  } catch (error) {
+    console.error('Errore durante la generazione del JSON per le giacenze:', error);
+    throw new Error(`Errore durante l'esportazione: ${(error as Error).message}`);
+  }
 }

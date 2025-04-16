@@ -28,6 +28,7 @@ import NFCScan from "@/pages/NFCScan";
 import NFCTagManager from "@/pages/NFCTagManager";
 import GrowJourney from "@/pages/GrowJourney";
 import BasketSelection from "@/pages/BasketSelection";
+import ExportPage from "@/pages/ExportPage";
 // Importiamo la nuova pagina per la gestione avanzata di NFC
 import NfcManagerPage from "@/nfc-features/pages/NfcManagerPage";
 // Importiamo le pagine per il modulo di vagliatura
@@ -63,6 +64,7 @@ function Router() {
       <Route path="/lots" component={Lots}/>
       <Route path="/statistics" component={Statistics}/>
       <Route path="/inventory" component={Inventory}/>
+      <Route path="/export" component={ExportPage}/>
       <Route path="/sizes" component={Sizes}/>
       <Route path="/sgr" component={Sgr}/>
       <Route path="/settings" component={Settings}/>
