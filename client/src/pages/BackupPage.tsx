@@ -234,7 +234,7 @@ export default function BackupPage() {
   };
 
   return (
-    <MainLayout>
+    <div className="w-full">
       <Helmet>
         <title>Gestione Backup - Flupsy Manager</title>
       </Helmet>
@@ -645,6 +645,6 @@ export default function BackupPage() {
           </TabsContent>
         </Tabs>
       </div>
-    </MainLayout>
+    </div>
   );
 }
