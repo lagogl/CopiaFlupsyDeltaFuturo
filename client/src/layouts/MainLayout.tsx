@@ -37,7 +37,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [location, setLocation] = useLocation();
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    'dashboard': true,
     'operational': true,
     'monitoring': true,
     'inventory': true,
@@ -73,20 +72,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
   // Definizione delle categorie e delle relative voci di menu
   const navCategories: NavCategory[] = [
     {
-      id: 'dashboard',
-      label: 'DASHBOARD',
-      icon: <Home className="h-6 w-6" />,
-      color: 'text-primary',
-      items: [
-        { icon: <Home className="h-6 w-6 mr-2 text-primary" />, label: "Dashboard", path: "/" },
-      ]
-    },
-    {
       id: 'operational',
       label: 'GESTIONE OPERATIVA',
       icon: <LayoutDashboard className="h-5 w-5" />,
       color: 'text-blue-600',
       items: [
+        { icon: <Home className="h-6 w-6 mr-2 text-black font-bold" />, label: "Dashboard", path: "/" },
         { icon: <Package2 className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Lotti", path: "/lots" },
         { icon: <Package className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Ceste", path: "/baskets" },
         { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Posizioni", path: "/flupsy-positions" },
@@ -203,14 +194,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <div key={category.id} className="space-y-1">
                 {/* Header della categoria */}
                 <div 
-                  className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer ${category.color} hover:bg-gray-100 transition-colors ${category.id === 'dashboard' ? 'bg-primary-50 border border-primary-200' : ''}`}
+                  className={`flex items-center justify-between px-3 py-2 rounded-md cursor-pointer ${category.color} hover:bg-gray-100 transition-colors`}
                   onClick={() => toggleCategory(category.id)}
                 >
                   <div className="flex items-center">
                     <div className={`p-1 rounded-md mr-2 ${category.color.replace('text-', 'bg-').replace('600', '100')}`}>
                       {category.icon}
                     </div>
-                    <span className={`font-medium ${category.id === 'dashboard' ? 'text-base font-bold' : 'text-sm'}`}>{category.label}</span>
+                    <span className="font-medium text-sm">{category.label}</span>
                   </div>
                   {expandedCategories[category.id] ? 
                     <ChevronDown className="h-4 w-4" /> : 
@@ -230,8 +221,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
                         }}
                         href={item.path}
                         className={`flex items-center p-2 rounded-md hover:bg-gray-100 transition-colors cursor-pointer ${
-                          category.id === 'dashboard' 
-                            ? 'text-base font-bold bg-primary-100 hover:bg-primary-200 text-primary' 
+                          item.path === '/' 
+                            ? 'text-base font-bold bg-gray-100 hover:bg-gray-200 text-black' 
                             : `text-sm ${
                                 isActive(item.path) 
                                   ? `bg-${category.color.split('-')[1]}-50 ${category.color} font-medium` 
