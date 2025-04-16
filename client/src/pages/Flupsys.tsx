@@ -209,12 +209,20 @@ export default function Flupsys() {
                 )}
                 <Separator className="my-4" />
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <a href={`/baskets?flupsyId=${flupsy.id}`} className="text-primary hover:underline">
+                  <Link 
+                    href="/baskets" 
+                    onClick={() => localStorage.setItem('selectedFlupsyId', String(flupsy.id))}
+                    className="text-primary hover:underline"
+                  >
                     Visualizza Cestelli
-                  </a>
-                  <a href={`/cycles?flupsyId=${flupsy.id}`} className="text-primary hover:underline">
+                  </Link>
+                  <Link 
+                    href="/cycles" 
+                    onClick={() => localStorage.setItem('selectedCycleFlupsyId', String(flupsy.id))}
+                    className="text-primary hover:underline"
+                  >
                     Visualizza Cicli
-                  </a>
+                  </Link>
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 flex justify-between">

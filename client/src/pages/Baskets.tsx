@@ -30,17 +30,24 @@ export default function Baskets() {
   const [location] = useLocation();
   const [urlParamsLoaded, setUrlParamsLoaded] = useState(false);
   
-  // Extract flupsyId from URL if present
+  // Carica il flupsyId dal localStorage (impostato dalla pagina Flupsys)
   useEffect(() => {
-    // Analizza i parametri dell'URL
-    const params = new URLSearchParams(location.split('?')[1] || '');
-    const flupsyIdParam = params.get('flupsyId');
+    const savedFlupsyId = localStorage.getItem('selectedFlupsyId');
     
-    if (flupsyIdParam) {
-      console.log("Setting flupsyFilter from URL:", flupsyIdParam);
-      setFlupsyFilter(flupsyIdParam);
-      // Marca come caricato solo se c'è un parametro
-      setUrlParamsLoaded(true);
+    if (savedFlupsyId) {
+      console.log("Impostazione filtro FLUPSY da localStorage:", savedFlupsyId);
+      setFlupsyFilter(savedFlupsyId);
+      // Rimuovi l'ID dopo averlo utilizzato per evitare che persista tra le navigazioni
+      localStorage.removeItem('selectedFlupsyId');
+    } else {
+      // Analizza i parametri dell'URL come fallback
+      const params = new URLSearchParams(location.split('?')[1] || '');
+      const flupsyIdParam = params.get('flupsyId');
+      
+      if (flupsyIdParam) {
+        console.log("Impostazione filtro FLUPSY da URL:", flupsyIdParam);
+        setFlupsyFilter(flupsyIdParam);
+      }
     }
   }, [location]);
   
