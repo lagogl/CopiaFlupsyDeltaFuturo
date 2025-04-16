@@ -5,6 +5,7 @@ import {
   Eye, Copy, Download, Plus, Filter, Upload, Pencil, Search, Waves,
   Trash2, AlertTriangle, History, MapPin, Info
 } from 'lucide-react';
+import { getSizeBadgeStyle } from '@/lib/sizeUtils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -356,18 +357,14 @@ export default function Baskets() {
                         {basket.size ? (
                           <div className="flex flex-col">
                             <Badge 
-                              style={{ 
-                                backgroundColor: basket.size.color ? `${basket.size.color}20` : '#e5e7eb',
-                                color: basket.size.color || '#1f2937',
-                                borderColor: basket.size.color ? `${basket.size.color}70` : '#d1d5db',
-                                borderWidth: '1px'
-                              }}
+                              className="size-badge"
+                              style={getSizeBadgeStyle(basket.size.code)}
                             >
                               {basket.size.code}
                             </Badge>
                             {basket.animalCount && (
                               <span className="text-xs text-muted-foreground mt-1">
-                                {basket.animalCount.toLocaleString('it-IT')} animali
+                                <span className="font-bold">{basket.animalCount.toLocaleString('it-IT')}</span> animali
                               </span>
                             )}
                           </div>
