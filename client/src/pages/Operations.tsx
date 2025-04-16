@@ -794,23 +794,61 @@ export default function Operations() {
                           </div>
                           <div>
                             <h3 className="text-lg font-semibold">Ciclo #{cycleId}</h3>
-                            <p className="text-sm text-gray-500">
-                              Cesta #{basket?.physicalNumber || '?'}
-                              {basket?.row && basket?.position && (
-                                <span className="text-indigo-600"> [Pos: {basket.row} - {basket.position}]</span>
-                              )} • 
-                              {cycle?.state === 'active' ? (
-                                <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-medium">Attivo</Badge>
-                              ) : (
-                                <Badge className="bg-red-100 text-red-800 hover:bg-red-200 font-medium">Chiuso</Badge>
-                              )} • 
-                              {cycle && 
-                                ` Inizio: ${format(new Date(cycle.startDate), 'dd/MM/yyyy')}`
-                              }
-                              {cycle && cycle.endDate && 
-                                ` • Fine: ${format(new Date(cycle.endDate), 'dd/MM/yyyy')}`
-                              }
-                            </p>
+                            <div className="space-y-1">
+                              <p className="text-sm">
+                                <span className="text-gray-500">Cesta #{basket?.physicalNumber || '?'}</span>
+                                {basket?.row && basket?.position && (
+                                  <span className="text-indigo-600 ml-1 font-medium">[Pos: {basket.row} - {basket.position}]</span>
+                                )}
+                                <span className="mx-2">•</span>
+                                {cycle?.state === 'active' ? (
+                                  <Badge className="bg-emerald-100 text-emerald-800 hover:bg-emerald-200 font-medium">Attivo</Badge>
+                                ) : (
+                                  <Badge className="bg-red-100 text-red-800 hover:bg-red-200 font-medium">Chiuso</Badge>
+                                )}
+                              </p>
+                              
+                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                                <div>
+                                  <span className="text-gray-500">FLUPSY:</span>
+                                  <span className="font-medium ml-1 text-gray-700">{basket?.flupsy?.name || 'N/D'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Lotto:</span>
+                                  <span className="font-medium ml-1 text-gray-700">
+                                    {cycleOps.length > 0 && cycleOps[0].lot ? cycleOps[0].lot.name : 'N/D'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Ultima taglia:</span>
+                                  <span className="font-medium ml-1 text-gray-700">
+                                    {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].size ? cycleOps[cycleOps.length - 1].size.code : 'N/D'}
+                                  </span>
+                                </div>
+                                <div>
+                                  <span className="text-gray-500">Inizio:</span>
+                                  <span className="font-medium ml-1 text-gray-700">
+                                    {cycle && format(new Date(cycle.startDate), 'dd/MM/yyyy')}
+                                  </span>
+                                </div>
+                                {cycle && cycle.endDate && (
+                                  <div>
+                                    <span className="text-gray-500">Fine:</span>
+                                    <span className="font-medium ml-1 text-gray-700">
+                                      {format(new Date(cycle.endDate), 'dd/MM/yyyy')}
+                                    </span>
+                                  </div>
+                                )}
+                                <div>
+                                  <span className="text-gray-500">Animali:</span>
+                                  <span className="font-medium ml-1 text-gray-700">
+                                    {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].animalCount 
+                                      ? cycleOps[cycleOps.length - 1].animalCount.toLocaleString() 
+                                      : 'N/D'}
+                                  </span>
+                                </div>
+                              </div>
+                            </div>
                           </div>
                         </div>
                         <div className="flex items-center">
