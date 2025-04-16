@@ -820,18 +820,37 @@ export default function Operations() {
                                   </span>
                                 </div>
                                 
-                                {/* Durata del ciclo */}
+                                {/* Durata del ciclo con sparkline */}
                                 <div>
                                   <span className="text-gray-500">Durata:</span>
-                                  <span className="font-medium ml-1 text-gray-700">
+                                  <div className="font-medium text-gray-700 flex items-center mt-1">
                                     {cycle && (() => {
                                       const startDate = new Date(cycle.startDate);
                                       const endDate = cycle.endDate ? new Date(cycle.endDate) : new Date();
                                       const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
                                       const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                      return `${diffDays} giorni${cycle.endDate ? '' : ' (in corso)'}`;
+                                      
+                                      // Crea una mini-sparkline con CSS per rappresentare la durata
+                                      const maxDays = 120; // Durata massima prevista per un ciclo
+                                      const percentage = Math.min(diffDays / maxDays * 100, 100);
+                                      
+                                      return (
+                                        <>
+                                          <span className="mr-2">{diffDays} giorni{cycle.endDate ? '' : ' (in corso)'}</span>
+                                          <div className="h-2 bg-gray-200 rounded-full w-16 flex-shrink-0">
+                                            <div 
+                                              className={`h-full rounded-full ${
+                                                percentage < 30 ? 'bg-blue-400' : 
+                                                percentage < 60 ? 'bg-green-400' : 
+                                                percentage < 90 ? 'bg-yellow-400' : 'bg-red-400'
+                                              }`}
+                                              style={{ width: `${percentage}%` }}
+                                            />
+                                          </div>
+                                        </>
+                                      );
                                     })()}
-                                  </span>
+                                  </div>
                                 </div>
                                 
                                 <div>
@@ -857,23 +876,38 @@ export default function Operations() {
                                   </div>
                                 )}
                                 
+                                {/* Taglia iniziale */}
+                                <div>
+                                  <span className="text-gray-500">Taglia iniziale:</span>
+                                  <span className="font-medium ml-1 text-gray-700 flex items-center">
+                                    {cycleOps.length > 0 && cycleOps[0].size ? (
+                                      <>
+                                        <span className="mr-1">{cycleOps[0].size.code}</span>
+                                        {cycleOps[0].animalsPerKg && (
+                                          <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
+                                            {Math.round(1000000 / cycleOps[0].animalsPerKg)} mg
+                                          </span>
+                                        )}
+                                      </>
+                                    ) : 'N/D'}
+                                  </span>
+                                </div>
+                                
                                 {/* Ultima taglia e peso medio */}
                                 <div>
-                                  <div className="flex items-center">
-                                    <span className="text-gray-500">Taglia:</span>
-                                    <span className="font-medium ml-1 text-gray-700 flex items-center">
-                                      {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].size ? (
-                                        <>
-                                          <span className="mr-1">{cycleOps[cycleOps.length - 1].size.code}</span>
-                                          {cycleOps[cycleOps.length - 1].animalsPerKg && (
-                                            <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-                                              {Math.round(1000000 / cycleOps[cycleOps.length - 1].animalsPerKg)} mg
-                                            </span>
-                                          )}
-                                        </>
-                                      ) : 'N/D'}
-                                    </span>
-                                  </div>
+                                  <span className="text-gray-500">Taglia attuale:</span>
+                                  <span className="font-medium ml-1 text-gray-700 flex items-center">
+                                    {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].size ? (
+                                      <>
+                                        <span className="mr-1">{cycleOps[cycleOps.length - 1].size.code}</span>
+                                        {cycleOps[cycleOps.length - 1].animalsPerKg && (
+                                          <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
+                                            {Math.round(1000000 / cycleOps[cycleOps.length - 1].animalsPerKg)} mg
+                                          </span>
+                                        )}
+                                      </>
+                                    ) : 'N/D'}
+                                  </span>
                                 </div>
                                 
                                 <div>
