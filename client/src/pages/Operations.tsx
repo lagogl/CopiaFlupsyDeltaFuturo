@@ -1007,8 +1007,9 @@ export default function Operations() {
                                     const currentSizeCode = cycleOps[cycleOps.length - 1].size?.code || '';
                                     
                                     // TP-3000 significa un range da 19.001 a 32.000 animali/kg
-                                    // Scegliamo 19.001 come valore di riferimento (animali più grandi in questa taglia)
-                                    const targetWeight = 1000000 / 19001; // ~ 52,63 mg
+                                    // Utilizziamo 32.000 come valore di riferimento (limite inferiore della categoria TP-3000)
+                                    // poiché rappresenta il valore minimo per entrare nella categoria
+                                    const targetWeight = 1000000 / 32000; // ~ 31,25 mg
                                     
                                     // Se il peso attuale è già superiore al target o la taglia è già TP-3000, non mostrare la proiezione
                                     if (currentWeight >= targetWeight || currentSizeCode === 'TP-3000') {
@@ -1045,8 +1046,9 @@ export default function Operations() {
                                           dailyGrowthRate = monthSgr.percentage / 100; // Converti in forma decimale
                                         }
                                         
-                                        // Versione semplificata: W1 = W0 * (1 + SGR)
-                                        simulatedWeight = simulatedWeight * (1 + dailyGrowthRate);
+                                        // Versione corretta che applica l'incremento giornaliero: W1 = W0 * (1 + (SGR/100))
+                                        // dailyGrowthRate è già in forma decimale (es. 0.037 per 3.7%)
+                                        simulatedWeight = simulatedWeight * (1 + (dailyGrowthRate / 100));
                                         
                                         // Incrementa la data di simulazione di un giorno
                                         simulationDate = addDays(simulationDate, 1);
@@ -1054,8 +1056,9 @@ export default function Operations() {
                                       }
                                     } else {
                                       // Fallback se non ci sono dati SGR: usa un tasso fisso di crescita
-                                      const fixedDailyRate = 0.037; // 3.7% al giorno
-                                      daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / fixedDailyRate);
+                                      const fixedDailyRate = 3.7; // 3.7% al giorno
+                                      // Formula logaritmica corretta quando il tasso è in percentuale: ln(W1/W0) / ln(1 + (SGR/100))
+                                      daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / Math.log(1 + (fixedDailyRate/100)));
                                     }
                                     
                                     // Calcola la data stimata di raggiungimento
