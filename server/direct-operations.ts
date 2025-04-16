@@ -147,8 +147,90 @@ export function implementDirectOperationRoute(app: Express) {
           
           return res.status(201).json(newOperation[0]);
         });
+      } else if (operationData.type === 'vendita' || operationData.type === 'selezione-vendita' || operationData.type === 'cessazione') {
+        console.log(`Rilevata operazione di CHIUSURA CICLO: ${operationData.type} - Esecuzione flusso speciale`);
+        
+        // Per operazioni standard, il cycleId deve essere fornito
+        if (!operationData.cycleId) {
+          // Tenta di recuperare il ciclo attivo del cestello
+          if (basket[0].currentCycleId) {
+            operationData.cycleId = basket[0].currentCycleId;
+            console.log(`Recuperato automaticamente cycleId ${operationData.cycleId} dal cestello`);
+          } else {
+            throw new Error("cycleId è obbligatorio per operazioni che non sono di prima attivazione");
+          }
+        }
+        
+        // Verifica che il ciclo sia attivo
+        const cycle = await db.select().from(cycles).where(eq(cycles.id, operationData.cycleId)).limit(1);
+        if (!cycle || cycle.length === 0) {
+          throw new Error(`Ciclo con ID ${operationData.cycleId} non trovato`);
+        }
+        
+        if (cycle[0].state === 'closed') {
+          throw new Error("Non è possibile aggiungere un'operazione di chiusura a un ciclo già chiuso");
+        }
+        
+        // TRANSAZIONE: Crea l'operazione, chiudi il ciclo e aggiorna lo stato del cestello
+        return await db.transaction(async (tx) => {
+          // 1. Inserisci l'operazione
+          console.log("Inserimento operazione di chiusura ciclo...");
+          const newOperation = await tx.insert(operations).values(operationData).returning();
+          if (!newOperation || newOperation.length === 0) {
+            throw new Error("Impossibile creare l'operazione");
+          }
+          
+          console.log("Operazione creata con successo:", newOperation[0]);
+          
+          // 2. Chiudi il ciclo
+          console.log("Chiusura ciclo...");
+          const updatedCycle = await tx.update(cycles)
+            .set({ 
+              state: 'closed',
+              endDate: operationData.date
+            })
+            .where(eq(cycles.id, operationData.cycleId))
+            .returning();
+          
+          console.log("Ciclo chiuso:", updatedCycle[0]);
+          
+          // 3. Aggiorna lo stato del cestello
+          console.log("Aggiornamento stato cestello...");
+          const updatedBasket = await tx.update(baskets)
+            .set({ 
+              state: 'available',
+              currentCycleId: null,
+              cycleCode: null
+            })
+            .where(eq(baskets.id, operationData.basketId))
+            .returning();
+          
+          console.log("Cestello aggiornato:", updatedBasket[0]);
+          
+          // 4. Notifica via WebSocket
+          if (typeof (global as any).broadcastUpdate === 'function') {
+            try {
+              console.log("Invio notifica WebSocket per operazione di chiusura");
+              (global as any).broadcastUpdate('operation_created', {
+                operation: newOperation[0],
+                message: `Nuova operazione di tipo ${newOperation[0].type} registrata`
+              });
+              
+              (global as any).broadcastUpdate('cycle_closed', {
+                cycleId: operationData.cycleId,
+                basketId: operationData.basketId,
+                message: `Ciclo ${operationData.cycleId} chiuso per il cestello ${operationData.basketId}`
+              });
+            } catch (wsError) {
+              console.error("Errore nell'invio della notifica WebSocket:", wsError);
+            }
+          }
+          
+          console.log("============= DIRECT OPERATION ROUTE END =============");
+          return res.status(201).json(newOperation[0]);
+        });
       } else {
-        console.log("Operazione standard (non prima attivazione) - Verifica il cycleId...");
+        console.log("Operazione standard - Verifica il cycleId...");
         
         // Per operazioni standard, il cycleId deve essere fornito
         if (!operationData.cycleId) {
