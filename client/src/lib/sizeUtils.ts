@@ -14,29 +14,29 @@ export function getSizeColor(sizeCode: string): string {
   // Estrai il numero dalla taglia
   const sizeNum = parseInt(sizeCode.replace('TP-', ''));
   
-  // Assegna colori in base alla gamma di dimensioni - più il numero è basso (taglia più grande), più il colore è verde
-  if (sizeNum <= 500) {
-    return '#22c55e'; // green-500 - più verde per i numeri più bassi (animali più grandi)
-  } else if (sizeNum <= 1000) {
+  // Assegna colori in base alla gamma di dimensioni - più il numero è alto (taglia più piccola), più è verde
+  if (sizeNum >= 10000) {
+    return '#22c55e'; // green-500 - più verde per i numeri più alti
+  } else if (sizeNum >= 8000) {
+    return '#16a34a'; // green-600
+  } else if (sizeNum >= 6000) {
     return '#84cc16'; // lime-500
-  } else if (sizeNum <= 2000) {
+  } else if (sizeNum >= 4000) {
     return '#65a30d'; // lime-600
-  } else if (sizeNum <= 3000) {
-    return '#f59e0b'; // amber-500
-  } else if (sizeNum <= 4000) {
-    return '#f97316'; // orange-500
-  } else if (sizeNum <= 6000) {
+  } else if (sizeNum >= 3000) {
+    return '#22c55e'; // green-500
+  } else if (sizeNum >= 2000) {
     return '#fb923c'; // orange-400
-  } else if (sizeNum <= 7000) {
+  } else if (sizeNum >= 1000) {
+    return '#f97316'; // orange-500
+  } else if (sizeNum >= 800) {
     return '#f43f5e'; // rose-500
-  } else if (sizeNum <= 8000) {
-    return '#ec4899'; // pink-500
-  } else if (sizeNum <= 9000) {
+  } else if (sizeNum >= 500) {
     return '#ef4444'; // red-500
-  } else if (sizeNum <= 10000) {
+  } else if (sizeNum >= 300) {
     return '#dc2626'; // red-600
   } else {
-    return '#b91c1c'; // red-700 - più rosso per i numeri più alti (animali più piccoli)
+    return '#b91c1c'; // red-700 - più rosso per i numeri più bassi
   }
 }
 
@@ -66,26 +66,26 @@ export function getSizeBadgeClass(sizeCode: string): string {
   
   const sizeNum = parseInt(sizeCode.replace('TP-', ''));
   
-  // Numero più basso (seme più grande) = più verde; numero più alto (seme più piccolo) = più rosso
-  if (sizeNum <= 500) {
+  // Numero più alto (taglia più piccola) = più verde; numero più basso (taglia più grande) = più rosso
+  if (sizeNum >= 10000) {
     return 'bg-green-100 text-green-800 border-green-300';
-  } else if (sizeNum <= 1000) {
+  } else if (sizeNum >= 8000) {
+    return 'bg-green-100 text-green-700 border-green-300';
+  } else if (sizeNum >= 6000) {
     return 'bg-lime-100 text-lime-800 border-lime-300';
-  } else if (sizeNum <= 2000) {
+  } else if (sizeNum >= 4000) {
     return 'bg-lime-100 text-lime-700 border-lime-300';
-  } else if (sizeNum <= 3000) {
+  } else if (sizeNum >= 3000) {
+    return 'bg-green-100 text-green-700 border-green-300';
+  } else if (sizeNum >= 2000) {
     return 'bg-amber-100 text-amber-800 border-amber-300';
-  } else if (sizeNum <= 4000) {
+  } else if (sizeNum >= 1000) {
     return 'bg-orange-100 text-orange-800 border-orange-300';
-  } else if (sizeNum <= 6000) {
-    return 'bg-orange-100 text-orange-700 border-orange-300';
-  } else if (sizeNum <= 7000) {
+  } else if (sizeNum >= 800) {
     return 'bg-rose-100 text-rose-800 border-rose-300';
-  } else if (sizeNum <= 8000) {
-    return 'bg-pink-100 text-pink-800 border-pink-300';
-  } else if (sizeNum <= 9000) {
+  } else if (sizeNum >= 500) {
     return 'bg-red-100 text-red-800 border-red-300';
-  } else if (sizeNum <= 10000) {
+  } else if (sizeNum >= 300) {
     return 'bg-red-100 text-red-700 border-red-300';
   } else {
     return 'bg-red-100 text-red-900 border-red-400';
