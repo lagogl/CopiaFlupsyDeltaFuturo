@@ -462,8 +462,11 @@ export default function BasketSelection() {
               backgroundColor: isLargerThanTP10000 ? '#000000' : basket.size.colorHex,
               color: '#ffffff',
               fontWeight: 'bold',
-              textShadow: '0px 0px 2px rgba(0,0,0,0.7)',
-              borderColor: basket.size.colorHex
+              textShadow: '0px 0px 3px rgba(0,0,0,0.9)',
+              borderColor: isLargerThanTP10000 ? '#333333' : basket.size.colorHex,
+              border: '2px solid',
+              padding: '2px 8px',
+              letterSpacing: '0.5px'
             }}
           >
             {isLargerThanTP10000 ? '+TP-10000' : basket.size.code}
