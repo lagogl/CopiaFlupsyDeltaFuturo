@@ -234,7 +234,7 @@ export default function TP3000Forecast() {
               </div>
               
               {/* Grafico a bolle */}
-              <div className="h-[500px] w-full">
+              <div className="h-[600px] w-full">
                 <ResponsiveContainer width="100%" height="100%">
                   <ScatterChart
                     margin={{ top: 20, right: 20, bottom: 20, left: 20 }}
@@ -256,7 +256,7 @@ export default function TP3000Forecast() {
                     <ZAxis 
                       type="number" 
                       dataKey="value" 
-                      range={[50, 400]} 
+                      range={[100, 800]} 
                       name="Animali"
                     />
                     <Tooltip 
@@ -320,14 +320,14 @@ export default function TP3000Forecast() {
                 </div>
                 <div className="flex items-center">
                   <div className="flex items-center justify-center">
-                    <div className="w-3 h-3 rounded-full bg-blue-500"></div>
-                    <div className="w-6 h-6 rounded-full border-2 border-blue-500 absolute"></div>
+                    <div className="w-6 h-6 rounded-full bg-blue-500"></div>
+                    <div className="w-10 h-10 rounded-full border-2 border-blue-500 absolute"></div>
                   </div>
                   <span className="text-xs ml-3">Pochi animali</span>
                 </div>
                 <div className="flex items-center">
                   <div className="flex items-center justify-center">
-                    <div className="w-8 h-8 rounded-full bg-blue-500"></div>
+                    <div className="w-16 h-16 rounded-full bg-blue-500"></div>
                   </div>
                   <span className="text-xs ml-3">Molti animali</span>
                 </div>
