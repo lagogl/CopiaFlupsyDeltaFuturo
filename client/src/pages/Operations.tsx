@@ -565,27 +565,27 @@ export default function Operations() {
               {/* Filtro per Stato Ciclo con bottoni */}
               <div className="flex space-x-2 items-center">
                 <span className="text-sm text-gray-500 mr-1">Stato:</span>
-                <div className="flex rounded-md border border-input overflow-hidden">
+                <div className="flex rounded-md shadow-sm">
                   <Button
-                    variant="ghost"
+                    variant={cycleStateFilter === 'active' ? 'default' : 'outline'}
                     size="sm"
-                    className={`px-3 py-1.5 rounded-none ${cycleStateFilter === 'active' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+                    className={`px-3 py-1.5 rounded-l-md rounded-r-none ${cycleStateFilter === 'active' ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600' : 'border-gray-200 hover:bg-gray-50'}`}
                     onClick={() => setCycleStateFilter('active')}
                   >
                     Attivi
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant={cycleStateFilter === 'closed' ? 'default' : 'outline'}
                     size="sm"
-                    className={`px-3 py-1.5 rounded-none border-l border-r border-input ${cycleStateFilter === 'closed' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+                    className={`px-3 py-1.5 rounded-none border-l-0 border-r-0 ${cycleStateFilter === 'closed' ? 'bg-red-600 hover:bg-red-700 border-red-600' : 'border-gray-200 hover:bg-gray-50'}`}
                     onClick={() => setCycleStateFilter('closed')}
                   >
                     Chiusi
                   </Button>
                   <Button
-                    variant="ghost"
+                    variant={cycleStateFilter === 'all' ? 'default' : 'outline'}
                     size="sm"
-                    className={`px-3 py-1.5 rounded-none ${cycleStateFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+                    className={`px-3 py-1.5 rounded-r-md rounded-l-none ${cycleStateFilter === 'all' ? 'bg-blue-600 hover:bg-blue-700 border-blue-600' : 'border-gray-200 hover:bg-gray-50'}`}
                     onClick={() => setCycleStateFilter('all')}
                   >
                     Tutti
