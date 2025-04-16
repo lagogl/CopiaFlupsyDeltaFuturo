@@ -974,7 +974,7 @@ SELECT pg_catalog.setval('public.cycles_id_seq', 5, true);
 -- Name: flupsys_id_seq; Type: SEQUENCE SET; Schema: public; Owner: -
 --
 
-SELECT pg_catalog.setval('public.flupsys_id_seq', 70, true);
+SELECT pg_catalog.setval('public.flupsys_id_seq', 72, true);
 
 
 --
