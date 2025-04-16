@@ -3962,8 +3962,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`File SQL caricato e salvato in: ${filePath}`);
       
       // Ripristina il database dal file caricato
-      // Utilizziamo direttamente la funzione importata a livello di modulo
-      const success = await restoreDatabaseFromBackup(filePath);
+      // Utilizziamo la funzione dedicata per i file caricati
+      const success = await restoreDatabaseFromUploadedFile(filePath);
       
       if (success) {
         // Rimuovi il file temporaneo dopo il ripristino
