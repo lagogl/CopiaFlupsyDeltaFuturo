@@ -298,7 +298,7 @@ export default function Operations() {
   
   // Filter operations
   const filteredOperations = useMemo(() => {
-    if (!operations) return [];
+    if (!operations || !cycles) return [];
     
     return operations.filter((op: any) => {
       // Filter by search term
@@ -322,9 +322,15 @@ export default function Operations() {
       const matchesCycle = cycleFilter === 'all' || 
         op.cycleId.toString() === cycleFilter;
       
-      return matchesSearch && matchesType && matchesDate && matchesFlupsy && matchesCycle;
+      // Filter by cycle state
+      const cycle = cycles.find((c: any) => c.id === op.cycleId);
+      const matchesCycleState = cycleStateFilter === 'all' || 
+        (cycleStateFilter === 'active' && cycle && cycle.state === 'active') ||
+        (cycleStateFilter === 'closed' && cycle && cycle.state === 'closed');
+      
+      return matchesSearch && matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesCycleState;
     });
-  }, [operations, searchTerm, typeFilter, dateFilter, flupsyFilter, cycleFilter]);
+  }, [operations, cycles, searchTerm, typeFilter, dateFilter, flupsyFilter, cycleFilter, cycleStateFilter]);
   
   // Get filtered cycles based on selected filters
   const filteredCycleIds = useMemo(() => {
@@ -556,17 +562,36 @@ export default function Operations() {
                 </SelectContent>
               </Select>
               
-              {/* Filtro per Stato Ciclo */}
-              <Select value={cycleStateFilter} onValueChange={setCycleStateFilter}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Stato Ciclo" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="active">Solo Cicli Attivi</SelectItem>
-                  <SelectItem value="closed">Solo Cicli Chiusi</SelectItem>
-                  <SelectItem value="all">Tutti gli Stati</SelectItem>
-                </SelectContent>
-              </Select>
+              {/* Filtro per Stato Ciclo con bottoni */}
+              <div className="flex space-x-2 items-center">
+                <span className="text-sm text-gray-500 mr-1">Stato:</span>
+                <div className="flex rounded-md border border-input overflow-hidden">
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`px-3 py-1.5 rounded-none ${cycleStateFilter === 'active' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+                    onClick={() => setCycleStateFilter('active')}
+                  >
+                    Attivi
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`px-3 py-1.5 rounded-none border-l border-r border-input ${cycleStateFilter === 'closed' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+                    onClick={() => setCycleStateFilter('closed')}
+                  >
+                    Chiusi
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    className={`px-3 py-1.5 rounded-none ${cycleStateFilter === 'all' ? 'bg-primary text-primary-foreground' : 'bg-background'}`}
+                    onClick={() => setCycleStateFilter('all')}
+                  >
+                    Tutti
+                  </Button>
+                </div>
+              </div>
             </div>
           </div>
         </div>
