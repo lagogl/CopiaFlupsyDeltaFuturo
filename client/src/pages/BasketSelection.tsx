@@ -462,11 +462,13 @@ export default function BasketSelection() {
         
         return (
           <Badge 
-            className={`${colorClasses} text-xs font-medium shadow-sm`}
+            className={`${colorClasses} text-xs font-medium shadow-sm inline-flex items-center justify-center`}
             style={{
               border: '1px solid',
-              padding: '1px 6px',
-              letterSpacing: '0.3px'
+              padding: '1px 10px',
+              letterSpacing: '0.3px',
+              minWidth: '60px',
+              height: '22px'
             }}
           >
             {isTP10000Plus ? '+TP-10000' : basket.size.code}
@@ -1330,11 +1332,13 @@ export default function BasketSelection() {
                   return (
                     <Badge 
                       key={sizeId}
-                      className={`${colorClasses} text-xs shadow-sm`}
+                      className={`${colorClasses} text-xs shadow-sm inline-flex items-center justify-center`}
                       style={{
                         fontWeight: 'medium',
                         border: '1px solid',
-                        padding: '1px 6px'
+                        padding: '1px 8px',
+                        minWidth: '80px',
+                        height: '22px'
                       }}
                     >
                       {size.code}: {count.toLocaleString('it-IT')}
