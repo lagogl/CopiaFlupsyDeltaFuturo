@@ -97,8 +97,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <Waves className="h-5 w-5 mr-2 text-green-600" />, label: "Unità FLUPSY", path: "/flupsys" },
         { icon: <GitCompare className="h-5 w-5 mr-2 text-green-600" />, label: "Confronto FLUPSY", path: "/flupsy-comparison" },
         { icon: <LineChart className="h-5 w-5 mr-2 text-green-600" />, label: "Percorso di Crescita", path: "/grow-journey" },
-        { icon: <BarChart2 className="h-5 w-5 mr-2 text-green-600" />, label: "Selezione Avanzata", path: "/basket-selection" },
-        { icon: <PieChart className="h-5 w-5 mr-2 text-green-600" />, label: "Previsione TP-3000", path: "/tp3000-forecast" }
+        { icon: <BarChart2 className="h-5 w-5 mr-2 text-green-600" />, label: "Selezione Avanzata", path: "/basket-selection" }
       ]
     },
     {

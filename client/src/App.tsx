@@ -38,7 +38,6 @@ import ScreeningDetail from "@/pages/ScreeningDetail";
 import ScreeningAddSource from "@/pages/ScreeningAddSource";
 import ScreeningAddDestination from "@/pages/ScreeningAddDestination";
 import BackupPage from "@/pages/BackupPage";
-import TP3000Forecast from "@/pages/TP3000Forecast";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -78,7 +77,6 @@ function Router() {
       <Route path="/grow-journey" component={GrowJourney}/>
       <Route path="/basket-selection" component={BasketSelection}/>
       <Route path="/backup" component={BackupPage}/>
-      <Route path="/tp3000-forecast" component={TP3000Forecast}/>
       
       {/* Screening (Vagliatura) routes */}
       <Route path="/screening" component={Screening}/>
