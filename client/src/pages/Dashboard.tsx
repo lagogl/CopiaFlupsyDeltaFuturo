@@ -71,6 +71,24 @@ export default function Dashboard() {
   }) || [];
   const activeLots = lots?.filter(l => l.state === 'active') || [];
 
+  // Calcola il numero totale di animali nelle ceste attive
+  const totalAnimalsInActiveBaskets = activeBaskets.reduce((total, basket) => {
+    // Trova le operazioni più recenti per ogni cesta attiva
+    const basketOperations = operations
+      ?.filter(op => op.basketId === basket.id)
+      ?.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) || [];
+    
+    // Prendi la più recente operazione che ha un conteggio di animali
+    const latestOperationWithCount = basketOperations.find(op => op.animalCount !== null && op.animalCount !== undefined);
+    
+    // Aggiungi al totale se abbiamo un conteggio di animali
+    if (latestOperationWithCount?.animalCount) {
+      return total + latestOperationWithCount.animalCount;
+    }
+    
+    return total;
+  }, 0);
+
   // Previous month comparison for baskets
   const lastMonthBaskets = activeBaskets.length - 3; // Mocked diff (+3 from last month)
 

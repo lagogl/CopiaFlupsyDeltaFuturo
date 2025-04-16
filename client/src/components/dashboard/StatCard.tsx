@@ -10,6 +10,7 @@ interface StatCardProps {
   changeType: 'success' | 'error' | 'warning' | 'info';
   linkTo?: string; // Percorso per la navigazione quando viene cliccato
   cardColor?: string; // Colore di sfondo personalizzato
+  secondaryInfo?: string; // Informazione secondaria da visualizzare sotto il valore principale
 }
 
 export default function StatCard({ 
