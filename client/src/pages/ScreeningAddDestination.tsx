@@ -38,6 +38,7 @@ const formSchema = z.object({
   animalsPerKg: z.coerce.number().nullable().optional(),
   sizeId: z.coerce.number().nullable().optional(),
   notes: z.string().nullable().optional(),
+  flupsyId: z.coerce.number().nullable().optional(),
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -97,6 +98,21 @@ export default function ScreeningAddDestination() {
       });
     },
   });
+  
+  // Query per ottenere i FLUPSY disponibili
+  const {
+    data: flupsys,
+    isLoading: flupsysLoading,
+    error: flupsysError
+  } = useQuery({
+    queryKey: ['/api/flupsys'],
+    queryFn: async () => {
+      return apiRequest<any[]>({
+        url: '/api/flupsys',
+        method: 'GET'
+      });
+    },
+  });
 
   // Form setup
   const form = useForm<FormValues>({
@@ -109,6 +125,7 @@ export default function ScreeningAddDestination() {
       animalsPerKg: null,
       sizeId: null,
       notes: null,
+      flupsyId: null,
     },
   });
 
@@ -157,9 +174,8 @@ export default function ScreeningAddDestination() {
       basketId: values.basketId,
       category: values.category,
       position: null,
-      flupsyId: null,
+      flupsyId: values.flupsyId,
       row: null,
-      cycleId: null,
       animalCount: values.animalCount,
       totalWeight: values.totalWeight ? values.totalWeight * 1000 : null, // Conversione in grammi
       animalsPerKg: values.animalsPerKg,
@@ -476,6 +492,40 @@ export default function ScreeningAddDestination() {
                       </FormControl>
                       <FormDescription>
                         Numero di animali per kg
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                <FormField
+                  control={form.control}
+                  name="flupsyId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>FLUPSY di destinazione</FormLabel>
+                      <Select 
+                        onValueChange={(value) => field.onChange(parseInt(value))}
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleziona un FLUPSY" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {flupsys?.map((flupsy) => (
+                            <SelectItem 
+                              key={flupsy.id} 
+                              value={flupsy.id.toString()}
+                            >
+                              {flupsy.name} ({flupsy.location})
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Seleziona il FLUPSY dove posizionare questa cesta
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
