@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, addDays, addWeeks } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { PieChart } from 'lucide-react';
 import { 
   ScatterChart, Scatter, XAxis, YAxis, ZAxis, Tooltip, 
   Legend, ResponsiveContainer, Cell 
@@ -16,7 +17,7 @@ import {
   Select, SelectContent, SelectItem, SelectTrigger, SelectValue
 } from '@/components/ui/select';
 import { Button } from '@/components/ui/button';
-import { Loader2, FileDown, PieChart, Calendar } from 'lucide-react';
+import { Loader2, FileDown, Calendar } from 'lucide-react';
 
 // Tipo per i dati delle bolle nel grafico
 type ForecastBubble = {

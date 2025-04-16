@@ -78,6 +78,7 @@ function Router() {
       <Route path="/grow-journey" component={GrowJourney}/>
       <Route path="/basket-selection" component={BasketSelection}/>
       <Route path="/backup" component={BackupPage}/>
+      <Route path="/tp3000-forecast" component={TP3000Forecast}/>
       
       {/* Screening (Vagliatura) routes */}
       <Route path="/screening" component={Screening}/>
