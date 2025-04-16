@@ -819,31 +819,121 @@ export default function Operations() {
                                     {cycleOps.length > 0 && cycleOps[0].lot ? cycleOps[0].lot.name : 'N/D'}
                                   </span>
                                 </div>
+                                
+                                {/* Durata del ciclo */}
                                 <div>
-                                  <span className="text-gray-500">Ultima taglia:</span>
+                                  <span className="text-gray-500">Durata:</span>
                                   <span className="font-medium ml-1 text-gray-700">
-                                    {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].size ? cycleOps[cycleOps.length - 1].size.code : 'N/D'}
+                                    {cycle && (() => {
+                                      const startDate = new Date(cycle.startDate);
+                                      const endDate = cycle.endDate ? new Date(cycle.endDate) : new Date();
+                                      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+                                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                      return `${diffDays} giorni${cycle.endDate ? '' : ' (in corso)'}`;
+                                    })()}
                                   </span>
                                 </div>
+                                
                                 <div>
                                   <span className="text-gray-500">Inizio:</span>
                                   <span className="font-medium ml-1 text-gray-700">
                                     {cycle && format(new Date(cycle.startDate), 'dd/MM/yyyy')}
                                   </span>
                                 </div>
-                                {cycle && cycle.endDate && (
+                                
+                                {cycle && cycle.endDate ? (
                                   <div>
                                     <span className="text-gray-500">Fine:</span>
                                     <span className="font-medium ml-1 text-gray-700">
                                       {format(new Date(cycle.endDate), 'dd/MM/yyyy')}
                                     </span>
                                   </div>
+                                ) : (
+                                  <div>
+                                    <span className="text-gray-500">Ultima operazione:</span>
+                                    <span className="font-medium ml-1 text-gray-700">
+                                      {cycleOps.length > 0 ? format(new Date(cycleOps[cycleOps.length - 1].date), 'dd/MM/yyyy') : 'N/D'}
+                                    </span>
+                                  </div>
                                 )}
+                                
+                                {/* Ultima taglia e peso medio */}
+                                <div>
+                                  <div className="flex items-center">
+                                    <span className="text-gray-500">Taglia:</span>
+                                    <span className="font-medium ml-1 text-gray-700 flex items-center">
+                                      {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].size ? (
+                                        <>
+                                          <span className="mr-1">{cycleOps[cycleOps.length - 1].size.code}</span>
+                                          {cycleOps[cycleOps.length - 1].animalsPerKg && (
+                                            <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
+                                              {Math.round(1000000 / cycleOps[cycleOps.length - 1].animalsPerKg)} mg
+                                            </span>
+                                          )}
+                                        </>
+                                      ) : 'N/D'}
+                                    </span>
+                                  </div>
+                                </div>
+                                
                                 <div>
                                   <span className="text-gray-500">Animali:</span>
                                   <span className="font-medium ml-1 text-gray-700">
                                     {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].animalCount 
                                       ? cycleOps[cycleOps.length - 1].animalCount.toLocaleString() 
+                                      : 'N/D'}
+                                  </span>
+                                </div>
+                                
+                                {/* Performance di crescita */}
+                                {cycleOps.length >= 2 && (
+                                  <div>
+                                    <span className="text-gray-500">Performance:</span>
+                                    {(() => {
+                                      const firstOp = cycleOps[0];
+                                      const lastOp = cycleOps[cycleOps.length - 1];
+                                      
+                                      if (firstOp.animalsPerKg && lastOp.animalsPerKg) {
+                                        const firstWeight = 1000000 / firstOp.animalsPerKg;
+                                        const lastWeight = 1000000 / lastOp.animalsPerKg;
+                                        const weightGain = lastWeight - firstWeight;
+                                        const percentGain = ((lastWeight - firstWeight) / firstWeight) * 100;
+                                        
+                                        const startDate = new Date(firstOp.date);
+                                        const endDate = new Date(lastOp.date);
+                                        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+                                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                        
+                                        const dailyGainPercent = percentGain / diffDays;
+                                        
+                                        let performanceClass = 'text-gray-700';
+                                        if (dailyGainPercent >= 3) performanceClass = 'text-emerald-600 font-semibold';
+                                        else if (dailyGainPercent >= 2) performanceClass = 'text-emerald-500';
+                                        else if (dailyGainPercent >= 1) performanceClass = 'text-yellow-600';
+                                        else if (dailyGainPercent > 0) performanceClass = 'text-orange-500';
+                                        else performanceClass = 'text-red-500';
+                                        
+                                        return (
+                                          <span className={`ml-1 ${performanceClass}`}>
+                                            {percentGain.toFixed(1)}% 
+                                            <span className="text-xs block">
+                                              ({dailyGainPercent.toFixed(2)}%/giorno)
+                                            </span>
+                                          </span>
+                                        );
+                                      }
+                                      
+                                      return <span className="ml-1 text-gray-700">N/D</span>;
+                                    })()}
+                                  </div>
+                                )}
+                                
+                                {/* Peso totale */}
+                                <div>
+                                  <span className="text-gray-500">Peso totale:</span>
+                                  <span className="font-medium ml-1 text-gray-700">
+                                    {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].totalWeight 
+                                      ? `${cycleOps[cycleOps.length - 1].totalWeight.toLocaleString()} g` 
                                       : 'N/D'}
                                   </span>
                                 </div>
