@@ -32,22 +32,17 @@ export default function Baskets() {
   
   // Extract flupsyId from URL if present
   useEffect(() => {
-    // Reset alla prima pagina quando cambia la location
+    // Analizza i parametri dell'URL
     const params = new URLSearchParams(location.split('?')[1] || '');
     const flupsyIdParam = params.get('flupsyId');
     
     if (flupsyIdParam) {
       console.log("Setting flupsyFilter from URL:", flupsyIdParam);
       setFlupsyFilter(flupsyIdParam);
-      setUrlParamsLoaded(true);
-    } else if (!urlParamsLoaded) {
-      // Se non ci sono parametri nell'URL e non abbiamo ancora caricato parametri,
-      // resetta il filtro a "all"
-      console.log("Resetting flupsyFilter to 'all'");
-      setFlupsyFilter('all');
+      // Marca come caricato solo se c'è un parametro
       setUrlParamsLoaded(true);
     }
-  }, [location, urlParamsLoaded]);
+  }, [location]);
   
   // Query baskets
   const { data: baskets, isLoading } = useQuery({
