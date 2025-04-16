@@ -1,5 +1,6 @@
 import { ReactNode } from 'react';
 import { ArrowUpCircle, ArrowDownCircle, Clock, InfoIcon } from 'lucide-react';
+import { useLocation } from 'wouter';
 
 interface StatCardProps {
   title: string;
@@ -7,9 +8,21 @@ interface StatCardProps {
   icon: ReactNode;
   changeText: string;
   changeType: 'success' | 'error' | 'warning' | 'info';
+  linkTo?: string; // Percorso per la navigazione quando viene cliccato
+  cardColor?: string; // Colore di sfondo personalizzato
 }
 
-export default function StatCard({ title, value, icon, changeText, changeType }: StatCardProps) {
+export default function StatCard({ 
+  title, 
+  value, 
+  icon, 
+  changeText, 
+  changeType, 
+  linkTo, 
+  cardColor 
+}: StatCardProps) {
+  const [, setLocation] = useLocation();
+
   const getIcon = () => {
     switch (changeType) {
       case 'success':
@@ -36,11 +49,38 @@ export default function StatCard({ title, value, icon, changeText, changeType }:
     }
   };
 
+  const getCardColorStyle = () => {
+    if (cardColor) return cardColor;
+
+    switch (changeType) {
+      case 'success':
+        return 'from-green-50 to-green-100 border-l-4 border-green-500';
+      case 'error':
+        return 'from-red-50 to-red-100 border-l-4 border-red-500';
+      case 'warning':
+        return 'from-yellow-50 to-yellow-100 border-l-4 border-yellow-500';
+      case 'info':
+        return 'from-blue-50 to-blue-100 border-l-4 border-blue-500';
+      default:
+        return 'bg-white';
+    }
+  };
+
+  const handleClick = () => {
+    if (linkTo) {
+      setLocation(linkTo);
+    }
+  };
+
   return (
-    <div className="bg-white rounded-lg shadow p-6">
+    <div 
+      className={`rounded-lg shadow-md p-6 transition-all duration-200 bg-gradient-to-br ${getCardColorStyle()} 
+                  ${linkTo ? 'cursor-pointer hover:shadow-lg transform hover:-translate-y-1' : ''}`}
+      onClick={handleClick}
+    >
       <div className="flex items-center justify-between">
         <div>
-          <p className="text-gray-500 text-sm">{title}</p>
+          <p className="text-gray-700 text-sm font-medium">{title}</p>
           <h3 className="text-3xl font-bold text-gray-800 mt-1">{value}</h3>
         </div>
         {icon}
