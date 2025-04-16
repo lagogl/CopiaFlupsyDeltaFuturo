@@ -4,7 +4,7 @@ import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { 
   Eye, Search, Filter, Pencil, Plus, Trash2, AlertTriangle, Copy, 
-  ArrowDown, ArrowUp, RotateCw, Calendar, Box, Target
+  ArrowDown, ArrowUp, RotateCw, Calendar, Box, Target, Check
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -69,6 +69,9 @@ export default function Operations() {
   const { data: sgrData, isLoading: isLoadingSgr } = useQuery({
     queryKey: ['/api/sgr'],
   });
+  
+  // Alias for SGR data (for consistency in naming)
+  const sgrs = sgrData;
 
   // Create mutation
   const createOperationMutation = useMutation({
@@ -893,21 +896,89 @@ export default function Operations() {
                                   </span>
                                 </div>
                                 
-                                {/* Ultima taglia e peso medio */}
+                                {/* Ultima taglia e peso medio con proiezione a TP-3000 */}
                                 <div>
                                   <span className="text-gray-500">Taglia attuale:</span>
-                                  <span className="font-medium ml-1 text-gray-700 flex items-center">
+                                  <div className="font-medium text-gray-700">
                                     {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].size ? (
                                       <>
-                                        <span className="mr-1">{cycleOps[cycleOps.length - 1].size.code}</span>
-                                        {cycleOps[cycleOps.length - 1].animalsPerKg && (
-                                          <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-                                            {Math.round(1000000 / cycleOps[cycleOps.length - 1].animalsPerKg)} mg
-                                          </span>
-                                        )}
+                                        <div className="flex items-center">
+                                          <span className="mr-1">{cycleOps[cycleOps.length - 1].size.code}</span>
+                                          {cycleOps[cycleOps.length - 1].animalsPerKg && (
+                                            <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
+                                              {Math.round(1000000 / cycleOps[cycleOps.length - 1].animalsPerKg)} mg
+                                            </span>
+                                          )}
+                                        </div>
+                                        
+                                        {/* Proiezione per raggiungere TP-3000 */}
+                                        {cycleOps[cycleOps.length - 1].animalsPerKg && (() => {
+                                          // Ottieni il peso attuale e il peso target TP-3000 (333 mg)
+                                          const currentWeight = 1000000 / cycleOps[cycleOps.length - 1].animalsPerKg;
+                                          const targetWeight = 333; // TP-3000 equivale a circa 333 mg per animale
+                                          
+                                          // Se il peso attuale è già superiore al target, non mostrare la proiezione
+                                          if (currentWeight >= targetWeight) {
+                                            return (
+                                              <div className="text-xs text-emerald-600 mt-1 flex items-center">
+                                                <Check className="h-3 w-3 mr-1" />
+                                                Taglia TP-3000 già raggiunta
+                                              </div>
+                                            );
+                                          }
+                                          
+                                          // Calcola i giorni necessari per raggiungere il target
+                                          // Ottieni il mese corrente per l'SGR appropriato
+                                          const now = new Date();
+                                          const currentMonth = format(now, 'MMMM', { locale: it }).toLowerCase();
+                                          
+                                          // Trova l'SGR mensile per il mese corrente
+                                          let monthlyRate = 2.0; // Valore predefinito del 2% mensile
+                                          if (sgrs && sgrs.length > 0) {
+                                            const currentSgr = sgrs.find((sgr: any) => sgr.month.toLowerCase() === currentMonth);
+                                            if (currentSgr) {
+                                              monthlyRate = currentSgr.percentage;
+                                            }
+                                          }
+                                          
+                                          // Converti tasso mensile in giornaliero
+                                          const dailyRate = ((Math.pow(1 + monthlyRate/100, 1/30) - 1) * 100);
+                                          
+                                          // Calcola i giorni necessari
+                                          const daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / Math.log(1 + dailyRate/100));
+                                          
+                                          // Calcola la data stimata di raggiungimento
+                                          const targetDate = addDays(now, daysNeeded);
+                                          
+                                          // Percentuale completata verso l'obiettivo
+                                          const progressPercentage = (currentWeight / targetWeight) * 100;
+                                          
+                                          return (
+                                            <div className="mt-1">
+                                              <div className="flex justify-between text-xs mb-1">
+                                                <span>Verso TP-3000</span>
+                                                <span>{Math.round(progressPercentage)}%</span>
+                                              </div>
+                                              <div className="h-1.5 bg-gray-200 rounded-full">
+                                                <div 
+                                                  className="h-full rounded-full bg-blue-500"
+                                                  style={{ width: `${progressPercentage}%` }}
+                                                />
+                                              </div>
+                                              <div className="flex justify-between text-xs mt-1 text-gray-500">
+                                                <span>
+                                                  ~{daysNeeded} giorni
+                                                </span>
+                                                <span>
+                                                  {format(targetDate, 'dd/MM/yyyy')}
+                                                </span>
+                                              </div>
+                                            </div>
+                                          );
+                                        })()}
                                       </>
                                     ) : 'N/D'}
-                                  </span>
+                                  </div>
                                 </div>
                                 
                                 <div>
