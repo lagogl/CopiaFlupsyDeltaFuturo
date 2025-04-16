@@ -913,9 +913,12 @@ export default function Operations() {
                                         
                                         {/* Proiezione per raggiungere TP-3000 */}
                                         {cycleOps[cycleOps.length - 1].animalsPerKg && (() => {
-                                          // Ottieni il peso attuale e il peso target TP-3000 (333 mg)
+                                          // Ottieni il peso attuale dall'ultimo dato registrato
                                           const currentWeight = 1000000 / cycleOps[cycleOps.length - 1].animalsPerKg;
-                                          const targetWeight = 333; // TP-3000 equivale a circa 333 mg per animale
+                                          
+                                          // TP-3000 significa un range da 19.001 a 32.000 animali/kg
+                                          // Scegliamo 19.001 come valore di riferimento (animali più grandi in questa taglia)
+                                          const targetWeight = 1000000 / 19001; // ~ 52,63 mg
                                           
                                           // Se il peso attuale è già superiore al target, non mostrare la proiezione
                                           if (currentWeight >= targetWeight) {
