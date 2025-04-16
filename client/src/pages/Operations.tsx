@@ -27,6 +27,7 @@ export default function Operations() {
   const [dateFilter, setDateFilter] = useState('');
   const [flupsyFilter, setFlupsyFilter] = useState('all');
   const [cycleFilter, setCycleFilter] = useState('all');
+  const [cycleStateFilter, setCycleStateFilter] = useState('active'); // Nuovo filtro: 'active', 'closed', 'all'
   const [viewMode, setViewMode] = useState<'table' | 'cycles'>('cycles');
   const [expandedCycles, setExpandedCycles] = useState<number[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
@@ -354,16 +355,21 @@ export default function Operations() {
         const matchesCycle = cycleFilter === 'all' || 
           cycle.id.toString() === cycleFilter;
         
+        // Check if the cycle state matches the cycle state filter
+        const matchesCycleState = cycleStateFilter === 'all' || 
+          (cycleStateFilter === 'active' && cycle.state === 'active') ||
+          (cycleStateFilter === 'closed' && cycle.state === 'closed');
+        
         // Check if any operation matches the search term
         const matchesSearch = searchTerm === '' || 
           `${cycle.id}`.includes(searchTerm) || 
           (basket && `${basket.physicalNumber}`.includes(searchTerm)) ||
           cycleOps.some((op: any) => `${op.basketId}`.includes(searchTerm));
         
-        return matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesSearch;
+        return matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesCycleState && matchesSearch;
       })
       .map((cycle: any) => cycle.id);
-  }, [cycles, baskets, operations, typeFilter, dateFilter, flupsyFilter, cycleFilter, searchTerm]);
+  }, [cycles, baskets, operations, typeFilter, dateFilter, flupsyFilter, cycleFilter, cycleStateFilter, searchTerm]);
 
   const getOperationTypeBadge = (type: string) => {
     let bgColor = 'bg-blue-100 text-blue-800';
@@ -547,6 +553,18 @@ export default function Operations() {
                       </SelectItem>
                     );
                   })}
+                </SelectContent>
+              </Select>
+              
+              {/* Filtro per Stato Ciclo */}
+              <Select value={cycleStateFilter} onValueChange={setCycleStateFilter}>
+                <SelectTrigger className="w-[180px]">
+                  <SelectValue placeholder="Stato Ciclo" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="active">Solo Cicli Attivi</SelectItem>
+                  <SelectItem value="closed">Solo Cicli Chiusi</SelectItem>
+                  <SelectItem value="all">Tutti gli Stati</SelectItem>
                 </SelectContent>
               </Select>
             </div>
