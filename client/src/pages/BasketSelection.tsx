@@ -454,22 +454,25 @@ export default function BasketSelection() {
       header: 'Taglia',
       cell: (basket) => {
         if (!basket.size) return <span className="text-muted-foreground">-</span>;
-        const isLargerThanTP10000 = basket.size.sizeMm > 10000;
+        
+        // Importa la funzione per ottenere il colore
+        const { getSizeColor } = require('@/lib/getSizeColor');
+        
+        // Ottieni colori basati sul codice taglia
+        const colorClasses = getSizeColor(basket.size.code, 'full');
+        const isTP10000Plus = basket.size.sizeMm >= 10000;
+        
         return (
           <Badge 
-            variant="outline" 
+            className={`${colorClasses} text-base font-bold shadow-md`}
             style={{
-              backgroundColor: isLargerThanTP10000 ? '#000000' : basket.size.colorHex,
-              color: '#ffffff',
-              fontWeight: 'bold',
-              textShadow: '0px 0px 3px rgba(0,0,0,0.9)',
-              borderColor: isLargerThanTP10000 ? '#333333' : basket.size.colorHex,
               border: '2px solid',
               padding: '2px 8px',
-              letterSpacing: '0.5px'
+              letterSpacing: '0.5px',
+              textShadow: '0px 0px 2px rgba(0,0,0,0.5)'
             }}
           >
-            {isLargerThanTP10000 ? '+TP-10000' : basket.size.code}
+            {isTP10000Plus ? '+TP-10000' : basket.size.code}
           </Badge>
         );
       },
@@ -1324,14 +1327,19 @@ export default function BasketSelection() {
                   const size = sizes?.find(s => s.id === parseInt(sizeId));
                   if (!size) return null;
                   
+                  // Importa una volta sola in alto nel file, qui usalo direttamente
+                  const getSizeColor = require('@/lib/getSizeColor').getSizeColor;
+                  const colorClasses = getSizeColor(size.code, 'full');
+                  
                   return (
                     <Badge 
                       key={sizeId}
+                      className={`${colorClasses} text-base shadow-md`}
                       style={{
-                        backgroundColor: size.colorHex,
-                        color: '#ffffff', // Cambiato a bianco per maggiore leggibilità su tutti i colori
                         fontWeight: 'bold',
-                        textShadow: '0px 0px 2px rgba(0,0,0,0.8)' // Aggiunto un'ombra per migliore leggibilità
+                        border: '2px solid',
+                        padding: '3px 8px',
+                        textShadow: '0px 0px 2px rgba(0,0,0,0.5)'
                       }}
                     >
                       {size.code}: {count.toLocaleString('it-IT')}
