@@ -1,6 +1,7 @@
 import { useState } from "react";
 import { useMutation, useQuery } from "@tanstack/react-query";
 import { queryClient, apiRequest } from "@/lib/queryClient";
+import { Link } from "wouter";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
@@ -13,6 +14,15 @@ import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
 import { Check, Plus, X } from "lucide-react";
 
+// Definizione del tipo per un'unità Flupsy
+interface Flupsy {
+  id: number;
+  name: string;
+  location?: string;
+  description?: string;
+  active: boolean;
+}
+
 export default function Flupsys() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [newFlupsy, setNewFlupsy] = useState({
@@ -23,9 +33,9 @@ export default function Flupsys() {
   });
 
   // Fetching FLUPSY units
-  const { data: flupsys, isLoading } = useQuery({
+  const { data: flupsys = [], isLoading } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
-    select: (data) => data
+    select: (data: Flupsy[]) => data || []
   });
 
   // Create FLUPSY mutation
@@ -199,12 +209,12 @@ export default function Flupsys() {
                 )}
                 <Separator className="my-4" />
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <a href={`/baskets?flupsyId=${flupsy.id}`} className="text-primary hover:underline">
+                  <Link href={`/baskets?flupsyId=${flupsy.id}`} className="text-primary hover:underline">
                     Visualizza Cestelli
-                  </a>
-                  <a href={`/cycles?flupsyId=${flupsy.id}`} className="text-primary hover:underline">
+                  </Link>
+                  <Link href={`/cycles?flupsyId=${flupsy.id}`} className="text-primary hover:underline">
                     Visualizza Cicli
-                  </a>
+                  </Link>
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 flex justify-between">
