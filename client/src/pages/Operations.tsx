@@ -538,7 +538,7 @@ export default function Operations() {
                 </SelectContent>
               </Select>
             </div>
-            <div className="flex-1 md:flex-none md:w-1/2">
+            <div className="flex-1 md:flex-none md:w-1/2 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-3">
               <Select value={cycleFilter} onValueChange={setCycleFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtra per Ciclo" />
@@ -558,7 +558,7 @@ export default function Operations() {
               
               {/* Filtro per Stato Ciclo */}
               <Select value={cycleStateFilter} onValueChange={setCycleStateFilter}>
-                <SelectTrigger className="w-[180px]">
+                <SelectTrigger>
                   <SelectValue placeholder="Stato Ciclo" />
                 </SelectTrigger>
                 <SelectContent>
