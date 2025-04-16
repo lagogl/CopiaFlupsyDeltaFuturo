@@ -209,12 +209,12 @@ export default function Flupsys() {
                 )}
                 <Separator className="my-4" />
                 <div className="grid grid-cols-2 gap-2 text-sm">
-                  <Link href={`/baskets?flupsyId=${flupsy.id}`} className="text-primary hover:underline">
+                  <a href={`/baskets?flupsyId=${flupsy.id}`} className="text-primary hover:underline">
                     Visualizza Cestelli
-                  </Link>
-                  <Link href={`/cycles?flupsyId=${flupsy.id}`} className="text-primary hover:underline">
+                  </a>
+                  <a href={`/cycles?flupsyId=${flupsy.id}`} className="text-primary hover:underline">
                     Visualizza Cicli
-                  </Link>
+                  </a>
                 </div>
               </CardContent>
               <CardFooter className="bg-muted/30 flex justify-between">
