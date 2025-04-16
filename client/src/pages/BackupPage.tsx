@@ -110,14 +110,45 @@ export default function BackupPage() {
   
   // Formatta la data in formato leggibile
   const formatDate = (dateString: string): string => {
-    const date = new Date(dateString);
-    return date.toLocaleString('it-IT', {
-      day: '2-digit',
-      month: '2-digit',
-      year: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    // Se la data è nel formato unix timestamp o millesimi di secondo,
+    // convertila in numero e poi in oggetto Date
+    if (!isNaN(Number(dateString))) {
+      const timestamp = Number(dateString);
+      // Controlla se è in secondi (timestamp unix) o millisecondi
+      const date = timestamp < 10000000000 
+        ? new Date(timestamp * 1000)  // Se è in secondi (formato unix)
+        : new Date(timestamp);        // Se è già in millisecondi
+      
+      return date.toLocaleString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    }
+    
+    // Altrimenti prova a parsare direttamente la stringa
+    try {
+      const date = new Date(dateString);
+      // Verifica che la data sia valida
+      if (isNaN(date.getTime())) {
+        // Se la data non è valida, mostra la stringa originale
+        console.warn(`Data non valida: ${dateString}`);
+        return dateString;
+      }
+      
+      return date.toLocaleString('it-IT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric',
+        hour: '2-digit',
+        minute: '2-digit'
+      });
+    } catch (error) {
+      console.error("Errore nella formattazione della data:", error);
+      return dateString;
+    }
   };
 
   return (
