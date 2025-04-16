@@ -1,0 +1,378 @@
+import { useState, useEffect } from 'react';
+import { Link } from 'wouter';
+import { Helmet } from 'react-helmet';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import { apiRequest } from '@/lib/queryClient';
+
+import { Button } from '@/components/ui/button';
+import { Table, TableHeader, TableRow, TableHead, TableBody, TableCell } from '@/components/ui/table';
+import { Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter } from '@/components/ui/card';
+import { Tabs, TabsList, TabsTrigger, TabsContent } from '@/components/ui/tabs';
+import { Alert, AlertTitle, AlertDescription } from "@/components/ui/alert";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useToast } from '@/hooks/use-toast';
+import { Loader2, CheckCircle, XCircle, Download, Upload, Trash2, Database, AlertTriangle, ArrowUpDown } from 'lucide-react';
+
+import MainLayout from '@/layouts/MainLayout';
+
+interface BackupInfo {
+  id: string;
+  filename: string;
+  timestamp: string;
+  size: number;
+}
+
+export default function BackupPage() {
+  const [activeTab, setActiveTab] = useState('backups');
+  const { toast } = useToast();
+  const queryClient = useQueryClient();
+  
+  // Query per recuperare i backup disponibili
+  const { 
+    data: backups = [], 
+    isLoading: isLoadingBackups,
+    isError: isBackupsError,
+    refetch: refetchBackups
+  } = useQuery<BackupInfo[]>({
+    queryKey: ['/api/database/backups'],
+    refetchOnWindowFocus: false
+  });
+  
+  // Mutation per creare un nuovo backup
+  const createBackupMutation = useMutation({
+    mutationFn: async () => {
+      return apiRequest('/api/database/backup', { method: 'POST' });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Backup creato con successo",
+        description: "Il nuovo backup è stato creato e salvato correttamente.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/database/backups'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore durante la creazione del backup",
+        description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Mutation per ripristinare da un backup
+  const restoreBackupMutation = useMutation({
+    mutationFn: async (backupId: string) => {
+      return apiRequest(`/api/database/restore/${backupId}`, { method: 'POST' });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Database ripristinato con successo",
+        description: "Il database è stato ripristinato correttamente dal backup selezionato.",
+      });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore durante il ripristino",
+        description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Mutation per eliminare un backup
+  const deleteBackupMutation = useMutation({
+    mutationFn: async (backupId: string) => {
+      return apiRequest(`/api/database/backups/${backupId}`, { method: 'DELETE' });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Backup eliminato",
+        description: "Il backup è stato eliminato correttamente.",
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/database/backups'] });
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore durante l'eliminazione",
+        description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Formatta dimensione file in KB o MB
+  const formatFileSize = (sizeInBytes: number): string => {
+    if (sizeInBytes < 1024 * 1024) {
+      return `${(sizeInBytes / 1024).toFixed(2)} KB`;
+    }
+    return `${(sizeInBytes / (1024 * 1024)).toFixed(2)} MB`;
+  };
+  
+  // Formatta la data in formato leggibile
+  const formatDate = (dateString: string): string => {
+    const date = new Date(dateString);
+    return date.toLocaleString('it-IT', {
+      day: '2-digit',
+      month: '2-digit',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  return (
+    <MainLayout activeItem="backup">
+      <Helmet>
+        <title>Gestione Backup - Flupsy Manager</title>
+      </Helmet>
+      
+      <div className="container mx-auto p-4">
+        <div className="flex flex-col md:flex-row justify-between items-start md:items-center mb-6">
+          <div>
+            <h1 className="text-3xl font-bold">Gestione Backup Database</h1>
+            <p className="text-muted-foreground mt-1">
+              Crea, ripristina e gestisci i backup del database dell'applicazione
+            </p>
+          </div>
+          
+          <div className="mt-4 md:mt-0">
+            <Button
+              onClick={() => createBackupMutation.mutate()}
+              disabled={createBackupMutation.isPending}
+              className="bg-primary"
+            >
+              {createBackupMutation.isPending ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Creazione in corso...
+                </>
+              ) : (
+                <>
+                  <Database className="mr-2 h-4 w-4" />
+                  Crea nuovo backup
+                </>
+              )}
+            </Button>
+          </div>
+        </div>
+
+        <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+          <TabsList className="grid w-full md:w-[400px] grid-cols-2">
+            <TabsTrigger value="backups">Backup Disponibili</TabsTrigger>
+            <TabsTrigger value="restore">Ripristino</TabsTrigger>
+          </TabsList>
+          
+          <TabsContent value="backups" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Backup Disponibili</CardTitle>
+                <CardDescription>
+                  Elenco di tutti i backup del database disponibili nel sistema
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {isLoadingBackups ? (
+                  <div className="flex justify-center items-center py-8">
+                    <Loader2 className="h-8 w-8 animate-spin" />
+                    <span className="ml-2">Caricamento backup...</span>
+                  </div>
+                ) : isBackupsError ? (
+                  <Alert variant="destructive">
+                    <AlertTriangle className="h-4 w-4" />
+                    <AlertTitle>Errore</AlertTitle>
+                    <AlertDescription>
+                      Si è verificato un errore durante il caricamento dei backup.
+                      <Button variant="outline" size="sm" className="mt-2" onClick={() => refetchBackups()}>
+                        Riprova
+                      </Button>
+                    </AlertDescription>
+                  </Alert>
+                ) : backups.length === 0 ? (
+                  <Alert>
+                    <AlertTitle>Nessun backup disponibile</AlertTitle>
+                    <AlertDescription>
+                      Non ci sono backup salvati nel sistema. Crea un nuovo backup usando il pulsante in alto.
+                    </AlertDescription>
+                  </Alert>
+                ) : (
+                  <div className="rounded-md border">
+                    <Table>
+                      <TableHeader>
+                        <TableRow>
+                          <TableHead>Nome</TableHead>
+                          <TableHead>Data</TableHead>
+                          <TableHead>Dimensione</TableHead>
+                          <TableHead className="text-right">Azioni</TableHead>
+                        </TableRow>
+                      </TableHeader>
+                      <TableBody>
+                        {backups.map((backup) => (
+                          <TableRow key={backup.id}>
+                            <TableCell className="font-medium truncate max-w-[200px]">
+                              {backup.filename}
+                            </TableCell>
+                            <TableCell>{formatDate(backup.timestamp)}</TableCell>
+                            <TableCell>{formatFileSize(backup.size)}</TableCell>
+                            <TableCell className="text-right">
+                              <div className="flex justify-end gap-2">
+                                <a 
+                                  href="/api/database/download" 
+                                  target="_blank" 
+                                  rel="noopener noreferrer"
+                                  className="inline-flex"
+                                >
+                                  <Button size="icon" variant="outline">
+                                    <Download className="h-4 w-4" />
+                                  </Button>
+                                </a>
+                                
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="icon" variant="outline">
+                                      <ArrowUpDown className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Sei sicuro?</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Stai per ripristinare il database da un backup. Tutti i dati attuali saranno sostituiti con quelli nel backup selezionato.
+                                        <br /><br />
+                                        <strong>Questa operazione non può essere annullata.</strong>
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Annulla</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => restoreBackupMutation.mutate(backup.id)}
+                                        disabled={restoreBackupMutation.isPending}
+                                        className="bg-yellow-500 hover:bg-yellow-600"
+                                      >
+                                        {restoreBackupMutation.isPending ? (
+                                          <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Ripristino in corso...
+                                          </>
+                                        ) : (
+                                          'Sì, ripristina'
+                                        )}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                                
+                                <AlertDialog>
+                                  <AlertDialogTrigger asChild>
+                                    <Button size="icon" variant="outline" className="text-red-500 hover:text-red-600">
+                                      <Trash2 className="h-4 w-4" />
+                                    </Button>
+                                  </AlertDialogTrigger>
+                                  <AlertDialogContent>
+                                    <AlertDialogHeader>
+                                      <AlertDialogTitle>Elimina backup</AlertDialogTitle>
+                                      <AlertDialogDescription>
+                                        Sei sicuro di voler eliminare questo backup? Questa operazione non può essere annullata.
+                                      </AlertDialogDescription>
+                                    </AlertDialogHeader>
+                                    <AlertDialogFooter>
+                                      <AlertDialogCancel>Annulla</AlertDialogCancel>
+                                      <AlertDialogAction
+                                        onClick={() => deleteBackupMutation.mutate(backup.id)}
+                                        disabled={deleteBackupMutation.isPending}
+                                        className="bg-red-500 hover:bg-red-600"
+                                      >
+                                        {deleteBackupMutation.isPending ? (
+                                          <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Eliminazione...
+                                          </>
+                                        ) : (
+                                          'Sì, elimina'
+                                        )}
+                                      </AlertDialogAction>
+                                    </AlertDialogFooter>
+                                  </AlertDialogContent>
+                                </AlertDialog>
+                              </div>
+                            </TableCell>
+                          </TableRow>
+                        ))}
+                      </TableBody>
+                    </Table>
+                  </div>
+                )}
+              </CardContent>
+              <CardFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => refetchBackups()}
+                  disabled={isLoadingBackups}
+                  className="ml-auto"
+                >
+                  {isLoadingBackups ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Aggiornamento...
+                    </>
+                  ) : (
+                    'Aggiorna lista'
+                  )}
+                </Button>
+              </CardFooter>
+            </Card>
+          </TabsContent>
+          
+          <TabsContent value="restore" className="mt-6">
+            <Card>
+              <CardHeader>
+                <CardTitle>Ripristino Database</CardTitle>
+                <CardDescription>
+                  Ripristina il database da un backup locale o carica un file SQL
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Alert className="mb-6">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Attenzione</AlertTitle>
+                  <AlertDescription>
+                    Il ripristino sovrascriverà completamente tutti i dati esistenti nel database.
+                    Assicurati di avere un backup recente prima di procedere.
+                  </AlertDescription>
+                </Alert>
+                
+                <div className="grid gap-6">
+                  <div className="border rounded-lg p-6">
+                    <h3 className="text-lg font-medium mb-4">Carica file SQL</h3>
+                    
+                    <div className="text-center py-10 border-2 border-dashed rounded-lg">
+                      <Upload className="h-10 w-10 mx-auto mb-4 text-muted-foreground" />
+                      <p className="mb-2 text-sm text-muted-foreground">
+                        La funzionalità di upload file è temporaneamente disabilitata.
+                      </p>
+                      <p className="text-xs text-muted-foreground">
+                        Si prega di utilizzare il ripristino da backup online.
+                      </p>
+                    </div>
+                  </div>
+                  
+                  <div className="border rounded-lg p-6">
+                    <h3 className="text-lg font-medium mb-4">Download backup completo</h3>
+                    <p className="mb-4 text-sm text-muted-foreground">
+                      Scarica un backup completo del database in formato SQL per conservarlo in locale.
+                    </p>
+                    <Button asChild>
+                      <a href="/api/database/download" download>
+                        <Download className="mr-2 h-4 w-4" />
+                        Scarica backup completo
+                      </a>
+                    </Button>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+          </TabsContent>
+        </Tabs>
+      </div>
+    </MainLayout>
+  );
+}
