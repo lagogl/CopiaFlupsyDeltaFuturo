@@ -14,29 +14,29 @@ export function getSizeColor(sizeCode: string): string {
   // Estrai il numero dalla taglia
   const sizeNum = parseInt(sizeCode.replace('TP-', ''));
   
-  // Assegna colori in base alla gamma di dimensioni
-  if (sizeNum <= 500) {
-    return '#a855f7'; // purple-500
-  } else if (sizeNum <= 1000) {
-    return '#ec4899'; // pink-500
-  } else if (sizeNum <= 2000) {
-    return '#f43f5e'; // rose-500
-  } else if (sizeNum <= 3000) {
-    return '#ef4444'; // red-500
-  } else if (sizeNum <= 4000) {
-    return '#f97316'; // orange-500
-  } else if (sizeNum <= 6000) {
-    return '#f59e0b'; // amber-500
-  } else if (sizeNum <= 7000) {
+  // Assegna colori in base alla gamma di dimensioni - più il numero è alto (taglia più piccola), più il colore è verde
+  if (sizeNum >= 10000) {
+    return '#22c55e'; // green-500 - più verde per i numeri più alti (animali più piccoli)
+  } else if (sizeNum >= 9000) {
     return '#84cc16'; // lime-500
-  } else if (sizeNum <= 8000) {
-    return '#22c55e'; // green-500
-  } else if (sizeNum <= 9000) {
-    return '#14b8a6'; // teal-500
-  } else if (sizeNum <= 10000) {
-    return '#0ea5e9'; // sky-500
+  } else if (sizeNum >= 8000) {
+    return '#65a30d'; // lime-600
+  } else if (sizeNum >= 7000) {
+    return '#f59e0b'; // amber-500
+  } else if (sizeNum >= 6000) {
+    return '#f97316'; // orange-500
+  } else if (sizeNum >= 4000) {
+    return '#fb923c'; // orange-400
+  } else if (sizeNum >= 3000) {
+    return '#f43f5e'; // rose-500
+  } else if (sizeNum >= 2000) {
+    return '#ec4899'; // pink-500
+  } else if (sizeNum >= 1000) {
+    return '#ef4444'; // red-500
+  } else if (sizeNum >= 500) {
+    return '#dc2626'; // red-600 - più rosso per i numeri più bassi (animali più grandi)
   } else {
-    return '#000000'; // black
+    return '#b91c1c'; // red-700
   }
 }
 
@@ -66,27 +66,28 @@ export function getSizeBadgeClass(sizeCode: string): string {
   
   const sizeNum = parseInt(sizeCode.replace('TP-', ''));
   
-  if (sizeNum <= 500) {
-    return 'bg-purple-100 text-purple-800 border-purple-300';
-  } else if (sizeNum <= 1000) {
-    return 'bg-pink-100 text-pink-800 border-pink-300';
-  } else if (sizeNum <= 2000) {
-    return 'bg-rose-100 text-rose-800 border-rose-300';
-  } else if (sizeNum <= 3000) {
-    return 'bg-red-100 text-red-800 border-red-300';
-  } else if (sizeNum <= 4000) {
-    return 'bg-orange-100 text-orange-800 border-orange-300';
-  } else if (sizeNum <= 6000) {
-    return 'bg-amber-100 text-amber-800 border-amber-300';
-  } else if (sizeNum <= 7000) {
-    return 'bg-lime-100 text-lime-800 border-lime-300';
-  } else if (sizeNum <= 8000) {
+  // Numero più alto (seme più piccolo) = più verde; numero più basso (seme più grande) = più rosso
+  if (sizeNum >= 10000) {
     return 'bg-green-100 text-green-800 border-green-300';
-  } else if (sizeNum <= 9000) {
-    return 'bg-teal-100 text-teal-800 border-teal-300';
-  } else if (sizeNum <= 10000) {
-    return 'bg-sky-100 text-sky-800 border-sky-300';
+  } else if (sizeNum >= 9000) {
+    return 'bg-lime-100 text-lime-800 border-lime-300';
+  } else if (sizeNum >= 8000) {
+    return 'bg-lime-100 text-lime-700 border-lime-300';
+  } else if (sizeNum >= 7000) {
+    return 'bg-amber-100 text-amber-800 border-amber-300';
+  } else if (sizeNum >= 6000) {
+    return 'bg-orange-100 text-orange-800 border-orange-300';
+  } else if (sizeNum >= 4000) {
+    return 'bg-orange-100 text-orange-700 border-orange-300';
+  } else if (sizeNum >= 3000) {
+    return 'bg-rose-100 text-rose-800 border-rose-300';
+  } else if (sizeNum >= 2000) {
+    return 'bg-pink-100 text-pink-800 border-pink-300';
+  } else if (sizeNum >= 1000) {
+    return 'bg-red-100 text-red-800 border-red-300';
+  } else if (sizeNum >= 500) {
+    return 'bg-red-100 text-red-700 border-red-300';
   } else {
-    return 'bg-gray-900 text-white border-gray-700';
+    return 'bg-red-100 text-red-900 border-red-400';
   }
 }
