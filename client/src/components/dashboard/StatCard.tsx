@@ -20,7 +20,8 @@ export default function StatCard({
   changeText, 
   changeType, 
   linkTo, 
-  cardColor 
+  cardColor,
+  secondaryInfo
 }: StatCardProps) {
   const [, setLocation] = useLocation();
 
@@ -86,7 +87,12 @@ export default function StatCard({
         </div>
         {icon}
       </div>
-      <div className="mt-4">
+      {secondaryInfo && (
+        <div className="mt-2">
+          <p className="text-xs text-gray-600 font-medium">{secondaryInfo}</p>
+        </div>
+      )}
+      <div className="mt-2">
         <div className={`flex items-center ${getTextColor()}`}>
           {getIcon()}
           <span className="text-xs font-medium">{changeText}</span>
