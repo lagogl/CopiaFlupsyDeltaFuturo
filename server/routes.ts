@@ -3883,6 +3883,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`File SQL caricato e salvato in: ${filePath}`);
       
       // Ripristina il database dal file caricato
+      const { execFile } = require('child_process');
+      const { DATABASE_URL } = process.env;
+      
+      // Funzione per ripristinare il database da un file SQL
+      async function restoreDatabaseFromUploadedFile(filePath) {
+        return new Promise((resolve, reject) => {
+          // Estrai i parametri di connessione dall'URL
+          const dbUrl = new URL(DATABASE_URL);
+          const dbName = dbUrl.pathname.substring(1); // Rimuovi lo / iniziale
+          const user = dbUrl.username;
+          const password = dbUrl.password;
+          const host = dbUrl.hostname;
+          const port = dbUrl.port || '5432'; // Porta default se non specificata
+          
+          // Imposta le variabili di ambiente per psql
+          const env = {
+            ...process.env,
+            PGPASSWORD: password
+          };
+          
+          // Costruisci il comando psql per il ripristino
+          const psqlArgs = [
+            '-U', user,
+            '-h', host,
+            '-p', port,
+            '-d', dbName,
+            '-f', filePath,
+            '--set', 'ON_ERROR_STOP=on' // Ferma in caso di errori
+          ];
+          
+          console.log(`Tentativo di ripristino da file: ${filePath}`);
+          console.log(`Parametri di connessione: dbName=${dbName}, user=${user}, host=${host}, port=${port}`);
+          
+          // Esegui il comando psql per il ripristino
+          execFile('psql', psqlArgs, { env }, (error, stdout, stderr) => {
+            if (error) {
+              console.error(`Errore di esecuzione psql: ${error.message}`);
+              console.error(`stderr: ${stderr}`);
+              reject(error);
+              return;
+            }
+            
+            if (stderr) {
+              console.warn(`Avvisi durante il ripristino: ${stderr}`);
+            }
+            
+            console.log(`Ripristino completato con successo`);
+            console.log(`stdout: ${stdout}`);
+            
+            resolve(true);
+          });
+        });
+      }
+      
       const success = await restoreDatabaseFromUploadedFile(filePath);
       
       if (success) {

@@ -23,10 +23,90 @@ interface BackupInfo {
 }
 
 export default function BackupPage() {
+  const { toast } = useToast();
   const [activeTab, setActiveTab] = useState('backups');
   const [selectedFile, setSelectedFile] = useState<File | null>(null);
   const [isUploading, setIsUploading] = useState(false);
-  const { toast } = useToast();
+  
+  // Mutation per ripristinare da file caricato
+  const restoreFromFileMutation = useMutation({
+    mutationFn: async ({ sqlContent, fileName }: { sqlContent: string, fileName: string }) => {
+      return apiRequest('/api/database/restore', { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ sqlContent, fileName })
+      });
+    },
+    onSuccess: () => {
+      toast({
+        title: "Database ripristinato con successo",
+        description: "Il database è stato ripristinato correttamente dal file caricato.",
+      });
+      setSelectedFile(null);
+      setIsUploading(false);
+    },
+    onError: (error) => {
+      toast({
+        title: "Errore durante il ripristino",
+        description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        variant: "destructive"
+      });
+      setIsUploading(false);
+    }
+  });
+  
+  // Funzione per gestire il caricamento e invio del file
+  const handleFileUpload = async () => {
+    if (!selectedFile) {
+      toast({
+        title: "Nessun file selezionato",
+        description: "Seleziona un file SQL prima di procedere con il ripristino.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsUploading(true);
+    
+    try {
+      // Converti il file in base64
+      const fileReader = new FileReader();
+      
+      fileReader.onload = async (event) => {
+        if (!event.target || !event.target.result) {
+          throw new Error("Errore nella lettura del file");
+        }
+        
+        // Ottieni il contenuto come base64 rimuovendo il prefisso "data:*;base64,"
+        const base64String = (event.target.result as string).split(',')[1] || (event.target.result as string);
+        
+        // Invia al server
+        await restoreFromFileMutation.mutateAsync({
+          sqlContent: base64String,
+          fileName: selectedFile.name
+        });
+      };
+      
+      fileReader.onerror = () => {
+        throw new Error("Errore nella lettura del file");
+      };
+      
+      // Leggi il file come Data URL (base64)
+      fileReader.readAsDataURL(selectedFile);
+      
+    } catch (error) {
+      console.error("Errore durante l'upload:", error);
+      toast({
+        title: "Errore di caricamento",
+        description: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`,
+        variant: "destructive"
+      });
+      setIsUploading(false);
+    }
+  };
+
   const queryClient = useQueryClient();
   
   // Query per recuperare i backup disponibili
