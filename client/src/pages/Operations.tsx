@@ -811,21 +811,45 @@ export default function Operations() {
                                 )}
                               </p>
                               
-                              <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                              <div className="grid grid-cols-2 md:grid-cols-4 gap-x-4 gap-y-3 text-sm">
+                                {/* Prima riga - Informazioni di base */}
                                 <div>
-                                  <span className="text-gray-500">FLUPSY:</span>
-                                  <span className="font-medium ml-1 text-gray-700">{basket?.flupsy?.name || 'N/D'}</span>
+                                  <span className="text-gray-500 block text-xs">FLUPSY:</span>
+                                  <span className="font-medium text-gray-700">{basket?.flupsy?.name || 'N/D'}</span>
                                 </div>
                                 <div>
-                                  <span className="text-gray-500">Lotto:</span>
-                                  <span className="font-medium ml-1 text-gray-700">
+                                  <span className="text-gray-500 block text-xs">Lotto:</span>
+                                  <span className="font-medium text-gray-700">
                                     {cycleOps.length > 0 && cycleOps[0].lot ? cycleOps[0].lot.name : 'N/D'}
                                   </span>
                                 </div>
-                                
-                                {/* Durata del ciclo con sparkline */}
                                 <div>
-                                  <span className="text-gray-500">Durata:</span>
+                                  <span className="text-gray-500 block text-xs">Inizio:</span>
+                                  <span className="font-medium text-gray-700">
+                                    {cycle && format(new Date(cycle.startDate), 'dd/MM/yyyy')}
+                                  </span>
+                                </div>
+                                <div>
+                                  {cycle && cycle.endDate ? (
+                                    <>
+                                      <span className="text-gray-500 block text-xs">Fine:</span>
+                                      <span className="font-medium text-gray-700">
+                                        {format(new Date(cycle.endDate), 'dd/MM/yyyy')}
+                                      </span>
+                                    </>
+                                  ) : (
+                                    <>
+                                      <span className="text-gray-500 block text-xs">Ultima operazione:</span>
+                                      <span className="font-medium text-gray-700">
+                                        {cycleOps.length > 0 ? format(new Date(cycleOps[cycleOps.length - 1].date), 'dd/MM/yyyy') : 'N/D'}
+                                      </span>
+                                    </>
+                                  )}
+                                </div>
+                                
+                                {/* Seconda riga - Durata */}
+                                <div className="col-span-4">
+                                  <span className="text-gray-500 block text-xs">Durata:</span>
                                   <div className="font-medium text-gray-700 flex items-center mt-1">
                                     {cycle && (() => {
                                       const startDate = new Date(cycle.startDate);
@@ -839,8 +863,8 @@ export default function Operations() {
                                       
                                       return (
                                         <>
-                                          <span className="mr-2">{diffDays} giorni{cycle.endDate ? '' : ' (in corso)'}</span>
-                                          <div className="h-2 bg-gray-200 rounded-full w-16 flex-shrink-0">
+                                          <span className="mr-2 font-semibold">{diffDays} giorni{cycle.endDate ? '' : ' (in corso)'}</span>
+                                          <div className="h-2.5 bg-gray-200 rounded-full w-full flex-grow">
                                             <div 
                                               className={`h-full rounded-full ${
                                                 percentage < 30 ? 'bg-blue-400' : 
@@ -856,33 +880,10 @@ export default function Operations() {
                                   </div>
                                 </div>
                                 
+                                {/* Terza riga - Taglie e animali */}
                                 <div>
-                                  <span className="text-gray-500">Inizio:</span>
-                                  <span className="font-medium ml-1 text-gray-700">
-                                    {cycle && format(new Date(cycle.startDate), 'dd/MM/yyyy')}
-                                  </span>
-                                </div>
-                                
-                                {cycle && cycle.endDate ? (
-                                  <div>
-                                    <span className="text-gray-500">Fine:</span>
-                                    <span className="font-medium ml-1 text-gray-700">
-                                      {format(new Date(cycle.endDate), 'dd/MM/yyyy')}
-                                    </span>
-                                  </div>
-                                ) : (
-                                  <div>
-                                    <span className="text-gray-500">Ultima operazione:</span>
-                                    <span className="font-medium ml-1 text-gray-700">
-                                      {cycleOps.length > 0 ? format(new Date(cycleOps[cycleOps.length - 1].date), 'dd/MM/yyyy') : 'N/D'}
-                                    </span>
-                                  </div>
-                                )}
-                                
-                                {/* Taglia iniziale */}
-                                <div>
-                                  <span className="text-gray-500">Taglia iniziale:</span>
-                                  <span className="font-medium ml-1 text-gray-700 flex items-center">
+                                  <span className="text-gray-500 block text-xs">Taglia iniziale:</span>
+                                  <div className="font-medium text-gray-700 flex items-center">
                                     {cycleOps.length > 0 && cycleOps[0].size ? (
                                       <>
                                         <span className="mr-1">{cycleOps[0].size.code}</span>
@@ -893,179 +894,199 @@ export default function Operations() {
                                         )}
                                       </>
                                     ) : 'N/D'}
-                                  </span>
+                                  </div>
                                 </div>
                                 
-                                {/* Ultima taglia e peso medio con proiezione a TP-3000 */}
                                 <div>
-                                  <span className="text-gray-500">Taglia attuale:</span>
-                                  <div className="font-medium text-gray-700">
+                                  <span className="text-gray-500 block text-xs">Taglia attuale:</span>
+                                  <div className="font-medium text-gray-700 flex items-center">
                                     {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].size ? (
                                       <>
-                                        <div className="flex items-center">
-                                          <span className="mr-1">{cycleOps[cycleOps.length - 1].size.code}</span>
-                                          {cycleOps[cycleOps.length - 1].animalsPerKg && (
-                                            <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-                                              {Math.round(1000000 / cycleOps[cycleOps.length - 1].animalsPerKg)} mg
-                                            </span>
-                                          )}
-                                        </div>
-                                        
-                                        {/* Proiezione per raggiungere TP-3000 */}
-                                        {cycleOps[cycleOps.length - 1].animalsPerKg && (() => {
-                                          // Ottieni il peso attuale dall'ultimo dato registrato
-                                          const currentWeight = 1000000 / cycleOps[cycleOps.length - 1].animalsPerKg;
-                                          
-                                          // TP-3000 significa un range da 19.001 a 32.000 animali/kg
-                                          // Scegliamo 19.001 come valore di riferimento (animali più grandi in questa taglia)
-                                          const targetWeight = 1000000 / 19001; // ~ 52,63 mg
-                                          
-                                          // Se il peso attuale è già superiore al target, non mostrare la proiezione
-                                          if (currentWeight >= targetWeight) {
-                                            return (
-                                              <div className="text-xs text-emerald-600 mt-1 flex items-center">
-                                                <Check className="h-3 w-3 mr-1" />
-                                                Taglia TP-3000 già raggiunta
-                                              </div>
-                                            );
-                                          }
-                                          
-                                          // Calcola i giorni necessari per raggiungere il target
-                                          // Ottieni il mese corrente per l'SGR appropriato
-                                          const now = new Date();
-                                          const currentMonth = format(now, 'MMMM', { locale: it }).toLowerCase();
-                                          
-                                          // Utilizziamo un calcolo più preciso che tiene conto dei tassi SGR variabili per mese
-                                          // Simuliamo la crescita giorno per giorno utilizzando il tasso SGR appropriato per ogni mese
-                                          let daysNeeded = 0;
-                                          let simulatedWeight = currentWeight;
-                                          let simulationDate = new Date(); // Data attuale
-                                          
-                                          // Assicuriamoci che abbiamo i dati SGR
-                                          if (sgrs && sgrs.length > 0) {
-                                            // Simuliamo fino a quando non raggiungiamo il peso target o un anno di simulazione
-                                            while (simulatedWeight < targetWeight && daysNeeded < 365) {
-                                              // Ottieni il mese corrente per la data di simulazione
-                                              const simMonth = format(simulationDate, 'MMMM', { locale: it }).toLowerCase();
-                                              
-                                              // Trova l'SGR per questo mese
-                                              const monthSgr = sgrs.find((sgr: any) => sgr.month.toLowerCase() === simMonth);
-                                              let dailyGrowthRate = 1.0; // Valore predefinito
-                                              
-                                              if (monthSgr) {
-                                                dailyGrowthRate = monthSgr.percentage / 100; // Converti in forma decimale
-                                              }
-                                              
-                                              // Calcola il nuovo peso con la formula: Wt = W0 * e^(SGR*t)
-                                              // Per un singolo giorno: W1 = W0 * e^(SGR*1)
-                                              // Versione semplificata: W1 = W0 * (1 + SGR)
-                                              simulatedWeight = simulatedWeight * (1 + dailyGrowthRate);
-                                              
-                                              // Incrementa la data di simulazione di un giorno
-                                              simulationDate = addDays(simulationDate, 1);
-                                              daysNeeded++;
-                                            }
-                                          } else {
-                                            // Fallback se non ci sono dati SGR: usa un tasso fisso di crescita
-                                            const fixedDailyRate = 0.037; // 3.7% al giorno
-                                            daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / fixedDailyRate);
-                                          }
-                                          
-                                          // Calcola la data stimata di raggiungimento
-                                          const targetDate = addDays(now, daysNeeded);
-                                          
-                                          // Percentuale completata verso l'obiettivo
-                                          const progressPercentage = (currentWeight / targetWeight) * 100;
-                                          
-                                          return (
-                                            <div className="mt-1">
-                                              <div className="flex justify-between text-xs mb-1">
-                                                <span>Verso TP-3000</span>
-                                                <span>{Math.round(progressPercentage)}%</span>
-                                              </div>
-                                              <div className="h-1.5 bg-gray-200 rounded-full">
-                                                <div 
-                                                  className="h-full rounded-full bg-blue-500"
-                                                  style={{ width: `${progressPercentage}%` }}
-                                                />
-                                              </div>
-                                              <div className="flex justify-between text-xs mt-1 text-gray-500">
-                                                <span>
-                                                  ~{daysNeeded} giorni
-                                                </span>
-                                                <span>
-                                                  {format(targetDate, 'dd/MM/yyyy')}
-                                                </span>
-                                              </div>
-                                            </div>
-                                          );
-                                        })()}
+                                        <span className="mr-1">{cycleOps[cycleOps.length - 1].size.code}</span>
+                                        {cycleOps[cycleOps.length - 1].animalsPerKg && (
+                                          <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
+                                            {Math.round(1000000 / cycleOps[cycleOps.length - 1].animalsPerKg)} mg
+                                          </span>
+                                        )}
                                       </>
                                     ) : 'N/D'}
                                   </div>
                                 </div>
                                 
                                 <div>
-                                  <span className="text-gray-500">Animali:</span>
-                                  <span className="font-medium ml-1 text-gray-700">
+                                  <span className="text-gray-500 block text-xs">Animali:</span>
+                                  <span className="font-medium text-gray-700">
                                     {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].animalCount 
                                       ? cycleOps[cycleOps.length - 1].animalCount.toLocaleString() 
                                       : 'N/D'}
                                   </span>
                                 </div>
                                 
-                                {/* Performance di crescita */}
-                                {cycleOps.length >= 2 && (
-                                  <div>
-                                    <span className="text-gray-500">Performance:</span>
-                                    {(() => {
-                                      const firstOp = cycleOps[0];
-                                      const lastOp = cycleOps[cycleOps.length - 1];
-                                      
-                                      if (firstOp.animalsPerKg && lastOp.animalsPerKg) {
-                                        const firstWeight = 1000000 / firstOp.animalsPerKg;
-                                        const lastWeight = 1000000 / lastOp.animalsPerKg;
-                                        const weightGain = lastWeight - firstWeight;
-                                        const percentGain = ((lastWeight - firstWeight) / firstWeight) * 100;
-                                        
-                                        const startDate = new Date(firstOp.date);
-                                        const endDate = new Date(lastOp.date);
-                                        const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
-                                        const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-                                        
-                                        const dailyGainPercent = percentGain / diffDays;
-                                        
-                                        let performanceClass = 'text-gray-700';
-                                        if (dailyGainPercent >= 3) performanceClass = 'text-emerald-600 font-semibold';
-                                        else if (dailyGainPercent >= 2) performanceClass = 'text-emerald-500';
-                                        else if (dailyGainPercent >= 1) performanceClass = 'text-yellow-600';
-                                        else if (dailyGainPercent > 0) performanceClass = 'text-orange-500';
-                                        else performanceClass = 'text-red-500';
-                                        
-                                        return (
-                                          <span className={`ml-1 ${performanceClass}`}>
-                                            {percentGain.toFixed(1)}% 
-                                            <span className="text-xs block">
-                                              ({dailyGainPercent.toFixed(2)}%/giorno)
-                                            </span>
-                                          </span>
-                                        );
-                                      }
-                                      
-                                      return <span className="ml-1 text-gray-700">N/D</span>;
-                                    })()}
-                                  </div>
-                                )}
-                                
-                                {/* Peso totale */}
                                 <div>
-                                  <span className="text-gray-500">Peso totale:</span>
-                                  <span className="font-medium ml-1 text-gray-700">
+                                  <span className="text-gray-500 block text-xs">Peso totale:</span>
+                                  <span className="font-medium text-gray-700">
                                     {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].totalWeight 
-                                      ? `${cycleOps[cycleOps.length - 1].totalWeight.toLocaleString()} g` 
+                                      ? `${cycleOps[cycleOps.length - 1].totalWeight.toLocaleString()} g`
                                       : 'N/D'}
                                   </span>
                                 </div>
+                                
+                                {/* Quarta riga - Performance di crescita */}
+                                <div className="col-span-4">
+                                  {cycleOps.length >= 2 && (() => {
+                                    const firstOp = cycleOps[0];
+                                    const lastOp = cycleOps[cycleOps.length - 1];
+                                    
+                                    if (firstOp.animalsPerKg && lastOp.animalsPerKg) {
+                                      const firstWeight = 1000000 / firstOp.animalsPerKg;
+                                      const lastWeight = 1000000 / lastOp.animalsPerKg;
+                                      const weightGain = lastWeight - firstWeight;
+                                      const percentGain = ((lastWeight - firstWeight) / firstWeight) * 100;
+                                      
+                                      const startDate = new Date(firstOp.date);
+                                      const endDate = new Date(lastOp.date);
+                                      const diffTime = Math.abs(endDate.getTime() - startDate.getTime());
+                                      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+                                      
+                                      const dailyGainPercent = percentGain / diffDays;
+                                      
+                                      let performanceClass = 'text-gray-700';
+                                      let bgClass = 'bg-gray-50';
+                                      if (dailyGainPercent >= 3) {
+                                        performanceClass = 'text-emerald-700';
+                                        bgClass = 'bg-emerald-50';
+                                      }
+                                      else if (dailyGainPercent >= 2) {
+                                        performanceClass = 'text-emerald-600';
+                                        bgClass = 'bg-emerald-50';
+                                      }
+                                      else if (dailyGainPercent >= 1) {
+                                        performanceClass = 'text-yellow-600';
+                                        bgClass = 'bg-yellow-50';
+                                      }
+                                      else if (dailyGainPercent > 0) {
+                                        performanceClass = 'text-orange-500';
+                                        bgClass = 'bg-orange-50';
+                                      }
+                                      else {
+                                        performanceClass = 'text-red-500';
+                                        bgClass = 'bg-red-50';
+                                      }
+                                      
+                                      return (
+                                        <div className={`${bgClass} p-2 rounded-md mt-1`}>
+                                          <div className="flex items-center justify-between">
+                                            <span className="font-medium">Performance di crescita</span>
+                                            <div className={`font-semibold ${performanceClass}`}>
+                                              {percentGain.toFixed(1)}% totale
+                                            </div>
+                                          </div>
+                                          <div className="flex justify-between text-sm mt-1">
+                                            <span className="text-gray-500">
+                                              Periodo: {format(startDate, 'dd/MM')} - {format(endDate, 'dd/MM')} ({diffDays} giorni)
+                                            </span>
+                                            <span className={`${performanceClass} font-medium`}>
+                                              {dailyGainPercent.toFixed(2)}% al giorno
+                                            </span>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    return null;
+                                  })()}
+                                </div>
+                                
+                                {/* Quinta riga - Proiezione verso TP-3000 */}
+                                <div className="col-span-4">
+                                  {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].animalsPerKg && (() => {
+                                    // Ottieni il peso attuale dall'ultimo dato registrato
+                                    const currentWeight = 1000000 / cycleOps[cycleOps.length - 1].animalsPerKg;
+                                    
+                                    // TP-3000 significa un range da 19.001 a 32.000 animali/kg
+                                    // Scegliamo 19.001 come valore di riferimento (animali più grandi in questa taglia)
+                                    const targetWeight = 1000000 / 19001; // ~ 52,63 mg
+                                    
+                                    // Se il peso attuale è già superiore al target, non mostrare la proiezione
+                                    if (currentWeight >= targetWeight) {
+                                      return (
+                                        <div className="bg-emerald-50 p-2 rounded-md mt-1">
+                                          <div className="text-emerald-600 flex items-center">
+                                            <Check className="h-4 w-4 mr-2" />
+                                            <span className="font-medium">Taglia TP-3000 già raggiunta</span>
+                                          </div>
+                                        </div>
+                                      );
+                                    }
+                                    
+                                    // Calcola i giorni necessari per raggiungere il target
+                                    const now = new Date();
+                                    
+                                    // Utilizziamo un calcolo più preciso che tiene conto dei tassi SGR variabili per mese
+                                    let daysNeeded = 0;
+                                    let simulatedWeight = currentWeight;
+                                    let simulationDate = new Date(); // Data attuale
+                                    
+                                    // Assicuriamoci che abbiamo i dati SGR
+                                    if (sgrs && sgrs.length > 0) {
+                                      // Simuliamo fino a quando non raggiungiamo il peso target o un anno di simulazione
+                                      while (simulatedWeight < targetWeight && daysNeeded < 365) {
+                                        // Ottieni il mese corrente per la data di simulazione
+                                        const simMonth = format(simulationDate, 'MMMM', { locale: it }).toLowerCase();
+                                        
+                                        // Trova l'SGR per questo mese
+                                        const monthSgr = sgrs.find((sgr: any) => sgr.month.toLowerCase() === simMonth);
+                                        let dailyGrowthRate = 1.0; // Valore predefinito
+                                        
+                                        if (monthSgr) {
+                                          dailyGrowthRate = monthSgr.percentage / 100; // Converti in forma decimale
+                                        }
+                                        
+                                        // Versione semplificata: W1 = W0 * (1 + SGR)
+                                        simulatedWeight = simulatedWeight * (1 + dailyGrowthRate);
+                                        
+                                        // Incrementa la data di simulazione di un giorno
+                                        simulationDate = addDays(simulationDate, 1);
+                                        daysNeeded++;
+                                      }
+                                    } else {
+                                      // Fallback se non ci sono dati SGR: usa un tasso fisso di crescita
+                                      const fixedDailyRate = 0.037; // 3.7% al giorno
+                                      daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / fixedDailyRate);
+                                    }
+                                    
+                                    // Calcola la data stimata di raggiungimento
+                                    const targetDate = addDays(now, daysNeeded);
+                                    
+                                    // Percentuale completata verso l'obiettivo
+                                    const progressPercentage = (currentWeight / targetWeight) * 100;
+                                    
+                                    return (
+                                      <div className="bg-blue-50 p-2 rounded-md mt-1">
+                                        <div className="flex items-center justify-between mb-1">
+                                          <span className="text-blue-700 font-medium">Verso TP-3000</span>
+                                          <div className="flex items-center">
+                                            <span className="text-sm font-medium">{Math.round(progressPercentage)}%</span>
+                                            <span className="text-sm text-gray-500 ml-2">
+                                              {daysNeeded} giorni rimanenti
+                                            </span>
+                                          </div>
+                                        </div>
+                                        <div className="h-2 bg-gray-200 rounded-full">
+                                          <div 
+                                            className="h-full rounded-full bg-blue-500"
+                                            style={{ width: `${progressPercentage}%` }}
+                                          />
+                                        </div>
+                                        <div className="text-right text-xs mt-1 text-gray-500">
+                                          <span>Data stimata: {format(targetDate, 'dd/MM/yyyy')}</span>
+                                        </div>
+                                      </div>
+                                    );
+                                  })()}
+                                </div>
+                                
+
                               </div>
                             </div>
                           </div>
