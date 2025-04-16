@@ -28,15 +28,26 @@ export default function Baskets() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [selectedBasket, setSelectedBasket] = useState<any>(null);
   const [location] = useLocation();
+  const [urlParamsLoaded, setUrlParamsLoaded] = useState(false);
   
   // Extract flupsyId from URL if present
   useEffect(() => {
-    const params = new URLSearchParams(location.split('?')[1]);
+    // Reset alla prima pagina quando cambia la location
+    const params = new URLSearchParams(location.split('?')[1] || '');
     const flupsyIdParam = params.get('flupsyId');
+    
     if (flupsyIdParam) {
+      console.log("Setting flupsyFilter from URL:", flupsyIdParam);
       setFlupsyFilter(flupsyIdParam);
+      setUrlParamsLoaded(true);
+    } else if (!urlParamsLoaded) {
+      // Se non ci sono parametri nell'URL e non abbiamo ancora caricato parametri,
+      // resetta il filtro a "all"
+      console.log("Resetting flupsyFilter to 'all'");
+      setFlupsyFilter('all');
+      setUrlParamsLoaded(true);
     }
-  }, [location]);
+  }, [location, urlParamsLoaded]);
   
   // Query baskets
   const { data: baskets, isLoading } = useQuery({
