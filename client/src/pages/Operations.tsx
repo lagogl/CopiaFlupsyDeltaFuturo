@@ -283,13 +283,13 @@ export default function Operations() {
     if (!sgrInfo) return null;
     
     // I valori SGR dal database sono già percentuali giornaliere
-    // Li convertiamo in decimale per la formula di crescita (da % a decimale)
-    const dailyRate = sgrInfo.percentage / 100;
+    // Li convertiamo in forma decimale per la formula di crescita (da % a decimale)
+    const dailyRateDecimal = sgrInfo.percentage / 100;
     
-    // Calcola la crescita teorica usando la formula corretta: Pf = Pi * e^(SGR*t)
-    // Poiché calcoliamo la percentuale di crescita, iniziamo con Pi = 1
-    // Formula: (Pf/Pi - 1) * 100 = (e^(SGR*t) - 1) * 100
-    const theoreticalGrowthPercent = (Math.exp(dailyRate * days) - 1) * 100;
+    // Calcola la crescita teorica usando la formula corretta: 
+    // Crescita specifica = (e^(SGR*t) - 1) * 100
+    // dove SGR è il tasso di crescita giornaliero in forma decimale
+    const theoreticalGrowthPercent = (Math.exp(dailyRateDecimal * days) - 1) * 100;
     
     return {
       sgrMonth: sgrInfo.month,
@@ -932,20 +932,20 @@ export default function Operations() {
                                           const now = new Date();
                                           const currentMonth = format(now, 'MMMM', { locale: it }).toLowerCase();
                                           
-                                          // Trova l'SGR mensile per il mese corrente
-                                          let monthlyRate = 2.0; // Valore predefinito del 2% mensile
+                                          // Trova l'SGR giornaliero per il mese corrente
+                                          // I valori nel DB sono già percentuali di crescita giornaliera
+                                          let dailyRate = 1.0; // Valore predefinito dell'1% giornaliero
                                           if (sgrs && sgrs.length > 0) {
                                             const currentSgr = sgrs.find((sgr: any) => sgr.month.toLowerCase() === currentMonth);
                                             if (currentSgr) {
-                                              monthlyRate = currentSgr.percentage;
+                                              dailyRate = currentSgr.percentage;
                                             }
                                           }
                                           
-                                          // Converti tasso mensile in giornaliero
-                                          const dailyRate = ((Math.pow(1 + monthlyRate/100, 1/30) - 1) * 100);
-                                          
-                                          // Calcola i giorni necessari
-                                          const daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / Math.log(1 + dailyRate/100));
+                                          // Calcola i giorni necessari usando la formula corretta
+                                          // Wt = W0 * e^(SGR*t) => t = ln(Wt/W0) / SGR
+                                          // dove SGR è in forma decimale
+                                          const daysNeeded = Math.ceil(Math.log(targetWeight / currentWeight) / (dailyRate/100));
                                           
                                           // Calcola la data stimata di raggiungimento
                                           const targetDate = addDays(now, daysNeeded);
