@@ -9,6 +9,7 @@ import {
   FileJson, Download, Database
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
+import { MarineWeather } from "@/components/MarineWeather";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -148,6 +149,9 @@ export default function MainLayout({ children }: MainLayoutProps) {
               <Menu className="h-6 w-6" />
             </button>
             <h1 className="text-xl font-condensed font-bold">FLUPSY Delta Futuro</h1>
+          </div>
+          <div className="flex-1 flex justify-center">
+            <MarineWeather />
           </div>
           <div className="flex items-center space-x-4">
             <button className="flex items-center hover:bg-primary-dark p-2 rounded-md">
