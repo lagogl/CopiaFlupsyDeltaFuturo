@@ -2,9 +2,12 @@ import { useState, useEffect } from 'react';
 import { Waves, Thermometer, Navigation, Clock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Coordinate esatte di Porto Tolle
-const PORTO_TOLLE_LAT = 44.82625;
-const PORTO_TOLLE_LON = 12.30980;
+// Coordinate esatte di Porto Tolle (45°01'06.7"N 12°23'09.3"E)
+// Conversione da DMS (gradi, minuti, secondi) a gradi decimali
+// 45° 1' 6.7" N = 45.01853 N
+// 12° 23' 9.3" E = 12.38592 E
+const PORTO_TOLLE_LAT = 45.01853;
+const PORTO_TOLLE_LON = 12.38592;
 
 interface WeatherData {
   seaTemperature: number | null;
@@ -194,6 +197,7 @@ export function MarineWeather() {
           <TooltipContent className="w-52">
             <div className="space-y-1">
               <p className="font-medium">Marea a Porto Tolle</p>
+              <p className="text-xs text-gray-500">45°01'06.7"N 12°23'09.3"E</p>
               <p>Attuale: {weatherData.tideLevel}m ({weatherData.tideDirection})</p>
               <p>Trend: {weatherData.tideTrend}</p>
               <div className="flex justify-between pt-1 border-t border-gray-200 mt-1">
