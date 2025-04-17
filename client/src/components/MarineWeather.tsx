@@ -131,7 +131,7 @@ export function MarineWeather() {
           <TooltipTrigger asChild>
             <div className="flex items-center space-x-1">
               <Thermometer className="h-4 w-4" />
-              <span className="text-sm">{weatherData.seaTemperature}°C</span>
+              <span className="text-sm">Mare: {weatherData.seaTemperature}°C</span>
             </div>
           </TooltipTrigger>
           <TooltipContent>
