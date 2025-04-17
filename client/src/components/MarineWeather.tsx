@@ -11,6 +11,7 @@ const PORTO_TOLLE_LON = 12.38592;
 
 // API per i dati di marea di Venezia (proxy locale)
 const VENEZIA_TIDE_API = "/api/proxy/tide-data";
+const VENEZIA_TIDE_FORECAST_API = "/api/proxy/tide-forecast";
 
 interface WeatherData {
   seaTemperature: number | null;
@@ -56,6 +57,7 @@ export function MarineWeather() {
     // Funzione per recuperare i dati delle maree da Venezia (Chioggia)
     const fetchChioggiaData = async () => {
       try {
+        // Recupera il livello attuale della marea
         const response = await fetch(VENEZIA_TIDE_API);
         
         if (!response.ok) {
@@ -76,7 +78,7 @@ export function MarineWeather() {
         const stationData = chioggiaData || chioggiaAlt;
         
         if (!stationData) {
-          console.warn('Dati per Chioggia non trovati');
+          console.warn('Dati attuali per Chioggia non trovati');
           return null;
         }
         
@@ -88,21 +90,72 @@ export function MarineWeather() {
         const chioggiaLevel = valoreNumerico;
         const chioggiaTime = stationData.data; // Prende direttamente la data dalla risposta
         
-        // Creiamo previsioni simulate basate sull'ora attuale
-        // Nell'API reale non ci sono previsioni, quindi le creiamo approssimativamente
-        const now = new Date();
-        const chioggiaForecast = Array.from({ length: 6 }, (_, i) => {
-          const forecastTime = new Date(now);
-          forecastTime.setHours(now.getHours() + (i + 1));
+        // Recupera le previsioni di marea
+        let chioggiaForecast: Array<{time: string, level: number}> = [];
+        
+        try {
+          const forecastResponse = await fetch(VENEZIA_TIDE_FORECAST_API);
           
-          // Aggiungiamo una variazione simulata (onda sinusoidale nelle prossime ore)
-          const variation = Math.sin((i+1) * 0.5) * 0.1;
+          if (forecastResponse.ok) {
+            const forecastData = await forecastResponse.json();
+            
+            // Cerchiamo dati specifici di Chioggia nelle previsioni
+            const chioggiaForecastStation = forecastData
+              .find((station: any) => station.stazione?.toLowerCase().includes('chioggia'));
+            
+            if (chioggiaForecastStation && Array.isArray(chioggiaForecastStation.previsione)) {
+              // Estrai le previsioni per le prossime ore
+              chioggiaForecast = chioggiaForecastStation.previsione
+                .slice(0, 6) // Prendiamo solo le prime 6 previsioni
+                .map((prev: any) => {
+                  // Estrai ora dalla data di previsione (es. "2024-02-12 18:00")
+                  const dateParts = prev.data.split(' ');
+                  const timePart = dateParts[1].substring(0, 5); // "18:00"
+                  
+                  // Estrai valore numerico
+                  const levelValue = parseFloat(prev.valore.replace(' m', ''));
+                  
+                  return {
+                    time: timePart,
+                    level: levelValue
+                  };
+                });
+            } else {
+              // Se non troviamo dati specifici per Chioggia, usiamo la prima stazione
+              if (forecastData[0]?.previsione && Array.isArray(forecastData[0].previsione)) {
+                chioggiaForecast = forecastData[0].previsione
+                  .slice(0, 6)
+                  .map((prev: any) => {
+                    const dateParts = prev.data.split(' ');
+                    const timePart = dateParts[1].substring(0, 5);
+                    const levelValue = parseFloat(prev.valore.replace(' m', ''));
+                    
+                    return {
+                      time: timePart,
+                      level: levelValue
+                    };
+                  });
+              }
+            }
+          }
+        } catch (forecastError) {
+          console.error('Errore nel recupero delle previsioni marea di Chioggia:', forecastError);
           
-          return {
-            time: forecastTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-            level: chioggiaLevel + variation
-          };
-        });
+          // Se le previsioni reali non funzionano, creiamo previsioni simulate come fallback
+          const now = new Date();
+          chioggiaForecast = Array.from({ length: 6 }, (_, i) => {
+            const forecastTime = new Date(now);
+            forecastTime.setHours(now.getHours() + (i + 1));
+            
+            // Aggiungiamo una variazione simulata (onda sinusoidale nelle prossime ore)
+            const variation = Math.sin((i+1) * 0.5) * 0.1;
+            
+            return {
+              time: forecastTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
+              level: chioggiaLevel + variation
+            };
+          });
+        }
         
         return {
           chioggiaLevel,
