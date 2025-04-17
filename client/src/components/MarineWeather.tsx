@@ -29,6 +29,12 @@ interface WeatherData {
   chioggiaLevel: number | null;
   chioggiaTime: string | null;
   chioggiaForecast: Array<{time: string, level: number}> | null;
+  // Dati degli estremi previsti per Chioggia
+  chioggiaMaxLevel: number | null;
+  chioggiaMaxTime: string | null;
+  chioggiaMinLevel: number | null;
+  chioggiaMinTime: string | null;
+  chioggiaTrend: string | null;
 }
 
 export function MarineWeather() {
@@ -48,7 +54,12 @@ export function MarineWeather() {
     tideTrend: null,
     chioggiaLevel: null,
     chioggiaTime: null,
-    chioggiaForecast: null
+    chioggiaForecast: null,
+    chioggiaMaxLevel: null,
+    chioggiaMaxTime: null,
+    chioggiaMinLevel: null,
+    chioggiaMinTime: null,
+    chioggiaTrend: null
   });
 
   useEffect(() => {
@@ -88,77 +99,109 @@ export function MarineWeather() {
         const chioggiaLevel = valoreNumerico;
         const chioggiaTime = stationData.data; // Prende direttamente la data dalla risposta
         
-        // Recupera le previsioni di marea
-        let chioggiaForecast: Array<{time: string, level: number}> = [];
-        
+        // Recupera le previsioni di marea e gli eventi estremi futuri (massimi e minimi)
         try {
           const forecastResponse = await fetch(VENEZIA_TIDE_FORECAST_API);
           
           if (forecastResponse.ok) {
             const forecastData = await forecastResponse.json();
             
-            // Cerchiamo dati specifici di Chioggia nelle previsioni
-            const chioggiaForecastStation = forecastData
-              .find((station: any) => station.stazione?.toLowerCase().includes('chioggia'));
+            // Ordina gli eventi estremi per data
+            const sortedExtremes = [...forecastData].sort((a, b) => {
+              const dateA = new Date(a.DATA_ESTREMALE).getTime();
+              const dateB = new Date(b.DATA_ESTREMALE).getTime();
+              return dateA - dateB;
+            });
             
-            if (chioggiaForecastStation && Array.isArray(chioggiaForecastStation.previsione)) {
-              // Estrai le previsioni per le prossime ore
-              chioggiaForecast = chioggiaForecastStation.previsione
-                .slice(0, 6) // Prendiamo solo le prime 6 previsioni
-                .map((prev: any) => {
-                  // Estrai ora dalla data di previsione (es. "2024-02-12 18:00")
-                  const dateParts = prev.data.split(' ');
-                  const timePart = dateParts[1].substring(0, 5); // "18:00"
-                  
-                  // Estrai valore numerico
-                  const levelValue = parseFloat(prev.valore.replace(' m', ''));
-                  
-                  return {
-                    time: timePart,
-                    level: levelValue
-                  };
+            // Estrai massimi e minimi previsti
+            const maxEvent = sortedExtremes.find(event => event.TIPO_ESTREMALE === 'max');
+            const minEvent = sortedExtremes.find(event => event.TIPO_ESTREMALE === 'min');
+            
+            // Crea le previsioni orarie
+            const chioggiaForecast: Array<{time: string, level: number}> = [];
+            
+            // Usa gli estremi per determinare la tendenza
+            const now = new Date();
+            const nextExtreme = sortedExtremes[0];
+            const nextExtremeDate = new Date(nextExtreme.DATA_ESTREMALE);
+            
+            // Determina il trend della marea basato sul prossimo estremo
+            let chioggiaTrend = "stabile";
+            if (nextExtreme.TIPO_ESTREMALE === 'max') {
+              chioggiaTrend = "crescente";
+            } else if (nextExtreme.TIPO_ESTREMALE === 'min') {
+              chioggiaTrend = "calante";
+            }
+            
+            // Estrai massimo e minimo
+            let chioggiaMaxLevel = null;
+            let chioggiaMaxTime = null;
+            let chioggiaMinLevel = null;
+            let chioggiaMinTime = null;
+            
+            if (maxEvent) {
+              const maxValue = parseInt(maxEvent.VALORE) / 100; // Converti in metri
+              const maxDate = new Date(maxEvent.DATA_ESTREMALE);
+              chioggiaMaxLevel = maxValue;
+              chioggiaMaxTime = `${maxDate.getHours().toString().padStart(2, '0')}:${maxDate.getMinutes().toString().padStart(2, '0')}`;
+            }
+            
+            if (minEvent) {
+              const minValue = parseInt(minEvent.VALORE) / 100; // Converti in metri
+              const minDate = new Date(minEvent.DATA_ESTREMALE);
+              chioggiaMinLevel = minValue;
+              chioggiaMinTime = `${minDate.getHours().toString().padStart(2, '0')}:${minDate.getMinutes().toString().padStart(2, '0')}`;
+            }
+            
+            // Crea simulazione di dati orari basati sugli estremi per il grafico
+            // Questo è necessario perché l'API fornisce solo eventi estremi (min/max)
+            if (maxEvent && minEvent) {
+              const maxValue = parseInt(maxEvent.VALORE) / 100;
+              const minValue = parseInt(minEvent.VALORE) / 100;
+              const maxTime = new Date(maxEvent.DATA_ESTREMALE).getTime();
+              const minTime = new Date(minEvent.DATA_ESTREMALE).getTime();
+              
+              // Crea sei punti di previsione
+              for (let i = 0; i < 6; i++) {
+                const forecastTime = new Date(now.getTime() + i * 60 * 60 * 1000); // Ogni ora
+                const forecastTimeStr = `${forecastTime.getHours().toString().padStart(2, '0')}:${forecastTime.getMinutes().toString().padStart(2, '0')}`;
+                
+                // Calcola livello basandosi su una funzione sinusoidale tra i due estremi
+                const timeFraction = (forecastTime.getTime() - now.getTime()) / (maxTime - now.getTime());
+                const level = chioggiaLevel + (maxValue - chioggiaLevel) * Math.sin(timeFraction * Math.PI / 2);
+                
+                chioggiaForecast.push({
+                  time: forecastTimeStr,
+                  level: parseFloat(level.toFixed(2))
                 });
-            } else {
-              // Se non troviamo dati specifici per Chioggia, usiamo la prima stazione
-              if (forecastData[0]?.previsione && Array.isArray(forecastData[0].previsione)) {
-                chioggiaForecast = forecastData[0].previsione
-                  .slice(0, 6)
-                  .map((prev: any) => {
-                    const dateParts = prev.data.split(' ');
-                    const timePart = dateParts[1].substring(0, 5);
-                    const levelValue = parseFloat(prev.valore.replace(' m', ''));
-                    
-                    return {
-                      time: timePart,
-                      level: levelValue
-                    };
-                  });
               }
             }
+            
+            return {
+              chioggiaLevel,
+              chioggiaTime,
+              chioggiaForecast,
+              chioggiaMaxLevel,
+              chioggiaMaxTime,
+              chioggiaMinLevel,
+              chioggiaMinTime,
+              chioggiaTrend
+            };
           }
         } catch (forecastError) {
           console.error('Errore nel recupero delle previsioni marea di Chioggia:', forecastError);
-          
-          // Se le previsioni reali non funzionano, creiamo previsioni simulate come fallback
-          const now = new Date();
-          chioggiaForecast = Array.from({ length: 6 }, (_, i) => {
-            const forecastTime = new Date(now);
-            forecastTime.setHours(now.getHours() + (i + 1));
-            
-            // Aggiungiamo una variazione simulata (onda sinusoidale nelle prossime ore)
-            const variation = Math.sin((i+1) * 0.5) * 0.1;
-            
-            return {
-              time: forecastTime.toLocaleTimeString('it-IT', { hour: '2-digit', minute: '2-digit' }),
-              level: chioggiaLevel + variation
-            };
-          });
         }
         
+        // In caso di errore, restituisci almeno i dati attuali
         return {
           chioggiaLevel,
           chioggiaTime,
-          chioggiaForecast
+          chioggiaForecast: [],
+          chioggiaMaxLevel: null,
+          chioggiaMaxTime: null,
+          chioggiaMinLevel: null,
+          chioggiaMinTime: null,
+          chioggiaTrend: null
         };
       } catch (error) {
         console.error('Errore nel recupero dei dati di Chioggia:', error);
@@ -286,12 +329,17 @@ export function MarineWeather() {
         const chioggiaData = await fetchChioggiaData();
         
         if (chioggiaData) {
-          // Aggiorniamo solo i dati di Chioggia, mantenendo gli altri dati invariati
+          // Aggiorniamo i dati di Chioggia, mantenendo gli altri dati invariati
           setWeatherData(prev => ({
             ...prev,
             chioggiaLevel: chioggiaData.chioggiaLevel,
             chioggiaTime: chioggiaData.chioggiaTime,
-            chioggiaForecast: chioggiaData.chioggiaForecast
+            chioggiaForecast: chioggiaData.chioggiaForecast,
+            chioggiaMaxLevel: chioggiaData.chioggiaMaxLevel,
+            chioggiaMaxTime: chioggiaData.chioggiaMaxTime,
+            chioggiaMinLevel: chioggiaData.chioggiaMinLevel,
+            chioggiaMinTime: chioggiaData.chioggiaMinTime,
+            chioggiaTrend: chioggiaData.chioggiaTrend
           }));
         }
       } catch (error) {
@@ -313,7 +361,12 @@ export function MarineWeather() {
           ...prev,
           chioggiaLevel: chioggiaData.chioggiaLevel,
           chioggiaTime: chioggiaData.chioggiaTime,
-          chioggiaForecast: chioggiaData.chioggiaForecast
+          chioggiaForecast: chioggiaData.chioggiaForecast,
+          chioggiaMaxLevel: chioggiaData.chioggiaMaxLevel,
+          chioggiaMaxTime: chioggiaData.chioggiaMaxTime,
+          chioggiaMinLevel: chioggiaData.chioggiaMinLevel,
+          chioggiaMinTime: chioggiaData.chioggiaMinTime,
+          chioggiaTrend: chioggiaData.chioggiaTrend
         }));
       }
     }, 10 * 60 * 1000); // 10 minuti
