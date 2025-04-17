@@ -120,18 +120,59 @@ export function MarineWeather() {
             // Crea le previsioni orarie
             const chioggiaForecast: Array<{time: string, level: number}> = [];
             
-            // Usa gli estremi per determinare la tendenza
-            const now = new Date();
-            const nextExtreme = sortedExtremes[0];
-            const nextExtremeDate = new Date(nextExtreme.DATA_ESTREMALE);
-            
-            // Determina il trend della marea basato sul prossimo estremo
-            let chioggiaTrend = "stabile";
-            if (nextExtreme.TIPO_ESTREMALE === 'max') {
-              chioggiaTrend = "crescente";
-            } else if (nextExtreme.TIPO_ESTREMALE === 'min') {
-              chioggiaTrend = "calante";
+            // Calcola il trend della marea basato sugli estremi di marea
+            function determineTrend() {
+              // Otteniamo l'ora attuale
+              const currentTime = new Date();
+              const currentTimeMs = currentTime.getTime();
+              
+              // Otteniamo il prossimo estremo (già ordinato per data)
+              const nextExtreme = sortedExtremes[0];
+              const nextExtremeDate = new Date(nextExtreme.DATA_ESTREMALE);
+              const nextExtremeMs = nextExtremeDate.getTime();
+              const timeToNextMs = nextExtremeMs - currentTimeMs;
+              
+              // Default: stabile
+              let trend = "stabile";
+              
+              // Logica del trend
+              if (nextExtreme.TIPO_ESTREMALE === 'max') {
+                // Se il prossimo evento è un massimo, la marea sta crescendo
+                trend = "crescente";
+                
+                // A meno che non siamo molto vicini al massimo (15 minuti)
+                if (timeToNextMs < 15 * 60 * 1000) {
+                  trend = "stabile"; // Quasi al massimo
+                }
+              } else if (nextExtreme.TIPO_ESTREMALE === 'min') {
+                // Se il prossimo evento è un minimo, la marea sta calando
+                trend = "calante";
+                
+                // A meno che non siamo molto vicini al minimo (15 minuti)
+                if (timeToNextMs < 15 * 60 * 1000) {
+                  trend = "stabile"; // Quasi al minimo
+                }
+              }
+              
+              // Se abbiamo un secondo estremo, possiamo affinare la previsione
+              if (sortedExtremes.length > 1) {
+                const secondExtreme = sortedExtremes[1];
+                
+                // Se siamo esattamente in un punto di svolta (5 minuti da un estremo)
+                if (timeToNextMs < 5 * 60 * 1000) {
+                  if (nextExtreme.TIPO_ESTREMALE === 'max' && secondExtreme.TIPO_ESTREMALE === 'min') {
+                    trend = "calante"; // Iniziamo a calare dopo un massimo
+                  } else if (nextExtreme.TIPO_ESTREMALE === 'min' && secondExtreme.TIPO_ESTREMALE === 'max') {
+                    trend = "crescente"; // Iniziamo a crescere dopo un minimo
+                  }
+                }
+              }
+              
+              return trend;
             }
+            
+            // Determina il trend della marea
+            const chioggiaTrend = determineTrend();
             
             // Estrai massimo e minimo
             let chioggiaMaxLevel = null;
