@@ -121,58 +121,51 @@ export function MarineWeather() {
             const chioggiaForecast: Array<{time: string, level: number}> = [];
             
             // Calcola il trend della marea basato sugli estremi di marea
-            function determineTrend() {
-              // Otteniamo l'ora attuale
-              const currentTime = new Date();
-              const currentTimeMs = currentTime.getTime();
+            // Otteniamo l'ora attuale
+            const currentTime = new Date();
+            const currentTimeMs = currentTime.getTime();
+            
+            // Otteniamo il prossimo estremo (già ordinato per data)
+            const nextExtreme = sortedExtremes[0];
+            const nextExtremeDate = new Date(nextExtreme.DATA_ESTREMALE);
+            const nextExtremeMs = nextExtremeDate.getTime();
+            const timeToNextMs = nextExtremeMs - currentTimeMs;
+            
+            // Default: stabile
+            let chioggiaTrend = "stabile";
+            
+            // Logica del trend
+            if (nextExtreme.TIPO_ESTREMALE === 'max') {
+              // Se il prossimo evento è un massimo, la marea sta crescendo
+              chioggiaTrend = "crescente";
               
-              // Otteniamo il prossimo estremo (già ordinato per data)
-              const nextExtreme = sortedExtremes[0];
-              const nextExtremeDate = new Date(nextExtreme.DATA_ESTREMALE);
-              const nextExtremeMs = nextExtremeDate.getTime();
-              const timeToNextMs = nextExtremeMs - currentTimeMs;
-              
-              // Default: stabile
-              let trend = "stabile";
-              
-              // Logica del trend
-              if (nextExtreme.TIPO_ESTREMALE === 'max') {
-                // Se il prossimo evento è un massimo, la marea sta crescendo
-                trend = "crescente";
-                
-                // A meno che non siamo molto vicini al massimo (15 minuti)
-                if (timeToNextMs < 15 * 60 * 1000) {
-                  trend = "stabile"; // Quasi al massimo
-                }
-              } else if (nextExtreme.TIPO_ESTREMALE === 'min') {
-                // Se il prossimo evento è un minimo, la marea sta calando
-                trend = "calante";
-                
-                // A meno che non siamo molto vicini al minimo (15 minuti)
-                if (timeToNextMs < 15 * 60 * 1000) {
-                  trend = "stabile"; // Quasi al minimo
-                }
+              // A meno che non siamo molto vicini al massimo (15 minuti)
+              if (timeToNextMs < 15 * 60 * 1000) {
+                chioggiaTrend = "stabile"; // Quasi al massimo
               }
+            } else if (nextExtreme.TIPO_ESTREMALE === 'min') {
+              // Se il prossimo evento è un minimo, la marea sta calando
+              chioggiaTrend = "calante";
               
-              // Se abbiamo un secondo estremo, possiamo affinare la previsione
-              if (sortedExtremes.length > 1) {
-                const secondExtreme = sortedExtremes[1];
-                
-                // Se siamo esattamente in un punto di svolta (5 minuti da un estremo)
-                if (timeToNextMs < 5 * 60 * 1000) {
-                  if (nextExtreme.TIPO_ESTREMALE === 'max' && secondExtreme.TIPO_ESTREMALE === 'min') {
-                    trend = "calante"; // Iniziamo a calare dopo un massimo
-                  } else if (nextExtreme.TIPO_ESTREMALE === 'min' && secondExtreme.TIPO_ESTREMALE === 'max') {
-                    trend = "crescente"; // Iniziamo a crescere dopo un minimo
-                  }
-                }
+              // A meno che non siamo molto vicini al minimo (15 minuti)
+              if (timeToNextMs < 15 * 60 * 1000) {
+                chioggiaTrend = "stabile"; // Quasi al minimo
               }
-              
-              return trend;
             }
             
-            // Determina il trend della marea
-            const chioggiaTrend = determineTrend();
+            // Se abbiamo un secondo estremo, possiamo affinare la previsione
+            if (sortedExtremes.length > 1) {
+              const secondExtreme = sortedExtremes[1];
+              
+              // Se siamo esattamente in un punto di svolta (5 minuti da un estremo)
+              if (timeToNextMs < 5 * 60 * 1000) {
+                if (nextExtreme.TIPO_ESTREMALE === 'max' && secondExtreme.TIPO_ESTREMALE === 'min') {
+                  chioggiaTrend = "calante"; // Iniziamo a calare dopo un massimo
+                } else if (nextExtreme.TIPO_ESTREMALE === 'min' && secondExtreme.TIPO_ESTREMALE === 'max') {
+                  chioggiaTrend = "crescente"; // Iniziamo a crescere dopo un minimo
+                }
+              }
+            }
             
             // Estrai massimo e minimo
             let chioggiaMaxLevel = null;
@@ -202,15 +195,26 @@ export function MarineWeather() {
               const maxTime = new Date(maxEvent.DATA_ESTREMALE).getTime();
               const minTime = new Date(minEvent.DATA_ESTREMALE).getTime();
               
+              // Usa l'ora attuale per le previsioni
+              const currentTimeForForecast = new Date();
+              const currentTimeMs = currentTimeForForecast.getTime();
+              
               // Crea sei punti di previsione
               for (let i = 0; i < 6; i++) {
-                const forecastTime = new Date(now.getTime() + i * 60 * 60 * 1000); // Ogni ora
+                // Calcola il timestamp per ogni ora di previsione
+                const forecastTimeMs = currentTimeMs + i * 60 * 60 * 1000;
+                const forecastTime = new Date(forecastTimeMs);
                 const forecastTimeStr = `${forecastTime.getHours().toString().padStart(2, '0')}:${forecastTime.getMinutes().toString().padStart(2, '0')}`;
                 
-                // Calcola livello basandosi su una funzione sinusoidale tra i due estremi
-                const timeFraction = (forecastTime.getTime() - now.getTime()) / (maxTime - now.getTime());
-                const level = chioggiaLevel + (maxValue - chioggiaLevel) * Math.sin(timeFraction * Math.PI / 2);
+                // Calcola livello basandosi su una funzione sinusoidale
+                const timeFraction = (forecastTimeMs - currentTimeMs) / (maxTime - currentTimeMs);
+                // Limita la frazione tra 0 e 1 per evitare errori di calcolo
+                const safeTimeFraction = Math.max(0, Math.min(1, timeFraction));
                 
+                // Calcola il livello interpolando tra il livello attuale e il massimo previsto
+                const level = chioggiaLevel + (maxValue - chioggiaLevel) * Math.sin(safeTimeFraction * Math.PI / 2);
+                
+                // Aggiungi il punto di previsione all'array
                 chioggiaForecast.push({
                   time: forecastTimeStr,
                   level: parseFloat(level.toFixed(2))
@@ -504,27 +508,33 @@ export function MarineWeather() {
             </TooltipTrigger>
             <TooltipContent className="w-64">
               <div className="space-y-1">
-                <p className="font-medium">Marea a Chioggia</p>
-                <p>Livello attuale: {weatherData.chioggiaLevel.toFixed(2)}m</p>
-                {weatherData.chioggiaTrend && <p>Trend: <span className="font-medium">{weatherData.chioggiaTrend}</span></p>}
+                <p className="font-medium text-blue-600">Marea a Chioggia</p>
+                <p>Livello attuale: <span className="font-medium">{weatherData.chioggiaLevel.toFixed(2)}m</span></p>
+                {weatherData.chioggiaTrend && (
+                  <p>Trend: <span className={`font-medium ${
+                    weatherData.chioggiaTrend === "crescente" ? "text-green-600" : 
+                    weatherData.chioggiaTrend === "calante" ? "text-red-600" : 
+                    "text-amber-600"
+                  }`}>{weatherData.chioggiaTrend}</span></p>
+                )}
                 
                 {/* Visualizza i valori massimi e minimi previsti */}
                 {weatherData.chioggiaMaxLevel && weatherData.chioggiaMaxTime && (
-                  <p>Max previsto: <span className="font-medium">{weatherData.chioggiaMaxLevel.toFixed(2)}m</span> alle <span className="font-mono">{weatherData.chioggiaMaxTime}</span></p>
+                  <p>Max previsto: <span className="font-medium text-green-600">{weatherData.chioggiaMaxLevel.toFixed(2)}m</span> alle <span className="font-mono text-blue-500">{weatherData.chioggiaMaxTime}</span></p>
                 )}
                 {weatherData.chioggiaMinLevel && weatherData.chioggiaMinTime && (
-                  <p>Min previsto: <span className="font-medium">{weatherData.chioggiaMinLevel.toFixed(2)}m</span> alle <span className="font-mono">{weatherData.chioggiaMinTime}</span></p>
+                  <p>Min previsto: <span className="font-medium text-red-600">{weatherData.chioggiaMinLevel.toFixed(2)}m</span> alle <span className="font-mono text-blue-500">{weatherData.chioggiaMinTime}</span></p>
                 )}
                 
                 <p className="text-xs text-gray-500">Aggiornato: {weatherData.chioggiaTime}</p>
                 
                 {weatherData.chioggiaForecast && weatherData.chioggiaForecast.length > 0 && (
                   <div className="pt-1 mt-1 border-t border-gray-200">
-                    <p className="text-sm font-medium mb-1">Previsioni:</p>
+                    <p className="text-sm font-medium mb-1 text-blue-600">Previsioni:</p>
                     <div className="grid grid-cols-2 gap-x-2 gap-y-1">
                       {weatherData.chioggiaForecast.slice(0, 6).map((forecast, index) => (
                         <div key={index} className="text-xs">
-                          <span className="font-mono">{forecast.time}</span>: {forecast.level.toFixed(2)}m
+                          <span className="font-mono text-gray-600">{forecast.time}</span>: <span className="font-medium">{forecast.level.toFixed(2)}m</span>
                         </div>
                       ))}
                     </div>
