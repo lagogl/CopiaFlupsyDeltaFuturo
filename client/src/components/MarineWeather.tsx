@@ -457,7 +457,7 @@ export function MarineWeather() {
                 <Waves className="h-4 w-4 text-blue-300" />
                 <span className="text-sm">
                   Marea: {weatherData.chioggiaLevel.toFixed(2)}m 
-                  {chioggiaAnalysis.trend && ` (${chioggiaAnalysis.trend})`}
+                  {weatherData.chioggiaTrend && ` (${weatherData.chioggiaTrend})`}
                 </span>
               </div>
             </TooltipTrigger>
@@ -465,14 +465,14 @@ export function MarineWeather() {
               <div className="space-y-1">
                 <p className="font-medium">Marea a Chioggia</p>
                 <p>Livello attuale: {weatherData.chioggiaLevel.toFixed(2)}m</p>
-                {chioggiaAnalysis.trend && <p>Trend: <span className="font-medium">{chioggiaAnalysis.trend}</span></p>}
+                {weatherData.chioggiaTrend && <p>Trend: <span className="font-medium">{weatherData.chioggiaTrend}</span></p>}
                 
                 {/* Visualizza i valori massimi e minimi previsti */}
-                {chioggiaAnalysis.maxLevel && chioggiaAnalysis.maxTime && (
-                  <p>Max previsto: <span className="font-medium">{chioggiaAnalysis.maxLevel.toFixed(2)}m</span> alle <span className="font-mono">{chioggiaAnalysis.maxTime}</span></p>
+                {weatherData.chioggiaMaxLevel && weatherData.chioggiaMaxTime && (
+                  <p>Max previsto: <span className="font-medium">{weatherData.chioggiaMaxLevel.toFixed(2)}m</span> alle <span className="font-mono">{weatherData.chioggiaMaxTime}</span></p>
                 )}
-                {chioggiaAnalysis.minLevel && chioggiaAnalysis.minTime && (
-                  <p>Min previsto: <span className="font-medium">{chioggiaAnalysis.minLevel.toFixed(2)}m</span> alle <span className="font-mono">{chioggiaAnalysis.minTime}</span></p>
+                {weatherData.chioggiaMinLevel && weatherData.chioggiaMinTime && (
+                  <p>Min previsto: <span className="font-medium">{weatherData.chioggiaMinLevel.toFixed(2)}m</span> alle <span className="font-mono">{weatherData.chioggiaMinTime}</span></p>
                 )}
                 
                 <p className="text-xs text-gray-500">Aggiornato: {weatherData.chioggiaTime}</p>
