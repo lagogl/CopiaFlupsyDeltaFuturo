@@ -15,6 +15,11 @@ interface WeatherData {
   windDirection: string | null;
   isLoading: boolean;
   lastUpdated: string | null;
+  tideMaxLevel: number | null;
+  tideMaxTime: string | null;
+  tideMinLevel: number | null;
+  tideMinTime: string | null;
+  tideTrend: string | null;
 }
 
 export function MarineWeather() {
@@ -26,7 +31,12 @@ export function MarineWeather() {
     windSpeed: null,
     windDirection: null,
     isLoading: true,
-    lastUpdated: null
+    lastUpdated: null,
+    tideMaxLevel: null,
+    tideMaxTime: null,
+    tideMinLevel: null,
+    tideMinTime: null,
+    tideTrend: null
   });
 
   useEffect(() => {
@@ -50,6 +60,22 @@ export function MarineWeather() {
         const currentHourIndex = new Date().getHours();
         const hourlySeaLevel = data.hourly.sea_level_height_msl[currentHourIndex + 24]; // +24 per ottenere i dati di oggi (past_days=2)
         
+        // Analizziamo i dati orari delle ultime 48 ore (con past_days=2)
+        const todayStart = 24; // Indice iniziale per i dati di oggi (dopo 2 giorni passati)
+        const seaLevelToday = data.hourly.sea_level_height_msl.slice(todayStart, todayStart + 24);
+        
+        // Troviamo massimo e minimo livello della marea nelle prossime 24 ore
+        const seaLevelValues = [...seaLevelToday];
+        const maxLevel = Math.max(...seaLevelValues);
+        const minLevel = Math.min(...seaLevelValues);
+        
+        // Troviamo gli orari di massima e minima marea
+        const maxLevelIndex = seaLevelValues.indexOf(maxLevel);
+        const minLevelIndex = seaLevelValues.indexOf(minLevel);
+        
+        const maxLevelTime = `${(currentHourIndex + maxLevelIndex) % 24}:00`;
+        const minLevelTime = `${(currentHourIndex + minLevelIndex) % 24}:00`;
+        
         // Calcoliamo la tendenza della marea confrontando il valore attuale con quello precedente e successivo
         const prevHourIndex = (currentHourIndex + 23) % 24 + 24;  // ora precedente
         const nextHourIndex = (currentHourIndex + 1) % 24 + 24;   // ora successiva
@@ -62,6 +88,18 @@ export function MarineWeather() {
           tideDirection = "crescente";
         } else if (nextSeaLevel < hourlySeaLevel) {
           tideDirection = "calante";
+        }
+        
+        // Determiniamo il trend generale della marea
+        const nextFewHours = data.hourly.sea_level_height_msl.slice(todayStart + currentHourIndex, todayStart + currentHourIndex + 6);
+        const firstValue = nextFewHours[0];
+        const lastValue = nextFewHours[nextFewHours.length - 1];
+        
+        let tideTrend = "variabile";
+        if (lastValue > firstValue + 0.1) {
+          tideTrend = "in aumento";
+        } else if (lastValue < firstValue - 0.1) {
+          tideTrend = "in diminuzione";
         }
         
         // Usiamo il livello del mare reale dai dati API
@@ -90,7 +128,12 @@ export function MarineWeather() {
           windSpeed: parseFloat(windSpeed.toFixed(1)),
           windDirection: windDirection,
           isLoading: false,
-          lastUpdated: now.toLocaleTimeString('it-IT')
+          lastUpdated: now.toLocaleTimeString('it-IT'),
+          tideMaxLevel: parseFloat(maxLevel.toFixed(2)),
+          tideMaxTime: maxLevelTime,
+          tideMinLevel: parseFloat(minLevel.toFixed(2)),
+          tideMinTime: minLevelTime,
+          tideTrend: tideTrend
         });
       } catch (error) {
         console.error('Errore nel recupero dei dati marine:', error);
@@ -145,12 +188,25 @@ export function MarineWeather() {
           <TooltipTrigger asChild>
             <div className="flex items-center space-x-1">
               <Waves className="h-4 w-4" />
-              <span className="text-sm">Marea {weatherData.tideDirection} {weatherData.tideLevel}m</span>
+              <span className="text-sm">Marea {weatherData.tideDirection} {weatherData.tideLevel}m ({weatherData.tideTrend})</span>
             </div>
           </TooltipTrigger>
-          <TooltipContent>
-            <p>Livello marea a Porto Tolle</p>
-            <p>Prossimo cambio: {weatherData.tideTime}</p>
+          <TooltipContent className="w-52">
+            <div className="space-y-1">
+              <p className="font-medium">Marea a Porto Tolle</p>
+              <p>Attuale: {weatherData.tideLevel}m ({weatherData.tideDirection})</p>
+              <p>Trend: {weatherData.tideTrend}</p>
+              <div className="flex justify-between pt-1 border-t border-gray-200 mt-1">
+                <div>
+                  <p className="text-xs text-green-600 font-semibold">Max: {weatherData.tideMaxLevel}m</p>
+                  <p className="text-xs">alle {weatherData.tideMaxTime}</p>
+                </div>
+                <div>
+                  <p className="text-xs text-red-600 font-semibold">Min: {weatherData.tideMinLevel}m</p>
+                  <p className="text-xs">alle {weatherData.tideMinTime}</p>
+                </div>
+              </div>
+            </div>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
