@@ -3968,6 +3968,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Scarica un backup
+  // Endpoint proxy per i dati delle maree di Venezia
+  app.get("/api/proxy/tide-data", async (req, res) => {
+    try {
+      const response = await fetch("https://dati.venezia.it/sites/default/files/dataset/opendata/livello.json");
+      
+      if (!response.ok) {
+        return res.status(response.status).json({ error: "Errore nel recupero dei dati della marea" });
+      }
+      
+      const data = await response.json();
+      res.json(data);
+    } catch (error) {
+      console.error("Errore nel proxy per i dati della marea:", error);
+      res.status(500).json({ error: "Errore interno nel recupero dei dati della marea" });
+    }
+  });
+
   app.get("/api/database/download", async (req, res) => {
     try {
       // Genera un nuovo dump completo del database

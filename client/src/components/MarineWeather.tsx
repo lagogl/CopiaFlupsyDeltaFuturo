@@ -9,8 +9,8 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const PORTO_TOLLE_LAT = 45.01853;
 const PORTO_TOLLE_LON = 12.38592;
 
-// API per i dati di marea di Venezia
-const VENEZIA_TIDE_API = "https://dati.venezia.it/sites/default/files/dataset/opendata/livello.json";
+// API per i dati di marea di Venezia (proxy locale)
+const VENEZIA_TIDE_API = "/api/proxy/tide-data";
 
 interface WeatherData {
   seaTemperature: number | null;
