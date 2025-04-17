@@ -304,7 +304,7 @@ export function MarineWeather() {
     
     // Impostare intervalli per aggiornamenti:
     // - Dati meteo standard ogni 30 minuti
-    // - Dati di Chioggia ogni 5 minuti
+    // - Dati di Chioggia ogni 10 minuti
     const marineInterval = setInterval(fetchMarineData, 30 * 60 * 1000);
     const chioggiaInterval = setInterval(async () => {
       const chioggiaData = await fetchChioggiaData();
@@ -316,7 +316,7 @@ export function MarineWeather() {
           chioggiaForecast: chioggiaData.chioggiaForecast
         }));
       }
-    }, 5 * 60 * 1000); // 5 minuti
+    }, 10 * 60 * 1000); // 10 minuti
     
     // Pulizia degli intervalli alla smontaggio del componente
     return () => {
@@ -333,27 +333,51 @@ export function MarineWeather() {
     );
   }
 
-  // Determina il trend della marea di Chioggia
-  const determineChioggiaTrend = () => {
+  // Determina il trend e i valori massimi e minimi della marea di Chioggia
+  const analyzeChioggiaForecast = () => {
     if (!weatherData.chioggiaForecast || weatherData.chioggiaForecast.length < 2) {
-      return null;
+      return {
+        trend: null,
+        maxLevel: null,
+        maxTime: null,
+        minLevel: null,
+        minTime: null
+      };
     }
     
     // Prendiamo il primo e l'ultimo valore della previsione per determinare il trend
     const firstValue = weatherData.chioggiaForecast[0].level;
     const lastValue = weatherData.chioggiaForecast[weatherData.chioggiaForecast.length - 1].level;
     
+    let trend;
     if (lastValue > firstValue + 0.05) {
-      return "crescente";
+      trend = "crescente";
     } else if (lastValue < firstValue - 0.05) {
-      return "calante";
+      trend = "calante";
     } else {
-      return "stabile";
+      trend = "stabile";
     }
+    
+    // Calcola massimo e minimo dalle previsioni
+    const levels = weatherData.chioggiaForecast.map(f => f.level);
+    const maxLevel = Math.max(...levels);
+    const minLevel = Math.min(...levels);
+    
+    // Trova gli orari corrispondenti ai valori massimi e minimi
+    const maxForecast = weatherData.chioggiaForecast.find(f => f.level === maxLevel);
+    const minForecast = weatherData.chioggiaForecast.find(f => f.level === minLevel);
+    
+    return {
+      trend,
+      maxLevel,
+      maxTime: maxForecast?.time || null,
+      minLevel,
+      minTime: minForecast?.time || null
+    };
   };
   
-  // Ottieni il trend della marea di Chioggia
-  const chioggiaTrend = determineChioggiaTrend();
+  // Ottieni il trend e i valori estremi della marea di Chioggia
+  const chioggiaAnalysis = analyzeChioggiaForecast();
 
   return (
     <div className="hidden sm:flex items-center space-x-4 px-3 text-white/80">
@@ -380,7 +404,7 @@ export function MarineWeather() {
                 <Waves className="h-4 w-4 text-blue-300" />
                 <span className="text-sm">
                   Marea: {weatherData.chioggiaLevel.toFixed(2)}m 
-                  {chioggiaTrend && ` (${chioggiaTrend})`}
+                  {chioggiaAnalysis.trend && ` (${chioggiaAnalysis.trend})`}
                 </span>
               </div>
             </TooltipTrigger>
@@ -388,7 +412,16 @@ export function MarineWeather() {
               <div className="space-y-1">
                 <p className="font-medium">Marea a Chioggia</p>
                 <p>Livello attuale: {weatherData.chioggiaLevel.toFixed(2)}m</p>
-                {chioggiaTrend && <p>Trend: <span className="font-medium">{chioggiaTrend}</span></p>}
+                {chioggiaAnalysis.trend && <p>Trend: <span className="font-medium">{chioggiaAnalysis.trend}</span></p>}
+                
+                {/* Visualizza i valori massimi e minimi previsti */}
+                {chioggiaAnalysis.maxLevel && chioggiaAnalysis.maxTime && (
+                  <p>Max previsto: <span className="font-medium">{chioggiaAnalysis.maxLevel.toFixed(2)}m</span> alle <span className="font-mono">{chioggiaAnalysis.maxTime}</span></p>
+                )}
+                {chioggiaAnalysis.minLevel && chioggiaAnalysis.minTime && (
+                  <p>Min previsto: <span className="font-medium">{chioggiaAnalysis.minLevel.toFixed(2)}m</span> alle <span className="font-mono">{chioggiaAnalysis.minTime}</span></p>
+                )}
+                
                 <p className="text-xs text-gray-500">Aggiornato: {weatherData.chioggiaTime}</p>
                 
                 {weatherData.chioggiaForecast && weatherData.chioggiaForecast.length > 0 && (
