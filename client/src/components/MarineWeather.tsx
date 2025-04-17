@@ -9,6 +9,9 @@ import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/comp
 const PORTO_TOLLE_LAT = 45.01853;
 const PORTO_TOLLE_LON = 12.38592;
 
+// API per i dati di marea di Venezia
+const VENEZIA_TIDE_API = "https://dati.venezia.it/sites/default/files/dataset/opendata/livello.json";
+
 interface WeatherData {
   seaTemperature: number | null;
   tideLevel: number | null;
@@ -23,6 +26,10 @@ interface WeatherData {
   tideMinLevel: number | null;
   tideMinTime: string | null;
   tideTrend: string | null;
+  // Dati specifici di Chioggia
+  chioggiaLevel: number | null;
+  chioggiaTime: string | null;
+  chioggiaForecast: Array<{time: string, level: number}> | null;
 }
 
 export function MarineWeather() {
@@ -39,10 +46,56 @@ export function MarineWeather() {
     tideMaxTime: null,
     tideMinLevel: null,
     tideMinTime: null,
-    tideTrend: null
+    tideTrend: null,
+    chioggiaLevel: null,
+    chioggiaTime: null,
+    chioggiaForecast: null
   });
 
   useEffect(() => {
+    // Funzione per recuperare i dati delle maree da Venezia (Chioggia)
+    const fetchChioggiaData = async () => {
+      try {
+        const response = await fetch(VENEZIA_TIDE_API);
+        
+        if (!response.ok) {
+          throw new Error('Errore nel recupero dei dati di Chioggia');
+        }
+        
+        const data = await response.json();
+        
+        // Estrae i dati per Chioggia
+        const chioggiaData = data.find((station: any) => 
+          station.stazione?.toLowerCase() === 'chioggia' || 
+          station.id?.toLowerCase().includes('chioggia'));
+        
+        if (!chioggiaData) {
+          console.warn('Dati per Chioggia non trovati');
+          return null;
+        }
+        
+        // Estrae il livello attuale e l'orario
+        const chioggiaLevel = parseFloat(chioggiaData.valore) / 100; // Conversione in metri
+        const chioggiaTime = new Date().toLocaleTimeString('it-IT');
+        
+        // Estrae le previsioni (se disponibili)
+        const chioggiaForecast = chioggiaData.previsione ? 
+          chioggiaData.previsione.map((p: any) => ({
+            time: p.data,
+            level: parseFloat(p.valore) / 100 // Conversione in metri
+          })) : null;
+        
+        return {
+          chioggiaLevel,
+          chioggiaTime,
+          chioggiaForecast
+        };
+      } catch (error) {
+        console.error('Errore nel recupero dei dati di Chioggia:', error);
+        return null;
+      }
+    };
+    
     const fetchMarineData = async () => {
       try {
         // Utilizziamo Open-Meteo Marine API con i parametri specifici per Porto Tolle
@@ -122,8 +175,9 @@ export function MarineWeather() {
         const windSpeed = Math.abs(nextSeaLevel - hourlySeaLevel) * 100;
         const windDirection = "NE"; // Direzione prevalente nell'area di Porto Tolle
         
-        // Aggiorniamo lo stato con i dati ottenuti
-        setWeatherData({
+        // Aggiorniamo lo stato con i dati ottenuti, mantendo i dati di Chioggia esistenti
+        setWeatherData(prev => ({
+          ...prev,
           seaTemperature: parseFloat(seaTemp.toFixed(1)),
           tideLevel: parseFloat(tideLevel.toFixed(2)),
           tideDirection: tideDirection,
@@ -137,7 +191,7 @@ export function MarineWeather() {
           tideMinLevel: parseFloat(minLevel.toFixed(2)),
           tideMinTime: minLevelTime,
           tideTrend: tideTrend
-        });
+        }));
       } catch (error) {
         console.error('Errore nel recupero dei dati marine:', error);
         // In caso di errore, manteniamo isLoading a false ma non aggiorniamo gli altri dati
@@ -152,14 +206,53 @@ export function MarineWeather() {
       return directions[index % 16];
     };
 
+    // Funzione per recuperare entrambi i dati (Porto Tolle e Chioggia)
+    const fetchAllData = async () => {
+      try {
+        // Recuperiamo i dati meteo marini standard
+        await fetchMarineData();
+        
+        // Recuperiamo i dati specifici di Chioggia
+        const chioggiaData = await fetchChioggiaData();
+        
+        if (chioggiaData) {
+          // Aggiorniamo solo i dati di Chioggia, mantenendo gli altri dati invariati
+          setWeatherData(prev => ({
+            ...prev,
+            chioggiaLevel: chioggiaData.chioggiaLevel,
+            chioggiaTime: chioggiaData.chioggiaTime,
+            chioggiaForecast: chioggiaData.chioggiaForecast
+          }));
+        }
+      } catch (error) {
+        console.error('Errore nel recupero di tutti i dati:', error);
+      }
+    };
+    
     // Chiamiamo subito la funzione al caricamento del componente
-    fetchMarineData();
+    fetchAllData();
     
-    // Impostare un intervallo per aggiornare i dati ogni 30 minuti
-    const intervalId = setInterval(fetchMarineData, 30 * 60 * 1000);
+    // Impostare intervalli per aggiornamenti:
+    // - Dati meteo standard ogni 30 minuti
+    // - Dati di Chioggia ogni 5 minuti
+    const marineInterval = setInterval(fetchMarineData, 30 * 60 * 1000);
+    const chioggiaInterval = setInterval(async () => {
+      const chioggiaData = await fetchChioggiaData();
+      if (chioggiaData) {
+        setWeatherData(prev => ({
+          ...prev,
+          chioggiaLevel: chioggiaData.chioggiaLevel,
+          chioggiaTime: chioggiaData.chioggiaTime,
+          chioggiaForecast: chioggiaData.chioggiaForecast
+        }));
+      }
+    }, 5 * 60 * 1000); // 5 minuti
     
-    // Pulizia dell'intervallo alla smontaggio del componente
-    return () => clearInterval(intervalId);
+    // Pulizia degli intervalli alla smontaggio del componente
+    return () => {
+      clearInterval(marineInterval);
+      clearInterval(chioggiaInterval);
+    };
   }, []);
 
   if (weatherData.isLoading) {
@@ -214,6 +307,40 @@ export function MarineWeather() {
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
+
+      {/* Dati marea di Chioggia */}
+      {weatherData.chioggiaLevel && (
+        <TooltipProvider>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <div className="flex items-center space-x-1">
+                <Waves className="h-4 w-4 text-blue-300" />
+                <span className="text-sm">Chioggia: {weatherData.chioggiaLevel.toFixed(2)}m</span>
+              </div>
+            </TooltipTrigger>
+            <TooltipContent className="w-64">
+              <div className="space-y-1">
+                <p className="font-medium">Marea a Chioggia</p>
+                <p>Livello attuale: {weatherData.chioggiaLevel.toFixed(2)}m</p>
+                <p className="text-xs text-gray-500">Aggiornato: {weatherData.chioggiaTime}</p>
+                
+                {weatherData.chioggiaForecast && weatherData.chioggiaForecast.length > 0 && (
+                  <div className="pt-1 mt-1 border-t border-gray-200">
+                    <p className="text-sm font-medium mb-1">Previsioni:</p>
+                    <div className="grid grid-cols-2 gap-x-2 gap-y-1">
+                      {weatherData.chioggiaForecast.slice(0, 6).map((forecast, index) => (
+                        <div key={index} className="text-xs">
+                          <span className="font-mono">{forecast.time}</span>: {forecast.level.toFixed(2)}m
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      )}
 
       <TooltipProvider>
         <Tooltip>
