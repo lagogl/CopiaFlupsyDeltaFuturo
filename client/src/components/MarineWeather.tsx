@@ -335,6 +335,28 @@ export function MarineWeather() {
     );
   }
 
+  // Determina il trend della marea di Chioggia
+  const determineChioggiaTrend = () => {
+    if (!weatherData.chioggiaForecast || weatherData.chioggiaForecast.length < 2) {
+      return null;
+    }
+    
+    // Prendiamo il primo e l'ultimo valore della previsione per determinare il trend
+    const firstValue = weatherData.chioggiaForecast[0].level;
+    const lastValue = weatherData.chioggiaForecast[weatherData.chioggiaForecast.length - 1].level;
+    
+    if (lastValue > firstValue + 0.05) {
+      return "crescente";
+    } else if (lastValue < firstValue - 0.05) {
+      return "calante";
+    } else {
+      return "stabile";
+    }
+  };
+  
+  // Ottieni il trend della marea di Chioggia
+  const chioggiaTrend = determineChioggiaTrend();
+
   return (
     <div className="hidden sm:flex items-center space-x-4 px-3 text-white/80">
       <TooltipProvider>
@@ -351,35 +373,6 @@ export function MarineWeather() {
         </Tooltip>
       </TooltipProvider>
 
-      <TooltipProvider>
-        <Tooltip>
-          <TooltipTrigger asChild>
-            <div className="flex items-center space-x-1">
-              <Waves className="h-4 w-4" />
-              <span className="text-sm">Marea {weatherData.tideDirection} {weatherData.tideLevel}m ({weatherData.tideTrend})</span>
-            </div>
-          </TooltipTrigger>
-          <TooltipContent className="w-52">
-            <div className="space-y-1">
-              <p className="font-medium">Marea a Porto Tolle</p>
-              <p className="text-xs text-gray-500">45°01'06.7"N 12°23'09.3"E</p>
-              <p>Attuale: {weatherData.tideLevel}m ({weatherData.tideDirection})</p>
-              <p>Trend: {weatherData.tideTrend}</p>
-              <div className="flex justify-between pt-1 border-t border-gray-200 mt-1">
-                <div>
-                  <p className="text-xs text-green-600 font-semibold">Max: {weatherData.tideMaxLevel}m</p>
-                  <p className="text-xs">alle {weatherData.tideMaxTime}</p>
-                </div>
-                <div>
-                  <p className="text-xs text-red-600 font-semibold">Min: {weatherData.tideMinLevel}m</p>
-                  <p className="text-xs">alle {weatherData.tideMinTime}</p>
-                </div>
-              </div>
-            </div>
-          </TooltipContent>
-        </Tooltip>
-      </TooltipProvider>
-
       {/* Dati marea di Chioggia */}
       {weatherData.chioggiaLevel && (
         <TooltipProvider>
@@ -387,13 +380,17 @@ export function MarineWeather() {
             <TooltipTrigger asChild>
               <div className="flex items-center space-x-1">
                 <Waves className="h-4 w-4 text-blue-300" />
-                <span className="text-sm">Chioggia: {weatherData.chioggiaLevel.toFixed(2)}m</span>
+                <span className="text-sm">
+                  Marea: {weatherData.chioggiaLevel.toFixed(2)}m 
+                  {chioggiaTrend && ` (${chioggiaTrend})`}
+                </span>
               </div>
             </TooltipTrigger>
             <TooltipContent className="w-64">
               <div className="space-y-1">
                 <p className="font-medium">Marea a Chioggia</p>
                 <p>Livello attuale: {weatherData.chioggiaLevel.toFixed(2)}m</p>
+                {chioggiaTrend && <p>Trend: <span className="font-medium">{chioggiaTrend}</span></p>}
                 <p className="text-xs text-gray-500">Aggiornato: {weatherData.chioggiaTime}</p>
                 
                 {weatherData.chioggiaForecast && weatherData.chioggiaForecast.length > 0 && (
