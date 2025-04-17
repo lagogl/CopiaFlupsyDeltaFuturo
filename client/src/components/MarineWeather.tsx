@@ -2,12 +2,10 @@ import { useState, useEffect } from 'react';
 import { Waves, Thermometer, Navigation, Clock } from 'lucide-react';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
-// Coordinate esatte di Porto Tolle (45°01'06.7"N 12°23'09.3"E)
-// Conversione da DMS (gradi, minuti, secondi) a gradi decimali
-// 45° 1' 6.7" N = 45.01853 N
-// 12° 23' 9.3" E = 12.38592 E
-const PORTO_TOLLE_LAT = 45.01853;
-const PORTO_TOLLE_LON = 12.38592;
+// Coordinate esatte di Goro
+// 44.82693493179904, 12.315839532852298
+const GORO_LAT = 44.82693493179904;
+const GORO_LON = 12.315839532852298;
 
 // API per i dati di marea di Venezia (proxy locale)
 const VENEZIA_TIDE_API = "/api/proxy/tide-data";
@@ -170,9 +168,9 @@ export function MarineWeather() {
     
     const fetchMarineData = async () => {
       try {
-        // Utilizziamo Open-Meteo Marine API con i parametri specifici per Porto Tolle
+        // Utilizziamo Open-Meteo Marine API con i parametri specifici per Goro
         const response = await fetch(
-          `https://marine-api.open-meteo.com/v1/marine?latitude=${PORTO_TOLLE_LAT}&longitude=${PORTO_TOLLE_LON}&hourly=sea_level_height_msl,sea_surface_temperature&current=sea_level_height_msl,sea_surface_temperature&timezone=Europe%2FBerlin&past_days=2`
+          `https://marine-api.open-meteo.com/v1/marine?latitude=${GORO_LAT}&longitude=${GORO_LON}&hourly=sea_level_height_msl,sea_surface_temperature&current=sea_level_height_msl,sea_surface_temperature&timezone=Europe%2FBerlin&past_days=2`
         );
         
         if (!response.ok) {
@@ -278,7 +276,7 @@ export function MarineWeather() {
       return directions[index % 16];
     };
 
-    // Funzione per recuperare entrambi i dati (Porto Tolle e Chioggia)
+    // Funzione per recuperare entrambi i dati (Goro e Chioggia)
     const fetchAllData = async () => {
       try {
         // Recuperiamo i dati meteo marini standard
@@ -368,7 +366,7 @@ export function MarineWeather() {
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Temperatura del mare a Porto Tolle</p>
+            <p>Temperatura del mare a Goro</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
@@ -420,7 +418,7 @@ export function MarineWeather() {
             </div>
           </TooltipTrigger>
           <TooltipContent>
-            <p>Vento a Porto Tolle</p>
+            <p>Vento a Goro</p>
           </TooltipContent>
         </Tooltip>
       </TooltipProvider>
