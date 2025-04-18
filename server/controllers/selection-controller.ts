@@ -778,8 +778,8 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           await tx.insert(basketPositionHistory).values({
             basketId: destBasket.basketId,
             flupsyId: destBasket.flupsyId,
-            row: destBasket.position.charAt(0), // Prendiamo la lettera della riga (es. 'A' da 'A1')
-            position: parseInt(destBasket.position.substring(1)), // Prendiamo il numero (es. 1 da 'A1')
+            row: destBasket.row, // Utilizziamo direttamente il campo row
+            position: destBasket.position, // Utilizziamo direttamente il campo position
             startDate: selection[0].date,
             operationId: operation.id
           });
