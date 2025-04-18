@@ -100,6 +100,7 @@ export default function SelectionDetailPage() {
   // Dati per il form di aggiunta cestello sorgente
   const [sourceBasketData, setSourceBasketData] = useState({
     basketId: "",
+    cycleId: null,
   });
 
   // Dati per il form di aggiunta cestello destinazione
@@ -201,8 +202,8 @@ export default function SelectionDetailPage() {
         body: JSON.stringify([
           {
             basketId: parseInt(sourceBasketData.basketId),
-            cycleId: null,  // Questi valori verranno determinati dal server
-            animalCount: null,
+            cycleId: sourceBasketData.cycleId,  // Usiamo il valore salvato quando si seleziona la cesta
+            animalCount: null, // Questi valori verranno determinati dal server
             totalWeight: null,
             animalsPerKg: null,
             sizeId: null,
@@ -224,7 +225,7 @@ export default function SelectionDetailPage() {
       });
       
       setAddSourceDialogOpen(false);
-      setSourceBasketData({ basketId: "" });
+      setSourceBasketData({ basketId: "", cycleId: null });
       refetchSourceBaskets();
     } catch (error) {
       console.error("Errore:", error);
@@ -942,7 +943,15 @@ export default function SelectionDetailPage() {
               <Label htmlFor="basketId">Cesta</Label>
               <Select
                 value={sourceBasketData.basketId}
-                onValueChange={(value) => setSourceBasketData({ ...sourceBasketData, basketId: value })}
+                onValueChange={(value) => {
+                  // Trova la cesta selezionata per ottenere il suo cycleId
+                  const selectedBasket = availableBaskets?.find(b => b.basketId.toString() === value);
+                  setSourceBasketData({ 
+                    ...sourceBasketData, 
+                    basketId: value,
+                    cycleId: selectedBasket?.cycle?.id || null
+                  });
+                }}
               >
                 <SelectTrigger id="basketId">
                   <SelectValue placeholder="Seleziona una cesta" />
@@ -955,13 +964,38 @@ export default function SelectionDetailPage() {
                   ) : availableBaskets?.filter(b => b.cycle?.state === "active")?.length ? (
                     availableBaskets
                       .filter(b => b.cycle?.state === "active")
-                      .map(basket => (
-                        <SelectItem key={basket.basketId} value={basket.basketId.toString()}>
-                          Cesta #{basket.physicalNumber}
-                          {basket.size?.code ? ` (${basket.size.code})` : ''}
-                          {basket.flupsy ? ` - ${basket.flupsy.name}` : ''}
-                        </SelectItem>
-                      ))
+                      .map(basket => {
+                        // Controlla se questa taglia corrisponde alla taglia di riferimento della selezione
+                        const isReferenceSize = selection?.referenceSizeId && basket.size?.id === selection.referenceSizeId;
+                        
+                        return (
+                          <SelectItem 
+                            key={basket.basketId} 
+                            value={basket.basketId.toString()}
+                            className={isReferenceSize ? "bg-green-50 dark:bg-green-900" : ""}
+                          >
+                            <div className="flex justify-between w-full items-center">
+                              <span>
+                                Cesta #{basket.physicalNumber}
+                                {basket.size?.code && (
+                                  <span 
+                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs ${isReferenceSize ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 font-semibold" : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"}`}
+                                  >
+                                    {basket.size.code}
+                                  </span>
+                                )}
+                                {basket.flupsy && ` - ${basket.flupsy.name}`}
+                              </span>
+                              
+                              {basket.cycle?.animalCount && (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  {basket.cycle.animalCount.toLocaleString()} animali
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        );
+                      })
                   ) : (
                     <SelectItem disabled value="none">Nessuna cesta attiva disponibile</SelectItem>
                   )}
@@ -1021,7 +1055,19 @@ export default function SelectionDetailPage() {
                         .filter(b => !b.cycle || b.cycle.state === "available")
                         .map(basket => (
                           <SelectItem key={basket.basketId} value={basket.basketId.toString()}>
-                            Cesta #{basket.physicalNumber}
+                            <div className="flex justify-between w-full items-center">
+                              <span>
+                                Cesta #{basket.physicalNumber}
+                                {basket.size?.code && (
+                                  <span 
+                                    className="ml-1 px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                                  >
+                                    {basket.size.code}
+                                  </span>
+                                )}
+                                {basket.flupsy && ` - ${basket.flupsy.name}`}
+                              </span>
+                            </div>
                           </SelectItem>
                         ))
                     ) : (
