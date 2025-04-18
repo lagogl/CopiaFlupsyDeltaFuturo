@@ -527,15 +527,32 @@ export async function addSourceBaskets(req: Request, res: Response) {
     await db.transaction(async (tx) => {
       // Salva ogni cesta di origine
       for (const sourceBasket of sourceBaskets) {
+        // Recupera l'ultima operazione per questo cestello per ottenere i dati correnti
+        const latestOperation = await tx.select()
+          .from(operations)
+          .where(eq(operations.basketId, sourceBasket.basketId))
+          .orderBy(sql`${operations.date} DESC, ${operations.id} DESC`)
+          .limit(1);
+          
+        // Recupera anche i dati del ciclo per ottenere il lotto
+        const cycleData = await tx.select()
+          .from(cycles)
+          .where(eq(cycles.id, sourceBasket.cycleId))
+          .limit(1);
+        
+        // Usa i dati dell'ultima operazione se disponibili, altrimenti usa i dati forniti (o null)
+        const lastOp = latestOperation.length > 0 ? latestOperation[0] : null;
+        const cycle = cycleData.length > 0 ? cycleData[0] : null;
+        
         await tx.insert(selectionSourceBaskets).values({
           selectionId: Number(id),
           basketId: sourceBasket.basketId,
           cycleId: sourceBasket.cycleId,
-          animalCount: sourceBasket.animalCount,
-          totalWeight: sourceBasket.totalWeight,
-          animalsPerKg: sourceBasket.animalsPerKg,
-          sizeId: sourceBasket.sizeId,
-          lotId: sourceBasket.lotId
+          animalCount: sourceBasket.animalCount || lastOp?.animalCount || null,
+          totalWeight: sourceBasket.totalWeight || lastOp?.totalWeight || null,
+          animalsPerKg: sourceBasket.animalsPerKg || lastOp?.animalsPerKg || null,
+          sizeId: sourceBasket.sizeId || lastOp?.sizeId || null,
+          lotId: sourceBasket.lotId || cycle?.lotId || null
         });
       }
       
