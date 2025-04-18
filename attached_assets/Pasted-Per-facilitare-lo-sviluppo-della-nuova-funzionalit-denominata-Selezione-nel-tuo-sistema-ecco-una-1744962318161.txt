@@ -1,0 +1,130 @@
+Per facilitare lo sviluppo della nuova funzionalità denominata "Selezione" nel tuo sistema, ecco una descrizione dettagliata e strutturata del processo. Questa guida è pensata per essere utilizzata da un sistema di generazione automatica del codice, garantendo l'integrazione senza interferire con le funzionalità attuali.​
+
+🧩 Nuova Funzionalità: "Selezione"
+📁 1. Creazione di una Nuova Voce di Menu
+Nome della voce: Selezione
+
+Posizionamento: Aggiunta come nuova voce nel menu principale dell'applicazione.
+
+Accessibilità: Disponibile per gli operatori autorizzati.​
+
+🔄 2. Fasi del Processo di Selezione
+🔹 Fase 1: Selezione delle Ceste Origine
+Impostazione della Taglia Desiderata:
+
+L'operatore imposta la taglia desiderata.
+
+Il sistema propone automaticamente le ceste con taglia simile, ordinate per prossimità.
+
+Le ceste con taglia meno simile sono proposte successivamente.​
+
+Selezione delle Ceste:
+
+L'operatore seleziona una o più ceste da mettere in attesa.​
+
+Impostazioni Aggiuntive:
+
+Data della Selezione:
+
+Proposta automaticamente come data odierna, ma modificabile dall'operatore.
+
+Numero di Selezione:
+
+Generato automaticamente come numero sequenziale univoco.
+
+Motivazione della Selezione:
+
+Opzioni disponibili: Vendita, Vagliatura, Altro.
+
+Tipo di Vaglio:
+
+Opzioni disponibili: Sopra Vaglio, Sotto Vaglio.
+
+🔹 Fase 2: Analisi delle Ceste Origine
+Calcolo dei Totali:
+
+Il sistema calcola e visualizza:
+
+Totale degli animali presenti nelle ceste selezionate, suddivisi per taglia.
+
+Totale generale degli animali.
+
+Altri dati rilevanti dei lotti coinvolti.
+
+🔹 Fase 3: Creazione delle Ceste Destinazione
+Proposta delle Ceste Libere:
+
+Il sistema propone automaticamente le ceste disponibili e libere per la destinazione.​
+
+Utilizzo della Calcolatrice Comune:
+
+Per ogni cesta destinazione, l'operatore inserisce:
+
+Peso del campione (in grammi).
+
+Numero di animali vivi nel campione.
+
+Numero di animali morti nel campione.
+
+Kg totali della cesta.
+
+Numero di animali per kg.
+
+Calcoli Automatici del Sistema:
+
+Numero totale di animali nella cesta.
+
+Percentuale di animali morti.
+
+Taglia, determinata confrontando il numero di animali per kg con i range presenti nella tabella sizes.
+
+Memorizzazione Temporanea:
+
+I dati calcolati per ogni cesta destinazione sono memorizzati temporaneamente.
+
+Il sistema si predispone per l'inserimento di una nuova cesta destinazione.
+
+Aggiornamento in Tempo Reale:
+
+Il totalizzatore delle ceste origine viene aggiornato in tempo reale, decrementando i totali ogni volta che una nuova cesta destinazione viene memorizzata.​
+
+🔹 Fase 4: Revisione e Conferma
+Visualizzazione Riepilogativa:
+
+Il sistema mostra un riepilogo completo delle ceste origine e delle ceste destinazione, con tutti i dati calcolati.​
+
+Modifiche da Parte dell'Operatore:
+
+L'operatore può modificare i numeri calcolati per le ceste destinazione.
+
+Il sistema verifica che la somma totale degli animali nelle ceste destinazione corrisponda al totale confermato.
+
+Eventuali discrepanze devono essere risolte prima della conferma finale.​
+
+Conferma Finale:
+
+Una volta confermati tutti i dati, il sistema procede con la registrazione definitiva.​
+
+🗃️ 3. Aggiornamento del Database
+Creazione delle Nuove Ceste:
+
+Per ogni nuova cesta destinazione, viene creato un record nel database con:
+
+Causale: Prima attivazione da selezione.
+
+Riferimento alle ceste origine da cui è stata generata.
+
+Registrazione delle Operazioni:
+
+Nella tabella operations, viene memorizzato:
+
+L'elenco delle ceste origine coinvolte.
+
+Dettagli delle ceste destinazione create.
+
+Tracciabilità:
+
+Il sistema garantisce la possibilità di risalire in qualsiasi momento dalla cesta destinazione alla relativa cesta origine.​
+
+🧠 4. Definizione del Processo di Vagliatura
+La vagliatura è un processo di separazione dei materiali basato sulle dimensioni, utilizzato in vari settori, inclusa l'industria alimentare. Nel contesto dei molluschi bivalvi, la vagliatura consente di separare gli esemplari in base alla taglia, migliorando la qualità del prodotto finale e facilitando la gestione delle ceste. Ad esempio, l'util
