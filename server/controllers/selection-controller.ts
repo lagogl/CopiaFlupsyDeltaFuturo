@@ -3,7 +3,7 @@
  */
 import { Request, Response } from "express";
 import { db } from "../db";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, isNotNull, sql } from "drizzle-orm";
 import { 
   selections, 
   selectionSourceBaskets, 
@@ -87,17 +87,17 @@ export async function getAvailableBaskets(req: Request, res: Response) {
     .where(
       and(
         eq(baskets.state, 'active'),
-        sql`${baskets.current_cycle_id} IS NOT NULL`
+        isNotNull(baskets.currentCycleId)
       )
     );
     
     // 2. Arricchisci i dati con informazioni sul FLUPSY e sull'ultima operazione per ogni cestello
     const basketsWithDetails = await Promise.all(activeBaskets.map(async (basket) => {
       // Recupera il FLUPSY
-      const flupsyData = await db.select()
+      const flupsyData = basket.flupsyId ? await db.select()
         .from(flupsys)
-        .where(eq(flupsys.id, basket.flupsyId as number))
-        .limit(1);
+        .where(eq(flupsys.id, basket.flupsyId))
+        .limit(1) : [];
       
       // Recupera l'ultima operazione per questo cestello
       const latestOperation = await db.select()
@@ -107,19 +107,24 @@ export async function getAvailableBaskets(req: Request, res: Response) {
         .limit(1);
       
       // Recupera la taglia se presente nell'ultima operazione
-      let size = null;
+      let sizeData = null;
       if (latestOperation.length > 0 && latestOperation[0].sizeId) {
-        size = await db.select()
-          .from(sizes)
-          .where(eq(sizes.id, latestOperation[0].sizeId as number))
-          .limit(1);
+        try {
+          const sizeResult = await db.select()
+            .from(sizes)
+            .where(eq(sizes.id, latestOperation[0].sizeId))
+            .limit(1);
+          sizeData = sizeResult.length > 0 ? sizeResult[0] : null;
+        } catch (error) {
+          console.error("Errore recupero taglia:", error);
+        }
       }
       
       // Recupera il ciclo attuale
-      const cycle = await db.select()
+      const cycle = basket.cycleId ? await db.select()
         .from(cycles)
-        .where(eq(cycles.id, basket.cycleId as number))
-        .limit(1);
+        .where(eq(cycles.id, basket.cycleId))
+        .limit(1) : [];
       
       return {
         basketId: basket.basketId,
@@ -129,7 +134,7 @@ export async function getAvailableBaskets(req: Request, res: Response) {
         position: basket.position,
         row: basket.row,
         lastOperation: latestOperation.length > 0 ? latestOperation[0] : null,
-        size: size && size.length > 0 ? size[0] : null,
+        size: sizeData,
         cycle: cycle.length > 0 ? cycle[0] : null
       };
     }));
@@ -137,20 +142,22 @@ export async function getAvailableBaskets(req: Request, res: Response) {
     // 3. Se è fornito un ID di taglia di riferimento, ordina i cestelli per similarità a quella taglia
     if (referenceSizeId && !isNaN(Number(referenceSizeId))) {
       // Recupera la taglia di riferimento
-      const refSize = await db.select()
+      const refSizeResults = await db.select()
         .from(sizes)
         .where(eq(sizes.id, Number(referenceSizeId)))
         .limit(1);
       
-      if (refSize && refSize.length > 0) {
-        const referenceMinAnimals = refSize[0].minAnimalsPerKg;
-        const referenceMaxAnimals = refSize[0].maxAnimalsPerKg;
+      const refSize = refSizeResults.length > 0 ? refSizeResults[0] : null;
+      
+      if (refSize) {
+        const referenceMinAnimals = refSize.minAnimalsPerKg || 0;
+        const referenceMaxAnimals = refSize.maxAnimalsPerKg || 0;
         const referenceAvg = (referenceMinAnimals + referenceMaxAnimals) / 2;
         
         // Calcola la distanza di ogni cestello dalla taglia di riferimento
         basketsWithDetails.sort((a, b) => {
-          const aSize = a.size ? (a.size.minAnimalsPerKg + a.size.maxAnimalsPerKg) / 2 : null;
-          const bSize = b.size ? (b.size.minAnimalsPerKg + b.size.maxAnimalsPerKg) / 2 : null;
+          const aSize = a.size ? ((a.size.minAnimalsPerKg || 0) + (a.size.maxAnimalsPerKg || 0)) / 2 : null;
+          const bSize = b.size ? ((b.size.minAnimalsPerKg || 0) + (b.size.maxAnimalsPerKg || 0)) / 2 : null;
           
           // Se entrambi hanno una taglia, ordina per vicinanza alla taglia di riferimento
           if (aSize !== null && bSize !== null) {
