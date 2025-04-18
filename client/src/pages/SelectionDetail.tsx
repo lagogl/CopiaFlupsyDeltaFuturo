@@ -1081,16 +1081,16 @@ export default function SelectionDetailPage() {
         open={addDestinationDialogOpen}
         onOpenChange={setAddDestinationDialogOpen}
       >
-        <DialogContent className="max-w-2xl">
-          <DialogHeader>
-            <DialogTitle>Aggiungi Cesta Destinazione</DialogTitle>
-            <DialogDescription>
+        <DialogContent className="max-w-3xl p-4">
+          <DialogHeader className="p-2">
+            <DialogTitle className="text-lg">Aggiungi Cesta Destinazione</DialogTitle>
+            <DialogDescription className="text-xs">
               Crea una nuova cesta di destinazione per la selezione
             </DialogDescription>
           </DialogHeader>
           
-          <div className="space-y-4 py-4">
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          <div className="space-y-2 py-2">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
               <div className="space-y-2">
                 <Label htmlFor="destBasketId">Cesta</Label>
                 <Select
@@ -1105,9 +1105,9 @@ export default function SelectionDetailPage() {
                       <div className="flex justify-center py-2">
                         <Spinner size="sm" />
                       </div>
-                    ) : availableBaskets?.filter(b => !b.cycle || b.cycle.state === "available")?.length ? (
+                    ) : availableBaskets?.filter(b => !b.cycle || b.cycle?.state === "available" || b.state === "available")?.length ? (
                       availableBaskets
-                        .filter(b => !b.cycle || b.cycle.state === "available")
+                        .filter(b => !b.cycle || b.cycle?.state === "available" || b.state === "available")
                         // Filtra le ceste che sono già state aggiunte come destinazione
                         .filter(basket => {
                           const alreadyAdded = destinationBaskets?.some(
@@ -1170,13 +1170,13 @@ export default function SelectionDetailPage() {
               </div>
               
               {/* Calcolatrice per misurazioni */}
-              <div className="col-span-2 bg-slate-100 dark:bg-slate-900 rounded-lg p-5 shadow-sm border mt-2">
-                <h3 className="text-lg font-semibold mb-4 text-center">Calcolatrice Misurazioni</h3>
+              <div className="col-span-2 bg-slate-100 dark:bg-slate-900 rounded-lg p-3 shadow-sm border mt-2">
+                <h3 className="text-base font-semibold mb-2 text-center">Calcolatrice Misurazioni</h3>
                 
-                <div className="grid grid-cols-2 gap-4">
+                <div className="grid grid-cols-2 gap-2">
                   {/* Prima riga - dati di input primari */}
-                  <div className="space-y-2 bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
-                    <Label htmlFor="sampleWeight" className="text-green-700 dark:text-green-400 font-medium">
+                  <div className="space-y-1 bg-green-50 dark:bg-green-900/20 p-2 rounded-md">
+                    <Label htmlFor="sampleWeight" className="text-green-700 dark:text-green-400 font-medium text-sm">
                       Peso Campione (g)
                     </Label>
                     <Input
@@ -1189,12 +1189,12 @@ export default function SelectionDetailPage() {
                         ...destinationBasketData, 
                         sampleWeight: parseFloat(e.target.value) || 0
                       })}
-                      className="bg-white dark:bg-slate-800 border-green-200 dark:border-green-800 font-mono text-lg"
+                      className="h-9 bg-white dark:bg-slate-800 border-green-200 dark:border-green-800 font-mono text-base"
                     />
                   </div>
                   
-                  <div className="space-y-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
-                    <Label htmlFor="sampleCount" className="text-blue-700 dark:text-blue-400 font-medium">
+                  <div className="space-y-1 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-md">
+                    <Label htmlFor="sampleCount" className="text-blue-700 dark:text-blue-400 font-medium text-sm">
                       N° Animali nel Campione
                     </Label>
                     <Input
@@ -1206,13 +1206,13 @@ export default function SelectionDetailPage() {
                         ...destinationBasketData, 
                         sampleCount: parseInt(e.target.value) || 0
                       })}
-                      className="bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800 font-mono text-lg"
+                      className="h-9 bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800 font-mono text-base"
                     />
                   </div>
                   
                   {/* Seconda riga - dati di input secondari */}
-                  <div className="space-y-2 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-md">
-                    <Label htmlFor="totalWeightKg" className="text-amber-700 dark:text-amber-400 font-medium">
+                  <div className="space-y-1 bg-amber-50 dark:bg-amber-900/20 p-2 rounded-md">
+                    <Label htmlFor="totalWeightKg" className="text-amber-700 dark:text-amber-400 font-medium text-sm">
                       Peso Totale Cesta (kg)
                     </Label>
                     <Input
@@ -1225,12 +1225,12 @@ export default function SelectionDetailPage() {
                         ...destinationBasketData, 
                         totalWeightKg: parseFloat(e.target.value) || 0
                       })}
-                      className="bg-white dark:bg-slate-800 border-amber-200 dark:border-amber-800 font-mono text-lg"
+                      className="h-9 bg-white dark:bg-slate-800 border-amber-200 dark:border-amber-800 font-mono text-base"
                     />
                   </div>
                   
-                  <div className="space-y-2 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
-                    <Label htmlFor="deadCount" className="text-red-700 dark:text-red-400 font-medium">
+                  <div className="space-y-1 bg-red-50 dark:bg-red-900/20 p-2 rounded-md">
+                    <Label htmlFor="deadCount" className="text-red-700 dark:text-red-400 font-medium text-sm">
                       Animali Morti
                     </Label>
                     <Input
@@ -1242,13 +1242,13 @@ export default function SelectionDetailPage() {
                         ...destinationBasketData, 
                         deadCount: parseInt(e.target.value) || 0
                       })}
-                      className="bg-white dark:bg-slate-800 border-red-200 dark:border-red-800 font-mono text-lg"
+                      className="h-9 bg-white dark:bg-slate-800 border-red-200 dark:border-red-800 font-mono text-base"
                     />
                   </div>
                   
                   {/* Terza riga - risultati calcolati */}
-                  <div className="space-y-2 bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md">
-                    <Label htmlFor="animalsPerKg" className="text-purple-700 dark:text-purple-400 font-medium">
+                  <div className="space-y-1 bg-purple-50 dark:bg-purple-900/20 p-2 rounded-md">
+                    <Label htmlFor="animalsPerKg" className="text-purple-700 dark:text-purple-400 font-medium text-sm">
                       Animali per Kg
                     </Label>
                     <Input
@@ -1260,12 +1260,12 @@ export default function SelectionDetailPage() {
                         ...destinationBasketData, 
                         animalsPerKg: parseInt(e.target.value) || 0
                       })}
-                      className="bg-white dark:bg-slate-800 border-purple-200 dark:border-purple-800 font-mono text-lg font-bold"
+                      className="h-9 bg-white dark:bg-slate-800 border-purple-200 dark:border-purple-800 font-mono text-base font-bold"
                     />
                   </div>
                   
-                  <div className="space-y-2 bg-cyan-50 dark:bg-cyan-900/20 p-3 rounded-md">
-                    <Label htmlFor="animalCount" className="text-cyan-700 dark:text-cyan-400 font-medium">
+                  <div className="space-y-1 bg-cyan-50 dark:bg-cyan-900/20 p-2 rounded-md">
+                    <Label htmlFor="animalCount" className="text-cyan-700 dark:text-cyan-400 font-medium text-sm">
                       Numero Totale Animali
                     </Label>
                     <Input
@@ -1277,7 +1277,7 @@ export default function SelectionDetailPage() {
                         ...destinationBasketData, 
                         animalCount: parseInt(e.target.value) || 0
                       })}
-                      className="bg-white dark:bg-slate-800 border-cyan-200 dark:border-cyan-800 font-mono text-lg font-bold"
+                      className="h-9 bg-white dark:bg-slate-800 border-cyan-200 dark:border-cyan-800 font-mono text-base font-bold"
                     />
                   </div>
                 </div>
