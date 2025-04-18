@@ -64,7 +64,7 @@ import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import configureWebSocketServer from "./websocket";
 import { implementDirectOperationRoute } from "./direct-operations";
-import { implementSelectionCancelRoute } from "./selectionCancelRoute";
+import { implementSelectionRoutes } from "./selectionCancelHandler";
 import { 
   getSelections, 
   getSelectionById, 
@@ -4189,7 +4189,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/selections/:id/destination-baskets", addDestinationBaskets);
 
   // Registra le route per cancellare e completare le selezioni
-  implementSelectionCancelRoute(app, db);
+  implementSelectionRoutes(app, db);
   
   // Configure WebSocket server
   const { 
