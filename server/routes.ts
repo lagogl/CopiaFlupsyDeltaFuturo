@@ -401,6 +401,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Ottieni ceste disponibili per la selezione (IMPORTANTE: questa rotta deve venire prima di /api/baskets/:id)
+  app.get("/api/baskets/available", getAvailableBaskets);
+
   app.get("/api/baskets/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
@@ -4150,8 +4153,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Ottieni statistiche sulle selezioni
   app.get("/api/selections/statistics", getSelectionStats);
-  
-  // Questa rotta è stata spostata per evitare conflitti con l'ordine delle route Express
   
   // Ottieni posizioni disponibili in un FLUPSY
   app.get("/api/selections/available-positions/:flupsyId", getAvailablePositions);
