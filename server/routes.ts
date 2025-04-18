@@ -4214,54 +4214,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { baskets, sizes, flupsys } = await import("../shared/schema");
       
-      // Recupera le ceste di origine
-      const sourceBaskets = await db.select({
+      // Ottieni prima i basic ID delle ceste di origine (per evitare duplicazioni di codice)
+      const sourceBasketIds = await db.select({
         id: selectionSourceBaskets.id,
-        selectionId: selectionSourceBaskets.selectionId,
         basketId: selectionSourceBaskets.basketId,
-        cycleId: selectionSourceBaskets.cycleId,
-        animalCount: selectionSourceBaskets.animalCount,
-        totalWeight: selectionSourceBaskets.totalWeight,
-        animalsPerKg: selectionSourceBaskets.animalsPerKg,
         sizeId: selectionSourceBaskets.sizeId,
-        lotId: selectionSourceBaskets.lotId,
-        createdAt: selectionSourceBaskets.createdAt,
-        // Campi correlati del basket
-        physicalNumber: baskets.physicalNumber,
-        flupsyId: baskets.flupsyId,
-        position: baskets.position
       })
       .from(selectionSourceBaskets)
-      .leftJoin(baskets, eq(selectionSourceBaskets.basketId, baskets.id))
       .where(eq(selectionSourceBaskets.selectionId, Number(id)));
       
-      // Arricchisci le ceste di origine con informazioni sulla taglia
-      const enrichedSourceBaskets = await Promise.all(sourceBaskets.map(async (basket) => {
-        // Se esiste un sizeId, recupera i dettagli della taglia
+      // Ottieni tutti i dati pertinenti in un unico passaggio
+      const enrichedSourceBaskets = await Promise.all(sourceBasketIds.map(async ({ id, basketId, sizeId }) => {
+        // Dati del cestello di origine dalla tabella selectionSourceBaskets
+        const [sourceData] = await db.select()
+          .from(selectionSourceBaskets)
+          .where(eq(selectionSourceBaskets.id, id));
+          
+        // Dati del cestello fisico
+        const [basketData] = await db.select()
+          .from(baskets)
+          .where(eq(baskets.id, basketId));
+          
+        // Dati della taglia
         let size = null;
-        if (basket.sizeId) {
-          const sizeResult = await db.select()
+        if (sizeId) {
+          const [sizeData] = await db.select()
             .from(sizes)
-            .where(eq(sizes.id, basket.sizeId))
-            .limit(1);
-          size = sizeResult.length > 0 ? sizeResult[0] : null;
+            .where(eq(sizes.id, sizeId));
+          size = sizeData;
         }
         
-        // Recupera i dettagli del FLUPSY se presente
+        // Dati del FLUPSY
         let flupsy = null;
-        if (basket.flupsyId) {
-          const flupsyResult = await db.select()
+        if (basketData?.flupsyId) {
+          const [flupsyData] = await db.select()
             .from(flupsys)
-            .where(eq(flupsys.id, basket.flupsyId))
-            .limit(1);
-          flupsy = flupsyResult.length > 0 ? flupsyResult[0] : null;
+            .where(eq(flupsys.id, basketData.flupsyId));
+          flupsy = flupsyData;
         }
         
+        // Restituisci un oggetto completo con tutti i dati necessari
         return {
-          ...basket,
-          basket: await db.select().from(baskets).where(eq(baskets.id, basket.basketId)).limit(1).then(res => res[0] || null),
-          size,
-          flupsy
+          ...sourceData,                   // Tutti i dati del cestello di origine
+          basketId: basketId,              // ID del cestello
+          physicalNumber: basketData?.physicalNumber,  // Numero fisico del cestello
+          basket: basketData,              // Tutti i dati del cestello
+          flupsy: flupsy,                  // Tutti i dati del FLUPSY
+          size: size                       // Tutti i dati della taglia
         };
       }));
       
@@ -4288,62 +4287,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       const { baskets, sizes, flupsys } = await import("../shared/schema");
       
-      // Recupera le ceste di destinazione
-      const destinationBaskets = await db.select({
+      // Ottieni prima i basic ID delle ceste di destinazione (per evitare duplicazioni di codice)
+      const destBasketIds = await db.select({
         id: selectionDestinationBaskets.id,
-        selectionId: selectionDestinationBaskets.selectionId,
         basketId: selectionDestinationBaskets.basketId,
-        cycleId: selectionDestinationBaskets.cycleId,
-        destinationType: selectionDestinationBaskets.destinationType,
-        flupsyId: selectionDestinationBaskets.flupsyId,
-        position: selectionDestinationBaskets.position,
-        animalCount: selectionDestinationBaskets.animalCount,
-        liveAnimals: selectionDestinationBaskets.liveAnimals,
-        totalWeight: selectionDestinationBaskets.totalWeight,
-        animalsPerKg: selectionDestinationBaskets.animalsPerKg,
         sizeId: selectionDestinationBaskets.sizeId,
-        deadCount: selectionDestinationBaskets.deadCount,
-        mortalityRate: selectionDestinationBaskets.mortalityRate,
-        sampleWeight: selectionDestinationBaskets.sampleWeight,
-        sampleCount: selectionDestinationBaskets.sampleCount,
-        notes: selectionDestinationBaskets.notes,
-        createdAt: selectionDestinationBaskets.createdAt,
-        // Campi correlati del basket
-        physicalNumber: baskets.physicalNumber
+        flupsyId: selectionDestinationBaskets.flupsyId
       })
       .from(selectionDestinationBaskets)
-      .leftJoin(baskets, eq(selectionDestinationBaskets.basketId, baskets.id))
       .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
       
-      // Arricchisci i dati con informazioni aggiuntive (taglia, flupsy, ecc.)
-      const enrichedDestinationBaskets = await Promise.all(destinationBaskets.map(async (basket) => {
-        const basketData = await db.select().from(baskets).where(eq(baskets.id, basket.basketId)).limit(1).then(res => res[0] || null);
-        
-        // Recupera i dettagli della taglia se presente
+      // Ottieni tutti i dati pertinenti in un unico passaggio
+      const enrichedDestinationBaskets = await Promise.all(destBasketIds.map(async ({ id, basketId, sizeId, flupsyId }) => {
+        // Dati del cestello di destinazione dalla tabella selectionDestinationBaskets
+        const [destData] = await db.select()
+          .from(selectionDestinationBaskets)
+          .where(eq(selectionDestinationBaskets.id, id));
+          
+        // Dati del cestello fisico
+        const [basketData] = await db.select()
+          .from(baskets)
+          .where(eq(baskets.id, basketId));
+          
+        // Dati della taglia
         let size = null;
-        if (basket.sizeId) {
-          const sizeResult = await db.select()
+        if (sizeId) {
+          const [sizeData] = await db.select()
             .from(sizes)
-            .where(eq(sizes.id, basket.sizeId))
-            .limit(1);
-          size = sizeResult.length > 0 ? sizeResult[0] : null;
+            .where(eq(sizes.id, sizeId));
+          size = sizeData;
         }
         
-        // Recupera i dettagli del FLUPSY se presente
+        // Dati del FLUPSY
         let flupsy = null;
-        if (basket.flupsyId) {
-          const flupsyResult = await db.select()
+        if (flupsyId) {
+          const [flupsyData] = await db.select()
             .from(flupsys)
-            .where(eq(flupsys.id, basket.flupsyId))
-            .limit(1);
-          flupsy = flupsyResult.length > 0 ? flupsyResult[0] : null;
+            .where(eq(flupsys.id, flupsyId));
+          flupsy = flupsyData;
         }
         
+        // Restituisci un oggetto completo con tutti i dati necessari
         return {
-          ...basket,
-          basket: basketData,
-          size,
-          flupsy
+          ...destData,                    // Tutti i dati del cestello di destinazione
+          basketId: basketId,             // ID del cestello
+          physicalNumber: basketData?.physicalNumber,  // Numero fisico del cestello
+          basket: basketData,             // Tutti i dati del cestello
+          flupsy: flupsy,                 // Tutti i dati del FLUPSY
+          size: size                      // Tutti i dati della taglia
         };
       }));
       
