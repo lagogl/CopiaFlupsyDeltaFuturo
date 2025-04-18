@@ -3,6 +3,13 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import path from 'path';
 import fs from 'fs';
+import { db } from "./db";
+import { eq, and, isNull, sql } from "drizzle-orm";
+import { 
+  selections, 
+  selectionSourceBaskets,
+  selectionDestinationBaskets
+} from "../shared/schema";
 import { execFile } from 'child_process';
 import { 
   createDatabaseBackup, 
@@ -57,6 +64,7 @@ import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import configureWebSocketServer from "./websocket";
 import { implementDirectOperationRoute } from "./direct-operations";
+import { implementSelectionCancelRoute } from "./selectionCancelRoute";
 import { 
   getSelections, 
   getSelectionById, 
@@ -4180,135 +4188,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Aggiungi ceste di destinazione e completa la selezione (fase 3)
   app.post("/api/selections/:id/destination-baskets", addDestinationBaskets);
 
-  // Annulla una selezione
-  app.post("/api/selections/:id/cancel", async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      if (!id || isNaN(Number(id))) {
-        return res.status(400).json({ 
-          success: false, 
-          error: "ID selezione non valido"
-        });
-      }
-      
-      // Verifica che la selezione esista
-      const selection = await db.select().from(selections)
-        .where(eq(selections.id, Number(id)))
-        .limit(1);
-        
-      if (!selection || selection.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: `Selezione con ID ${id} non trovata`
-        });
-      }
-      
-      // Verifica che la selezione non sia già annullata
-      if (selection[0].status === 'cancelled') {
-        return res.status(400).json({
-          success: false,
-          error: `La selezione è già stata annullata`
-        });
-      }
-      
-      // Aggiorna lo stato della selezione a 'cancelled'
-      const [updatedSelection] = await db.update(selections)
-        .set({ 
-          status: 'cancelled',
-          updatedAt: new Date()
-        })
-        .where(eq(selections.id, Number(id)))
-        .returning();
-      
-      // Notifica via WebSocket
-      if (typeof (global as any).broadcastUpdate === 'function') {
-        (global as any).broadcastUpdate('selection_cancelled', {
-          selectionId: Number(id),
-          selectionNumber: selection[0].selectionNumber,
-          message: `Selezione #${selection[0].selectionNumber} annullata`
-        });
-      }
-      
-      return res.status(200).json({
-        success: true,
-        message: "Selezione annullata con successo",
-        selection: updatedSelection
-      });
-      
-    } catch (error) {
-      console.error("Errore durante l'annullamento della selezione:", error);
-      return res.status(500).json({
-        success: false,
-        error: `Errore durante l'annullamento della selezione: ${error instanceof Error ? error.message : String(error)}`
-      });
-    }
-  });
-  
-  // Completa una selezione
-  app.post("/api/selections/:id/complete", async (req, res) => {
-    try {
-      const { id } = req.params;
-      
-      if (!id || isNaN(Number(id))) {
-        return res.status(400).json({ 
-          success: false, 
-          error: "ID selezione non valido"
-        });
-      }
-      
-      // Verifica che la selezione esista
-      const selection = await db.select().from(selections)
-        .where(eq(selections.id, Number(id)))
-        .limit(1);
-        
-      if (!selection || selection.length === 0) {
-        return res.status(404).json({
-          success: false,
-          error: `Selezione con ID ${id} non trovata`
-        });
-      }
-      
-      // Verifica che la selezione sia in stato 'draft'
-      if (selection[0].status !== 'draft') {
-        return res.status(400).json({
-          success: false,
-          error: `La selezione non può essere completata perché è in stato "${selection[0].status}"`
-        });
-      }
-      
-      // Aggiorna lo stato della selezione a 'completed'
-      const [updatedSelection] = await db.update(selections)
-        .set({ 
-          status: 'completed',
-          updatedAt: new Date()
-        })
-        .where(eq(selections.id, Number(id)))
-        .returning();
-      
-      // Notifica via WebSocket
-      if (typeof (global as any).broadcastUpdate === 'function') {
-        (global as any).broadcastUpdate('selection_completed', {
-          selectionId: Number(id),
-          selectionNumber: selection[0].selectionNumber,
-          message: `Selezione #${selection[0].selectionNumber} completata`
-        });
-      }
-      
-      return res.status(200).json({
-        success: true,
-        message: "Selezione completata con successo",
-        selection: updatedSelection
-      });
-      
-    } catch (error) {
-      console.error("Errore durante il completamento della selezione:", error);
-      return res.status(500).json({
-        success: false,
-        error: `Errore durante il completamento della selezione: ${error instanceof Error ? error.message : String(error)}`
-      });
-    }
-  });
+  // Registra le route per cancellare e completare le selezioni
+  implementSelectionCancelRoute(app, db);
   
   // Configure WebSocket server
   const { 
