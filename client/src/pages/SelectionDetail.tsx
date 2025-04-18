@@ -192,18 +192,28 @@ export default function SelectionDetailPage() {
     setIsSubmitting(true);
 
     try {
+      // Nota: Il server si aspetta un array di cestelli di origine
       const response = await fetch(`/api/selections/${id}/source-baskets`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          basketId: parseInt(sourceBasketData.basketId),
-        }),
+        body: JSON.stringify([
+          {
+            basketId: parseInt(sourceBasketData.basketId),
+            cycleId: null,  // Questi valori verranno determinati dal server
+            animalCount: null,
+            totalWeight: null,
+            animalsPerKg: null,
+            sizeId: null,
+            lotId: null
+          }
+        ]),
       });
 
       if (!response.ok) {
-        throw new Error("Errore nell'aggiunta del cestello sorgente");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Errore nell'aggiunta del cestello sorgente");
       }
 
       await response.json();
@@ -251,28 +261,41 @@ export default function SelectionDetailPage() {
     setIsSubmitting(true);
 
     try {
+      // Nota: Il server si aspetta un array di cestelli di destinazione
       const response = await fetch(`/api/selections/${id}/destination-baskets`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
-        body: JSON.stringify({
-          ...destinationBasketData,
-          basketId: parseInt(destinationBasketData.basketId),
-          positionFlupsyId: destinationBasketData.positionFlupsyId 
-            ? parseInt(destinationBasketData.positionFlupsyId) 
-            : null,
-          positionNumber: destinationBasketData.positionNumber 
-            ? parseInt(destinationBasketData.positionNumber) 
-            : null,
-          saleDate: destinationBasketData.saleDate 
-            ? destinationBasketData.saleDate.toISOString().split('T')[0]
-            : null,
-        }),
+        body: JSON.stringify([
+          {
+            basketId: parseInt(destinationBasketData.basketId),
+            positionFlupsyId: destinationBasketData.positionFlupsyId 
+              ? parseInt(destinationBasketData.positionFlupsyId) 
+              : null,
+            position: destinationBasketData.positionRow 
+              ? `${destinationBasketData.positionRow}${destinationBasketData.positionNumber}`
+              : null,
+            destinationType: destinationBasketData.saleDestination ? 'sold' : 'placed',
+            animalCount: destinationBasketData.animalCount || null,
+            deadCount: destinationBasketData.deadCount || null,
+            sampleWeight: destinationBasketData.sampleWeight || null,
+            sampleCount: destinationBasketData.sampleCount || null, 
+            totalWeight: destinationBasketData.totalWeightKg ? destinationBasketData.totalWeightKg * 1000 : null, // Converti in grammi
+            animalsPerKg: destinationBasketData.animalsPerKg || null,
+            saleDate: destinationBasketData.saleDate && destinationBasketData.saleDestination
+              ? destinationBasketData.saleDate.toISOString().split('T')[0]
+              : null,
+            saleClient: destinationBasketData.saleClient && destinationBasketData.saleDestination
+              ? destinationBasketData.saleClient
+              : null
+          }
+        ]),
       });
 
       if (!response.ok) {
-        throw new Error("Errore nell'aggiunta del cestello destinazione");
+        const errorData = await response.json();
+        throw new Error(errorData.error || "Errore nell'aggiunta del cestello destinazione");
       }
 
       await response.json();
