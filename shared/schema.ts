@@ -34,7 +34,8 @@ export const operationTypes = [
   "vendita",
   "selezione-vendita",
   "cessazione",
-  "peso"
+  "peso",
+  "selezione-origine"
 ] as const;
 
 // Screening (Operazioni di vagliatura)
@@ -105,6 +106,79 @@ export const screeningBasketHistory = pgTable("screening_basket_history", {
 export const screeningLotReferences = pgTable("screening_lot_references", {
   id: serial("id").primaryKey(),
   screeningId: integer("screening_id").notNull(), // Riferimento all'operazione di vagliatura
+  destinationBasketId: integer("destination_basket_id").notNull(), // Riferimento alla cesta di destinazione
+  destinationCycleId: integer("destination_cycle_id").notNull(), // Riferimento al ciclo di destinazione
+  lotId: integer("lot_id").notNull(), // Riferimento al lotto
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+});
+
+// Selections (Operazioni di Selezione)
+export const selections = pgTable("selections", {
+  id: serial("id").primaryKey(),
+  date: date("date").notNull(), // Data dell'operazione di selezione
+  selectionNumber: integer("selection_number").notNull(), // Numero progressivo dell'operazione di selezione
+  purpose: text("purpose", { enum: ["vendita", "vagliatura", "altro"] }).notNull(), // Scopo della selezione
+  screeningType: text("screening_type", { enum: ["sopra_vaglio", "sotto_vaglio"] }), // Tipo di vagliatura, se pertinente
+  status: text("status", { enum: ["draft", "completed", "cancelled"] }).notNull().default("draft"), // Stato dell'operazione di selezione
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento
+  notes: text("notes"), // Note aggiuntive
+});
+
+// Selection Source Baskets (Ceste di origine per la selezione)
+export const selectionSourceBaskets = pgTable("selection_source_baskets", {
+  id: serial("id").primaryKey(),
+  selectionId: integer("selection_id").notNull(), // Riferimento all'operazione di selezione
+  basketId: integer("basket_id").notNull(), // Riferimento alla cesta di origine
+  cycleId: integer("cycle_id").notNull(), // Riferimento al ciclo attivo della cesta
+  // Dati della cesta di origine al momento della selezione
+  animalCount: integer("animal_count"), // Numero di animali
+  totalWeight: real("total_weight"), // Peso totale in grammi
+  animalsPerKg: integer("animals_per_kg"), // Animali per kg
+  sizeId: integer("size_id"), // Taglia attuale
+  lotId: integer("lot_id"), // Lotto di origine
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di aggiunta alla selezione
+});
+
+// Selection Destination Baskets (Nuove ceste create dalla selezione)
+export const selectionDestinationBaskets = pgTable("selection_destination_baskets", {
+  id: serial("id").primaryKey(),
+  selectionId: integer("selection_id").notNull(), // Riferimento all'operazione di selezione
+  basketId: integer("basket_id").notNull(), // Riferimento alla nuova cesta
+  cycleId: integer("cycle_id"), // Riferimento al nuovo ciclo (può essere null se non ancora creato)
+  destinationType: text("destination_type", { enum: ["sold", "placed"] }).notNull(), // Venduta o collocata
+  flupsyId: integer("flupsy_id"), // FLUPSY assegnato se collocata
+  position: text("position"), // Posizione nel FLUPSY se collocata
+  // Dati della nuova cesta
+  animalCount: integer("animal_count"), // Numero di animali totale
+  liveAnimals: integer("live_animals"), // Numero di animali vivi
+  totalWeight: real("total_weight"), // Peso totale in grammi
+  animalsPerKg: integer("animals_per_kg"), // Animali per kg
+  sizeId: integer("size_id"), // Taglia calcolata
+  deadCount: integer("dead_count"), // Conteggio animali morti
+  mortalityRate: real("mortality_rate"), // Tasso di mortalità
+  sampleWeight: real("sample_weight"), // Peso del campione in grammi
+  sampleCount: integer("sample_count"), // Numero di animali nel campione
+  notes: text("notes"), // Note specifiche per questa cesta
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento
+});
+
+// Selection Basket History (Storico delle relazioni tra ceste di origine e destinazione)
+export const selectionBasketHistory = pgTable("selection_basket_history", {
+  id: serial("id").primaryKey(),
+  selectionId: integer("selection_id").notNull(), // Riferimento all'operazione di selezione
+  sourceBasketId: integer("source_basket_id").notNull(), // Riferimento alla cesta di origine
+  sourceCycleId: integer("source_cycle_id").notNull(), // Riferimento al ciclo di origine
+  destinationBasketId: integer("destination_basket_id").notNull(), // Riferimento alla cesta di destinazione
+  destinationCycleId: integer("destination_cycle_id").notNull(), // Riferimento al ciclo di destinazione
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+});
+
+// Selection Lot References (Riferimenti ai lotti per le ceste di destinazione)
+export const selectionLotReferences = pgTable("selection_lot_references", {
+  id: serial("id").primaryKey(),
+  selectionId: integer("selection_id").notNull(), // Riferimento all'operazione di selezione
   destinationBasketId: integer("destination_basket_id").notNull(), // Riferimento alla cesta di destinazione
   destinationCycleId: integer("destination_cycle_id").notNull(), // Riferimento al ciclo di destinazione
   lotId: integer("lot_id").notNull(), // Riferimento al lotto
@@ -307,6 +381,37 @@ export const insertScreeningLotReferenceSchema = createInsertSchema(screeningLot
   createdAt: true
 });
 
+// Schema per il modulo di selezione
+export const insertSelectionSchema = createInsertSchema(selections).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  status: true,
+  selectionNumber: true
+});
+
+export const insertSelectionSourceBasketSchema = createInsertSchema(selectionSourceBaskets).omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertSelectionDestinationBasketSchema = createInsertSchema(selectionDestinationBaskets).omit({
+  id: true,
+  createdAt: true,
+  updatedAt: true,
+  cycleId: true
+});
+
+export const insertSelectionBasketHistorySchema = createInsertSchema(selectionBasketHistory).omit({
+  id: true,
+  createdAt: true
+});
+
+export const insertSelectionLotReferenceSchema = createInsertSchema(selectionLotReferences).omit({
+  id: true,
+  createdAt: true
+});
+
 // Types
 export type Flupsy = typeof flupsys.$inferSelect;
 export type InsertFlupsy = z.infer<typeof insertFlupsySchema>;
@@ -357,6 +462,22 @@ export type InsertScreeningBasketHistory = z.infer<typeof insertScreeningBasketH
 
 export type ScreeningLotReference = typeof screeningLotReferences.$inferSelect;
 export type InsertScreeningLotReference = z.infer<typeof insertScreeningLotReferenceSchema>;
+
+// Tipi per il modulo di selezione
+export type Selection = typeof selections.$inferSelect;
+export type InsertSelection = z.infer<typeof insertSelectionSchema>;
+
+export type SelectionSourceBasket = typeof selectionSourceBaskets.$inferSelect;
+export type InsertSelectionSourceBasket = z.infer<typeof insertSelectionSourceBasketSchema>;
+
+export type SelectionDestinationBasket = typeof selectionDestinationBaskets.$inferSelect;
+export type InsertSelectionDestinationBasket = z.infer<typeof insertSelectionDestinationBasketSchema>;
+
+export type SelectionBasketHistory = typeof selectionBasketHistory.$inferSelect;
+export type InsertSelectionBasketHistory = z.infer<typeof insertSelectionBasketHistorySchema>;
+
+export type SelectionLotReference = typeof selectionLotReferences.$inferSelect;
+export type InsertSelectionLotReference = z.infer<typeof insertSelectionLotReferenceSchema>;
 
 // Extended schemas for validation
 export const operationSchema = insertOperationSchema.extend({
