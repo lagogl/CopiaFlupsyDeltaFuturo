@@ -121,8 +121,20 @@ export default function SelectionDetailPage() {
 
   // Query per caricare le ceste disponibili
   const { data: availableBaskets, isLoading: isLoadingAvailableBaskets } = useQuery({
-    queryKey: ["/api/baskets/available"],
+    queryKey: ["/api/baskets/available", selection?.referenceSizeId],
+    queryFn: async () => {
+      // Includi il parametro referenceSizeId nella richiesta se disponibile
+      const url = selection?.referenceSizeId 
+        ? `/api/baskets/available?referenceSizeId=${selection.referenceSizeId}` 
+        : '/api/baskets/available';
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento delle ceste disponibili');
+      }
+      return response.json();
+    },
     staleTime: 1000 * 60, // 1 minuto
+    enabled: !!selection, // Esegui solo quando i dati della selezione sono caricati
   });
 
   // Query per caricare i flupsy disponibili
