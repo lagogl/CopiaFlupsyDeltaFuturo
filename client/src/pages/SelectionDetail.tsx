@@ -1003,6 +1003,7 @@ export default function SelectionDetailPage() {
                       .map(basket => {
                         // Controlla se questa taglia corrisponde alla taglia di riferimento della selezione
                         const isReferenceSize = selection?.referenceSizeId && basket.size?.id === selection.referenceSizeId;
+                        const sizeCode = basket.size?.code || basket.size?.sizeCode || "N/A";
                         
                         return (
                           <SelectItem 
@@ -1010,32 +1011,39 @@ export default function SelectionDetailPage() {
                             value={basket.basketId.toString()}
                             className={isReferenceSize ? "bg-green-50 dark:bg-green-900" : ""}
                           >
-                            <div className="flex justify-between w-full items-center">
-                              <span>
+                            <div className="grid grid-cols-12 w-full items-center gap-1">
+                              {/* Colonna 1-3: Numero cestello */}
+                              <div className="col-span-3 font-semibold">
                                 Cesta #{basket.physicalNumber}
-                                {basket.size?.sizeCode && (
-                                  <span 
-                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs font-medium
-                                      ${isReferenceSize 
-                                        ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 font-bold border border-green-500" 
-                                        : getSizeColorClass(basket.size.sizeCode)}`
-                                    }
-                                  >
-                                    {isReferenceSize ? "★ " : ""}{basket.size.sizeCode}{isReferenceSize ? " ★" : ""}
-                                  </span>
-                                )}
-                                {basket.flupsy && ` - ${basket.flupsy.name}`}
-                              </span>
+                              </div>
                               
-                              {/* Mostra il numero di animali e taglia in modo più visibile */}
-                              <div className="flex flex-col items-end">
+                              {/* Colonna 4-5: Taglia */}
+                              <div className="col-span-2">
+                                <span 
+                                  className={`px-2 py-0.5 rounded text-xs font-medium inline-block ${
+                                    isReferenceSize 
+                                      ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 font-bold border border-green-500" 
+                                      : getSizeColorClass(sizeCode)
+                                  }`}
+                                >
+                                  {isReferenceSize ? "★ " : ""}{sizeCode}{isReferenceSize ? " ★" : ""}
+                                </span>
+                              </div>
+                              
+                              {/* Colonna 6-9: Nome FLUPSY */}
+                              <div className="col-span-4 truncate">
+                                {basket.flupsy && basket.flupsy.name}
+                              </div>
+                              
+                              {/* Colonna 10-12: Conteggio animali */}
+                              <div className="col-span-3 text-right">
                                 {basket.lastOperation?.animalCount ? (
-                                  <span className="text-xs font-medium ml-2">
-                                    {formatNumberWithCommas(basket.lastOperation.animalCount)} animali
+                                  <span className="text-xs font-medium">
+                                    {formatNumberWithCommas(basket.lastOperation.animalCount)}
                                   </span>
                                 ) : basket.cycle?.animalCount ? (
-                                  <span className="text-xs font-medium ml-2">
-                                    {formatNumberWithCommas(basket.cycle.animalCount)} animali
+                                  <span className="text-xs font-medium">
+                                    {formatNumberWithCommas(basket.cycle.animalCount)}
                                   </span>
                                 ) : null}
                               </div>
@@ -1107,23 +1115,34 @@ export default function SelectionDetailPage() {
                           );
                           return !alreadyAdded;
                         })
-                        .map(basket => (
-                          <SelectItem key={basket.basketId} value={basket.basketId.toString()}>
-                            <div className="flex justify-between w-full items-center">
-                              <span>
-                                Cesta #{basket.physicalNumber}
-                                {basket.size?.sizeCode && (
+                        .map(basket => {
+                          const sizeCode = basket.size?.code || basket.size?.sizeCode || "N/A";
+                          
+                          return (
+                            <SelectItem key={basket.basketId} value={basket.basketId.toString()}>
+                              <div className="grid grid-cols-12 w-full items-center gap-1">
+                                {/* Colonna 1-3: Numero cestello */}
+                                <div className="col-span-3 font-semibold">
+                                  Cesta #{basket.physicalNumber}
+                                </div>
+                                
+                                {/* Colonna 4-5: Taglia */}
+                                <div className="col-span-2">
                                   <span 
-                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs font-medium ${getSizeColorClass(basket.size.sizeCode)}`}
+                                    className={`px-2 py-0.5 rounded text-xs font-medium inline-block ${getSizeColorClass(sizeCode)}`}
                                   >
-                                    {basket.size.sizeCode}
+                                    {sizeCode}
                                   </span>
-                                )}
-                                {basket.flupsy && ` - ${basket.flupsy.name}`}
-                              </span>
-                            </div>
-                          </SelectItem>
-                        ))
+                                </div>
+                                
+                                {/* Colonna 6-12: Nome FLUPSY */}
+                                <div className="col-span-7 truncate">
+                                  {basket.flupsy && basket.flupsy.name}
+                                </div>
+                              </div>
+                            </SelectItem>
+                          );
+                        })
                     ) : (
                       <SelectItem disabled value="none">Nessuna cesta disponibile</SelectItem>
                     )}
