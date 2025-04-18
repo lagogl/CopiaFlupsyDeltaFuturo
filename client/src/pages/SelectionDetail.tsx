@@ -1169,93 +1169,118 @@ export default function SelectionDetailPage() {
                 </Select>
               </div>
               
-              {/* Campi per calcolo */}
-              <div className="space-y-2">
-                <Label htmlFor="sampleWeight">Peso Campione (g)</Label>
-                <Input
-                  id="sampleWeight"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={destinationBasketData.sampleWeight || ""}
-                  onChange={(e) => setDestinationBasketData({ 
-                    ...destinationBasketData, 
-                    sampleWeight: parseFloat(e.target.value) || 0
-                  })}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="sampleCount">N° Animali nel Campione</Label>
-                <Input
-                  id="sampleCount"
-                  type="number"
-                  min="0"
-                  value={destinationBasketData.sampleCount || ""}
-                  onChange={(e) => setDestinationBasketData({ 
-                    ...destinationBasketData, 
-                    sampleCount: parseInt(e.target.value) || 0
-                  })}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="totalWeightKg">Peso Totale Cesta (kg)</Label>
-                <Input
-                  id="totalWeightKg"
-                  type="number"
-                  min="0"
-                  step="0.1"
-                  value={destinationBasketData.totalWeightKg || ""}
-                  onChange={(e) => setDestinationBasketData({ 
-                    ...destinationBasketData, 
-                    totalWeightKg: parseFloat(e.target.value) || 0
-                  })}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="deadCount">Animali Morti</Label>
-                <Input
-                  id="deadCount"
-                  type="number"
-                  min="0"
-                  value={destinationBasketData.deadCount || ""}
-                  onChange={(e) => setDestinationBasketData({ 
-                    ...destinationBasketData, 
-                    deadCount: parseInt(e.target.value) || 0
-                  })}
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="animalsPerKg">Animali per Kg</Label>
-                <Input
-                  id="animalsPerKg"
-                  type="number"
-                  min="0"
-                  value={destinationBasketData.animalsPerKg || ""}
-                  onChange={(e) => setDestinationBasketData({ 
-                    ...destinationBasketData, 
-                    animalsPerKg: parseInt(e.target.value) || 0
-                  })}
-                  className="font-mono"
-                />
-              </div>
-              
-              <div className="space-y-2">
-                <Label htmlFor="animalCount">Numero Totale Animali</Label>
-                <Input
-                  id="animalCount"
-                  type="number"
-                  min="0"
-                  value={destinationBasketData.animalCount || ""}
-                  onChange={(e) => setDestinationBasketData({ 
-                    ...destinationBasketData, 
-                    animalCount: parseInt(e.target.value) || 0
-                  })}
-                  className="font-mono"
-                />
+              {/* Calcolatrice per misurazioni */}
+              <div className="col-span-2 bg-slate-100 dark:bg-slate-900 rounded-lg p-5 shadow-sm border mt-2">
+                <h3 className="text-lg font-semibold mb-4 text-center">Calcolatrice Misurazioni</h3>
+                
+                <div className="grid grid-cols-2 gap-4">
+                  {/* Prima riga - dati di input primari */}
+                  <div className="space-y-2 bg-green-50 dark:bg-green-900/20 p-3 rounded-md">
+                    <Label htmlFor="sampleWeight" className="text-green-700 dark:text-green-400 font-medium">
+                      Peso Campione (g)
+                    </Label>
+                    <Input
+                      id="sampleWeight"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={destinationBasketData.sampleWeight || ""}
+                      onChange={(e) => setDestinationBasketData({ 
+                        ...destinationBasketData, 
+                        sampleWeight: parseFloat(e.target.value) || 0
+                      })}
+                      className="bg-white dark:bg-slate-800 border-green-200 dark:border-green-800 font-mono text-lg"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2 bg-blue-50 dark:bg-blue-900/20 p-3 rounded-md">
+                    <Label htmlFor="sampleCount" className="text-blue-700 dark:text-blue-400 font-medium">
+                      N° Animali nel Campione
+                    </Label>
+                    <Input
+                      id="sampleCount"
+                      type="number"
+                      min="0"
+                      value={destinationBasketData.sampleCount || ""}
+                      onChange={(e) => setDestinationBasketData({ 
+                        ...destinationBasketData, 
+                        sampleCount: parseInt(e.target.value) || 0
+                      })}
+                      className="bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800 font-mono text-lg"
+                    />
+                  </div>
+                  
+                  {/* Seconda riga - dati di input secondari */}
+                  <div className="space-y-2 bg-amber-50 dark:bg-amber-900/20 p-3 rounded-md">
+                    <Label htmlFor="totalWeightKg" className="text-amber-700 dark:text-amber-400 font-medium">
+                      Peso Totale Cesta (kg)
+                    </Label>
+                    <Input
+                      id="totalWeightKg"
+                      type="number"
+                      min="0"
+                      step="0.1"
+                      value={destinationBasketData.totalWeightKg || ""}
+                      onChange={(e) => setDestinationBasketData({ 
+                        ...destinationBasketData, 
+                        totalWeightKg: parseFloat(e.target.value) || 0
+                      })}
+                      className="bg-white dark:bg-slate-800 border-amber-200 dark:border-amber-800 font-mono text-lg"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2 bg-red-50 dark:bg-red-900/20 p-3 rounded-md">
+                    <Label htmlFor="deadCount" className="text-red-700 dark:text-red-400 font-medium">
+                      Animali Morti
+                    </Label>
+                    <Input
+                      id="deadCount"
+                      type="number"
+                      min="0"
+                      value={destinationBasketData.deadCount || ""}
+                      onChange={(e) => setDestinationBasketData({ 
+                        ...destinationBasketData, 
+                        deadCount: parseInt(e.target.value) || 0
+                      })}
+                      className="bg-white dark:bg-slate-800 border-red-200 dark:border-red-800 font-mono text-lg"
+                    />
+                  </div>
+                  
+                  {/* Terza riga - risultati calcolati */}
+                  <div className="space-y-2 bg-purple-50 dark:bg-purple-900/20 p-3 rounded-md">
+                    <Label htmlFor="animalsPerKg" className="text-purple-700 dark:text-purple-400 font-medium">
+                      Animali per Kg
+                    </Label>
+                    <Input
+                      id="animalsPerKg"
+                      type="number"
+                      min="0"
+                      value={destinationBasketData.animalsPerKg || ""}
+                      onChange={(e) => setDestinationBasketData({ 
+                        ...destinationBasketData, 
+                        animalsPerKg: parseInt(e.target.value) || 0
+                      })}
+                      className="bg-white dark:bg-slate-800 border-purple-200 dark:border-purple-800 font-mono text-lg font-bold"
+                    />
+                  </div>
+                  
+                  <div className="space-y-2 bg-cyan-50 dark:bg-cyan-900/20 p-3 rounded-md">
+                    <Label htmlFor="animalCount" className="text-cyan-700 dark:text-cyan-400 font-medium">
+                      Numero Totale Animali
+                    </Label>
+                    <Input
+                      id="animalCount"
+                      type="number"
+                      min="0"
+                      value={destinationBasketData.animalCount || ""}
+                      onChange={(e) => setDestinationBasketData({ 
+                        ...destinationBasketData, 
+                        animalCount: parseInt(e.target.value) || 0
+                      })}
+                      className="bg-white dark:bg-slate-800 border-cyan-200 dark:border-cyan-800 font-mono text-lg font-bold"
+                    />
+                  </div>
+                </div>
               </div>
               
               {/* Campi condizionali in base alla destinazione */}
