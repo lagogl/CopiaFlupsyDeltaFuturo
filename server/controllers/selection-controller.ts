@@ -14,7 +14,8 @@ import {
   cycles,
   baskets,
   basketPositionHistory,
-  flupsys
+  flupsys,
+  sizes
 } from "../../shared/schema";
 import { format } from "date-fns";
 
@@ -43,17 +44,22 @@ export async function getSelections(req: Request, res: Response) {
   try {
     const { status } = req.query;
     
-    let query = db.select().from(selections);
+    let selectionQuery = db.select().from(selections);
     
     // Applicazione filtri
-    if (status) {
-      query = query.where(eq(selections.status, status as string));
+    if (status && typeof status === 'string') {
+      if (status === 'draft' || status === 'completed' || status === 'cancelled') {
+        selectionQuery = selectionQuery.where(eq(selections.status, status));
+      }
     }
     
     // Ordina per data decrescente e poi per ID decrescente
-    query = query.orderBy(sql`${selections.date} DESC, ${selections.id} DESC`);
+    selectionQuery = selectionQuery.orderBy(
+      sql`${selections.date} DESC`,
+      sql`${selections.id} DESC`
+    );
     
-    const result = await query;
+    const result = await selectionQuery;
     
     return res.status(200).json(result);
   } catch (error) {
@@ -302,16 +308,42 @@ export async function createSelection(req: Request, res: Response) {
     // Prima fase: crea solo il record principale della selezione
     // I cestelli verranno aggiunti in fasi successive
     
+    // Controllo e conversione dei dati di input
+    let referenceSizeId: number | null = null;
+    if (selectionData.referenceSizeId) {
+      referenceSizeId = Number(selectionData.referenceSizeId);
+      
+      // Verifica che la taglia di riferimento esista
+      if (!isNaN(referenceSizeId)) {
+        const sizeExists = await db.select({ id: sizes.id })
+          .from(sizes)
+          .where(eq(sizes.id, referenceSizeId))
+          .limit(1);
+        
+        if (!sizeExists || sizeExists.length === 0) {
+          return res.status(400).json({
+            success: false,
+            error: `La taglia di riferimento con ID ${referenceSizeId} non esiste.`
+          });
+        }
+      } else {
+        return res.status(400).json({
+          success: false,
+          error: `ID taglia di riferimento non valido: ${selectionData.referenceSizeId}`
+        });
+      }
+    }
+    
     // Esecuzione in una singola transazione
     const selection = await db.transaction(async (tx) => {
       // 1. Crea record principale della selezione
       const [selection] = await tx.insert(selections).values({
         date: selectionData.date,
         selectionNumber: await getNextSelectionNumber(tx),
-        purpose: selectionData.purpose,
-        screeningType: selectionData.screeningType,
-        referenceSizeId: selectionData.referenceSizeId,
-        notes: selectionData.notes,
+        purpose: selectionData.purpose || null,
+        screeningType: selectionData.screeningType || null,
+        referenceSizeId: referenceSizeId,
+        notes: selectionData.notes || null,
         status: 'draft' // Inizia come bozza, sarà completata durante il processo di selezione
       }).returning();
       
@@ -328,7 +360,7 @@ export async function createSelection(req: Request, res: Response) {
     
     return res.status(201).json({
       success: true,
-      message: "Operazione di selezione completata con successo",
+      message: "Operazione di selezione creata con successo",
       id: selection.id,
       selectionNumber: selection.selectionNumber
     });

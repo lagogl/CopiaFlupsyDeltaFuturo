@@ -4151,8 +4151,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ottieni statistiche sulle selezioni
   app.get("/api/selections/statistics", getSelectionStats);
   
-  // Ottieni ceste disponibili per la selezione
-  app.get("/api/baskets/available", getAvailableBaskets);
+  // Questa rotta è stata spostata per evitare conflitti con l'ordine delle route Express
   
   // Ottieni posizioni disponibili in un FLUPSY
   app.get("/api/selections/available-positions/:flupsyId", getAvailablePositions);
