@@ -993,6 +993,13 @@ export default function SelectionDetailPage() {
                   ) : availableBaskets?.filter(b => b.cycle?.state === "active")?.length ? (
                     availableBaskets
                       .filter(b => b.cycle?.state === "active")
+                      // Filtra le ceste che sono già state aggiunte come origine
+                      .filter(basket => {
+                        const alreadyAdded = sourceBaskets?.some(
+                          sourceBasket => sourceBasket.basketId === basket.basketId
+                        );
+                        return !alreadyAdded;
+                      })
                       .map(basket => {
                         // Controlla se questa taglia corrisponde alla taglia di riferimento della selezione
                         const isReferenceSize = selection?.referenceSizeId && basket.size?.id === selection.referenceSizeId;
@@ -1008,7 +1015,7 @@ export default function SelectionDetailPage() {
                                 Cesta #{basket.physicalNumber}
                                 {basket.size?.sizeCode && (
                                   <span 
-                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs 
+                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs font-medium
                                       ${isReferenceSize 
                                         ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 font-bold border border-green-500" 
                                         : getSizeColorClass(basket.size.sizeCode)}`
@@ -1020,16 +1027,18 @@ export default function SelectionDetailPage() {
                                 {basket.flupsy && ` - ${basket.flupsy.name}`}
                               </span>
                               
-                              {/* Mostra il numero di animali dall'ultima operazione */}
-                              {basket.lastOperation?.animalCount ? (
-                                <span className="text-xs text-muted-foreground ml-2">
-                                  {formatNumberWithCommas(basket.lastOperation.animalCount)} animali
-                                </span>
-                              ) : basket.cycle?.animalCount ? (
-                                <span className="text-xs text-muted-foreground ml-2">
-                                  {formatNumberWithCommas(basket.cycle.animalCount)} animali
-                                </span>
-                              ) : null}
+                              {/* Mostra il numero di animali e taglia in modo più visibile */}
+                              <div className="flex flex-col items-end">
+                                {basket.lastOperation?.animalCount ? (
+                                  <span className="text-xs font-medium ml-2">
+                                    {formatNumberWithCommas(basket.lastOperation.animalCount)} animali
+                                  </span>
+                                ) : basket.cycle?.animalCount ? (
+                                  <span className="text-xs font-medium ml-2">
+                                    {formatNumberWithCommas(basket.cycle.animalCount)} animali
+                                  </span>
+                                ) : null}
+                              </div>
                             </div>
                           </SelectItem>
                         );
@@ -1091,6 +1100,13 @@ export default function SelectionDetailPage() {
                     ) : availableBaskets?.filter(b => !b.cycle || b.cycle.state === "available")?.length ? (
                       availableBaskets
                         .filter(b => !b.cycle || b.cycle.state === "available")
+                        // Filtra le ceste che sono già state aggiunte come destinazione
+                        .filter(basket => {
+                          const alreadyAdded = destinationBaskets?.some(
+                            destBasket => destBasket.basketId === basket.basketId
+                          );
+                          return !alreadyAdded;
+                        })
                         .map(basket => (
                           <SelectItem key={basket.basketId} value={basket.basketId.toString()}>
                             <div className="flex justify-between w-full items-center">
@@ -1098,7 +1114,7 @@ export default function SelectionDetailPage() {
                                 Cesta #{basket.physicalNumber}
                                 {basket.size?.sizeCode && (
                                   <span 
-                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs ${getSizeColorClass(basket.size.sizeCode)}`}
+                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs font-medium ${getSizeColorClass(basket.size.sizeCode)}`}
                                   >
                                     {basket.size.sizeCode}
                                   </span>
