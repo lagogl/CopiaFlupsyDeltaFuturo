@@ -1,9 +1,14 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { format, addDays, differenceInDays } from "date-fns";
+import { it } from "date-fns/locale";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
+}
+
+export function formatDate(date: Date): string {
+  return format(date, "d MMMM yyyy", { locale: it });
 }
 
 /**

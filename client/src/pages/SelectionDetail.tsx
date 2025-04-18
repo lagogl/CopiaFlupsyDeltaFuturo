@@ -1,493 +1,792 @@
-import React, { useState } from "react";
-import { useLocation, useParams, Link } from "wouter";
+import { useState, useEffect } from "react";
 import { useQuery } from "@tanstack/react-query";
+import { useLocation, useParams } from "wouter";
 import { PageHeading } from "@/components/PageHeading";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { Separator } from "@/components/ui/separator";
-import { Table, TableBody, TableCaption, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
-import { Badge } from "@/components/ui/badge";
-import { Spinner } from "@/components/ui/spinner";
-import { EmptyState } from "@/components/EmptyState";
-import { apiRequest } from "@/lib/queryClient";
-import { format } from "date-fns";
-import { it } from "date-fns/locale";
 import {
   ArrowLeft,
   FileText,
-  PlusCircle,
-  ShoppingCart,
   Package,
-  Clipboard,
+  Info,
+  Plus,
+  X,
+  FileDown,
+  CheckCircle,
   AlertCircle,
-  ChevronRight,
-  MoveRight,
-  Edit,
-  Hash
+  Clock,
 } from "lucide-react";
+import { Spinner } from "@/components/ui/spinner";
+import { EmptyState } from "@/components/EmptyState";
+import { Button } from "@/components/ui/button";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
+import {
+  Tabs,
+  TabsContent,
+  TabsList,
+  TabsTrigger,
+} from "@/components/ui/tabs";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
+import { Badge } from "@/components/ui/badge";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from "@/components/ui/dialog";
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
+import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
+import { Calendar } from "@/components/ui/calendar";
+import { cn, formatDate, formatNumberWithCommas } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
+import type { Selection, SelectionSourceBasket, SelectionDestinationBasket } from "@shared/schema";
 
-// Definizione dei tipi per i dati della selezione
-interface Selection {
-  id: number;
-  date: string;
-  selectionNumber: number;
-  purpose: string | null;
-  screeningType: string | null;
-  status: 'draft' | 'completed' | 'cancelled';
-  notes: string | null;
-  createdAt: string;
-  sourceBaskets: SourceBasket[];
-  destinationBaskets: DestinationBasket[];
-  basketHistory: BasketHistory[];
-  lotReferences: LotReference[];
-}
-
-interface SourceBasket {
-  id: number;
-  selectionId: number;
-  basketId: number;
-  cycleId: number;
-  animalCount: number;
-  totalWeight: number;
-  animalsPerKg: number;
-  sizeId: number | null;
-  lotId: number | null;
-  physicalNumber: number; // campo joinato dalla tabella baskets
-  flupsyId: number | null; // campo joinato dalla tabella baskets
-  position: string | null; // campo joinato dalla tabella baskets
-}
-
-interface DestinationBasket {
-  id: number;
-  selectionId: number;
-  basketId: number;
-  cycleId: number;
-  destinationType: 'sold' | 'placed';
-  flupsyId?: number;
-  position?: string;
-  animalCount: number;
-  liveAnimals: number;
-  totalWeight: number;
-  animalsPerKg: number;
-  sizeId: number | null;
-  deadCount: number | null;
-  mortalityRate: number | null;
-  sampleWeight: number | null;
-  sampleCount: number | null;
-  notes: string | null;
-  physicalNumber: number; // campo joinato dalla tabella baskets
-}
-
-interface BasketHistory {
-  id: number;
-  selectionId: number;
-  sourceBasketId: number;
-  sourceCycleId: number;
-  destinationBasketId: number;
-  destinationCycleId: number;
-}
-
-interface LotReference {
-  id: number;
-  selectionId: number;
-  destinationBasketId: number;
-  destinationCycleId: number;
-  lotId: number;
-}
-
-interface Size {
-  id: number;
-  code: string;
-  name: string;
-  sizeMm: number | null;
-  rangeMin: number | null;
-  rangeMax: number | null;
-}
-
-export default function SelectionDetail() {
-  const params = useParams<{ id: string }>();
+export default function SelectionDetailPage() {
+  const { id } = useParams();
   const [, navigate] = useLocation();
-  const [activeTab, setActiveTab] = useState("overview");
-  
-  // Query per recuperare i dettagli della selezione
-  const { data: selection, isLoading, error } = useQuery({
-    queryKey: ['/api/selections', params.id],
-    queryFn: async () => {
-      return apiRequest<Selection>(`/api/selections/${params.id}`);
-    },
+  const { toast } = useToast();
+  const [isSubmitting, setIsSubmitting] = useState(false);
+  const [addSourceDialogOpen, setAddSourceDialogOpen] = useState(false);
+  const [addDestinationDialogOpen, setAddDestinationDialogOpen] = useState(false);
+  const [cancelConfirmDialogOpen, setCancelConfirmDialogOpen] = useState(false);
+  const [completeConfirmDialogOpen, setCompleteConfirmDialogOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState("origine");
+
+  // Query per caricare i dati della selezione
+  const { data: selection, isLoading: isLoadingSelection, refetch: refetchSelection } = useQuery({
+    queryKey: [`/api/selections/${id}`],
+    staleTime: 1000 * 30, // 30 secondi
   });
-  
-  // Query per recuperare le informazioni sulle taglie (per riferimento)
-  const { data: sizes } = useQuery({
-    queryKey: ['/api/sizes'],
-    queryFn: async () => {
-      return apiRequest<Size[]>('/api/sizes');
-    },
+
+  // Query per caricare i cestelli di origine
+  const { data: sourceBaskets, isLoading: isLoadingSourceBaskets, refetch: refetchSourceBaskets } = useQuery({
+    queryKey: [`/api/selections/${id}/source-baskets`],
+    staleTime: 1000 * 30, // 30 secondi
   });
-  
-  // Funzioni di formattazione
-  const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd/MM/yyyy', { locale: it });
+
+  // Query per caricare i cestelli di destinazione
+  const { data: destinationBaskets, isLoading: isLoadingDestinationBaskets, refetch: refetchDestinationBaskets } = useQuery({
+    queryKey: [`/api/selections/${id}/destination-baskets`],
+    staleTime: 1000 * 30, // 30 secondi
+  });
+
+  // Dati per il form di aggiunta cestello sorgente
+  const [sourceBasketData, setSourceBasketData] = useState({
+    basketId: "",
+  });
+
+  // Dati per il form di aggiunta cestello destinazione
+  const [destinationBasketData, setDestinationBasketData] = useState({
+    basketId: "",
+    animalCount: 0,
+    deadCount: 0,
+    sampleWeight: 0,
+    sampleCount: 0,
+    totalWeightKg: 0,
+    animalsPerKg: 0,
+    positionFlupsyId: "",
+    positionRow: "",
+    positionNumber: "",
+    saleDestination: false,
+    saleDate: new Date(),
+    saleClient: "",
+  });
+
+  // Query per caricare le ceste disponibili
+  const { data: availableBaskets, isLoading: isLoadingAvailableBaskets } = useQuery({
+    queryKey: ["/api/baskets/available"],
+    staleTime: 1000 * 60, // 1 minuto
+  });
+
+  // Query per caricare i flupsy disponibili
+  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
+    queryKey: ["/api/flupsys"],
+    staleTime: 1000 * 60, // 1 minuto
+  });
+
+  // Calcola i totali della selezione
+  const calculateTotals = () => {
+    if (!sourceBaskets || !destinationBaskets) return null;
+
+    const sourceTotals = {
+      basketCount: sourceBaskets.length,
+      totalAnimals: sourceBaskets.reduce(
+        (sum: number, basket: SelectionSourceBasket) => sum + (basket.animalCount || 0),
+        0
+      ),
+    };
+
+    const destinationTotals = {
+      basketCount: destinationBaskets.length,
+      totalAnimals: destinationBaskets.reduce(
+        (sum: number, basket: SelectionDestinationBasket) => sum + (basket.animalCount || 0),
+        0
+      ),
+    };
+
+    const remainingAnimals = sourceTotals.totalAnimals - destinationTotals.totalAnimals;
+
+    return {
+      sourceTotals,
+      destinationTotals,
+      remainingAnimals,
+      percentageCompleted: sourceTotals.totalAnimals > 0
+        ? ((destinationTotals.totalAnimals / sourceTotals.totalAnimals) * 100).toFixed(1)
+        : "0",
+    };
   };
-  
-  // Trova il nome della taglia dato l'ID
-  const getSizeName = (sizeId: number | null) => {
-    if (!sizeId || !sizes) return "—";
-    const size = sizes.find(s => s.id === sizeId);
-    return size ? size.name : "—";
+
+  // Calcola i totali
+  const totals = calculateTotals();
+
+  // Gestisce l'aggiunta di un cestello sorgente
+  const handleAddSourceBasket = async () => {
+    if (!sourceBasketData.basketId) {
+      toast({
+        title: "Errore",
+        description: "Seleziona un cestello valido",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/selections/${id}/source-baskets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          basketId: parseInt(sourceBasketData.basketId),
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Errore nell'aggiunta del cestello sorgente");
+      }
+
+      await response.json();
+      
+      toast({
+        title: "Cestello aggiunto",
+        description: "Cestello sorgente aggiunto con successo",
+      });
+      
+      setAddSourceDialogOpen(false);
+      setSourceBasketData({ basketId: "" });
+      refetchSourceBaskets();
+    } catch (error) {
+      console.error("Errore:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'aggiunta del cestello",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-  
-  // Torna alla lista delle selezioni
-  const handleBack = () => {
-    navigate('/selection');
+
+  // Gestisce l'aggiunta di un cestello destinazione
+  const handleAddDestinationBasket = async () => {
+    if (!destinationBasketData.basketId) {
+      toast({
+        title: "Errore",
+        description: "Seleziona un cestello valido",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    if (destinationBasketData.saleDestination && !destinationBasketData.saleClient) {
+      toast({
+        title: "Errore",
+        description: "Inserisci il cliente per la vendita",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const response = await fetch(`/api/selections/${id}/destination-baskets`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({
+          ...destinationBasketData,
+          basketId: parseInt(destinationBasketData.basketId),
+          positionFlupsyId: destinationBasketData.positionFlupsyId 
+            ? parseInt(destinationBasketData.positionFlupsyId) 
+            : null,
+          positionNumber: destinationBasketData.positionNumber 
+            ? parseInt(destinationBasketData.positionNumber) 
+            : null,
+          saleDate: destinationBasketData.saleDate 
+            ? destinationBasketData.saleDate.toISOString().split('T')[0]
+            : null,
+        }),
+      });
+
+      if (!response.ok) {
+        throw new Error("Errore nell'aggiunta del cestello destinazione");
+      }
+
+      await response.json();
+      
+      toast({
+        title: "Cestello aggiunto",
+        description: "Cestello destinazione aggiunto con successo",
+      });
+      
+      setAddDestinationDialogOpen(false);
+      setDestinationBasketData({
+        basketId: "",
+        animalCount: 0,
+        deadCount: 0,
+        sampleWeight: 0,
+        sampleCount: 0,
+        totalWeightKg: 0,
+        animalsPerKg: 0,
+        positionFlupsyId: "",
+        positionRow: "",
+        positionNumber: "",
+        saleDestination: false,
+        saleDate: new Date(),
+        saleClient: "",
+      });
+      refetchDestinationBaskets();
+    } catch (error) {
+      console.error("Errore:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'aggiunta del cestello",
+        variant: "destructive",
+      });
+    } finally {
+      setIsSubmitting(false);
+    }
   };
-  
-  // Reindirizza per aggiungere una cesta di origine
-  const handleAddSourceBasket = () => {
-    navigate(`/selection/${params.id}/add-source`);
+
+  // Rimuove un cestello sorgente
+  const handleRemoveSourceBasket = async (sourceBasketId: number) => {
+    try {
+      const response = await fetch(`/api/selections/${id}/source-baskets/${sourceBasketId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Errore nella rimozione del cestello sorgente");
+      }
+
+      toast({
+        title: "Cestello rimosso",
+        description: "Cestello sorgente rimosso con successo",
+      });
+      
+      refetchSourceBaskets();
+    } catch (error) {
+      console.error("Errore:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante la rimozione del cestello",
+        variant: "destructive",
+      });
+    }
   };
-  
-  // Reindirizza per aggiungere una cesta di destinazione
-  const handleAddDestinationBasket = () => {
-    navigate(`/selection/${params.id}/add-destination`);
+
+  // Rimuove un cestello destinazione
+  const handleRemoveDestinationBasket = async (destinationBasketId: number) => {
+    try {
+      const response = await fetch(`/api/selections/${id}/destination-baskets/${destinationBasketId}`, {
+        method: "DELETE",
+      });
+
+      if (!response.ok) {
+        throw new Error("Errore nella rimozione del cestello destinazione");
+      }
+
+      toast({
+        title: "Cestello rimosso",
+        description: "Cestello destinazione rimosso con successo",
+      });
+      
+      refetchDestinationBaskets();
+    } catch (error) {
+      console.error("Errore:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante la rimozione del cestello",
+        variant: "destructive",
+      });
+    }
   };
-  
-  if (isLoading) {
+
+  // Annulla la selezione
+  const handleCancelSelection = async () => {
+    try {
+      const response = await fetch(`/api/selections/${id}/cancel`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Errore nell'annullamento della selezione");
+      }
+
+      toast({
+        title: "Selezione annullata",
+        description: "La selezione è stata annullata con successo",
+      });
+      
+      setCancelConfirmDialogOpen(false);
+      refetchSelection();
+    } catch (error) {
+      console.error("Errore:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'annullamento della selezione",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Completa la selezione
+  const handleCompleteSelection = async () => {
+    try {
+      const response = await fetch(`/api/selections/${id}/complete`, {
+        method: "POST",
+      });
+
+      if (!response.ok) {
+        throw new Error("Errore nel completamento della selezione");
+      }
+
+      toast({
+        title: "Selezione completata",
+        description: "La selezione è stata completata con successo",
+      });
+      
+      setCompleteConfirmDialogOpen(false);
+      refetchSelection();
+    } catch (error) {
+      console.error("Errore:", error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il completamento della selezione",
+        variant: "destructive",
+      });
+    }
+  };
+
+  // Calcola automaticamente animalsPerKg dal campione
+  useEffect(() => {
+    if (
+      destinationBasketData.sampleWeight > 0 &&
+      destinationBasketData.sampleCount > 0
+    ) {
+      // Calcola animali per kg dal campione
+      const animalsPerKg = Math.round(
+        (destinationBasketData.sampleCount / destinationBasketData.sampleWeight) * 1000
+      );
+      setDestinationBasketData({
+        ...destinationBasketData,
+        animalsPerKg,
+      });
+    }
+  }, [destinationBasketData.sampleWeight, destinationBasketData.sampleCount]);
+
+  // Calcola automaticamente animalCount dal peso totale e animalsPerKg
+  useEffect(() => {
+    if (
+      destinationBasketData.totalWeightKg > 0 &&
+      destinationBasketData.animalsPerKg > 0
+    ) {
+      // Calcola numero totale di animali
+      const animalCount = Math.round(
+        destinationBasketData.totalWeightKg * destinationBasketData.animalsPerKg
+      );
+      setDestinationBasketData({
+        ...destinationBasketData,
+        animalCount,
+      });
+    }
+  }, [destinationBasketData.totalWeightKg, destinationBasketData.animalsPerKg]);
+
+  // Ottiene lo stato della selezione
+  const getStatusBadge = (status: string) => {
+    switch (status) {
+      case "completed":
+        return (
+          <Badge variant="success" className="ml-2">
+            <CheckCircle className="h-3 w-3 mr-1" />
+            Completata
+          </Badge>
+        );
+      case "draft":
+        return (
+          <Badge variant="secondary" className="ml-2">
+            <Clock className="h-3 w-3 mr-1" />
+            Bozza
+          </Badge>
+        );
+      case "cancelled":
+        return (
+          <Badge variant="destructive" className="ml-2">
+            <AlertCircle className="h-3 w-3 mr-1" />
+            Annullata
+          </Badge>
+        );
+      default:
+        return null;
+    }
+  };
+
+  // Mostra il loader se i dati sono in caricamento
+  if (isLoadingSelection) {
     return (
-      <div className="container mx-auto py-6">
-        <div className="w-full flex justify-center my-8">
-          <Spinner size="lg" />
-        </div>
+      <div className="flex justify-center items-center h-[50vh]">
+        <Spinner size="lg" />
       </div>
     );
   }
-  
-  if (error || !selection) {
+
+  // Se la selezione non esiste, mostra un messaggio di errore
+  if (!selection) {
     return (
-      <div className="container mx-auto py-6">
-        <Breadcrumbs
-          items={[
-            { label: "Home", href: "/" },
-            { label: "Selezioni", href: "/selection" },
-            { label: "Dettaglio", href: "#" },
-          ]}
-        />
-        
-        <div className="flex items-center mt-2 mb-6">
-          <Button variant="ghost" onClick={handleBack} className="mr-4">
-            <ArrowLeft className="mr-2 h-4 w-4" />
-            Indietro
+      <EmptyState
+        icon={<AlertCircle className="h-12 w-12 text-destructive" />}
+        title="Selezione non trovata"
+        description="La selezione richiesta non è stata trovata nel database"
+        action={
+          <Button onClick={() => navigate("/selection")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Torna all'elenco
           </Button>
-          
-          <PageHeading
-            title="Dettaglio Selezione"
-            description="Visualizza e gestisci i dettagli dell'operazione"
-            icon={<FileText className="h-8 w-8 text-primary"/>}
-          />
-        </div>
-        
-        <EmptyState
-          icon={<AlertCircle className="h-10 w-10 text-destructive" />}
-          title="Errore di caricamento"
-          description="Non è stato possibile caricare i dettagli della selezione. La selezione potrebbe non esistere o si è verificato un errore."
-          action={
-            <Button variant="outline" onClick={handleBack}>
-              Torna all'elenco
-            </Button>
-          }
-        />
-      </div>
+        }
+      />
     );
   }
-  
-  // Oggetto dati caricato correttamente, procedi con il rendering
+
   return (
-    <div className="container mx-auto py-6">
-      <Breadcrumbs
-        items={[
-          { label: "Home", href: "/" },
-          { label: "Selezioni", href: "/selection" },
-          { label: `Selezione #${selection.selectionNumber}`, href: "#" },
-        ]}
-      />
-      
-      <div className="flex items-center mt-2 mb-6">
-        <Button variant="ghost" onClick={handleBack} className="mr-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Indietro
-        </Button>
-        
-        <PageHeading
-          title={`Selezione #${selection.selectionNumber}`}
-          description={`${formatDate(selection.date)} - ${selection.purpose || 'Nessuno scopo specificato'}`}
-          icon={<FileText className="h-8 w-8 text-primary"/>}
-        />
-      </div>
-      
-      {/* Header Card con dettagli principali e stato */}
-      <Card className="mb-6">
-        <CardContent className="pt-6">
-          <div className="flex flex-col md:flex-row md:justify-between md:items-center">
-            <div className="space-y-2">
-              <div className="flex items-center">
-                <Hash className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground mr-2">Numero:</span>
-                <span className="font-semibold">{selection.selectionNumber}</span>
-              </div>
-              
-              <div className="flex items-center">
-                <Calendar className="mr-2 h-4 w-4 text-muted-foreground" />
-                <span className="text-sm text-muted-foreground mr-2">Data:</span>
-                <span>{formatDate(selection.date)}</span>
-              </div>
-              
-              {selection.screeningType && (
-                <div className="flex items-center">
-                  <ScreeningIcon className="mr-2 h-4 w-4 text-muted-foreground" />
-                  <span className="text-sm text-muted-foreground mr-2">Vaglio:</span>
-                  <span>{selection.screeningType}</span>
-                </div>
-              )}
-            </div>
-            
-            <div className="mt-4 md:mt-0 space-y-2">
-              <div className="flex items-center">
-                <span className="text-sm text-muted-foreground mr-2">Stato:</span>
-                <Badge variant={
-                  selection.status === 'completed' ? 'success' :
-                  selection.status === 'draft' ? 'outline' :
-                  'destructive'
-                }>
-                  {selection.status === 'completed' ? 'Completata' :
-                   selection.status === 'draft' ? 'Bozza' :
-                   'Annullata'}
-                </Badge>
-              </div>
-              
-              <div className="flex items-center">
-                <span className="text-sm text-muted-foreground mr-2">Ceste origine:</span>
-                <span className="font-semibold">{selection.sourceBaskets.length}</span>
-              </div>
-              
-              <div className="flex items-center">
-                <span className="text-sm text-muted-foreground mr-2">Ceste destinazione:</span>
-                <span className="font-semibold">{selection.destinationBaskets.length}</span>
-              </div>
-            </div>
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <Breadcrumbs
+            items={[
+              { label: "Dashboard", href: "/" },
+              { label: "Selezione", href: "/selection" },
+              { label: `Selezione #${selection.selectionNumber}`, href: `/selection/${id}` },
+            ]}
+          />
+          <div className="flex items-center">
+            <PageHeading
+              title={`Selezione #${selection.selectionNumber}`}
+              description={`Creata il ${formatDate(new Date(selection.date))}`}
+              icon={<FileText className="h-6 w-6" />}
+              className="mt-2"
+            />
+            {getStatusBadge(selection.status)}
           </div>
-          
-          {selection.notes && (
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          {selection.status === "draft" && (
             <>
-              <Separator className="my-4" />
-              <div>
-                <h4 className="text-sm font-medium mb-2">Note</h4>
-                <p className="text-sm text-muted-foreground">{selection.notes}</p>
-              </div>
+              <Button 
+                variant="outline" 
+                onClick={() => setAddSourceDialogOpen(true)}
+                disabled={selection.status !== "draft"}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Aggiungi Cesta Origine
+              </Button>
+              
+              <Button 
+                variant="outline" 
+                onClick={() => setAddDestinationDialogOpen(true)}
+                disabled={selection.status !== "draft" || !sourceBaskets?.length}
+              >
+                <Plus className="h-4 w-4 mr-2" />
+                Aggiungi Cesta Destinazione
+              </Button>
+              
+              <Button
+                variant="destructive"
+                onClick={() => setCancelConfirmDialogOpen(true)}
+                disabled={selection.status !== "draft"}
+              >
+                <X className="h-4 w-4 mr-2" />
+                Annulla Selezione
+              </Button>
+              
+              <Button
+                onClick={() => setCompleteConfirmDialogOpen(true)}
+                disabled={
+                  selection.status !== "draft" || 
+                  !sourceBaskets?.length || 
+                  !destinationBaskets?.length ||
+                  (totals && totals.remainingAnimals > 0)
+                }
+              >
+                <CheckCircle className="h-4 w-4 mr-2" />
+                Completa Selezione
+              </Button>
             </>
           )}
+          
+          <Button variant="outline" onClick={() => navigate("/selection")}>
+            <ArrowLeft className="h-4 w-4 mr-2" />
+            Torna all'elenco
+          </Button>
+        </div>
+      </div>
+
+      {/* Informazioni sulla selezione */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Dettagli Selezione</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                Scopo
+              </h3>
+              <p className="font-medium">
+                {selection.purpose === "vendita"
+                  ? "Vendita"
+                  : selection.purpose === "vagliatura"
+                  ? "Vagliatura"
+                  : "Altro"}
+              </p>
+            </div>
+            
+            {selection.purpose === "vagliatura" && selection.screeningType && (
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Tipo Vaglio
+                </h3>
+                <p className="font-medium">
+                  {selection.screeningType === "sopra_vaglio"
+                    ? "Sopra Vaglio"
+                    : "Sotto Vaglio"}
+                </p>
+              </div>
+            )}
+            
+            <div>
+              <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                Data
+              </h3>
+              <p className="font-medium">{formatDate(new Date(selection.date))}</p>
+            </div>
+            
+            {selection.notes && (
+              <div className="md:col-span-3">
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Note
+                </h3>
+                <p className="text-sm">{selection.notes}</p>
+              </div>
+            )}
+          </div>
         </CardContent>
       </Card>
-      
-      {/* Tabs per organizzare la visualizzazione */}
-      <Tabs value={activeTab} onValueChange={setActiveTab} className="mb-6">
+
+      {/* Riepilogo dei totali */}
+      {totals && (
+        <Card className={selection.status === "completed" ? "border-green-500" : (selection.status === "cancelled" ? "border-red-500" : "")}>
+          <CardHeader>
+            <CardTitle>Riepilogo Operazione</CardTitle>
+          </CardHeader>
+          <CardContent>
+            <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Ceste Origine
+                </h3>
+                <p className="text-xl font-bold">{totals.sourceTotals.basketCount}</p>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Animali Totali
+                </h3>
+                <p className="text-xl font-bold">
+                  {formatNumberWithCommas(totals.sourceTotals.totalAnimals)}
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Ceste Destinate
+                </h3>
+                <p className="text-xl font-bold">{totals.destinationTotals.basketCount}</p>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Animali Rimanenti
+                </h3>
+                <p className={`text-xl font-bold ${totals.remainingAnimals > 0 && selection.status === "draft" ? "text-amber-600" : totals.remainingAnimals === 0 ? "text-green-600" : ""}`}>
+                  {formatNumberWithCommas(totals.remainingAnimals)}
+                </p>
+              </div>
+              
+              <div className="md:col-span-4">
+                <div className="bg-muted p-3 rounded-md">
+                  <div className="flex items-start">
+                    <Info className="h-5 w-5 text-primary mr-2 mt-0.5" />
+                    <div>
+                      <h3 className="text-sm font-medium mb-1">
+                        Stato attuale dell'operazione
+                      </h3>
+                      <p className="text-sm text-muted-foreground">
+                        {selection.status === "completed" 
+                          ? "Questa selezione è stata completata con successo."
+                          : selection.status === "cancelled"
+                          ? "Questa selezione è stata annullata."
+                          : totals.remainingAnimals > 0
+                          ? `Ci sono ancora ${formatNumberWithCommas(totals.remainingAnimals)} animali da distribuire nelle ceste di destinazione.`
+                          : totals.remainingAnimals === 0 && totals.destinationTotals.basketCount > 0
+                          ? "Tutti gli animali sono stati distribuiti nelle ceste di destinazione. La selezione può essere completata."
+                          : totals.sourceTotals.basketCount === 0
+                          ? "Non sono state ancora aggiunte ceste di origine."
+                          : "Aggiungi ceste di destinazione per completare la selezione."}
+                      </p>
+                      {selection.status === "draft" && totals.sourceTotals.totalAnimals > 0 && totals.destinationTotals.totalAnimals > 0 && (
+                        <div className="mt-2">
+                          <p className="text-sm font-medium">
+                            Progresso: {totals.percentageCompleted}% completato
+                          </p>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
+      )}
+
+      {/* Tabs per gestire le ceste di origine e destinazione */}
+      <Tabs
+        defaultValue="origine"
+        value={activeTab}
+        onValueChange={setActiveTab}
+        className="space-y-4"
+      >
         <TabsList>
-          <TabsTrigger value="overview">Panoramica</TabsTrigger>
-          <TabsTrigger value="source">Ceste di Origine</TabsTrigger>
-          <TabsTrigger value="destination">Ceste di Destinazione</TabsTrigger>
+          <TabsTrigger value="origine">Ceste Origine</TabsTrigger>
+          <TabsTrigger value="destinazione">Ceste Destinazione</TabsTrigger>
         </TabsList>
         
-        {/* Panoramica */}
-        <TabsContent value="overview" className="space-y-6">
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            {/* Card Ceste di Origine */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center">
-                  <Package className="h-5 w-5 mr-2 text-primary" />
-                  Ceste di Origine
-                </CardTitle>
-                <CardDescription>
-                  Ceste da cui provengono gli animali
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent>
-                {selection.sourceBaskets.length > 0 ? (
-                  <div className="space-y-4">
-                    {selection.sourceBaskets.map((basket) => (
-                      <div key={basket.id} className="border rounded-md p-3 hover:bg-accent/50 cursor-pointer">
-                        <div className="flex justify-between items-center">
-                          <div className="font-semibold">Cesta #{basket.physicalNumber}</div>
-                          <Badge variant="outline">{getSizeName(basket.sizeId)}</Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {basket.animalCount.toLocaleString()} animali · {(basket.totalWeight / 1000).toFixed(1)} kg
-                        </div>
-                        <div className="text-sm mt-1">
-                          <span className="text-muted-foreground">Animali/kg:</span> {basket.animalsPerKg.toLocaleString()}
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">Nessuna cesta di origine</p>
-                    {selection.status === 'draft' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-2"
-                        onClick={handleAddSourceBasket}
-                      >
-                        <PlusCircle className="h-3.5 w-3.5 mr-1" />
-                        Aggiungi cesta
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-              
-              {selection.status === 'draft' && selection.sourceBaskets.length > 0 && (
-                <CardFooter>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={handleAddSourceBasket}
-                  >
-                    <PlusCircle className="h-3.5 w-3.5 mr-1" />
-                    Aggiungi cesta
-                  </Button>
-                </CardFooter>
-              )}
-            </Card>
-            
-            {/* Card Ceste di Destinazione */}
-            <Card>
-              <CardHeader className="pb-2">
-                <CardTitle className="text-lg flex items-center">
-                  <Package className="h-5 w-5 mr-2 text-primary" />
-                  Ceste di Destinazione
-                </CardTitle>
-                <CardDescription>
-                  Ceste dove sono stati collocati gli animali
-                </CardDescription>
-              </CardHeader>
-              
-              <CardContent>
-                {selection.destinationBaskets.length > 0 ? (
-                  <div className="space-y-4">
-                    {selection.destinationBaskets.map((basket) => (
-                      <div key={basket.id} className="border rounded-md p-3 hover:bg-accent/50 cursor-pointer">
-                        <div className="flex justify-between items-center">
-                          <div className="font-semibold">Cesta #{basket.physicalNumber}</div>
-                          <Badge variant={basket.destinationType === 'sold' ? 'destructive' : 'success'}>
-                            {basket.destinationType === 'sold' ? 'Venduta' : 'Collocata'}
-                          </Badge>
-                        </div>
-                        <div className="text-sm text-muted-foreground mt-1">
-                          {basket.animalCount.toLocaleString()} animali · {(basket.totalWeight / 1000).toFixed(1)} kg
-                        </div>
-                        <div className="text-sm mt-1">
-                          <span className="text-muted-foreground">Animali/kg:</span> {basket.animalsPerKg.toLocaleString()} · 
-                          <span className="text-muted-foreground ml-2">Taglia:</span> {getSizeName(basket.sizeId)}
-                        </div>
-                        {basket.destinationType === 'placed' && basket.position && (
-                          <div className="text-sm mt-1">
-                            <span className="text-muted-foreground">Posizione:</span> {basket.position}
-                          </div>
-                        )}
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center py-4">
-                    <p className="text-muted-foreground">Nessuna cesta di destinazione</p>
-                    {selection.status === 'draft' && (
-                      <Button 
-                        variant="outline" 
-                        size="sm" 
-                        className="mt-2"
-                        onClick={handleAddDestinationBasket}
-                      >
-                        <PlusCircle className="h-3.5 w-3.5 mr-1" />
-                        Aggiungi cesta
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </CardContent>
-              
-              {selection.status === 'draft' && selection.destinationBaskets.length > 0 && (
-                <CardFooter>
-                  <Button 
-                    variant="outline" 
-                    size="sm" 
-                    className="w-full"
-                    onClick={handleAddDestinationBasket}
-                  >
-                    <PlusCircle className="h-3.5 w-3.5 mr-1" />
-                    Aggiungi cesta
-                  </Button>
-                </CardFooter>
-              )}
-            </Card>
-          </div>
-        </TabsContent>
-        
-        {/* Ceste di Origine (vista dettagliata) */}
-        <TabsContent value="source">
+        <TabsContent value="origine" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Package className="h-5 w-5 mr-2 text-primary" />
-                Ceste di Origine
-              </CardTitle>
+              <CardTitle>Ceste Origine</CardTitle>
               <CardDescription>
-                Dettaglio completo delle ceste di origine utilizzate in questa selezione
+                Elenco delle ceste origine selezionate per l'operazione
               </CardDescription>
             </CardHeader>
-            
             <CardContent>
-              {selection.sourceBaskets.length > 0 ? (
+              {isLoadingSourceBaskets ? (
+                <div className="flex justify-center py-8">
+                  <Spinner size="lg" />
+                </div>
+              ) : sourceBaskets?.length ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Cesta #</TableHead>
-                      <TableHead>Animali</TableHead>
-                      <TableHead>Peso (kg)</TableHead>
-                      <TableHead>Animali/kg</TableHead>
+                      <TableHead>Cesta</TableHead>
+                      <TableHead>FLUPSY</TableHead>
                       <TableHead>Taglia</TableHead>
-                      <TableHead>Posizione</TableHead>
+                      <TableHead className="text-right">Animali</TableHead>
+                      <TableHead>Animali/Kg</TableHead>
+                      {selection.status === "draft" && <TableHead></TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selection.sourceBaskets.map((basket) => (
-                      <TableRow key={basket.id}>
-                        <TableCell className="font-medium">{basket.physicalNumber}</TableCell>
-                        <TableCell>{basket.animalCount.toLocaleString()}</TableCell>
-                        <TableCell>{(basket.totalWeight / 1000).toFixed(2)}</TableCell>
-                        <TableCell>{basket.animalsPerKg.toLocaleString()}</TableCell>
-                        <TableCell>{getSizeName(basket.sizeId)}</TableCell>
-                        <TableCell>{basket.position || "—"}</TableCell>
+                    {sourceBaskets.map((sourceBasket: SelectionSourceBasket) => (
+                      <TableRow key={sourceBasket.id}>
+                        <TableCell className="font-medium">
+                          #{sourceBasket.basket.physicalNumber}
+                        </TableCell>
+                        <TableCell>
+                          {sourceBasket.basket.flupsy?.name || "N/A"}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="font-mono">
+                            {sourceBasket.size?.code || "N/A"}
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatNumberWithCommas(sourceBasket.animalCount || 0)}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {formatNumberWithCommas(sourceBasket.animalsPerKg || 0)}
+                        </TableCell>
+                        {selection.status === "draft" && (
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveSourceBasket(sourceBasket.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               ) : (
                 <EmptyState
-                  icon={<Package className="h-8 w-8 text-muted-foreground" />}
-                  title="Nessuna cesta di origine"
-                  description="Non sono state ancora aggiunte ceste di origine a questa selezione."
+                  icon={<Package className="h-12 w-12 text-muted-foreground" />}
+                  title="Nessuna cesta origine"
+                  description="Non sono state ancora aggiunte ceste di origine a questa selezione"
                   action={
-                    selection.status === 'draft' && (
-                      <Button onClick={handleAddSourceBasket}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Aggiungi cesta
+                    selection.status === "draft" ? (
+                      <Button
+                        onClick={() => setAddSourceDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Aggiungi Cesta
                       </Button>
-                    )
+                    ) : null
                   }
                 />
               )}
@@ -495,67 +794,93 @@ export default function SelectionDetail() {
           </Card>
         </TabsContent>
         
-        {/* Ceste di Destinazione (vista dettagliata) */}
-        <TabsContent value="destination">
+        <TabsContent value="destinazione" className="space-y-4">
           <Card>
             <CardHeader>
-              <CardTitle className="flex items-center">
-                <Package className="h-5 w-5 mr-2 text-primary" />
-                Ceste di Destinazione
-              </CardTitle>
+              <CardTitle>Ceste Destinazione</CardTitle>
               <CardDescription>
-                Dettaglio completo delle ceste di destinazione utilizzate in questa selezione
+                Elenco delle ceste destinazione create durante l'operazione
               </CardDescription>
             </CardHeader>
-            
             <CardContent>
-              {selection.destinationBaskets.length > 0 ? (
+              {isLoadingDestinationBaskets ? (
+                <div className="flex justify-center py-8">
+                  <Spinner size="lg" />
+                </div>
+              ) : destinationBaskets?.length ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Cesta #</TableHead>
-                      <TableHead>Stato</TableHead>
-                      <TableHead>Animali</TableHead>
-                      <TableHead>Peso (kg)</TableHead>
-                      <TableHead>Animali/kg</TableHead>
+                      <TableHead>Cesta</TableHead>
+                      <TableHead>Destinazione</TableHead>
                       <TableHead>Taglia</TableHead>
-                      <TableHead>Posizione</TableHead>
+                      <TableHead className="text-right">Animali</TableHead>
+                      <TableHead>Animali/Kg</TableHead>
+                      {selection.status === "draft" && <TableHead></TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {selection.destinationBaskets.map((basket) => (
-                      <TableRow key={basket.id}>
-                        <TableCell className="font-medium">{basket.physicalNumber}</TableCell>
+                    {destinationBaskets.map((destBasket: SelectionDestinationBasket) => (
+                      <TableRow key={destBasket.id}>
+                        <TableCell className="font-medium">
+                          #{destBasket.basket.physicalNumber}
+                        </TableCell>
                         <TableCell>
-                          <Badge variant={basket.destinationType === 'sold' ? 'destructive' : 'success'}>
-                            {basket.destinationType === 'sold' ? 'Venduta' : 'Collocata'}
+                          {destBasket.saleDestination ? (
+                            <Badge variant="destructive">Venduta</Badge>
+                          ) : (
+                            destBasket.positionFlupsyId ? (
+                              <span>
+                                {flupsys?.find(f => f.id === destBasket.positionFlupsyId)?.name || "Flupsy"} {" "}
+                                {destBasket.positionRow} {destBasket.positionNumber}
+                              </span>
+                            ) : "N/A"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className="font-mono">
+                            {destBasket.size?.code || "N/A"}
                           </Badge>
                         </TableCell>
-                        <TableCell>{basket.animalCount.toLocaleString()}</TableCell>
-                        <TableCell>{(basket.totalWeight / 1000).toFixed(2)}</TableCell>
-                        <TableCell>{basket.animalsPerKg.toLocaleString()}</TableCell>
-                        <TableCell>{getSizeName(basket.sizeId)}</TableCell>
-                        <TableCell>
-                          {basket.destinationType === 'placed' && basket.position
-                            ? basket.position
-                            : "—"}
+                        <TableCell className="text-right font-mono">
+                          {formatNumberWithCommas(destBasket.animalCount || 0)}
                         </TableCell>
+                        <TableCell className="font-mono">
+                          {formatNumberWithCommas(destBasket.animalsPerKg || 0)}
+                        </TableCell>
+                        {selection.status === "draft" && (
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemoveDestinationBasket(destBasket.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        )}
                       </TableRow>
                     ))}
                   </TableBody>
                 </Table>
               ) : (
                 <EmptyState
-                  icon={<Package className="h-8 w-8 text-muted-foreground" />}
-                  title="Nessuna cesta di destinazione"
-                  description="Non sono state ancora aggiunte ceste di destinazione a questa selezione."
+                  icon={<Package className="h-12 w-12 text-muted-foreground" />}
+                  title="Nessuna cesta destinazione"
+                  description={
+                    sourceBaskets?.length ? 
+                    "Non sono state ancora create ceste di destinazione" :
+                    "Aggiungi prima ceste di origine per poter creare ceste di destinazione"
+                  }
                   action={
-                    selection.status === 'draft' && (
-                      <Button onClick={handleAddDestinationBasket}>
-                        <PlusCircle className="mr-2 h-4 w-4" />
-                        Aggiungi cesta
+                    selection.status === "draft" && sourceBaskets?.length ? (
+                      <Button
+                        onClick={() => setAddDestinationDialogOpen(true)}
+                      >
+                        <Plus className="h-4 w-4 mr-2" />
+                        Aggiungi Cesta
                       </Button>
-                    )
+                    ) : null
                   }
                 />
               )}
@@ -563,52 +888,419 @@ export default function SelectionDetail() {
           </Card>
         </TabsContent>
       </Tabs>
-      
-      {/* Pulsanti azione principali */}
-      <div className="flex flex-col md:flex-row space-y-2 md:space-y-0 md:space-x-2">
-        <Button variant="outline" onClick={handleBack}>
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Torna all'elenco
-        </Button>
-        
-        {selection.status === 'draft' && (
-          <>
-            <Button onClick={handleAddSourceBasket}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Aggiungi Cesta Origine
-            </Button>
-            
-            <Button variant="secondary" onClick={handleAddDestinationBasket}>
-              <PlusCircle className="mr-2 h-4 w-4" />
-              Aggiungi Cesta Destinazione
-            </Button>
-          </>
-        )}
-      </div>
-    </div>
-  );
-}
 
-// Componente icona per il tipo di vaglio (utilizzato nel dettaglio)
-function ScreeningIcon(props: React.SVGProps<SVGSVGElement>) {
-  return (
-    <svg
-      {...props}
-      xmlns="http://www.w3.org/2000/svg"
-      width="24"
-      height="24"
-      viewBox="0 0 24 24"
-      fill="none"
-      stroke="currentColor"
-      strokeWidth="2"
-      strokeLinecap="round"
-      strokeLinejoin="round"
-    >
-      <rect x="3" y="3" width="18" height="18" rx="2" />
-      <path d="M3 9 H21" />
-      <path d="M3 15 H21" />
-      <path d="M9 3 V21" />
-      <path d="M15 3 V21" />
-    </svg>
+      {/* Dialog per aggiungere cesta origine */}
+      <Dialog
+        open={addSourceDialogOpen}
+        onOpenChange={setAddSourceDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Aggiungi Cesta Origine</DialogTitle>
+            <DialogDescription>
+              Seleziona una cesta attiva da utilizzare come origine
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label htmlFor="basketId">Cesta</Label>
+              <Select
+                value={sourceBasketData.basketId}
+                onValueChange={(value) => setSourceBasketData({ ...sourceBasketData, basketId: value })}
+              >
+                <SelectTrigger id="basketId">
+                  <SelectValue placeholder="Seleziona una cesta" />
+                </SelectTrigger>
+                <SelectContent>
+                  {isLoadingAvailableBaskets ? (
+                    <div className="flex justify-center py-2">
+                      <Spinner size="sm" />
+                    </div>
+                  ) : availableBaskets?.filter(b => b.state === "active" && b.currentCycleId)?.length ? (
+                    availableBaskets
+                      .filter(b => b.state === "active" && b.currentCycleId)
+                      .map(basket => (
+                        <SelectItem key={basket.id} value={basket.id.toString()}>
+                          Cesta #{basket.physicalNumber}
+                          {basket.cycle?.lotSizeCode ? ` (${basket.cycle.lotSizeCode})` : ''}
+                          {basket.flupsyId ? ` - ${basket.flupsy?.name}` : ''}
+                        </SelectItem>
+                      ))
+                  ) : (
+                    <SelectItem disabled value="none">Nessuna cesta attiva disponibile</SelectItem>
+                  )}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAddSourceDialogOpen(false)}
+            >
+              Annulla
+            </Button>
+            <Button 
+              onClick={handleAddSourceBasket}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Aggiunta in corso..." : "Aggiungi"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog per aggiungere cesta destinazione */}
+      <Dialog
+        open={addDestinationDialogOpen}
+        onOpenChange={setAddDestinationDialogOpen}
+      >
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Aggiungi Cesta Destinazione</DialogTitle>
+            <DialogDescription>
+              Crea una nuova cesta di destinazione per la selezione
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label htmlFor="destBasketId">Cesta</Label>
+                <Select
+                  value={destinationBasketData.basketId}
+                  onValueChange={(value) => setDestinationBasketData({ ...destinationBasketData, basketId: value })}
+                >
+                  <SelectTrigger id="destBasketId">
+                    <SelectValue placeholder="Seleziona una cesta" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {isLoadingAvailableBaskets ? (
+                      <div className="flex justify-center py-2">
+                        <Spinner size="sm" />
+                      </div>
+                    ) : availableBaskets?.filter(b => b.state === "available")?.length ? (
+                      availableBaskets
+                        .filter(b => b.state === "available")
+                        .map(basket => (
+                          <SelectItem key={basket.id} value={basket.id.toString()}>
+                            Cesta #{basket.physicalNumber}
+                          </SelectItem>
+                        ))
+                    ) : (
+                      <SelectItem disabled value="none">Nessuna cesta disponibile</SelectItem>
+                    )}
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="saleDestination">Destinazione</Label>
+                <Select
+                  value={destinationBasketData.saleDestination ? "sale" : "flupsy"}
+                  onValueChange={(value) => setDestinationBasketData({ 
+                    ...destinationBasketData, 
+                    saleDestination: value === "sale" 
+                  })}
+                >
+                  <SelectTrigger id="saleDestination">
+                    <SelectValue placeholder="Seleziona destinazione" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="flupsy">Posiziona in FLUPSY</SelectItem>
+                    <SelectItem value="sale">Vendita Diretta</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
+              
+              {/* Campi per calcolo */}
+              <div className="space-y-2">
+                <Label htmlFor="sampleWeight">Peso Campione (g)</Label>
+                <Input
+                  id="sampleWeight"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={destinationBasketData.sampleWeight || ""}
+                  onChange={(e) => setDestinationBasketData({ 
+                    ...destinationBasketData, 
+                    sampleWeight: parseFloat(e.target.value) || 0
+                  })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="sampleCount">N° Animali nel Campione</Label>
+                <Input
+                  id="sampleCount"
+                  type="number"
+                  min="0"
+                  value={destinationBasketData.sampleCount || ""}
+                  onChange={(e) => setDestinationBasketData({ 
+                    ...destinationBasketData, 
+                    sampleCount: parseInt(e.target.value) || 0
+                  })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="totalWeightKg">Peso Totale Cesta (kg)</Label>
+                <Input
+                  id="totalWeightKg"
+                  type="number"
+                  min="0"
+                  step="0.1"
+                  value={destinationBasketData.totalWeightKg || ""}
+                  onChange={(e) => setDestinationBasketData({ 
+                    ...destinationBasketData, 
+                    totalWeightKg: parseFloat(e.target.value) || 0
+                  })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="deadCount">Animali Morti</Label>
+                <Input
+                  id="deadCount"
+                  type="number"
+                  min="0"
+                  value={destinationBasketData.deadCount || ""}
+                  onChange={(e) => setDestinationBasketData({ 
+                    ...destinationBasketData, 
+                    deadCount: parseInt(e.target.value) || 0
+                  })}
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="animalsPerKg">Animali per Kg</Label>
+                <Input
+                  id="animalsPerKg"
+                  type="number"
+                  min="0"
+                  value={destinationBasketData.animalsPerKg || ""}
+                  onChange={(e) => setDestinationBasketData({ 
+                    ...destinationBasketData, 
+                    animalsPerKg: parseInt(e.target.value) || 0
+                  })}
+                  className="font-mono"
+                />
+              </div>
+              
+              <div className="space-y-2">
+                <Label htmlFor="animalCount">Numero Totale Animali</Label>
+                <Input
+                  id="animalCount"
+                  type="number"
+                  min="0"
+                  value={destinationBasketData.animalCount || ""}
+                  onChange={(e) => setDestinationBasketData({ 
+                    ...destinationBasketData, 
+                    animalCount: parseInt(e.target.value) || 0
+                  })}
+                  className="font-mono"
+                />
+              </div>
+              
+              {/* Campi condizionali in base alla destinazione */}
+              {destinationBasketData.saleDestination ? (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="saleDate">Data Vendita</Label>
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button
+                          variant="outline"
+                          className={cn(
+                            "w-full justify-start text-left font-normal",
+                            !destinationBasketData.saleDate && "text-muted-foreground"
+                          )}
+                        >
+                          {destinationBasketData.saleDate ? (
+                            formatDate(destinationBasketData.saleDate)
+                          ) : (
+                            <span>Seleziona data</span>
+                          )}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={destinationBasketData.saleDate}
+                          onSelect={(date) => setDestinationBasketData({ 
+                            ...destinationBasketData, 
+                            saleDate: date || new Date()
+                          })}
+                          initialFocus
+                        />
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="saleClient">Cliente</Label>
+                    <Input
+                      id="saleClient"
+                      value={destinationBasketData.saleClient}
+                      onChange={(e) => setDestinationBasketData({ 
+                        ...destinationBasketData, 
+                        saleClient: e.target.value
+                      })}
+                    />
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div className="space-y-2">
+                    <Label htmlFor="positionFlupsyId">FLUPSY</Label>
+                    <Select
+                      value={destinationBasketData.positionFlupsyId}
+                      onValueChange={(value) => setDestinationBasketData({ 
+                        ...destinationBasketData, 
+                        positionFlupsyId: value
+                      })}
+                    >
+                      <SelectTrigger id="positionFlupsyId">
+                        <SelectValue placeholder="Seleziona FLUPSY" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        {isLoadingFlupsys ? (
+                          <div className="flex justify-center py-2">
+                            <Spinner size="sm" />
+                          </div>
+                        ) : flupsys?.filter(f => f.active)?.length ? (
+                          flupsys
+                            .filter(f => f.active)
+                            .map(flupsy => (
+                              <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                                {flupsy.name}
+                              </SelectItem>
+                            ))
+                        ) : (
+                          <SelectItem disabled value="none">Nessun FLUPSY disponibile</SelectItem>
+                        )}
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2">
+                    <Label htmlFor="positionRow">Fila</Label>
+                    <Select
+                      value={destinationBasketData.positionRow}
+                      onValueChange={(value) => setDestinationBasketData({ 
+                        ...destinationBasketData, 
+                        positionRow: value
+                      })}
+                    >
+                      <SelectTrigger id="positionRow">
+                        <SelectValue placeholder="Seleziona fila" />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="DX">Fila DX</SelectItem>
+                        <SelectItem value="SX">Fila SX</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
+                  
+                  <div className="space-y-2 md:col-span-2">
+                    <Label htmlFor="positionNumber">Posizione</Label>
+                    <Input
+                      id="positionNumber"
+                      type="number"
+                      min="1"
+                      max="10"
+                      value={destinationBasketData.positionNumber || ""}
+                      onChange={(e) => setDestinationBasketData({ 
+                        ...destinationBasketData, 
+                        positionNumber: e.target.value
+                      })}
+                    />
+                  </div>
+                </>
+              )}
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setAddDestinationDialogOpen(false)}
+            >
+              Annulla
+            </Button>
+            <Button 
+              onClick={handleAddDestinationBasket}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Aggiunta in corso..." : "Aggiungi"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog per confermare cancellazione */}
+      <Dialog
+        open={cancelConfirmDialogOpen}
+        onOpenChange={setCancelConfirmDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Conferma Annullamento</DialogTitle>
+            <DialogDescription>
+              Sei sicuro di voler annullare questa selezione? 
+              Questa azione non può essere annullata.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCancelConfirmDialogOpen(false)}
+            >
+              No, mantieni
+            </Button>
+            <Button 
+              variant="destructive"
+              onClick={handleCancelSelection}
+            >
+              Sì, annulla selezione
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog per confermare completamento */}
+      <Dialog
+        open={completeConfirmDialogOpen}
+        onOpenChange={setCompleteConfirmDialogOpen}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Conferma Completamento</DialogTitle>
+            <DialogDescription>
+              Sei sicuro di voler completare questa selezione?
+              Questa azione chiuderà tutti i cicli collegati alle ceste di origine
+              e creerà nuovi cicli per le ceste di destinazione.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setCompleteConfirmDialogOpen(false)}
+            >
+              No, non ancora
+            </Button>
+            <Button 
+              onClick={handleCompleteSelection}
+            >
+              Sì, completa selezione
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
   );
 }

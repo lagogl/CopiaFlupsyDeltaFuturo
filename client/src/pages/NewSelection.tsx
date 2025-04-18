@@ -1,14 +1,13 @@
-import React, { useState } from "react";
-import { useLocation } from "wouter";
+import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { useLocation } from "wouter";
 import { z } from "zod";
-import { Button } from "@/components/ui/button";
+import { Calendar, FileText, ArrowLeft, Boxes } from "lucide-react";
 import { PageHeading } from "@/components/PageHeading";
 import { Breadcrumbs } from "@/components/Breadcrumbs";
-import { Card, CardContent, CardHeader, CardTitle, CardDescription, CardFooter } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
+import { Button } from "@/components/ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import {
   Form,
   FormControl,
@@ -25,139 +24,140 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { useToast } from "@/hooks/use-toast";
-import { useMutation, useQueryClient } from "@tanstack/react-query";
-import { apiRequest } from "@/lib/queryClient";
-import { Calendar } from "@/components/ui/calendar";
+import { Input } from "@/components/ui/input";
+import { Textarea } from "@/components/ui/textarea";
+import { CalendarIcon } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
-import {
-  LayoutDashboard,
-  FileText,
-  ArrowLeft,
-  Save,
-  Calendar as CalendarIcon
-} from "lucide-react";
+import { cn } from "@/lib/utils";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import {
   Popover,
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
-import { cn } from "@/lib/utils";
+import { useToast } from "@/hooks/use-toast";
 
-// Schema di validazione per il form
-const selectionSchema = z.object({
+// Schema per la validazione del form
+const formSchema = z.object({
   date: z.date({
     required_error: "La data è obbligatoria",
   }),
-  purpose: z.string().min(1, "Lo scopo è obbligatorio"),
-  screeningType: z.string().optional(),
+  purpose: z.enum(["vendita", "vagliatura", "altro"], {
+    required_error: "Lo scopo è obbligatorio",
+  }),
+  screeningType: z.enum(["sopra_vaglio", "sotto_vaglio"]).optional(),
   notes: z.string().optional(),
 });
 
-type SelectionFormValues = z.infer<typeof selectionSchema>;
+type FormValues = z.infer<typeof formSchema>;
 
-export default function NewSelection() {
+export default function NewSelectionPage() {
   const [, navigate] = useLocation();
   const { toast } = useToast();
-  const queryClient = useQueryClient();
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
-  // Configurazione del form con react-hook-form
-  const form = useForm<SelectionFormValues>({
-    resolver: zodResolver(selectionSchema),
+
+  // Form con validazione Zod
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      purpose: "",
-      screeningType: "",
+      purpose: "vendita",
       notes: "",
     },
   });
-  
-  // Mutazione per creare una nuova selezione
-  const createSelectionMutation = useMutation({
-    mutationFn: async (data: SelectionFormValues) => {
-      return apiRequest('/api/selections', {
-        method: 'POST',
-        data: {
-          ...data,
-          date: format(data.date, 'yyyy-MM-dd'),
-          status: 'draft', // La selezione inizia come bozza
+
+  // Gestione del submit del form
+  async function onSubmit(values: FormValues) {
+    setIsSubmitting(true);
+
+    try {
+      // Formattazione dei dati per l'API
+      const payload = {
+        ...values,
+        date: format(values.date, "yyyy-MM-dd"),
+      };
+
+      // Chiamata all'API per creare una nuova selezione
+      const response = await fetch("/api/selections", {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
         },
+        body: JSON.stringify(payload),
       });
-    },
-    onSuccess: (data) => {
-      // Invalida le query per aggiornare la cache
-      queryClient.invalidateQueries({ queryKey: ['/api/selections'] });
-      
+
+      if (!response.ok) {
+        throw new Error("Errore nella creazione della selezione");
+      }
+
+      const data = await response.json();
+
+      // Redirect alla pagina di dettaglio
       toast({
         title: "Selezione creata",
-        description: `La selezione #${data.selection.selectionNumber} è stata creata con successo.`,
+        description: `Selezione #${data.selectionNumber} creata con successo`,
       });
-      
-      // Reindirizza alla pagina di dettaglio
-      navigate(`/selection/${data.selection.id}`);
-    },
-    onError: (error) => {
-      console.error("Errore durante la creazione della selezione:", error);
+
+      navigate(`/selection/${data.id}`);
+    } catch (error) {
+      console.error("Errore:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante la creazione della selezione.",
+        description: "Si è verificato un errore durante la creazione della selezione",
         variant: "destructive",
       });
-    },
-    onSettled: () => {
+    } finally {
       setIsSubmitting(false);
     }
-  });
-  
-  const onSubmit = (data: SelectionFormValues) => {
-    setIsSubmitting(true);
-    createSelectionMutation.mutate(data);
-  };
-  
+  }
+
+  // Monitora i cambiamenti nel campo "purpose" per gestire il campo "screeningType"
+  const watchPurpose = form.watch("purpose");
+
   return (
-    <div className="container mx-auto py-6">
-      <Breadcrumbs
-        items={[
-          { label: "Home", href: "/" },
-          { label: "Selezioni", href: "/selection" },
-          { label: "Nuova Selezione", href: "/selection/new" },
-        ]}
-      />
-      
-      <div className="flex items-center mt-2 mb-6">
-        <Button variant="ghost" onClick={() => navigate('/selection')} className="mr-4">
-          <ArrowLeft className="mr-2 h-4 w-4" />
-          Indietro
+    <div className="space-y-6">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div>
+          <Breadcrumbs
+            items={[
+              { label: "Dashboard", href: "/" },
+              { label: "Selezione", href: "/selection" },
+              { label: "Nuova Selezione", href: "/selection/new" },
+            ]}
+          />
+          <PageHeading
+            title="Nuova Selezione"
+            description="Crea una nuova operazione di selezione"
+            icon={<FileText className="h-6 w-6" />}
+            className="mt-2"
+          />
+        </div>
+        <Button
+          variant="outline"
+          onClick={() => navigate("/selection")}
+          className="flex-shrink-0"
+        >
+          <ArrowLeft className="h-4 w-4 mr-2" />
+          Torna all'elenco
         </Button>
-        
-        <PageHeading
-          title="Nuova Selezione"
-          description="Crea una nuova operazione di selezione"
-          icon={<FileText className="h-8 w-8 text-primary"/>}
-        />
       </div>
-      
+
       <Card>
         <CardHeader>
-          <CardTitle>Dettagli Selezione</CardTitle>
-          <CardDescription>
-            Inserisci le informazioni di base per la nuova operazione di selezione.
-            Dopo aver creato la selezione, potrai aggiungere le ceste di origine e destinazione.
-          </CardDescription>
+          <CardTitle>Informazioni Selezione</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Campo Data */}
+                {/* Data selezione */}
                 <FormField
                   control={form.control}
                   name="date"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Data Operazione</FormLabel>
+                      <FormLabel>Data Selezione</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -169,7 +169,9 @@ export default function NewSelection() {
                               )}
                             >
                               {field.value ? (
-                                format(field.value, "PPP", { locale: it })
+                                format(field.value, "d MMMM yyyy", {
+                                  locale: it,
+                                })
                               ) : (
                                 <span>Seleziona data</span>
                               )}
@@ -178,120 +180,139 @@ export default function NewSelection() {
                           </FormControl>
                         </PopoverTrigger>
                         <PopoverContent className="w-auto p-0" align="start">
-                          <Calendar
+                          <CalendarComponent
                             mode="single"
                             selected={field.value}
                             onSelect={field.onChange}
                             disabled={(date) =>
-                              date > new Date() || date < new Date("2023-01-01")
+                              date > new Date() || date < new Date("2020-01-01")
                             }
                             initialFocus
                           />
                         </PopoverContent>
                       </Popover>
                       <FormDescription>
-                        La data in cui viene eseguita la selezione
+                        Data in cui viene eseguita l'operazione di selezione
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
-                {/* Campo Scopo */}
+
+                {/* Scopo */}
                 <FormField
                   control={form.control}
                   name="purpose"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel>Scopo Selezione</FormLabel>
-                      <FormControl>
-                        <Input placeholder="Es: Trasferimento per liberare spazio" {...field} />
-                      </FormControl>
-                      <FormDescription>
-                        Lo scopo principale per cui viene effettuata questa selezione
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
-              </div>
-              
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Tipo di Vaglio */}
-                <FormField
-                  control={form.control}
-                  name="screeningType"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Tipo di Vaglio (opzionale)</FormLabel>
+                      <FormLabel>Scopo</FormLabel>
                       <Select
                         onValueChange={field.onChange}
                         defaultValue={field.value}
                       >
                         <FormControl>
                           <SelectTrigger>
-                            <SelectValue placeholder="Seleziona vaglio" />
+                            <SelectValue placeholder="Seleziona lo scopo" />
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="TP-1000">TP-1000</SelectItem>
-                          <SelectItem value="TP-1140">TP-1140</SelectItem>
-                          <SelectItem value="TP-1260">TP-1260</SelectItem>
-                          <SelectItem value="TP-1500">TP-1500</SelectItem>
-                          <SelectItem value="TP-1800">TP-1800</SelectItem>
-                          <SelectItem value="TP-2000">TP-2000</SelectItem>
-                          <SelectItem value="TP-2500">TP-2500</SelectItem>
-                          <SelectItem value="TP-3000">TP-3000</SelectItem>
+                          <SelectItem value="vendita">Vendita</SelectItem>
+                          <SelectItem value="vagliatura">Vagliatura</SelectItem>
+                          <SelectItem value="altro">Altro</SelectItem>
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Se utilizzato, specifica il tipo di vaglio
+                        Motivazione per cui viene effettuata la selezione
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
-                
+
+                {/* Tipo di vaglio (solo se scopo = vagliatura) */}
+                {watchPurpose === "vagliatura" && (
+                  <FormField
+                    control={form.control}
+                    name="screeningType"
+                    render={({ field }) => (
+                      <FormItem>
+                        <FormLabel>Tipo di Vaglio</FormLabel>
+                        <Select
+                          onValueChange={field.onChange}
+                          defaultValue={field.value}
+                        >
+                          <FormControl>
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleziona il tipo di vaglio" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            <SelectItem value="sopra_vaglio">
+                              Sopra Vaglio
+                            </SelectItem>
+                            <SelectItem value="sotto_vaglio">
+                              Sotto Vaglio
+                            </SelectItem>
+                          </SelectContent>
+                        </Select>
+                        <FormDescription>
+                          Specifica il tipo di vagliatura da effettuare
+                        </FormDescription>
+                        <FormMessage />
+                      </FormItem>
+                    )}
+                  />
+                )}
+
                 {/* Note */}
                 <FormField
                   control={form.control}
                   name="notes"
                   render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Note (opzionale)</FormLabel>
+                    <FormItem className="md:col-span-2">
+                      <FormLabel>Note</FormLabel>
                       <FormControl>
                         <Textarea
-                          placeholder="Inserisci eventuali note o osservazioni"
-                          className="resize-none"
+                          placeholder="Inserisci eventuali note o informazioni aggiuntive..."
                           {...field}
+                          className="resize-y min-h-[100px]"
                         />
                       </FormControl>
-                      <FormDescription>
-                        Note aggiuntive sull'operazione di selezione
-                      </FormDescription>
                       <FormMessage />
                     </FormItem>
                   )}
                 />
               </div>
-              
-              <CardFooter className="flex justify-between px-0 pt-6">
+
+              <div className="flex justify-end space-x-4">
                 <Button
                   type="button"
                   variant="outline"
-                  onClick={() => navigate('/selection')}
+                  onClick={() => navigate("/selection")}
                 >
                   Annulla
                 </Button>
                 <Button type="submit" disabled={isSubmitting}>
-                  {isSubmitting ? "Salvataggio..." : "Crea Selezione"}
-                  <Save className="ml-2 h-4 w-4" />
+                  {isSubmitting ? "Creazione in corso..." : "Procedi"}
                 </Button>
-              </CardFooter>
+              </div>
             </form>
           </Form>
         </CardContent>
       </Card>
+
+      <div className="bg-muted/50 rounded-lg p-4 border">
+        <div className="flex items-start">
+          <Boxes className="h-5 w-5 text-primary mr-2 mt-0.5" />
+          <div>
+            <h3 className="text-sm font-medium mb-1">Informazioni sul processo di selezione</h3>
+            <p className="text-sm text-muted-foreground">
+              Dopo aver creato la selezione, potrai selezionare le ceste di origine per l'operazione. 
+              Successivamente, potrai creare le ceste di destinazione con i conteggi precisi degli animali.
+            </p>
+          </div>
+        </div>
+      </div>
     </div>
   );
 }
