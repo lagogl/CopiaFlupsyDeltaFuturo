@@ -1008,9 +1008,13 @@ export default function SelectionDetailPage() {
                                 Cesta #{basket.physicalNumber}
                                 {basket.size?.sizeCode && (
                                   <span 
-                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs ${isReferenceSize ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 font-semibold" : getSizeColorClass(basket.size.sizeCode)}`}
+                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs 
+                                      ${isReferenceSize 
+                                        ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 font-bold border border-green-500" 
+                                        : getSizeColorClass(basket.size.sizeCode)}`
+                                    }
                                   >
-                                    {basket.size.sizeCode}
+                                    {isReferenceSize ? "★ " : ""}{basket.size.sizeCode}{isReferenceSize ? " ★" : ""}
                                   </span>
                                 )}
                                 {basket.flupsy && ` - ${basket.flupsy.name}`}
