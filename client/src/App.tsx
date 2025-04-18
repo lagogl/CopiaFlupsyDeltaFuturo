@@ -90,6 +90,11 @@ function Router() {
       <Route path="/screening/:id/add-source" component={ScreeningAddSource}/>
       <Route path="/screening/:id/add-destination" component={ScreeningAddDestination}/>
       
+      {/* Selection (Selezione) routes */}
+      <Route path="/selection" component={Screening}/>
+      <Route path="/selection/new" component={NewScreening}/>
+      <Route path="/selection/:id" component={ScreeningDetail}/>
+      
       {/* Fallback to 404 */}
       <Route component={NotFound} />
     </Switch>

@@ -4129,6 +4129,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // === Selection Module Routes ===
+  
+  // Ottieni tutte le selezioni
+  app.get("/api/selections", getSelections);
+  
+  // Ottieni una singola selezione con tutti i dettagli correlati
+  app.get("/api/selections/:id", getSelectionById);
+  
+  // Ottieni statistiche sulle selezioni
+  app.get("/api/selections/statistics", getSelectionStats);
+  
+  // Ottieni posizioni disponibili in un FLUPSY
+  app.get("/api/selections/available-positions/:flupsyId", getAvailablePositions);
+  
+  // Crea una nuova selezione
+  app.post("/api/selections", async (req, res) => {
+    try {
+      // Validazione dei dati di input mediante lo schema Zod
+      const validatedData = insertSelectionSchema.parse(req.body);
+      
+      // Chiama il controller per la creazione
+      await createSelection(req, res);
+      
+    } catch (error) {
+      // Gestisci errori di validazione specifici
+      if (error instanceof z.ZodError) {
+        const validationError = fromZodError(error);
+        return res.status(400).json({
+          success: false,
+          message: "Errore di validazione",
+          errors: validationError.details
+        });
+      }
+      
+      // Altri errori
+      console.error("Errore durante la creazione della selezione:", error);
+      return res.status(500).json({
+        success: false,
+        message: `Si è verificato un errore: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`
+      });
+    }
+  });
+  
   // Configure WebSocket server
   const { 
     broadcastMessage, 

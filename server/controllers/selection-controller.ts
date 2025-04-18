@@ -392,7 +392,8 @@ export async function createSelection(req: Request, res: Response) {
           await tx.insert(basketPositionHistory).values({
             basketId: destBasket.basketId,
             flupsyId: destBasket.flupsyId,
-            position: destBasket.position,
+            row: destBasket.position.charAt(0), // Prendiamo la lettera della riga (es. 'A' da 'A1')
+            position: parseInt(destBasket.position.substring(1)), // Prendiamo il numero (es. 1 da 'A1')
             startDate: selectionData.date,
             operationId: operation.id
           });
@@ -461,8 +462,8 @@ export async function getAvailablePositions(req: Request, res: Response) {
     }
     
     // Ottieni informazioni sul FLUPSY
-    const flupsy = await db.select().from(db.flupsys)
-      .where(eq(db.flupsys.id, Number(flupsyId)))
+    const flupsy = await db.select().from(flupsys)
+      .where(eq(flupsys.id, Number(flupsyId)))
       .limit(1);
     
     if (!flupsy || flupsy.length === 0) {
@@ -492,7 +493,7 @@ export async function getAvailablePositions(req: Request, res: Response) {
     });
     
     // Lista di tutte le posizioni possibili
-    const allPositions = [];
+    const allPositions: Array<{flupsyId: number, flupsyName: string, position: string, available: boolean}> = [];
     
     // Generiamo le posizioni in formato "A1", "A2", "B1", "B2", ecc.
     const rows = ['A', 'B', 'C', 'D'];
