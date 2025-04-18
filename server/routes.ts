@@ -62,7 +62,9 @@ import {
   getSelectionById, 
   createSelection, 
   getAvailablePositions, 
-  getSelectionStats 
+  getSelectionStats,
+  addSourceBaskets,
+  addDestinationBaskets
 } from "./controllers/selection-controller";
 
 // Preparazione per la gestione dei file di backup
@@ -4143,7 +4145,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ottieni posizioni disponibili in un FLUPSY
   app.get("/api/selections/available-positions/:flupsyId", getAvailablePositions);
   
-  // Crea una nuova selezione
+  // Crea una nuova selezione (fase 1)
   app.post("/api/selections", async (req, res) => {
     try {
       // Validazione dei dati di input mediante lo schema Zod
@@ -4171,6 +4173,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Aggiungi ceste di origine alla selezione (fase 2)
+  app.post("/api/selections/:id/source-baskets", addSourceBaskets);
+  
+  // Aggiungi ceste di destinazione e completa la selezione (fase 3)
+  app.post("/api/selections/:id/destination-baskets", addDestinationBaskets);
   
   // Configure WebSocket server
   const { 

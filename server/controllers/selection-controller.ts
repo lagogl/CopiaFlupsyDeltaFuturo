@@ -13,7 +13,8 @@ import {
   operations,
   cycles,
   baskets,
-  basketPositionHistory
+  basketPositionHistory,
+  flupsys
 } from "../../shared/schema";
 import { format } from "date-fns";
 
@@ -168,44 +169,16 @@ export async function getSelectionById(req: Request, res: Response) {
 }
 
 /**
- * Crea una nuova selezione
+ * Crea una nuova selezione (prima fase)
+ * Questa funzione crea solo il record principale della selezione, senza 
+ * gestire ancora le ceste di origine e destinazione
  */
 export async function createSelection(req: Request, res: Response) {
   try {
     const selectionData = req.body;
     
-    // Validazione dei dati
-    if (!selectionData.sourceBaskets || selectionData.sourceBaskets.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: "È necessario specificare almeno una cesta di origine"
-      });
-    }
-    
-    if (!selectionData.destinationBaskets || selectionData.destinationBaskets.length === 0) {
-      return res.status(400).json({
-        success: false,
-        error: "È necessario specificare almeno una cesta di destinazione"
-      });
-    }
-    
-    // Verifica che tutte le ceste destinazione abbiano una destinazione valida
-    const invalidDestinations = selectionData.destinationBaskets.filter((basket: any) => {
-      if (basket.destinationType === 'sold') {
-        return false; // Valida
-      } else if (basket.destinationType === 'placed') {
-        return !basket.flupsyId || !basket.position; // Invalida se manca FLUPSY o posizione
-      }
-      return true; // Invalida per qualsiasi altro valore
-    });
-    
-    if (invalidDestinations.length > 0) {
-      return res.status(400).json({
-        success: false,
-        error: "Alcune ceste non hanno una destinazione valida. " +
-               "Assicurati che ogni cesta sia impostata per la vendita o abbia un FLUPSY e una posizione."
-      });
-    }
+    // Prima fase: crea solo il record principale della selezione
+    // I cestelli verranno aggiunti in fasi successive
     
     // Esecuzione in una singola transazione
     const selection = await db.transaction(async (tx) => {
@@ -216,216 +189,14 @@ export async function createSelection(req: Request, res: Response) {
         purpose: selectionData.purpose,
         screeningType: selectionData.screeningType,
         notes: selectionData.notes,
-        status: 'completed' // Le selezioni sono completate immediatamente
+        status: 'draft' // Inizia come bozza, sarà completata durante il processo di selezione
       }).returning();
-      
-      // 2. Processa le ceste origine (chiudendole)
-      for (const sourceBasket of selectionData.sourceBaskets) {
-        // Registra nella tabella di relazione
-        await tx.insert(selectionSourceBaskets).values({
-          selectionId: selection.id,
-          basketId: sourceBasket.basketId,
-          cycleId: sourceBasket.cycleId,
-          animalCount: sourceBasket.animalCount,
-          totalWeight: sourceBasket.totalWeight,
-          animalsPerKg: sourceBasket.animalsPerKg,
-          sizeId: sourceBasket.sizeId,
-          lotId: sourceBasket.lotId
-        });
-        
-        // Crea operazione di chiusura per il ciclo di origine
-        await tx.insert(operations).values({
-          date: selectionData.date,
-          type: 'selezione-origine',
-          basketId: sourceBasket.basketId,
-          cycleId: sourceBasket.cycleId,
-          animalCount: sourceBasket.animalCount,
-          totalWeight: sourceBasket.totalWeight,
-          animalsPerKg: sourceBasket.animalsPerKg,
-          notes: `Chiuso per selezione #${selection.selectionNumber}`
-        });
-        
-        // Chiudi il ciclo di origine
-        await tx.update(cycles)
-          .set({ 
-            state: 'closed', 
-            endDate: selectionData.date 
-          })
-          .where(eq(cycles.id, sourceBasket.cycleId));
-        
-        // Aggiorna lo stato del cestello origine a disponibile
-        await tx.update(baskets)
-          .set({ 
-            state: 'available',
-            currentCycleId: null 
-          })
-          .where(eq(baskets.id, sourceBasket.basketId));
-      }
-      
-      // 3. Processa le ceste destinazione con gestione delle collocazioni
-      for (const destBasket of selectionData.destinationBaskets) {
-        // Crea operazione di prima attivazione
-        const [operation] = await tx.insert(operations).values({
-          date: selectionData.date,
-          type: 'prima-attivazione',
-          basketId: destBasket.basketId,
-          cycleId: 0, // Placeholder, aggiornato dopo
-          animalCount: destBasket.animalCount,
-          totalWeight: destBasket.totalWeight, // già in grammi
-          animalsPerKg: destBasket.animalsPerKg,
-          averageWeight: 1000000 / destBasket.animalsPerKg,
-          deadCount: destBasket.deadCount,
-          mortalityRate: destBasket.mortalityRate,
-          sizeId: destBasket.sizeId,
-          notes: `Nuova cesta da selezione #${selection.selectionNumber}`
-        }).returning();
-        
-        // Crea nuovo ciclo per la cesta
-        const [cycle] = await tx.insert(cycles).values({
-          basketId: destBasket.basketId,
-          startDate: selectionData.date,
-          state: 'active'
-        }).returning();
-        
-        // Aggiorna l'operazione con l'ID del ciclo
-        await tx.update(operations)
-          .set({ cycleId: cycle.id })
-          .where(eq(operations.id, operation.id));
-        
-        // Gestione in base al tipo di destinazione
-        if (destBasket.destinationType === 'sold') {
-          // Caso 1: Vendita immediata
-          
-          // Crea operazione di vendita
-          await tx.insert(operations).values({
-            date: selectionData.date,
-            type: 'vendita',
-            basketId: destBasket.basketId,
-            cycleId: cycle.id,
-            animalCount: destBasket.animalCount,
-            totalWeight: destBasket.totalWeight,
-            animalsPerKg: destBasket.animalsPerKg,
-            notes: `Vendita immediata dopo selezione #${selection.selectionNumber}`
-          });
-          
-          // Chiudi il ciclo appena creato
-          await tx.update(cycles)
-            .set({ 
-              state: 'closed', 
-              endDate: selectionData.date 
-            })
-            .where(eq(cycles.id, cycle.id));
-          
-          // Aggiorna lo stato del cestello a disponibile
-          await tx.update(baskets)
-            .set({ 
-              state: 'available',
-              currentCycleId: null,
-              flupsyId: null,
-              position: null
-            })
-            .where(eq(baskets.id, destBasket.basketId));
-          
-          // Registra nella tabella di relazione
-          await tx.insert(selectionDestinationBaskets).values({
-            selectionId: selection.id,
-            basketId: destBasket.basketId,
-            cycleId: cycle.id,
-            destinationType: 'sold',
-            animalCount: destBasket.animalCount,
-            liveAnimals: destBasket.animalCount - (destBasket.deadCount || 0),
-            totalWeight: destBasket.totalWeight,
-            animalsPerKg: destBasket.animalsPerKg,
-            sizeId: destBasket.sizeId,
-            deadCount: destBasket.deadCount,
-            mortalityRate: destBasket.mortalityRate,
-            sampleWeight: destBasket.sampleWeight,
-            sampleCount: destBasket.sampleCount
-          });
-          
-        } else if (destBasket.destinationType === 'placed') {
-          // Caso 2: Collocazione in un FLUPSY
-          
-          // Verifica che la posizione sia disponibile
-          const basketInPosition = await tx.select().from(baskets)
-            .where(and(
-              eq(baskets.flupsyId, destBasket.flupsyId),
-              eq(baskets.position, destBasket.position),
-              eq(baskets.state, 'active')
-            ));
-          
-          if (basketInPosition.length > 0 && basketInPosition[0].id !== destBasket.basketId) {
-            throw new Error(`Posizione ${destBasket.position} nel FLUPSY ${destBasket.flupsyId} già occupata`);
-          }
-          
-          // Aggiorna stato del cestello con FLUPSY e posizione
-          await tx.update(baskets)
-            .set({ 
-              state: 'active',
-              currentCycleId: cycle.id,
-              flupsyId: destBasket.flupsyId,
-              position: destBasket.position
-            })
-            .where(eq(baskets.id, destBasket.basketId));
-          
-          // Registra nella tabella di relazione
-          await tx.insert(selectionDestinationBaskets).values({
-            selectionId: selection.id,
-            basketId: destBasket.basketId,
-            cycleId: cycle.id,
-            destinationType: 'placed',
-            flupsyId: destBasket.flupsyId,
-            position: destBasket.position,
-            animalCount: destBasket.animalCount,
-            liveAnimals: destBasket.animalCount - (destBasket.deadCount || 0),
-            totalWeight: destBasket.totalWeight,
-            animalsPerKg: destBasket.animalsPerKg,
-            sizeId: destBasket.sizeId,
-            deadCount: destBasket.deadCount,
-            mortalityRate: destBasket.mortalityRate,
-            sampleWeight: destBasket.sampleWeight,
-            sampleCount: destBasket.sampleCount,
-            notes: destBasket.notes
-          });
-          
-          // Registra il movimento di posizione nella cronologia
-          await tx.insert(basketPositionHistory).values({
-            basketId: destBasket.basketId,
-            flupsyId: destBasket.flupsyId,
-            row: destBasket.position.charAt(0), // Prendiamo la lettera della riga (es. 'A' da 'A1')
-            position: parseInt(destBasket.position.substring(1)), // Prendiamo il numero (es. 1 da 'A1')
-            startDate: selectionData.date,
-            operationId: operation.id
-          });
-        }
-        
-        // Traccia relazioni tra ceste di origine e destinazione
-        for (const sourceBasket of selectionData.sourceBaskets) {
-          await tx.insert(selectionBasketHistory).values({
-            selectionId: selection.id,
-            sourceBasketId: sourceBasket.basketId,
-            sourceCycleId: sourceBasket.cycleId,
-            destinationBasketId: destBasket.basketId,
-            destinationCycleId: cycle.id
-          });
-          
-          // Se il lotto è specificato, traccia anche la relazione
-          if (sourceBasket.lotId) {
-            await tx.insert(selectionLotReferences).values({
-              selectionId: selection.id,
-              destinationBasketId: destBasket.basketId,
-              destinationCycleId: cycle.id,
-              lotId: sourceBasket.lotId
-            });
-          }
-        }
-      }
       
       // Invia notifiche WebSocket
       if (typeof (global as any).broadcastUpdate === 'function') {
         (global as any).broadcastUpdate('selection_created', {
           selection: selection,
-          message: `Nuova operazione di selezione #${selection.selectionNumber} completata`
+          message: `Nuova operazione di selezione #${selection.selectionNumber} creata`
         });
       }
       
@@ -520,6 +291,391 @@ export async function getAvailablePositions(req: Request, res: Response) {
     return res.status(500).json({ 
       success: false,
       error: `Errore durante il recupero delle posizioni disponibili: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}
+
+/**
+ * Aggiunge ceste di origine alla selezione (seconda fase)
+ */
+export async function addSourceBaskets(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const sourceBaskets = req.body;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: "ID selezione non fornito"
+      });
+    }
+    
+    if (!Array.isArray(sourceBaskets) || sourceBaskets.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "È necessario specificare almeno una cesta di origine"
+      });
+    }
+    
+    // Verifica che la selezione esista
+    const selection = await db.select().from(selections)
+      .where(eq(selections.id, Number(id)))
+      .limit(1);
+      
+    if (!selection || selection.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: `Selezione con ID ${id} non trovata`
+      });
+    }
+    
+    // Verifica che la selezione sia in stato modificabile (non completed o cancelled)
+    if (selection[0].status === 'completed' || selection[0].status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        error: `La selezione con ID ${id} non è modificabile (stato corrente: ${selection[0].status})`
+      });
+    }
+    
+    // Esecuzione in una transazione
+    await db.transaction(async (tx) => {
+      // Salva ogni cesta di origine
+      for (const sourceBasket of sourceBaskets) {
+        await tx.insert(selectionSourceBaskets).values({
+          selectionId: Number(id),
+          basketId: sourceBasket.basketId,
+          cycleId: sourceBasket.cycleId,
+          animalCount: sourceBasket.animalCount,
+          totalWeight: sourceBasket.totalWeight,
+          animalsPerKg: sourceBasket.animalsPerKg,
+          sizeId: sourceBasket.sizeId,
+          lotId: sourceBasket.lotId
+        });
+      }
+      
+      // Aggiorna lo stato della selezione (opzionale, può rimanere in draft)
+      // await tx.update(selections)
+      //   .set({ status: 'in_progress' })
+      //   .where(eq(selections.id, Number(id)));
+      
+      // Invia notifiche WebSocket
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('selection_updated', {
+          selectionId: Number(id),
+          message: `Ceste di origine aggiunte alla selezione #${selection[0].selectionNumber}`
+        });
+      }
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: "Ceste di origine aggiunte con successo",
+      selectionId: Number(id)
+    });
+    
+  } catch (error) {
+    console.error("Errore durante l'aggiunta di ceste di origine:", error);
+    return res.status(500).json({
+      success: false,
+      error: `Errore durante l'aggiunta di ceste di origine: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}
+
+/**
+ * Aggiunge ceste di destinazione e completa la selezione (fase finale)
+ */
+export async function addDestinationBaskets(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const destinationBaskets = req.body;
+    
+    if (!id) {
+      return res.status(400).json({
+        success: false,
+        error: "ID selezione non fornito"
+      });
+    }
+    
+    if (!Array.isArray(destinationBaskets) || destinationBaskets.length === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "È necessario specificare almeno una cesta di destinazione"
+      });
+    }
+    
+    // Verifica destinazioni valide
+    const invalidDestinations = destinationBaskets.filter(basket => {
+      if (basket.destinationType === 'sold') {
+        return false; // Valida
+      } else if (basket.destinationType === 'placed') {
+        return !basket.flupsyId || !basket.position; // Invalida se manca FLUPSY o posizione
+      }
+      return true; // Invalida per qualsiasi altro valore
+    });
+    
+    if (invalidDestinations.length > 0) {
+      return res.status(400).json({
+        success: false,
+        error: "Alcune ceste non hanno una destinazione valida. " +
+               "Assicurati che ogni cesta sia impostata per la vendita o abbia un FLUPSY e una posizione."
+      });
+    }
+    
+    // Verifica che la selezione esista
+    const selection = await db.select().from(selections)
+      .where(eq(selections.id, Number(id)))
+      .limit(1);
+      
+    if (!selection || selection.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: `Selezione con ID ${id} non trovata`
+      });
+    }
+    
+    // Verifica che la selezione sia in stato modificabile (non completed o cancelled)
+    if (selection[0].status === 'completed' || selection[0].status === 'cancelled') {
+      return res.status(400).json({
+        success: false,
+        error: `La selezione con ID ${id} non è modificabile (stato corrente: ${selection[0].status})`
+      });
+    }
+    
+    // Verifica che ci siano ceste di origine
+    const sourceCount = await db.select({ count: sql`count(*)` })
+      .from(selectionSourceBaskets)
+      .where(eq(selectionSourceBaskets.selectionId, Number(id)));
+    
+    if (!sourceCount[0] || sourceCount[0].count === 0) {
+      return res.status(400).json({
+        success: false,
+        error: "La selezione non ha ceste di origine. Aggiungi prima le ceste di origine."
+      });
+    }
+    
+    // Ottieni le ceste di origine per il tracciamento delle relazioni
+    const sourceBaskets = await db.select()
+      .from(selectionSourceBaskets)
+      .where(eq(selectionSourceBaskets.selectionId, Number(id)));
+    
+    // Esecuzione in una transazione
+    await db.transaction(async (tx) => {
+      // Chiudi i cicli delle ceste di origine
+      for (const sourceBasket of sourceBaskets) {
+        // Crea operazione di chiusura per il ciclo di origine
+        await tx.insert(operations).values({
+          date: selection[0].date,
+          type: 'selezione-origine',
+          basketId: sourceBasket.basketId,
+          cycleId: sourceBasket.cycleId,
+          animalCount: sourceBasket.animalCount,
+          totalWeight: sourceBasket.totalWeight,
+          animalsPerKg: sourceBasket.animalsPerKg,
+          notes: `Chiuso per selezione #${selection[0].selectionNumber}`
+        });
+        
+        // Chiudi il ciclo di origine
+        await tx.update(cycles)
+          .set({ 
+            state: 'closed', 
+            endDate: selection[0].date 
+          })
+          .where(eq(cycles.id, sourceBasket.cycleId));
+        
+        // Aggiorna lo stato del cestello origine a disponibile
+        await tx.update(baskets)
+          .set({ 
+            state: 'available',
+            currentCycleId: null 
+          })
+          .where(eq(baskets.id, sourceBasket.basketId));
+      }
+      
+      // Processa le ceste di destinazione
+      for (const destBasket of destinationBaskets) {
+        // Crea operazione di prima attivazione
+        const [operation] = await tx.insert(operations).values({
+          date: selection[0].date,
+          type: 'prima-attivazione',
+          basketId: destBasket.basketId,
+          cycleId: 0, // Placeholder, aggiornato dopo
+          animalCount: destBasket.animalCount,
+          totalWeight: destBasket.totalWeight,
+          animalsPerKg: destBasket.animalsPerKg,
+          averageWeight: destBasket.totalWeight / destBasket.animalCount,
+          deadCount: destBasket.deadCount || 0,
+          mortalityRate: destBasket.mortalityRate || 0,
+          sizeId: destBasket.sizeId,
+          notes: `Nuova cesta da selezione #${selection[0].selectionNumber}`
+        }).returning();
+        
+        // Crea nuovo ciclo per la cesta
+        const [cycle] = await tx.insert(cycles).values({
+          basketId: destBasket.basketId,
+          startDate: selection[0].date,
+          state: 'active'
+        }).returning();
+        
+        // Aggiorna l'operazione con l'ID del ciclo
+        await tx.update(operations)
+          .set({ cycleId: cycle.id })
+          .where(eq(operations.id, operation.id));
+        
+        // Gestione in base al tipo di destinazione
+        if (destBasket.destinationType === 'sold') {
+          // Caso 1: Vendita immediata
+          
+          // Crea operazione di vendita
+          await tx.insert(operations).values({
+            date: selection[0].date,
+            type: 'vendita',
+            basketId: destBasket.basketId,
+            cycleId: cycle.id,
+            animalCount: destBasket.animalCount,
+            totalWeight: destBasket.totalWeight,
+            animalsPerKg: destBasket.animalsPerKg,
+            notes: `Vendita immediata dopo selezione #${selection[0].selectionNumber}`
+          });
+          
+          // Chiudi il ciclo appena creato
+          await tx.update(cycles)
+            .set({ 
+              state: 'closed', 
+              endDate: selection[0].date 
+            })
+            .where(eq(cycles.id, cycle.id));
+          
+          // Aggiorna lo stato del cestello a disponibile
+          await tx.update(baskets)
+            .set({ 
+              state: 'available',
+              currentCycleId: null,
+              flupsyId: null,
+              position: null
+            })
+            .where(eq(baskets.id, destBasket.basketId));
+          
+          // Registra nella tabella di relazione
+          await tx.insert(selectionDestinationBaskets).values({
+            selectionId: Number(id),
+            basketId: destBasket.basketId,
+            cycleId: cycle.id,
+            destinationType: 'sold',
+            animalCount: destBasket.animalCount,
+            liveAnimals: destBasket.animalCount - (destBasket.deadCount || 0),
+            totalWeight: destBasket.totalWeight,
+            animalsPerKg: destBasket.animalsPerKg,
+            sizeId: destBasket.sizeId,
+            deadCount: destBasket.deadCount || 0,
+            mortalityRate: destBasket.mortalityRate || 0,
+            sampleWeight: destBasket.sampleWeight,
+            sampleCount: destBasket.sampleCount
+          });
+          
+        } else if (destBasket.destinationType === 'placed') {
+          // Caso 2: Collocazione in un FLUPSY
+          
+          // Verifica che la posizione sia disponibile
+          const basketInPosition = await tx.select().from(baskets)
+            .where(and(
+              eq(baskets.flupsyId, destBasket.flupsyId),
+              eq(baskets.position, destBasket.position),
+              eq(baskets.state, 'active')
+            ));
+          
+          if (basketInPosition.length > 0 && basketInPosition[0].id !== destBasket.basketId) {
+            throw new Error(`Posizione ${destBasket.position} nel FLUPSY ${destBasket.flupsyId} già occupata`);
+          }
+          
+          // Aggiorna stato del cestello con FLUPSY e posizione
+          await tx.update(baskets)
+            .set({ 
+              state: 'active',
+              currentCycleId: cycle.id,
+              flupsyId: destBasket.flupsyId,
+              position: destBasket.position
+            })
+            .where(eq(baskets.id, destBasket.basketId));
+          
+          // Registra nella tabella di relazione
+          await tx.insert(selectionDestinationBaskets).values({
+            selectionId: Number(id),
+            basketId: destBasket.basketId,
+            cycleId: cycle.id,
+            destinationType: 'placed',
+            flupsyId: destBasket.flupsyId,
+            position: destBasket.position,
+            animalCount: destBasket.animalCount,
+            liveAnimals: destBasket.animalCount - (destBasket.deadCount || 0),
+            totalWeight: destBasket.totalWeight,
+            animalsPerKg: destBasket.animalsPerKg,
+            sizeId: destBasket.sizeId,
+            deadCount: destBasket.deadCount || 0,
+            mortalityRate: destBasket.mortalityRate || 0,
+            sampleWeight: destBasket.sampleWeight,
+            sampleCount: destBasket.sampleCount,
+            notes: destBasket.notes
+          });
+          
+          // Registra il movimento di posizione nella cronologia
+          await tx.insert(basketPositionHistory).values({
+            basketId: destBasket.basketId,
+            flupsyId: destBasket.flupsyId,
+            row: destBasket.position.charAt(0), // Prendiamo la lettera della riga (es. 'A' da 'A1')
+            position: parseInt(destBasket.position.substring(1)), // Prendiamo il numero (es. 1 da 'A1')
+            startDate: selection[0].date,
+            operationId: operation.id
+          });
+        }
+        
+        // Traccia relazioni tra ceste di origine e destinazione
+        for (const sourceBasket of sourceBaskets) {
+          await tx.insert(selectionBasketHistory).values({
+            selectionId: Number(id),
+            sourceBasketId: sourceBasket.basketId,
+            sourceCycleId: sourceBasket.cycleId,
+            destinationBasketId: destBasket.basketId,
+            destinationCycleId: cycle.id
+          });
+          
+          // Se il lotto è specificato, traccia anche la relazione
+          if (sourceBasket.lotId) {
+            await tx.insert(selectionLotReferences).values({
+              selectionId: Number(id),
+              destinationBasketId: destBasket.basketId,
+              destinationCycleId: cycle.id,
+              lotId: sourceBasket.lotId
+            });
+          }
+        }
+      }
+      
+      // Aggiorna lo stato della selezione a completato
+      await tx.update(selections)
+        .set({ status: 'completed' })
+        .where(eq(selections.id, Number(id)));
+      
+      // Invia notifiche WebSocket
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('selection_completed', {
+          selectionId: Number(id),
+          message: `Selezione #${selection[0].selectionNumber} completata con successo`
+        });
+      }
+    });
+    
+    return res.status(200).json({
+      success: true,
+      message: "Selezione completata con successo",
+      selectionId: Number(id)
+    });
+    
+  } catch (error) {
+    console.error("Errore durante il completamento della selezione:", error);
+    return res.status(500).json({
+      success: false,
+      error: `Errore durante il completamento della selezione: ${error instanceof Error ? error.message : String(error)}`
     });
   }
 }
