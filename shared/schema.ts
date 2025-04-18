@@ -119,6 +119,7 @@ export const selections = pgTable("selections", {
   selectionNumber: integer("selection_number").notNull(), // Numero progressivo dell'operazione di selezione
   purpose: text("purpose", { enum: ["vendita", "vagliatura", "altro"] }).notNull(), // Scopo della selezione
   screeningType: text("screening_type", { enum: ["sopra_vaglio", "sotto_vaglio"] }), // Tipo di vagliatura, se pertinente
+  referenceSizeId: integer("reference_size_id"), // ID della taglia di riferimento per la selezione
   status: text("status", { enum: ["draft", "completed", "cancelled"] }).notNull().default("draft"), // Stato dell'operazione di selezione
   createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
   updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento

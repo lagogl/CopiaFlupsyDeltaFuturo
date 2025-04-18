@@ -72,7 +72,8 @@ import {
   getAvailablePositions, 
   getSelectionStats,
   addSourceBaskets,
-  addDestinationBaskets
+  addDestinationBaskets,
+  getAvailableBaskets
 } from "./controllers/selection-controller";
 
 // Preparazione per la gestione dei file di backup

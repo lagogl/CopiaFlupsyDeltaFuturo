@@ -66,6 +66,121 @@ export async function getSelections(req: Request, res: Response) {
 }
 
 /**
+ * Recupera tutte le ceste disponibili per l'aggiunta a una selezione,
+ * opzionalmente ordinate per similarità con una taglia di riferimento
+ */
+export async function getAvailableBaskets(req: Request, res: Response) {
+  try {
+    const { referenceSizeId } = req.query;
+    
+    // 1. Recupera tutte le ceste attive (con ciclo attivo)
+    const activeBaskets = await db.select({
+      basketId: baskets.id,
+      cycleId: baskets.currentCycleId,
+      physicalNumber: baskets.physicalNumber,
+      flupsyId: baskets.flupsyId,
+      position: baskets.position,
+      row: baskets.row,
+      state: baskets.state
+    })
+    .from(baskets)
+    .where(
+      and(
+        eq(baskets.state, 'active'),
+        sql`${baskets.current_cycle_id} IS NOT NULL`
+      )
+    );
+    
+    // 2. Arricchisci i dati con informazioni sul FLUPSY e sull'ultima operazione per ogni cestello
+    const basketsWithDetails = await Promise.all(activeBaskets.map(async (basket) => {
+      // Recupera il FLUPSY
+      const flupsyData = await db.select()
+        .from(flupsys)
+        .where(eq(flupsys.id, basket.flupsyId as number))
+        .limit(1);
+      
+      // Recupera l'ultima operazione per questo cestello
+      const latestOperation = await db.select()
+        .from(operations)
+        .where(eq(operations.basketId, basket.basketId))
+        .orderBy(sql`${operations.date} DESC, ${operations.id} DESC`)
+        .limit(1);
+      
+      // Recupera la taglia se presente nell'ultima operazione
+      let size = null;
+      if (latestOperation.length > 0 && latestOperation[0].sizeId) {
+        size = await db.select()
+          .from(sizes)
+          .where(eq(sizes.id, latestOperation[0].sizeId as number))
+          .limit(1);
+      }
+      
+      // Recupera il ciclo attuale
+      const cycle = await db.select()
+        .from(cycles)
+        .where(eq(cycles.id, basket.cycleId as number))
+        .limit(1);
+      
+      return {
+        basketId: basket.basketId,
+        physicalNumber: basket.physicalNumber,
+        cycleId: basket.cycleId,
+        flupsy: flupsyData.length > 0 ? flupsyData[0] : null,
+        position: basket.position,
+        row: basket.row,
+        lastOperation: latestOperation.length > 0 ? latestOperation[0] : null,
+        size: size && size.length > 0 ? size[0] : null,
+        cycle: cycle.length > 0 ? cycle[0] : null
+      };
+    }));
+    
+    // 3. Se è fornito un ID di taglia di riferimento, ordina i cestelli per similarità a quella taglia
+    if (referenceSizeId && !isNaN(Number(referenceSizeId))) {
+      // Recupera la taglia di riferimento
+      const refSize = await db.select()
+        .from(sizes)
+        .where(eq(sizes.id, Number(referenceSizeId)))
+        .limit(1);
+      
+      if (refSize && refSize.length > 0) {
+        const referenceMinAnimals = refSize[0].minAnimalsPerKg;
+        const referenceMaxAnimals = refSize[0].maxAnimalsPerKg;
+        const referenceAvg = (referenceMinAnimals + referenceMaxAnimals) / 2;
+        
+        // Calcola la distanza di ogni cestello dalla taglia di riferimento
+        basketsWithDetails.sort((a, b) => {
+          const aSize = a.size ? (a.size.minAnimalsPerKg + a.size.maxAnimalsPerKg) / 2 : null;
+          const bSize = b.size ? (b.size.minAnimalsPerKg + b.size.maxAnimalsPerKg) / 2 : null;
+          
+          // Se entrambi hanno una taglia, ordina per vicinanza alla taglia di riferimento
+          if (aSize !== null && bSize !== null) {
+            const aDiff = Math.abs(aSize - referenceAvg);
+            const bDiff = Math.abs(bSize - referenceAvg);
+            return aDiff - bDiff;
+          }
+          
+          // Se solo uno ha una taglia, quello con la taglia viene prima
+          if (aSize !== null) return -1;
+          if (bSize !== null) return 1;
+          
+          // Altrimenti, ordina per numero fisico del cestello
+          return a.physicalNumber - b.physicalNumber;
+        });
+      }
+    }
+    
+    return res.status(200).json(basketsWithDetails);
+    
+  } catch (error) {
+    console.error("Errore durante il recupero delle ceste disponibili:", error);
+    return res.status(500).json({ 
+      success: false, 
+      error: `Errore durante il recupero delle ceste disponibili: ${error instanceof Error ? error.message : String(error)}` 
+    });
+  }
+}
+
+/**
  * Ottiene una singola selezione con tutti i dettagli correlati
  */
 export async function getSelectionById(req: Request, res: Response) {
@@ -188,6 +303,7 @@ export async function createSelection(req: Request, res: Response) {
         selectionNumber: await getNextSelectionNumber(tx),
         purpose: selectionData.purpose,
         screeningType: selectionData.screeningType,
+        referenceSizeId: selectionData.referenceSizeId,
         notes: selectionData.notes,
         status: 'draft' // Inizia come bozza, sarà completata durante il processo di selezione
       }).returning();
