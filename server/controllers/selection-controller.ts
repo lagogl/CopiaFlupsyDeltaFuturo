@@ -899,3 +899,159 @@ export async function getSelectionStats(req: Request, res: Response) {
     });
   }
 }
+
+/**
+ * Rimuove una cesta di origine dalla selezione
+ */
+export async function removeSourceBasket(req: Request, res: Response) {
+  try {
+    const { id, sourceBasketId } = req.params;
+    
+    if (!id || !sourceBasketId) {
+      return res.status(400).json({
+        success: false,
+        error: "ID selezione o ID cesta di origine non fornito"
+      });
+    }
+    
+    // Verifica che la selezione esista
+    const selection = await db.select().from(selections)
+      .where(eq(selections.id, Number(id)))
+      .limit(1);
+      
+    if (!selection || selection.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: `Selezione con ID ${id} non trovata`
+      });
+    }
+    
+    // Verifica che la selezione sia in stato modificabile (draft)
+    if (selection[0].status !== 'draft') {
+      return res.status(400).json({
+        success: false,
+        error: `La selezione con ID ${id} non è modificabile (stato corrente: ${selection[0].status})`
+      });
+    }
+    
+    // Verifica che la cesta di origine esista
+    const sourceBasket = await db.select().from(selectionSourceBaskets)
+      .where(and(
+        eq(selectionSourceBaskets.id, Number(sourceBasketId)),
+        eq(selectionSourceBaskets.selectionId, Number(id))
+      ))
+      .limit(1);
+      
+    if (!sourceBasket || sourceBasket.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: `Cesta di origine con ID ${sourceBasketId} non trovata per la selezione ${id}`
+      });
+    }
+    
+    // Elimina la cesta di origine
+    await db.delete(selectionSourceBaskets)
+      .where(eq(selectionSourceBaskets.id, Number(sourceBasketId)));
+    
+    // Invia notifiche WebSocket
+    if (typeof (global as any).broadcastUpdate === 'function') {
+      (global as any).broadcastUpdate('selection_source_basket_removed', {
+        selectionId: Number(id),
+        sourceBasketId: Number(sourceBasketId),
+        message: `Cesta di origine rimossa dalla selezione #${selection[0].selectionNumber}`
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: "Cesta di origine rimossa con successo"
+    });
+    
+  } catch (error) {
+    console.error("Errore durante la rimozione della cesta di origine:", error);
+    return res.status(500).json({
+      success: false,
+      error: `Errore durante la rimozione della cesta di origine: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}
+
+/**
+ * Rimuove una cesta di destinazione dalla selezione
+ */
+export async function removeDestinationBasket(req: Request, res: Response) {
+  try {
+    const { id, destinationBasketId } = req.params;
+    
+    if (!id || !destinationBasketId) {
+      return res.status(400).json({
+        success: false,
+        error: "ID selezione o ID cesta di destinazione non fornito"
+      });
+    }
+    
+    // Verifica che la selezione esista
+    const selection = await db.select().from(selections)
+      .where(eq(selections.id, Number(id)))
+      .limit(1);
+      
+    if (!selection || selection.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: `Selezione con ID ${id} non trovata`
+      });
+    }
+    
+    // Verifica che la selezione sia in stato modificabile (draft)
+    if (selection[0].status !== 'draft') {
+      return res.status(400).json({
+        success: false,
+        error: `La selezione con ID ${id} non è modificabile (stato corrente: ${selection[0].status})`
+      });
+    }
+    
+    // Verifica che la cesta di destinazione esista
+    const destinationBasket = await db.select().from(selectionDestinationBaskets)
+      .where(and(
+        eq(selectionDestinationBaskets.id, Number(destinationBasketId)),
+        eq(selectionDestinationBaskets.selectionId, Number(id))
+      ))
+      .limit(1);
+      
+    if (!destinationBasket || destinationBasket.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: `Cesta di destinazione con ID ${destinationBasketId} non trovata per la selezione ${id}`
+      });
+    }
+    
+    // Elimina la cesta di destinazione
+    await db.delete(selectionDestinationBaskets)
+      .where(eq(selectionDestinationBaskets.id, Number(destinationBasketId)));
+    
+    // Elimina anche le relazioni nella history
+    await db.delete(selectionBasketHistory)
+      .where(eq(selectionBasketHistory.destinationBasketId, Number(destinationBasketId)));
+    
+    // Invia notifiche WebSocket
+    if (typeof (global as any).broadcastUpdate === 'function') {
+      (global as any).broadcastUpdate('selection_destination_basket_removed', {
+        selectionId: Number(id),
+        destinationBasketId: Number(destinationBasketId),
+        message: `Cesta di destinazione rimossa dalla selezione #${selection[0].selectionNumber}`
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: "Cesta di destinazione rimossa con successo"
+    });
+    
+  } catch (error) {
+    console.error("Errore durante la rimozione della cesta di destinazione:", error);
+    return res.status(500).json({
+      success: false,
+      error: `Errore durante la rimozione della cesta di destinazione: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}

@@ -73,7 +73,9 @@ import {
   getSelectionStats,
   addSourceBaskets,
   addDestinationBaskets,
-  getAvailableBaskets
+  getAvailableBaskets,
+  removeSourceBasket,
+  removeDestinationBasket
 } from "./controllers/selection-controller";
 
 // Preparazione per la gestione dei file di backup
@@ -4273,6 +4275,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Ottieni solo le ceste di destinazione di una selezione
+  // Route per eliminare una cesta sorgente da una selezione
+  app.delete("/api/selections/:id/source-baskets/:sourceBasketId", removeSourceBasket);
+  
   app.get("/api/selections/:id/destination-baskets", async (req, res) => {
     try {
       const { id } = req.params;
@@ -4351,6 +4356,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Route per eliminare una cesta di destinazione da una selezione
+  app.delete("/api/selections/:id/destination-baskets/:destinationBasketId", removeDestinationBasket);
+  
   // Registra le route per cancellare e completare le selezioni
   implementSelectionRoutes(app, db);
   
