@@ -52,7 +52,8 @@ import { ContextualTooltip } from "@/components/ui/contextual-tooltip";
 function Router() {
   return (
     <Switch>
-      <Route path="/" component={Dashboard}/>
+      {/* Assicuriamoci che la root vada alla dashboard */}
+      <Route path="/" component={Dashboard} />
       <Route path="/flupsys" component={Flupsys}/>
       <Route path="/flupsy-view" component={FlupsyFullView}/>
       <Route path="/flupsy-positions" component={FlupsyPositions}/>
