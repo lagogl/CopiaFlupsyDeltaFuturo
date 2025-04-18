@@ -189,10 +189,39 @@ export default function SelectionDetailPage() {
       });
       return;
     }
+    
+    // Verifica se cycleId è presente
+    if (!sourceBasketData.cycleId) {
+      // Se non è presente, trova nuovamente la cesta selezionata
+      const selectedBasket = availableBaskets?.find(b => b.basketId.toString() === sourceBasketData.basketId);
+      
+      if (!selectedBasket || !selectedBasket.cycle?.id) {
+        toast({
+          title: "Errore",
+          description: "La cesta selezionata non ha un ciclo attivo",
+          variant: "destructive",
+        });
+        return;
+      }
+      
+      // Aggiorna il cycleId con quello trovato
+      setSourceBasketData(prev => ({ 
+        ...prev, 
+        cycleId: selectedBasket.cycle.id 
+      }));
+    }
 
     setIsSubmitting(true);
 
     try {
+      // Ottieni nuovamente il basket selezionato (per sicurezza)
+      const selectedBasket = availableBaskets?.find(b => b.basketId.toString() === sourceBasketData.basketId);
+      const cycleId = sourceBasketData.cycleId || selectedBasket?.cycle?.id;
+      
+      if (!cycleId) {
+        throw new Error("Impossibile determinare il cycleId per la cesta selezionata");
+      }
+      
       // Nota: Il server si aspetta un array di cestelli di origine
       const response = await fetch(`/api/selections/${id}/source-baskets`, {
         method: "POST",
@@ -202,7 +231,7 @@ export default function SelectionDetailPage() {
         body: JSON.stringify([
           {
             basketId: parseInt(sourceBasketData.basketId),
-            cycleId: sourceBasketData.cycleId,  // Usiamo il valore salvato quando si seleziona la cesta
+            cycleId: cycleId,  // Usiamo il valore sicuramente non null
             animalCount: null, // Questi valori verranno determinati dal server
             totalWeight: null,
             animalsPerKg: null,
