@@ -99,7 +99,18 @@ export default function NewSelectionPage() {
         description: `Selezione #${data.selectionNumber} creata con successo`,
       });
 
-      navigate(`/selection/${data.id}`);
+      // Assicuriamoci che data.id esista e sia un numero valido
+      if (data && data.id && !isNaN(Number(data.id))) {
+        navigate(`/selection/${data.id}`);
+      } else {
+        console.error("ID selezione non valido:", data);
+        toast({
+          title: "Attenzione",
+          description: "Selezione creata ma impossibile visualizzare i dettagli. Torna all'elenco.",
+          variant: "destructive",
+        });
+        navigate("/selection");
+      }
     } catch (error) {
       console.error("Errore:", error);
       toast({

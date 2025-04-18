@@ -206,7 +206,8 @@ export async function createSelection(req: Request, res: Response) {
     return res.status(201).json({
       success: true,
       message: "Operazione di selezione completata con successo",
-      selection
+      id: selection.id,
+      selectionNumber: selection.selectionNumber
     });
     
   } catch (error) {
