@@ -237,6 +237,44 @@ export function getSizeColor(sizeCode: string): string {
 }
 
 /**
+ * Restituisce la classe di colore per il badge della taglia in base al codice
+ * Questa funzione è usata nei menu a tendina e nei componenti per visualizzare la taglia
+ * @param sizeCode - Codice della taglia (es. TP-1000)
+ * @returns Classe CSS per lo stile del badge
+ */
+export function getSizeColorClass(sizeCode: string): string {
+  if (!sizeCode) return 'bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200';
+  
+  // Colore per le taglie TP-XXXX
+  if (sizeCode.startsWith('TP-')) {
+    // Verifica il numero presente nel codice
+    const numStr = sizeCode.substring(3);
+    const num = parseInt(numStr);
+    
+    if (num <= 500) {
+      return 'bg-red-100 text-red-800 dark:bg-red-900 dark:text-red-100';
+    } else if (num <= 1000) {
+      return 'bg-red-100 text-red-700 dark:bg-red-900 dark:text-red-200';
+    } else if (num <= 2000) {
+      return 'bg-amber-100 text-amber-800 dark:bg-amber-900 dark:text-amber-100';
+    } else if (num <= 3000) {
+      return 'bg-yellow-100 text-yellow-800 dark:bg-yellow-900 dark:text-yellow-100';
+    } else if (num <= 6000) {
+      return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
+    } else if (num <= 10000) {
+      return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
+    } else {
+      // Per +TP-10000
+      return 'bg-gray-100 text-gray-800 dark:bg-gray-900 dark:text-gray-100';
+    }
+  } else if (sizeCode.startsWith('M')) {
+    return 'bg-green-100 text-green-800 dark:bg-green-900 dark:text-green-100';
+  }
+  
+  return 'bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100';
+}
+
+/**
  * Calcola lo spessore del bordo in base alla taglia (peso)
  * @param weight - Peso in mg
  * @returns Classe CSS per lo spessore del bordo

@@ -807,14 +807,14 @@ export default function SelectionDetailPage() {
                     {sourceBaskets.map((sourceBasket: SelectionSourceBasket) => (
                       <TableRow key={sourceBasket.id}>
                         <TableCell className="font-medium">
-                          #{sourceBasket.basket.physicalNumber}
+                          #{sourceBasket.physicalNumber || (sourceBasket.basket?.physicalNumber || "N/A")}
                         </TableCell>
                         <TableCell>
-                          {sourceBasket.basket.flupsy?.name || "N/A"}
+                          {sourceBasket.flupsy?.name || (sourceBasket.basket?.flupsy?.name || "N/A")}
                         </TableCell>
                         <TableCell>
-                          <Badge className="font-mono">
-                            {sourceBasket.size?.code || "N/A"}
+                          <Badge className={`font-mono ${sourceBasket.size?.sizeCode ? getSizeColorClass(sourceBasket.size.sizeCode) : ''}`}>
+                            {sourceBasket.size?.sizeCode || "N/A"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-mono">
@@ -1006,21 +1006,26 @@ export default function SelectionDetailPage() {
                             <div className="flex justify-between w-full items-center">
                               <span>
                                 Cesta #{basket.physicalNumber}
-                                {basket.size?.code && (
+                                {basket.size?.sizeCode && (
                                   <span 
-                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs ${isReferenceSize ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 font-semibold" : "bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"}`}
+                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs ${isReferenceSize ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 font-semibold" : getSizeColorClass(basket.size.sizeCode)}`}
                                   >
-                                    {basket.size.code}
+                                    {basket.size.sizeCode}
                                   </span>
                                 )}
                                 {basket.flupsy && ` - ${basket.flupsy.name}`}
                               </span>
                               
-                              {basket.cycle?.animalCount && (
+                              {/* Mostra il numero di animali dall'ultima operazione */}
+                              {basket.lastOperation?.animalCount ? (
                                 <span className="text-xs text-muted-foreground ml-2">
-                                  {basket.cycle.animalCount.toLocaleString()} animali
+                                  {formatNumberWithCommas(basket.lastOperation.animalCount)} animali
                                 </span>
-                              )}
+                              ) : basket.cycle?.animalCount ? (
+                                <span className="text-xs text-muted-foreground ml-2">
+                                  {formatNumberWithCommas(basket.cycle.animalCount)} animali
+                                </span>
+                              ) : null}
                             </div>
                           </SelectItem>
                         );
