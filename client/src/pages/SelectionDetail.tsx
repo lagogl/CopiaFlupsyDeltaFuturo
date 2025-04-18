@@ -929,14 +929,14 @@ export default function SelectionDetailPage() {
                     <div className="flex justify-center py-2">
                       <Spinner size="sm" />
                     </div>
-                  ) : availableBaskets?.filter(b => b.state === "active" && b.currentCycleId)?.length ? (
+                  ) : availableBaskets?.filter(b => b.cycle?.state === "active")?.length ? (
                     availableBaskets
-                      .filter(b => b.state === "active" && b.currentCycleId)
+                      .filter(b => b.cycle?.state === "active")
                       .map(basket => (
-                        <SelectItem key={basket.id} value={basket.id.toString()}>
+                        <SelectItem key={basket.basketId} value={basket.basketId.toString()}>
                           Cesta #{basket.physicalNumber}
-                          {basket.cycle?.lotSizeCode ? ` (${basket.cycle.lotSizeCode})` : ''}
-                          {basket.flupsyId ? ` - ${basket.flupsy?.name}` : ''}
+                          {basket.size?.code ? ` (${basket.size.code})` : ''}
+                          {basket.flupsy ? ` - ${basket.flupsy.name}` : ''}
                         </SelectItem>
                       ))
                   ) : (
@@ -993,11 +993,11 @@ export default function SelectionDetailPage() {
                       <div className="flex justify-center py-2">
                         <Spinner size="sm" />
                       </div>
-                    ) : availableBaskets?.filter(b => b.state === "available")?.length ? (
+                    ) : availableBaskets?.filter(b => !b.cycle || b.cycle.state === "available")?.length ? (
                       availableBaskets
-                        .filter(b => b.state === "available")
+                        .filter(b => !b.cycle || b.cycle.state === "available")
                         .map(basket => (
-                          <SelectItem key={basket.id} value={basket.id.toString()}>
+                          <SelectItem key={basket.basketId} value={basket.basketId.toString()}>
                             Cesta #{basket.physicalNumber}
                           </SelectItem>
                         ))
