@@ -39,13 +39,31 @@ import {
   ScreeningSourceBasket,
   ScreeningDestinationBasket,
   ScreeningBasketHistory,
-  ScreeningLotReference
+  ScreeningLotReference,
+  // Schemi per il modulo di selezione
+  insertSelectionSchema,
+  insertSelectionSourceBasketSchema,
+  insertSelectionDestinationBasketSchema,
+  insertSelectionBasketHistorySchema,
+  insertSelectionLotReferenceSchema,
+  Selection,
+  SelectionSourceBasket,
+  SelectionDestinationBasket,
+  SelectionBasketHistory,
+  SelectionLotReference
 } from "@shared/schema";
 import { format, addDays } from "date-fns";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import configureWebSocketServer from "./websocket";
 import { implementDirectOperationRoute } from "./direct-operations";
+import { 
+  getSelections, 
+  getSelectionById, 
+  createSelection, 
+  getAvailablePositions, 
+  getSelectionStats 
+} from "./controllers/selection-controller";
 
 // Preparazione per la gestione dei file di backup
 const getBackupUploadDir = () => {
