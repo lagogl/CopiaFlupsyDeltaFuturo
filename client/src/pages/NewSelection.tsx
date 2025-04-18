@@ -37,6 +37,10 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { useToast } from "@/hooks/use-toast";
+import { useQuery } from "@tanstack/react-query";
+import { apiRequest } from "@/lib/queryClient";
+import { Skeleton } from "@/components/ui/skeleton";
+import { Size } from "@shared/schema";
 
 // Schema per la validazione del form
 const formSchema = z.object({
@@ -47,6 +51,7 @@ const formSchema = z.object({
     required_error: "Lo scopo è obbligatorio",
   }),
   screeningType: z.enum(["sopra_vaglio", "sotto_vaglio"]).optional(),
+  referenceSizeId: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
   notes: z.string().optional(),
 });
 
