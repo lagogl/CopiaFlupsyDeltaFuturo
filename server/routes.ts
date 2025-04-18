@@ -4192,6 +4192,165 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Aggiungi ceste di destinazione e completa la selezione (fase 3)
   app.post("/api/selections/:id/destination-baskets", addDestinationBaskets);
 
+  // Ottieni solo le ceste di origine di una selezione
+  app.get("/api/selections/:id/source-baskets", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({ error: "ID selezione non valido" });
+      }
+      
+      // Recupera la selezione
+      const selection = await db.select().from(selections)
+        .where(eq(selections.id, Number(id)))
+        .limit(1);
+        
+      if (!selection || selection.length === 0) {
+        return res.status(404).json({ error: `Selezione con ID ${id} non trovata` });
+      }
+      
+      const { baskets, sizes, flupsys } = await import("../shared/schema");
+      
+      // Recupera le ceste di origine
+      const sourceBaskets = await db.select({
+        id: selectionSourceBaskets.id,
+        selectionId: selectionSourceBaskets.selectionId,
+        basketId: selectionSourceBaskets.basketId,
+        cycleId: selectionSourceBaskets.cycleId,
+        animalCount: selectionSourceBaskets.animalCount,
+        totalWeight: selectionSourceBaskets.totalWeight,
+        animalsPerKg: selectionSourceBaskets.animalsPerKg,
+        sizeId: selectionSourceBaskets.sizeId,
+        lotId: selectionSourceBaskets.lotId,
+        createdAt: selectionSourceBaskets.createdAt,
+        // Campi correlati del basket
+        physicalNumber: baskets.physicalNumber,
+        flupsyId: baskets.flupsyId,
+        position: baskets.position
+      })
+      .from(selectionSourceBaskets)
+      .leftJoin(baskets, eq(selectionSourceBaskets.basketId, baskets.id))
+      .where(eq(selectionSourceBaskets.selectionId, Number(id)));
+      
+      // Arricchisci le ceste di origine con informazioni sulla taglia
+      const enrichedSourceBaskets = await Promise.all(sourceBaskets.map(async (basket) => {
+        // Se esiste un sizeId, recupera i dettagli della taglia
+        let size = null;
+        if (basket.sizeId) {
+          const sizeResult = await db.select()
+            .from(sizes)
+            .where(eq(sizes.id, basket.sizeId))
+            .limit(1);
+          size = sizeResult.length > 0 ? sizeResult[0] : null;
+        }
+        
+        // Recupera i dettagli del FLUPSY se presente
+        let flupsy = null;
+        if (basket.flupsyId) {
+          const flupsyResult = await db.select()
+            .from(flupsys)
+            .where(eq(flupsys.id, basket.flupsyId))
+            .limit(1);
+          flupsy = flupsyResult.length > 0 ? flupsyResult[0] : null;
+        }
+        
+        return {
+          ...basket,
+          basket: await db.select().from(baskets).where(eq(baskets.id, basket.basketId)).limit(1).then(res => res[0] || null),
+          size,
+          flupsy
+        };
+      }));
+      
+      return res.json(enrichedSourceBaskets);
+    } catch (error) {
+      console.error("Errore durante il recupero delle ceste di origine:", error);
+      return res.status(500).json({ 
+        error: `Errore durante il recupero delle ceste di origine: ${error instanceof Error ? error.message : String(error)}` 
+      });
+    }
+  });
+  
+  // Ottieni solo le ceste di destinazione di una selezione
+  app.get("/api/selections/:id/destination-baskets", async (req, res) => {
+    try {
+      const { id } = req.params;
+      
+      if (!id || isNaN(Number(id))) {
+        return res.status(400).json({ error: "ID selezione non valido" });
+      }
+      
+      const { baskets, sizes, flupsys } = await import("../shared/schema");
+      
+      // Recupera le ceste di destinazione
+      const destinationBaskets = await db.select({
+        id: selectionDestinationBaskets.id,
+        selectionId: selectionDestinationBaskets.selectionId,
+        basketId: selectionDestinationBaskets.basketId,
+        cycleId: selectionDestinationBaskets.cycleId,
+        destinationType: selectionDestinationBaskets.destinationType,
+        flupsyId: selectionDestinationBaskets.flupsyId,
+        position: selectionDestinationBaskets.position,
+        animalCount: selectionDestinationBaskets.animalCount,
+        liveAnimals: selectionDestinationBaskets.liveAnimals,
+        totalWeight: selectionDestinationBaskets.totalWeight,
+        animalsPerKg: selectionDestinationBaskets.animalsPerKg,
+        sizeId: selectionDestinationBaskets.sizeId,
+        deadCount: selectionDestinationBaskets.deadCount,
+        mortalityRate: selectionDestinationBaskets.mortalityRate,
+        sampleWeight: selectionDestinationBaskets.sampleWeight,
+        sampleCount: selectionDestinationBaskets.sampleCount,
+        notes: selectionDestinationBaskets.notes,
+        createdAt: selectionDestinationBaskets.createdAt,
+        // Campi correlati del basket
+        physicalNumber: baskets.physicalNumber
+      })
+      .from(selectionDestinationBaskets)
+      .leftJoin(baskets, eq(selectionDestinationBaskets.basketId, baskets.id))
+      .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
+      
+      // Arricchisci i dati con informazioni aggiuntive (taglia, flupsy, ecc.)
+      const enrichedDestinationBaskets = await Promise.all(destinationBaskets.map(async (basket) => {
+        const basketData = await db.select().from(baskets).where(eq(baskets.id, basket.basketId)).limit(1).then(res => res[0] || null);
+        
+        // Recupera i dettagli della taglia se presente
+        let size = null;
+        if (basket.sizeId) {
+          const sizeResult = await db.select()
+            .from(sizes)
+            .where(eq(sizes.id, basket.sizeId))
+            .limit(1);
+          size = sizeResult.length > 0 ? sizeResult[0] : null;
+        }
+        
+        // Recupera i dettagli del FLUPSY se presente
+        let flupsy = null;
+        if (basket.flupsyId) {
+          const flupsyResult = await db.select()
+            .from(flupsys)
+            .where(eq(flupsys.id, basket.flupsyId))
+            .limit(1);
+          flupsy = flupsyResult.length > 0 ? flupsyResult[0] : null;
+        }
+        
+        return {
+          ...basket,
+          basket: basketData,
+          size,
+          flupsy
+        };
+      }));
+      
+      return res.json(enrichedDestinationBaskets);
+    } catch (error) {
+      console.error("Errore durante il recupero delle ceste di destinazione:", error);
+      return res.status(500).json({ 
+        error: `Errore durante il recupero delle ceste di destinazione: ${error instanceof Error ? error.message : String(error)}` 
+      });
+    }
+  });
+
   // Registra le route per cancellare e completare le selezioni
   implementSelectionRoutes(app, db);
   
