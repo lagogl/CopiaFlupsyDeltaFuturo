@@ -64,7 +64,7 @@ import {
   PopoverTrigger,
 } from "@/components/ui/popover";
 import { Calendar } from "@/components/ui/calendar";
-import { cn, formatDate, formatNumberWithCommas } from "@/lib/utils";
+import { cn, formatDate, formatNumberWithCommas, getSizeColorClass } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import type { Selection, SelectionSourceBasket, SelectionDestinationBasket } from "@shared/schema";
 
@@ -1092,11 +1092,11 @@ export default function SelectionDetailPage() {
                             <div className="flex justify-between w-full items-center">
                               <span>
                                 Cesta #{basket.physicalNumber}
-                                {basket.size?.code && (
+                                {basket.size?.sizeCode && (
                                   <span 
-                                    className="ml-1 px-1.5 py-0.5 rounded text-xs bg-gray-100 text-gray-800 dark:bg-gray-800 dark:text-gray-200"
+                                    className={`ml-1 px-1.5 py-0.5 rounded text-xs ${getSizeColorClass(basket.size.sizeCode)}`}
                                   >
-                                    {basket.size.code}
+                                    {basket.size.sizeCode}
                                   </span>
                                 )}
                                 {basket.flupsy && ` - ${basket.flupsy.name}`}
