@@ -50,8 +50,8 @@ function implementSelectionCancelRoute(app, db, selections, eq) {
         .limit(1);
       
       // Notifica via WebSocket
-      if (typeof (global.broadcastUpdate) === 'function') {
-        global.broadcastUpdate('selection_cancelled', {
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('selection_cancelled', {
           selectionId: Number(id),
           selectionNumber: selection[0].selectionNumber,
           message: `Selezione #${selection[0].selectionNumber} annullata`
@@ -119,8 +119,8 @@ function implementSelectionCancelRoute(app, db, selections, eq) {
         .limit(1);
       
       // Notifica via WebSocket
-      if (typeof (global.broadcastUpdate) === 'function') {
-        global.broadcastUpdate('selection_completed', {
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('selection_completed', {
           selectionId: Number(id),
           selectionNumber: selection[0].selectionNumber,
           message: `Selezione #${selection[0].selectionNumber} completata`
