@@ -62,6 +62,14 @@ export default function NewSelectionPage() {
   const { toast } = useToast();
   const [isSubmitting, setIsSubmitting] = useState(false);
 
+  // Query per ottenere le taglie
+  const { data: sizes, isLoading: sizesLoading } = useQuery({
+    queryKey: ['/api/sizes'],
+    queryFn: async () => {
+      return apiRequest<Size[]>({ url: '/api/sizes', method: 'GET' });
+    },
+  });
+
   // Form con validazione Zod
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
@@ -279,6 +287,50 @@ export default function NewSelectionPage() {
                     )}
                   />
                 )}
+                
+                {/* Taglia di riferimento */}
+                <FormField
+                  control={form.control}
+                  name="referenceSizeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Taglia di Riferimento</FormLabel>
+                      <Select
+                        onValueChange={field.onChange}
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger>
+                            <SelectValue placeholder="Seleziona una taglia" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {sizesLoading ? (
+                            <div className="p-2">
+                              <Skeleton className="h-4 w-full" />
+                              <Skeleton className="h-4 w-full mt-2" />
+                              <Skeleton className="h-4 w-full mt-2" />
+                            </div>
+                          ) : sizes && sizes.length > 0 ? (
+                            sizes.map((size) => (
+                              <SelectItem key={size.id} value={size.id.toString()}>
+                                {size.name} ({size.code})
+                              </SelectItem>
+                            ))
+                          ) : (
+                            <SelectItem value="" disabled>
+                              Nessuna taglia disponibile
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription>
+                        Taglia di riferimento per questa selezione
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
 
                 {/* Note */}
                 <FormField
@@ -325,6 +377,10 @@ export default function NewSelectionPage() {
             <p className="text-sm text-muted-foreground">
               Dopo aver creato la selezione, potrai selezionare le ceste di origine per l'operazione. 
               Successivamente, potrai creare le ceste di destinazione con i conteggi precisi degli animali.
+            </p>
+            <p className="text-sm text-muted-foreground mt-2">
+              <strong>Importante:</strong> La taglia di riferimento ti aiuta a selezionare le ceste di origine più appropriate per questa operazione. 
+              Le ceste con taglia simile saranno proposte per prime durante la selezione.
             </p>
           </div>
         </div>
