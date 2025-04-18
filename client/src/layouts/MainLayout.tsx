@@ -252,8 +252,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
         </aside>
 
         {/* Main Content */}
-        <main className={`flex-1 overflow-y-auto bg-gray-100 p-3 md:p-6 ${sidebarOpen ? "md:ml-0" : "ml-0"} transition-all duration-300 w-full`}>
-          <div className={`transition-all duration-300 ${isMobile && sidebarOpen ? 'opacity-50' : 'opacity-100'}`}>
+        <main className={`flex-1 overflow-y-auto bg-gray-100 p-1 md:p-3 ${sidebarOpen ? "md:ml-0" : "ml-0"} transition-all duration-300 w-full`}>
+          <div className={`transition-all duration-300 ${isMobile && sidebarOpen ? 'opacity-50' : 'opacity-100'} space-y-2`}>
             {children}
           </div>
         </main>
