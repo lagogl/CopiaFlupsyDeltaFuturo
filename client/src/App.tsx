@@ -37,6 +37,10 @@ import NewScreening from "@/pages/NewScreening";
 import ScreeningDetail from "@/pages/ScreeningDetail";
 import ScreeningAddSource from "@/pages/ScreeningAddSource";
 import ScreeningAddDestination from "@/pages/ScreeningAddDestination";
+// Importiamo le pagine per il modulo di selezione
+import Selection from "@/pages/Selection";
+import NewSelection from "@/pages/NewSelection";
+import SelectionDetail from "@/pages/SelectionDetail";
 import BackupPage from "@/pages/BackupPage";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
@@ -91,9 +95,9 @@ function Router() {
       <Route path="/screening/:id/add-destination" component={ScreeningAddDestination}/>
       
       {/* Selection (Selezione) routes */}
-      <Route path="/selection" component={Screening}/>
-      <Route path="/selection/new" component={NewScreening}/>
-      <Route path="/selection/:id" component={ScreeningDetail}/>
+      <Route path="/selection" component={Selection}/>
+      <Route path="/selection/new" component={NewSelection}/>
+      <Route path="/selection/:id" component={SelectionDetail}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
