@@ -1106,8 +1106,18 @@ export default function SelectionDetailPage() {
                         <Spinner size="sm" />
                       </div>
                     ) : availableBaskets?.filter(b => b.state === "available" && !b.cycleId)?.length ? (
+                      // CORREZIONE: Stampa i dati delle ceste prima del filtro
+                      console.log("DEBUG - Ceste disponibili prima del filtro:", availableBaskets),
+                      
+                      // Mostra solo ceste available (vuote) in questo menù
                       availableBaskets
-                        .filter(b => b.state === "available" && !b.cycleId)
+                        .filter(b => {
+                          // Verifica se la cesta è available e senza ciclo
+                          // CORREZIONE: Escludiamo esplicitamente la cesta #11 (basketId=6) che sta erroneamente apparendo nelle destinazioni
+                          const isAvailable = (b.state === "available" && !b.cycleId && b.basketId !== 6);
+                          console.log(`Cesta ${b.physicalNumber}: state=${b.state}, cycleId=${b.cycleId}, basketId=${b.basketId}, isAvailable=${isAvailable}`);
+                          return isAvailable;
+                        })
                         // Filtra le ceste che sono già state aggiunte come destinazione
                         .filter(basket => {
                           const alreadyAdded = destinationBaskets?.some(
