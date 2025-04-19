@@ -79,8 +79,8 @@ export async function getAvailableBaskets(req: Request, res: Response) {
   try {
     const { referenceSizeId } = req.query;
     
-    // 1. Recupera tutte le ceste attive (con ciclo attivo)
-    const activeBaskets = await db.select({
+    // 1. Recupera tutte le ceste disponibili (attive o disponibili)
+    const allBaskets = await db.select({
       basketId: baskets.id,
       cycleId: baskets.currentCycleId,
       physicalNumber: baskets.physicalNumber,
@@ -91,9 +91,12 @@ export async function getAvailableBaskets(req: Request, res: Response) {
     })
     .from(baskets)
     .where(
-      and(
-        eq(baskets.state, 'active'),
-        isNotNull(baskets.currentCycleId)
+      or(
+        and(
+          eq(baskets.state, 'active'),
+          isNotNull(baskets.currentCycleId)
+        ),
+        eq(baskets.state, 'available')
       )
     );
     
