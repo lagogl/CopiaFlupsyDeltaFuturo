@@ -352,7 +352,8 @@ export default function DraggableFlupsyVisualizer() {
     mutationFn: async ({ 
       basket1Id, 
       basket2Id,
-      flupsyId,
+      flupsyId1,
+      flupsyId2,
       position1Row,
       position1Number, 
       position2Row,
@@ -360,15 +361,16 @@ export default function DraggableFlupsyVisualizer() {
     }: { 
       basket1Id: number;
       basket2Id: number;
-      flupsyId: number;
+      flupsyId1: number;
+      flupsyId2: number;
       position1Row: string;
       position1Number: number;
       position2Row: string;
       position2Number: number;
     }) => {
       console.log("INIZIO OPERAZIONE DI SCAMBIO CESTELLI");
-      console.log("Cestello 1:", basket1Id, "Posizione:", position1Row, position1Number);
-      console.log("Cestello 2:", basket2Id, "Posizione:", position2Row, position2Number);
+      console.log("Cestello 1:", basket1Id, "Posizione:", position1Row, position1Number, "FLUPSY:", flupsyId1);
+      console.log("Cestello 2:", basket2Id, "Posizione:", position2Row, position2Number, "FLUPSY:", flupsyId2);
       
       try {
         // Utilizziamo il nuovo endpoint dedicato per lo scambio di posizione
@@ -378,7 +380,8 @@ export default function DraggableFlupsyVisualizer() {
           body: {
             basket1Id,
             basket2Id,
-            flupsyId,
+            flupsyId1,
+            flupsyId2,
             position1Row,
             position1Number,
             position2Row,
@@ -468,7 +471,8 @@ export default function DraggableFlupsyVisualizer() {
       switchBasketPositions.mutate({
         basket1Id: basket1.id,
         basket2Id: basket2.id,
-        flupsyId: flupsyId,
+        flupsyId1: basket1.flupsyId,
+        flupsyId2: basket2.flupsyId,
         position1Row: basket1.row || "",
         position1Number: basket1.position || 0,
         position2Row: basket2.row || "",

@@ -693,7 +693,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const switchSchema = z.object({
         basket1Id: z.number(),
         basket2Id: z.number(),
-        flupsyId: z.number(),
+        flupsyId1: z.number(),  // FLUPSY ID per il cestello 1
+        flupsyId2: z.number(),  // FLUPSY ID per il cestello 2
         position1Row: z.string(),
         position1Number: z.number(),
         position2Row: z.string(),
@@ -706,9 +707,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: errorMessage });
       }
       
-      const { basket1Id, basket2Id, flupsyId, position1Row, position1Number, position2Row, position2Number } = parsedData.data;
+      const { 
+        basket1Id, 
+        basket2Id, 
+        flupsyId1,  // Usa FLUPSY ID separati per ogni cestello
+        flupsyId2, 
+        position1Row, 
+        position1Number, 
+        position2Row, 
+        position2Number 
+      } = parsedData.data;
       
-      console.log(`API - SWITCH CESTELLI: Cestello ${basket1Id} <-> Cestello ${basket2Id}`);
+      console.log(`API - SWITCH CESTELLI: Cestello ${basket1Id} (FLUPSY ${flupsyId1}) <-> Cestello ${basket2Id} (FLUPSY ${flupsyId2})`);
       
       // Verifica che entrambi i cestelli esistano
       const basket1 = await storage.getBasket(basket1Id);
@@ -730,9 +740,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         await storage.closeBasketPositionHistory(basket2Id, formattedDate);
       }
       
-      // Aggiorna il cestello 2 con posizione temporanea null
+      // Aggiorna il cestello 2 con posizione temporanea null ma mantieni il flupsyId originale
       await storage.updateBasket(basket2Id, {
-        flupsyId,
         row: null,
         position: null
       });
@@ -749,16 +758,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Crea una nuova voce di cronologia posizione per il cestello 1
       await storage.createBasketPositionHistory({
         basketId: basket1Id,
-        flupsyId: flupsyId,
+        flupsyId: flupsyId2,  // Usa il FLUPSY ID del cestello 2
         row: position2Row,
         position: position2Number,
         startDate: new Date().toISOString().split('T')[0],
         operationId: null
       });
       
-      // Aggiorna il cestello 1 con la posizione del cestello 2
+      // Aggiorna il cestello 1 con la posizione e il FLUPSY del cestello 2
       await storage.updateBasket(basket1Id, {
-        flupsyId,
+        flupsyId: flupsyId2,  // Usa il FLUPSY ID del cestello 2
         row: position2Row,
         position: position2Number
       });
@@ -767,16 +776,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Crea una nuova voce di cronologia posizione per il cestello 2
       await storage.createBasketPositionHistory({
         basketId: basket2Id,
-        flupsyId: flupsyId,
+        flupsyId: flupsyId1,  // Usa il FLUPSY ID del cestello 1
         row: position1Row,
         position: position1Number,
         startDate: new Date().toISOString().split('T')[0],
         operationId: null
       });
       
-      // Aggiorna il cestello 2 con la posizione originale del cestello 1
+      // Aggiorna il cestello 2 con la posizione e il FLUPSY originali del cestello 1
       await storage.updateBasket(basket2Id, {
-        flupsyId,
+        flupsyId: flupsyId1,  // Usa il FLUPSY ID del cestello 1
         row: position1Row,
         position: position1Number
       });
