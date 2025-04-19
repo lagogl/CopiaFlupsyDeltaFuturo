@@ -302,6 +302,52 @@ export async function getSelectionById(req: Request, res: Response) {
     .leftJoin(baskets, eq(selectionDestinationBaskets.basketId, baskets.id))
     .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
     
+    // 3.1. Arricchisci le ceste di destinazione con informazioni sulla taglia
+    const enrichedDestinationBaskets = await Promise.all(destinationBaskets.map(async (basket) => {
+      // Se esiste un sizeId, recupera i dettagli della taglia
+      let size = null;
+      if (basket.sizeId) {
+        const sizeResult = await db.select()
+          .from(sizes)
+          .where(eq(sizes.id, basket.sizeId))
+          .limit(1);
+        size = sizeResult.length > 0 ? sizeResult[0] : null;
+      }
+      
+      // Recupera i dettagli del FLUPSY se presente
+      let flupsy = null;
+      if (basket.flupsyId) {
+        const flupsyResult = await db.select()
+          .from(flupsys)
+          .where(eq(flupsys.id, basket.flupsyId))
+          .limit(1);
+        flupsy = flupsyResult.length > 0 ? flupsyResult[0] : null;
+      }
+      
+      // Se la posizione è nel formato "ROW+NUMBER" (es. "DX5"), suddividi in positionRow e positionNumber
+      let positionRow = null;
+      let positionNumber = null;
+      
+      if (basket.position) {
+        // Estrai la parte alfabetica all'inizio come "row"
+        const match = basket.position.match(/^([A-Za-z]+)(\d+)$/);
+        if (match) {
+          positionRow = match[1];
+          positionNumber = match[2];
+        }
+      }
+      
+      return {
+        ...basket,
+        basket: await db.select().from(baskets).where(eq(baskets.id, basket.basketId)).limit(1).then(res => res[0] || null),
+        size,
+        flupsy,
+        positionRow,
+        positionNumber,
+        saleDestination: basket.destinationType === 'sold'
+      };
+    }));
+    
     // 4. Recupera le relazioni tra ceste di origine e destinazione
     const basketHistory = await db.select()
       .from(selectionBasketHistory)
@@ -316,7 +362,7 @@ export async function getSelectionById(req: Request, res: Response) {
     const result = {
       ...selection[0],
       sourceBaskets: enrichedSourceBaskets,  // Usiamo i dati arricchiti
-      destinationBaskets,
+      destinationBaskets: enrichedDestinationBaskets,  // Usiamo i dati arricchiti anche qui
       basketHistory,
       lotReferences
     };
