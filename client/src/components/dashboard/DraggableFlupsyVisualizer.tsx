@@ -74,7 +74,7 @@ interface DropTargetProps {
   flupsyId: number;
   row: 'DX' | 'SX';
   position: number;
-  onDrop: (item: BasketDragItem, row: string, position: number) => void;
+  onDrop: (item: BasketDragItem, row: string, position: number, flupsyId: number) => void;
   isOccupied: boolean;
   children: React.ReactNode;
 }
@@ -86,9 +86,9 @@ function DropTarget({ flupsyId, row, position, onDrop, isOccupied, children }: D
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.BASKET,
     drop: (item: BasketDragItem) => {
-      // Aggiungiamo una proprietà isSwitch all'item che passiamo alla funzione onDrop
-      // per identificare se si tratta di uno switch o di un semplice spostamento
-      return onDrop(item, row, position);
+      // Passiamo anche il flupsyId del target alla funzione onDrop
+      // Questo ci permette di gestire correttamente gli spostamenti tra FLUPSY diversi
+      return onDrop(item, row, position, flupsyId);
     },
     // Permettiamo sempre il drop, anche su posizioni occupate
     canDrop: () => true,
@@ -128,6 +128,17 @@ function DropTarget({ flupsyId, row, position, onDrop, isOccupied, children }: D
   );
 }
 
+// Definizione dell'interfaccia per pendingBasketMove
+interface PendingBasketMove {
+  basketId: number;
+  targetRow: string;
+  targetPosition: number;
+  flupsyId?: number;
+  targetFlupsyId?: number; // Aggiunto per supportare spostamenti tra FLUPSY diversi
+  isSwitch?: boolean;
+  targetBasketId?: number;
+}
+
 // Main component
 export default function DraggableFlupsyVisualizer() {
   const { toast } = useToast();
@@ -135,14 +146,7 @@ export default function DraggableFlupsyVisualizer() {
   const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>([]);
   const [showFlupsySelector, setShowFlupsySelector] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
-  const [pendingBasketMove, setPendingBasketMove] = useState<{
-    basketId: number;
-    targetRow: string;
-    targetPosition: number;
-    flupsyId?: number;
-    isSwitch?: boolean;
-    targetBasketId?: number;
-  } | null>(null);
+  const [pendingBasketMove, setPendingBasketMove] = useState<PendingBasketMove | null>(null);
 
   // Data queries
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
@@ -268,7 +272,7 @@ export default function DraggableFlupsyVisualizer() {
   }, [flupsys, selectedFlupsyIds]);
 
   // Handle drop event
-  const handleBasketDrop = useCallback((item: BasketDragItem, targetRow: string, targetPosition: number) => {
+  const handleBasketDrop = useCallback((item: BasketDragItem, targetRow: string, targetPosition: number, dropFlupsyId: number) => {
     if (item.sourceRow === targetRow && item.sourcePosition === targetPosition) {
       return; // No change in position
     }
@@ -296,7 +300,7 @@ export default function DraggableFlupsyVisualizer() {
     );
     
     // Determiniamo il FLUPSY target in base al cestello target o al FLUPSY dell'oggetto DropTarget
-    const targetFlupsyId = targetBasket ? targetBasket.flupsyId : flupsyId;
+    const targetFlupsyId = targetBasket ? targetBasket.flupsyId : dropFlupsyId;
     
     // Assicuriamoci di avere i flupsyId corretti
     const sourceFlupsyId = sourceBasket.flupsyId;
@@ -322,7 +326,7 @@ export default function DraggableFlupsyVisualizer() {
         basketId: item.id,
         targetRow,
         targetPosition,
-        flupsyId,      // FLUPSY di origine
+        flupsyId: sourceFlupsyId,      // FLUPSY di origine
         targetFlupsyId, // FLUPSY di destinazione (può essere diverso da quello di origine)
         isSwitch: true,
         targetBasketId: targetBasket.id
@@ -335,7 +339,8 @@ export default function DraggableFlupsyVisualizer() {
         basketId: item.id,
         targetRow,
         targetPosition,
-        flupsyId,
+        flupsyId: sourceFlupsyId,
+        targetFlupsyId, // Aggiungiamo anche per i movimenti normali
         isSwitch: false
       });
     }
@@ -498,8 +503,8 @@ export default function DraggableFlupsyVisualizer() {
       
       console.log("SPOSTAMENTO NORMALE:", pendingBasketMove.basketId, "a", pendingBasketMove.targetRow, pendingBasketMove.targetPosition);
       
-      // Usiamo flupsyId del cestello se disponibile, altrimenti cerchiamo di estrarlo dalla DropTarget
-      let targetFlupsyId = basket.flupsyId;
+      // Usiamo targetFlupsyId che ora è incluso in pendingBasketMove, altrimenti flupsyId del cestello come fallback
+      let targetFlupsyId = pendingBasketMove.targetFlupsyId || basket.flupsyId;
       
       console.log("Spostamento cestello:", {
         basketId: pendingBasketMove.basketId,
