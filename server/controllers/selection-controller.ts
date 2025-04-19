@@ -798,6 +798,39 @@ export async function addSourceBaskets(req: Request, res: Response) {
 /**
  * Aggiunge ceste di destinazione e completa la selezione (fase finale)
  */
+/**
+ * Funzione di utilità per determinare la taglia (sizeId) in base al valore animalsPerKg
+ * @param animalsPerKg - Numero di animali per kg
+ * @returns Promise<number|null> - ID della taglia o null se non trovata
+ */
+async function determineSizeId(animalsPerKg: number): Promise<number | null> {
+  if (!animalsPerKg || animalsPerKg <= 0) return null;
+  
+  try {
+    // Recupera tutte le taglie disponibili
+    const allSizes = await db.select().from(sizes);
+    
+    // Trova la taglia corrispondente in base a animalsPerKg
+    const matchingSize = allSizes.find(size => 
+      size.minAnimalsPerKg !== null && 
+      size.maxAnimalsPerKg !== null && 
+      animalsPerKg >= size.minAnimalsPerKg && 
+      animalsPerKg <= size.maxAnimalsPerKg
+    );
+    
+    if (matchingSize) {
+      console.log(`Taglia determinata automaticamente: ${matchingSize.code} (ID: ${matchingSize.id})`);
+      return matchingSize.id;
+    } else {
+      console.log(`Nessuna taglia trovata per animalsPerKg: ${animalsPerKg}`);
+      return null;
+    }
+  } catch (error) {
+    console.error("Errore durante la determinazione della taglia:", error);
+    return null;
+  }
+}
+
 export async function addDestinationBaskets(req: Request, res: Response) {
   try {
     const { id } = req.params;
@@ -907,6 +940,24 @@ export async function addDestinationBaskets(req: Request, res: Response) {
       
       // Processa le ceste di destinazione
       for (const destBasket of destinationBaskets) {
+        // Assicura che ogni cesta abbia un valore di sizeId basato su animalsPerKg
+        let actualSizeId = destBasket.sizeId;
+        
+        // Se non c'è sizeId oppure è 0 o null, tenta di determinarlo automaticamente
+        if (!actualSizeId || actualSizeId === 0) {
+          if (destBasket.animalsPerKg) {
+            const calculatedSizeId = await determineSizeId(destBasket.animalsPerKg);
+            if (calculatedSizeId) {
+              console.log(`Taglia determinata automaticamente per cesta ${destBasket.basketId}: ID ${calculatedSizeId}`);
+              actualSizeId = calculatedSizeId;
+            } else {
+              console.log(`Impossibile determinare la taglia automaticamente per cesta ${destBasket.basketId}`);
+            }
+          } else {
+            console.log(`Manca animalsPerKg per cesta ${destBasket.basketId}, impossibile determinare la taglia`);
+          }
+        }
+        
         // Crea operazione di prima attivazione
         const [operation] = await tx.insert(operations).values({
           date: selection[0].date,
@@ -919,7 +970,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           averageWeight: destBasket.totalWeight / destBasket.animalCount,
           deadCount: destBasket.deadCount || 0,
           mortalityRate: destBasket.mortalityRate || 0,
-          sizeId: destBasket.sizeId,
+          sizeId: actualSizeId,
           notes: `Nuova cesta da selezione #${selection[0].selectionNumber}`
         }).returning();
         
@@ -979,7 +1030,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             liveAnimals: destBasket.animalCount - (destBasket.deadCount || 0),
             totalWeight: destBasket.totalWeight,
             animalsPerKg: destBasket.animalsPerKg,
-            sizeId: destBasket.sizeId,
+            sizeId: actualSizeId,
             deadCount: destBasket.deadCount || 0,
             mortalityRate: destBasket.mortalityRate || 0,
             sampleWeight: destBasket.sampleWeight,
@@ -1051,7 +1102,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             liveAnimals: destBasket.animalCount - (destBasket.deadCount || 0),
             totalWeight: destBasket.totalWeight,
             animalsPerKg: destBasket.animalsPerKg,
-            sizeId: destBasket.sizeId,
+            sizeId: actualSizeId,
             deadCount: destBasket.deadCount || 0,
             mortalityRate: destBasket.mortalityRate || 0,
             sampleWeight: destBasket.sampleWeight,
