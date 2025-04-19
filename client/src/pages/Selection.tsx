@@ -86,12 +86,12 @@ export default function SelectionPage() {
           <Breadcrumbs
             items={[
               { label: "Dashboard", href: "/" },
-              { label: "Selezione", href: "/selection" },
+              { label: "Vagliatura", href: "/selection" },
             ]}
           />
           <PageHeading
-            title="Gestione Selezioni"
-            description="Gestisci le operazioni di selezione per trasferire gli animali tra le ceste"
+            title="Gestione Vagliatura"
+            description="Gestisci le operazioni di vagliatura per trasferire gli animali tra le ceste"
             icon={<FileText className="h-6 w-6" />}
             className="mt-2"
           />
@@ -101,13 +101,13 @@ export default function SelectionPage() {
           className="flex-shrink-0"
         >
           <Plus className="h-4 w-4 mr-2" />
-          Nuova Selezione
+          Nuova Vagliatura
         </Button>
       </div>
 
       <Card>
         <CardHeader>
-          <CardTitle>Elenco Selezioni</CardTitle>
+          <CardTitle>Elenco Vagliature</CardTitle>
           <div className="flex flex-col sm:flex-row gap-4 mt-4">
             <Input
               placeholder="Cerca per numero, scopo..."
@@ -148,7 +148,7 @@ export default function SelectionPage() {
                       <div>
                         <div className="flex items-center">
                           <h3 className="text-lg font-medium">
-                            Selezione #{selection.selectionNumber}
+                            Vagliatura #{selection.selectionNumber}
                           </h3>
                           {getStatusBadge(selection.status)}
                         </div>
@@ -174,11 +174,11 @@ export default function SelectionPage() {
           ) : (
             <EmptyState
               icon={<FileText className="h-12 w-12 text-muted-foreground" />}
-              title="Nessuna selezione trovata"
+              title="Nessuna vagliatura trovata"
               description={
                 search || statusFilter !== "all"
                   ? "Prova a cambiare i filtri di ricerca"
-                  : "Inizia creando una nuova selezione"
+                  : "Inizia creando una nuova vagliatura"
               }
               action={
                 !search && statusFilter === "all" ? (
@@ -186,7 +186,7 @@ export default function SelectionPage() {
                     onClick={() => navigate("/selection/new")}
                   >
                     <Plus className="h-4 w-4 mr-2" />
-                    Nuova Selezione
+                    Nuova Vagliatura
                   </Button>
                 ) : null
               }
