@@ -154,9 +154,11 @@ export default function DraggableFlupsyVisualizer() {
     queryFn: getQueryFn({ on401: "throw" })
   });
 
-  const { data: baskets, isLoading: isLoadingBaskets } = useQuery({
+  const { data: baskets, isLoading: isLoadingBaskets, refetch: refetchBaskets } = useQuery({
     queryKey: ['/api/baskets'],
-    queryFn: getQueryFn({ on401: "throw" })
+    queryFn: getQueryFn({ on401: "throw" }),
+    refetchOnWindowFocus: true,  // Riaggiorna i dati quando la finestra riprende il focus
+    staleTime: 2000, // Considera i dati obsoleti dopo 2 secondi
   });
 
   const { data: operations, isLoading: isLoadingOperations } = useQuery({
@@ -272,32 +274,34 @@ export default function DraggableFlupsyVisualizer() {
   }, [flupsys, selectedFlupsyIds]);
 
   // Handle drop event
-  const handleBasketDrop = useCallback((item: BasketDragItem, targetRow: string, targetPosition: number, dropFlupsyId: number) => {
+  const handleBasketDrop = useCallback(async (item: BasketDragItem, targetRow: string, targetPosition: number, dropFlupsyId: number) => {
     if (item.sourceRow === targetRow && item.sourcePosition === targetPosition) {
       return; // No change in position
     }
     
     // Prima di tutto, forziamo un refresh dei dati dei cestelli per garantire di avere i dati più aggiornati
     // Questo evita problemi di sincronizzazione tra frontend e backend
-    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    await refetchBaskets();
     
-    // Verifica se i dati dei cestelli sono disponibili
-    if (!baskets || !Array.isArray(baskets)) {
-      console.error("Baskets data not available or not an array");
+    // Recupera i dati freschi dopo il refetch
+    // Nota: getQueryData restituisce i dati più aggiornati dalla cache dopo il refetch
+    const freshBaskets = queryClient.getQueryData(['/api/baskets']) as any[];
+    if (!freshBaskets || !Array.isArray(freshBaskets)) {
+      console.error("Baskets data not available or not an array after refetch");
       return;
     }
     
-    // Otteniamo il cestello che stiamo trascinando
-    const sourceBasket = baskets.find((b: any) => b.id === item.id);
+    // Otteniamo il cestello che stiamo trascinando dai dati aggiornati
+    const sourceBasket = freshBaskets.find((b: any) => b.id === item.id);
     if (!sourceBasket) {
-      console.error("Source basket not found:", item.id);
+      console.error("Source basket not found in fresh data:", item.id);
       return;
     }
     
     // Verifica attentamente se c'è già un cestello nella posizione target
     // Deve essere un cestello diverso da quello che stiamo trascinando nella posizione target
     // Il cestello deve essere nel FLUPSY target (dropFlupsyId) e nella posizione target
-    const targetBasket = baskets.find((b: any) => 
+    const targetBasket = freshBaskets.find((b: any) => 
       b.id !== item.id && 
       b.row === targetRow && 
       b.position === targetPosition &&
@@ -431,13 +435,17 @@ export default function DraggableFlupsyVisualizer() {
   });
 
   // Confirm basket move
-  const confirmBasketMove = () => {
+  const confirmBasketMove = async () => {
     if (!pendingBasketMove) return;
+    
+    // Assicuriamoci di avere dati aggiornati prima di continuare
+    await refetchBaskets();
+    const freshBaskets = queryClient.getQueryData(['/api/baskets']) as any[];
     
     if (pendingBasketMove.isSwitch && pendingBasketMove.targetBasketId) {
       // Caso di switch tra due cestelli
-      const basket1 = baskets?.find((b: any) => b.id === pendingBasketMove.basketId);
-      const basket2 = baskets?.find((b: any) => b.id === pendingBasketMove.targetBasketId);
+      const basket1 = freshBaskets?.find((b: any) => b.id === pendingBasketMove.basketId);
+      const basket2 = freshBaskets?.find((b: any) => b.id === pendingBasketMove.targetBasketId);
       
       console.log("Attempting to switch baskets:", basket1, basket2);
       
@@ -494,7 +502,7 @@ export default function DraggableFlupsyVisualizer() {
       });
     } else {
       // Caso normale: sposta un cestello in una posizione vuota
-      const basket = baskets?.find((b: any) => b.id === pendingBasketMove.basketId);
+      const basket = freshBaskets?.find((b: any) => b.id === pendingBasketMove.basketId);
       if (!basket) {
         toast({
           title: "Errore",
