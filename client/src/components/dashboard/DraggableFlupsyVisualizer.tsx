@@ -287,28 +287,31 @@ export default function DraggableFlupsyVisualizer() {
     }
     
     // Verifica attentamente se c'è già un cestello nella posizione target
-    // Deve essere un cestello diverso da quello che stiamo trascinando
+    // Deve essere un cestello diverso da quello che stiamo trascinando nella posizione target
+    // Rimuoviamo la condizione che limita allo stesso FLUPSY per consentire lo scambio tra FLUPSY diversi
     const targetBasket = baskets.find((b: any) => 
       b.id !== item.id && 
       b.row === targetRow && 
-      b.position === targetPosition && 
-      b.flupsyId === sourceBasket.flupsyId // Deve essere nello stesso flupsy
+      b.position === targetPosition
     );
+    
+    // Determiniamo il FLUPSY target in base al cestello target o al FLUPSY dell'oggetto DropTarget
+    const targetFlupsyId = targetBasket ? targetBasket.flupsyId : flupsyId;
+    
+    // Assicuriamoci di avere i flupsyId corretti
+    const sourceFlupsyId = sourceBasket.flupsyId;
     
     // Log dettagliato
     console.log("=== OPERAZIONE CESTELLO ===");
     console.log("Cestello trascinato:", sourceBasket.physicalNumber, "(ID:", item.id, ")");
-    console.log("Da posizione:", item.sourceRow, item.sourcePosition);
-    console.log("A posizione:", targetRow, targetPosition);
+    console.log("Da posizione:", item.sourceRow, item.sourcePosition, "FLUPSY:", sourceFlupsyId);
+    console.log("A posizione:", targetRow, targetPosition, "FLUPSY:", targetFlupsyId);
     
     if (targetBasket) {
       console.log("Operazione: SCAMBIO con cestello", targetBasket.physicalNumber, "(ID:", targetBasket.id, ")");
     } else {
       console.log("Operazione: SPOSTAMENTO in posizione libera")
     }
-    
-    // Assicuriamoci di avere il flupsyId
-    const flupsyId = sourceBasket.flupsyId;
     
     if (targetBasket) {
       // Se c'è già una cesta nella posizione target, è un'operazione di switch
@@ -319,7 +322,8 @@ export default function DraggableFlupsyVisualizer() {
         basketId: item.id,
         targetRow,
         targetPosition,
-        flupsyId,
+        flupsyId,      // FLUPSY di origine
+        targetFlupsyId, // FLUPSY di destinazione (può essere diverso da quello di origine)
         isSwitch: true,
         targetBasketId: targetBasket.id
       });
