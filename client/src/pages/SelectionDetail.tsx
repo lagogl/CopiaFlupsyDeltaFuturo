@@ -660,13 +660,13 @@ export default function SelectionDetailPage() {
           <Breadcrumbs
             items={[
               { label: "Dashboard", href: "/" },
-              { label: "Selezione", href: "/selection" },
-              { label: `Selezione #${selection.selectionNumber}`, href: `/selection/${id}` },
+              { label: "Vagliatura", href: "/selection" },
+              { label: `Vagliatura #${selection.selectionNumber}`, href: `/selection/${id}` },
             ]}
           />
           <div className="flex items-center">
             <PageHeading
-              title={`Selezione #${selection.selectionNumber}`}
+              title={`Vagliatura #${selection.selectionNumber}`}
               description={`Creata il ${formatDate(new Date(selection.date))}`}
               icon={<FileText className="h-6 w-6" />}
               className="mt-2"
@@ -702,7 +702,7 @@ export default function SelectionDetailPage() {
                 disabled={selection.status !== "draft"}
               >
                 <X className="h-4 w-4 mr-2" />
-                Annulla Selezione
+                Annulla Vagliatura
               </Button>
               
               <Button
