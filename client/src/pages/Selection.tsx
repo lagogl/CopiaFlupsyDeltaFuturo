@@ -16,7 +16,7 @@ import { EmptyState } from "@/components/EmptyState";
 import { formatDate } from "@/lib/utils";
 import type { Selection } from "@shared/schema";
 
-export default function SelectionPage() {
+export default function VagliaturaPage() {
   const [, navigate] = useLocation();
   const [search, setSearch] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");

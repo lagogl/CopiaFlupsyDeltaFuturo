@@ -68,7 +68,7 @@ import { cn, formatDate, formatNumberWithCommas, getSizeColorClass } from "@/lib
 import { useToast } from "@/hooks/use-toast";
 import type { Selection, SelectionSourceBasket, SelectionDestinationBasket } from "@shared/schema";
 
-export default function SelectionDetailPage() {
+export default function VagliaturaDetailPage() {
   const { id } = useParams();
   const [, navigate] = useLocation();
   const { toast } = useToast();
