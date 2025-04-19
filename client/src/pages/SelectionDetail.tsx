@@ -157,10 +157,10 @@ export default function SelectionDetailPage() {
     return selectedBasket?.flupsyId || null;
   }
   
-  // Query per caricare tutte le posizioni disponibili in tutti i FLUPSY
+  // Query per caricare tutte le posizioni disponibili in tutti i FLUPSY (usa il nuovo endpoint)
   const { data: availablePositions, isLoading: isLoadingPositions } = useQuery({
     queryKey: [
-      `/api/selections/available-positions-all`, 
+      `/api/flupsy/available-positions`, 
       { originFlupsyId: getSourceFlupsyId() }
     ],
     queryFn: async ({ queryKey }) => {
@@ -168,8 +168,8 @@ export default function SelectionDetailPage() {
       const originFlupsyId = (params as any).originFlupsyId;
       
       const url = originFlupsyId 
-        ? `/api/selections/available-positions-all?originFlupsyId=${originFlupsyId}` 
-        : '/api/selections/available-positions-all';
+        ? `/api/flupsy/available-positions?originFlupsyId=${originFlupsyId}` 
+        : '/api/flupsy/available-positions';
         
       const response = await fetch(url);
       if (!response.ok) {

@@ -4160,7 +4160,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ottieni posizioni disponibili in un FLUPSY
   app.get("/api/selections/available-positions/:flupsyId", getAvailablePositions);
   // Aggiungiamo anche un endpoint per recuperare tutte le posizioni disponibili in tutti i FLUPSY
-  app.get("/api/selections/available-positions-all", getAllAvailablePositions);
+  // Endpoint completamente nuovo per tutte le posizioni disponibili (evita problemi con il parametro ID)
+  app.get("/api/flupsy/available-positions", getAllAvailablePositions);
   
   // Crea una nuova selezione (fase 1)
   app.post("/api/selections", async (req, res) => {

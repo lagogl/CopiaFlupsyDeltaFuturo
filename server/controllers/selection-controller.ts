@@ -539,12 +539,17 @@ export async function getAvailablePositions(req: Request, res: Response) {
 }
 
 /**
- * Ottiene tutte le posizioni disponibili in tutti i FLUPSY
- * Endpoint separato per evitare conflitti con il parametro di selezione
+ * Ottiene tutte le posizioni disponibili in tutti i FLUPSY senza alcun legame con le selezioni
  */
 export async function getAllAvailablePositions(req: Request, res: Response) {
   try {
-    const { originFlupsyId } = req.query;
+    // Estraiamo esplicitamente il FLUPSY di origine come stringa e lo convertiamo se valido
+    const originFlupsyIdParam = req.query.originFlupsyId as string;
+    let originFlupsyId: number | null = null;
+    
+    if (originFlupsyIdParam && !isNaN(Number(originFlupsyIdParam))) {
+      originFlupsyId = Number(originFlupsyIdParam);
+    }
     
     // Lista finale di tutte le posizioni disponibili
     const allAvailablePositions: Array<{
@@ -557,11 +562,11 @@ export async function getAllAvailablePositions(req: Request, res: Response) {
       sameFlupsy: boolean
     }> = [];
     
-    // Recupera tutti i FLUPSY attivi
-    const flupsysToProcess = await db.select().from(flupsys).where(eq(flupsys.active, true));
+    // Recupera tutti i FLUPSY attivi direttamente
+    const activeFlupsys = await db.select().from(flupsys).where(eq(flupsys.active, true));
     
-    // Per ogni FLUPSY, recuperiamo le posizioni disponibili
-    for (const flupsy of flupsysToProcess) {
+    // Per ogni FLUPSY attivo, recuperiamo le posizioni disponibili
+    for (const flupsy of activeFlupsys) {
       // Ottieni le posizioni già occupate
       const occupiedPositions = await db.select({
         position: baskets.position,
@@ -584,11 +589,7 @@ export async function getAllAvailablePositions(req: Request, res: Response) {
       });
       
       // Determina se è lo stesso FLUPSY di origine
-      let originId = null;
-      if (originFlupsyId && !isNaN(Number(originFlupsyId))) {
-        originId = Number(originFlupsyId);
-      }
-      const isSameFlupsy = originId !== null && originId === flupsy.id;
+      const isSameFlupsy = originFlupsyId !== null && originFlupsyId === flupsy.id;
       
       // Generiamo le posizioni in formato "DX-1", "DX-2", "SX-1", "SX-2", ecc.
       const rows = ['DX', 'SX'];
