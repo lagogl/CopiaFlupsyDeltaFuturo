@@ -4161,6 +4161,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Aggiungiamo anche un endpoint per recuperare tutte le posizioni disponibili in tutti i FLUPSY
   app.get("/api/selections/available-positions-all", (req, res) => {
     req.params.flupsyId = 'all'; // Impostiamo 'all' come flupsyId per ottenere tutte le posizioni
+    
+    // Ottieni il FLUPSY di origine dalla query string, se fornito
+    const originFlupsyId = req.query.originFlupsyId;
+    if (originFlupsyId) {
+      req.query.originFlupsyId = originFlupsyId;
+    }
+    
     getAvailablePositions(req, res);
   });
   

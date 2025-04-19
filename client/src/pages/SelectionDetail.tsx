@@ -163,6 +163,20 @@ export default function SelectionDetailPage() {
       `/api/selections/available-positions-all`, 
       { originFlupsyId: getSourceFlupsyId() }
     ],
+    queryFn: async ({ queryKey }) => {
+      const [_, params] = queryKey;
+      const originFlupsyId = (params as any).originFlupsyId;
+      
+      const url = originFlupsyId 
+        ? `/api/selections/available-positions-all?originFlupsyId=${originFlupsyId}` 
+        : '/api/selections/available-positions-all';
+        
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento delle posizioni disponibili');
+      }
+      return response.json();
+    },
   });
 
   // Calcola i totali della selezione
@@ -365,6 +379,7 @@ export default function SelectionDetailPage() {
         sampleCount: 0,
         totalWeightKg: 0,
         animalsPerKg: 0,
+        positionId: "", // Aggiungiamo il nuovo campo combinato
         positionFlupsyId: "",
         positionRow: "",
         positionNumber: "",
