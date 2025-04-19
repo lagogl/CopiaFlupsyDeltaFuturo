@@ -1225,81 +1225,44 @@ export default function SelectionDetailPage() {
                     <Label htmlFor="sampleWeight" className="text-green-700 dark:text-green-400 font-medium text-sm">
                       Peso Campione (g)
                     </Label>
-                    <div className="relative">
-                      <Input
-                        id="sampleWeight"
-                        type="number"
-                        min="0"
-                        step="10" /* Incrementi di 10 grammi */
-                        value={destinationBasketData.sampleWeight || ""}
-                        onChange={(e) => {
-                          const sampleWeight = parseFloat(e.target.value) || 0;
-                          let animalsPerKg = 0;
-                          
-                          // Calcolo animali per kg
-                          if (sampleWeight > 0 && destinationBasketData.sampleCount > 0) {
-                            animalsPerKg = Math.round((destinationBasketData.sampleCount / sampleWeight) * 1000);
-                          }
-                          
-                          // MODIFICA: Calcola percentuale di mortalità in base al campione
-                          let mortalityPercentage = 0;
-                          if (destinationBasketData.sampleCount && destinationBasketData.sampleCount > 0 && destinationBasketData.deadCount) {
-                            mortalityPercentage = destinationBasketData.deadCount / destinationBasketData.sampleCount;
-                          }
-                          
-                          // Calcolo totale animali (considerando la percentuale di mortalità)
-                          let animalCount = 0;
-                          if (animalsPerKg > 0 && destinationBasketData.totalWeightKg > 0) {
-                            const totalBeforeMortality = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
-                            animalCount = Math.round(totalBeforeMortality * (1 - mortalityPercentage));
-                          }
-                          
-                          setDestinationBasketData({ 
-                            ...destinationBasketData, 
-                            sampleWeight,
-                            animalsPerKg: animalsPerKg || 0,
-                            animalCount: animalCount || 0
-                          });
-                        }}
-                        className="h-9 bg-white dark:bg-slate-800 border-green-200 dark:border-green-800 font-mono text-base pr-16"
-                      />
-                      <div className="absolute right-0 top-0 h-full flex">
-                        <button
-                          type="button"
-                          className="h-full px-2 text-sm bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 border-l border-green-200 dark:border-green-800"
-                          onClick={() => {
-                            const newValue = Math.max(0, (destinationBasketData.sampleWeight || 100) - 10);
-                            // Simuliamo un evento change
-                            const changeEvent = { target: { value: newValue.toString() } };
-                            // Richiamiamo l'handler onChange dell'input
-                            const input = document.getElementById("sampleWeight") as HTMLInputElement;
-                            if (input) {
-                              input.value = newValue.toString();
-                              input.dispatchEvent(new Event("change", { bubbles: true }));
-                            }
-                          }}
-                        >
-                          -10g
-                        </button>
-                        <button
-                          type="button"
-                          className="h-full px-2 text-sm bg-green-50 hover:bg-green-100 dark:bg-green-900/30 dark:hover:bg-green-900/50 border-l border-green-200 dark:border-green-800"
-                          onClick={() => {
-                            const newValue = (destinationBasketData.sampleWeight || 100) + 10;
-                            // Simuliamo un evento change
-                            const changeEvent = { target: { value: newValue.toString() } };
-                            // Richiamiamo l'handler onChange dell'input
-                            const input = document.getElementById("sampleWeight") as HTMLInputElement;
-                            if (input) {
-                              input.value = newValue.toString();
-                              input.dispatchEvent(new Event("change", { bubbles: true }));
-                            }
-                          }}
-                        >
-                          +10g
-                        </button>
-                      </div>
-                    </div>
+                    <Input
+                      id="sampleWeight"
+                      type="number"
+                      min="0"
+                      step="10" /* Incrementi di 10 grammi per click sulle freccette */
+                      defaultValue="100"
+                      value={destinationBasketData.sampleWeight || ""}
+                      onChange={(e) => {
+                        const sampleWeight = parseFloat(e.target.value) || 0;
+                        let animalsPerKg = 0;
+                        
+                        // Calcolo animali per kg
+                        if (sampleWeight > 0 && destinationBasketData.sampleCount > 0) {
+                          animalsPerKg = Math.round((destinationBasketData.sampleCount / sampleWeight) * 1000);
+                        }
+                        
+                        // MODIFICA: Calcola percentuale di mortalità in base al campione
+                        let mortalityPercentage = 0;
+                        if (destinationBasketData.sampleCount && destinationBasketData.sampleCount > 0 && destinationBasketData.deadCount) {
+                          mortalityPercentage = destinationBasketData.deadCount / destinationBasketData.sampleCount;
+                        }
+                        
+                        // Calcolo totale animali (considerando la percentuale di mortalità)
+                        let animalCount = 0;
+                        if (animalsPerKg > 0 && destinationBasketData.totalWeightKg > 0) {
+                          const totalBeforeMortality = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
+                          animalCount = Math.round(totalBeforeMortality * (1 - mortalityPercentage));
+                        }
+                        
+                        setDestinationBasketData({ 
+                          ...destinationBasketData, 
+                          sampleWeight,
+                          animalsPerKg: animalsPerKg || 0,
+                          animalCount: animalCount || 0
+                        });
+                      }}
+                      className="h-9 bg-white dark:bg-slate-800 border-green-200 dark:border-green-800 font-mono text-base"
+                    />
                   </div>
                   
                   <div className="space-y-1 bg-blue-50 dark:bg-blue-900/20 p-2 rounded-md">
