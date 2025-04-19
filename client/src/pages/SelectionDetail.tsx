@@ -1105,9 +1105,9 @@ export default function SelectionDetailPage() {
                       <div className="flex justify-center py-2">
                         <Spinner size="sm" />
                       </div>
-                    ) : availableBaskets?.filter(b => b.state === "available")?.length ? (
+                    ) : availableBaskets?.filter(b => b.state === "available" && !b.cycleId)?.length ? (
                       availableBaskets
-                        .filter(b => b.state === "available")
+                        .filter(b => b.state === "available" && !b.cycleId)
                         // Filtra le ceste che sono già state aggiunte come destinazione
                         .filter(basket => {
                           const alreadyAdded = destinationBaskets?.some(
@@ -1449,11 +1449,37 @@ export default function SelectionDetailPage() {
                         ) : flupsys?.filter(f => f.active)?.length ? (
                           flupsys
                             .filter(f => f.active)
-                            .map(flupsy => (
-                              <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
-                                {flupsy.name}
-                              </SelectItem>
-                            ))
+                            // Ordina i FLUPSY in modo che il FLUPSY della cesta selezionata appaia per primo
+                            .sort((a, b) => {
+                              // Ottieni il FLUPSY ID della cesta selezionata
+                              const basketId = parseInt(destinationBasketData.basketId);
+                              const selectedBasket = availableBaskets?.find(b => b.basketId === basketId);
+                              const selectedFlupsyId = selectedBasket?.flupsyId;
+                              
+                              // Se uno dei due FLUPSY corrisponde a quello della cesta selezionata, mettilo prima
+                              if (selectedFlupsyId === a.id) return -1;
+                              if (selectedFlupsyId === b.id) return 1;
+                              return 0;
+                            })
+                            .map(flupsy => {
+                              // Ottieni il FLUPSY ID della cesta selezionata
+                              const basketId = parseInt(destinationBasketData.basketId);
+                              const selectedBasket = availableBaskets?.find(b => b.basketId === basketId);
+                              const selectedFlupsyId = selectedBasket?.flupsyId;
+                              
+                              // Evidenzia con un colore diverso i FLUPSY che sono diversi da quello della cesta selezionata
+                              const isSameFlupsy = selectedFlupsyId === flupsy.id;
+                              
+                              return (
+                                <SelectItem 
+                                  key={flupsy.id} 
+                                  value={flupsy.id.toString()}
+                                  className={isSameFlupsy ? "bg-green-50 dark:bg-green-950 font-medium" : ""}
+                                >
+                                  {isSameFlupsy ? "→ " : ""}{flupsy.name}
+                                </SelectItem>
+                              );
+                            })
                         ) : (
                           <SelectItem disabled value="none">Nessun FLUPSY disponibile</SelectItem>
                         )}
