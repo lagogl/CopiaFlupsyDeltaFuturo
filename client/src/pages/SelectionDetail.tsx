@@ -993,7 +993,7 @@ export default function SelectionDetailPage() {
                           )}
                         </TableCell>
                         <TableCell>
-                          <Badge className="font-mono">
+                          <Badge className={`font-mono ${destBasket.size?.code ? getSizeColorClass(destBasket.size.code) : ''}`}>
                             {destBasket.size?.code || "N/A"}
                           </Badge>
                         </TableCell>
