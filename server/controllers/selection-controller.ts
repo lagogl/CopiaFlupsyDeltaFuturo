@@ -943,16 +943,43 @@ export async function addDestinationBaskets(req: Request, res: Response) {
         } else if (destBasket.destinationType === 'placed') {
           // Caso 2: Collocazione in un FLUPSY
           
+          // Estrai la riga e la posizione numerica dalla stringa di posizione
+          // Il formato atteso è "DX2", "SX3", ecc. dove le prime due lettere sono la riga
+          // e il resto è il numero di posizione
+          console.log("Posizione ricevuta:", destBasket.position);
+          
+          // Verifica che la posizione sia una stringa valida
+          if (!destBasket.position || typeof destBasket.position !== 'string') {
+            throw new Error("Posizione non valida o non specificata");
+          }
+          
+          // Estrai la riga (DX, SX) e la posizione numerica
+          const rowMatch = destBasket.position.match(/^([A-Za-z]+)(\d+)$/);
+          if (!rowMatch) {
+            throw new Error(`Formato posizione non valido: ${destBasket.position}. Formato atteso: FILA+NUMERO (es. DX2)`);
+          }
+          
+          const row = rowMatch[1];
+          const positionNumber = parseInt(rowMatch[2]);
+          
+          console.log("Riga estratta:", row);
+          console.log("Numero posizione estratto:", positionNumber);
+          
+          if (isNaN(positionNumber)) {
+            throw new Error(`Numero posizione non valido in: ${destBasket.position}`);
+          }
+          
           // Verifica che la posizione sia disponibile
           const basketInPosition = await tx.select().from(baskets)
             .where(and(
               eq(baskets.flupsyId, destBasket.flupsyId),
-              eq(baskets.position, destBasket.position),
+              eq(baskets.row, row),
+              eq(baskets.position, positionNumber),
               eq(baskets.state, 'active')
             ));
           
           if (basketInPosition.length > 0 && basketInPosition[0].id !== destBasket.basketId) {
-            throw new Error(`Posizione ${destBasket.position} nel FLUPSY ${destBasket.flupsyId} già occupata`);
+            throw new Error(`Posizione ${row}${positionNumber} nel FLUPSY ${destBasket.flupsyId} già occupata`);
           }
           
           // Aggiorna stato del cestello con FLUPSY e posizione
@@ -961,7 +988,8 @@ export async function addDestinationBaskets(req: Request, res: Response) {
               state: 'active',
               currentCycleId: cycle.id,
               flupsyId: destBasket.flupsyId,
-              position: destBasket.position
+              row: row,
+              position: positionNumber
             })
             .where(eq(baskets.id, destBasket.basketId));
           
@@ -989,8 +1017,8 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           await tx.insert(basketPositionHistory).values({
             basketId: destBasket.basketId,
             flupsyId: destBasket.flupsyId,
-            row: destBasket.row, // Utilizziamo direttamente il campo row
-            position: destBasket.position, // Utilizziamo direttamente il campo position
+            row: row, // Utilizziamo la riga estratta
+            position: positionNumber, // Utilizziamo il numero di posizione estratto
             startDate: selection[0].date,
             operationId: operation.id
           });
