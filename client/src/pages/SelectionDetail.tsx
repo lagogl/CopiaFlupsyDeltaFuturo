@@ -715,7 +715,7 @@ export default function SelectionDetailPage() {
                 }
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Completa Selezione
+                Completa Vagliatura
               </Button>
             </>
           )}
@@ -730,7 +730,7 @@ export default function SelectionDetailPage() {
       {/* Informazioni sulla selezione */}
       <Card>
         <CardHeader>
-          <CardTitle>Dettagli Selezione</CardTitle>
+          <CardTitle>Dettagli Vagliatura</CardTitle>
         </CardHeader>
         <CardContent>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -829,16 +829,16 @@ export default function SelectionDetailPage() {
                       </h3>
                       <p className="text-sm text-muted-foreground">
                         {selection.status === "completed" 
-                          ? "Questa selezione è stata completata con successo."
+                          ? "Questa vagliatura è stata completata con successo."
                           : selection.status === "cancelled"
-                          ? "Questa selezione è stata annullata."
+                          ? "Questa vagliatura è stata annullata."
                           : totals.remainingAnimals > 0
                           ? `Ci sono ancora ${formatNumberWithCommas(totals.remainingAnimals)} animali da distribuire nelle ceste di destinazione.`
                           : totals.remainingAnimals === 0 && totals.destinationTotals.basketCount > 0
-                          ? "Tutti gli animali sono stati distribuiti nelle ceste di destinazione. La selezione può essere completata."
+                          ? "Tutti gli animali sono stati distribuiti nelle ceste di destinazione. La vagliatura può essere completata."
                           : totals.sourceTotals.basketCount === 0
                           ? "Non sono state ancora aggiunte ceste di origine."
-                          : "Aggiungi ceste di destinazione per completare la selezione."}
+                          : "Aggiungi ceste di destinazione per completare la vagliatura."}
                       </p>
                       {selection.status === "draft" && totals.sourceTotals.totalAnimals > 0 && totals.destinationTotals.totalAnimals > 0 && (
                         <div className="mt-2">
@@ -932,7 +932,7 @@ export default function SelectionDetailPage() {
                 <EmptyState
                   icon={<Package className="h-12 w-12 text-muted-foreground" />}
                   title="Nessuna cesta origine"
-                  description="Non sono state ancora aggiunte ceste di origine a questa selezione"
+                  description="Non sono state ancora aggiunte ceste di origine a questa vagliatura"
                   action={
                     selection.status === "draft" ? (
                       <Button
@@ -1175,7 +1175,7 @@ export default function SelectionDetailPage() {
           <DialogHeader className="p-2">
             <DialogTitle className="text-lg">Aggiungi Cesta Destinazione</DialogTitle>
             <DialogDescription className="text-xs">
-              Crea una nuova cesta di destinazione per la selezione
+              Crea una nuova cesta di destinazione per la vagliatura
             </DialogDescription>
           </DialogHeader>
           
