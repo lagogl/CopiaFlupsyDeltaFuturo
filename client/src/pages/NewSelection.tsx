@@ -91,7 +91,7 @@ export default function NewSelectionPage() {
         date: format(values.date, "yyyy-MM-dd"),
       };
 
-      // Chiamata all'API per creare una nuova selezione
+      // Chiamata all'API per creare una nuova vagliatura
       const response = await fetch("/api/selections", {
         method: "POST",
         headers: {
@@ -101,25 +101,25 @@ export default function NewSelectionPage() {
       });
 
       if (!response.ok) {
-        throw new Error("Errore nella creazione della selezione");
+        throw new Error("Errore nella creazione della vagliatura");
       }
 
       const data = await response.json();
 
       // Redirect alla pagina di dettaglio
       toast({
-        title: "Selezione creata",
-        description: `Selezione #${data.selectionNumber} creata con successo`,
+        title: "Vagliatura creata",
+        description: `Vagliatura #${data.selectionNumber} creata con successo`,
       });
 
       // Assicuriamoci che data.id esista e sia un numero valido
       if (data && data.id && !isNaN(Number(data.id))) {
         navigate(`/selection/${data.id}`);
       } else {
-        console.error("ID selezione non valido:", data);
+        console.error("ID vagliatura non valido:", data);
         toast({
           title: "Attenzione",
-          description: "Selezione creata ma impossibile visualizzare i dettagli. Torna all'elenco.",
+          description: "Vagliatura creata ma impossibile visualizzare i dettagli. Torna all'elenco.",
           variant: "destructive",
         });
         navigate("/selection");
@@ -128,7 +128,7 @@ export default function NewSelectionPage() {
       console.error("Errore:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante la creazione della selezione",
+        description: "Si è verificato un errore durante la creazione della vagliatura",
         variant: "destructive",
       });
     } finally {
@@ -146,13 +146,13 @@ export default function NewSelectionPage() {
           <Breadcrumbs
             items={[
               { label: "Dashboard", href: "/" },
-              { label: "Selezione", href: "/selection" },
-              { label: "Nuova Selezione", href: "/selection/new" },
+              { label: "Vagliatura", href: "/selection" },
+              { label: "Nuova Vagliatura", href: "/selection/new" },
             ]}
           />
           <PageHeading
-            title="Nuova Selezione"
-            description="Crea una nuova operazione di selezione"
+            title="Nuova Vagliatura"
+            description="Crea una nuova operazione di vagliatura"
             icon={<FileText className="h-6 w-6" />}
             className="mt-2"
           />
@@ -169,19 +169,19 @@ export default function NewSelectionPage() {
 
       <Card>
         <CardHeader>
-          <CardTitle>Informazioni Selezione</CardTitle>
+          <CardTitle>Informazioni Vagliatura</CardTitle>
         </CardHeader>
         <CardContent>
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                {/* Data selezione */}
+                {/* Data vagliatura */}
                 <FormField
                   control={form.control}
                   name="date"
                   render={({ field }) => (
                     <FormItem className="flex flex-col">
-                      <FormLabel>Data Selezione</FormLabel>
+                      <FormLabel>Data Vagliatura</FormLabel>
                       <Popover>
                         <PopoverTrigger asChild>
                           <FormControl>
@@ -216,7 +216,7 @@ export default function NewSelectionPage() {
                         </PopoverContent>
                       </Popover>
                       <FormDescription>
-                        Data in cui viene eseguita l'operazione di selezione
+                        Data in cui viene eseguita l'operazione di vagliatura
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -246,7 +246,7 @@ export default function NewSelectionPage() {
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Motivazione per cui viene effettuata la selezione
+                        Motivazione per cui viene effettuata la vagliatura
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -325,7 +325,7 @@ export default function NewSelectionPage() {
                         </SelectContent>
                       </Select>
                       <FormDescription>
-                        Taglia di riferimento per questa selezione
+                        Taglia di riferimento per questa vagliatura
                       </FormDescription>
                       <FormMessage />
                     </FormItem>
@@ -373,14 +373,14 @@ export default function NewSelectionPage() {
         <div className="flex items-start">
           <Boxes className="h-5 w-5 text-primary mr-2 mt-0.5" />
           <div>
-            <h3 className="text-sm font-medium mb-1">Informazioni sul processo di selezione</h3>
+            <h3 className="text-sm font-medium mb-1">Informazioni sul processo di vagliatura</h3>
             <p className="text-sm text-muted-foreground">
-              Dopo aver creato la selezione, potrai selezionare le ceste di origine per l'operazione. 
+              Dopo aver creato la vagliatura, potrai selezionare le ceste di origine per l'operazione. 
               Successivamente, potrai creare le ceste di destinazione con i conteggi precisi degli animali.
             </p>
             <p className="text-sm text-muted-foreground mt-2">
               <strong>Importante:</strong> La taglia di riferimento ti aiuta a selezionare le ceste di origine più appropriate per questa operazione. 
-              Le ceste con taglia simile saranno proposte per prime durante la selezione.
+              Le ceste con taglia simile saranno proposte per prime durante la vagliatura.
             </p>
           </div>
         </div>

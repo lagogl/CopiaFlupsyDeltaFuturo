@@ -598,7 +598,7 @@ export default function SelectionDetailPage() {
     }
   }, [destinationBasketData.totalWeightKg, destinationBasketData.animalsPerKg]);
 
-  // Ottiene lo stato della selezione
+  // Ottiene lo stato della vagliatura
   const getStatusBadge = (status: string) => {
     switch (status) {
       case "completed":
@@ -636,13 +636,13 @@ export default function SelectionDetailPage() {
     );
   }
 
-  // Se la selezione non esiste, mostra un messaggio di errore
+  // Se la vagliatura non esiste, mostra un messaggio di errore
   if (!selection) {
     return (
       <EmptyState
         icon={<AlertCircle className="h-12 w-12 text-destructive" />}
-        title="Selezione non trovata"
-        description="La selezione richiesta non è stata trovata nel database"
+        title="Vagliatura non trovata"
+        description="La vagliatura richiesta non è stata trovata nel database"
         action={
           <Button onClick={() => navigate("/selection")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
