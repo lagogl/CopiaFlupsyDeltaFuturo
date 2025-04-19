@@ -990,9 +990,9 @@ export default function SelectionDetailPage() {
                     <div className="flex justify-center py-2">
                       <Spinner size="sm" />
                     </div>
-                  ) : availableBaskets?.filter(b => b.cycle?.state === "active")?.length ? (
+                  ) : availableBaskets?.filter(b => b.state === "active" && b.cycleId)?.length ? (
                     availableBaskets
-                      .filter(b => b.cycle?.state === "active")
+                      .filter(b => b.state === "active" && b.cycleId)
                       // Filtra le ceste che sono già state aggiunte come origine
                       .filter(basket => {
                         const alreadyAdded = sourceBaskets?.some(
