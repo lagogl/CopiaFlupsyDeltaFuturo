@@ -277,6 +277,10 @@ export default function DraggableFlupsyVisualizer() {
       return; // No change in position
     }
     
+    // Prima di tutto, forziamo un refresh dei dati dei cestelli per garantire di avere i dati più aggiornati
+    // Questo evita problemi di sincronizzazione tra frontend e backend
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    
     // Verifica se i dati dei cestelli sono disponibili
     if (!baskets || !Array.isArray(baskets)) {
       console.error("Baskets data not available or not an array");
