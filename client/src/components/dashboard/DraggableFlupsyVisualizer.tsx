@@ -292,11 +292,12 @@ export default function DraggableFlupsyVisualizer() {
     
     // Verifica attentamente se c'è già un cestello nella posizione target
     // Deve essere un cestello diverso da quello che stiamo trascinando nella posizione target
-    // Rimuoviamo la condizione che limita allo stesso FLUPSY per consentire lo scambio tra FLUPSY diversi
+    // Il cestello deve essere nel FLUPSY target (dropFlupsyId) e nella posizione target
     const targetBasket = baskets.find((b: any) => 
       b.id !== item.id && 
       b.row === targetRow && 
-      b.position === targetPosition
+      b.position === targetPosition &&
+      b.flupsyId === dropFlupsyId
     );
     
     // Determiniamo il FLUPSY target in base al cestello target o al FLUPSY dell'oggetto DropTarget
