@@ -42,13 +42,23 @@ interface DraggableBasketProps {
 }
 
 function DraggableBasket({ basket, isDropDisabled = false, children, onClick }: DraggableBasketProps) {
+  // Forza un refetch dei dati per garantire che il drag usi info aggiornate
+  const queryClient = useQueryClient();
+  
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.BASKET,
-    item: {
-      id: basket.id,
-      sourceRow: basket.row,
-      sourcePosition: basket.position
-    } as BasketDragItem,
+    // Ogni volta che inizia il dragging, prendiamo i valori attuali del cestello direttamente dalla cache
+    item: () => {
+      // Ottieniamo i dati più aggiornati prima di iniziare il dragging
+      const freshBaskets = queryClient.getQueryData(['/api/baskets']) as any[] || [];
+      const freshBasket = freshBaskets.find((b: any) => b.id === basket.id) || basket;
+      
+      return { 
+        id: freshBasket.id, 
+        sourceRow: freshBasket.row, 
+        sourcePosition: freshBasket.position
+      } as BasketDragItem;
+    },
     canDrag: basket && basket.state === 'active', // Solo i cestelli attivi possono essere trascinati
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging()
@@ -80,12 +90,18 @@ interface DropTargetProps {
 }
 
 function DropTarget({ flupsyId, row, position, onDrop, isOccupied, children }: DropTargetProps) {
+  // Forza un refetch dei dati per garantire che l'operazione di drag-and-drop usi info aggiornate
+  const queryClient = useQueryClient();
+  
   // Qui la modifica principale: rendiamo la funzione drop consapevole dello stato di occupazione
   // Il problema era che prima il drop veniva sempre eseguito, ma non stavamo passando
   // l'informazione se è un'operazione di switch o uno spostamento normale
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.BASKET,
-    drop: (item: BasketDragItem) => {
+    drop: async (item: BasketDragItem) => {
+      // Forziamo un refetch dei dati più recenti prima di determinare l'operazione
+      await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+      
       // Passiamo anche il flupsyId del target alla funzione onDrop
       // Questo ci permette di gestire correttamente gli spostamenti tra FLUPSY diversi
       return onDrop(item, row, position, flupsyId);
