@@ -727,7 +727,7 @@ export default function SelectionDetailPage() {
         </div>
       </div>
 
-      {/* Informazioni sulla selezione */}
+      {/* Informazioni sulla vagliatura */}
       <Card>
         <CardHeader>
           <CardTitle>Dettagli Vagliatura</CardTitle>
@@ -1656,7 +1656,7 @@ export default function SelectionDetailPage() {
               variant="destructive"
               onClick={handleCancelSelection}
             >
-              Sì, annulla selezione
+              Sì, annulla vagliatura
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -1671,7 +1671,7 @@ export default function SelectionDetailPage() {
           <DialogHeader>
             <DialogTitle>Conferma Completamento</DialogTitle>
             <DialogDescription>
-              Sei sicuro di voler completare questa selezione?
+              Sei sicuro di voler completare questa vagliatura?
               Questa azione chiuderà tutti i cicli collegati alle ceste di origine
               e creerà nuovi cicli per le ceste di destinazione.
             </DialogDescription>
@@ -1687,7 +1687,7 @@ export default function SelectionDetailPage() {
             <Button 
               onClick={handleCompleteSelection}
             >
-              Sì, completa selezione
+              Sì, completa vagliatura
             </Button>
           </DialogFooter>
         </DialogContent>
