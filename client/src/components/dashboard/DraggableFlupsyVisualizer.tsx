@@ -261,9 +261,15 @@ export default function DraggableFlupsyVisualizer() {
       } else {
         // Normale successo - aggiornamento posizione completato
         queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        
+        // Forza un aggiornamento completo dei dati
+        setTimeout(() => {
+          window.location.reload();
+        }, 500);
+        
         toast({
           title: "Posizione aggiornata",
-          description: "La posizione della cesta è stata aggiornata con successo."
+          description: "La posizione della cesta è stata aggiornata con successo. La pagina verrà ricaricata per aggiornare le visualizzazioni."
         });
         setConfirmDialogOpen(false);
         setPendingBasketMove(null);
@@ -432,9 +438,15 @@ export default function DraggableFlupsyVisualizer() {
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      
+      // Forza un aggiornamento completo dei dati dopo lo switch
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
+      
       toast({
         title: "Scambio completato",
-        description: "Lo scambio delle ceste è stato completato con successo.",
+        description: "Lo scambio delle ceste è stato completato con successo. La pagina verrà ricaricata per aggiornare le visualizzazioni.",
       });
       setConfirmDialogOpen(false);
       setPendingBasketMove(null);
@@ -770,11 +782,25 @@ export default function DraggableFlupsyVisualizer() {
 
   // Render a single FLUPSY grid
   const renderFlupsyGrid = (flupsyId: number) => {
+    // Prima di renderizzare, forziamo un refresh completo dei dati dal server
+    // per assicurarci di avere i dati più aggiornati
+    const refreshBaskets = async () => {
+      await refetchBaskets();
+    };
+    
+    // Chiamiamo il refresh all'inizio del rendering
+    useEffect(() => {
+      refreshBaskets();
+    }, [flupsyId]);
+    
     const flupsy = flupsys?.find((f: any) => f.id === flupsyId);
     if (!flupsy || !baskets) return null;
     
-    // Get baskets for this FLUPSY
-    const flupsyBaskets = baskets.filter((b: any) => b.flupsyId === flupsyId);
+    // Otteniamo i dati più aggiornati prima di procedere
+    const freshBaskets = queryClient.getQueryData(['/api/baskets']) as any[] || [];
+    
+    // Get baskets for this FLUPSY - usiamo freshBaskets invece di baskets
+    const flupsyBaskets = freshBaskets.filter((b: any) => b.flupsyId === flupsyId);
     const flupsyDxRow = flupsyBaskets.filter((b: any) => b.row === 'DX');
     const flupsySxRow = flupsyBaskets.filter((b: any) => b.row === 'SX');
     
