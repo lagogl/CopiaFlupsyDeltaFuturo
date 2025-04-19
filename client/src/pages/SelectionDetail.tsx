@@ -1281,12 +1281,17 @@ export default function SelectionDetailPage() {
                       onChange={(e) => {
                         const totalWeightKg = parseFloat(e.target.value) || 0;
                         
-                        // Calcolo totale animali (tenendo conto della mortalità)
+                        // MODIFICA: Calcola percentuale di mortalità in base al campione
+                        let mortalityPercentage = 0;
+                        if (destinationBasketData.sampleCount && destinationBasketData.sampleCount > 0 && destinationBasketData.deadCount) {
+                          mortalityPercentage = destinationBasketData.deadCount / destinationBasketData.sampleCount;
+                        }
+                        
+                        // Calcolo totale animali (considerando la percentuale di mortalità)
                         let animalCount = 0;
                         if (destinationBasketData.animalsPerKg > 0 && totalWeightKg > 0) {
-                          animalCount = Math.round(destinationBasketData.animalsPerKg * totalWeightKg);
-                          // Sottrai gli animali morti
-                          animalCount = Math.max(0, animalCount - (destinationBasketData.deadCount || 0));
+                          const totalBeforeMortality = Math.round(destinationBasketData.animalsPerKg * totalWeightKg);
+                          animalCount = Math.round(totalBeforeMortality * (1 - mortalityPercentage));
                         }
                         
                         setDestinationBasketData({ 
@@ -1348,12 +1353,17 @@ export default function SelectionDetailPage() {
                       onChange={(e) => {
                         const animalsPerKg = parseInt(e.target.value) || 0;
                         
-                        // Calcolo totale animali (tenendo conto della mortalità)
+                        // MODIFICA: Calcola percentuale di mortalità in base al campione
+                        let mortalityPercentage = 0;
+                        if (destinationBasketData.sampleCount && destinationBasketData.sampleCount > 0 && destinationBasketData.deadCount) {
+                          mortalityPercentage = destinationBasketData.deadCount / destinationBasketData.sampleCount;
+                        }
+                        
+                        // Calcolo totale animali (considerando la percentuale di mortalità)
                         let animalCount = 0;
                         if (animalsPerKg > 0 && destinationBasketData.totalWeightKg > 0) {
-                          animalCount = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
-                          // Sottrai gli animali morti
-                          animalCount = Math.max(0, animalCount - (destinationBasketData.deadCount || 0));
+                          const totalBeforeMortality = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
+                          animalCount = Math.round(totalBeforeMortality * (1 - mortalityPercentage));
                         }
                         
                         setDestinationBasketData({ 
