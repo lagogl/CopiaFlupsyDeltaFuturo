@@ -85,7 +85,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <FileText className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni", path: "/operations" },
         { icon: <Zap className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Rapide", path: "/quick-operations" },
         { icon: <GripHorizontal className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Drag&Drop", path: "/operations-drag-drop" },
-        { icon: <Boxes className="h-5 w-5 mr-2 text-blue-600" />, label: "Selezione", path: "/selection" },
+        { icon: <Filter className="h-5 w-5 mr-2 text-blue-600" />, label: "Vagliatura", path: "/selection" },
         { icon: <Scan className="h-5 w-5 mr-2 text-blue-600" />, label: "FlupsyScan Mobile", path: "/nfc-scan" }
       ]
     },
