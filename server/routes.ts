@@ -4159,16 +4159,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ottieni posizioni disponibili in un FLUPSY
   app.get("/api/selections/available-positions/:flupsyId", getAvailablePositions);
   // Aggiungiamo anche un endpoint per recuperare tutte le posizioni disponibili in tutti i FLUPSY
-  app.get("/api/selections/available-positions-all", (req, res) => {
-    req.params.flupsyId = 'all'; // Impostiamo 'all' come flupsyId per ottenere tutte le posizioni
-    
-    // Ottieni il FLUPSY di origine dalla query string, se fornito
-    const originFlupsyId = req.query.originFlupsyId;
-    if (originFlupsyId) {
-      req.query.originFlupsyId = originFlupsyId;
+  app.get("/api/selections/available-positions-all", async (req, res) => {
+    try {
+      // Impostiamo 'all' come flupsyId per ottenere tutte le posizioni
+      req.params.flupsyId = 'all';
+      
+      // Elaboriamo esplicitamente il FLUPSY di origine
+      const originFlupsyId = req.query.originFlupsyId;
+      // Utilizziamo il parametro solo se è un numero valido
+      if (originFlupsyId && !isNaN(Number(originFlupsyId))) {
+        req.query.originFlupsyId = originFlupsyId;
+      } else {
+        // Eliminiamo il parametro dalla query se non è valido
+        delete req.query.originFlupsyId;
+      }
+      
+      await getAvailablePositions(req, res);
+    } catch (error) {
+      console.error("Errore durante il recupero delle posizioni disponibili:", error);
+      return res.status(500).json({ 
+        success: false,
+        error: `Errore durante il recupero delle posizioni disponibili: ${error instanceof Error ? error.message : String(error)}`
+      });
     }
-    
-    getAvailablePositions(req, res);
   });
   
   // Crea una nuova selezione (fase 1)

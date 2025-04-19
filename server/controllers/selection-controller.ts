@@ -478,7 +478,11 @@ export async function getAvailablePositions(req: Request, res: Response) {
       });
       
       // Determina se è lo stesso FLUPSY di origine
-      const isSameFlupsy = originFlupsyId && Number(originFlupsyId) === Number(flupsy.id);
+      let originId = null;
+      if (originFlupsyId && !isNaN(Number(originFlupsyId))) {
+        originId = Number(originFlupsyId);
+      }
+      const isSameFlupsy = originId !== null && originId === flupsy.id;
       
       // Generiamo le posizioni in formato "DX-1", "DX-2", "SX-1", "SX-2", ecc.
       const rows = ['DX', 'SX'];
