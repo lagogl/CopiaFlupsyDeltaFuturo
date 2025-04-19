@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
@@ -689,7 +689,7 @@ export default function DraggableFlupsyVisualizer() {
     
     // Get baskets for this FLUPSY
     const flupsyBaskets = baskets.filter(b => b.flupsyId === flupsyId);
-    const positions = Array.from({ length: 12 }, (_, i) => i + 1); // 12 posizioni per lato
+    const positions = Array.from({ length: 10 }, (_, i) => i + 1); // 10 posizioni per lato
     
     return (
       <Card className="mb-6">
@@ -715,7 +715,11 @@ export default function DraggableFlupsyVisualizer() {
               <div className="grid grid-cols-3 gap-2">
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
-                  return renderBasketBox(basket, position, 'SX', flupsyId);
+                  return (
+                    <React.Fragment key={`sx-${position}`}>
+                      {renderBasketBox(basket, position, 'SX', flupsyId)}
+                    </React.Fragment>
+                  );
                 })}
               </div>
             </div>
@@ -728,7 +732,11 @@ export default function DraggableFlupsyVisualizer() {
               <div className="grid grid-cols-3 gap-2">
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'DX' && b.position === position);
-                  return renderBasketBox(basket, position, 'DX', flupsyId);
+                  return (
+                    <React.Fragment key={`dx-${position}`}>
+                      {renderBasketBox(basket, position, 'DX', flupsyId)}
+                    </React.Fragment>
+                  );
                 })}
               </div>
             </div>
