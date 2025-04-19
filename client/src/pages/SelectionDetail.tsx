@@ -903,8 +903,8 @@ export default function SelectionDetailPage() {
                           {sourceBasket.flupsy?.name || (sourceBasket.basket?.flupsy?.name || "N/A")}
                         </TableCell>
                         <TableCell>
-                          <Badge className={`font-mono ${sourceBasket.size?.sizeCode ? getSizeColorClass(sourceBasket.size.sizeCode) : ''}`}>
-                            {sourceBasket.size?.sizeCode || "N/A"}
+                          <Badge className={`font-mono ${sourceBasket.size?.code ? getSizeColorClass(sourceBasket.size.code) : ''}`}>
+                            {sourceBasket.size?.code || "N/A"}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right font-mono">
@@ -1113,10 +1113,10 @@ export default function SelectionDetailPage() {
                                   className={`px-2 py-0.5 rounded text-xs font-medium inline-block ${
                                     isReferenceSize 
                                       ? "bg-green-100 text-green-800 dark:bg-green-800 dark:text-green-100 font-bold border border-green-500" 
-                                      : getSizeColorClass(sizeCode)
+                                      : basket.size?.code ? getSizeColorClass(basket.size.code) : ""
                                   }`}
                                 >
-                                  {isReferenceSize ? "★ " : ""}{sizeCode}{isReferenceSize ? " ★" : ""}
+                                  {isReferenceSize ? "★ " : ""}{basket.size?.code || "N/A"}{isReferenceSize ? " ★" : ""}
                                 </span>
                               </div>
                               
