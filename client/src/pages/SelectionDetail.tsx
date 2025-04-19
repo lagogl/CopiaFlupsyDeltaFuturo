@@ -372,12 +372,18 @@ export default function SelectionDetailPage() {
       
       const positionNumber = positionComponents && positionComponents.length > 2 ? 
                            parseInt(positionComponents[2]) : null;
+                           
+      // Crea la stringa di posizione nel formato corretto per il backend (es: "DX2")
+      // Non includiamo il flupsyId nella posizione, solo row + number
+      const formattedPosition = positionRow && positionNumber !== null ? 
+                           `${positionRow}${positionNumber}` : null;
       
       // Log per debug
       console.log("positionComponents:", positionComponents);
       console.log("positionFlupsyId:", positionFlupsyId);
       console.log("positionRow:", positionRow);
       console.log("positionNumber:", positionNumber);
+      console.log("Formatted position:", formattedPosition);
       
       const response = await fetch(`/api/selections/${id}/destination-baskets`, {
         method: "POST",
@@ -387,9 +393,8 @@ export default function SelectionDetailPage() {
         body: JSON.stringify([
           {
             basketId: parseInt(destinationBasketData.basketId),
-            positionFlupsyId: positionFlupsyId,
-            position: positionRow && positionNumber ? 
-                    `${positionRow}${positionNumber}` : null,
+            flupsyId: positionFlupsyId, // Cambiato da positionFlupsyId a flupsyId per corrispondere al backend
+            position: formattedPosition,
             destinationType: destinationBasketData.saleDestination ? 'sold' : 'placed',
             animalCount: destinationBasketData.animalCount || null,
             deadCount: destinationBasketData.deadCount || null,
