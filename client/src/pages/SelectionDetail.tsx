@@ -1105,9 +1105,9 @@ export default function SelectionDetailPage() {
                       <div className="flex justify-center py-2">
                         <Spinner size="sm" />
                       </div>
-                    ) : availableBaskets?.filter(b => !b.cycle || b.cycle?.state === "available" || b.state === "available")?.length ? (
+                    ) : availableBaskets?.filter(b => b.state === "available")?.length ? (
                       availableBaskets
-                        .filter(b => !b.cycle || b.cycle?.state === "available" || b.state === "available")
+                        .filter(b => b.state === "available")
                         // Filtra le ceste che sono già state aggiunte come destinazione
                         .filter(basket => {
                           const alreadyAdded = destinationBaskets?.some(
@@ -1185,10 +1185,30 @@ export default function SelectionDetailPage() {
                       min="0"
                       step="0.1"
                       value={destinationBasketData.sampleWeight || ""}
-                      onChange={(e) => setDestinationBasketData({ 
-                        ...destinationBasketData, 
-                        sampleWeight: parseFloat(e.target.value) || 0
-                      })}
+                      onChange={(e) => {
+                        const sampleWeight = parseFloat(e.target.value) || 0;
+                        let animalsPerKg = 0;
+                        
+                        // Calcolo animali per kg
+                        if (sampleWeight > 0 && destinationBasketData.sampleCount > 0) {
+                          animalsPerKg = Math.round((destinationBasketData.sampleCount / sampleWeight) * 1000);
+                        }
+                        
+                        // Calcolo totale animali (tenendo conto della mortalità)
+                        let animalCount = 0;
+                        if (animalsPerKg > 0 && destinationBasketData.totalWeightKg > 0) {
+                          animalCount = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
+                          // Sottrai gli animali morti
+                          animalCount = Math.max(0, animalCount - (destinationBasketData.deadCount || 0));
+                        }
+                        
+                        setDestinationBasketData({ 
+                          ...destinationBasketData, 
+                          sampleWeight,
+                          animalsPerKg: animalsPerKg || 0,
+                          animalCount: animalCount || 0
+                        });
+                      }}
                       className="h-9 bg-white dark:bg-slate-800 border-green-200 dark:border-green-800 font-mono text-base"
                     />
                   </div>
@@ -1202,10 +1222,30 @@ export default function SelectionDetailPage() {
                       type="number"
                       min="0"
                       value={destinationBasketData.sampleCount || ""}
-                      onChange={(e) => setDestinationBasketData({ 
-                        ...destinationBasketData, 
-                        sampleCount: parseInt(e.target.value) || 0
-                      })}
+                      onChange={(e) => {
+                        const sampleCount = parseInt(e.target.value) || 0;
+                        let animalsPerKg = 0;
+                        
+                        // Calcolo animali per kg
+                        if (destinationBasketData.sampleWeight > 0 && sampleCount > 0) {
+                          animalsPerKg = Math.round((sampleCount / destinationBasketData.sampleWeight) * 1000);
+                        }
+                        
+                        // Calcolo totale animali (tenendo conto della mortalità)
+                        let animalCount = 0;
+                        if (animalsPerKg > 0 && destinationBasketData.totalWeightKg > 0) {
+                          animalCount = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
+                          // Sottrai gli animali morti
+                          animalCount = Math.max(0, animalCount - (destinationBasketData.deadCount || 0));
+                        }
+                        
+                        setDestinationBasketData({ 
+                          ...destinationBasketData, 
+                          sampleCount,
+                          animalsPerKg: animalsPerKg || 0,
+                          animalCount: animalCount || 0
+                        });
+                      }}
                       className="h-9 bg-white dark:bg-slate-800 border-blue-200 dark:border-blue-800 font-mono text-base"
                     />
                   </div>
@@ -1221,10 +1261,23 @@ export default function SelectionDetailPage() {
                       min="0"
                       step="0.1"
                       value={destinationBasketData.totalWeightKg || ""}
-                      onChange={(e) => setDestinationBasketData({ 
-                        ...destinationBasketData, 
-                        totalWeightKg: parseFloat(e.target.value) || 0
-                      })}
+                      onChange={(e) => {
+                        const totalWeightKg = parseFloat(e.target.value) || 0;
+                        
+                        // Calcolo totale animali (tenendo conto della mortalità)
+                        let animalCount = 0;
+                        if (destinationBasketData.animalsPerKg > 0 && totalWeightKg > 0) {
+                          animalCount = Math.round(destinationBasketData.animalsPerKg * totalWeightKg);
+                          // Sottrai gli animali morti
+                          animalCount = Math.max(0, animalCount - (destinationBasketData.deadCount || 0));
+                        }
+                        
+                        setDestinationBasketData({ 
+                          ...destinationBasketData, 
+                          totalWeightKg,
+                          animalCount: animalCount || 0
+                        });
+                      }}
                       className="h-9 bg-white dark:bg-slate-800 border-amber-200 dark:border-amber-800 font-mono text-base"
                     />
                   </div>
@@ -1238,10 +1291,23 @@ export default function SelectionDetailPage() {
                       type="number"
                       min="0"
                       value={destinationBasketData.deadCount || ""}
-                      onChange={(e) => setDestinationBasketData({ 
-                        ...destinationBasketData, 
-                        deadCount: parseInt(e.target.value) || 0
-                      })}
+                      onChange={(e) => {
+                        const deadCount = parseInt(e.target.value) || 0;
+                        
+                        // Calcolo totale animali (tenendo conto della mortalità)
+                        let animalCount = 0;
+                        let totalBeforeDead = 0;
+                        if (destinationBasketData.animalsPerKg > 0 && destinationBasketData.totalWeightKg > 0) {
+                          totalBeforeDead = Math.round(destinationBasketData.animalsPerKg * destinationBasketData.totalWeightKg);
+                          animalCount = Math.max(0, totalBeforeDead - deadCount);
+                        }
+                        
+                        setDestinationBasketData({ 
+                          ...destinationBasketData, 
+                          deadCount,
+                          animalCount: animalCount || 0
+                        });
+                      }}
                       className="h-9 bg-white dark:bg-slate-800 border-red-200 dark:border-red-800 font-mono text-base"
                     />
                   </div>
@@ -1256,10 +1322,23 @@ export default function SelectionDetailPage() {
                       type="number"
                       min="0"
                       value={destinationBasketData.animalsPerKg || ""}
-                      onChange={(e) => setDestinationBasketData({ 
-                        ...destinationBasketData, 
-                        animalsPerKg: parseInt(e.target.value) || 0
-                      })}
+                      onChange={(e) => {
+                        const animalsPerKg = parseInt(e.target.value) || 0;
+                        
+                        // Calcolo totale animali (tenendo conto della mortalità)
+                        let animalCount = 0;
+                        if (animalsPerKg > 0 && destinationBasketData.totalWeightKg > 0) {
+                          animalCount = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
+                          // Sottrai gli animali morti
+                          animalCount = Math.max(0, animalCount - (destinationBasketData.deadCount || 0));
+                        }
+                        
+                        setDestinationBasketData({ 
+                          ...destinationBasketData, 
+                          animalsPerKg,
+                          animalCount: animalCount || 0
+                        });
+                      }}
                       className="h-9 bg-white dark:bg-slate-800 border-purple-200 dark:border-purple-800 font-mono text-base font-bold"
                     />
                   </div>
@@ -1279,6 +1358,24 @@ export default function SelectionDetailPage() {
                       })}
                       className="h-9 bg-white dark:bg-slate-800 border-cyan-200 dark:border-cyan-800 font-mono text-base font-bold"
                     />
+                  </div>
+                </div>
+                
+                {/* Percentuale mortalità */}
+                <div className="mt-3 p-2 bg-orange-50 dark:bg-orange-900/20 rounded-md flex items-center justify-between">
+                  <Label className="text-orange-700 dark:text-orange-400 font-medium text-sm">
+                    Percentuale Mortalità:
+                  </Label>
+                  <div className="font-bold text-base font-mono bg-white dark:bg-slate-800 px-4 py-1 rounded-md border border-orange-200 dark:border-orange-800">
+                    {(() => {
+                      // Calcola la percentuale di mortalità
+                      const totalBeforeDead = destinationBasketData.animalsPerKg * destinationBasketData.totalWeightKg;
+                      if (totalBeforeDead && destinationBasketData.deadCount) {
+                        const percentage = (destinationBasketData.deadCount / totalBeforeDead) * 100;
+                        return isNaN(percentage) || !isFinite(percentage) ? "0.00%" : `${percentage.toFixed(2)}%`;
+                      }
+                      return "0.00%";
+                    })()}
                   </div>
                 </div>
               </div>
