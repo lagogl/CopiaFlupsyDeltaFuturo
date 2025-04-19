@@ -313,6 +313,36 @@ export default function SelectionDetailPage() {
       });
       return;
     }
+    
+    // Verifica che sia selezionata una posizione quando è richiesta
+    if (!destinationBasketData.saleDestination && !destinationBasketData.positionId) {
+      toast({
+        title: "Errore",
+        description: "Seleziona una posizione valida per il cestello",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Verifica che siano stati inseriti dati minimi validi per il conteggio
+    if (!destinationBasketData.animalCount || destinationBasketData.animalCount <= 0) {
+      toast({
+        title: "Errore",
+        description: "Inserisci un numero valido di animali nel cestello",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Verifica che il peso del campione sia valido
+    if (!destinationBasketData.sampleWeight || destinationBasketData.sampleWeight <= 0) {
+      toast({
+        title: "Errore",
+        description: "Inserisci un peso del campione valido (maggiore di zero)",
+        variant: "destructive",
+      });
+      return;
+    }
 
     if (destinationBasketData.saleDestination && !destinationBasketData.saleClient) {
       toast({
@@ -327,6 +357,28 @@ export default function SelectionDetailPage() {
 
     try {
       // Nota: Il server si aspetta un array di cestelli di destinazione
+      // Log per debug dei dati inviati
+      console.log("Dati destinazione:", destinationBasketData);
+      
+      // Prepariamo i parametri corretti per la richiesta
+      const positionComponents = destinationBasketData.positionId ? 
+                                 destinationBasketData.positionId.split('-') : null;
+      
+      const positionFlupsyId = positionComponents && positionComponents.length > 0 ? 
+                             parseInt(positionComponents[0]) : null;
+      
+      const positionRow = positionComponents && positionComponents.length > 1 ? 
+                        positionComponents[1] : null;
+      
+      const positionNumber = positionComponents && positionComponents.length > 2 ? 
+                           parseInt(positionComponents[2]) : null;
+      
+      // Log per debug
+      console.log("positionComponents:", positionComponents);
+      console.log("positionFlupsyId:", positionFlupsyId);
+      console.log("positionRow:", positionRow);
+      console.log("positionNumber:", positionNumber);
+      
       const response = await fetch(`/api/selections/${id}/destination-baskets`, {
         method: "POST",
         headers: {
@@ -335,12 +387,9 @@ export default function SelectionDetailPage() {
         body: JSON.stringify([
           {
             basketId: parseInt(destinationBasketData.basketId),
-            positionFlupsyId: destinationBasketData.positionFlupsyId 
-              ? parseInt(destinationBasketData.positionFlupsyId) 
-              : null,
-            position: destinationBasketData.positionRow 
-              ? `${destinationBasketData.positionRow}${destinationBasketData.positionNumber}`
-              : null,
+            positionFlupsyId: positionFlupsyId,
+            position: positionRow && positionNumber ? 
+                    `${positionRow}${positionNumber}` : null,
             destinationType: destinationBasketData.saleDestination ? 'sold' : 'placed',
             animalCount: destinationBasketData.animalCount || null,
             deadCount: destinationBasketData.deadCount || null,
