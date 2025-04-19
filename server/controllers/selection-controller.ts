@@ -79,7 +79,7 @@ export async function getAvailableBaskets(req: Request, res: Response) {
   try {
     const { referenceSizeId } = req.query;
     
-    // 1. Recupera solo le ceste con stato "available"
+    // 1. Recupera sia le ceste con stato "available" che quelle con stato "active" e ciclo attivo
     const allBaskets = await db.select({
       basketId: baskets.id,
       cycleId: baskets.currentCycleId,
@@ -91,7 +91,13 @@ export async function getAvailableBaskets(req: Request, res: Response) {
     })
     .from(baskets)
     .where(
-      eq(baskets.state, 'available')
+      or(
+        eq(baskets.state, 'available'),
+        and(
+          eq(baskets.state, 'active'),
+          isNotNull(baskets.currentCycleId)
+        )
+      )
     );
     
     // 2. Arricchisci i dati con informazioni sul FLUPSY e sull'ultima operazione per ogni cestello
