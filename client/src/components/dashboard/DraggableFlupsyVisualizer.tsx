@@ -42,23 +42,13 @@ interface DraggableBasketProps {
 }
 
 function DraggableBasket({ basket, isDropDisabled = false, children, onClick }: DraggableBasketProps) {
-  // Forza un refetch dei dati per garantire che il drag usi info aggiornate
-  const queryClient = useQueryClient();
-  
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.BASKET,
-    // Ogni volta che inizia il dragging, prendiamo i valori attuali del cestello direttamente dalla cache
-    item: () => {
-      // Ottieniamo i dati più aggiornati prima di iniziare il dragging
-      const freshBaskets = queryClient.getQueryData(['/api/baskets']) as any[] || [];
-      const freshBasket = freshBaskets.find((b: any) => b.id === basket.id) || basket;
-      
-      return { 
-        id: freshBasket.id, 
-        sourceRow: freshBasket.row, 
-        sourcePosition: freshBasket.position
-      } as BasketDragItem;
-    },
+    item: {
+      id: basket.id,
+      sourceRow: basket.row,
+      sourcePosition: basket.position
+    } as BasketDragItem,
     canDrag: basket && basket.state === 'active', // Solo i cestelli attivi possono essere trascinati
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging()
@@ -90,18 +80,12 @@ interface DropTargetProps {
 }
 
 function DropTarget({ flupsyId, row, position, onDrop, isOccupied, children }: DropTargetProps) {
-  // Forza un refetch dei dati per garantire che l'operazione di drag-and-drop usi info aggiornate
-  const queryClient = useQueryClient();
-  
   // Qui la modifica principale: rendiamo la funzione drop consapevole dello stato di occupazione
   // Il problema era che prima il drop veniva sempre eseguito, ma non stavamo passando
   // l'informazione se è un'operazione di switch o uno spostamento normale
   const [{ isOver, canDrop }, drop] = useDrop(() => ({
     accept: ItemTypes.BASKET,
-    drop: async (item: BasketDragItem) => {
-      // Forziamo un refetch dei dati più recenti prima di determinare l'operazione
-      await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
-      
+    drop: (item: BasketDragItem) => {
       // Passiamo anche il flupsyId del target alla funzione onDrop
       // Questo ci permette di gestire correttamente gli spostamenti tra FLUPSY diversi
       return onDrop(item, row, position, flupsyId);
@@ -288,7 +272,7 @@ export default function DraggableFlupsyVisualizer() {
 
   // Initialize selected FLUPSYs on data load
   useEffect(() => {
-    if (flupsys && flupsys.length > 0 && selectedFlupsyIds.length === 0) {
+    if (flupsys && Array.isArray(flupsys) && flupsys.length > 0 && selectedFlupsyIds.length === 0) {
       // Seleziona tutti i flupsy disponibili invece di solo il primo
       const allFlupsyIds = flupsys.map((flupsy: any) => flupsy.id);
       setSelectedFlupsyIds(allFlupsyIds);
@@ -301,12 +285,8 @@ export default function DraggableFlupsyVisualizer() {
       return; // No change in position
     }
     
-    // Prima di tutto, forziamo un refresh dei dati dei cestelli per garantire di avere i dati più aggiornati
-    // Questo evita problemi di sincronizzazione tra frontend e backend
-    await refetchBaskets();
-    
     // Recupera i dati freschi dopo il refetch
-    // Nota: getQueryData restituisce i dati più aggiornati dalla cache dopo il refetch
+    await refetchBaskets();
     const freshBaskets = queryClient.getQueryData(['/api/baskets']) as any[];
     if (!freshBaskets || !Array.isArray(freshBaskets)) {
       console.error("Baskets data not available or not an array after refetch");
@@ -377,7 +357,7 @@ export default function DraggableFlupsyVisualizer() {
     }
     
     setConfirmDialogOpen(true);
-  }, [baskets]);
+  }, [queryClient, refetchBaskets]);
 
   // Handle basket click
   const handleBasketClick = (basket: any) => {
@@ -472,8 +452,12 @@ export default function DraggableFlupsyVisualizer() {
     
     if (pendingBasketMove.isSwitch && pendingBasketMove.targetBasketId) {
       // Caso di switch tra due cestelli
-      const basket1 = freshBaskets?.find((b: any) => b.id === pendingBasketMove.basketId);
-      const basket2 = freshBaskets?.find((b: any) => b.id === pendingBasketMove.targetBasketId);
+      const basket1 = freshBaskets && Array.isArray(freshBaskets) ? 
+        freshBaskets.find((b: any) => b.id === pendingBasketMove.basketId) : 
+        null;
+      const basket2 = freshBaskets && Array.isArray(freshBaskets) ? 
+        freshBaskets.find((b: any) => b.id === pendingBasketMove.targetBasketId) : 
+        null;
       
       console.log("Attempting to switch baskets:", basket1, basket2);
       
@@ -501,7 +485,7 @@ export default function DraggableFlupsyVisualizer() {
       let flupsyId = basket1.flupsyId;
       
       // Se per qualche motivo flupsyId non è disponibile, usa un valore di fallback intelligente
-      if (!flupsyId && flupsys && flupsys.length > 0) {
+      if (!flupsyId && flupsys && Array.isArray(flupsys) && flupsys.length > 0) {
         flupsyId = flupsys[0].id;
         console.warn("FlupsyId non trovato nel cestello, usando il primo FLUPSY disponibile:", flupsyId);
       }
@@ -530,7 +514,9 @@ export default function DraggableFlupsyVisualizer() {
       });
     } else {
       // Caso normale: sposta un cestello in una posizione vuota
-      const basket = freshBaskets?.find((b: any) => b.id === pendingBasketMove.basketId);
+      const basket = freshBaskets && Array.isArray(freshBaskets) ? 
+        freshBaskets.find((b: any) => b.id === pendingBasketMove.basketId) : 
+        null;
       if (!basket) {
         toast({
           title: "Errore",
@@ -577,7 +563,7 @@ export default function DraggableFlupsyVisualizer() {
     
     if (isOccupied) {
       // Get latest operation for this basket
-      const basketOperations = operations
+      const basketOperations = operations && Array.isArray(operations)
         ? operations
             .filter((op: any) => op.basketId === basket.id)
             .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
@@ -586,7 +572,10 @@ export default function DraggableFlupsyVisualizer() {
       
       // Get cycle data
       if (basket.currentCycleId) {
-        cycle = queryClient.getQueryData(['api/cycles'])?.find((c: any) => c.id === basket.currentCycleId);
+        const cycles = queryClient.getQueryData(['api/cycles']);
+        cycle = cycles && Array.isArray(cycles) ? 
+          cycles.find((c: any) => c.id === basket.currentCycleId) : 
+          null;
         if (cycle) {
           startDate = new Date(cycle.startDate);
         }
@@ -691,315 +680,149 @@ export default function DraggableFlupsyVisualizer() {
     );
   };
 
-  // Render tooltip content for a basket
-  const renderTooltipContent = (basket: any) => {
-    if (!basket) return null;
-
-    // Get the latest operation for this basket
-    const basketOperations = operations
-      ? operations
-          .filter((op: any) => op.basketId === basket.id)
-          .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
-      : [];
-    const latestOperation = basketOperations.length > 0 ? basketOperations[0] : null;
+  // Render a single FLUPSY layout
+  const renderFlupsyLayout = (flupsyId: number) => {
+    if (!flupsys || !Array.isArray(flupsys) || !baskets || !Array.isArray(baskets)) return null;
     
-    // Get cycle data
-    let cycle = null;
-    let startDate = null;
-    if (basket.currentCycleId) {
-      cycle = queryClient.getQueryData(['api/cycles'])?.find((c: any) => c.id === basket.currentCycleId);
-      if (cycle) {
-        startDate = new Date(cycle.startDate);
-      }
-    }
+    const flupsy = flupsys.find(f => f.id === flupsyId);
+    if (!flupsy) return null;
     
-    // Calcola il numero di giorni del ciclo se startDate è disponibile
-    let cycleDays = null;
-    if (startDate) {
-      const today = new Date();
-      const diffTime = Math.abs(today.getTime() - startDate.getTime());
-      cycleDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    }
-    
-    // Calcola il numero di animali se disponibile
-    let animalCount = null;
-    if (latestOperation) {
-      animalCount = latestOperation.animalCount;
-      if (!animalCount && latestOperation.animalsPerKg) {
-        const totalWeight = latestOperation.totalWeight || 0;
-        if (totalWeight > 0) {
-          animalCount = Math.round((totalWeight / 1000) * latestOperation.animalsPerKg);
-        }
-      }
-    }
-
-    return (
-      <div className="p-3 max-w-[320px]">
-        <div className="font-semibold text-base mb-2 border-b pb-1">Cesta #{basket.physicalNumber}</div>
-        <div className="grid grid-cols-2 gap-x-4 gap-y-1 text-xs">
-          <div><span className="font-medium text-gray-700">Stato:</span> {basket.state === 'active' ? 'Attiva' : 'Disponibile'}</div>
-          <div><span className="font-medium text-gray-700">Posizione:</span> {basket.row || '-'}-{basket.position || '-'}</div>
-          
-          {cycle && (
-            <>
-              <div><span className="font-medium text-gray-700">Ciclo:</span> #{cycle.id}</div>
-              {cycleDays && (
-                <div><span className="font-medium text-gray-700">Giorni:</span> {cycleDays}</div>
-              )}
-              {startDate && (
-                <div><span className="font-medium text-gray-700">Inizio:</span> {startDate.toLocaleDateString()}</div>
-              )}
-            </>
-          )}
-          
-          {latestOperation && (
-            <>
-              <div className="col-span-2 mt-1 pt-1 border-t font-medium text-gray-900">Ultima operazione:</div>
-              <div><span className="font-medium text-gray-700">Tipo:</span> {latestOperation.type}</div>
-              <div><span className="font-medium text-gray-700">Data:</span> {new Date(latestOperation.date).toLocaleDateString()}</div>
-              
-              {latestOperation.animalsPerKg && (
-                <div><span className="font-medium text-gray-700">Animali/kg:</span> {formatNumberWithCommas(latestOperation.animalsPerKg)}</div>
-              )}
-              
-              {animalCount && (
-                <div><span className="font-medium text-gray-700">Tot. animali:</span> {formatNumberWithCommas(animalCount)}</div>
-              )}
-              
-              {latestOperation.sizeId && latestOperation.size && (
-                <div><span className="font-medium text-gray-700">Taglia:</span> {latestOperation.size.code}</div>
-              )}
-              
-              {latestOperation.averageWeight && (
-                <div><span className="font-medium text-gray-700">Peso medio:</span> {latestOperation.averageWeight.toFixed(2)} mg</div>
-              )}
-            </>
-          )}
-        </div>
-      </div>
-    );
-  };
-
-  // Render a single FLUPSY grid
-  const renderFlupsyGrid = (flupsyId: number) => {
-    // Prima di renderizzare, forziamo un refresh completo dei dati dal server
-    // per assicurarci di avere i dati più aggiornati
-    const refreshBaskets = async () => {
-      await refetchBaskets();
-    };
-    
-    // Chiamiamo il refresh all'inizio del rendering
-    useEffect(() => {
-      refreshBaskets();
-    }, [flupsyId]);
-    
-    const flupsy = flupsys?.find((f: any) => f.id === flupsyId);
-    if (!flupsy || !baskets) return null;
-    
-    // Otteniamo i dati più aggiornati prima di procedere
-    const freshBaskets = queryClient.getQueryData(['/api/baskets']) as any[] || [];
-    
-    // Get baskets for this FLUPSY - usiamo freshBaskets invece di baskets
-    const flupsyBaskets = freshBaskets.filter((b: any) => b.flupsyId === flupsyId);
-    const flupsyDxRow = flupsyBaskets.filter((b: any) => b.row === 'DX');
-    const flupsySxRow = flupsyBaskets.filter((b: any) => b.row === 'SX');
-    
-    // Calculate max positions
-    const flupsyMaxPositions = Math.max(
-      ...flupsyBaskets
-        .filter((b: any) => b.position !== null && b.position !== undefined)
-        .map((b: any) => b.position || 0),
-      10 // Minimum of 10 positions
-    );
-    
-    // Helper function to get the basket at a specific position
-    const getFlupsyBasketByPosition = (row: 'DX' | 'SX', position: number): any => {
-      if (row === 'DX') {
-        return flupsyDxRow.find((b: any) => b.position === position);
-      }
-      return flupsySxRow.find((b: any) => b.position === position);
-    };
+    // Get baskets for this FLUPSY
+    const flupsyBaskets = baskets.filter(b => b.flupsyId === flupsyId);
+    const positions = Array.from({ length: 12 }, (_, i) => i + 1); // 12 posizioni per lato
     
     return (
-      <div key={flupsyId} className="border rounded-lg p-4 relative mb-8">
-        <div className="flex justify-between items-center mb-4">
-          <div className="font-medium text-base">{flupsy.name}</div>
-          <Badge variant="outline" className="absolute right-2 top-2">
-            Cestelli: {flupsyBaskets.length}
-          </Badge>
-        </div>
-        
-        <div className="space-y-6 relative">
-          {/* Icona elica (per orientare l'operatore) */}
-          <div className="absolute -left-14 top-0 z-10">
-            <div className="bg-blue-100 w-14 h-14 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300">
-              <Fan className="w-10 h-10 animate-spin-slow" />
+      <Card className="mb-6">
+        <CardHeader className="p-4 pb-0">
+          <div className="flex justify-between items-center">
+            <CardTitle className="text-xl flex items-center gap-2">
+              <Fan className="h-5 w-5" /> {flupsy.name}
+            </CardTitle>
+            <div className="text-xs text-gray-500 flex flex-col items-end">
+              <div>{flupsy.location}</div>
+              {flupsy.description && <div>{flupsy.description}</div>}
             </div>
           </div>
-          
-          {/* DX row (Right row) */}
-          <div>
-            <div className="flex items-center mb-2">
-              <Badge variant="secondary" className="mr-2">Fila DX</Badge>
-              <Separator className="flex-grow" />
+        </CardHeader>
+        <CardContent className="p-4">
+          {/* Grid layout per le posizioni */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {/* Lato SX */}
+            <div>
+              <div className="mb-2 font-semibold flex items-center">
+                <Wind className="h-4 w-4 mr-1" /> Lato SX
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {positions.map(position => {
+                  const basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
+                  return renderBasketBox(basket, position, 'SX', flupsyId);
+                })}
+              </div>
             </div>
             
-            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-              {Array.from({ length: flupsyMaxPositions }).map((_, i) => {
-                const position = i + 1;
-                const basket = getFlupsyBasketByPosition('DX', position);
-                
-                return (
-                  <TooltipProvider key={`${flupsyId}-dx-${position}`}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        {renderBasketBox(basket, position, 'DX', flupsyId)}
-                      </TooltipTrigger>
-                      <TooltipContent side="top" align="center" className="z-50">
-                        {renderTooltipContent(basket)}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                );
-              })}
+            {/* Lato DX */}
+            <div>
+              <div className="mb-2 font-semibold flex items-center">
+                <Wind className="h-4 w-4 mr-1" /> Lato DX
+              </div>
+              <div className="grid grid-cols-3 gap-2">
+                {positions.map(position => {
+                  const basket = flupsyBaskets.find(b => b.row === 'DX' && b.position === position);
+                  return renderBasketBox(basket, position, 'DX', flupsyId);
+                })}
+              </div>
             </div>
           </div>
-          
-          {/* SX row (Left row) */}
-          <div>
-            <div className="flex items-center mb-2">
-              <Badge variant="secondary" className="mr-2">Fila SX</Badge>
-              <Separator className="flex-grow" />
-            </div>
-            
-            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-              {Array.from({ length: flupsyMaxPositions }).map((_, i) => {
-                const position = i + 1;
-                const basket = getFlupsyBasketByPosition('SX', position);
-                
-                return (
-                  <TooltipProvider key={`${flupsyId}-sx-${position}`}>
-                    <Tooltip>
-                      <TooltipTrigger asChild>
-                        {renderBasketBox(basket, position, 'SX', flupsyId)}
-                      </TooltipTrigger>
-                      <TooltipContent side="top" align="center" className="z-50">
-                        {renderTooltipContent(basket)}
-                      </TooltipContent>
-                    </Tooltip>
-                  </TooltipProvider>
-                );
-              })}
-            </div>
-          </div>
-        </div>
-      </div>
+        </CardContent>
+      </Card>
     );
   };
 
-  // Render the FLUPSY grids
-  const renderFlupsyGrids = () => {
-    if (isLoadingFlupsys || isLoadingBaskets) {
-      return <div className="py-8 text-center">Caricamento dati FLUPSY...</div>;
-    }
+  // Render menu for selecting FLUPSY
+  const renderFlupsyMenu = () => {
+    if (!flupsys || !Array.isArray(flupsys)) return null;
     
-    if (!flupsys || flupsys.length === 0) {
-      return <div className="py-8 text-center">Nessuna unità FLUPSY configurata</div>;
-    }
-    
-    // Render selected FLUPSYs
     return (
-      <div className="space-y-8">
-        {selectedFlupsyIds.map(flupsyId => renderFlupsyGrid(flupsyId))}
-      </div>
-    );
-  };
-
-  return (
-    <DndProvider backend={HTML5Backend}>
-      <Card>
-        <CardHeader className="pb-2">
-          <div className="flex items-center justify-between">
-            <CardTitle>Gestione Posizioni FLUPSY</CardTitle>
-            <Button 
-              variant="ghost" 
-              size="sm" 
-              className="h-8 w-8 p-0"
-              onClick={() => setShowFlupsySelector(!showFlupsySelector)}
-            >
-              <Filter className="h-4 w-4" />
-            </Button>
-          </div>
-          <CardDescription>
-            Trascina le ceste per riposizionarle all'interno dell'unità FLUPSY
-          </CardDescription>
-          
-          {/* FLUPSY Selector */}
-          {showFlupsySelector && (
-            <div className="border rounded-md p-3 mt-2 bg-muted/20">
-              <div className="text-sm font-medium mb-2">Seleziona unità FLUPSY:</div>
-              <div className="flex flex-wrap gap-2">
-                {flupsys?.map((flupsy: any) => (
-                  <Badge 
+      <Card className="mb-4">
+        <CardContent className="p-3">
+          <div className="flex flex-wrap gap-2">
+            <Badge variant="outline" className="cursor-pointer" onClick={() => setShowFlupsySelector(!showFlupsySelector)}>
+              <Filter className="h-3 w-3 mr-1" />
+              {showFlupsySelector ? "Nascondi filtri" : "Visualizza filtri"}
+            </Badge>
+            
+            {showFlupsySelector && (
+              <>
+                <Separator orientation="vertical" className="h-6" />
+                
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className={`text-xs px-2 py-0 h-6 ${selectedFlupsyIds.length === flupsys.length ? 'bg-primary/10' : ''}`}
+                  onClick={() => setSelectedFlupsyIds(flupsys.map(f => f.id))}
+                >
+                  Tutti
+                </Button>
+                
+                {flupsys.map(flupsy => (
+                  <Button
                     key={flupsy.id}
-                    variant={selectedFlupsyIds.includes(flupsy.id) ? "default" : "outline"}
-                    className="cursor-pointer"
+                    size="sm"
+                    variant="ghost"
+                    className={`text-xs px-2 py-0 h-6 ${selectedFlupsyIds.includes(flupsy.id) ? 'bg-primary/10' : ''}`}
                     onClick={() => {
                       if (selectedFlupsyIds.includes(flupsy.id)) {
-                        // Remove if already selected and there's more than one
-                        if (selectedFlupsyIds.length > 1) {
-                          setSelectedFlupsyIds(selectedFlupsyIds.filter(id => id !== flupsy.id));
-                        }
+                        setSelectedFlupsyIds(selectedFlupsyIds.filter(id => id !== flupsy.id));
                       } else {
-                        // Add to selection
                         setSelectedFlupsyIds([...selectedFlupsyIds, flupsy.id]);
                       }
                     }}
                   >
                     {flupsy.name}
-                  </Badge>
+                  </Button>
                 ))}
-              </div>
-              
-              <div className="flex items-center mt-4 text-xs text-muted-foreground">
-                <Info className="h-3 w-3 mr-1" />
-                Trascina una cesta e rilasciala su una posizione vuota per spostarla.
-              </div>
-            </div>
-          )}
-        </CardHeader>
-        
-        <CardContent>
-          {renderFlupsyGrids()}
+              </>
+            )}
+          </div>
         </CardContent>
       </Card>
+    );
+  };
+
+  // Loading state
+  if (isLoadingFlupsys || isLoadingBaskets) {
+    return (
+      <div className="flex flex-col items-center justify-center min-h-[300px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+        <span className="mt-2 text-sm text-gray-500">Caricamento in corso...</span>
+      </div>
+    );
+  }
+
+  return (
+    <DndProvider backend={HTML5Backend}>
+      {renderFlupsyMenu()}
       
-      {/* Confirmation Dialog */}
+      {/* Render selected FLUPSY layouts */}
+      {selectedFlupsyIds.map(flupsyId => renderFlupsyLayout(flupsyId))}
+      
+      {/* Confirmation dialog */}
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
             <AlertDialogTitle>
-              {pendingBasketMove?.isSwitch ? "Conferma scambio" : "Conferma spostamento"}
+              {pendingBasketMove?.isSwitch ? "Conferma scambio cestelli" : "Conferma spostamento cestello"}
             </AlertDialogTitle>
             <AlertDialogDescription>
               {pendingBasketMove?.isSwitch 
-                ? "Vuoi fare switch?"
-                : "Vuoi spostare la cesta nella nuova posizione?"
+                ? "Sei sicuro di voler scambiare le posizioni dei due cestelli?"
+                : "Sei sicuro di voler spostare il cestello nella nuova posizione?"
               }
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
-            <AlertDialogCancel
-              onClick={() => {
-                setConfirmDialogOpen(false);
-                setPendingBasketMove(null);
-              }}
-            >
-              Annulla
-            </AlertDialogCancel>
-            <AlertDialogAction onClick={confirmBasketMove}>
-              Conferma
-            </AlertDialogAction>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction onClick={confirmBasketMove}>Conferma</AlertDialogAction>
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
