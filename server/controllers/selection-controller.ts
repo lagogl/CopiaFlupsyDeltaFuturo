@@ -410,11 +410,12 @@ export async function createSelection(req: Request, res: Response) {
 }
 
 /**
- * Ottiene le posizioni disponibili in un FLUPSY
+ * Ottiene le posizioni disponibili in un FLUPSY, supportando priorità per le posizioni nello stesso FLUPSY di origine
  */
 export async function getAvailablePositions(req: Request, res: Response) {
   try {
     const { flupsyId } = req.params;
+    const { originFlupsyId, row } = req.query;
     
     if (!flupsyId) {
       return res.status(400).json({
@@ -437,7 +438,8 @@ export async function getAvailablePositions(req: Request, res: Response) {
     
     // Ottieni le posizioni già occupate
     const occupiedPositions = await db.select({
-      position: baskets.position
+      position: baskets.position,
+      row: baskets.row
     })
     .from(baskets)
     .where(and(
@@ -449,30 +451,65 @@ export async function getAvailablePositions(req: Request, res: Response) {
     // Mappatura delle posizioni occupate
     const occupiedPositionsMap = new Map();
     occupiedPositions.forEach(p => {
-      if (p.position) {
-        occupiedPositionsMap.set(p.position, true);
+      if (p.position && p.row) {
+        const key = `${p.row}-${p.position}`;
+        occupiedPositionsMap.set(key, true);
       }
     });
     
+    // Determina se è lo stesso FLUPSY di origine
+    const isSameFlupsy = originFlupsyId && Number(originFlupsyId) === Number(flupsyId);
+    
     // Lista di tutte le posizioni possibili
-    const allPositions: Array<{flupsyId: number, flupsyName: string, position: string, available: boolean}> = [];
+    const allPositions: Array<{
+      flupsyId: number, 
+      flupsyName: string, 
+      row: string,
+      position: number, 
+      positionDisplay: string,
+      available: boolean,
+      sameFlupsy: boolean
+    }> = [];
     
-    // Generiamo le posizioni in formato "A1", "A2", "B1", "B2", ecc.
-    const rows = ['A', 'B', 'C', 'D'];
-    const cols = [1, 2, 3, 4, 5, 6, 7, 8];
+    // Generiamo le posizioni in formato "DX-1", "DX-2", "SX-1", "SX-2", ecc.
+    const rows = ['DX', 'SX'];
+    const positions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
     
-    rows.forEach(row => {
-      cols.forEach(col => {
-        const position = `${row}${col}`;
-        const isOccupied = occupiedPositionsMap.has(position);
+    rows.forEach(posRow => {
+      // Se è stata specificata una fila, mostriamo solo quella
+      if (row && row !== posRow) return;
+      
+      positions.forEach(pos => {
+        const key = `${posRow}-${pos}`;
+        const isOccupied = occupiedPositionsMap.has(key);
         
-        allPositions.push({
-          flupsyId: Number(flupsyId),
-          flupsyName: flupsy[0].name,
-          position,
-          available: !isOccupied
-        });
+        if (!isOccupied) {
+          allPositions.push({
+            flupsyId: Number(flupsyId),
+            flupsyName: flupsy[0].name,
+            row: posRow,
+            position: pos,
+            positionDisplay: `${posRow}-${pos}`,
+            available: true,
+            sameFlupsy: isSameFlupsy
+          });
+        }
       });
+    });
+    
+    // Ordina le posizioni: prima quelle nello stesso FLUPSY di origine, poi le altre
+    allPositions.sort((a, b) => {
+      // Se sono entrambe nello stesso FLUPSY di origine o entrambe in FLUPSY differenti, ordina per fila e posizione
+      if (a.sameFlupsy === b.sameFlupsy) {
+        // Prima ordina per fila (DX prima di SX)
+        if (a.row !== b.row) {
+          return a.row === 'DX' ? -1 : 1;
+        }
+        // Poi per posizione
+        return a.position - b.position;
+      }
+      // Altrimenti, mostra prima quelle nello stesso FLUPSY di origine
+      return a.sameFlupsy ? -1 : 1;
     });
     
     return res.status(200).json(allPositions);
