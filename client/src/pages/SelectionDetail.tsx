@@ -144,6 +144,28 @@ export default function SelectionDetailPage() {
     staleTime: 1000 * 60, // 1 minuto
   });
 
+  // Funzione per ottenere il FLUPSY di origine della cesta selezionata
+  function getSourceFlupsyId() {
+    if (!destinationBasketData.basketId) return null;
+    
+    // Cerca la cesta selezionata tra le ceste disponibili
+    const selectedBasket = availableBaskets?.find(
+      basket => basket.basketId === parseInt(destinationBasketData.basketId)
+    );
+    
+    return selectedBasket?.flupsyId || null;
+  }
+  
+  // Query per caricare le posizioni disponibili nel FLUPSY selezionato
+  const { data: availablePositions, isLoading: isLoadingPositions } = useQuery({
+    queryKey: [
+      `/api/selections/available-positions/${destinationBasketData.positionFlupsyId}`, 
+      { originFlupsyId: getSourceFlupsyId() }
+    ],
+    // La query dovrebbe eseguirsi solo se è stato selezionato un FLUPSY
+    enabled: Boolean(destinationBasketData.positionFlupsyId),
+  });
+
   // Calcola i totali della selezione
   const calculateTotals = () => {
     if (!sourceBaskets || !destinationBaskets) return null;
@@ -1540,17 +1562,43 @@ export default function SelectionDetailPage() {
                   
                   <div className="space-y-2 md:col-span-2">
                     <Label htmlFor="positionNumber">Posizione</Label>
-                    <Input
-                      id="positionNumber"
-                      type="number"
-                      min="1"
-                      max="10"
-                      value={destinationBasketData.positionNumber || ""}
-                      onChange={(e) => setDestinationBasketData({ 
-                        ...destinationBasketData, 
-                        positionNumber: e.target.value
-                      })}
-                    />
+                    
+                    {isLoadingPositions ? (
+                      <div className="h-10 flex items-center">
+                        <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary mr-2"></div>
+                        <span className="text-sm text-muted-foreground">Caricamento posizioni...</span>
+                      </div>
+                    ) : availablePositions && availablePositions.length > 0 ? (
+                      <Select
+                        value={destinationBasketData.positionNumber || ""}
+                        onValueChange={(value) => setDestinationBasketData({ 
+                          ...destinationBasketData, 
+                          positionNumber: value
+                        })}
+                      >
+                        <SelectTrigger id="positionNumber">
+                          <SelectValue placeholder="Seleziona posizione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availablePositions.map((position, i) => (
+                            <SelectItem 
+                              key={`${position.row}-${position.position}`} 
+                              value={position.position.toString()}
+                              className={position.sameFlupsy ? 'bg-green-50 text-green-700 border-l-4 border-green-400 pl-2' : ''}
+                            >
+                              {position.positionDisplay}
+                              {position.sameFlupsy && (
+                                <span className="ml-2 text-xs text-green-600 font-normal">(stesso FLUPSY)</span>
+                              )}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    ) : (
+                      <div className="text-sm text-muted-foreground p-2 border rounded-md">
+                        Nessuna posizione disponibile in questo FLUPSY.
+                      </div>
+                    )}
                   </div>
                 </>
               )}
