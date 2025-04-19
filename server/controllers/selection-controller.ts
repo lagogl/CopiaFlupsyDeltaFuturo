@@ -3,7 +3,7 @@
  */
 import { Request, Response } from "express";
 import { db } from "../db";
-import { eq, and, isNull, isNotNull, sql } from "drizzle-orm";
+import { eq, and, or, isNull, isNotNull, sql } from "drizzle-orm";
 import { 
   selections, 
   selectionSourceBaskets, 
@@ -101,7 +101,7 @@ export async function getAvailableBaskets(req: Request, res: Response) {
     );
     
     // 2. Arricchisci i dati con informazioni sul FLUPSY e sull'ultima operazione per ogni cestello
-    const basketsWithDetails = await Promise.all(activeBaskets.map(async (basket) => {
+    const basketsWithDetails = await Promise.all(allBaskets.map(async (basket) => {
       // Recupera il FLUPSY
       const flupsyData = basket.flupsyId ? await db.select()
         .from(flupsys)
@@ -139,9 +139,11 @@ export async function getAvailableBaskets(req: Request, res: Response) {
         basketId: basket.basketId,
         physicalNumber: basket.physicalNumber,
         cycleId: basket.cycleId,
+        flupsyId: basket.flupsyId,
         flupsy: flupsyData.length > 0 ? flupsyData[0] : null,
         position: basket.position,
         row: basket.row,
+        state: basket.state,
         lastOperation: latestOperation.length > 0 ? latestOperation[0] : null,
         size: sizeData,
         cycle: cycle.length > 0 ? cycle[0] : null
