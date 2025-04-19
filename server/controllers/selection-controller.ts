@@ -539,6 +539,112 @@ export async function getAvailablePositions(req: Request, res: Response) {
 }
 
 /**
+ * Ottiene tutte le posizioni disponibili in tutti i FLUPSY
+ * Endpoint separato per evitare conflitti con il parametro di selezione
+ */
+export async function getAllAvailablePositions(req: Request, res: Response) {
+  try {
+    const { originFlupsyId } = req.query;
+    
+    // Lista finale di tutte le posizioni disponibili
+    const allAvailablePositions: Array<{
+      flupsyId: number,
+      flupsyName: string,
+      row: string,
+      position: number,
+      positionDisplay: string,
+      available: boolean,
+      sameFlupsy: boolean
+    }> = [];
+    
+    // Recupera tutti i FLUPSY attivi
+    const flupsysToProcess = await db.select().from(flupsys).where(eq(flupsys.active, true));
+    
+    // Per ogni FLUPSY, recuperiamo le posizioni disponibili
+    for (const flupsy of flupsysToProcess) {
+      // Ottieni le posizioni già occupate
+      const occupiedPositions = await db.select({
+        position: baskets.position,
+        row: baskets.row
+      })
+      .from(baskets)
+      .where(and(
+        eq(baskets.flupsyId, flupsy.id),
+        eq(baskets.state, 'active'),
+        sql`${baskets.position} IS NOT NULL`
+      ));
+      
+      // Mappatura delle posizioni occupate
+      const occupiedPositionsMap = new Map();
+      occupiedPositions.forEach(p => {
+        if (p.position && p.row) {
+          const key = `${p.row}-${p.position}`;
+          occupiedPositionsMap.set(key, true);
+        }
+      });
+      
+      // Determina se è lo stesso FLUPSY di origine
+      let originId = null;
+      if (originFlupsyId && !isNaN(Number(originFlupsyId))) {
+        originId = Number(originFlupsyId);
+      }
+      const isSameFlupsy = originId !== null && originId === flupsy.id;
+      
+      // Generiamo le posizioni in formato "DX-1", "DX-2", "SX-1", "SX-2", ecc.
+      const rows = ['DX', 'SX'];
+      const positions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      
+      rows.forEach(posRow => {
+        positions.forEach(pos => {
+          const key = `${posRow}-${pos}`;
+          const isOccupied = occupiedPositionsMap.has(key);
+          
+          if (!isOccupied) {
+            allAvailablePositions.push({
+              flupsyId: flupsy.id,
+              flupsyName: flupsy.name,
+              row: posRow,
+              position: pos,
+              positionDisplay: `${flupsy.name} ${posRow}-${pos}`,
+              available: true,
+              sameFlupsy: isSameFlupsy
+            });
+          }
+        });
+      });
+    }
+    
+    // Ordina le posizioni: prima quelle nello stesso FLUPSY di origine, poi le altre
+    allAvailablePositions.sort((a, b) => {
+      // Se sono entrambe nello stesso FLUPSY di origine o entrambe in FLUPSY differenti, ordina per nome FLUPSY
+      if (a.sameFlupsy === b.sameFlupsy) {
+        // Ordina prima per nome FLUPSY
+        if (a.flupsyName !== b.flupsyName) {
+          return a.flupsyName.localeCompare(b.flupsyName);
+        }
+        // Poi per fila (DX prima di SX)
+        if (a.row !== b.row) {
+          return a.row === 'DX' ? -1 : 1;
+        }
+        // Infine per posizione
+        return a.position - b.position;
+      }
+      // Altrimenti, mostra prima quelle nello stesso FLUPSY di origine
+      return a.sameFlupsy ? -1 : 1;
+    });
+    
+    return res.status(200).json(allAvailablePositions);
+    
+  } catch (error) {
+    console.error("ERRORE DURANTE RECUPERO POSIZIONI DISPONIBILI:", error);
+    return res.status(500).json({ 
+      success: false,
+      error: `Errore durante il recupero delle posizioni disponibili: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}
+
+/**
  * Aggiunge ceste di origine alla selezione (seconda fase)
  */
 export async function addSourceBaskets(req: Request, res: Response) {
