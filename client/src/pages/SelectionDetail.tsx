@@ -108,7 +108,7 @@ export default function SelectionDetailPage() {
     basketId: "",
     animalCount: 0,
     deadCount: 0,
-    sampleWeight: 0,
+    sampleWeight: 100, // Impostiamo il valore predefinito a 100 grammi
     sampleCount: 0,
     totalWeightKg: 0,
     animalsPerKg: 0,
