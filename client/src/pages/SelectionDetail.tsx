@@ -1201,12 +1201,17 @@ export default function SelectionDetailPage() {
                           animalsPerKg = Math.round((destinationBasketData.sampleCount / sampleWeight) * 1000);
                         }
                         
-                        // Calcolo totale animali (tenendo conto della mortalità)
+                        // MODIFICA: Calcola percentuale di mortalità in base al campione
+                        let mortalityPercentage = 0;
+                        if (destinationBasketData.sampleCount && destinationBasketData.sampleCount > 0 && destinationBasketData.deadCount) {
+                          mortalityPercentage = destinationBasketData.deadCount / destinationBasketData.sampleCount;
+                        }
+                        
+                        // Calcolo totale animali (considerando la percentuale di mortalità)
                         let animalCount = 0;
                         if (animalsPerKg > 0 && destinationBasketData.totalWeightKg > 0) {
-                          animalCount = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
-                          // Sottrai gli animali morti
-                          animalCount = Math.max(0, animalCount - (destinationBasketData.deadCount || 0));
+                          const totalBeforeMortality = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
+                          animalCount = Math.round(totalBeforeMortality * (1 - mortalityPercentage));
                         }
                         
                         setDestinationBasketData({ 
@@ -1238,12 +1243,17 @@ export default function SelectionDetailPage() {
                           animalsPerKg = Math.round((sampleCount / destinationBasketData.sampleWeight) * 1000);
                         }
                         
-                        // Calcolo totale animali (tenendo conto della mortalità)
+                        // MODIFICA: Calcola percentuale di mortalità in base al campione
+                        let mortalityPercentage = 0;
+                        if (sampleCount > 0 && destinationBasketData.deadCount) {
+                          mortalityPercentage = destinationBasketData.deadCount / sampleCount;
+                        }
+                        
+                        // Calcolo totale animali (considerando la percentuale di mortalità)
                         let animalCount = 0;
                         if (animalsPerKg > 0 && destinationBasketData.totalWeightKg > 0) {
-                          animalCount = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
-                          // Sottrai gli animali morti
-                          animalCount = Math.max(0, animalCount - (destinationBasketData.deadCount || 0));
+                          const totalBeforeMortality = Math.round(animalsPerKg * destinationBasketData.totalWeightKg);
+                          animalCount = Math.round(totalBeforeMortality * (1 - mortalityPercentage));
                         }
                         
                         setDestinationBasketData({ 
@@ -1301,18 +1311,24 @@ export default function SelectionDetailPage() {
                       onChange={(e) => {
                         const deadCount = parseInt(e.target.value) || 0;
                         
-                        // Calcolo totale animali (tenendo conto della mortalità)
+                        // MODIFICA: Calcola percentuale di mortalità basandosi sui dati del campione
+                        let mortalityPercentage = 0;
+                        if (destinationBasketData.sampleCount && destinationBasketData.sampleCount > 0) {
+                          mortalityPercentage = deadCount / destinationBasketData.sampleCount;
+                        }
+                        
+                        // Calcolo totale animali (considerando la percentuale di mortalità)
                         let animalCount = 0;
-                        let totalBeforeDead = 0;
                         if (destinationBasketData.animalsPerKg > 0 && destinationBasketData.totalWeightKg > 0) {
-                          totalBeforeDead = Math.round(destinationBasketData.animalsPerKg * destinationBasketData.totalWeightKg);
-                          animalCount = Math.max(0, totalBeforeDead - deadCount);
+                          const totalBeforeMortality = Math.round(destinationBasketData.animalsPerKg * destinationBasketData.totalWeightKg);
+                          animalCount = Math.round(totalBeforeMortality * (1 - mortalityPercentage));
                         }
                         
                         setDestinationBasketData({ 
                           ...destinationBasketData, 
                           deadCount,
-                          animalCount: animalCount || 0
+                          animalCount: animalCount || 0,
+                          mortalityPercentage // Aggiungiamo questo campo per usi futuri
                         });
                       }}
                       className="h-9 bg-white dark:bg-slate-800 border-red-200 dark:border-red-800 font-mono text-base"
@@ -1375,10 +1391,9 @@ export default function SelectionDetailPage() {
                   </Label>
                   <div className="font-bold text-base font-mono bg-white dark:bg-slate-800 px-4 py-1 rounded-md border border-orange-200 dark:border-orange-800">
                     {(() => {
-                      // Calcola la percentuale di mortalità
-                      const totalBeforeDead = destinationBasketData.animalsPerKg * destinationBasketData.totalWeightKg;
-                      if (totalBeforeDead && destinationBasketData.deadCount) {
-                        const percentage = (destinationBasketData.deadCount / totalBeforeDead) * 100;
+                      // MODIFICA: Calcola la percentuale di mortalità in base al campione
+                      if (destinationBasketData.sampleCount && destinationBasketData.deadCount) {
+                        const percentage = (destinationBasketData.deadCount / destinationBasketData.sampleCount) * 100;
                         return isNaN(percentage) || !isFinite(percentage) ? "0.00%" : `${percentage.toFixed(2)}%`;
                       }
                       return "0.00%";
