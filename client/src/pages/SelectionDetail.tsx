@@ -1113,8 +1113,7 @@ export default function SelectionDetailPage() {
                       availableBaskets
                         .filter(b => {
                           // Verifica se la cesta è available e senza ciclo
-                          // CORREZIONE: Escludiamo esplicitamente la cesta #11 (basketId=6) che sta erroneamente apparendo nelle destinazioni
-                          const isAvailable = (b.state === "available" && !b.cycleId && b.basketId !== 6);
+                          const isAvailable = (b.state === "available" && !b.cycleId);
                           console.log(`Cesta ${b.physicalNumber}: state=${b.state}, cycleId=${b.cycleId}, basketId=${b.basketId}, isAvailable=${isAvailable}`);
                           return isAvailable;
                         })
@@ -1126,7 +1125,9 @@ export default function SelectionDetailPage() {
                           return !alreadyAdded;
                         })
                         .map(basket => {
-                          const sizeCode = basket.size?.code || basket.size?.sizeCode || "N/A";
+                          // CORREZIONE: Se siamo in una cesta di destinazione (senza ciclo)
+                          // Non dobbiamo mostrare la taglia, perché non ha senso mostrarla in una cesta vuota
+                          // Se una cesta è available, non dovrebbe avere una taglia associata
                           
                           return (
                             <SelectItem key={basket.basketId} value={basket.basketId.toString()}>
@@ -1136,13 +1137,9 @@ export default function SelectionDetailPage() {
                                   Cesta #{basket.physicalNumber}
                                 </div>
                                 
-                                {/* Colonna 4-5: Taglia */}
+                                {/* Per le ceste di destinazione (vuote), non mostriamo la taglia */}
                                 <div className="col-span-2">
-                                  <span 
-                                    className={`px-2 py-0.5 rounded text-xs font-medium inline-block ${getSizeColorClass(sizeCode)}`}
-                                  >
-                                    {sizeCode}
-                                  </span>
+                                  {/* Colonna intenzionalmente vuota */}
                                 </div>
                                 
                                 {/* Colonna 6-12: Nome FLUPSY */}
