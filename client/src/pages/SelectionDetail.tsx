@@ -112,6 +112,7 @@ export default function SelectionDetailPage() {
     sampleCount: 0,
     totalWeightKg: 0,
     animalsPerKg: 0,
+    positionId: "", // ID combinato per la posizione nel formato "flupsyId-row-position"
     positionFlupsyId: "",
     positionRow: "",
     positionNumber: "",
@@ -156,14 +157,12 @@ export default function SelectionDetailPage() {
     return selectedBasket?.flupsyId || null;
   }
   
-  // Query per caricare le posizioni disponibili nel FLUPSY selezionato
+  // Query per caricare tutte le posizioni disponibili in tutti i FLUPSY
   const { data: availablePositions, isLoading: isLoadingPositions } = useQuery({
     queryKey: [
-      `/api/selections/available-positions/${destinationBasketData.positionFlupsyId}`, 
+      `/api/selections/available-positions-all`, 
       { originFlupsyId: getSourceFlupsyId() }
     ],
-    // La query dovrebbe eseguirsi solo se è stato selezionato un FLUPSY
-    enabled: Boolean(destinationBasketData.positionFlupsyId),
   });
 
   // Calcola i totali della selezione
@@ -1483,107 +1482,42 @@ export default function SelectionDetailPage() {
                 </>
               ) : (
                 <>
-                  <div className="space-y-2">
-                    <Label htmlFor="positionFlupsyId">FLUPSY</Label>
-                    <Select
-                      value={destinationBasketData.positionFlupsyId}
-                      onValueChange={(value) => setDestinationBasketData({ 
-                        ...destinationBasketData, 
-                        positionFlupsyId: value
-                      })}
-                    >
-                      <SelectTrigger id="positionFlupsyId">
-                        <SelectValue placeholder="Seleziona FLUPSY" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {isLoadingFlupsys ? (
-                          <div className="flex justify-center py-2">
-                            <Spinner size="sm" />
-                          </div>
-                        ) : flupsys?.filter(f => f.active)?.length ? (
-                          flupsys
-                            .filter(f => f.active)
-                            // Ordina i FLUPSY in modo che il FLUPSY della cesta selezionata appaia per primo
-                            .sort((a, b) => {
-                              // Ottieni il FLUPSY ID della cesta selezionata
-                              const basketId = parseInt(destinationBasketData.basketId);
-                              const selectedBasket = availableBaskets?.find(b => b.basketId === basketId);
-                              const selectedFlupsyId = selectedBasket?.flupsyId;
-                              
-                              // Se uno dei due FLUPSY corrisponde a quello della cesta selezionata, mettilo prima
-                              if (selectedFlupsyId === a.id) return -1;
-                              if (selectedFlupsyId === b.id) return 1;
-                              return 0;
-                            })
-                            .map(flupsy => {
-                              // Ottieni il FLUPSY ID della cesta selezionata
-                              const basketId = parseInt(destinationBasketData.basketId);
-                              const selectedBasket = availableBaskets?.find(b => b.basketId === basketId);
-                              const selectedFlupsyId = selectedBasket?.flupsyId;
-                              
-                              // Evidenzia con un colore diverso i FLUPSY che sono diversi da quello della cesta selezionata
-                              const isSameFlupsy = selectedFlupsyId === flupsy.id;
-                              
-                              return (
-                                <SelectItem 
-                                  key={flupsy.id} 
-                                  value={flupsy.id.toString()}
-                                  className={isSameFlupsy ? "bg-green-50 dark:bg-green-950 font-medium" : ""}
-                                >
-                                  {isSameFlupsy ? "→ " : ""}{flupsy.name}
-                                </SelectItem>
-                              );
-                            })
-                        ) : (
-                          <SelectItem disabled value="none">Nessun FLUPSY disponibile</SelectItem>
-                        )}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2">
-                    <Label htmlFor="positionRow">Fila</Label>
-                    <Select
-                      value={destinationBasketData.positionRow}
-                      onValueChange={(value) => setDestinationBasketData({ 
-                        ...destinationBasketData, 
-                        positionRow: value
-                      })}
-                    >
-                      <SelectTrigger id="positionRow">
-                        <SelectValue placeholder="Seleziona fila" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        <SelectItem value="DX">Fila DX</SelectItem>
-                        <SelectItem value="SX">Fila SX</SelectItem>
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div className="space-y-2 md:col-span-2">
-                    <Label htmlFor="positionNumber">Posizione</Label>
+                  <div className="space-y-2 md:col-span-4">
+                    <Label htmlFor="position">Posizione nel FLUPSY</Label>
                     
                     {isLoadingPositions ? (
                       <div className="h-10 flex items-center">
                         <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-primary mr-2"></div>
-                        <span className="text-sm text-muted-foreground">Caricamento posizioni...</span>
+                        <span className="text-sm text-muted-foreground">Caricamento posizioni disponibili...</span>
                       </div>
                     ) : availablePositions && availablePositions.length > 0 ? (
                       <Select
-                        value={destinationBasketData.positionNumber || ""}
-                        onValueChange={(value) => setDestinationBasketData({ 
-                          ...destinationBasketData, 
-                          positionNumber: value
-                        })}
+                        value={destinationBasketData.positionId || ""}
+                        onValueChange={(value) => {
+                          // Trova la posizione selezionata tra quelle disponibili
+                          const selectedPosition = availablePositions.find(p => 
+                            `${p.flupsyId}-${p.row}-${p.position}` === value
+                          );
+                          
+                          if (selectedPosition) {
+                            setDestinationBasketData({ 
+                              ...destinationBasketData,
+                              positionId: value,
+                              positionFlupsyId: selectedPosition.flupsyId.toString(),
+                              positionRow: selectedPosition.row,
+                              positionNumber: selectedPosition.position.toString()
+                            });
+                          }
+                        }}
                       >
-                        <SelectTrigger id="positionNumber">
-                          <SelectValue placeholder="Seleziona posizione" />
+                        <SelectTrigger id="position">
+                          <SelectValue placeholder="Seleziona una posizione disponibile" />
                         </SelectTrigger>
                         <SelectContent>
-                          {availablePositions.map((position, i) => (
+                          {availablePositions.map((position) => (
                             <SelectItem 
-                              key={`${position.row}-${position.position}`} 
-                              value={position.position.toString()}
+                              key={`${position.flupsyId}-${position.row}-${position.position}`} 
+                              value={`${position.flupsyId}-${position.row}-${position.position}`}
                               className={position.sameFlupsy ? 'bg-green-50 text-green-700 border-l-4 border-green-400 pl-2' : ''}
                             >
                               {position.positionDisplay}
@@ -1596,7 +1530,7 @@ export default function SelectionDetailPage() {
                       </Select>
                     ) : (
                       <div className="text-sm text-muted-foreground p-2 border rounded-md">
-                        Nessuna posizione disponibile in questo FLUPSY.
+                        Nessuna posizione disponibile in alcun FLUPSY.
                       </div>
                     )}
                   </div>
