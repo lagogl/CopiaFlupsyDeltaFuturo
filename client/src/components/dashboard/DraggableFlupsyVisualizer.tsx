@@ -246,14 +246,18 @@ export default function DraggableFlupsyVisualizer() {
         // Normale successo - aggiornamento posizione completato
         queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
         
-        // Forza un aggiornamento completo dei dati
+        // Aggiorna immediatamente tutte le query rilevanti senza ricaricare la pagina
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+        
+        // Forza un refetch attivo per ottenere subito i dati aggiornati
         setTimeout(() => {
-          window.location.reload();
-        }, 500);
+          refetchBaskets();
+        }, 50);
         
         toast({
           title: "Posizione aggiornata",
-          description: "La posizione della cesta è stata aggiornata con successo. La pagina verrà ricaricata per aggiornare le visualizzazioni."
+          description: "La posizione della cesta è stata aggiornata con successo."
         });
         setConfirmDialogOpen(false);
         setPendingBasketMove(null);
@@ -419,14 +423,18 @@ export default function DraggableFlupsyVisualizer() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       
-      // Forza un aggiornamento completo dei dati dopo lo switch
+      // Aggiorna immediatamente tutte le query rilevanti senza ricaricare la pagina
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+      
+      // Forza un refetch attivo per ottenere subito i dati aggiornati
       setTimeout(() => {
-        window.location.reload();
-      }, 500);
+        refetchBaskets();
+      }, 50);
       
       toast({
         title: "Scambio completato",
-        description: "Lo scambio delle ceste è stato completato con successo. La pagina verrà ricaricata per aggiornare le visualizzazioni.",
+        description: "Lo scambio delle ceste è stato completato con successo.",
       });
       setConfirmDialogOpen(false);
       setPendingBasketMove(null);
