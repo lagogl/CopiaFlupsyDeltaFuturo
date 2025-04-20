@@ -297,6 +297,10 @@ export default function OperationForm({
     { value: 'cessazione', label: 'Cessazione' },
   ];
   
+  // Determina se abbiamo un cestello attivo senza cicli attivi
+  const isActiveBasketWithNoCycles = selectedBasket?.state === 'active' && 
+    filteredCycles.length === 0;
+
   // Filter operation types based on basket state and cycle availability
   const operationTypes = selectedBasket 
     ? (selectedBasket.state === 'available' 
@@ -456,9 +460,6 @@ export default function OperationForm({
       onSubmit(formattedValues);
     }
   };
-  
-  // Determina se abbiamo un cestello attivo senza cicli attivi
-  const isActiveBasketWithNoCycles = selectedBasket?.state === 'active' && filteredCycles.length === 0;
 
   return (
     <Form {...form}>
@@ -616,8 +617,10 @@ export default function OperationForm({
                   </SelectContent>
                 </Select>
                 <FormDescription className="text-xs">
-                  {selectedBasket?.state === 'active' && filteredCycles.length > 0 && 
-                    "L'operazione Prima Attivazione è disponibile solo per cestelli senza ciclo attivo"}
+                  {selectedBasket?.state === 'active' && 
+                    (isActiveBasketWithNoCycles 
+                      ? "È possibile utilizzare Prima Attivazione per creare un nuovo ciclo"
+                      : "L'operazione Prima Attivazione è disponibile solo per cestelli senza ciclo attivo")}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
