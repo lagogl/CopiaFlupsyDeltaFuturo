@@ -297,11 +297,13 @@ export default function OperationForm({
     { value: 'cessazione', label: 'Cessazione' },
   ];
   
-  // Filter operation types based on basket state
+  // Filter operation types based on basket state and cycle availability
   const operationTypes = selectedBasket 
     ? (selectedBasket.state === 'available' 
       ? allOperationTypes.filter(op => op.value === 'prima-attivazione') // Only 'Prima Attivazione' for available baskets
-      : allOperationTypes.filter(op => op.value !== 'prima-attivazione')) // All operations EXCEPT 'Prima Attivazione' for active baskets
+      : isActiveBasketWithNoCycles
+        ? allOperationTypes // All operations (including 'Prima Attivazione') for active baskets WITHOUT cycles
+        : allOperationTypes.filter(op => op.value !== 'prima-attivazione')) // All operations EXCEPT 'Prima Attivazione' for active baskets WITH cycles
     : allOperationTypes;
 
   // Aggiungi una funzione per gestire l'invio del form con log dettagliati per debug
