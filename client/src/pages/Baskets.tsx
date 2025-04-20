@@ -451,7 +451,7 @@ export default function Baskets() {
 
       {/* Create Basket Dialog */}
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Crea Nuova Cesta</DialogTitle>
             <DialogDescription>
@@ -467,7 +467,7 @@ export default function Baskets() {
       
       {/* Edit Basket Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifica Cesta</DialogTitle>
             <DialogDescription>
@@ -492,7 +492,7 @@ export default function Baskets() {
       
       {/* View Basket Details Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-        <DialogContent className="sm:max-w-[700px]">
+        <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Dettagli Cesta</DialogTitle>
             <DialogDescription>
@@ -597,7 +597,7 @@ export default function Baskets() {
       
       {/* Delete Basket Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Elimina Cesta</DialogTitle>
             <DialogDescription className="text-destructive-foreground/80">
