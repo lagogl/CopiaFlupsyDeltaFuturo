@@ -457,8 +457,8 @@ export default function OperationForm({
   
   return (
     <Form {...form}>
-      <form onSubmit={onSubmitForm} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+      <form onSubmit={onSubmitForm} className="space-y-4">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <FormField
             control={form.control}
             name="basketId"
@@ -580,7 +580,7 @@ export default function OperationForm({
                       ))}
                     </SelectContent>
                   </Select>
-                  <FormDescription>
+                  <FormDescription className="text-xs">
                     {!watchBasketId ? "Seleziona prima una cesta" : 
                       filteredCycles.length === 0 ? "Nessun ciclo attivo per questa cesta" : ""}
                   </FormDescription>
@@ -633,9 +633,9 @@ export default function OperationForm({
                         "Calcolato automaticamente"
                       }
                       readOnly
-                      className="bg-gray-100"
+                      className="bg-sky-50 border-sky-100 font-medium text-sky-700"
                     />
-                    <div className="text-xs text-muted-foreground mt-1 ml-1">
+                    <div className="text-xs text-sky-600 mt-1 ml-1">
                       {field.value ? 
                         sizes?.find(s => s.id === field.value)?.name : 
                         "Basato su animali per kg"
@@ -643,7 +643,7 @@ export default function OperationForm({
                     </div>
                   </div>
                 </FormControl>
-                <FormDescription>
+                <FormDescription className="text-xs">
                   La taglia viene selezionata automaticamente in base al numero di animali per kg
                 </FormDescription>
                 <FormMessage />
@@ -697,10 +697,10 @@ export default function OperationForm({
                     placeholder="Calcolato automaticamente"
                     value={field.value ? Number(field.value).toFixed(2) : ''}
                     readOnly
-                    className="bg-gray-100"
+                    className="bg-amber-50 border-amber-100 font-medium text-amber-700"
                   />
                 </FormControl>
-                <FormDescription>
+                <FormDescription className="text-xs">
                   Calcolato automaticamente: (Numero animali × Peso medio) ÷ 1000
                 </FormDescription>
                 <FormMessage />
@@ -753,10 +753,10 @@ export default function OperationForm({
                     placeholder="Calcolato automaticamente"
                     value={field.value ? Math.round(field.value) : ''}
                     readOnly
-                    className="bg-gray-100"
+                    className="bg-green-50 border-green-100 font-medium text-green-700"
                   />
                 </FormControl>
-                <FormDescription>
+                <FormDescription className="text-xs">
                   Calcolato automaticamente: 1.000.000 ÷ (animali per kg)
                 </FormDescription>
                 <FormMessage />
