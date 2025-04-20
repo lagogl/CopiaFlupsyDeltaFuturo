@@ -306,7 +306,7 @@ export default function OperationForm({
     ? (selectedBasket.state === 'available' 
       ? allOperationTypes.filter(op => op.value === 'prima-attivazione') // Only 'Prima Attivazione' for available baskets
       : isActiveBasketWithNoCycles
-        ? allOperationTypes // All operations (including 'Prima Attivazione') for active baskets WITHOUT cycles
+        ? allOperationTypes.filter(op => op.value === 'prima-attivazione') // Only 'Prima Attivazione' for active baskets WITHOUT cycles
         : allOperationTypes.filter(op => op.value !== 'prima-attivazione')) // All operations EXCEPT 'Prima Attivazione' for active baskets WITH cycles
     : allOperationTypes;
 
@@ -617,9 +617,9 @@ export default function OperationForm({
                   </SelectContent>
                 </Select>
                 <FormDescription className="text-xs">
-                  {selectedBasket?.state === 'active' && 
-                    (isActiveBasketWithNoCycles 
-                      ? "È possibile utilizzare Prima Attivazione per creare un nuovo ciclo"
+                  {selectedBasket && 
+                    (selectedBasket.state === 'available' || isActiveBasketWithNoCycles
+                      ? "L'operazione Prima Attivazione creerà un nuovo ciclo per questo cestello"
                       : "L'operazione Prima Attivazione è disponibile solo per cestelli senza ciclo attivo")}
                 </FormDescription>
                 <FormMessage />
