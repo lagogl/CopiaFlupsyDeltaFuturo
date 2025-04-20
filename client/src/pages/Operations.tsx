@@ -1315,7 +1315,7 @@ export default function Operations() {
         }
         setIsCreateDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[850px] max-h-[95vh] overflow-y-auto" aria-describedby="operation-form-description">
+        <DialogContent className="sm:max-w-[850px] max-h-[95vh] overflow-y-auto" aria-describedby="operation-form-description" aria-description="Form per la creazione di una nuova operazione.">
           <DialogHeader>
             <DialogTitle>
               {selectedOperation ? "Duplica Operazione" : "Registra Nuova Operazione"}
@@ -1362,7 +1362,7 @@ export default function Operations() {
       
       {/* Edit Operation Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[850px] max-h-[95vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[850px] max-h-[95vh] overflow-y-auto" aria-description="Form per la modifica di un'operazione esistente.">
           <DialogHeader>
             <DialogTitle>Modifica Operazione</DialogTitle>
           </DialogHeader>
@@ -1404,7 +1404,7 @@ export default function Operations() {
       
       {/* Delete Operation Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[425px]" aria-description="Form per confermare l'eliminazione di un'operazione.">
           <DialogHeader>
             <DialogTitle>Elimina Operazione</DialogTitle>
             <DialogDescription className="text-destructive-foreground/80">
