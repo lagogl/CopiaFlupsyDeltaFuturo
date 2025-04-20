@@ -458,7 +458,7 @@ export default function OperationForm({
   return (
     <Form {...form}>
       <form onSubmit={onSubmitForm} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
           <FormField
             control={form.control}
             name="basketId"
@@ -610,7 +610,7 @@ export default function OperationForm({
                     ))}
                   </SelectContent>
                 </Select>
-                <FormDescription>
+                <FormDescription className="text-xs">
                   {selectedBasket?.state === 'active' && 
                     "L'operazione Prima Attivazione non è disponibile per cestelli già attivi"}
                 </FormDescription>
@@ -935,12 +935,12 @@ export default function OperationForm({
                   </SelectContent>
                 </Select>
                 {watchType === 'prima-attivazione' && (
-                  <FormDescription>
+                  <FormDescription className="text-xs">
                     Il lotto è obbligatorio per la Prima Attivazione e sarà utilizzato per le operazioni successive
                   </FormDescription>
                 )}
                 {watchType !== 'prima-attivazione' && (
-                  <FormDescription>
+                  <FormDescription className="text-xs">
                     Il lotto viene precompilato automaticamente dal lotto usato nella Prima Attivazione di questo ciclo
                   </FormDescription>
                 )}
@@ -968,7 +968,7 @@ export default function OperationForm({
           )}
         />
 
-        <div className="flex justify-end space-x-2">
+        <div className="flex justify-end space-x-2 mt-2">
           <Button variant="outline" type="button" onClick={() => form.reset()}>
             Annulla
           </Button>
