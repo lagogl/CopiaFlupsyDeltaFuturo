@@ -85,10 +85,13 @@ export function implementDirectOperationRoute(app: Express) {
             eq(cycles.state, 'active')
           ));
           
-        console.log(`Verifica dei cicli attivi per il cestello: trovati ${hasActiveCycle.length} cicli`);
+        // Verifica extra sulla presenza di current_cycle_id
+        const currentCycleId = basket[0].currentCycleId;
         
-        if (basket[0].state !== 'available' && (hasActiveCycle.length > 0 || basket[0].currentCycleId !== null)) {
-          throw new Error(`Impossibile eseguire la prima attivazione: cestello ${operationData.basketId} ha già un ciclo attivo oppure non è disponibile (stato attuale: ${basket[0].state})`);
+        console.log(`Verifica dei cicli attivi per il cestello: trovati ${hasActiveCycle.length} cicli. Current cycle ID: ${currentCycleId || 'nessuno'}`);
+        
+        if (hasActiveCycle.length > 0) {
+          throw new Error(`Impossibile eseguire la prima attivazione: cestello ${operationData.basketId} ha già un ciclo attivo`);
         }
         
         // TRASAZIONE: Crea prima il ciclo, poi l'operazione con cycleId corretto
