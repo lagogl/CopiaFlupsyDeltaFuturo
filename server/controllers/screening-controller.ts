@@ -280,10 +280,14 @@ export async function executeScreeningOperation(req: Request, res: Response) {
       }
       
       // 4. Crea una nuova operazione di tipo "vagliatura"
-      const operationResult = await tx.select()
-        .from(operationTypes)
-        .where(eq(operationTypes.code, 'vagliatura'))
-        .limit(1);
+      // Trova il tipo di operazione "vagliatura"
+      const operationResult = await tx.select({
+        id: operationTypes.id,
+        code: operationTypes.code
+      })
+      .from(operationTypes)
+      .where(eq(operationTypes.code, 'vagliatura'))
+      .limit(1);
       
       if (!operationResult || operationResult.length === 0) {
         throw new Error("Tipo di operazione 'vagliatura' non trovato");

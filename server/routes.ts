@@ -10,6 +10,10 @@ import {
   selectionSourceBaskets,
   selectionDestinationBaskets
 } from "../shared/schema";
+
+// Importazione dei controller
+import * as SelectionController from "./controllers/selection-controller";
+import * as ScreeningController from "./controllers/screening-controller";
 import { execFile } from 'child_process';
 import { 
   createDatabaseBackup, 
@@ -4366,6 +4370,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Registra le route per cancellare e completare le selezioni
   implementSelectionRoutes(app, db);
+  
+  // === Route per operazioni di vagliatura ===
+  app.post("/api/screening/prepare", ScreeningController.prepareScreeningOperation);
+  app.post("/api/screening/execute", ScreeningController.executeScreeningOperation);
   
   // Configure WebSocket server
   const { 
