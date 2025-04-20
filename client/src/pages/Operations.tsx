@@ -126,8 +126,10 @@ export default function Operations() {
       }
       // 3. Operazioni normali
       else {
+        // Utilizziamo la route diretta per tutte le operazioni normali
+        // Questa è più resiliente e gestisce meglio i casi in cui cycleId manca
         createdOperation = await apiRequest({
-          url: '/api/operations',
+          url: '/api/direct-operations',
           method: 'POST',
           body: newOperation
         });
