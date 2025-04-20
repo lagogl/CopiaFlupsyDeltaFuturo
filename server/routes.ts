@@ -135,6 +135,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return {
           ...basket,
           flupsy: flupsy || null,
+          flupsyName: flupsy ? flupsy.name : null,
           lastOperation: lastOperation ? {
             ...lastOperation,
             type: lastOperation.type, // Causale dell'operazione

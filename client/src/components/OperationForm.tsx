@@ -464,7 +464,7 @@ export default function OperationForm({
             name="basketId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Numero Cesta</FormLabel>
+                <FormLabel>Numero Cesta e FLUPSY</FormLabel>
                 <Select 
                   onValueChange={(value) => {
                     field.onChange(Number(value));
@@ -494,7 +494,7 @@ export default function OperationForm({
                         
                       return (
                         <SelectItem key={basket.id} value={basket.id.toString()}>
-                          Cesta #{basket.physicalNumber}{positionInfo}{cycleInfo}{stateInfo}
+                          Cesta #{basket.physicalNumber} - {basket.flupsyName || `FLUPSY #${basket.flupsyId}`}{positionInfo}{cycleInfo}{stateInfo}
                         </SelectItem>
                       );
                     })}
