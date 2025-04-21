@@ -308,6 +308,19 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
         return;
       }
 
+      // Gestione delle diverse operazioni in base al tipo
+      if (operationType === "misura" || operationType === "peso") {
+        // Per operazioni rapide misura e peso, reindirizzare alla pagina corrispondente
+        const operationParam = operationType === "misura" ? "misura" : "peso";
+        window.location.href = `/quick-operations?operation=${operationParam}&basketId=${basketId}`;
+        return;
+      } else if (operationType === "vagliatura") {
+        // Per l'operazione di vagliatura, reindirizzare alla pagina di screening
+        window.location.href = `/screening/new?basketId=${basketId}`;
+        return;
+      }
+
+      // Per le altre operazioni (se future saranno abilitate) usiamo il dialog interno
       // Trova l'ultima operazione per questa cesta
       const basketOperations = operations && Array.isArray(operations)
         ? operations.filter((op: any) => op.basketId === basketId)
@@ -555,6 +568,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                 type={item.type}
                 icon={item.icon}
                 label={item.label}
+                disabled={item.disabled}
               />
             ))}
           </div>
