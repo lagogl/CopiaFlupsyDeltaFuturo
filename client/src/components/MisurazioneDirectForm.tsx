@@ -499,8 +499,10 @@ export default function MisurazioneDirectForm({
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-xs text-muted-foreground">Animali/kg:</label>
-              <div className="font-semibold text-md">
+              <div className={`font-semibold text-md ${calculatedValues.animalsPerKg && calculatedValues.animalsPerKg > 32000 ? 'text-green-600 flex items-center' : ''}`}>
                 {calculatedValues.animalsPerKg ? formatNumberWithCommas(calculatedValues.animalsPerKg) : '-'}
+                {calculatedValues.animalsPerKg && calculatedValues.animalsPerKg > 32000 && 
+                  <span className="ml-2 text-sm font-medium">(TP-3000 superata)</span>}
               </div>
             </div>
             <div>

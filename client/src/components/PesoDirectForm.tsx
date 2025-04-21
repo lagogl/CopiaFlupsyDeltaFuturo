@@ -359,6 +359,8 @@ export default function PesoDirectForm({
               }
             }}
             previousOperationData={previousOperationData}
+            operationDate={formData.date}
+            lastOperationDate={lastOperationDate || undefined}
           />
         )}
         
