@@ -266,9 +266,33 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
   // Mutation per creare una nuova operazione
   const createOperationMutation = useMutation({
     mutationFn: async (operationData: any) => {
-      return apiRequest("POST", "/api/operations", operationData);
+      console.log("Dati operazione da inviare:", operationData);
+      try {
+        // Utilizziamo fetch direttamente con opzione credentials incluse
+        const response = await fetch("/api/operations", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify(operationData),
+          credentials: "include"
+        });
+        
+        if (!response.ok) {
+          console.error("Errore nella risposta:", response.status, response.statusText);
+          const errorText = await response.text();
+          console.error("Dettagli errore:", errorText);
+          throw new Error(`Errore HTTP: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+      } catch (error) {
+        console.error("Errore durante la creazione dell'operazione:", error);
+        throw error;
+      }
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Operazione creata con successo:", data);
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       toast({
         title: "Operazione completata",
@@ -279,6 +303,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       setPreviousOperationData(null);
     },
     onError: (error: any) => {
+      console.error("Errore nella mutazione:", error);
       toast({
         title: "Errore",
         description: `Si è verificato un errore: ${error.message}`,
