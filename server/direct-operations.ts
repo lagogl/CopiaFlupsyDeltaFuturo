@@ -78,9 +78,12 @@ export function implementDirectOperationRoute(app: Express) {
       if (operationData.type === 'prima-attivazione') {
         console.log("Rilevata operazione di PRIMA ATTIVAZIONE - Esecuzione flusso speciale");
         
-        // Verifica che il cestello sia disponibile (non in un ciclo attivo)
-        if (basket[0].state !== 'available') {
-          throw new Error(`Impossibile eseguire la prima attivazione: cestello ${operationData.basketId} non è disponibile (stato attuale: ${basket[0].state})`);
+        // Verifica che il cestello sia disponibile o attivo senza ciclo
+        const isAvailable = basket[0].state === 'available';
+        const isActiveWithoutCycle = basket[0].state === 'active' && !basket[0].currentCycleId;
+        
+        if (!isAvailable && !isActiveWithoutCycle) {
+          throw new Error(`Impossibile eseguire la prima attivazione: cestello ${operationData.basketId} ha già un ciclo attivo`);
         }
         
         // TRASAZIONE: Crea prima il ciclo, poi l'operazione con cycleId corretto

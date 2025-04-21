@@ -704,11 +704,13 @@ export default function OperationForm({
               const availableOperationTypes = operationTypes;
               
               // Determina se il selettore dovrebbe essere disabilitato
-              const isSelectDisabled = selectedBasket?.state === 'available';
+              const isSelectDisabled = selectedBasket?.state === 'available' || 
+                (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId);
 
               // Colore di sfondo e testo per il selettore
               const selectClassName = 
-                selectedBasket?.state === 'available' ? 
+                (selectedBasket?.state === 'available' || 
+                (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) ?
                 "bg-amber-50 border-amber-200 text-amber-700 font-medium" : "";
               
               return (
@@ -722,7 +724,7 @@ export default function OperationForm({
                        ? 'prima-attivazione' 
                        : field.value
                     }
-                    disabled={isSelectDisabled} // Disabilitato solo se il cestello è disponibile
+                    disabled={isSelectDisabled} // Disabilitato per ceste disponibili o attive senza ciclo
                   >
                     <FormControl>
                       <SelectTrigger className={selectClassName}>
@@ -733,7 +735,9 @@ export default function OperationForm({
                       {availableOperationTypes.map((type) => {
                         // Evidenzia in modo speciale l'opzione Prima Attivazione per cestelli senza ciclo
                         const isPrimaAttivazione = type.value === 'prima-attivazione';
-                        const isMandatory = isPrimaAttivazione && selectedBasket?.state === 'available';
+                        const isMandatory = isPrimaAttivazione && 
+                          (selectedBasket?.state === 'available' || 
+                           (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId));
                         const className = isMandatory ? "bg-amber-50 font-medium" : "";
                         
                         return (
