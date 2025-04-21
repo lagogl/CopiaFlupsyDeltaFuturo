@@ -26,8 +26,12 @@ interface MisurazioneDirectFormProps {
 // Funzione per formattare le date in formato italiano
 const formatDate = (dateString: string) => {
   try {
+    console.log("Data originale ricevuta:", dateString);
     const date = new Date(dateString);
-    return format(date, 'dd/MM/yyyy', { locale: it });
+    console.log("Data convertita:", date);
+    const formattedDate = format(date, 'dd/MM/yyyy', { locale: it });
+    console.log("Data formattata:", formattedDate);
+    return formattedDate;
   } catch (e) {
     console.error("Errore nel formato della data:", dateString, e);
     return dateString;
