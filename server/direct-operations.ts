@@ -3,8 +3,63 @@
 
 import type { Express } from "express";
 import { db } from './db';
-import { operations, cycles, baskets } from '../shared/schema';
-import { sql, eq } from 'drizzle-orm';
+import { operations, cycles, baskets, sizes } from '../shared/schema';
+import { sql, eq, and, between } from 'drizzle-orm';
+
+/**
+ * Trova automaticamente il sizeId corretto in base al numero di animali per kg.
+ * @param animalsPerKg Numero di animali per kg
+ * @returns Promise che risolve con il sizeId appropriato
+ */
+async function findSizeIdByAnimalsPerKg(animalsPerKg: number): Promise<number | null> {
+  try {
+    // Cerca la taglia appropriata in base al range di animali per kg
+    const appropriateSize = await db
+      .select()
+      .from(sizes)
+      .where(
+        and(
+          sql`${animalsPerKg} >= ${sizes.minAnimalsPerKg}`,
+          sql`${animalsPerKg} <= ${sizes.maxAnimalsPerKg}`
+        )
+      )
+      .limit(1);
+    
+    if (appropriateSize && appropriateSize.length > 0) {
+      console.log(`Trovata taglia appropriata per ${animalsPerKg} animali/kg:`, appropriateSize[0]);
+      return appropriateSize[0].id;
+    }
+    
+    // Se non troviamo un range esatto, cerchiamo la taglia più vicina
+    console.log(`Nessuna taglia esatta trovata per ${animalsPerKg} animali/kg, cercando la più vicina...`);
+    const allSizes = await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
+    
+    if (allSizes.length === 0) {
+      console.error("Nessuna taglia trovata nel database!");
+      return null;
+    }
+    
+    // Trova la taglia più vicina
+    let closestSize = allSizes[0];
+    let minDifference = Math.abs(animalsPerKg - ((closestSize.minAnimalsPerKg || 0) + (closestSize.maxAnimalsPerKg || 0)) / 2);
+    
+    for (const size of allSizes) {
+      const avgAnimalsPerKg = ((size.minAnimalsPerKg || 0) + (size.maxAnimalsPerKg || 0)) / 2;
+      const difference = Math.abs(animalsPerKg - avgAnimalsPerKg);
+      
+      if (difference < minDifference) {
+        minDifference = difference;
+        closestSize = size;
+      }
+    }
+    
+    console.log(`Trovata taglia più vicina per ${animalsPerKg} animali/kg:`, closestSize);
+    return closestSize.id;
+  } catch (error) {
+    console.error("Errore nella ricerca della taglia:", error);
+    return null;
+  }
+}
 
 /**
  * Implementa la route diretta per le operazioni che risolve i problemi di inserimento
@@ -58,11 +113,33 @@ export function implementDirectOperationRoute(app: Express) {
         operationData.lotId = Number(operationData.lotId);
       }
       
-      // 3. Calcola averageWeight se viene fornito animalsPerKg
+      // 3. Calcola averageWeight e sizeId appropriato se viene fornito animalsPerKg
       if (operationData.animalsPerKg && operationData.animalsPerKg > 0) {
+        // Calcola il peso medio in mg per ogni animale
         const averageWeight = 1000000 / operationData.animalsPerKg;
         operationData.averageWeight = averageWeight;
         console.log(`Calcolato averageWeight: ${averageWeight} da animalsPerKg: ${operationData.animalsPerKg}`);
+        
+        // Se l'operazione è di tipo "misura" o "peso", aggiorna automaticamente sizeId
+        if (
+          (operationData.type === 'misura' || operationData.type === 'peso' || operationData.type === 'prima-attivazione') && 
+          operationData.animalsPerKg > 0
+        ) {
+          console.log(`Calcolo automatico della taglia in base a ${operationData.animalsPerKg} animali/kg...`);
+          
+          // Trova la taglia appropriata in base al numero di animali per kg
+          const appropriateSizeId = await findSizeIdByAnimalsPerKg(operationData.animalsPerKg);
+          
+          if (appropriateSizeId) {
+            // Se l'utente non ha specificato una taglia o se la taglia è diversa da quella calcolata
+            if (!operationData.sizeId || operationData.sizeId !== appropriateSizeId) {
+              console.log(`Aggiornamento automatico della taglia da ${operationData.sizeId || 'non specificata'} a ${appropriateSizeId} in base al peso`);
+              operationData.sizeId = appropriateSizeId;
+            }
+          } else {
+            console.warn("Impossibile calcolare automaticamente la taglia appropriata, viene mantenuta quella specificata dall'utente.");
+          }
+        }
       }
       
       console.log("Dati operazione dopo la normalizzazione:");
