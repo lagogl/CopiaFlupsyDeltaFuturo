@@ -305,7 +305,8 @@ export default function Operations() {
   const filteredOperations = useMemo(() => {
     if (!operations || !cycles) return [];
     
-    return operations.filter((op: any) => {
+    // Filtriamo prima le operazioni secondo i criteri
+    const filtered = operations.filter((op: any) => {
       // Filter by search term
       const matchesSearch = searchTerm === '' || 
         `${op.basketId}`.includes(searchTerm) || 
@@ -334,6 +335,17 @@ export default function Operations() {
         (cycleStateFilter === 'closed' && cycle && cycle.state === 'closed');
       
       return matchesSearch && matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesCycleState;
+    });
+    
+    // Ora ordiniamo le operazioni per ciclo e all'interno di ciascun ciclo per data in ordine ascendente
+    return [...filtered].sort((a, b) => {
+      // Prima ordina per ciclo
+      if (a.cycleId !== b.cycleId) {
+        return a.cycleId - b.cycleId;
+      }
+      
+      // Se sono dello stesso ciclo, ordina per data (ascendente)
+      return new Date(a.date).getTime() - new Date(b.date).getTime();
     });
   }, [operations, cycles, searchTerm, typeFilter, dateFilter, flupsyFilter, cycleFilter, cycleStateFilter]);
   
