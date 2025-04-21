@@ -783,7 +783,8 @@ export default function VagliaturaDetailPage() {
                   selection.status !== "draft" || 
                   !sourceBaskets?.length || 
                   (!destinationBaskets?.length && !pendingDestinationBaskets?.length) ||
-                  (totals && totals.remainingAnimals > 0)
+                  // Se ci sono cestelli in attesa, ignoriamo il controllo sugli animali rimanenti
+                  (pendingDestinationBaskets.length === 0 && totals && totals.remainingAnimals > 0)
                 }
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
