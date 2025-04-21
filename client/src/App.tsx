@@ -119,11 +119,17 @@ function WebSocketListener() {
   return null; // Questo componente non renderizza nulla
 }
 
+// Importiamo il componente di integrazione WebSocket-Query
+import { WebSocketQueryIntegration } from './lib/websocketQueryIntegration';
+
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
       {/* Inizializza il WebSocket all'avvio dell'app */}
       <WebSocketListener />
+      
+      {/* Integrazione tra WebSocket e React Query */}
+      <WebSocketQueryIntegration />
       
       {/* Provider per i tooltip contestuali personalizzati */}
       <TooltipProvider>
