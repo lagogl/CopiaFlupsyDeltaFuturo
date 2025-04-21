@@ -5,6 +5,8 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatNumberWithCommas } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 
 interface MisurazioneDirectFormProps {
   basketId: number;
@@ -20,6 +22,17 @@ interface MisurazioneDirectFormProps {
   onSuccess: () => void;
   onCancel: () => void;
 }
+
+// Funzione per formattare le date in formato italiano
+const formatDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    return format(date, 'dd/MM/yyyy', { locale: it });
+  } catch (e) {
+    console.error("Errore nel formato della data:", dateString, e);
+    return dateString;
+  }
+};
 
 export default function MisurazioneDirectForm({
   basketId,
@@ -250,7 +263,7 @@ export default function MisurazioneDirectForm({
             <span>Informazioni sulla cesta:</span>
             {lastOperationDate && (
               <span className="text-xs text-blue-600 font-normal">
-                Ultima op: {new Date(lastOperationDate).toLocaleDateString()}
+                Ultima op: {formatDate(lastOperationDate)}
               </span>
             )}
           </h4>
