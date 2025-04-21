@@ -850,10 +850,27 @@ export async function addDestinationBaskets(req: Request, res: Response) {
       });
     }
     
+    // Verifica destinazioni valide e assegna flupsyId predefinito ai cestelli venduti
+    // Modificato per assicurarsi che i cestelli venduti abbiano un flupsyId
+    const processedDestinationBaskets = destinationBaskets.map(basket => {
+      if (basket.destinationType === 'sold' && !basket.flupsyId) {
+        // Se è un cestello venduto senza FLUPSY, assegna il FLUPSY ID 1 come predefinito
+        console.log('Assegnazione flupsyId predefinito (1) per cestello venduto');
+        return {
+          ...basket,
+          flupsyId: 1 // Usa il primo FLUPSY come predefinito per i cestelli venduti
+        };
+      }
+      return basket;
+    });
+    
+    // Aggiorna la lista dei cestelli con quella processata
+    const destinationBasketsWithValidFlupsyId = processedDestinationBaskets;
+    
     // Verifica destinazioni valide
-    const invalidDestinations = destinationBaskets.filter(basket => {
+    const invalidDestinations = destinationBasketsWithValidFlupsyId.filter(basket => {
       if (basket.destinationType === 'sold') {
-        return false; // Valida
+        return false; // Valida se è un cestello venduto (ora avrà sempre un flupsyId)
       } else if (basket.destinationType === 'placed') {
         return !basket.flupsyId || !basket.position; // Invalida se manca FLUPSY o posizione
       }
@@ -939,7 +956,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
       }
       
       // Processa le ceste di destinazione
-      for (const destBasket of destinationBaskets) {
+      for (const destBasket of destinationBasketsWithValidFlupsyId) {
         // Assicura che ogni cesta abbia un valore di sizeId basato su animalsPerKg
         let actualSizeId = destBasket.sizeId;
         
@@ -1011,12 +1028,14 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             .where(eq(cycles.id, cycle.id));
           
           // Aggiorna lo stato del cestello a disponibile
+          // IMPORTANTE: Manteniamo il flupsyId a un valore valido (quello attuale o 1 di default)
+          // per rispettare il vincolo not-null del database, ma impostiamo position a null
           await tx.update(baskets)
             .set({ 
               state: 'available',
               currentCycleId: null,
-              flupsyId: null,
-              position: null
+              position: null,
+              row: null // La row può essere null
             })
             .where(eq(baskets.id, destBasket.basketId));
           
