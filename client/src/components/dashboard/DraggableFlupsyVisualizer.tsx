@@ -713,14 +713,14 @@ export default function DraggableFlupsyVisualizer() {
           </div>
         </CardHeader>
         <CardContent className="p-4">
-          {/* Grid layout per le posizioni */}
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+          {/* Layout per le posizioni - due righe orizzontali di 10 ceste ciascuna */}
+          <div className="flex flex-col gap-8">
             {/* Lato SX */}
             <div>
               <div className="mb-2 font-semibold flex items-center">
                 <Wind className="h-4 w-4 mr-1" /> Lato SX
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
                   return (
@@ -737,7 +737,7 @@ export default function DraggableFlupsyVisualizer() {
               <div className="mb-2 font-semibold flex items-center">
                 <Wind className="h-4 w-4 mr-1" /> Lato DX
               </div>
-              <div className="grid grid-cols-3 gap-2">
+              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'DX' && b.position === position);
                   return (
