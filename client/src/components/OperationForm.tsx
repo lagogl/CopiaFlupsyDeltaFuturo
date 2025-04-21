@@ -475,6 +475,13 @@ export default function OperationForm({
                     field.onChange(Number(value));
                     // Reset cycle when basket changes
                     form.setValue('cycleId', undefined);
+                    
+                    // Verifica lo stato del cestello selezionato
+                    const selectedBasket = baskets?.find(b => b.id === Number(value));
+                    if (selectedBasket?.state === 'available') {
+                      // Se la cesta è disponibile, imposta automaticamente il tipo a "prima-attivazione"
+                      form.setValue('type', 'prima-attivazione');
+                    }
                   }}
                   value={field.value?.toString()}
                 >
@@ -498,7 +505,16 @@ export default function OperationForm({
                         ' - Disponibile' : '';
                         
                       return (
-                        <SelectItem key={basket.id} value={basket.id.toString()}>
+                        <SelectItem 
+                          key={basket.id} 
+                          value={basket.id.toString()}
+                          className={basket.state === 'active' ? "text-green-700 font-medium" : basket.state === 'available' ? "text-amber-600" : ""}
+                        >
+                          {basket.state === 'active' 
+                            ? "🟢 " 
+                            : basket.state === 'available' 
+                              ? "🟠 " 
+                              : ""}
                           Cesta #{basket.physicalNumber} - {basket.flupsyName || `FLUPSY #${basket.flupsyId}`}{positionInfo}{cycleInfo}{stateInfo}
                         </SelectItem>
                       );
@@ -601,9 +617,13 @@ export default function OperationForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Tipologia Operazione</FormLabel>
-                <Select onValueChange={field.onChange} defaultValue={field.value}>
+                <Select 
+                  onValueChange={field.onChange} 
+                  defaultValue={field.value}
+                  disabled={selectedBasket?.state === 'available'} // Disabilitato se il cestello è disponibile
+                >
                   <FormControl>
-                    <SelectTrigger>
+                    <SelectTrigger className={selectedBasket?.state === 'available' ? "bg-amber-50 border-amber-200 text-amber-700" : ""}>
                       <SelectValue placeholder="Seleziona tipologia" />
                     </SelectTrigger>
                   </FormControl>
@@ -616,7 +636,9 @@ export default function OperationForm({
                   </SelectContent>
                 </Select>
                 <FormDescription className="text-xs">
-                  {selectedBasket?.state === 'active' && filteredCycles.length > 0 && 
+                  {selectedBasket?.state === 'available' ? 
+                    "Per ceste disponibili è possibile eseguire solo operazioni di Prima Attivazione" : 
+                    selectedBasket?.state === 'active' && filteredCycles.length > 0 && 
                     "L'operazione Prima Attivazione è disponibile solo per cestelli senza ciclo attivo"}
                 </FormDescription>
                 <FormMessage />
