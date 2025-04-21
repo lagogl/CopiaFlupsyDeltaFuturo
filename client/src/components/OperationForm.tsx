@@ -264,6 +264,9 @@ export default function OperationForm({
   // Determine if a new cycle needs to be created
   const needsNewCycle = selectedBasket?.state === 'available' && watchBasketId;
   
+  // Determina se abbiamo un cestello attivo senza cicli attivi
+  const isActiveBasketWithNoCycles = selectedBasket?.state === 'active' && filteredCycles.length === 0;
+  
   // Auto-select cycle when basket is selected and there's only one active cycle
   useEffect(() => {
     if (watchBasketId && filteredCycles && filteredCycles.length === 1 && !watchCycleId && watchType !== 'prima-attivazione') {
@@ -456,9 +459,6 @@ export default function OperationForm({
       onSubmit(formattedValues);
     }
   };
-  
-  // Determina se abbiamo un cestello attivo senza cicli attivi
-  const isActiveBasketWithNoCycles = selectedBasket?.state === 'active' && filteredCycles.length === 0;
 
   return (
     <Form {...form}>
