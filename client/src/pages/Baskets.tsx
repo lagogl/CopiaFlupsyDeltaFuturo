@@ -326,8 +326,10 @@ export default function Baskets() {
               ) : (
                 filteredBaskets.map((basket) => {
                   let statusBadge;
-                  if (basket.state === 'active') {
+                  if (basket.state === 'active' && basket.currentCycleId) {
                     statusBadge = <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Ciclo attivo</Badge>;
+                  } else if (basket.state === 'active' && !basket.currentCycleId) {
+                    statusBadge = <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200">Attiva, senza ciclo</Badge>;
                   } else {
                     statusBadge = <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">Disponibile</Badge>;
                   }
@@ -517,8 +519,19 @@ export default function Baskets() {
                   <div className="p-4 border-b bg-muted/30">
                     <h3 className="text-lg font-semibold flex items-center">
                       Cesta #{selectedBasket.physicalNumber}
-                      <Badge className="ml-2" variant={selectedBasket.state === 'active' ? 'default' : 'secondary'}>
-                        {selectedBasket.state === 'active' ? 'Ciclo attivo' : 'Disponibile'}
+                      <Badge className="ml-2" variant={
+                        selectedBasket.state === 'active' && selectedBasket.currentCycleId 
+                          ? 'default' 
+                          : selectedBasket.state === 'active' && !selectedBasket.currentCycleId
+                            ? 'outline' 
+                            : 'secondary'
+                      }>
+                        {selectedBasket.state === 'active' && selectedBasket.currentCycleId 
+                          ? 'Ciclo attivo' 
+                          : selectedBasket.state === 'active' && !selectedBasket.currentCycleId
+                            ? 'Attiva, senza ciclo' 
+                            : 'Disponibile'
+                        }
                       </Badge>
                     </h3>
                   </div>
@@ -636,8 +649,10 @@ export default function Baskets() {
                     <p className="font-medium flex items-center">
                       {selectedBasket.state === 'available' ? (
                         <><span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-2"></span> Disponibile</>
-                      ) : (
+                      ) : selectedBasket.state === 'active' && selectedBasket.currentCycleId ? (
                         <><span className="inline-block h-2 w-2 rounded-full bg-blue-500 mr-2"></span> In uso (ciclo attivo)</>
+                      ) : (
+                        <><span className="inline-block h-2 w-2 rounded-full bg-amber-500 mr-2"></span> Attiva, senza ciclo</>
                       )}
                     </p>
                   </div>
