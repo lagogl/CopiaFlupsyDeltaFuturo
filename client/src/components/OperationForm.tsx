@@ -311,13 +311,31 @@ export default function OperationForm({
   
   // Filter operation types based on basket state and cycle availability
   // Filtro più restrittivo per le operazioni
-  const operationTypes = selectedBasket 
-    ? (selectedBasket.state === 'available' 
-      ? allOperationTypes.filter(op => op.value === 'prima-attivazione') // Solo 'Prima Attivazione' per cestelli disponibili
-      : selectedBasket.state === 'active' && !selectedBasket.currentCycleId
-        ? allOperationTypes // Tutte le operazioni per cestelli attivi SENZA ciclo attivo
-        : allOperationTypes.filter(op => op.value !== 'prima-attivazione')) // Tutte le operazioni TRANNE 'Prima Attivazione' per cestelli con ciclo attivo
-    : allOperationTypes;
+  console.log('Stato cestello selezionato:', selectedBasket?.state);
+  console.log('Cestello ha ciclo attivo?', selectedBasket?.currentCycleId ? 'Sì' : 'No');
+  
+  // Implementazione restrittiva per cestelli disponibili
+  let filteredOperationTypes;
+  if (selectedBasket) {
+    if (selectedBasket.state === 'available') {
+      // Solo "Prima Attivazione" per cestelli disponibili
+      filteredOperationTypes = allOperationTypes.filter(op => op.value === 'prima-attivazione');
+      console.log('Filtraggio per cestello DISPONIBILE - solo Prima Attivazione:', filteredOperationTypes);
+    } else if (selectedBasket.state === 'active' && !selectedBasket.currentCycleId) {
+      // Tutte le operazioni per cestelli attivi SENZA ciclo attivo
+      filteredOperationTypes = allOperationTypes;
+      console.log('Filtraggio per cestello ATTIVO SENZA CICLO - tutte operazioni:', filteredOperationTypes);
+    } else {
+      // Tutte le operazioni TRANNE 'Prima Attivazione' per cestelli con ciclo attivo
+      filteredOperationTypes = allOperationTypes.filter(op => op.value !== 'prima-attivazione');
+      console.log('Filtraggio per cestello ATTIVO CON CICLO - no Prima Attivazione:', filteredOperationTypes);
+    }
+  } else {
+    filteredOperationTypes = allOperationTypes;
+    console.log('Nessun cestello selezionato - tutte operazioni:', filteredOperationTypes);
+  }
+  
+  const operationTypes = filteredOperationTypes;
 
   // Aggiungi una funzione per gestire l'invio del form con log dettagliati per debug
   const handleFormSubmit = (values: FormValues) => {
@@ -633,6 +651,11 @@ export default function OperationForm({
                 }, 0);
               }
               
+              // Per cestelli disponibili mostriamo solo l'opzione "Prima Attivazione"
+              const availableOperationTypes = selectedBasket?.state === 'available'
+                ? allOperationTypes.filter(op => op.value === 'prima-attivazione')
+                : operationTypes;
+              
               return (
                 <FormItem>
                   <FormLabel>Tipologia Operazione</FormLabel>
@@ -647,9 +670,14 @@ export default function OperationForm({
                       </SelectTrigger>
                     </FormControl>
                     <SelectContent>
-                      {operationTypes.map((type) => (
-                        <SelectItem key={type.value} value={type.value}>
-                          {type.label}
+                      {/* Usiamo availableOperationTypes invece di operationTypes per assicurarci di mostrare solo "Prima Attivazione" per ceste disponibili */}
+                      {availableOperationTypes.map((type) => (
+                        <SelectItem 
+                          key={type.value} 
+                          value={type.value}
+                          className={type.value === 'prima-attivazione' && selectedBasket?.state === 'available' ? "bg-amber-50 font-medium" : ""}
+                        >
+                          {type.label} {type.value === 'prima-attivazione' && selectedBasket?.state === 'available' ? "(Obbligatorio)" : ""}
                         </SelectItem>
                       ))}
                     </SelectContent>
