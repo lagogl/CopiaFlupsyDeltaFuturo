@@ -409,8 +409,11 @@ export default function VagliaturaDetailPage() {
       const newBasket = {
         basketId: parseInt(destinationBasketData.basketId),
         physicalNumber: selectedBasket.physicalNumber,
-        flupsyId: positionFlupsyId,
-        position: formattedPosition,
+        // Anche per i cestelli venduti è necessario impostare un FLUPSY, 
+        // altrimenti viola vincolo not-null nel database
+        // Se è vendita, useremo il FLUPSY predefinito 1 ma non sarà visibile
+        flupsyId: destinationBasketData.saleDestination ? 1 : positionFlupsyId,
+        position: destinationBasketData.saleDestination ? null : formattedPosition,
         destinationType: destinationBasketData.saleDestination ? 'sold' : 'placed',
         animalCount: destinationBasketData.animalCount || null,
         deadCount: destinationBasketData.deadCount || null,
