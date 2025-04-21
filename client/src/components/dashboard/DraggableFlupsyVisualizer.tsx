@@ -72,14 +72,10 @@ function DraggableBasket({ basket, isDropDisabled = false, children, onClick }: 
     <div
       ref={drag}
       onClick={onClick}
-      onMouseDown={handleMouseDown}
-      onMouseUp={handleMouseUp}
-      onMouseLeave={handleMouseUp}
       style={{ 
         opacity: isDragging ? 0.5 : 1,
-        cursor: isDraggable ? 'grab' : 'pointer',
       }}
-      className={`hover:shadow-md transition-shadow duration-200 ${isDraggable ? 'active:cursor-grabbing' : ''}`}
+      className={`hover:shadow-md transition-shadow duration-200 ${isDraggable ? 'basket-draggable' : ''}`}
     >
       {children}
     </div>
@@ -624,6 +620,11 @@ export default function DraggableFlupsyVisualizer() {
       }
     }
     
+    // Per debug
+    if (isOccupied) {
+      console.log("Basket state:", basket.state, "currentCycleId:", basket.currentCycleId);
+    }
+    
     const content = (
       <div 
         className={`
@@ -633,7 +634,7 @@ export default function DraggableFlupsyVisualizer() {
             : 'border border-dashed border-gray-300 bg-gray-50'
           }
           min-h-[120px] flex flex-col justify-between items-center
-          ${isDraggable ? 'cursor-grab hover:shadow-md' : ''}
+          ${isDraggable ? 'basket-draggable' : ''}
         `}
       >
         {isOccupied ? (
