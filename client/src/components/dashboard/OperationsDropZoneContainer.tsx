@@ -230,6 +230,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
   // Stato per i dialoghi
   const [operationDialogOpen, setOperationDialogOpen] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
+  const [dateError, setDateError] = useState(false); // Stato per gestire errore sulla data
   const [currentOperation, setCurrentOperation] = useState<{
     basketId: number;
     type: DraggableOperationType;
@@ -304,11 +305,23 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
     },
     onError: (error: any) => {
       console.error("Errore nella mutazione:", error);
-      toast({
-        title: "Errore",
-        description: `Si è verificato un errore: ${error.message}`,
-        variant: "destructive",
-      });
+      
+      // Se è un errore di duplicazione (operazione già presente per la data)
+      if (error.message && error.message.includes("già un'operazione registrata")) {
+        setDateError(true); // Imposta lo stato di errore della data
+        toast({
+          title: "Operazione già esistente",
+          description: "È già presente un'operazione per questa cesta in questa data. Scegli una data diversa.",
+          variant: "destructive",
+        });
+        // Non chiudiamo il modale per permettere all'utente di cambiare la data
+      } else {
+        toast({
+          title: "Errore",
+          description: `Si è verificato un errore: ${error.message}`,
+          variant: "destructive",
+        });
+      }
     }
   });
 
@@ -636,8 +649,18 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                   id="date"
                   type="date"
                   value={currentOperation?.formData.date || ''}
-                  onChange={(e) => handleFormChange('date', e.target.value)}
+                  onChange={(e) => {
+                    // Reset errore data quando viene modificata
+                    if (dateError) setDateError(false);
+                    handleFormChange('date', e.target.value);
+                  }}
+                  className={dateError ? "border-red-500 focus-visible:ring-red-500" : ""}
                 />
+                {dateError && (
+                  <p className="text-xs text-red-500 mt-1">
+                    Esiste già un'operazione per questa data. Seleziona una data diversa.
+                  </p>
+                )}
               </div>
               
               {/* Se ci sono operazioni precedenti, mostriamo i dati precedenti */}
