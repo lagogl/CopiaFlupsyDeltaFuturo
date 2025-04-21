@@ -308,19 +308,8 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
         return;
       }
 
-      // Gestione delle diverse operazioni in base al tipo
-      if (operationType === "misura" || operationType === "peso") {
-        // Per operazioni rapide misura e peso, reindirizzare alla pagina corrispondente
-        const operationParam = operationType === "misura" ? "misura" : "peso";
-        window.location.href = `/quick-operations?operation=${operationParam}&basketId=${basketId}`;
-        return;
-      } else if (operationType === "vagliatura") {
-        // Per l'operazione di vagliatura, reindirizzare alla pagina di screening
-        window.location.href = `/screening/new?basketId=${basketId}`;
-        return;
-      }
-
-      // Per le altre operazioni (se future saranno abilitate) usiamo il dialog interno
+      // Gestione dell'operazione direttamente nel modale integrato
+      // Per tutte le operazioni abilitate, usiamo il dialog interno mostrandolo direttamente
       // Trova l'ultima operazione per questa cesta
       const basketOperations = operations && Array.isArray(operations)
         ? operations.filter((op: any) => op.basketId === basketId)
@@ -544,7 +533,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
   const operationItems: { type: DraggableOperationType; icon: React.ReactNode; label: string; disabled?: boolean }[] = [
     { type: "misura", icon: <Ruler size={24} />, label: "Misurazione" },
     { type: "peso", icon: <Scale size={24} />, label: "Pesatura" },
-    { type: "vagliatura", icon: <Scissors size={24} />, label: "Selezione" },
+    { type: "vagliatura", icon: <Scissors size={24} />, label: "Selezione", disabled: true },
     { type: "vendita", icon: <ShoppingBag size={24} />, label: "Vendita", disabled: true },
     { type: "selezione-vendita", icon: <Tag size={24} />, label: "Selezione Vendita", disabled: true },
     { type: "pulizia", icon: <Brush size={24} />, label: "Pulizia", disabled: true },
