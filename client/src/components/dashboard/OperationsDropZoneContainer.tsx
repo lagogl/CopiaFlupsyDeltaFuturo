@@ -309,12 +309,59 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       // Se è un errore di duplicazione (operazione già presente per la data)
       if (error.message && error.message.includes("già un'operazione registrata")) {
         setDateError(true); // Imposta lo stato di errore della data
+        
+        // Trova la prossima data disponibile
+        const suggestNextAvailableDate = () => {
+          if (currentOperation?.formData.date) {
+            // Prendi la data corrente e trova una data successiva che non ha operazioni
+            const currentDate = new Date(currentOperation.formData.date);
+            const basketId = currentOperation.basketId;
+            
+            // Trova tutte le operazioni per questa cesta
+            const basketOperations = operations && Array.isArray(operations)
+              ? operations.filter((op: any) => op.basketId === basketId)
+              : [];
+              
+            // Converti le date in formato stringa per confronto
+            const existingDates = basketOperations.map((op: any) => 
+              new Date(op.date).toISOString().split('T')[0]
+            );
+            
+            // Trova la prima data disponibile
+            let nextDate = new Date(currentDate);
+            let nextDateStr;
+            
+            // Cerca i prossimi 10 giorni
+            for (let i = 1; i <= 10; i++) {
+              nextDate.setDate(currentDate.getDate() + i);
+              nextDateStr = nextDate.toISOString().split('T')[0];
+              
+              if (!existingDates.includes(nextDateStr)) {
+                // Data disponibile trovata
+                if (currentOperation) {
+                  // Aggiorna la data nel form
+                  handleFormChange('date', nextDateStr);
+                }
+                return nextDateStr;
+              }
+            }
+            
+            return null; // Nessuna data disponibile trovata
+          }
+          return null;
+        };
+        
+        const suggestedDate = suggestNextAvailableDate();
+        
         toast({
           title: "Operazione già esistente",
-          description: "È già presente un'operazione per questa cesta in questa data. Scegli una data diversa.",
+          description: suggestedDate 
+            ? `È già presente un'operazione per questa cesta in questa data. La data è stata aggiornata al ${new Date(suggestedDate).toLocaleDateString('it-IT')}.`
+            : "È già presente un'operazione per questa cesta in questa data. Scegli una data diversa.",
           variant: "destructive",
         });
-        // Non chiudiamo il modale per permettere all'utente di cambiare la data
+        
+        // Non chiudiamo il modale per permettere all'utente di cambiare la data se necessario
       } else {
         toast({
           title: "Errore",
