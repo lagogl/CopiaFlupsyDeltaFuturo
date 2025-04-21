@@ -91,7 +91,6 @@ export async function createDatabaseBackup(): Promise<BackupInfo> {
       `--schema=public`,
       `--no-publications`,
       `--no-subscriptions`,
-      `--timeout=60`,
       `--no-sync`
     );
     
@@ -343,7 +342,16 @@ export async function generateFullDatabaseDump(): Promise<string> {
       `-f "${tempFilePath}"`,
       `--format=p`,
       `--no-owner`,
-      `--no-acl`
+      `--no-acl`,
+      `--no-privileges`,
+      `--if-exists`,
+      `--verbose`,
+      `--no-security-labels`,
+      `--no-tablespaces`,
+      `--no-comments`,
+      `--schema=public`,
+      `--no-publications`,
+      `--no-subscriptions`
     );
     
     const command = commandParts.join(' ');
