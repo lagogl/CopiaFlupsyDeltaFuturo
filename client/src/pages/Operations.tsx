@@ -1278,8 +1278,8 @@ export default function Operations() {
                                   </div>
                                 </div>
                                 
-                                {/* Visualizza l'indicatore di performance di crescita per le operazioni di misura */}
-                                {index > 0 && op.type === 'misura' && prevWeight && currWeight && actualGrowthPercent !== null && theoreticalGrowth && (
+                                {/* Visualizza l'indicatore di performance di crescita per le operazioni di misura e peso */}
+                                {index > 0 && (op.type === 'misura' || op.type === 'peso') && prevWeight && currWeight && actualGrowthPercent !== null && theoreticalGrowth && (
                                   <div className="mt-4">
                                     <p className="text-gray-500 text-sm font-medium mb-1">Performance di crescita</p>
                                     <GrowthPerformanceIndicator
