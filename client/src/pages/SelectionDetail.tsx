@@ -120,6 +120,9 @@ export default function VagliaturaDetailPage() {
     saleDate: new Date(),
     saleClient: "",
   });
+  
+  // Stato per le ceste di destinazione in attesa di registrazione
+  const [pendingDestinationBaskets, setPendingDestinationBaskets] = useState([]);
 
   // Query per caricare le ceste disponibili
   const { data: availableBaskets, isLoading: isLoadingAvailableBaskets } = useQuery({
@@ -179,10 +182,11 @@ export default function VagliaturaDetailPage() {
     },
   });
 
-  // Calcola i totali della selezione
+  // Calcola i totali della selezione, includendo sia i cestelli confermati che quelli pendenti
   const calculateTotals = () => {
-    if (!sourceBaskets || !destinationBaskets) return null;
+    if (!sourceBaskets) return null;
 
+    // Calcola il totale degli animali dalle ceste di origine
     const sourceTotals = {
       basketCount: sourceBaskets.length,
       totalAnimals: sourceBaskets.reduce(
@@ -191,12 +195,28 @@ export default function VagliaturaDetailPage() {
       ),
     };
 
-    const destinationTotals = {
-      basketCount: destinationBaskets.length,
-      totalAnimals: destinationBaskets.reduce(
+    // Calcola il totale per le ceste di destinazione già confermate
+    const confirmedDestinationTotals = {
+      basketCount: destinationBaskets ? destinationBaskets.length : 0,
+      totalAnimals: destinationBaskets ? destinationBaskets.reduce(
         (sum: number, basket: SelectionDestinationBasket) => sum + (basket.animalCount || 0),
         0
+      ) : 0,
+    };
+    
+    // Calcola il totale per le ceste di destinazione in attesa
+    const pendingDestinationTotals = {
+      basketCount: pendingDestinationBaskets.length,
+      totalAnimals: pendingDestinationBaskets.reduce(
+        (sum: number, basket: any) => sum + (basket.animalCount || 0),
+        0
       ),
+    };
+    
+    // Combina i totali confermati e pendenti
+    const destinationTotals = {
+      basketCount: confirmedDestinationTotals.basketCount + pendingDestinationTotals.basketCount,
+      totalAnimals: confirmedDestinationTotals.totalAnimals + pendingDestinationTotals.totalAnimals,
     };
 
     const remainingAnimals = sourceTotals.totalAnimals - destinationTotals.totalAnimals;
@@ -204,6 +224,8 @@ export default function VagliaturaDetailPage() {
     return {
       sourceTotals,
       destinationTotals,
+      pendingDestinationTotals,
+      confirmedDestinationTotals,
       remainingAnimals,
       percentageCompleted: sourceTotals.totalAnimals > 0
         ? ((destinationTotals.totalAnimals / sourceTotals.totalAnimals) * 100).toFixed(1)
@@ -303,7 +325,7 @@ export default function VagliaturaDetailPage() {
     }
   };
 
-  // Gestisce l'aggiunta di un cestello destinazione
+  // Gestisce l'aggiunta di un cestello destinazione - NON registra subito sul database
   const handleAddDestinationBasket = async () => {
     if (!destinationBasketData.basketId) {
       toast({
@@ -356,10 +378,6 @@ export default function VagliaturaDetailPage() {
     setIsSubmitting(true);
 
     try {
-      // Nota: Il server si aspetta un array di cestelli di destinazione
-      // Log per debug dei dati inviati
-      console.log("Dati destinazione:", destinationBasketData);
-      
       // Prepariamo i parametri corretti per la richiesta
       const positionComponents = destinationBasketData.positionId ? 
                                  destinationBasketData.positionId.split('-') : null;
@@ -378,50 +396,46 @@ export default function VagliaturaDetailPage() {
       const formattedPosition = positionRow && positionNumber !== null ? 
                            `${positionRow}${positionNumber}` : null;
       
-      // Log per debug
-      console.log("positionComponents:", positionComponents);
-      console.log("positionFlupsyId:", positionFlupsyId);
-      console.log("positionRow:", positionRow);
-      console.log("positionNumber:", positionNumber);
-      console.log("Formatted position:", formattedPosition);
+      // Trova la cesta tra quelle disponibili
+      const selectedBasket = availableBaskets?.find(
+        basket => basket.basketId === parseInt(destinationBasketData.basketId)
+      );
       
-      const response = await fetch(`/api/selections/${id}/destination-baskets`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify([
-          {
-            basketId: parseInt(destinationBasketData.basketId),
-            flupsyId: positionFlupsyId, // Cambiato da positionFlupsyId a flupsyId per corrispondere al backend
-            position: formattedPosition,
-            destinationType: destinationBasketData.saleDestination ? 'sold' : 'placed',
-            animalCount: destinationBasketData.animalCount || null,
-            deadCount: destinationBasketData.deadCount || null,
-            sampleWeight: destinationBasketData.sampleWeight || null,
-            sampleCount: destinationBasketData.sampleCount || null, 
-            totalWeight: destinationBasketData.totalWeightKg ? destinationBasketData.totalWeightKg * 1000 : null, // Converti in grammi
-            animalsPerKg: destinationBasketData.animalsPerKg || null,
-            saleDate: destinationBasketData.saleDate && destinationBasketData.saleDestination
-              ? destinationBasketData.saleDate.toISOString().split('T')[0]
-              : null,
-            saleClient: destinationBasketData.saleClient && destinationBasketData.saleDestination
-              ? destinationBasketData.saleClient
-              : null
-          }
-        ]),
-      });
-
-      if (!response.ok) {
-        const errorData = await response.json();
-        throw new Error(errorData.error || "Errore nell'aggiunta del cestello destinazione");
+      if (!selectedBasket) {
+        throw new Error("Cestello non trovato");
       }
 
-      await response.json();
+      // Crea l'oggetto cestello da aggiungere all'array dei pending
+      const newBasket = {
+        basketId: parseInt(destinationBasketData.basketId),
+        physicalNumber: selectedBasket.physicalNumber,
+        flupsyId: positionFlupsyId,
+        position: formattedPosition,
+        destinationType: destinationBasketData.saleDestination ? 'sold' : 'placed',
+        animalCount: destinationBasketData.animalCount || null,
+        deadCount: destinationBasketData.deadCount || null,
+        sampleWeight: destinationBasketData.sampleWeight || null,
+        sampleCount: destinationBasketData.sampleCount || null,
+        totalWeight: destinationBasketData.totalWeightKg ? destinationBasketData.totalWeightKg * 1000 : null, // Converti in grammi
+        animalsPerKg: destinationBasketData.animalsPerKg || null,
+        saleDate: destinationBasketData.saleDate && destinationBasketData.saleDestination
+          ? destinationBasketData.saleDate.toISOString().split('T')[0]
+          : null,
+        saleClient: destinationBasketData.saleClient && destinationBasketData.saleDestination
+          ? destinationBasketData.saleClient
+          : null,
+        flupsy: positionFlupsyId ? flupsys?.find(f => f.id === positionFlupsyId) : null,
+        isPending: true, // Flag per indicare che è in attesa di registrazione
+        createdAt: new Date().toISOString()
+      };
+
+      // Aggiungi il nuovo cestello all'array dei cestelli in attesa
+      setPendingDestinationBaskets(prev => [...prev, newBasket]);
       
+      // MODIFICA: Non eseguiamo più chiamata API, ma aggiorniamo solo lo stato locale
       toast({
-        title: "Cestello aggiunto",
-        description: "Cestello destinazione aggiunto con successo",
+        title: "Cestello aggiunto in attesa",
+        description: "Cestello destinazione aggiunto in attesa di completamento vagliatura",
       });
       
       setAddDestinationDialogOpen(false);
@@ -441,7 +455,7 @@ export default function VagliaturaDetailPage() {
         saleDate: new Date(),
         saleClient: "",
       });
-      refetchDestinationBaskets();
+      
     } catch (error) {
       console.error("Errore:", error);
       toast({
@@ -536,31 +550,86 @@ export default function VagliaturaDetailPage() {
     }
   };
 
-  // Completa la selezione
-  const handleCompleteSelection = async () => {
-    try {
-      const response = await fetch(`/api/selections/${id}/complete`, {
-        method: "POST",
-      });
+  // Rimuove un cestello dalla lista di quelli in attesa
+  const handleRemovePendingDestinationBasket = (basketId: number) => {
+    setPendingDestinationBaskets(prev => prev.filter(basket => basket.basketId !== basketId));
+    
+    toast({
+      title: "Cestello rimosso",
+      description: "Cestello destinazione in attesa rimosso con successo",
+    });
+  };
 
-      if (!response.ok) {
-        throw new Error("Errore nel completamento della selezione");
+  // Completa la selezione registrando tutte le operazioni in attesa
+  const handleCompleteSelection = async () => {
+    setIsSubmitting(true);
+    
+    try {
+      // Verifica che ci siano cestelli in attesa da registrare
+      if (pendingDestinationBaskets.length === 0) {
+        // Se non ci sono cestelli in attesa, procedi con il completamento standard
+        const response = await fetch(`/api/selections/${id}/complete`, {
+          method: "POST",
+        });
+
+        if (!response.ok) {
+          throw new Error("Errore nel completamento della selezione");
+        }
+      } else {
+        // FASE 1: Registra tutti i cestelli di destinazione in attesa
+        const registeredBaskets = [];
+        
+        for (const pendingBasket of pendingDestinationBaskets) {
+          // Rimuovi proprietà aggiunte localmente che non servono per l'API
+          const { flupsy, isPending, createdAt, ...basketToRegister } = pendingBasket;
+          
+          const response = await fetch(`/api/selections/${id}/destination-baskets`, {
+            method: "POST",
+            headers: {
+              "Content-Type": "application/json",
+            },
+            body: JSON.stringify([basketToRegister]),
+          });
+
+          if (!response.ok) {
+            const errorData = await response.json();
+            throw new Error(errorData.error || "Errore nella registrazione dei cestelli destinazione");
+          }
+          
+          const result = await response.json();
+          registeredBaskets.push(result);
+        }
+        
+        // FASE 2: Completa la selezione
+        const completeResponse = await fetch(`/api/selections/${id}/complete`, {
+          method: "POST",
+        });
+
+        if (!completeResponse.ok) {
+          throw new Error("Errore nel completamento della selezione");
+        }
       }
 
+      // Svuota l'array dei cestelli in attesa
+      setPendingDestinationBaskets([]);
+      
       toast({
-        title: "Selezione completata",
-        description: "La selezione è stata completata con successo",
+        title: "Vagliatura completata",
+        description: "La vagliatura è stata completata con successo e tutte le operazioni sono state registrate",
       });
       
       setCompleteConfirmDialogOpen(false);
       refetchSelection();
+      refetchDestinationBaskets();
     } catch (error) {
       console.error("Errore:", error);
       toast({
         title: "Errore",
-        description: "Si è verificato un errore durante il completamento della selezione",
+        description: "Si è verificato un errore durante il completamento della vagliatura",
         variant: "destructive",
       });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
@@ -962,7 +1031,7 @@ export default function VagliaturaDetailPage() {
                 <div className="flex justify-center py-8">
                   <Spinner size="lg" />
                 </div>
-              ) : destinationBaskets?.length ? (
+              ) : destinationBaskets?.length || pendingDestinationBaskets?.length ? (
                 <Table>
                   <TableHeader>
                     <TableRow>
@@ -971,14 +1040,16 @@ export default function VagliaturaDetailPage() {
                       <TableHead>Taglia</TableHead>
                       <TableHead className="text-right">Animali</TableHead>
                       <TableHead>Animali/Kg</TableHead>
+                      <TableHead>Stato</TableHead>
                       {selection.status === "draft" && <TableHead></TableHead>}
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {destinationBaskets.map((destBasket: SelectionDestinationBasket) => (
-                      <TableRow key={destBasket.id}>
+                    {/* Prima mostra i cestelli destinazione confermati */}
+                    {destinationBaskets && destinationBaskets.map((destBasket: SelectionDestinationBasket) => (
+                      <TableRow key={`confirmed-${destBasket.id}`}>
                         <TableCell className="font-medium">
-                          #{destBasket.basket.physicalNumber}
+                          #{destBasket.basket && destBasket.basket.physicalNumber}
                         </TableCell>
                         <TableCell>
                           {destBasket.saleDestination ? (
@@ -1003,12 +1074,65 @@ export default function VagliaturaDetailPage() {
                         <TableCell className="font-mono">
                           {formatNumberWithCommas(destBasket.animalsPerKg || 0)}
                         </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-green-50 text-green-700 border-green-200">
+                            Confermata
+                          </Badge>
+                        </TableCell>
                         {selection.status === "draft" && (
                           <TableCell>
                             <Button
                               variant="ghost"
                               size="sm"
                               onClick={() => handleRemoveDestinationBasket(destBasket.id)}
+                            >
+                              <X className="h-4 w-4" />
+                            </Button>
+                          </TableCell>
+                        )}
+                      </TableRow>
+                    ))}
+                    
+                    {/* Poi mostra i cestelli in attesa */}
+                    {pendingDestinationBaskets.map((pendingBasket) => (
+                      <TableRow key={`pending-${pendingBasket.basketId}`} className="bg-amber-50">
+                        <TableCell className="font-medium">
+                          #{pendingBasket.physicalNumber}
+                        </TableCell>
+                        <TableCell>
+                          {pendingBasket.destinationType === 'sold' ? (
+                            <Badge variant="destructive">Vendita: {pendingBasket.saleClient}</Badge>
+                          ) : (
+                            pendingBasket.flupsyId ? (
+                              <span>
+                                {flupsys?.find(f => f.id === pendingBasket.flupsyId)?.name || "Flupsy"} {" "}
+                                {pendingBasket.position && pendingBasket.position.substring(0, 2)} {pendingBasket.position && pendingBasket.position.substring(2)}
+                              </span>
+                            ) : "N/A"
+                          )}
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={`font-mono`}>
+                            In Definizione
+                          </Badge>
+                        </TableCell>
+                        <TableCell className="text-right font-mono">
+                          {formatNumberWithCommas(pendingBasket.animalCount || 0)}
+                        </TableCell>
+                        <TableCell className="font-mono">
+                          {formatNumberWithCommas(pendingBasket.animalsPerKg || 0)}
+                        </TableCell>
+                        <TableCell>
+                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
+                            In Attesa
+                          </Badge>
+                        </TableCell>
+                        {selection.status === "draft" && (
+                          <TableCell>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleRemovePendingDestinationBasket(pendingBasket.basketId)}
                             >
                               <X className="h-4 w-4" />
                             </Button>
