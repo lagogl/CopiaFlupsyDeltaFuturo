@@ -280,6 +280,7 @@ export default function OperationForm({
     if (watchBasketId && selectedBasket?.state === 'available') {
       // Forza il tipo a "prima-attivazione" per ceste disponibili
       form.setValue('type', 'prima-attivazione');
+      console.log('Tipo operazione impostato automaticamente a "Prima Attivazione" per cesta disponibile');
     }
   }, [watchBasketId, selectedBasket, form]);
   
