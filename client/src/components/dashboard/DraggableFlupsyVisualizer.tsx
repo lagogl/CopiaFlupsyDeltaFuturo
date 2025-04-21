@@ -715,24 +715,7 @@ export default function DraggableFlupsyVisualizer() {
         <CardContent className="p-4">
           {/* Layout per le posizioni - due righe orizzontali di 10 ceste ciascuna */}
           <div className="flex flex-col gap-8">
-            {/* Lato SX */}
-            <div>
-              <div className="mb-2 font-semibold flex items-center">
-                <Wind className="h-4 w-4 mr-1" /> Lato SX
-              </div>
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-                {positions.map(position => {
-                  const basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
-                  return (
-                    <React.Fragment key={`sx-${position}`}>
-                      {renderBasketBox(basket, position, 'SX', flupsyId)}
-                    </React.Fragment>
-                  );
-                })}
-              </div>
-            </div>
-            
-            {/* Lato DX */}
+            {/* Lato DX - mostrato prima perché dall'alto guardando verso l'elica */}
             <div>
               <div className="mb-2 font-semibold flex items-center">
                 <Wind className="h-4 w-4 mr-1" /> Lato DX
@@ -743,6 +726,23 @@ export default function DraggableFlupsyVisualizer() {
                   return (
                     <React.Fragment key={`dx-${position}`}>
                       {renderBasketBox(basket, position, 'DX', flupsyId)}
+                    </React.Fragment>
+                  );
+                })}
+              </div>
+            </div>
+            
+            {/* Lato SX - mostrato sotto perché dall'alto guardando verso l'elica */}
+            <div>
+              <div className="mb-2 font-semibold flex items-center">
+                <Wind className="h-4 w-4 mr-1" /> Lato SX
+              </div>
+              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+                {positions.map(position => {
+                  const basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
+                  return (
+                    <React.Fragment key={`sx-${position}`}>
+                      {renderBasketBox(basket, position, 'SX', flupsyId)}
                     </React.Fragment>
                   );
                 })}
