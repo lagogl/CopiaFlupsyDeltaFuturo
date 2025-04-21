@@ -52,6 +52,7 @@ type DraggableOperationType =
   | "misura" 
   | "peso" 
   | "selezione" 
+  | "vagliatura"
   | "vendita" 
   | "selezione-vendita"
   | "pulizia"
@@ -66,35 +67,43 @@ interface DraggableOperationItemProps {
   type: DraggableOperationType;
   icon: React.ReactNode;
   label: string;
+  disabled?: boolean;
 }
 
 // Componente per l'elemento trascinabile
-const DraggableOperationItem = ({ type, icon, label }: DraggableOperationItemProps) => {
+const DraggableOperationItem = ({ type, icon, label, disabled = false }: DraggableOperationItemProps) => {
   const [{ isDragging }, drag] = useDrag({
     type: 'OPERATION',
     item: { type },
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging(),
     }),
+    canDrag: () => !disabled
   });
 
   return (
     <div
-      ref={drag}
-      className={`rounded-lg p-4 border bg-gradient-to-b from-white to-gray-50 shadow-md cursor-grab transition-all ${
-        isDragging ? 'opacity-50 scale-105' : 'opacity-100'
-      } hover:shadow-lg hover:scale-105 group`}
+      ref={disabled ? null : drag}
+      className={`rounded-lg p-4 border shadow-md transition-all ${
+        disabled ? 'bg-gray-100 opacity-60 cursor-not-allowed' : 
+        `bg-gradient-to-b from-white to-gray-50 cursor-grab ${
+          isDragging ? 'opacity-50 scale-105' : 'opacity-100'
+        } hover:shadow-lg hover:scale-105`
+      } group`}
       style={{ 
         transformOrigin: 'center top',
         borderWidth: '1px' 
       }}
     >
       <div className="flex flex-col items-center justify-center gap-2">
-        <div className="text-primary group-hover:text-primary-dark transform group-hover:rotate-12 transition-all" 
-             style={{ filter: 'drop-shadow(2px 2px 2px rgba(0,0,0,0.2))' }}>
+        <div className={`${disabled ? 'text-gray-400' : 'text-primary group-hover:text-primary-dark transform group-hover:rotate-12'} transition-all`} 
+             style={{ filter: disabled ? 'none' : 'drop-shadow(2px 2px 2px rgba(0,0,0,0.2))' }}>
           {icon}
         </div>
-        <span className="text-sm font-medium">{label}</span>
+        <span className={`text-sm font-medium ${disabled ? 'text-gray-500' : ''}`}>{label}</span>
+        {disabled && (
+          <span className="text-xs text-gray-500 mt-1">Non disponibile</span>
+        )}
       </div>
     </div>
   );
@@ -519,15 +528,15 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
   };
 
   // Definisce le operazioni disponibili
-  const operationItems: { type: DraggableOperationType; icon: React.ReactNode; label: string }[] = [
+  const operationItems: { type: DraggableOperationType; icon: React.ReactNode; label: string; disabled?: boolean }[] = [
     { type: "misura", icon: <Ruler size={24} />, label: "Misurazione" },
     { type: "peso", icon: <Scale size={24} />, label: "Pesatura" },
-    { type: "selezione", icon: <Scissors size={24} />, label: "Selezione" },
-    { type: "vendita", icon: <ShoppingBag size={24} />, label: "Vendita" },
-    { type: "selezione-vendita", icon: <Tag size={24} />, label: "Selezione Vendita" },
-    { type: "pulizia", icon: <Brush size={24} />, label: "Pulizia" },
-    { type: "trattamento", icon: <Droplets size={24} />, label: "Trattamento" },
-    { type: "cessazione", icon: <Trash2 size={24} />, label: "Cessazione" }
+    { type: "vagliatura", icon: <Scissors size={24} />, label: "Selezione" },
+    { type: "vendita", icon: <ShoppingBag size={24} />, label: "Vendita", disabled: true },
+    { type: "selezione-vendita", icon: <Tag size={24} />, label: "Selezione Vendita", disabled: true },
+    { type: "pulizia", icon: <Brush size={24} />, label: "Pulizia", disabled: true },
+    { type: "trattamento", icon: <Droplets size={24} />, label: "Trattamento", disabled: true },
+    { type: "cessazione", icon: <Trash2 size={24} />, label: "Cessazione", disabled: true }
   ];
 
   return (
