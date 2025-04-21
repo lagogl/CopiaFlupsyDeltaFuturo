@@ -4,7 +4,7 @@
 import type { Express } from "express";
 import { db } from './db';
 import { operations, cycles, baskets } from '../shared/schema';
-import { sql, eq, and } from 'drizzle-orm';
+import { sql, eq } from 'drizzle-orm';
 
 /**
  * Implementa la route diretta per le operazioni che risolve i problemi di inserimento
@@ -78,20 +78,9 @@ export function implementDirectOperationRoute(app: Express) {
       if (operationData.type === 'prima-attivazione') {
         console.log("Rilevata operazione di PRIMA ATTIVAZIONE - Esecuzione flusso speciale");
         
-        // Verifica che il cestello sia disponibile oppure sia attivo ma senza ciclo
-        const hasActiveCycle = await db.select().from(cycles)
-          .where(and(
-            eq(cycles.basketId, operationData.basketId),
-            eq(cycles.state, 'active')
-          ));
-          
-        // Verifica extra sulla presenza di current_cycle_id
-        const currentCycleId = basket[0].currentCycleId;
-        
-        console.log(`Verifica dei cicli attivi per il cestello: trovati ${hasActiveCycle.length} cicli. Current cycle ID: ${currentCycleId || 'nessuno'}`);
-        
-        if (hasActiveCycle.length > 0) {
-          throw new Error(`Impossibile eseguire la prima attivazione: cestello ${operationData.basketId} ha già un ciclo attivo`);
+        // Verifica che il cestello sia disponibile (non in un ciclo attivo)
+        if (basket[0].state !== 'available') {
+          throw new Error(`Impossibile eseguire la prima attivazione: cestello ${operationData.basketId} non è disponibile (stato attuale: ${basket[0].state})`);
         }
         
         // TRASAZIONE: Crea prima il ciclo, poi l'operazione con cycleId corretto

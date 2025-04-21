@@ -297,16 +297,12 @@ export default function OperationForm({
     { value: 'cessazione', label: 'Cessazione' },
   ];
   
-  // Determina se abbiamo un cestello attivo senza cicli attivi
-  const isActiveBasketWithNoCycles = selectedBasket?.state === 'active' && 
-    filteredCycles.length === 0;
-
   // Filter operation types based on basket state and cycle availability
   const operationTypes = selectedBasket 
     ? (selectedBasket.state === 'available' 
       ? allOperationTypes.filter(op => op.value === 'prima-attivazione') // Only 'Prima Attivazione' for available baskets
       : isActiveBasketWithNoCycles
-        ? allOperationTypes.filter(op => op.value === 'prima-attivazione') // Only 'Prima Attivazione' for active baskets WITHOUT cycles
+        ? allOperationTypes // All operations (including 'Prima Attivazione') for active baskets WITHOUT cycles
         : allOperationTypes.filter(op => op.value !== 'prima-attivazione')) // All operations EXCEPT 'Prima Attivazione' for active baskets WITH cycles
     : allOperationTypes;
 
@@ -460,6 +456,9 @@ export default function OperationForm({
       onSubmit(formattedValues);
     }
   };
+  
+  // Determina se abbiamo un cestello attivo senza cicli attivi
+  const isActiveBasketWithNoCycles = selectedBasket?.state === 'active' && filteredCycles.length === 0;
 
   return (
     <Form {...form}>
@@ -617,10 +616,8 @@ export default function OperationForm({
                   </SelectContent>
                 </Select>
                 <FormDescription className="text-xs">
-                  {selectedBasket && 
-                    (selectedBasket.state === 'available' || isActiveBasketWithNoCycles
-                      ? "L'operazione Prima Attivazione creerà un nuovo ciclo per questo cestello"
-                      : "L'operazione Prima Attivazione è disponibile solo per cestelli senza ciclo attivo")}
+                  {selectedBasket?.state === 'active' && filteredCycles.length > 0 && 
+                    "L'operazione Prima Attivazione è disponibile solo per cestelli senza ciclo attivo"}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
