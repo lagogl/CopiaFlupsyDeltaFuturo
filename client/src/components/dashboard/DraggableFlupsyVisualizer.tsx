@@ -42,6 +42,19 @@ interface DraggableBasketProps {
 }
 
 function DraggableBasket({ basket, isDropDisabled = false, children, onClick }: DraggableBasketProps) {
+  const isDraggable = basket && basket.state === 'active';
+  
+  // Aggiungi un indicatore visivo per i cestelli trascinabili
+  const handleMouseDown = () => {
+    if (isDraggable) {
+      document.body.style.cursor = 'grabbing';
+    }
+  };
+  
+  const handleMouseUp = () => {
+    document.body.style.cursor = '';
+  };
+  
   const [{ isDragging }, drag] = useDrag(() => ({
     type: ItemTypes.BASKET,
     item: {
@@ -49,7 +62,7 @@ function DraggableBasket({ basket, isDropDisabled = false, children, onClick }: 
       sourceRow: basket.row,
       sourcePosition: basket.position
     } as BasketDragItem,
-    canDrag: basket && basket.state === 'active', // Solo i cestelli attivi possono essere trascinati
+    canDrag: isDraggable, // Solo i cestelli attivi possono essere trascinati
     collect: (monitor) => ({
       isDragging: !!monitor.isDragging()
     })
@@ -59,10 +72,14 @@ function DraggableBasket({ basket, isDropDisabled = false, children, onClick }: 
     <div
       ref={drag}
       onClick={onClick}
+      onMouseDown={handleMouseDown}
+      onMouseUp={handleMouseUp}
+      onMouseLeave={handleMouseUp}
       style={{ 
         opacity: isDragging ? 0.5 : 1,
-        cursor: basket && basket.state === 'active' ? 'move' : 'pointer' 
+        cursor: isDraggable ? 'grab' : 'pointer',
       }}
+      className={`hover:shadow-md transition-shadow duration-200 ${isDraggable ? 'active:cursor-grabbing' : ''}`}
     >
       {children}
     </div>
@@ -569,6 +586,9 @@ export default function DraggableFlupsyVisualizer() {
     let animalCount = null;
     let startDate = null;
     
+    // Determina se il cestello è trascinabile per applicare indicazioni visive
+    const isDraggable = basket && basket.state === 'active';
+    
     if (isOccupied) {
       // Get latest operation for this basket
       const basketOperations = operations && Array.isArray(operations)
@@ -613,6 +633,7 @@ export default function DraggableFlupsyVisualizer() {
             : 'border border-dashed border-gray-300 bg-gray-50'
           }
           min-h-[120px] flex flex-col justify-between items-center
+          ${isDraggable ? 'cursor-grab hover:shadow-md' : ''}
         `}
       >
         {isOccupied ? (
