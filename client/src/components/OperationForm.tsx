@@ -284,6 +284,15 @@ export default function OperationForm({
     }
   }, [watchBasketId, selectedBasket, form]);
   
+  // Auto-set cycleId when basket with active cycle is selected
+  useEffect(() => {
+    if (watchBasketId && selectedBasket?.state === 'active' && selectedBasket?.currentCycleId) {
+      // Imposta automaticamente il ciclo attivo della cesta
+      form.setValue('cycleId', selectedBasket.currentCycleId);
+      console.log('Ciclo impostato automaticamente al ciclo attivo della cesta:', selectedBasket.currentCycleId);
+    }
+  }, [watchBasketId, selectedBasket, form]);
+  
   // Precompila il lotto per operazioni su cestelli con ciclo attivo
   useEffect(() => {
     if (watchBasketId && basketOperations && basketOperations.length > 0 && watchType !== 'prima-attivazione') {
@@ -592,52 +601,79 @@ export default function OperationForm({
             }}
           />
 
-{watchType === 'prima-attivazione' ? (
-            <div className="col-span-1 md:col-span-2 rounded-md border border-blue-100 bg-blue-50 p-3 text-sm text-blue-600">
-              <div className="flex items-center">
-                <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
-                </svg>
-                <span className="font-medium">Un nuovo ciclo verrà creato automaticamente.</span>
-              </div>
-              <div className="mt-1 ml-7">
-                Operazione di Prima Attivazione genera un ciclo con codice automatico nel formato basket#-flupsy#-YYMM.
-              </div>
-            </div>
-          ) : (
-            <FormField
-              control={form.control}
-              name="cycleId"
-              render={({ field }) => (
+{(() => {
+            // Mostra avviso per operazioni di Prima Attivazione
+            if (watchType === 'prima-attivazione') {
+              return (
+                <div className="col-span-1 md:col-span-2 rounded-md border border-blue-100 bg-blue-50 p-3 text-sm text-blue-600">
+                  <div className="flex items-center">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="mr-2 h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                    </svg>
+                    <span className="font-medium">Un nuovo ciclo verrà creato automaticamente.</span>
+                  </div>
+                  <div className="mt-1 ml-7">
+                    Operazione di Prima Attivazione genera un ciclo con codice automatico nel formato basket#-flupsy#-YYMM.
+                  </div>
+                </div>
+              );
+            }
+            
+            // Per ceste con ciclo attivo, mostra un campo di sola lettura
+            if (selectedBasket?.state === 'active' && selectedBasket?.currentCycleId) {
+              return (
                 <FormItem>
-                  <FormLabel>Ciclo</FormLabel>
-                  <Select 
-                    onValueChange={(value) => field.onChange(Number(value))}
-                    value={field.value?.toString()}
-                    disabled={!watchBasketId || filteredCycles.length === 0}
-                  >
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleziona un ciclo" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {filteredCycles.map((cycle) => (
-                        <SelectItem key={cycle.id} value={cycle.id.toString()}>
-                          Ciclo #{cycle.id}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+                  <FormLabel>Ciclo Attivo</FormLabel>
+                  <FormControl>
+                    <Input
+                      readOnly
+                      className="bg-blue-50 border-blue-100 font-medium text-blue-600"
+                      value={`Ciclo #${selectedBasket.currentCycleId} - ${selectedBasket.cycleCode || ""}`}
+                    />
+                  </FormControl>
                   <FormDescription className="text-xs">
-                    {!watchBasketId ? "Seleziona prima una cesta" : 
-                      filteredCycles.length === 0 ? "Nessun ciclo attivo per questa cesta" : ""}
+                    Questo cestello ha un ciclo attivo. Il ciclo è selezionato automaticamente.
                   </FormDescription>
-                  <FormMessage />
                 </FormItem>
-              )}
-            />
-          )}
+              );
+            }
+            
+            // Altrimenti mostra selettore standard
+            return (
+              <FormField
+                control={form.control}
+                name="cycleId"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Ciclo</FormLabel>
+                    <Select 
+                      onValueChange={(value) => field.onChange(Number(value))}
+                      value={field.value?.toString()}
+                      disabled={!watchBasketId || filteredCycles.length === 0}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona un ciclo" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {filteredCycles.map((cycle) => (
+                          <SelectItem key={cycle.id} value={cycle.id.toString()}>
+                            Ciclo #{cycle.id} {cycle.code ? `- ${cycle.code}` : ''}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormDescription className="text-xs">
+                      {!watchBasketId ? "Seleziona prima una cesta" : 
+                        filteredCycles.length === 0 ? "Nessun ciclo attivo per questa cesta" : ""}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            );
+          })()}
 
           <FormField
             control={form.control}
