@@ -7,6 +7,8 @@ import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { useQuery } from '@tanstack/react-query';
+import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
 
 interface MisurazioneDirectFormProps {
   basketId: number;
@@ -51,6 +53,55 @@ export default function MisurazioneDirectForm({
 }: MisurazioneDirectFormProps) {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Recupera i dati SGR per calcolare la crescita attesa
+  const { data: sgrs } = useQuery({
+    queryKey: ['/api/sgr'],
+    enabled: !!lastOperationDate // Abilita la query solo se abbiamo la data dell'ultima operazione
+  });
+  
+  // Prepara i dati per l'indicatore di crescita
+  const prepareGrowthData = () => {
+    if (!defaultAverageWeight || 
+        !calculatedValues.averageWeight || 
+        !lastOperationDate || 
+        !operationDate || 
+        !sgrs) {
+      return null;
+    }
+    
+    // Calcolo giorni tra le operazioni
+    const lastDate = new Date(lastOperationDate);
+    const currDate = new Date(operationDate);
+    const daysDiff = Math.round((currDate.getTime() - lastDate.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysDiff <= 0) return null;
+    
+    // Calcolo crescita reale
+    const prevAvgWeight = defaultAverageWeight;
+    const currAvgWeight = calculatedValues.averageWeight;
+    const actualGrowthPercent = ((currAvgWeight - prevAvgWeight) / prevAvgWeight) * 100;
+    
+    // Ottieni il mese per SGR
+    const month = format(lastDate, 'MMMM', { locale: it }).toLowerCase();
+    const sgrData = sgrs.find((sgr: any) => sgr.month.toLowerCase() === month);
+    
+    if (!sgrData) return null;
+    
+    // Calcola crescita attesa (SGR del mese × giorni)
+    const dailySgr = sgrData.percentage; // Percentuale SGR giornaliera
+    const targetGrowthPercent = dailySgr * daysDiff;
+    
+    return {
+      actualGrowthPercent,
+      targetGrowthPercent,
+      daysBetweenMeasurements: daysDiff,
+      currentAverageWeight: currAvgWeight,
+      previousAverageWeight: prevAvgWeight,
+      sgrMonth: sgrData.month,
+      sgrDailyPercentage: dailySgr
+    };
+  };
   
   // Valori di input del campione
   const [operationDate, setOperationDate] = useState<string>(new Date().toISOString().split('T')[0]);
@@ -493,8 +544,34 @@ export default function MisurazioneDirectForm({
         </div>
         
         {/* Risultati del calcolo */}
-        <div className="bg-muted/30 p-4 rounded-md space-y-2 border mt-4">
+        <div className="bg-muted/30 p-4 rounded-md space-y-3 border mt-4">
           <h4 className="text-sm font-medium mb-2">Risultati del calcolo:</h4>
+          
+          {/* Indicatore di crescita */}
+          {calculatedValues.averageWeight && defaultAverageWeight && calculatedValues.animalsPerKg && (
+            <div className="mb-2">
+              <h5 className="text-sm font-medium text-gray-700 mb-1">Andamento crescita</h5>
+              {(() => {
+                const growthData = prepareGrowthData();
+                return growthData ? (
+                  <GrowthPerformanceIndicator 
+                    actualGrowthPercent={growthData.actualGrowthPercent}
+                    targetGrowthPercent={growthData.targetGrowthPercent}
+                    daysBetweenMeasurements={growthData.daysBetweenMeasurements}
+                    currentAverageWeight={growthData.currentAverageWeight}
+                    previousAverageWeight={growthData.previousAverageWeight}
+                    sgrMonth={growthData.sgrMonth}
+                    sgrDailyPercentage={growthData.sgrDailyPercentage}
+                    showDetailedChart={true}
+                  />
+                ) : (
+                  <div className="text-sm text-gray-500 italic">
+                    Dati di crescita non disponibili. Verifica la data dell'operazione.
+                  </div>
+                );
+              })()}
+            </div>
+          )}
           
           <div className="grid grid-cols-2 gap-4">
             <div>
