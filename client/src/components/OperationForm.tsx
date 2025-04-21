@@ -301,12 +301,13 @@ export default function OperationForm({
   ];
   
   // Filter operation types based on basket state and cycle availability
+  // Filtro più restrittivo per le operazioni
   const operationTypes = selectedBasket 
     ? (selectedBasket.state === 'available' 
-      ? allOperationTypes.filter(op => op.value === 'prima-attivazione') // Only 'Prima Attivazione' for available baskets
-      : isActiveBasketWithNoCycles
-        ? allOperationTypes // All operations (including 'Prima Attivazione') for active baskets WITHOUT cycles
-        : allOperationTypes.filter(op => op.value !== 'prima-attivazione')) // All operations EXCEPT 'Prima Attivazione' for active baskets WITH cycles
+      ? allOperationTypes.filter(op => op.value === 'prima-attivazione') // Solo 'Prima Attivazione' per cestelli disponibili
+      : selectedBasket.state === 'active' && !selectedBasket.currentCycleId
+        ? allOperationTypes // Tutte le operazioni per cestelli attivi SENZA ciclo attivo
+        : allOperationTypes.filter(op => op.value !== 'prima-attivazione')) // Tutte le operazioni TRANNE 'Prima Attivazione' per cestelli con ciclo attivo
     : allOperationTypes;
 
   // Aggiungi una funzione per gestire l'invio del form con log dettagliati per debug
@@ -508,9 +509,9 @@ export default function OperationForm({
                         <SelectItem 
                           key={basket.id} 
                           value={basket.id.toString()}
-                          className={basket.state === 'active' ? "text-green-700 font-medium" : basket.state === 'available' ? "text-amber-600" : ""}
+                          className={basket.state === 'active' && basket.currentCycleId ? "text-green-700 font-medium" : basket.state === 'available' ? "text-amber-600" : ""}
                         >
-                          {basket.state === 'active' 
+                          {basket.state === 'active' && basket.currentCycleId
                             ? "🟢 " 
                             : basket.state === 'available' 
                               ? "🟠 " 
