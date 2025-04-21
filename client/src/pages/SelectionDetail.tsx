@@ -779,12 +779,12 @@ export default function VagliaturaDetailPage() {
                 disabled={
                   selection.status !== "draft" || 
                   !sourceBaskets?.length || 
-                  !destinationBaskets?.length ||
+                  (!destinationBaskets?.length && !pendingDestinationBaskets?.length) ||
                   (totals && totals.remainingAnimals > 0)
                 }
               >
                 <CheckCircle className="h-4 w-4 mr-2" />
-                Completa Vagliatura
+                {pendingDestinationBaskets.length > 0 ? 'Conferma Destinazioni e Completa' : 'Completa Vagliatura'}
               </Button>
             </>
           )}
@@ -1795,11 +1795,47 @@ export default function VagliaturaDetailPage() {
           <DialogHeader>
             <DialogTitle>Conferma Completamento</DialogTitle>
             <DialogDescription>
-              Sei sicuro di voler completare questa vagliatura?
-              Questa azione chiuderà tutti i cicli collegati alle ceste di origine
-              e creerà nuovi cicli per le ceste di destinazione.
+              {pendingDestinationBaskets.length > 0 ? (
+                <>
+                  Stai per registrare <strong>{pendingDestinationBaskets.length}</strong> ceste di destinazione in attesa e completare la vagliatura.
+                  <br />
+                  {pendingDestinationBaskets.some(b => b.destinationType === 'sold') && (
+                    <>I cestelli destinati alla vendita saranno immediatamente registrati come venduti.<br /></>
+                  )}
+                  Questa azione chiuderà tutti i cicli collegati alle ceste di origine e creerà nuovi cicli per le ceste di destinazione.
+                </>
+              ) : (
+                <>
+                  Sei sicuro di voler completare questa vagliatura?
+                  <br />
+                  Questa azione chiuderà tutti i cicli collegati alle ceste di origine
+                  e creerà nuovi cicli per le ceste di destinazione.
+                </>
+              )}
             </DialogDescription>
           </DialogHeader>
+          
+          {pendingDestinationBaskets.length > 0 && (
+            <div className="py-2">
+              <h3 className="font-medium mb-2">Cestelli in attesa di registrazione:</h3>
+              <ul className="text-sm space-y-1 max-h-60 overflow-y-auto border rounded-md p-2">
+                {pendingDestinationBaskets.map((basket, index) => (
+                  <li key={index} className="flex justify-between items-center">
+                    <span>
+                      <span className="font-medium">Cesta #{basket.physicalNumber}</span>
+                      {' - '}
+                      {basket.destinationType === 'sold' ? (
+                        <span className="text-red-600">Vendita</span>
+                      ) : (
+                        <span>{flupsys?.find(f => f.id === basket.flupsyId)?.name || "FLUPSY"} {basket.position}</span>
+                      )}
+                    </span>
+                    <span className="font-mono">{formatNumberWithCommas(basket.animalCount || 0)} animali</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
           
           <DialogFooter>
             <Button
@@ -1810,8 +1846,10 @@ export default function VagliaturaDetailPage() {
             </Button>
             <Button 
               onClick={handleCompleteSelection}
+              disabled={isSubmitting}
             >
-              Sì, completa vagliatura
+              {isSubmitting ? <Spinner size="sm" className="mr-2" /> : null}
+              {pendingDestinationBaskets.length > 0 ? 'Conferma e Completa' : 'Sì, completa vagliatura'}
             </Button>
           </DialogFooter>
         </DialogContent>
