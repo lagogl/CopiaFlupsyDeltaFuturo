@@ -16,7 +16,7 @@
 @layer components {
   /* Stile per cestelli attivi */
   .basket-draggable {
-    cursor: grab !important;
+    cursor: move !important; /* Cursore con croce direzionale standard */
   }
   
   .basket-draggable:active {
