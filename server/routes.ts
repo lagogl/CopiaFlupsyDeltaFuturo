@@ -2775,6 +2775,83 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Route per azzerare i dati delle selezioni
+  app.post("/api/reset-selections", async (req, res) => {
+    try {
+      // Verifica la password
+      const { password } = req.body;
+      
+      if (password !== "Gianluigi") {
+        return res.status(401).json({
+          success: false,
+          message: "Password non valida. Operazione non autorizzata."
+        });
+      }
+      
+      // Importiamo il queryClient dal modulo db
+      const { queryClient } = await import("./db.js");
+      
+      // Usiamo il metodo corretto per le transazioni
+      await queryClient.begin(async sql => {
+        try {
+          console.log("Avvio azzeramento dati selezioni...");
+          
+          // 1. Elimina i riferimenti ai lotti per le ceste di destinazione
+          await sql`DELETE FROM selection_lot_references`;
+          console.log("Eliminati riferimenti ai lotti");
+          
+          // 2. Elimina lo storico delle relazioni tra ceste
+          await sql`DELETE FROM selection_basket_history`;
+          console.log("Eliminato storico delle relazioni tra ceste");
+          
+          // 3. Elimina le ceste di destinazione
+          await sql`DELETE FROM selection_destination_baskets`;
+          console.log("Eliminate ceste di destinazione");
+          
+          // 4. Elimina le ceste di origine
+          await sql`DELETE FROM selection_source_baskets`;
+          console.log("Eliminate ceste di origine");
+          
+          // 5. Elimina le selezioni
+          await sql`DELETE FROM selections`;
+          console.log("Eliminate selezioni");
+          
+          // 6. Resettiamo le sequenze degli ID
+          await sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS selection_basket_history_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS selection_destination_baskets_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS selection_source_baskets_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS selections_id_seq RESTART WITH 1`;
+          console.log("Reset delle sequenze ID completato");
+          
+          return true; // Successo - commit implicito
+        } catch (error) {
+          console.error("Errore durante l'azzeramento dei dati di selezione:", error);
+          throw error; // Rollback implicito
+        }
+      });
+      
+      // Invia broadcast WebSocket per notificare i client
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('selections_reset', {
+          message: "I dati delle selezioni sono stati azzerati."
+        });
+      }
+      
+      res.status(200).json({ 
+        success: true,
+        message: "Dati di selezione azzerati con successo. Tutte le operazioni di selezione e i dati correlati sono stati eliminati."
+      });
+    } catch (error) {
+      console.error("Errore durante l'azzeramento dei dati di selezione:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Errore durante l'azzeramento dei dati di selezione",
+        error: error instanceof Error ? error.message : "Errore sconosciuto"
+      });
+    }
+  });
 
   // === Target Size Annotations routes ===
   app.get("/api/target-size-annotations", async (req, res) => {

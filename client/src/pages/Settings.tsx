@@ -26,6 +26,7 @@ export default function Settings() {
   const [readingNfc, setReadingNfc] = useState(false);
   const [isResetting, setIsResetting] = useState(false);
   const [isResettingScreening, setIsResettingScreening] = useState(false);
+  const [isResettingSelections, setIsResettingSelections] = useState(false);
   const { toast } = useToast();
   const [resetPassword, setResetPassword] = useState("");
   const { areTooltipsEnabled, enableAllTooltips, disableAllTooltips, markTooltipAsSeen, setFirstTimeUser } = useTooltip();
@@ -102,6 +103,39 @@ export default function Settings() {
       });
     } finally {
       setIsResettingScreening(false);
+    }
+  };
+  
+  // Funzione per azzerare i dati delle selezioni
+  const resetSelectionsData = async () => {
+    try {
+      setIsResettingSelections(true);
+      const response = await fetch('/api/reset-selections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ password: resetPassword }),
+      });
+      
+      if (response.ok) {
+        toast({
+          title: "Azzeramento completato",
+          description: "Tutte le operazioni di selezione e i dati correlati sono stati eliminati correttamente.",
+        });
+        setResetPassword("");
+      } else {
+        const error = await response.json();
+        throw new Error(error.message || 'Errore sconosciuto');
+      }
+    } catch (error) {
+      toast({
+        title: "Errore durante l'azzeramento",
+        description: error instanceof Error ? error.message : "Si è verificato un errore",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResettingSelections(false);
     }
   };
 
@@ -433,6 +467,69 @@ export default function Settings() {
                           disabled={isResettingScreening || !resetPassword}
                         >
                           {isResettingScreening ? "Azzeramento in corso..." : "Conferma Azzeramento"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+              
+              <div className="border border-border rounded-lg p-4 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium mb-1">Azzeramento Dati Selezioni</h3>
+                    <p className="text-sm text-gray-500">
+                      Elimina tutte le operazioni di selezione, le ceste di origine e destinazione, 
+                      i riferimenti ai lotti e lo storico delle relazioni tra ceste.
+                      I contatori verranno ripristinati a 1.
+                    </p>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button variant="destructive" className="whitespace-nowrap ml-4">
+                        <Trash2 className="h-4 w-4 mr-2" />
+                        Azzera Selezioni
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Conferma Azzeramento Selezioni</DialogTitle>
+                        <DialogDescription>
+                          Stai per eliminare TUTTI i dati relativi alle selezioni. Questa azione:
+                          <ul className="list-disc list-inside my-2 space-y-1">
+                            <li>Eliminerà tutte le operazioni di selezione</li>
+                            <li>Eliminerà tutte le ceste di origine e destinazione</li>
+                            <li>Eliminerà lo storico delle relazioni tra ceste</li>
+                            <li>Eliminerà i riferimenti ai lotti delle ceste</li>
+                            <li>Resetterà i contatori delle sequenze ID a 1</li>
+                          </ul>
+                          Questa operazione non può essere annullata.
+                        </DialogDescription>
+                      </DialogHeader>
+                      
+                      <div className="my-4 space-y-2">
+                        <Label htmlFor="reset-selections-password">Password di Sicurezza</Label>
+                        <Input 
+                          id="reset-selections-password" 
+                          type="password"
+                          placeholder="Inserisci la password di sicurezza"
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                        />
+                      </div>
+                      
+                      <DialogFooter>
+                        <Button variant="outline" onClick={() => {
+                          setResetPassword("");
+                        }}>
+                          Annulla
+                        </Button>
+                        <Button 
+                          variant="destructive" 
+                          onClick={resetSelectionsData}
+                          disabled={isResettingSelections || !resetPassword}
+                        >
+                          {isResettingSelections ? "Azzeramento in corso..." : "Conferma Azzeramento"}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
