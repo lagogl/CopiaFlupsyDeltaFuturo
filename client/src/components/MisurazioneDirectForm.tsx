@@ -246,7 +246,14 @@ export default function MisurazioneDirectForm({
         
         {/* Mostra informazioni sulla cesta e ultima misurazione */}
         <div className="bg-blue-50 p-3 rounded-md border border-blue-100 mb-4">
-          <h4 className="text-sm font-medium text-blue-800 mb-2">Informazioni sulla cesta:</h4>
+          <h4 className="text-sm font-medium text-blue-800 mb-2 flex items-center justify-between">
+            <span>Informazioni sulla cesta:</span>
+            {lastOperationDate && (
+              <span className="text-xs text-blue-600 font-normal">
+                Ultima op: {new Date(lastOperationDate).toLocaleDateString()}
+              </span>
+            )}
+          </h4>
           <div className="grid grid-cols-2 gap-2 text-sm mb-3">
             <div>
               <span className="text-blue-600 font-medium">Cesta #:</span> {basketNumber}
@@ -260,21 +267,64 @@ export default function MisurazioneDirectForm({
           
           {(defaultAnimalsPerKg || defaultAverageWeight || defaultAnimalCount) && (
             <>
-              <h4 className="text-sm font-medium text-blue-800 mb-2">Valori precedenti:</h4>
-              <div className="grid grid-cols-2 gap-2 text-sm">
+              <h4 className="text-sm font-medium text-blue-800 mb-2">Ultima misurazione:</h4>
+              
+              <div className="grid grid-cols-2 gap-x-3 gap-y-1 text-sm">
                 {defaultAnimalsPerKg && (
-                  <div>
-                    <span className="text-blue-600 font-medium">Animali/kg:</span> {formatNumberWithCommas(defaultAnimalsPerKg)}
+                  <div className="flex flex-col">
+                    <span className="text-blue-600 font-medium text-xs">Animali/kg:</span>
+                    <span className="font-semibold">{formatNumberWithCommas(defaultAnimalsPerKg)}</span>
                   </div>
                 )}
+                
                 {defaultAverageWeight && (
-                  <div>
-                    <span className="text-blue-600 font-medium">Peso medio (mg):</span> {formatNumberWithCommas(defaultAverageWeight)}
+                  <div className="flex flex-col">
+                    <span className="text-blue-600 font-medium text-xs">Peso medio:</span>
+                    <span className="font-semibold">{formatNumberWithCommas(defaultAverageWeight)} mg</span>
                   </div>
                 )}
+                
                 {defaultAnimalCount && (
-                  <div>
-                    <span className="text-blue-600 font-medium">Popolazione:</span> {formatNumberWithCommas(defaultAnimalCount)}
+                  <div className="flex flex-col">
+                    <span className="text-blue-600 font-medium text-xs">Popolazione:</span>
+                    <span className="font-semibold">{formatNumberWithCommas(defaultAnimalCount)}</span>
+                  </div>
+                )}
+                
+                {/* Nuovi dati aggiuntivi */}
+                {defaultAverageWeight && defaultAnimalsPerKg && (
+                  <div className="flex flex-col">
+                    <span className="text-blue-600 font-medium text-xs">Taglia approssimativa:</span>
+                    <span className="font-semibold">
+                      {defaultAnimalsPerKg > 32000 ? 'TP-3000 (superata)' : 
+                       defaultAnimalsPerKg > 19000 ? 'TP-3000' :
+                       defaultAnimalsPerKg > 12000 ? 'TP-2000' :
+                       defaultAnimalsPerKg > 8000 ? 'TP-1500' :
+                       defaultAnimalsPerKg > 5000 ? 'TP-1000' :
+                       defaultAnimalsPerKg > 3000 ? 'TP-750' :
+                       defaultAnimalsPerKg > 2000 ? 'TP-500' : 'N/D'}
+                    </span>
+                  </div>
+                )}
+                
+                {/* Calcolo stima peso totale basato sugli ultimi dati */}
+                {defaultAnimalCount && defaultAnimalsPerKg && (
+                  <div className="flex flex-col">
+                    <span className="text-blue-600 font-medium text-xs">Peso totale stimato:</span>
+                    <span className="font-semibold">
+                      {formatNumberWithCommas(Math.round((defaultAnimalCount / defaultAnimalsPerKg) * 100) / 100)} kg
+                    </span>
+                  </div>
+                )}
+                
+                {/* Target prossima crescita */}
+                {defaultAverageWeight && (
+                  <div className="flex flex-col border-t border-blue-100 mt-1 pt-1 col-span-2">
+                    <span className="text-blue-600 font-medium text-xs">Target prossima crescita:</span>
+                    <span className="font-semibold flex items-center">
+                      <span className="mr-2">{formatNumberWithCommas(Math.round(defaultAverageWeight * 1.1))} mg</span>
+                      <span className="text-xs text-emerald-600">(+10%)</span>
+                    </span>
                   </div>
                 )}
               </div>
