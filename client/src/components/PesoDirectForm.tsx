@@ -9,6 +9,7 @@ import { Card, CardContent } from '@/components/ui/card';
 import { PesoOperationResults } from '@/components/peso/PesoOperationResults';
 import { createDirectOperation } from '@/lib/operations';
 import { format } from 'date-fns';
+import { it } from 'date-fns/locale';
 import {
   Select,
   SelectContent,
@@ -32,6 +33,17 @@ interface PesoDirectFormProps {
   onSuccess: () => void;
   onCancel: () => void;
 }
+
+// Funzione per formattare le date in formato italiano
+const formatDate = (dateString: string) => {
+  try {
+    const date = new Date(dateString);
+    return format(date, 'dd/MM/yyyy', { locale: it });
+  } catch (e) {
+    console.error("Errore nel formato della data:", dateString, e);
+    return dateString;
+  }
+};
 
 export default function PesoDirectForm({
   basketId,
@@ -241,9 +253,16 @@ export default function PesoDirectForm({
       <div className="grid gap-4">
         {/* Informazioni sulla cesta */}
         <div className="p-3 bg-slate-100 rounded-md">
-          <p className="text-sm text-slate-700">
-            <strong>Cesta:</strong> #{basketNumber} {lottoInfo && `- ${lottoInfo}`}
-          </p>
+          <div className="flex justify-between items-center">
+            <p className="text-sm text-slate-700">
+              <strong>Cesta:</strong> #{basketNumber} {lottoInfo && `- ${lottoInfo}`}
+            </p>
+            {lastOperationDate && (
+              <span className="text-xs text-blue-600 font-normal">
+                Ultima op: {formatDate(lastOperationDate)}
+              </span>
+            )}
+          </div>
         </div>
       
         {/* Data operazione */}

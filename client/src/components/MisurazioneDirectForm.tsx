@@ -26,12 +26,9 @@ interface MisurazioneDirectFormProps {
 // Funzione per formattare le date in formato italiano
 const formatDate = (dateString: string) => {
   try {
-    console.log("Data originale ricevuta:", dateString);
+    // Rimuoviamo i log di debug
     const date = new Date(dateString);
-    console.log("Data convertita:", date);
-    const formattedDate = format(date, 'dd/MM/yyyy', { locale: it });
-    console.log("Data formattata:", formattedDate);
-    return formattedDate;
+    return format(date, 'dd/MM/yyyy', { locale: it });
   } catch (e) {
     console.error("Errore nel formato della data:", dateString, e);
     return dateString;
@@ -312,14 +309,16 @@ export default function MisurazioneDirectForm({
                 {defaultAverageWeight && defaultAnimalsPerKg && (
                   <div className="flex flex-col">
                     <span className="text-blue-600 font-medium text-xs">Taglia approssimativa:</span>
-                    <span className="font-semibold">
-                      {defaultAnimalsPerKg > 32000 ? 'TP-3000 (superata)' : 
+                    <span className={`font-semibold ${defaultAnimalsPerKg > 32000 ? 'text-green-600' : ''}`}>
+                      {defaultAnimalsPerKg > 32000 ? 'TP-3000' : 
                        defaultAnimalsPerKg > 19000 ? 'TP-3000' :
                        defaultAnimalsPerKg > 12000 ? 'TP-2000' :
                        defaultAnimalsPerKg > 8000 ? 'TP-1500' :
                        defaultAnimalsPerKg > 5000 ? 'TP-1000' :
                        defaultAnimalsPerKg > 3000 ? 'TP-750' :
                        defaultAnimalsPerKg > 2000 ? 'TP-500' : 'N/D'}
+                      {defaultAnimalsPerKg > 32000 && 
+                        <span className="ml-1 text-green-600 font-medium">(e superata)</span>}
                     </span>
                   </div>
                 )}
