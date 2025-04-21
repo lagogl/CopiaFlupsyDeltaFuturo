@@ -1024,12 +1024,19 @@ export default function Operations() {
                                     const targetWeight = 1000000 / 32000; // ~ 31,25 mg
                                     
                                     // Se il peso attuale è già superiore al target o la taglia è già TP-3000, non mostrare la proiezione
-                                    if (currentWeight >= targetWeight || currentSizeCode === 'TP-3000') {
+                                    if (currentWeight >= targetWeight || currentSizeCode === 'TP-3000' || currentSizeCode?.startsWith('TP-') && parseInt(currentSizeCode.replace('TP-', '')) >= 3000) {
+                                      // Determina se la taglia è stata anche superata
+                                      const isSizeExceeded = currentSizeCode && currentSizeCode !== 'TP-3000' && 
+                                        currentSizeCode.startsWith('TP-') && 
+                                        parseInt(currentSizeCode.replace('TP-', '')) > 3000;
+                                      
                                       return (
                                         <div className="bg-emerald-50 p-2 rounded-md mt-1">
                                           <div className="text-emerald-600 flex items-center">
                                             <Check className="h-4 w-4 mr-2" />
-                                            <span className="font-medium">Taglia TP-3000 già raggiunta</span>
+                                            <span className="font-medium">
+                                              Taglia TP-3000 già raggiunta{isSizeExceeded ? ' e superata' : ''}
+                                            </span>
                                           </div>
                                         </div>
                                       );
