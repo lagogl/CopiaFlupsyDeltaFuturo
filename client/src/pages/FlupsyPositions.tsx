@@ -31,9 +31,9 @@ export default function FlupsyPositions() {
           <div className="flex">
             <div className="ml-3">
               <p className="text-sm text-yellow-700">
-                <strong>Suggerimento:</strong> Trascina una cesta attiva e rilasciala su una posizione vuota per spostarla, 
+                <strong>Suggerimento:</strong> Trascina una cesta (sia attiva che disponibile) e rilasciala su una posizione vuota per spostarla, 
                 oppure su una posizione occupata per effettuare uno scambio (switch). 
-                Conferma l'operazione nel dialog che apparirà. Alla richiesta "Vuoi fare switch?" conferma per scambiare le posizioni delle due ceste.
+                Conferma l'operazione nel dialog che apparirà.
               </p>
             </div>
           </div>

@@ -622,10 +622,7 @@ export default function DraggableFlupsyVisualizer() {
       }
     }
     
-    // Per debug
-    if (isOccupied) {
-      console.log("Basket state:", basket.state, "currentCycleId:", basket.currentCycleId);
-    }
+      // Rimosso log di debug
     
     const content = (
       <div 
@@ -747,11 +744,7 @@ export default function DraggableFlupsyVisualizer() {
               <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'DX' && b.position === position);
-                  return (
-                    <React.Fragment key={`dx-${position}`}>
-                      {renderBasketBox(basket, position, 'DX', flupsyId)}
-                    </React.Fragment>
-                  );
+                  return renderBasketBox(basket, position, 'DX', flupsyId);
                 })}
               </div>
             </div>
@@ -764,11 +757,7 @@ export default function DraggableFlupsyVisualizer() {
               <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
-                  return (
-                    <React.Fragment key={`sx-${position}`}>
-                      {renderBasketBox(basket, position, 'SX', flupsyId)}
-                    </React.Fragment>
-                  );
+                  return renderBasketBox(basket, position, 'SX', flupsyId);
                 })}
               </div>
             </div>
