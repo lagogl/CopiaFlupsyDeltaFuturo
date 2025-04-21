@@ -515,8 +515,11 @@ export default function OperationForm({
                     
                     // Verifica lo stato del cestello selezionato
                     const selectedBasket = baskets?.find(b => b.id === Number(value));
-                    if (selectedBasket?.state === 'available') {
-                      // Se la cesta è disponibile, imposta automaticamente il tipo a "prima-attivazione"
+                    
+                    // Imposta "prima-attivazione" sia per ceste disponibili che per ceste attive senza ciclo
+                    if (selectedBasket?.state === 'available' || 
+                       (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) {
+                      console.log('Impostazione automatica operazione prima-attivazione per cesta:', selectedBasket);
                       form.setValue('type', 'prima-attivazione');
                     }
                   }}
@@ -690,11 +693,11 @@ export default function OperationForm({
                   (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) && 
                   field.value !== 'prima-attivazione') {
                 // Aggiorna immediatamente il valore del campo per ceste disponibili
-                if (selectedBasket?.state === 'available') {
-                  setTimeout(() => {
-                    form.setValue('type', 'prima-attivazione');
-                  }, 0);
-                }
+                // o ceste attive senza ciclo
+                setTimeout(() => {
+                  console.log('Impostazione automatica di "Prima Attivazione" per cesta:', selectedBasket);
+                  form.setValue('type', 'prima-attivazione');
+                }, 0);
               }
               
               // Usa direttamente operationTypes che è già filtrato correttamente
@@ -713,7 +716,12 @@ export default function OperationForm({
                   <FormLabel>Tipologia Operazione</FormLabel>
                   <Select 
                     onValueChange={field.onChange} 
-                    value={selectedBasket?.state === 'available' ? 'prima-attivazione' : field.value}
+                    value={
+                      (selectedBasket?.state === 'available' || 
+                       (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) 
+                       ? 'prima-attivazione' 
+                       : field.value
+                    }
                     disabled={isSelectDisabled} // Disabilitato solo se il cestello è disponibile
                   >
                     <FormControl>
