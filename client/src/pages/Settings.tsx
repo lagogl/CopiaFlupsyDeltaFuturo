@@ -582,8 +582,8 @@ export default function Settings() {
               <div className="space-y-2">
                 <h4 className="font-medium">Contatti</h4>
                 <p className="text-sm text-gray-600">
-                  Email: supporto@deltafuturo.it<br />
-                  Telefono: +39 0123 456789<br />
+                  Email: lago.gianluigi@gmail.com<br />
+                  Telefono: +39 3484105353<br />
                   Sito web: www.deltafuturo.it
                 </p>
               </div>
