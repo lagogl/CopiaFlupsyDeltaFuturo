@@ -80,7 +80,8 @@ import {
   addDestinationBaskets,
   getAvailableBaskets,
   removeSourceBasket,
-  removeDestinationBasket
+  removeDestinationBasket,
+  completeSelection
 } from "./controllers/selection-controller";
 
 // Preparazione per la gestione dei file di backup
