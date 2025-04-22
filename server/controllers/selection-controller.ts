@@ -1035,7 +1035,9 @@ export async function addDestinationBaskets(req: Request, res: Response) {
               state: 'available',
               currentCycleId: null,
               position: null,
-              row: null // La row può essere null
+              row: null, // La row può essere null
+              // NON impostiamo flupsyId a null, manteniamo quello esistente o il default
+              // flupsyId: destBasket.flupsyId // Assicuriamo che ci sia un flupsyId valido
             })
             .where(eq(baskets.id, destBasket.basketId));
           
