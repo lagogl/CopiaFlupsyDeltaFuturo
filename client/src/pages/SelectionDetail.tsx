@@ -220,6 +220,17 @@ export default function VagliaturaDetailPage() {
     };
 
     const remainingAnimals = sourceTotals.totalAnimals - destinationTotals.totalAnimals;
+    
+    // Calcola il bilancio tra animali di origine e destinazione
+    const animalBalance = {
+      // Se gli animali di destinazione sono più di quelli di origine, c'è un surplus
+      hasDiscrepancy: sourceTotals.totalAnimals !== destinationTotals.totalAnimals && destinationTotals.totalAnimals > 0,
+      surplus: destinationTotals.totalAnimals > sourceTotals.totalAnimals,
+      difference: Math.abs(sourceTotals.totalAnimals - destinationTotals.totalAnimals),
+      percentage: sourceTotals.totalAnimals > 0 
+        ? Math.abs((destinationTotals.totalAnimals - sourceTotals.totalAnimals) / sourceTotals.totalAnimals * 100).toFixed(1)
+        : "0"
+    };
 
     return {
       sourceTotals,
@@ -227,6 +238,7 @@ export default function VagliaturaDetailPage() {
       pendingDestinationTotals,
       confirmedDestinationTotals,
       remainingAnimals,
+      animalBalance,
       percentageCompleted: sourceTotals.totalAnimals > 0
         ? ((destinationTotals.totalAnimals / sourceTotals.totalAnimals) * 100).toFixed(1)
         : "0",
@@ -913,6 +925,28 @@ export default function VagliaturaDetailPage() {
                           ? "Non sono state ancora aggiunte ceste di origine."
                           : "Aggiungi ceste di destinazione per completare la vagliatura."}
                       </p>
+                      
+                      {/* Avviso bilancio animali discrepante */}
+                      {totals.animalBalance?.hasDiscrepancy && (
+                        <div className={`mt-2 p-2 rounded ${totals.animalBalance.surplus ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"}`}>
+                          <div className="flex items-start">
+                            <AlertCircle className="h-4 w-4 mr-2 mt-0.5" />
+                            <div>
+                              <p className="text-sm font-medium">
+                                {totals.animalBalance.surplus 
+                                  ? `Eccesso: ${formatNumberWithCommas(totals.animalBalance.difference)} animali in più nelle destinazioni` 
+                                  : `Deficit: ${formatNumberWithCommas(totals.animalBalance.difference)} animali in meno nelle destinazioni`}
+                              </p>
+                              <p className="text-xs">
+                                {totals.animalBalance.surplus
+                                  ? `Le ceste di destinazione contengono il ${totals.animalBalance.percentage}% di animali in più rispetto alle ceste di origine.`
+                                  : `Le ceste di destinazione contengono il ${totals.animalBalance.percentage}% di animali in meno rispetto alle ceste di origine.`}
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+                      )}
+                      
                       {selection.status === "draft" && totals.sourceTotals.totalAnimals > 0 && totals.destinationTotals.totalAnimals > 0 && (
                         <div className="mt-2">
                           <p className="text-sm font-medium">
