@@ -587,6 +587,150 @@ export default function VagliaturaDetailPage() {
       description: "Cestello destinazione in attesa rimosso con successo",
     });
   };
+
+  // Gestisce l'apertura del dialogo di modifica di un cestello in attesa
+  const handleEditPendingBasket = (basketId: number) => {
+    // Trova il cestello da modificare
+    const basketToEdit = pendingDestinationBaskets.find(basket => basket.basketId === basketId);
+    
+    if (!basketToEdit) {
+      toast({
+        title: "Errore",
+        description: "Cestello non trovato",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Imposta i dati del cestello nel form
+    setDestinationBasketData({
+      basketId: basketToEdit.basketId.toString(),
+      animalCount: basketToEdit.animalCount || 0,
+      deadCount: basketToEdit.deadCount || 0,
+      sampleWeight: basketToEdit.sampleWeight || 100,
+      sampleCount: basketToEdit.sampleCount || 0,
+      totalWeightKg: basketToEdit.totalWeight ? basketToEdit.totalWeight / 1000 : 0, // Converti da grammi a kg
+      animalsPerKg: basketToEdit.animalsPerKg || 0,
+      positionId: basketToEdit.flupsyId && basketToEdit.position 
+        ? `${basketToEdit.flupsyId}-${basketToEdit.position.substring(0, 2)}-${basketToEdit.position.substring(2)}` 
+        : "",
+      positionFlupsyId: basketToEdit.flupsyId ? basketToEdit.flupsyId.toString() : "",
+      positionRow: basketToEdit.position ? basketToEdit.position.substring(0, 2) : "",
+      positionNumber: basketToEdit.position ? basketToEdit.position.substring(2) : "",
+      saleDestination: basketToEdit.destinationType === 'sold',
+      saleDate: basketToEdit.saleDate ? new Date(basketToEdit.saleDate) : new Date(),
+      saleClient: basketToEdit.saleClient || "",
+    });
+    
+    // Imposta l'ID del cestello in modifica e apri il dialogo
+    setEditingBasketId(basketId);
+    setEditDestinationDialogOpen(true);
+  };
+  
+  // Salva le modifiche a un cestello in attesa
+  const handleSaveEditedPendingBasket = () => {
+    if (!editingBasketId) return;
+    
+    // Verifica che siano stati inseriti dati minimi validi per il conteggio
+    if (!destinationBasketData.animalCount || destinationBasketData.animalCount <= 0) {
+      toast({
+        title: "Errore",
+        description: "Inserisci un numero valido di animali nel cestello",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Verifica che il peso del campione sia valido
+    if (!destinationBasketData.sampleWeight || destinationBasketData.sampleWeight <= 0) {
+      toast({
+        title: "Errore",
+        description: "Inserisci un peso del campione valido (maggiore di zero)",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    if (destinationBasketData.saleDestination && !destinationBasketData.saleClient) {
+      toast({
+        title: "Errore",
+        description: "Inserisci il cliente per la vendita",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Trova il cestello originale per preservare alcune informazioni
+    const originalBasket = pendingDestinationBaskets.find(basket => basket.basketId === editingBasketId);
+    if (!originalBasket) {
+      toast({
+        title: "Errore",
+        description: "Cestello non trovato",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    // Prepariamo i parametri corretti per la modifica
+    const positionComponents = destinationBasketData.positionId ? 
+                             destinationBasketData.positionId.split('-') : null;
+    
+    const positionFlupsyId = positionComponents && positionComponents.length > 0 ? 
+                           parseInt(positionComponents[0]) : null;
+    
+    const positionRow = positionComponents && positionComponents.length > 1 ? 
+                      positionComponents[1] : null;
+    
+    const positionNumber = positionComponents && positionComponents.length > 2 ? 
+                         positionComponents[2] : null;
+                         
+    // Crea la stringa di posizione nel formato corretto per il backend (es: "DX2")
+    const formattedPosition = positionRow && positionNumber ? 
+                         `${positionRow}${positionNumber}` : null;
+    
+    // Aggiorna il cestello nell'array dei pendenti
+    setPendingDestinationBaskets(prev => 
+      prev.map(basket => {
+        if (basket.basketId === editingBasketId) {
+          return {
+            // Mantieni alcune proprietà originali
+            ...basket,
+            // Aggiorna con i nuovi valori
+            animalCount: destinationBasketData.animalCount || null,
+            deadCount: destinationBasketData.deadCount || null,
+            sampleWeight: destinationBasketData.sampleWeight || null,
+            sampleCount: destinationBasketData.sampleCount || null,
+            animalsPerKg: destinationBasketData.animalsPerKg || null,
+            totalWeight: destinationBasketData.totalWeightKg ? destinationBasketData.totalWeightKg * 1000 : null, // Converti in grammi
+            destinationType: destinationBasketData.saleDestination ? 'sold' : 'placed',
+            position: destinationBasketData.saleDestination ? null : formattedPosition,
+            flupsyId: destinationBasketData.saleDestination ? 1 : positionFlupsyId, // Imposta flupsyId a 1 per le ceste vendute (per mantenere il vincolo di non-null)
+            saleClient: destinationBasketData.saleDestination ? destinationBasketData.saleClient : null,
+            saleDate: destinationBasketData.saleDestination ? 
+                     (destinationBasketData.saleDate instanceof Date ? 
+                      destinationBasketData.saleDate.toISOString().split('T')[0] : 
+                      new Date().toISOString().split('T')[0]) : null,
+          };
+        }
+        return basket;
+      })
+    );
+    
+    // Aggiorna anche lo stato della destinazione (flupsy o sold)
+    setBasketDestinations(prev => ({
+      ...prev,
+      [editingBasketId]: destinationBasketData.saleDestination ? 'sold' : 'flupsy'
+    }));
+    
+    // Chiudi il dialog e resetta lo stato
+    setEditDestinationDialogOpen(false);
+    setEditingBasketId(null);
+    
+    toast({
+      title: "Cestello aggiornato",
+      description: "Informazioni del cestello aggiornate con successo",
+    });
+  };
   
   // Cambia la destinazione di una cesta da "placed" a "sold" o viceversa
   const toggleBasketDestination = (basketId: number) => {
