@@ -836,6 +836,10 @@ export async function addDestinationBaskets(req: Request, res: Response) {
     const { id } = req.params;
     const destinationBaskets = req.body;
     
+    // Aggiungi log per debug
+    console.log(`Ricevuta richiesta di aggiunta cestelli di destinazione per selezione ${id}:`);
+    console.log(`Payload ricevuto:`, JSON.stringify(destinationBaskets, null, 2));
+    
     if (!id) {
       return res.status(400).json({
         success: false,
@@ -848,6 +852,39 @@ export async function addDestinationBaskets(req: Request, res: Response) {
         success: false,
         error: "È necessario specificare almeno una cesta di destinazione"
       });
+    }
+    
+    // Verifica che tutti i campi necessari siano presenti
+    for (const basket of destinationBaskets) {
+      if (!basket.basketId) {
+        return res.status(400).json({
+          success: false,
+          error: "Tutti i cestelli devono avere un basketId valido"
+        });
+      }
+      
+      if (!basket.destinationType) {
+        return res.status(400).json({
+          success: false,
+          error: "Tutti i cestelli devono avere un tipo di destinazione (placed o sold)"
+        });
+      }
+      
+      if (basket.destinationType === 'placed' && (!basket.position || !basket.flupsyId)) {
+        console.error(`Cestello ${basket.basketId} ha destinationType=${basket.destinationType} ma manca position=${basket.position} o flupsyId=${basket.flupsyId}`);
+        return res.status(400).json({
+          success: false,
+          error: `Il cestello ${basket.basketId} è di tipo 'placed' ma manca la posizione o l'ID del FLUPSY`
+        });
+      }
+      
+      if (!basket.animalCount) {
+        console.error(`Cestello ${basket.basketId} manca di animalCount`);
+        return res.status(400).json({
+          success: false,
+          error: `Il cestello ${basket.basketId} non ha un conteggio di animali valido`
+        });
+      }
     }
     
     // Verifica destinazioni valide e assegna flupsyId predefinito ai cestelli venduti
@@ -1066,27 +1103,41 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           // e il resto è il numero di posizione
           console.log("Posizione ricevuta:", destBasket.position);
           
-          // Verifica che la posizione sia una stringa valida
-          if (!destBasket.position || typeof destBasket.position !== 'string') {
-            throw new Error("Posizione non valida o non specificata");
-          }
+          let row: string;
+          let positionNumber: number;
           
-          // Estrai la riga (DX, SX) e la posizione numerica
-          // Controllo aggiuntivo: Se position è null o undefined, gestisci appositamente
-          const positionStr = String(destBasket.position || ''); // Converti a stringa o usa stringa vuota
-          const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
-          if (!rowMatch) {
-            throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
-          }
-          
-          const row = rowMatch[1];
-          const positionNumber = parseInt(rowMatch[2]);
-          
-          console.log("Riga estratta:", row);
-          console.log("Numero posizione estratto:", positionNumber);
-          
-          if (isNaN(positionNumber)) {
-            throw new Error(`Numero posizione non valido in: ${destBasket.position}`);
+          try {
+              // Verifica che la posizione sia una stringa valida
+              if (!destBasket.position || typeof destBasket.position !== 'string') {
+                console.error(`Posizione non valida per cestello ${destBasket.basketId}: ${JSON.stringify(destBasket.position)}`);
+                throw new Error("Posizione non valida o non specificata");
+              }
+              
+              // Estrai la riga (DX, SX) e la posizione numerica
+              // Controllo aggiuntivo: Se position è null o undefined, gestisci appositamente
+              const positionStr = String(destBasket.position || ''); // Converti a stringa o usa stringa vuota
+              console.log(`Posizione in elaborazione: "${positionStr}" per cestello ${destBasket.basketId}`);
+              
+              const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
+              if (!rowMatch) {
+                console.error(`Errore formato posizione per cestello ${destBasket.basketId}: "${positionStr}" non rispetta il formato atteso`);
+                throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
+              }
+              
+              // Estrae i valori all'interno del try per evitare errori di scope
+              row = rowMatch[1];
+              positionNumber = parseInt(rowMatch[2]);
+              
+              console.log("Riga estratta:", row);
+              console.log("Numero posizione estratto:", positionNumber);
+              
+              if (isNaN(positionNumber)) {
+                throw new Error(`Numero posizione non valido in: ${destBasket.position}`);
+              }
+              
+          } catch (positionError) {
+              console.error(`Errore di elaborazione posizione: ${positionError.message}`);
+              throw new Error(`Errore nella posizione del cestello ${destBasket.basketId}: ${positionError.message}`);
           }
           
           // Verifica che la posizione sia disponibile
