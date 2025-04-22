@@ -240,7 +240,6 @@ export default function NewVagliaturaPage() {
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          <SelectItem value="vendita">Vendita</SelectItem>
                           <SelectItem value="vagliatura">Vagliatura</SelectItem>
                           <SelectItem value="altro">Altro</SelectItem>
                         </SelectContent>
