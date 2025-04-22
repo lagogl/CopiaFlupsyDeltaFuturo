@@ -1612,10 +1612,21 @@ export default function VagliaturaDetailPage() {
                         })
                         // Filtra le ceste che sono già state aggiunte come destinazione
                         .filter(basket => {
-                          const alreadyAdded = destinationBaskets?.some(
+                          // Controlla se la cesta è già stata aggiunta alle ceste di destinazione nel database
+                          const alreadyAddedInDB = destinationBaskets?.some(
                             destBasket => destBasket.basketId === basket.basketId
                           );
-                          return !alreadyAdded;
+                          
+                          // Controlla se la cesta è già stata aggiunta alle ceste di destinazione in attesa
+                          const alreadyAddedInPending = pendingDestinationBaskets.some(
+                            pendingBasket => pendingBasket.basketId === basket.basketId
+                          );
+                          
+                          // DEBUG - Log per capire quali ceste vengono filtrate e perché
+                          console.log(`Cesta ${basket.physicalNumber} verifica: in DB=${alreadyAddedInDB}, in pending=${alreadyAddedInPending}`);
+                          
+                          // Escludi la cesta se è già presente in uno dei due gruppi
+                          return !alreadyAddedInDB && !alreadyAddedInPending;
                         })
                         .map(basket => {
                           // CORREZIONE: Se siamo in una cesta di destinazione (senza ciclo)
