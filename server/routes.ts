@@ -4447,6 +4447,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Route per eliminare una cesta di destinazione da una selezione
   app.delete("/api/selections/:id/destination-baskets/:destinationBasketId", removeDestinationBasket);
   
+  // Route per completare definitivamente una selezione
+  app.post("/api/selections/:id/complete", completeSelection);
+  
   // Registra le route per cancellare e completare le selezioni
   implementSelectionRoutes(app, db);
   
