@@ -2002,18 +2002,44 @@ export default function VagliaturaDetailPage() {
                           <SelectValue placeholder="Seleziona una posizione disponibile" />
                         </SelectTrigger>
                         <SelectContent>
-                          {availablePositions.map((position) => (
-                            <SelectItem 
-                              key={`${position.flupsyId}-${position.row}-${position.position}`} 
-                              value={`${position.flupsyId}-${position.row}-${position.position}`}
-                              className={position.sameFlupsy ? 'bg-green-50 text-green-700 border-l-4 border-green-400 pl-2' : ''}
-                            >
-                              {position.positionDisplay}
-                              {position.sameFlupsy && (
-                                <span className="ml-2 text-xs text-green-600 font-normal">(stesso FLUPSY)</span>
-                              )}
-                            </SelectItem>
-                          ))}
+                          {/* Filtriamo le posizioni per escludere quelle già utilizzate nelle ceste pendenti */}
+                          {availablePositions
+                            .filter(position => {
+                              // Verifica se questa posizione è già stata utilizzata in una cesta pending
+                              const positionKey = `${position.flupsyId}-${position.row}-${position.position}`;
+                              const alreadyUsedInPending = pendingDestinationBaskets.some(basket => {
+                                if (basket.destinationType !== 'placed') return false; // Ignora ceste in vendita
+                                
+                                // Se la posizione è specificata come stringa nel formato "DX1", estrai flupsyId, row e position
+                                if (basket.position && typeof basket.position === 'string' && basket.flupsyId) {
+                                  const positionMatch = basket.position.match(/^([A-Za-z]+)(\d+)$/);
+                                  if (positionMatch) {
+                                    const row = positionMatch[1];
+                                    const positionNumber = parseInt(positionMatch[2]);
+                                    // Controlla se coincide con la posizione corrente
+                                    return basket.flupsyId === position.flupsyId && 
+                                           row === position.row && 
+                                           positionNumber === position.position;
+                                  }
+                                }
+                                return false;
+                              });
+                              
+                              // Mantieni solo le posizioni non usate
+                              return !alreadyUsedInPending;
+                            })
+                            .map((position) => (
+                              <SelectItem 
+                                key={`${position.flupsyId}-${position.row}-${position.position}`} 
+                                value={`${position.flupsyId}-${position.row}-${position.position}`}
+                                className={position.sameFlupsy ? 'bg-green-50 text-green-700 border-l-4 border-green-400 pl-2' : ''}
+                              >
+                                {position.positionDisplay}
+                                {position.sameFlupsy && (
+                                  <span className="ml-2 text-xs text-green-600 font-normal">(stesso FLUPSY)</span>
+                                )}
+                              </SelectItem>
+                            ))}
                         </SelectContent>
                       </Select>
                     ) : (

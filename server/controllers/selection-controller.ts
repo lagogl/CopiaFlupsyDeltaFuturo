@@ -1072,9 +1072,11 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           }
           
           // Estrai la riga (DX, SX) e la posizione numerica
-          const rowMatch = destBasket.position.match(/^([A-Za-z]+)(\d+)$/);
+          // Controllo aggiuntivo: Se position è null o undefined, gestisci appositamente
+          const positionStr = String(destBasket.position || ''); // Converti a stringa o usa stringa vuota
+          const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
           if (!rowMatch) {
-            throw new Error(`Formato posizione non valido: ${destBasket.position}. Formato atteso: FILA+NUMERO (es. DX2)`);
+            throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
           }
           
           const row = rowMatch[1];
