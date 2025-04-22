@@ -47,10 +47,6 @@ const formSchema = z.object({
   date: z.date({
     required_error: "La data è obbligatoria",
   }),
-  purpose: z.enum(["vagliatura", "altro"], {
-    required_error: "Lo scopo è obbligatorio",
-  }),
-  screeningType: z.enum(["sopra_vaglio", "sotto_vaglio"]).optional(),
   referenceSizeId: z.string().optional().transform(val => val ? parseInt(val, 10) : undefined),
   notes: z.string().optional(),
 });
@@ -75,7 +71,6 @@ export default function NewVagliaturaPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      purpose: "vagliatura",
       notes: "",
     },
   });
@@ -89,6 +84,7 @@ export default function NewVagliaturaPage() {
       const payload = {
         ...values,
         date: format(values.date, "yyyy-MM-dd"),
+        purpose: "vagliatura", // Impostiamo sempre lo scopo a "vagliatura"
       };
 
       // Chiamata all'API per creare una nuova vagliatura
@@ -136,8 +132,7 @@ export default function NewVagliaturaPage() {
     }
   }
 
-  // Monitora i cambiamenti nel campo "purpose" per gestire il campo "screeningType"
-  const watchPurpose = form.watch("purpose");
+  // Nessuna variabile di monitoraggio necessaria
 
   return (
     <div className="space-y-6">
@@ -223,69 +218,7 @@ export default function NewVagliaturaPage() {
                   )}
                 />
 
-                {/* Scopo */}
-                <FormField
-                  control={form.control}
-                  name="purpose"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel>Scopo</FormLabel>
-                      <Select
-                        onValueChange={field.onChange}
-                        defaultValue={field.value}
-                      >
-                        <FormControl>
-                          <SelectTrigger>
-                            <SelectValue placeholder="Seleziona lo scopo" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          <SelectItem value="vagliatura">Vagliatura</SelectItem>
-                          <SelectItem value="altro">Altro</SelectItem>
-                        </SelectContent>
-                      </Select>
-                      <FormDescription>
-                        Motivazione per cui viene effettuata la vagliatura
-                      </FormDescription>
-                      <FormMessage />
-                    </FormItem>
-                  )}
-                />
 
-                {/* Tipo di vaglio (solo se scopo = vagliatura) */}
-                {watchPurpose === "vagliatura" && (
-                  <FormField
-                    control={form.control}
-                    name="screeningType"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Tipo di Vaglio</FormLabel>
-                        <Select
-                          onValueChange={field.onChange}
-                          defaultValue={field.value}
-                        >
-                          <FormControl>
-                            <SelectTrigger>
-                              <SelectValue placeholder="Seleziona il tipo di vaglio" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            <SelectItem value="sopra_vaglio">
-                              Sopra Vaglio
-                            </SelectItem>
-                            <SelectItem value="sotto_vaglio">
-                              Sotto Vaglio
-                            </SelectItem>
-                          </SelectContent>
-                        </Select>
-                        <FormDescription>
-                          Specifica il tipo di vagliatura da effettuare
-                        </FormDescription>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
                 
                 {/* Taglia di riferimento */}
                 <FormField
