@@ -2097,17 +2097,33 @@ export default function VagliaturaDetailPage() {
               <h3 className="font-medium mb-2">Cestelli in attesa di registrazione:</h3>
               <ul className="text-sm space-y-1 max-h-60 overflow-y-auto border rounded-md p-2">
                 {pendingDestinationBaskets.map((basket, index) => (
-                  <li key={index} className="flex justify-between items-center">
-                    <span>
+                  <li key={index} className="flex items-center py-1 border-b last:border-b-0 border-gray-100">
+                    <div className="flex-1">
                       <span className="font-medium">Cesta #{basket.physicalNumber}</span>
                       {' - '}
                       {basket.destinationType === 'sold' ? (
-                        <span className="text-red-600">Vendita</span>
+                        <span className="text-red-600">Vendita {basket.saleClient ? `(${basket.saleClient})` : ''}</span>
                       ) : (
-                        <span>{flupsys?.find(f => f.id === basket.flupsyId)?.name || "FLUPSY"} {basket.position}</span>
+                        <span className="text-green-600">{flupsys?.find(f => f.id === basket.flupsyId)?.name || "FLUPSY"} {basket.position}</span>
                       )}
-                    </span>
-                    <span className="font-mono">{formatNumberWithCommas(basket.animalCount || 0)} animali</span>
+                    </div>
+                    <div className="flex-none font-mono ml-2 mr-4">{formatNumberWithCommas(basket.animalCount || 0)} animali</div>
+                    <div className="flex-none flex space-x-1">
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          handleEditPendingBasket(basket.basketId);
+                          setCompleteConfirmDialogOpen(false);
+                        }}
+                        className="h-6 w-6 p-0"
+                        title="Modifica cestello"
+                      >
+                        <Pencil className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </li>
                 ))}
               </ul>
@@ -2127,6 +2143,337 @@ export default function VagliaturaDetailPage() {
             >
               {isSubmitting ? <Spinner size="sm" className="mr-2" /> : null}
               {pendingDestinationBaskets.length > 0 ? 'Conferma e Completa' : 'Sì, completa vagliatura'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Dialog per modificare cesta destinazione in attesa */}
+      <Dialog
+        open={editDestinationDialogOpen}
+        onOpenChange={(open) => {
+          setEditDestinationDialogOpen(open);
+          if (!open) setEditingBasketId(null);
+        }}
+      >
+        <DialogContent className="max-w-3xl p-4">
+          <DialogHeader className="p-2">
+            <DialogTitle className="text-lg">Modifica Cesta Destinazione</DialogTitle>
+            <DialogDescription className="text-xs">
+              Modifica i dati della cesta di destinazione selezionata
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-2">
+            <div className="flex flex-col space-y-4">
+              {/* Prima riga - Informazioni sul cestello (solo visualizzazione) */}
+              <div className="p-3 bg-blue-50 rounded-md">
+                <p className="text-sm font-medium text-blue-800">
+                  Modifica del cestello #{
+                    pendingDestinationBaskets.find(basket => basket.basketId === editingBasketId)?.physicalNumber || ""
+                  }
+                </p>
+              </div>
+              
+              {/* Contenuto uguale al dialog di aggiunta cestello, ma senza la selezione del cestello */}
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                {/* Input numerico per il conteggio animali */}
+                <div>
+                  <Label htmlFor="animalCount" className="block mb-2">Conteggio Animali</Label>
+                  <Input
+                    id="animalCount"
+                    type="number"
+                    min={0}
+                    value={destinationBasketData.animalCount}
+                    onChange={(e) => {
+                      const count = parseInt(e.target.value) || 0;
+                      setDestinationBasketData({
+                        ...destinationBasketData,
+                        animalCount: count
+                      });
+                    }}
+                    placeholder="Numero di animali"
+                    className="w-full"
+                  />
+                </div>
+                
+                {/* Input numerico per il conteggio morti */}
+                <div>
+                  <Label htmlFor="deadCount" className="block mb-2">Animali Morti</Label>
+                  <Input
+                    id="deadCount"
+                    type="number"
+                    min={0}
+                    value={destinationBasketData.deadCount}
+                    onChange={(e) => {
+                      const count = parseInt(e.target.value) || 0;
+                      setDestinationBasketData({
+                        ...destinationBasketData,
+                        deadCount: count
+                      });
+                    }}
+                    placeholder="Numero di animali morti"
+                    className="w-full"
+                  />
+                </div>
+                
+                {/* Campionamento e peso - Calcolatrice */}
+                <div className="sm:col-span-2 p-4 border rounded-md">
+                  <h4 className="text-sm font-medium mb-2 flex items-center">
+                    <Calculator className="h-4 w-4 mr-1" />
+                    Calcolatrice Peso Campione
+                  </h4>
+                  
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Input per il peso del campione */}
+                    <div>
+                      <Label htmlFor="sampleWeight" className="block mb-1">Peso del Campione (g)</Label>
+                      <Input
+                        id="sampleWeight"
+                        type="number"
+                        min={0}
+                        value={destinationBasketData.sampleWeight}
+                        onChange={(e) => {
+                          const weight = parseFloat(e.target.value) || 0;
+                          const sampleCount = destinationBasketData.sampleCount;
+                          
+                          // Calcola gli animali per kg solo se entrambi i valori sono validi e maggiori di zero
+                          let animalsPerKg = 0;
+                          if (weight > 0 && sampleCount > 0) {
+                            // Calcola gli animali per kg (converti grammi in kg dividendo per 1000)
+                            animalsPerKg = Math.round(sampleCount / (weight / 1000));
+                          }
+                          
+                          // Stima il peso totale in kg se il numero di animali totale è maggiore di zero
+                          let totalWeightKg = 0;
+                          if (destinationBasketData.animalCount > 0 && animalsPerKg > 0) {
+                            totalWeightKg = parseFloat((destinationBasketData.animalCount / animalsPerKg).toFixed(2));
+                          }
+                          
+                          setDestinationBasketData({
+                            ...destinationBasketData,
+                            sampleWeight: weight,
+                            animalsPerKg,
+                            totalWeightKg
+                          });
+                        }}
+                        placeholder="Peso in grammi"
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    {/* Input per il conteggio del campione */}
+                    <div>
+                      <Label htmlFor="sampleCount" className="block mb-1">Numero Animali nel Campione</Label>
+                      <Input
+                        id="sampleCount"
+                        type="number"
+                        min={0}
+                        value={destinationBasketData.sampleCount}
+                        onChange={(e) => {
+                          const count = parseInt(e.target.value) || 0;
+                          const sampleWeight = destinationBasketData.sampleWeight;
+                          
+                          // Calcola gli animali per kg solo se entrambi i valori sono validi e maggiori di zero
+                          let animalsPerKg = 0;
+                          if (sampleWeight > 0 && count > 0) {
+                            // Calcola gli animali per kg (converti grammi in kg dividendo per 1000)
+                            animalsPerKg = Math.round(count / (sampleWeight / 1000));
+                          }
+                          
+                          // Stima il peso totale in kg se il numero di animali totale è maggiore di zero
+                          let totalWeightKg = 0;
+                          if (destinationBasketData.animalCount > 0 && animalsPerKg > 0) {
+                            totalWeightKg = parseFloat((destinationBasketData.animalCount / animalsPerKg).toFixed(2));
+                          }
+                          
+                          setDestinationBasketData({
+                            ...destinationBasketData,
+                            sampleCount: count,
+                            animalsPerKg,
+                            totalWeightKg
+                          });
+                        }}
+                        placeholder="Numero animali"
+                        className="w-full"
+                      />
+                    </div>
+                    
+                    {/* Risultati dei calcoli in una cornice */}
+                    <div className="sm:col-span-2 p-3 bg-gray-50 rounded-md space-y-2">
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-700">Animali per Kg:</span>
+                        <span className="font-mono font-medium">
+                          {formatNumberWithCommas(destinationBasketData.animalsPerKg || 0)}
+                        </span>
+                      </div>
+                      <div className="flex justify-between items-center">
+                        <span className="text-sm text-gray-700">Peso Totale Stimato:</span>
+                        <span className="font-mono font-medium">
+                          {formatNumberWithCommas(destinationBasketData.totalWeightKg || 0)} kg
+                        </span>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Destinazione del cestello: FLUPSY o Vendita con switch */}
+                <div className="sm:col-span-2 p-4 border rounded-md">
+                  <div className="flex items-center justify-between">
+                    <div>
+                      <h4 className="text-sm font-medium">Destinazione Finale</h4>
+                      <p className="text-xs text-muted-foreground">
+                        Scegli se riposizionare il cestello in un FLUPSY o se destinarlo alla vendita
+                      </p>
+                    </div>
+                    
+                    <div className="relative">
+                      <div 
+                        className={`relative w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-colors
+                          ${destinationBasketData.saleDestination ? 'bg-red-200' : 'bg-green-200'}`}
+                        onClick={() => setDestinationBasketData({
+                          ...destinationBasketData,
+                          saleDestination: !destinationBasketData.saleDestination,
+                          // Se cambiamo da vendita a FLUPSY, ripuliamo i campi di vendita
+                          ...(destinationBasketData.saleDestination ? {
+                            saleClient: "",
+                            saleDate: new Date()
+                          } : {})
+                        })}
+                      >
+                        <div 
+                          className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform duration-300 ${
+                            destinationBasketData.saleDestination ? 'translate-x-7' : ''
+                          }`}
+                        />
+                      </div>
+                      <span className="absolute -top-6 left-1/2 transform -translate-x-1/2 text-xs font-medium">
+                        {destinationBasketData.saleDestination ? 'Vendita' : 'FLUPSY'}
+                      </span>
+                    </div>
+                  </div>
+                  
+                  {/* Mostra i campi per FLUPSY o per la vendita a seconda della selezione */}
+                  {destinationBasketData.saleDestination ? (
+                    // Form per la vendita
+                    <div className="mt-4 space-y-3">
+                      <div>
+                        <Label htmlFor="saleClient" className="block mb-1">Cliente</Label>
+                        <Input
+                          id="saleClient"
+                          value={destinationBasketData.saleClient}
+                          onChange={(e) => setDestinationBasketData({
+                            ...destinationBasketData,
+                            saleClient: e.target.value
+                          })}
+                          placeholder="Nome cliente"
+                          className="w-full"
+                        />
+                      </div>
+                      
+                      <div>
+                        <Label htmlFor="saleDate" className="block mb-1">Data Vendita</Label>
+                        <Popover>
+                          <PopoverTrigger asChild>
+                            <Button
+                              variant="outline"
+                              className="w-full justify-start text-left font-normal"
+                            >
+                              {destinationBasketData.saleDate ? (
+                                formatDate(destinationBasketData.saleDate)
+                              ) : (
+                                <span>Seleziona una data</span>
+                              )}
+                            </Button>
+                          </PopoverTrigger>
+                          <PopoverContent className="w-auto p-0">
+                            <Calendar
+                              mode="single"
+                              selected={destinationBasketData.saleDate}
+                              onSelect={(date) => {
+                                if (date) {
+                                  setDestinationBasketData({
+                                    ...destinationBasketData,
+                                    saleDate: date
+                                  });
+                                }
+                              }}
+                              initialFocus
+                            />
+                          </PopoverContent>
+                        </Popover>
+                      </div>
+                    </div>
+                  ) : (
+                    // Form per il posizionamento nel FLUPSY
+                    <div className="mt-4">
+                      <Label htmlFor="positionId" className="block mb-1">Posizione nel FLUPSY</Label>
+                      <Select
+                        value={destinationBasketData.positionId}
+                        onValueChange={(value) => setDestinationBasketData({
+                          ...destinationBasketData,
+                          positionId: value
+                        })}
+                      >
+                        <SelectTrigger id="positionId" className="w-full">
+                          <SelectValue placeholder="Seleziona una posizione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {isLoadingPositions ? (
+                            <div className="flex justify-center py-2">
+                              <Spinner size="sm" />
+                            </div>
+                          ) : availablePositions?.length ? (
+                            availablePositions
+                              .map(position => {
+                                // Crea un ID combinato per la posizione nel formato "flupsyId-row-position"
+                                const positionId = `${position.flupsyId}-${position.row}-${position.position}`;
+                                
+                                return (
+                                  <SelectItem key={positionId} value={positionId}>
+                                    <div className="grid grid-cols-12 w-full items-center gap-1">
+                                      {/* Nome FLUPSY */}
+                                      <div className="col-span-8 truncate">
+                                        {position.flupsyName}
+                                      </div>
+                                      
+                                      {/* Posizione */}
+                                      <div className="col-span-4 text-right font-mono">
+                                        {position.row}{position.position}
+                                      </div>
+                                    </div>
+                                  </SelectItem>
+                                );
+                              })
+                          ) : (
+                            <SelectItem disabled value="none">
+                              Nessuna posizione disponibile
+                            </SelectItem>
+                          )}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setEditDestinationDialogOpen(false);
+                setEditingBasketId(null);
+              }}
+            >
+              Annulla
+            </Button>
+            <Button 
+              onClick={handleSaveEditedPendingBasket}
+              disabled={isSubmitting}
+            >
+              {isSubmitting ? "Aggiornamento in corso..." : "Salva Modifiche"}
             </Button>
           </DialogFooter>
         </DialogContent>
