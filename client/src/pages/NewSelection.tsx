@@ -47,7 +47,7 @@ const formSchema = z.object({
   date: z.date({
     required_error: "La data è obbligatoria",
   }),
-  purpose: z.enum(["vendita", "vagliatura", "altro"], {
+  purpose: z.enum(["vagliatura", "altro"], {
     required_error: "Lo scopo è obbligatorio",
   }),
   screeningType: z.enum(["sopra_vaglio", "sotto_vaglio"]).optional(),
@@ -75,7 +75,7 @@ export default function NewVagliaturaPage() {
     resolver: zodResolver(formSchema),
     defaultValues: {
       date: new Date(),
-      purpose: "vendita",
+      purpose: "vagliatura",
       notes: "",
     },
   });

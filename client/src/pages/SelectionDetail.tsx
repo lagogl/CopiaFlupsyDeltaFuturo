@@ -15,6 +15,7 @@ import {
   AlertCircle,
   Clock,
   Pencil,
+  Calculator,
 } from "lucide-react";
 import { Spinner } from "@/components/ui/spinner";
 import { EmptyState } from "@/components/EmptyState";
