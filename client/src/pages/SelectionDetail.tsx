@@ -1104,6 +1104,15 @@ export default function VagliaturaDetailPage() {
               
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">
+                  Animali in Destinazione
+                </h3>
+                <p className="text-xl font-bold">
+                  {formatNumberWithCommas(totals.destinationTotals.totalAnimals)}
+                </p>
+              </div>
+              
+              <div>
+                <h3 className="text-sm font-medium text-muted-foreground mb-1">
                   Animali Rimanenti
                 </h3>
                 <p className={`text-xl font-bold ${
