@@ -123,6 +123,9 @@ export default function VagliaturaDetailPage() {
   
   // Stato per le ceste di destinazione in attesa di registrazione
   const [pendingDestinationBaskets, setPendingDestinationBaskets] = useState([]);
+  
+  // Stato per gestire la destinazione finale delle ceste pendenti (FLUPSY o vendita)
+  const [basketDestinations, setBasketDestinations] = useState<Record<string, 'flupsy' | 'sold'>>({});
 
   // Query per caricare le ceste disponibili
   const { data: availableBaskets, isLoading: isLoadingAvailableBaskets } = useQuery({
@@ -569,10 +572,66 @@ export default function VagliaturaDetailPage() {
   const handleRemovePendingDestinationBasket = (basketId: number) => {
     setPendingDestinationBaskets(prev => prev.filter(basket => basket.basketId !== basketId));
     
+    // Rimuovi anche la destinazione se presente
+    if (basketDestinations[basketId]) {
+      const newDestinations = {...basketDestinations};
+      delete newDestinations[basketId];
+      setBasketDestinations(newDestinations);
+    }
+    
     toast({
       title: "Cestello rimosso",
       description: "Cestello destinazione in attesa rimosso con successo",
     });
+  };
+  
+  // Cambia la destinazione di una cesta da "placed" a "sold" o viceversa
+  const toggleBasketDestination = (basketId: number) => {
+    setBasketDestinations(prev => {
+      const currentValue = prev[basketId] || 'flupsy';
+      return {
+        ...prev,
+        [basketId]: currentValue === 'flupsy' ? 'sold' : 'flupsy'
+      };
+    });
+    
+    // Aggiorna anche il cestello nel pendingDestinationBaskets
+    setPendingDestinationBaskets(prev => 
+      prev.map(basket => {
+        if (basket.basketId === basketId) {
+          const newDestType = (basketDestinations[basketId] || 'flupsy') === 'flupsy' ? 'sold' : 'placed';
+          
+          // Se la destinazione è cambiata a vendita, richiedi il cliente
+          if (newDestType === 'sold' && !basket.saleClient) {
+            // Apri un dialogo modale per richiedere il cliente di vendita
+            // Per ora usiamo un prompt, ma potremmo implementare un dialogo più elegante
+            const clientName = prompt('Inserisci il nome del cliente per la vendita');
+            
+            // Se la destinazione è cambiata a vendita, impostiamo il FLUPSY predefinito ma position a null
+            // Se torna a normale, dobbiamo impostare position a un valore valido
+            return {
+              ...basket,
+              destinationType: newDestType,
+              position: newDestType === 'sold' ? null : (basket.position || 'DX1'), // Usa la posizione esistente o un default
+              // Un FLUPSY ID deve sempre essere presente per motivi di vincolo database
+              flupsyId: newDestType === 'sold' ? 1 : (basket.flupsyId || 1),
+              saleClient: clientName || 'Cliente non specificato',
+              saleDate: new Date().toISOString().split('T')[0] // Data di oggi
+            };
+          }
+          
+          // Se la destinazione cambia da vendita a FLUPSY o non è cambiata
+          return {
+            ...basket,
+            destinationType: newDestType,
+            position: newDestType === 'sold' ? null : (basket.position || 'DX1'), // Usa la posizione esistente o un default
+            // Un FLUPSY ID deve sempre essere presente per motivi di vincolo database
+            flupsyId: newDestType === 'sold' ? 1 : (basket.flupsyId || 1)
+          };
+        }
+        return basket;
+      })
+    );
   };
 
   // Completa la selezione registrando tutte le operazioni in attesa
@@ -1139,7 +1198,7 @@ export default function VagliaturaDetailPage() {
                         </TableCell>
                         <TableCell>
                           {pendingBasket.destinationType === 'sold' ? (
-                            <Badge variant="destructive">Vendita: {pendingBasket.saleClient}</Badge>
+                            <Badge variant="destructive">Vendita: {pendingBasket.saleClient || "N/A"}</Badge>
                           ) : (
                             pendingBasket.flupsyId ? (
                               <span>
@@ -1161,9 +1220,25 @@ export default function VagliaturaDetailPage() {
                           {formatNumberWithCommas(pendingBasket.animalsPerKg || 0)}
                         </TableCell>
                         <TableCell>
-                          <Badge variant="outline" className="bg-amber-50 text-amber-700 border-amber-200">
-                            In Attesa
-                          </Badge>
+                          {/* Manopola per scegliere la destinazione finale */}
+                          <div className="flex items-center space-x-2">
+                            <div 
+                              className={`relative w-14 h-7 flex items-center rounded-full p-1 cursor-pointer transition-colors
+                                ${pendingBasket.destinationType === 'sold' ? 'bg-red-200' : 'bg-green-200'}`}
+                              onClick={() => toggleBasketDestination(pendingBasket.basketId)}
+                            >
+                              <div 
+                                className={`bg-white w-5 h-5 rounded-full shadow-md transform transition-transform
+                                  ${pendingBasket.destinationType === 'sold' ? 'translate-x-7' : 'translate-x-0'}`}
+                              />
+                              <span className={`absolute text-[10px] font-bold
+                                ${pendingBasket.destinationType === 'sold' 
+                                  ? 'right-1.5 text-red-700' 
+                                  : 'left-1.5 text-green-700'}`}>
+                                {pendingBasket.destinationType === 'sold' ? 'VENDI' : 'FLUPSY'}
+                              </span>
+                            </div>
+                          </div>
                         </TableCell>
                         {selection.status === "draft" && (
                           <TableCell>
