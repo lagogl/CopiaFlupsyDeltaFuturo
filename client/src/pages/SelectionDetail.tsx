@@ -77,6 +77,8 @@ export default function VagliaturaDetailPage() {
   const [addDestinationDialogOpen, setAddDestinationDialogOpen] = useState(false);
   const [cancelConfirmDialogOpen, setCancelConfirmDialogOpen] = useState(false);
   const [completeConfirmDialogOpen, setCompleteConfirmDialogOpen] = useState(false);
+  const [editDestinationDialogOpen, setEditDestinationDialogOpen] = useState(false);
+  const [editingBasketId, setEditingBasketId] = useState<number | null>(null);
   const [activeTab, setActiveTab] = useState("origine");
 
   // Query per caricare i dati della selezione
@@ -958,7 +960,13 @@ export default function VagliaturaDetailPage() {
                 <h3 className="text-sm font-medium text-muted-foreground mb-1">
                   Animali Rimanenti
                 </h3>
-                <p className={`text-xl font-bold ${totals.remainingAnimals > 0 && selection.status === "draft" ? "text-amber-600" : totals.remainingAnimals === 0 ? "text-green-600" : ""}`}>
+                <p className={`text-xl font-bold ${
+                  totals.remainingAnimals > 0 
+                    ? "text-red-600" // Deficit (negativo) - rosso
+                    : totals.remainingAnimals < 0 
+                      ? "text-green-600" // Surplus (positivo) - verde  
+                      : "" // Zero - colore normale
+                }`}>
                   {formatNumberWithCommas(totals.remainingAnimals)}
                 </p>
               </div>
@@ -987,7 +995,7 @@ export default function VagliaturaDetailPage() {
                       
                       {/* Avviso bilancio animali discrepante */}
                       {totals.animalBalance?.hasDiscrepancy && (
-                        <div className={`mt-2 p-2 rounded ${totals.animalBalance.surplus ? "bg-amber-100 text-amber-800" : "bg-blue-100 text-blue-800"}`}>
+                        <div className={`mt-2 p-2 rounded ${totals.animalBalance.surplus ? "bg-green-100 text-green-800" : "bg-red-100 text-red-800"}`}>
                           <div className="flex items-start">
                             <AlertCircle className="h-4 w-4 mr-2 mt-0.5" />
                             <div>
@@ -1242,13 +1250,24 @@ export default function VagliaturaDetailPage() {
                         </TableCell>
                         {selection.status === "draft" && (
                           <TableCell>
-                            <Button
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => handleRemovePendingDestinationBasket(pendingBasket.basketId)}
-                            >
-                              <X className="h-4 w-4" />
-                            </Button>
+                            <div className="flex space-x-1">
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleEditPendingBasket(pendingBasket.basketId)}
+                                title="Modifica cestello"
+                              >
+                                <Pencil className="h-4 w-4" />
+                              </Button>
+                              <Button
+                                variant="ghost"
+                                size="sm"
+                                onClick={() => handleRemovePendingDestinationBasket(pendingBasket.basketId)}
+                                title="Rimuovi cestello"
+                              >
+                                <X className="h-4 w-4" />
+                              </Button>
+                            </div>
                           </TableCell>
                         )}
                       </TableRow>
