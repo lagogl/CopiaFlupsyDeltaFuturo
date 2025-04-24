@@ -603,9 +603,18 @@ export default function CycleDetail() {
                 {cycle.state === 'active' ? 'Attivo' : 'Chiuso'}
               </span>
               <span className={`px-2 py-1 rounded-full text-xs ${
-                cycle.state === 'active' ? 'bg-green-100 text-green-800' : 'bg-blue-100 text-blue-800'
+                cycle.state === 'active' 
+                  ? 'bg-green-100 text-green-800' 
+                  : operations?.some(op => op.type === 'vendita' && op.cycleId === cycle.id)
+                    ? 'bg-red-100 text-red-800'
+                    : 'bg-blue-100 text-blue-800'
               }`}>
-                {cycle.state === 'active' ? 'In corso' : 'Completato'}
+                {cycle.state === 'active' 
+                  ? 'In corso'
+                  : operations?.some(op => op.type === 'vendita' && op.cycleId === cycle.id)
+                    ? 'Venduto'
+                    : 'Completato'
+                }
               </span>
             </div>
           </CardContent>
