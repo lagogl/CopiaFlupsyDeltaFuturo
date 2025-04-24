@@ -1083,7 +1083,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           deadCount: destBasket.deadCount || 0,
           mortalityRate: destBasket.mortalityRate || 0,
           sizeId: actualSizeId,
-          notes: `Nuova cesta da selezione #${selection[0].selectionNumber}`
+          notes: `Nuova cesta da vagliatura #${selection[0].selectionNumber}`
         }).returning();
         
         // Crea nuovo ciclo per la cesta
