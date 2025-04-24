@@ -318,6 +318,17 @@ export default function BasicFlupsyVisualizer() {
                     </svg>
                   </div>
                 )}
+                
+                {/* Indicatore di ciclo venduto */}
+                {basket.currentCycleId && cycles?.find(c => c.id === basket.currentCycleId)?.state === 'closed' && 
+                  operations?.some(op => op.type === 'vendita' && op.cycleId === basket.currentCycleId) && (
+                  <div className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-white shadow-sm" 
+                       title="Ciclo venduto">
+                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                      <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h8V3a1 1 0 112 0v1h1a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V6a2 2 0 012-2h1V3a1 1 0 011-1zm11 14V6H4v10h12z" clipRule="evenodd" />
+                    </svg>
+                  </div>
+                )}
               </div>
             </div>
             
@@ -534,7 +545,11 @@ export default function BasicFlupsyVisualizer() {
                 className={`${borderClass} rounded-md p-1.5 text-center 
                   ${zoomLevel === 4 ? 'text-lg' : zoomLevel === 3 ? 'text-base' : zoomLevel === 2 ? 'text-sm' : 'text-xs'} 
                   ${zoomLevel === 4 ? 'h-72' : zoomLevel === 3 ? 'h-56' : zoomLevel === 2 ? 'h-48' : 'h-44'} 
-                  overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${bgClass}`}
+                  overflow-hidden cursor-pointer hover:shadow-md transition-shadow ${bgClass}
+                  ${basket.currentCycleId && cycles?.find(c => c.id === basket.currentCycleId)?.state === 'closed' && 
+                    operations?.some(op => op.type === 'vendita' && op.cycleId === basket.currentCycleId) 
+                    ? 'relative after:absolute after:inset-0 after:bg-red-500/20 after:content-[""] after:z-10 after:pointer-events-none after:[background-image:repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.5)_10px,rgba(255,255,255,0.5)_20px)]' 
+                    : ''}`}
               >
                 {basketContent}
               </div>
@@ -556,7 +571,11 @@ export default function BasicFlupsyVisualizer() {
           ${zoomLevel === 4 ? 'text-lg' : zoomLevel === 3 ? 'text-base' : zoomLevel === 2 ? 'text-sm' : 'text-xs'} 
           ${zoomLevel === 4 ? 'h-72' : zoomLevel === 3 ? 'h-56' : zoomLevel === 2 ? 'h-48' : 'h-44'} 
           overflow-hidden
-          ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}`}
+          ${(basket && basket.state === 'active' && basket.currentCycleId) ? 'cursor-pointer hover:shadow-md transition-shadow' : ''} ${bgClass}
+          ${basket?.currentCycleId && cycles?.find(c => c.id === basket.currentCycleId)?.state === 'closed' && 
+            operations?.some(op => op.type === 'vendita' && op.cycleId === basket.currentCycleId) 
+            ? 'relative after:absolute after:inset-0 after:bg-red-500/20 after:content-[""] after:z-10 after:pointer-events-none after:[background-image:repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.5)_10px,rgba(255,255,255,0.5)_20px)]' 
+            : ''}`}
       >
         {basketContent}
       </div>
