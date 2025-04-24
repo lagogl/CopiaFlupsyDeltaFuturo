@@ -679,6 +679,11 @@ export default function Operations() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div>
                             #{op.basket?.physicalNumber || op.basketId}
+                            {op.basket?.flupsyId && flupsys?.find((f: any) => f.id === op.basket?.flupsyId) && (
+                              <span className="text-xs block text-blue-600 mt-1">
+                                FLUPSY: {flupsys.find((f: any) => f.id === op.basket?.flupsyId)?.name || `#${op.basket.flupsyId}`}
+                              </span>
+                            )}
                             {op.basket?.row && op.basket?.position && (
                               <span className="text-xs block text-indigo-600 mt-1">
                                 Posizione: {op.basket.row} - {op.basket.position}
@@ -687,7 +692,7 @@ export default function Operations() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          #{op.cycleId}
+                          {op.cycleId ? `#${op.cycleId}` : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {op.lot ? (
@@ -700,12 +705,39 @@ export default function Operations() {
                                 Fornitore: {op.lot.supplier || 'N/D'}
                               </span>
                             </div>
+                          ) : op.lotId ? (
+                            <div>
+                              <span className="font-medium text-indigo-600">Lotto #{op.lotId}</span>
+                              {lots?.find((l: any) => l.id === op.lotId) && (
+                                <>
+                                  <span className="text-xs block text-gray-500">
+                                    Arrivo: {format(new Date(lots.find((l: any) => l.id === op.lotId).arrivalDate), 'dd/MM/yyyy')}
+                                  </span>
+                                  <span className="text-xs block text-gray-500">
+                                    Fornitore: {lots.find((l: any) => l.id === op.lotId)?.supplier || 'N/D'}
+                                  </span>
+                                </>
+                              )}
+                            </div>
                           ) : (
                             <span className="text-gray-400 italic">Nessun lotto</span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {getSizeBadge(op.size)}
+                          {op.size ? (
+                            getSizeBadge(op.size)
+                          ) : op.sizeId ? (
+                            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium" 
+                                  style={{ backgroundColor: allSizes?.find((s: any) => s.id === op.sizeId)?.color || '#e5e7eb', color: '#111827' }}>
+                              {allSizes?.find((s: any) => s.id === op.sizeId)?.code || `Size #${op.sizeId}`}
+                            </span>
+                          ) : op.animalsPerKg ? (
+                            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
+                              ~{Math.round(1000000 / op.animalsPerKg)} mg/animale
+                            </span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {op.animalCount ? op.animalCount.toLocaleString() : '-'}
