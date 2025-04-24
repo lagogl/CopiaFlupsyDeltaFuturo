@@ -203,18 +203,46 @@ export default function Operations() {
     }
   });
 
-  // Group operations by cycle
+  // Group operations by cycle with enriched data
   const operationsByCycle = useMemo(() => {
-    if (!operations || !cycles) return {};
+    if (!operations || !cycles || !lots || !sizes || !flupsys) return {};
     
     const grouped: { [key: string]: any[] } = {};
     
     operations.forEach((op: any) => {
+      if (!op.cycleId) return;
+      
       const cycleId = op.cycleId.toString();
       if (!grouped[cycleId]) {
         grouped[cycleId] = [];
       }
-      grouped[cycleId].push(op);
+      
+      // Arricchisci i dati prima di aggiungerli al gruppo
+      let enrichedOp = { ...op };
+      
+      // Arricchisci i dati del lotto se non presente ma c'è l'ID
+      if (!enrichedOp.lot && enrichedOp.lotId && lots) {
+        const matchingLot = lots.find((l: any) => l.id === enrichedOp.lotId);
+        if (matchingLot) {
+          enrichedOp.lot = matchingLot;
+          console.log(`Lotto trovato per operazione ${op.id}: ${matchingLot.name}`);
+        }
+      }
+      
+      // Arricchisci i dati della taglia se non presente ma c'è l'ID
+      if (!enrichedOp.size && enrichedOp.sizeId && sizes) {
+        enrichedOp.size = sizes.find((s: any) => s.id === enrichedOp.sizeId);
+      }
+      
+      // Arricchisci i dati del cestello con FLUPSY
+      if (enrichedOp.basket && enrichedOp.basket.flupsyId && flupsys) {
+        const flupsy = flupsys.find((f: any) => f.id === enrichedOp.basket.flupsyId);
+        if (flupsy) {
+          enrichedOp.basket.flupsy = flupsy;
+        }
+      }
+      
+      grouped[cycleId].push(enrichedOp);
     });
     
     // Sort operations in each cycle by date
@@ -225,7 +253,7 @@ export default function Operations() {
     });
     
     return grouped;
-  }, [operations, cycles]);
+  }, [operations, cycles, lots, sizes, flupsys]);
   
   // Function to toggle cycle expansion
   const toggleCycleExpansion = (cycleId: number) => {
@@ -728,8 +756,8 @@ export default function Operations() {
                             getSizeBadge(op.size)
                           ) : op.sizeId ? (
                             <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium" 
-                                  style={{ backgroundColor: allSizes?.find((s: any) => s.id === op.sizeId)?.color || '#e5e7eb', color: '#111827' }}>
-                              {allSizes?.find((s: any) => s.id === op.sizeId)?.code || `Size #${op.sizeId}`}
+                                  style={{ backgroundColor: sizes?.find((s: any) => s.id === op.sizeId)?.color || '#e5e7eb', color: '#111827' }}>
+                              {sizes?.find((s: any) => s.id === op.sizeId)?.code || `Size #${op.sizeId}`}
                             </span>
                           ) : op.animalsPerKg ? (
                             <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
