@@ -1083,7 +1083,9 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           deadCount: destBasket.deadCount || 0,
           mortalityRate: destBasket.mortalityRate || 0,
           sizeId: actualSizeId,
-          notes: `Nuova cesta da vagliatura #${selection[0].selectionNumber}`
+          notes: `Nuova cesta da vagliatura #${selection[0].selectionNumber}`,
+          // Aggiungi il riferimento al lotto (il primo disponibile dalle ceste di origine)
+          lotId: sourceBaskets.find(sb => sb.lotId)?.lotId || null
         }).returning();
         
         // Crea nuovo ciclo per la cesta
@@ -1102,7 +1104,18 @@ export async function addDestinationBaskets(req: Request, res: Response) {
         if (destBasket.destinationType === 'sold') {
           // Caso 1: Vendita immediata
           
-          // Crea operazione di vendita
+          // Ottieni i riferimenti ai lotti provenienti dai cestelli di origine
+          const lotReferences = [];
+          for (const sourceBasket of sourceBaskets) {
+            if (sourceBasket.lotId) {
+              lotReferences.push(sourceBasket.lotId);
+            }
+          }
+          
+          // Usa il primo lotto disponibile (se presente) per l'operazione di vendita
+          const primaryLotId = lotReferences.length > 0 ? lotReferences[0] : null;
+          
+          // Crea operazione di vendita con il lotto associato
           await tx.insert(operations).values({
             date: selection[0].date,
             type: 'vendita',
@@ -1111,7 +1124,8 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             animalCount: destBasket.animalCount,
             totalWeight: destBasket.totalWeight,
             animalsPerKg: destBasket.animalsPerKg,
-            notes: `Vendita immediata dopo selezione #${selection[0].selectionNumber}`
+            notes: `Vendita immediata dopo selezione #${selection[0].selectionNumber}`,
+            lotId: primaryLotId // Associa il lotto all'operazione di vendita
           });
           
           // Chiudi il ciclo appena creato
