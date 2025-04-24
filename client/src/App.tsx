@@ -29,6 +29,7 @@ import NFCTagManager from "@/pages/NFCTagManager";
 import GrowJourney from "@/pages/GrowJourney";
 import BasketSelection from "@/pages/BasketSelection";
 import ExportPage from "@/pages/ExportPage";
+import DiarioDiBordo from "@/pages/DiarioDiBordo";
 // Importiamo la nuova pagina per la gestione avanzata di NFC
 import NfcManagerPage from "@/nfc-features/pages/NfcManagerPage";
 // Importiamo le pagine per il modulo di vagliatura
@@ -82,6 +83,7 @@ function Router() {
       <Route path="/grow-journey" component={GrowJourney}/>
       <Route path="/basket-selection" component={BasketSelection}/>
       <Route path="/backup" component={BackupPage}/>
+      <Route path="/diario-di-bordo" component={DiarioDiBordo}/>
       
       {/* Redirezione per la pagina TP3000 rimossa */}
       <Route path="/tp3000-forecast">
