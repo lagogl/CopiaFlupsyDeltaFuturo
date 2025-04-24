@@ -70,9 +70,9 @@ const createWhatsAppText = (data: any, date: Date) => {
   
   // Bilancio giornata
   text += `🧮 *BILANCIO GIORNALIERO*\n`;
-  text += `Entrate: ${data.totals.totale_entrate.toLocaleString('it-IT')} animali\n`;
-  text += `Uscite: ${data.totals.totale_uscite.toLocaleString('it-IT')} animali\n`;
-  text += `Bilancio netto: ${data.totals.bilancio_netto.toLocaleString('it-IT')} animali\n`;
+  text += `Entrate: ${data.totals.totale_entrate ? data.totals.totale_entrate.toLocaleString('it-IT') : '0'} animali\n`;
+  text += `Uscite: ${data.totals.totale_uscite ? data.totals.totale_uscite.toLocaleString('it-IT') : '0'} animali\n`;
+  text += `Bilancio netto: ${data.totals.bilancio_netto ? data.totals.bilancio_netto.toLocaleString('it-IT') : '0'} animali\n`;
   text += `Totale operazioni: ${data.totals.numero_operazioni}\n`;
   
   return text;
@@ -369,19 +369,19 @@ export default function DiarioDiBordo() {
                             <div className="p-3 border rounded-lg">
                               <p className="text-xs text-muted-foreground">Entrate</p>
                               <p className="text-lg font-semibold text-emerald-600">
-                                {totals.totale_entrate.toLocaleString('it-IT')}
+                                {totals.totale_entrate ? totals.totale_entrate.toLocaleString('it-IT') : '0'}
                               </p>
                             </div>
                             <div className="p-3 border rounded-lg">
                               <p className="text-xs text-muted-foreground">Uscite</p>
                               <p className="text-lg font-semibold text-red-600">
-                                {totals.totale_uscite.toLocaleString('it-IT')}
+                                {totals.totale_uscite ? totals.totale_uscite.toLocaleString('it-IT') : '0'}
                               </p>
                             </div>
                             <div className="p-3 border rounded-lg">
                               <p className="text-xs text-muted-foreground">Bilancio Netto</p>
                               <p className={`text-lg font-semibold ${totals.bilancio_netto >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                {totals.bilancio_netto.toLocaleString('it-IT')}
+                                {totals.bilancio_netto ? totals.bilancio_netto.toLocaleString('it-IT') : '0'}
                               </p>
                             </div>
                             <div className="p-3 border rounded-lg">
