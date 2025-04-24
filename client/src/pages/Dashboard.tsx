@@ -156,14 +156,55 @@ export default function Dashboard() {
     return <div className="flex justify-center items-center h-full">Caricamento dashboard...</div>;
   }
 
+  // Formatta il tempo trascorso dall'ultimo aggiornamento
+  const formatLastUpdate = () => {
+    const now = new Date();
+    const diff = now.getTime() - lastRefresh.getTime();
+    const mins = Math.floor(diff / 60000);
+    
+    if (mins < 1) return "Aggiornato adesso";
+    if (mins === 1) return "Aggiornato 1 minuto fa";
+    if (mins < 60) return `Aggiornato ${mins} minuti fa`;
+    
+    const hours = Math.floor(mins / 60);
+    if (hours === 1) return "Aggiornato 1 ora fa";
+    return `Aggiornato ${hours} ore fa`;
+  };
+
   return (
     <div>
-      <h2 
-        ref={dashboardTitleRef} 
-        className="text-2xl font-condensed font-bold text-gray-800 mb-6"
-      >
-        Dashboard
-      </h2>
+      <div className="flex justify-between items-center mb-6">
+        <h2 
+          ref={dashboardTitleRef} 
+          className="text-2xl font-condensed font-bold text-gray-800"
+        >
+          Dashboard
+        </h2>
+        
+        <div className="flex items-center gap-2">
+          {needsRefresh && (
+            <div className="flex items-center text-amber-600 bg-amber-50 px-3 py-1 rounded-md mr-2">
+              <AlertCircle className="w-4 h-4 mr-1" />
+              <span className="text-sm">Dati non aggiornati</span>
+            </div>
+          )}
+          
+          <div className="text-sm text-gray-500 mr-2">
+            {formatLastUpdate()}
+          </div>
+          
+          <Button
+            size="sm"
+            onClick={refreshData}
+            disabled={isRefreshing}
+            variant="outline"
+            className="flex items-center gap-2"
+          >
+            <RefreshCw className={`w-4 h-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+            {isRefreshing ? 'Aggiornamento...' : 'Aggiorna dati'}
+          </Button>
+        </div>
+      </div>
       
       {/* Dashboard Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
