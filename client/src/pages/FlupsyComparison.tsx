@@ -1055,40 +1055,7 @@ export default function FlupsyComparison() {
                           </div>
                         ))}
                         
-                        {/* Cestelli senza posizione (esclusi quelli venduti) */}
-                        {fluspyBaskets
-                          .filter(b => (!b.row || b.position === null) && 
-                            // Escludiamo cestelli con cicli venduti
-                            !(b.currentCycleId && operations?.some(op => 
-                              op.type === 'vendita' && op.cycleId === b.currentCycleId
-                            ))
-                          ).length > 0 && (
-                          <div className="rounded-md">
-                            <div className="flex items-center mb-2">
-                              <div className="text-sm font-medium bg-gray-100 px-2 py-1 rounded">
-                                Cestelli senza posizione (disponibili)
-                              </div>
-                            </div>
-                            <div className="grid grid-cols-4 md:grid-cols-8 lg:grid-cols-12 gap-2">
-                              {fluspyBaskets
-                                .filter(b => (!b.row || b.position === null) && 
-                                  // Escludiamo cestelli con cicli venduti
-                                  !(b.currentCycleId && operations?.some(op => 
-                                    op.type === 'vendita' && op.cycleId === b.currentCycleId
-                                  ))
-                                )
-                                .map(basket => (
-                                  <div key={basket.id} className="flex items-center justify-center">
-                                    {currentTabId === 'data-futuro' ? 
-                                      renderFutureBasket(basket) : 
-                                      renderTargetSizeBasket(basket)
-                                    }
-                                  </div>
-                                ))
-                              }
-                            </div>
-                          </div>
-                        )}
+                        {/* Sezione cestelli senza posizione rimossa per evitare confusione nel modulo di confronto */}
                       </div>
                     );
                   })()}
