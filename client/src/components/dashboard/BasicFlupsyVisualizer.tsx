@@ -659,6 +659,12 @@ export default function BasicFlupsyVisualizer() {
     // Calcola i badge per questo FLUPSY
     const flupsyBadges = calculateBadgesForFlupsy(flupsy.id);
     
+    // Trova le ceste senza posizione assegnata per questo FLUPSY
+    const basketsWithoutPosition = baskets?.filter((b: any) => 
+      b.flupsyId === flupsy.id && 
+      (b.position === null || b.row === null)
+    ) || [];
+    
     return (
       <div key={`flupsy-${flupsy.id}`} className="mb-8">
         <div className="flex items-center justify-between mb-4">
@@ -705,6 +711,52 @@ export default function BasicFlupsyVisualizer() {
               )}
             </div>
           </div>
+          
+          {/* Ceste senza posizione assegnata */}
+          {basketsWithoutPosition.length > 0 && (
+            <div className="bg-slate-50 rounded-md p-3 shadow-sm border border-dashed border-slate-300 mt-4">
+              <div className="flex items-center mb-3">
+                <div className="h-8 w-8 rounded-full bg-slate-200 flex items-center justify-center text-slate-600 mr-2">
+                  <span>!</span>
+                </div>
+                <div className="text-sm font-medium">Ceste senza posizione</div>
+                <Badge variant="outline" className="ml-2">{basketsWithoutPosition.length}</Badge>
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
+                {basketsWithoutPosition.map((basket: any) => {
+                  // Ottieni l'ultima operazione per questo cestello
+                  const latestOperation = getLatestOperation(basket.id);
+                  
+                  // Stile base per cestelli senza posizione
+                  const borderClass = 'border-slate-300 border-2';
+                  const bgClass = 'bg-slate-50';
+                  
+                  return (
+                    <div 
+                      key={`basket-no-pos-${basket.id}`}
+                      className={`${borderClass} ${bgClass} p-2 rounded-md text-center cursor-pointer transition-colors duration-200 hover:bg-slate-100`}
+                      onClick={() => handleBasketClick(basket)}
+                    >
+                      <p className="text-sm font-bold">
+                        Cesta #{basket.physicalNumber}
+                      </p>
+                      {latestOperation && (
+                        <div className="text-xs text-slate-500 mt-1">
+                          {latestOperation.type && (
+                            <p>{getOperationTypeLabel(latestOperation.type)}</p>
+                          )}
+                          {latestOperation.date && (
+                            <p>{format(new Date(latestOperation.date), 'dd/MM/yyyy')}</p>
+                          )}
+                        </div>
+                      )}
+                    </div>
+                  );
+                })}
+              </div>
+            </div>
+          )}
         </div>
       </div>
     );
