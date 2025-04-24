@@ -64,7 +64,7 @@ const createWhatsAppText = (data: any, date: Date) => {
   // Statistiche per taglia
   text += `📊 *RIEPILOGO PER TAGLIA*\n`;
   data.sizeStats.forEach((stat: any) => {
-    text += `${stat.taglia}: ${stat.entrate.toLocaleString('it-IT')} entrate, ${stat.uscite.toLocaleString('it-IT')} uscite\n`;
+    text += `${stat.taglia}: ${stat.entrate ? stat.entrate.toLocaleString('it-IT') : '0'} entrate, ${stat.uscite ? stat.uscite.toLocaleString('it-IT') : '0'} uscite\n`;
   });
   text += '\n';
   
@@ -338,13 +338,13 @@ export default function DiarioDiBordo() {
                                   <div>
                                     <p className="text-xs text-muted-foreground">Entrate</p>
                                     <p className="text-lg font-semibold text-emerald-600">
-                                      {stat.entrate.toLocaleString('it-IT')}
+                                      {stat.entrate ? stat.entrate.toLocaleString('it-IT') : '0'}
                                     </p>
                                   </div>
                                   <div>
                                     <p className="text-xs text-muted-foreground">Uscite</p>
                                     <p className="text-lg font-semibold text-red-600">
-                                      {stat.uscite.toLocaleString('it-IT')}
+                                      {stat.uscite ? stat.uscite.toLocaleString('it-IT') : '0'}
                                     </p>
                                   </div>
                                 </div>
@@ -380,7 +380,7 @@ export default function DiarioDiBordo() {
                             </div>
                             <div className="p-3 border rounded-lg">
                               <p className="text-xs text-muted-foreground">Bilancio Netto</p>
-                              <p className={`text-lg font-semibold ${totals.bilancio_netto >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                              <p className={`text-lg font-semibold ${(totals.bilancio_netto || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
                                 {totals.bilancio_netto ? totals.bilancio_netto.toLocaleString('it-IT') : '0'}
                               </p>
                             </div>
