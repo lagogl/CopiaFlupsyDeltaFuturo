@@ -1117,15 +1117,45 @@ export default function Operations() {
                                       // Verifica se c'è un'operazione con lotti multipli
                                       const opWithMultipleLots = cycleOps.find(op => op.hasMultipleLots && op.additionalLots);
                                       if (opWithMultipleLots) {
-                                        // Mostra il lotto principale con indicatore di lotto misto
+                                        // Mostra il lotto principale con indicatore di lotto misto e menu a tendina
                                         const mainLot = opWithMultipleLots.lot || 
                                                        (opWithMultipleLots.lotId ? lots?.find(l => l.id === opWithMultipleLots.lotId) : null);
+                                        
+                                        // Ottieni gli altri lotti da visualizzare nel menu a tendina
+                                        const additionalLots = opWithMultipleLots.additionalLots || [];
+                                        const additionalLotsCount = Array.isArray(additionalLots) ? additionalLots.length : 0;
+                                        
                                         return (
-                                          <div className="flex items-center gap-2">
-                                            <span>{mainLot ? mainLot.name : 'Lotto principale'}</span>
-                                            <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
-                                              Misto
-                                            </span>
+                                          <div className="flex flex-col">
+                                            <div className="flex items-center gap-2">
+                                              <span>{mainLot ? mainLot.name : 'Lotto principale'}</span>
+                                              <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
+                                                Misto
+                                              </span>
+                                            </div>
+                                            
+                                            {/* Menu a tendina per gli altri lotti */}
+                                            {additionalLotsCount > 0 && (
+                                              <details className="mt-1 text-xs">
+                                                <summary className="cursor-pointer text-indigo-600 font-medium">
+                                                  ▼ Altri lotti ({additionalLotsCount})
+                                                </summary>
+                                                <div className="pl-2 mt-1 border-l-2 border-indigo-100">
+                                                  {additionalLots.map((lotRef: any) => {
+                                                    // Cerca i dettagli del lotto
+                                                    const lot = lots?.find(l => l.id === lotRef.id || l.id === lotRef.lotId);
+                                                    if (!lot) return null;
+                                                    
+                                                    return (
+                                                      <div key={lot.id} className="py-1">
+                                                        <div>Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')}</div>
+                                                        <div>Fornitore: {lot.supplier || 'N/D'}</div>
+                                                      </div>
+                                                    );
+                                                  })}
+                                                </div>
+                                              </details>
+                                            )}
                                           </div>
                                         );
                                       }
