@@ -333,7 +333,9 @@ export default function BasicFlupsyVisualizer() {
             <div className="flex justify-between items-center bg-slate-50 px-1 py-0.5 rounded-md">
               <div className={`${zoomLevel >= 2 ? 'text-[12px]' : 'text-[10px]'} font-medium text-slate-500`}>Q.tà:</div>
               <div className={`${zoomLevel >= 2 ? 'text-[13px]' : 'text-[11px]'}`}>
-                {latestOperation.animalsPerKg.toLocaleString('it-IT')}/kg
+                {latestOperation.animalsPerKg 
+                  ? latestOperation.animalsPerKg.toLocaleString('it-IT')
+                  : "N/D"}/kg
               </div>
             </div>
             
@@ -472,13 +474,13 @@ export default function BasicFlupsyVisualizer() {
           
           <div className="flex justify-between">
             <span className="font-medium">Animali per kg:</span>
-            <span>{latestOperation.animalsPerKg.toLocaleString('it-IT')}</span>
+            <span>{latestOperation.animalsPerKg ? latestOperation.animalsPerKg.toLocaleString('it-IT') : "N/D"}</span>
           </div>
           
           {latestOperation.animalCount && (
             <div className="flex justify-between">
               <span className="font-medium">Totale animali:</span>
-              <span>{latestOperation.animalCount.toLocaleString('it-IT')}</span>
+              <span>{latestOperation.animalCount ? latestOperation.animalCount.toLocaleString('it-IT') : "N/D"}</span>
             </div>
           )}
           
