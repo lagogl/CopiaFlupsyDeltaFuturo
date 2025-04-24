@@ -1467,7 +1467,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Diario di Bordo API routes ===
   
   // API - Ottieni operazioni per data
-  app.get("/api/operations/by-date", async (req, res) => {
+  app.get("/api/diario/operations-by-date", async (req, res) => {
     try {
       const date = req.query.date as string;
       
@@ -1498,7 +1498,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API - Ottieni statistiche per taglia
-  app.get("/api/operations/size-stats", async (req, res) => {
+  app.get("/api/diario/size-stats", async (req, res) => {
     try {
       const date = req.query.date as string;
       
@@ -1529,7 +1529,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // API - Ottieni totali giornalieri
-  app.get("/api/operations/daily-totals", async (req, res) => {
+  app.get("/api/diario/daily-totals", async (req, res) => {
     try {
       const date = req.query.date as string;
       

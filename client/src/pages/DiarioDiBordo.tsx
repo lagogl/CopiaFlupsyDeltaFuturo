@@ -146,9 +146,9 @@ export default function DiarioDiBordo() {
   
   // Carica le operazioni per la data selezionata
   const { data: operations, isLoading: isLoadingOperations } = useQuery({
-    queryKey: ['/api/operations/by-date', formattedDate],
+    queryKey: ['/api/diario/operations-by-date', formattedDate],
     queryFn: async () => {
-      const response = await fetch(`/api/operations/by-date?date=${formattedDate}`);
+      const response = await fetch(`/api/diario/operations-by-date?date=${formattedDate}`);
       if (!response.ok) {
         throw new Error('Errore nel caricamento delle operazioni');
       }
@@ -159,9 +159,9 @@ export default function DiarioDiBordo() {
   
   // Carica le statistiche per taglia
   const { data: sizeStats, isLoading: isLoadingSizeStats } = useQuery({
-    queryKey: ['/api/operations/size-stats', formattedDate],
+    queryKey: ['/api/diario/size-stats', formattedDate],
     queryFn: async () => {
-      const response = await fetch(`/api/operations/size-stats?date=${formattedDate}`);
+      const response = await fetch(`/api/diario/size-stats?date=${formattedDate}`);
       if (!response.ok) {
         throw new Error('Errore nel caricamento delle statistiche per taglia');
       }
@@ -172,9 +172,9 @@ export default function DiarioDiBordo() {
   
   // Carica i totali del giorno
   const { data: totals, isLoading: isLoadingTotals } = useQuery({
-    queryKey: ['/api/operations/daily-totals', formattedDate],
+    queryKey: ['/api/diario/daily-totals', formattedDate],
     queryFn: async () => {
-      const response = await fetch(`/api/operations/daily-totals?date=${formattedDate}`);
+      const response = await fetch(`/api/diario/daily-totals?date=${formattedDate}`);
       if (!response.ok) {
         throw new Error('Errore nel caricamento dei totali giornalieri');
       }
