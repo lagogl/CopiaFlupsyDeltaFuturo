@@ -1050,6 +1050,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         operations = await storage.getOperations();
       }
       
+      // Importa le utilità di Drizzle e le tabelle dello schema
+      const { selectionLotReferences } = await import('../shared/schema');
+      const { eq } = await import('drizzle-orm');
+      const { db } = await import('./db');
+      
       // Fetch related entities
       const operationsWithDetails = await Promise.all(
         operations.map(async (op) => {
@@ -1059,13 +1064,43 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const sgr = op.sgrId ? await storage.getSgr(op.sgrId) : null;
           const lot = op.lotId ? await storage.getLot(op.lotId) : null;
           
+          // Per operazioni di tipo "prima-attivazione-da-vagliatura", controlla se hanno lotti multipli
+          let additionalLots = [];
+          let hasMultipleLots = false;
+          
+          if (op.type === 'prima-attivazione-da-vagliatura' && op.basketId) {
+            try {
+              // Cerca riferimenti ai lotti nella tabella selectionLotReferences
+              const lotRefs = await db.select().from(selectionLotReferences)
+                .where(eq(selectionLotReferences.destinationBasketId, op.basketId));
+              
+              if (lotRefs && lotRefs.length > 1) {
+                hasMultipleLots = true;
+                // Per ogni riferimento, escludi quello già rappresentato dal lotId principale
+                for (const ref of lotRefs) {
+                  if (ref.lotId && (!op.lotId || ref.lotId !== op.lotId)) {
+                    const additionalLot = await storage.getLot(ref.lotId);
+                    if (additionalLot) {
+                      additionalLots.push(additionalLot);
+                    }
+                  }
+                }
+              }
+            } catch (error) {
+              console.error(`Errore nel recupero dei riferimenti ai lotti per operazione ${op.id}:`, error);
+            }
+          }
+          
           return {
             ...op,
             basket,
             cycle,
             size,
             sgr,
-            lot
+            lot,
+            // Aggiungi informazioni sui lotti multipli
+            hasMultipleLots,
+            additionalLots: additionalLots.length > 0 ? additionalLots : undefined
           };
         })
       );

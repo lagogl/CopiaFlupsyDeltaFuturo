@@ -850,6 +850,51 @@ export default function Operations() {
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {(() => {
+                            // Caso speciale: l'operazione ha lotti multipli
+                            if (op.hasMultipleLots && op.additionalLots && Array.isArray(op.additionalLots) && op.additionalLots.length > 0) {
+                              const mainLot = op.lot || (op.lotId ? lots?.find((l: any) => l.id === op.lotId) : null);
+                              return (
+                                <div>
+                                  <div className="flex items-center gap-2">
+                                    <span className="font-medium text-indigo-600">
+                                      {mainLot ? mainLot.name : 'Lotto principale'}
+                                    </span>
+                                    <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
+                                      Lotto misto
+                                    </span>
+                                  </div>
+                                  {mainLot && (
+                                    <>
+                                      <span className="text-xs block text-gray-500">
+                                        Arrivo: {format(new Date(mainLot.arrivalDate), 'dd/MM/yyyy')}
+                                      </span>
+                                      <span className="text-xs block text-gray-500">
+                                        Fornitore: {mainLot.supplier || 'N/D'}
+                                      </span>
+                                    </>
+                                  )}
+                                  <details className="text-xs mt-1">
+                                    <summary className="cursor-pointer text-indigo-600 hover:text-indigo-800">
+                                      Altri lotti ({op.additionalLots.length})
+                                    </summary>
+                                    <div className="pl-2 mt-1 border-l-2 border-indigo-200">
+                                      {op.additionalLots.map((lot: any, idx: number) => (
+                                        <div key={idx} className="mb-1.5">
+                                          <div className="font-medium">{lot.name}</div>
+                                          <div className="text-xs text-gray-500">
+                                            Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')}
+                                          </div>
+                                          <div className="text-xs text-gray-500">
+                                            Fornitore: {lot.supplier || 'N/D'}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </details>
+                                </div>
+                              );
+                            }
+                            
                             // Prima controlla se l'operazione ha già un lotto
                             if (op.lot) {
                               return (
@@ -1069,6 +1114,22 @@ export default function Operations() {
                                   <span className="text-gray-500 block text-xs">Lotto:</span>
                                   <span className="font-medium text-gray-700">
                                     {(() => {
+                                      // Verifica se c'è un'operazione con lotti multipli
+                                      const opWithMultipleLots = cycleOps.find(op => op.hasMultipleLots && op.additionalLots);
+                                      if (opWithMultipleLots) {
+                                        // Mostra il lotto principale con indicatore di lotto misto
+                                        const mainLot = opWithMultipleLots.lot || 
+                                                       (opWithMultipleLots.lotId ? lots?.find(l => l.id === opWithMultipleLots.lotId) : null);
+                                        return (
+                                          <div className="flex items-center gap-2">
+                                            <span>{mainLot ? mainLot.name : 'Lotto principale'}</span>
+                                            <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
+                                              Misto
+                                            </span>
+                                          </div>
+                                        );
+                                      }
+                                      
                                       // Cerca prima un'operazione di tipo prima-attivazione che abbia un lotto
                                       const firstActivation = cycleOps.find(op => op.type === 'prima-attivazione' && op.lot);
                                       if (firstActivation && firstActivation.lot) {
