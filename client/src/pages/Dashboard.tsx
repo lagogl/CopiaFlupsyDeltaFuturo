@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { useRef, useEffect } from 'react';
+import { useRef, useEffect, useState } from 'react';
 import StatCard from '@/components/dashboard/StatCard';
 import RecentOperations from '@/components/dashboard/RecentOperations';
 import GrowthChart from '@/components/dashboard/GrowthChart';
@@ -10,9 +10,17 @@ import { TargetSizePredictions } from '@/components/dashboard/TargetSizePredicti
 import { Basket, Cycle, Operation, Lot } from '@shared/schema';
 import { TooltipTrigger } from '@/components/ui/tooltip-trigger';
 import { useTooltip } from '@/contexts/TooltipContext';
+import { Button } from '@/components/ui/button';
+import { RefreshCw, AlertCircle } from 'lucide-react';
 
 export default function Dashboard() {
   const { isFirstTimeUser, registerTooltip, showTooltip } = useTooltip();
+  const queryClient = useQueryClient();
+  
+  // Stato per gestire l'ultimo aggiornamento dei dati
+  const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
+  const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
+  const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
   
   // Riferimenti agli elementi che avranno tooltip
   const dashboardTitleRef = useRef<HTMLHeadingElement>(null);
@@ -25,21 +33,68 @@ export default function Dashboard() {
   const flupsyVisualizerRef = useRef<HTMLDivElement>(null);
 
   // Query for active baskets and cycles
-  const { data: baskets, isLoading: basketsLoading } = useQuery<Basket[]>({
+  const { data: baskets, isLoading: basketsLoading, dataUpdatedAt: basketsUpdatedAt } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
   });
 
-  const { data: cycles, isLoading: cyclesLoading } = useQuery<Cycle[]>({
+  const { data: cycles, isLoading: cyclesLoading, dataUpdatedAt: cyclesUpdatedAt } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles'],
   });
 
-  const { data: operations, isLoading: operationsLoading } = useQuery<Operation[]>({
+  const { data: operations, isLoading: operationsLoading, dataUpdatedAt: operationsUpdatedAt } = useQuery<Operation[]>({
     queryKey: ['/api/operations'],
   });
 
-  const { data: lots, isLoading: lotsLoading } = useQuery<Lot[]>({
+  const { data: lots, isLoading: lotsLoading, dataUpdatedAt: lotsUpdatedAt } = useQuery<Lot[]>({
     queryKey: ['/api/lots'],
   });
+  
+  // Funzione per aggiornare i dati
+  const refreshData = async () => {
+    setIsRefreshing(true);
+    try {
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/operations'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/lots'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/sizes'] })
+      ]);
+      setLastRefresh(new Date());
+      setNeedsRefresh(false);
+    } finally {
+      setIsRefreshing(false);
+    }
+  };
+  
+  // Controlla se i dati sono vecchi (più di 5 minuti)
+  useEffect(() => {
+    const interval = setInterval(() => {
+      const now = new Date();
+      const fiveMinutesAgo = new Date(now.getTime() - 5 * 60 * 1000);
+      
+      if (lastRefresh < fiveMinutesAgo) {
+        setNeedsRefresh(true);
+      }
+    }, 60000); // Controlla ogni minuto
+    
+    return () => clearInterval(interval);
+  }, [lastRefresh]);
+  
+  // Verifica l'aggiornamento dei dati
+  useEffect(() => {
+    const latestUpdate = Math.max(
+      basketsUpdatedAt || 0,
+      cyclesUpdatedAt || 0,
+      operationsUpdatedAt || 0,
+      lotsUpdatedAt || 0
+    );
+    
+    if (latestUpdate > 0) {
+      setLastRefresh(new Date(latestUpdate));
+    }
+  }, [basketsUpdatedAt, cyclesUpdatedAt, operationsUpdatedAt, lotsUpdatedAt]);
 
   // Registrazione dei tooltip solo una volta all'avvio del componente
   useEffect(() => {
