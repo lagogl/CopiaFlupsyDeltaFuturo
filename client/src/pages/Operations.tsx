@@ -207,6 +207,18 @@ export default function Operations() {
   const operationsByCycle = useMemo(() => {
     if (!operations || !cycles || !lots || !sizes || !flupsys) return {};
     
+    // Log dello stato dei dati delle operazioni prima dell'elaborazione
+    console.log("Stato iniziale operazioni:", operations.map(op => ({
+      id: op.id,
+      type: op.type,
+      cycleId: op.cycleId,
+      lotId: op.lotId,
+      hasLot: !!op.lot
+    })));
+    
+    // Log dei lotti disponibili
+    console.log("Lotti disponibili:", lots.map(l => ({ id: l.id, name: l.name })));
+    
     const grouped: { [key: string]: any[] } = {};
     
     operations.forEach((op: any) => {
