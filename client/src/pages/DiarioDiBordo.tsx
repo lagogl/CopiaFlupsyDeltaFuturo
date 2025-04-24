@@ -271,7 +271,7 @@ export default function DiarioDiBordo() {
                             </Badge>
                             <span className="text-sm text-muted-foreground flex items-center">
                               <Clock className="h-3 w-3 mr-1" />
-                              {op.created_at ? format(new Date(op.created_at), 'HH:mm') : 'N/D'}
+                              {format(new Date(op.date), 'HH:mm')}
                             </span>
                           </div>
                           <Badge variant="secondary">

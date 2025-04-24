@@ -1478,7 +1478,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Query completa con join per ottenere tutti i dettagli delle operazioni per una data specifica
       const operations = await db.execute(sql`
         SELECT o.id, o.date, o.type, o.notes, o.basket_id, o.cycle_id, o.size_id, 
-              o.animal_count, o.animals_per_kg, o.created_at,
+              o.animal_count, o.animals_per_kg,
               b.physical_number AS basket_number, b.flupsy_id,
               f.name AS flupsy_name,
               s.code AS size_code, s.name AS size_name
@@ -1487,7 +1487,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         LEFT JOIN flupsys f ON b.flupsy_id = f.id
         LEFT JOIN sizes s ON o.size_id = s.id
         WHERE o.date = ${date}
-        ORDER BY o.created_at DESC, o.id DESC
+        ORDER BY o.id DESC
       `);
       
       return res.json(operations);
