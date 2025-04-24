@@ -247,9 +247,42 @@ export default function Operations() {
     
     // Sort operations in each cycle by date
     Object.keys(grouped).forEach(cycleId => {
+      // Prima ordina le operazioni per data
       grouped[cycleId].sort((a: any, b: any) => {
         return new Date(a.date).getTime() - new Date(b.date).getTime();
       });
+      
+      // Dopo l'ordinamento, propaga le informazioni di lotto all'interno dello stesso ciclo
+      // per le operazioni che non hanno un lotto definito
+      if (grouped[cycleId].length > 0) {
+        let lastKnownLot = null;
+        
+        // Prima passata in avanti - propaga il lotto dalle operazioni precedenti
+        for (let i = 0; i < grouped[cycleId].length; i++) {
+          if (grouped[cycleId][i].lot) {
+            lastKnownLot = grouped[cycleId][i].lot;
+          } else if (lastKnownLot && !grouped[cycleId][i].lot) {
+            // Se questa operazione non ha un lotto ma abbiamo un lotto noto dallo stesso ciclo
+            // assegna il lotto noto a questa operazione
+            grouped[cycleId][i].lot = lastKnownLot;
+            console.log(`Propagato lotto '${lastKnownLot.name}' all'operazione ${grouped[cycleId][i].id} (forward)`);
+          }
+        }
+        
+        // Seconda passata all'indietro - propaga il lotto dalle operazioni successive
+        // Utile quando la prima operazione non ha un lotto ma le successive sì
+        lastKnownLot = null;
+        for (let i = grouped[cycleId].length - 1; i >= 0; i--) {
+          if (grouped[cycleId][i].lot) {
+            lastKnownLot = grouped[cycleId][i].lot;
+          } else if (lastKnownLot && !grouped[cycleId][i].lot) {
+            // Se questa operazione non ha un lotto ma abbiamo un lotto noto dallo stesso ciclo
+            // assegna il lotto noto a questa operazione
+            grouped[cycleId][i].lot = lastKnownLot;
+            console.log(`Propagato lotto '${lastKnownLot.name}' all'operazione ${grouped[cycleId][i].id} (backward)`);
+          }
+        }
+      }
     });
     
     return grouped;
@@ -331,7 +364,7 @@ export default function Operations() {
   
   // Filter operations
   const filteredOperations = useMemo(() => {
-    if (!operations || !cycles) return [];
+    if (!operations || !cycles || !lots) return [];
     
     // Filtriamo prima le operazioni secondo i criteri
     const filtered = operations.filter((op: any) => {
@@ -366,7 +399,7 @@ export default function Operations() {
     });
     
     // Ora ordiniamo le operazioni per ciclo e all'interno di ciascun ciclo per data in ordine ascendente
-    return [...filtered].sort((a, b) => {
+    const sorted = [...filtered].sort((a, b) => {
       // Prima ordina per ciclo
       if (a.cycleId !== b.cycleId) {
         return a.cycleId - b.cycleId;
@@ -375,7 +408,52 @@ export default function Operations() {
       // Se sono dello stesso ciclo, ordina per data (ascendente)
       return new Date(a.date).getTime() - new Date(b.date).getTime();
     });
-  }, [operations, cycles, searchTerm, typeFilter, dateFilter, flupsyFilter, cycleFilter, cycleStateFilter]);
+    
+    // Ora che le operazioni sono ordinate, arricchisciamo le operazioni che non hanno un lotto
+    // usando le stesse logiche di operationsByCycle per propagare i lotti all'interno dello stesso ciclo
+    
+    // Raggruppiamo le operazioni per ciclo
+    const opsByCycle: { [key: string]: any[] } = {};
+    
+    sorted.forEach((op: any) => {
+      const cycleId = op.cycleId.toString();
+      if (!opsByCycle[cycleId]) {
+        opsByCycle[cycleId] = [];
+      }
+      opsByCycle[cycleId].push(op);
+    });
+    
+    // Propaga le informazioni di lotto all'interno di ciascun ciclo
+    Object.keys(opsByCycle).forEach(cycleId => {
+      if (opsByCycle[cycleId].length > 0) {
+        let lastKnownLot = null;
+        
+        // Prima passata in avanti - propaga il lotto dalle operazioni precedenti
+        for (let i = 0; i < opsByCycle[cycleId].length; i++) {
+          if (opsByCycle[cycleId][i].lot) {
+            lastKnownLot = opsByCycle[cycleId][i].lot;
+          } else if (lastKnownLot && !opsByCycle[cycleId][i].lot) {
+            // Se questa operazione non ha un lotto ma abbiamo un lotto noto dallo stesso ciclo
+            opsByCycle[cycleId][i].lot = lastKnownLot;
+          }
+        }
+        
+        // Seconda passata all'indietro - propaga il lotto dalle operazioni successive
+        lastKnownLot = null;
+        for (let i = opsByCycle[cycleId].length - 1; i >= 0; i--) {
+          if (opsByCycle[cycleId][i].lot) {
+            lastKnownLot = opsByCycle[cycleId][i].lot;
+          } else if (lastKnownLot && !opsByCycle[cycleId][i].lot) {
+            opsByCycle[cycleId][i].lot = lastKnownLot;
+          }
+        }
+      }
+    });
+    
+    // Appiattisci di nuovo l'array delle operazioni
+    return Object.values(opsByCycle).flat();
+    
+  }, [operations, cycles, lots, searchTerm, typeFilter, dateFilter, flupsyFilter, cycleFilter, cycleStateFilter]);
   
   // Get filtered cycles based on selected filters
   const filteredCycleIds = useMemo(() => {
