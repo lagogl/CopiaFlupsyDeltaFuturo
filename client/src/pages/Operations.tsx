@@ -460,6 +460,18 @@ export default function Operations() {
     </span>;
   };
 
+  // Funzione per determinare la taglia in base al numero di animali per kg (animalsPerKg)
+  const determineSizeFromAnimalsPerKg = (animalsPerKg: number) => {
+    if (!sizes || !animalsPerKg) return null;
+    
+    // Trova la taglia corrispondente al range di animali per kg
+    return sizes.find((size: any) => {
+      const minAnimalsPerKg = size.minAnimalsPerKg || 0;
+      const maxAnimalsPerKg = size.maxAnimalsPerKg || Number.MAX_SAFE_INTEGER;
+      return animalsPerKg >= minAnimalsPerKg && animalsPerKg <= maxAnimalsPerKg;
+    });
+  };
+
   const getSizeBadge = (size: any) => {
     if (!size) return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">-</span>;
     
@@ -488,6 +500,26 @@ export default function Operations() {
     return <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${bgColor}`}>
       {size.code}
     </span>;
+  };
+  
+  // Funzione che genera il badge di taglia basandosi sugli animali per kg
+  const getSizeBadgeFromAnimalsPerKg = (animalsPerKg: number) => {
+    if (!animalsPerKg) return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">-</span>;
+    
+    // Determina la taglia in base al numero di animali per kg
+    const detectedSize = determineSizeFromAnimalsPerKg(animalsPerKg);
+    
+    if (detectedSize) {
+      // Usa la taglia trovata
+      return getSizeBadge(detectedSize);
+    } else {
+      // Se non troviamo una taglia corrispondente, mostra un badge generico con il peso medio approssimativo
+      return (
+        <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
+          ~{Math.round(1000000 / animalsPerKg)} mg/animale
+        </span>
+      );
+    }
   };
 
   return (
@@ -760,9 +792,8 @@ export default function Operations() {
                               {sizes?.find((s: any) => s.id === op.sizeId)?.code || `Size #${op.sizeId}`}
                             </span>
                           ) : op.animalsPerKg ? (
-                            <span className="inline-flex items-center rounded-full px-2.5 py-0.5 text-xs font-medium bg-gray-100 text-gray-800">
-                              ~{Math.round(1000000 / op.animalsPerKg)} mg/animale
-                            </span>
+                            // Usa la funzione per determinare la taglia in base al numero di animali per kg
+                            getSizeBadgeFromAnimalsPerKg(op.animalsPerKg)
                           ) : (
                             <span className="text-gray-400">-</span>
                           )}
@@ -958,9 +989,18 @@ export default function Operations() {
                                 <div>
                                   <span className="text-gray-500 block text-xs">Taglia iniziale:</span>
                                   <div className="font-medium text-gray-700 flex items-center">
-                                    {cycleOps.length > 0 && cycleOps[0].size ? (
+                                    {cycleOps.length > 0 && (
                                       <>
-                                        <span className="mr-1">{cycleOps[0].size.code}</span>
+                                        {cycleOps[0].size ? (
+                                          <span className="mr-1">{cycleOps[0].size.code}</span>
+                                        ) : cycleOps[0].sizeId ? (
+                                          <span className="mr-1">{sizes?.find((s: any) => s.id === cycleOps[0].sizeId)?.code || `Size #${cycleOps[0].sizeId}`}</span>
+                                        ) : cycleOps[0].animalsPerKg ? (
+                                          <span className="mr-1">{determineSizeFromAnimalsPerKg(cycleOps[0].animalsPerKg)?.code || 'Calcolata'}</span>
+                                        ) : (
+                                          <span className="mr-1">N/D</span>
+                                        )}
+                                        
                                         {cycleOps[0].animalsPerKg && (
                                           <>
                                             <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
@@ -972,16 +1012,25 @@ export default function Operations() {
                                           </>
                                         )}
                                       </>
-                                    ) : 'N/D'}
+                                    )}
                                   </div>
                                 </div>
                                 
                                 <div>
                                   <span className="text-gray-500 block text-xs">Taglia attuale:</span>
                                   <div className="font-medium text-gray-700 flex items-center">
-                                    {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].size ? (
+                                    {cycleOps.length > 0 && (
                                       <>
-                                        <span className="mr-1">{cycleOps[cycleOps.length - 1].size.code}</span>
+                                        {cycleOps[cycleOps.length - 1].size ? (
+                                          <span className="mr-1">{cycleOps[cycleOps.length - 1].size.code}</span>
+                                        ) : cycleOps[cycleOps.length - 1].sizeId ? (
+                                          <span className="mr-1">{sizes?.find((s: any) => s.id === cycleOps[cycleOps.length - 1].sizeId)?.code || `Size #${cycleOps[cycleOps.length - 1].sizeId}`}</span>
+                                        ) : cycleOps[cycleOps.length - 1].animalsPerKg ? (
+                                          <span className="mr-1">{determineSizeFromAnimalsPerKg(cycleOps[cycleOps.length - 1].animalsPerKg)?.code || 'Calcolata'}</span>
+                                        ) : (
+                                          <span className="mr-1">N/D</span>
+                                        )}
+                                        
                                         {cycleOps[cycleOps.length - 1].animalsPerKg && (
                                           <>
                                             <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
@@ -993,7 +1042,7 @@ export default function Operations() {
                                           </>
                                         )}
                                       </>
-                                    ) : 'N/D'}
+                                    )}
                                   </div>
                                 </div>
                                 
