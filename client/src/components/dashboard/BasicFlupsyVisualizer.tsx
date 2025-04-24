@@ -322,11 +322,21 @@ export default function BasicFlupsyVisualizer() {
                 {/* Indicatore di ciclo venduto */}
                 {basket.currentCycleId && cycles?.find(c => c.id === basket.currentCycleId)?.state === 'closed' && 
                   operations?.some(op => op.type === 'vendita' && op.cycleId === basket.currentCycleId) && (
-                  <div className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-white shadow-sm" 
-                       title="Ciclo venduto">
-                    <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
-                      <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h8V3a1 1 0 112 0v1h1a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V6a2 2 0 012-2h1V3a1 1 0 011-1zm11 14V6H4v10h12z" clipRule="evenodd" />
-                    </svg>
+                  <div>
+                    {/* Badge indicatore vendita */}
+                    <div className="absolute inset-0 pointer-events-none" style={{ 
+                      backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,0,0,0.05) 10px, rgba(255,0,0,0.05) 20px)',
+                      backgroundSize: '28px 28px',
+                      zIndex: 1
+                    }} />
+                    
+                    {/* Icona di vendita */}
+                    <div className="h-4 w-4 rounded-full bg-red-500 flex items-center justify-center text-white shadow-sm absolute top-1 right-1" 
+                         title="Ciclo venduto">
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-3 w-3" viewBox="0 0 20 20" fill="currentColor">
+                        <path fillRule="evenodd" d="M5 2a1 1 0 011 1v1h8V3a1 1 0 112 0v1h1a2 2 0 012 2v10a2 2 0 01-2 2H3a2 2 0 01-2-2V6a2 2 0 012-2h1V3a1 1 0 011-1zm11 14V6H4v10h12z" clipRule="evenodd" />
+                      </svg>
+                    </div>
                   </div>
                 )}
               </div>

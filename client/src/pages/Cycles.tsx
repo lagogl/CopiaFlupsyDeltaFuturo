@@ -8,6 +8,15 @@ import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
+import { Link } from 'wouter';
+
+// Definizione dell'interfaccia Operation per tipizzare i dati delle operazioni
+interface Operation {
+  id: number;
+  cycleId: number;
+  type: string;
+  date: string;
+}
 
 // Definizione dell'interfaccia Cycle per tipizzare i dati
 interface Cycle {
@@ -28,6 +37,11 @@ export default function Cycles() {
   // Query cycles with details
   const { data: cycles = [], isLoading } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles'],
+  });
+  
+  // Query operations to check if any cycles were sold
+  const { data: operations = [] } = useQuery<Operation[]>({
+    queryKey: ['/api/operations'],
   });
 
   // Filter cycles
@@ -162,10 +176,26 @@ export default function Cycles() {
                     duration = `${days}`;
                   }
                   
+                  // Check if this cycle has a vendita operation
+                  const isSoldCycle = operations.some(op => op.type === 'vendita' && op.cycleId === cycle.id);
+                  
                   return (
-                    <tr key={cycle.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                    <tr key={cycle.id} className={isSoldCycle ? 'relative bg-red-50/20' : ''}>
+                      {isSoldCycle && (
+                        <div className="absolute inset-0 pointer-events-none" style={{ 
+                          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,0,0,0.05) 10px, rgba(255,0,0,0.05) 20px)',
+                          backgroundSize: '28px 28px'
+                        }} />
+                      )}
+                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 relative">
                         #{cycle.id}
+                        {isSoldCycle && (
+                          <span className="absolute -right-2 -top-1">
+                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500">
+                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
+                            </span>
+                          </span>
+                        )}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                         Cesta #{cycle.basket?.physicalNumber || cycle.basketId}
@@ -181,16 +211,27 @@ export default function Cycles() {
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge className={`${
-                          cycle.state === 'active' ? 'bg-blue-100 text-blue-800' : 'bg-green-100 text-green-800'
+                          cycle.state === 'active' 
+                            ? 'bg-blue-100 text-blue-800' 
+                            : isSoldCycle 
+                              ? 'bg-red-100 text-red-800 border border-red-300'
+                              : 'bg-green-100 text-green-800'
                         }`}>
-                          {cycle.state === 'active' ? 'Attivo' : 'Chiuso'}
+                          {cycle.state === 'active' 
+                            ? 'Attivo'
+                            : isSoldCycle 
+                              ? 'Venduto' 
+                              : 'Chiuso'
+                          }
                         </Badge>
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
-                          <Button variant="ghost" size="icon" title="Visualizza dettagli">
-                            <Eye className="h-5 w-5 text-primary" />
-                          </Button>
+                          <Link href={`/cycles/${cycle.id}`}>
+                            <Button variant="ghost" size="icon" title="Visualizza dettagli">
+                              <Eye className="h-5 w-5 text-primary" />
+                            </Button>
+                          </Link>
                         </div>
                       </td>
                     </tr>
