@@ -849,33 +849,82 @@ export default function Operations() {
                           {op.cycleId ? `#${op.cycleId}` : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {op.lot ? (
-                            <div>
-                              <span className="font-medium text-indigo-600">{op.lot.name}</span>
-                              <span className="text-xs block text-gray-500">
-                                Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
-                              </span>
-                              <span className="text-xs block text-gray-500">
-                                Fornitore: {op.lot.supplier || 'N/D'}
-                              </span>
-                            </div>
-                          ) : op.lotId ? (
-                            <div>
-                              <span className="font-medium text-indigo-600">Lotto #{op.lotId}</span>
-                              {lots?.find((l: any) => l.id === op.lotId) && (
-                                <>
+                          {(() => {
+                            // Prima controlla se l'operazione ha già un lotto
+                            if (op.lot) {
+                              return (
+                                <div>
+                                  <span className="font-medium text-indigo-600">{op.lot.name}</span>
                                   <span className="text-xs block text-gray-500">
-                                    Arrivo: {format(new Date(lots.find((l: any) => l.id === op.lotId).arrivalDate), 'dd/MM/yyyy')}
+                                    Arrivo: {format(new Date(op.lot.arrivalDate), 'dd/MM/yyyy')}
                                   </span>
                                   <span className="text-xs block text-gray-500">
-                                    Fornitore: {lots.find((l: any) => l.id === op.lotId)?.supplier || 'N/D'}
+                                    Fornitore: {op.lot.supplier || 'N/D'}
                                   </span>
-                                </>
-                              )}
-                            </div>
-                          ) : (
-                            <span className="text-gray-400 italic">Nessun lotto</span>
-                          )}
+                                </div>
+                              );
+                            }
+                            
+                            // Se ha un lotId, cerca il lotto nei dati disponibili
+                            if (op.lotId) {
+                              const lotById = lots?.find((l: any) => l.id === op.lotId);
+                              if (lotById) {
+                                return (
+                                  <div>
+                                    <span className="font-medium text-indigo-600">{lotById.name || `Lotto #${lotById.id}`}</span>
+                                    <span className="text-xs block text-gray-500">
+                                      Arrivo: {format(new Date(lotById.arrivalDate), 'dd/MM/yyyy')}
+                                    </span>
+                                    <span className="text-xs block text-gray-500">
+                                      Fornitore: {lotById.supplier || 'N/D'}
+                                    </span>
+                                  </div>
+                                );
+                              }
+                            }
+                            
+                            // Se non ha né lotto né lotId, cerca un'operazione "prima-attivazione" nello stesso ciclo
+                            const opsInSameCycle = operations?.filter((o: any) => o.cycleId === op.cycleId) || [];
+                            const firstActivationInCycle = opsInSameCycle.find((o: any) => o.type === 'prima-attivazione');
+                            
+                            if (firstActivationInCycle && (firstActivationInCycle.lot || firstActivationInCycle.lotId)) {
+                              // Se l'operazione prima-attivazione ha un lotto, usalo
+                              if (firstActivationInCycle.lot) {
+                                return (
+                                  <div>
+                                    <span className="font-medium text-indigo-600">{firstActivationInCycle.lot.name}</span>
+                                    <span className="text-xs block text-gray-500">
+                                      Arrivo: {format(new Date(firstActivationInCycle.lot.arrivalDate), 'dd/MM/yyyy')}
+                                    </span>
+                                    <span className="text-xs block text-gray-500">
+                                      Fornitore: {firstActivationInCycle.lot.supplier || 'N/D'}
+                                    </span>
+                                  </div>
+                                );
+                              }
+                              
+                              // Se ha solo un lotId, cerca il lotto nei dati disponibili
+                              if (firstActivationInCycle.lotId) {
+                                const firstActivationLot = lots?.find((l: any) => l.id === firstActivationInCycle.lotId);
+                                if (firstActivationLot) {
+                                  return (
+                                    <div>
+                                      <span className="font-medium text-indigo-600">{firstActivationLot.name || `Lotto #${firstActivationLot.id}`}</span>
+                                      <span className="text-xs block text-gray-500">
+                                        Arrivo: {format(new Date(firstActivationLot.arrivalDate), 'dd/MM/yyyy')}
+                                      </span>
+                                      <span className="text-xs block text-gray-500">
+                                        Fornitore: {firstActivationLot.supplier || 'N/D'}
+                                      </span>
+                                    </div>
+                                  );
+                                }
+                              }
+                            }
+                            
+                            // Se tutte le precedenti falliscono, mostra "Nessun lotto"
+                            return <span className="text-gray-400 italic">Nessun lotto</span>;
+                          })()}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           {op.size ? (
@@ -1019,7 +1068,38 @@ export default function Operations() {
                                 <div>
                                   <span className="text-gray-500 block text-xs">Lotto:</span>
                                   <span className="font-medium text-gray-700">
-                                    {cycleOps.length > 0 && cycleOps[0].lot ? cycleOps[0].lot.name : 'N/D'}
+                                    {(() => {
+                                      // Cerca prima un'operazione di tipo prima-attivazione che abbia un lotto
+                                      const firstActivation = cycleOps.find(op => op.type === 'prima-attivazione' && op.lot);
+                                      if (firstActivation && firstActivation.lot) {
+                                        return firstActivation.lot.name;
+                                      }
+
+                                      // Se non c'è, cerca un'operazione di tipo prima-attivazione che abbia un lotId
+                                      const firstActivationWithLotId = cycleOps.find(op => op.type === 'prima-attivazione' && op.lotId);
+                                      if (firstActivationWithLotId && firstActivationWithLotId.lotId) {
+                                        const lot = lots?.find(l => l.id === firstActivationWithLotId.lotId);
+                                        if (lot) return lot.name || `Lotto #${lot.id}`;
+                                      }
+
+                                      // Se ancora non c'è, prendi il primo elemento del ciclo che ha un lotto
+                                      if (cycleOps.length > 0) {
+                                        const opWithLot = cycleOps.find(op => op.lot);
+                                        if (opWithLot && opWithLot.lot) {
+                                          return opWithLot.lot.name;
+                                        }
+
+                                        // O il primo che ha un lotId
+                                        const opWithLotId = cycleOps.find(op => op.lotId);
+                                        if (opWithLotId && opWithLotId.lotId) {
+                                          const lot = lots?.find(l => l.id === opWithLotId.lotId);
+                                          if (lot) return lot.name || `Lotto #${lot.id}`;
+                                        }
+                                      }
+
+                                      // Se proprio non si trova niente
+                                      return 'N/D';
+                                    })()}
                                   </span>
                                 </div>
                                 <div>
