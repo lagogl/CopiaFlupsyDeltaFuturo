@@ -261,10 +261,11 @@ export default function Operations() {
         for (let i = 0; i < grouped[cycleId].length; i++) {
           if (grouped[cycleId][i].lot) {
             lastKnownLot = grouped[cycleId][i].lot;
-          } else if (lastKnownLot && !grouped[cycleId][i].lot) {
+          } else if (lastKnownLot && (!grouped[cycleId][i].lot || !grouped[cycleId][i].lotId)) {
             // Se questa operazione non ha un lotto ma abbiamo un lotto noto dallo stesso ciclo
             // assegna il lotto noto a questa operazione
             grouped[cycleId][i].lot = lastKnownLot;
+            grouped[cycleId][i].lotId = lastKnownLot.id;
             console.log(`Propagato lotto '${lastKnownLot.name}' all'operazione ${grouped[cycleId][i].id} (forward)`);
           }
         }
@@ -275,10 +276,11 @@ export default function Operations() {
         for (let i = grouped[cycleId].length - 1; i >= 0; i--) {
           if (grouped[cycleId][i].lot) {
             lastKnownLot = grouped[cycleId][i].lot;
-          } else if (lastKnownLot && !grouped[cycleId][i].lot) {
+          } else if (lastKnownLot && (!grouped[cycleId][i].lot || !grouped[cycleId][i].lotId)) {
             // Se questa operazione non ha un lotto ma abbiamo un lotto noto dallo stesso ciclo
             // assegna il lotto noto a questa operazione
             grouped[cycleId][i].lot = lastKnownLot;
+            grouped[cycleId][i].lotId = lastKnownLot.id;
             console.log(`Propagato lotto '${lastKnownLot.name}' all'operazione ${grouped[cycleId][i].id} (backward)`);
           }
         }
@@ -432,9 +434,10 @@ export default function Operations() {
         for (let i = 0; i < opsByCycle[cycleId].length; i++) {
           if (opsByCycle[cycleId][i].lot) {
             lastKnownLot = opsByCycle[cycleId][i].lot;
-          } else if (lastKnownLot && !opsByCycle[cycleId][i].lot) {
+          } else if (lastKnownLot && (!opsByCycle[cycleId][i].lot || !opsByCycle[cycleId][i].lotId)) {
             // Se questa operazione non ha un lotto ma abbiamo un lotto noto dallo stesso ciclo
             opsByCycle[cycleId][i].lot = lastKnownLot;
+            opsByCycle[cycleId][i].lotId = lastKnownLot.id;
           }
         }
         
@@ -443,8 +446,9 @@ export default function Operations() {
         for (let i = opsByCycle[cycleId].length - 1; i >= 0; i--) {
           if (opsByCycle[cycleId][i].lot) {
             lastKnownLot = opsByCycle[cycleId][i].lot;
-          } else if (lastKnownLot && !opsByCycle[cycleId][i].lot) {
+          } else if (lastKnownLot && (!opsByCycle[cycleId][i].lot || !opsByCycle[cycleId][i].lotId)) {
             opsByCycle[cycleId][i].lot = lastKnownLot;
+            opsByCycle[cycleId][i].lotId = lastKnownLot.id;
           }
         }
       }
