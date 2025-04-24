@@ -1471,6 +1471,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const date = req.query.date as string;
       
+      console.log('API operazioni per data - Data richiesta:', date);
+      
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return res.status(400).json({ error: 'Formato data non valido. Utilizzare YYYY-MM-DD' });
       }
@@ -1486,9 +1488,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         LEFT JOIN baskets b ON o.basket_id = b.id
         LEFT JOIN flupsys f ON b.flupsy_id = f.id
         LEFT JOIN sizes s ON o.size_id = s.id
-        WHERE o.date = ${date}
+        WHERE o.date::text = ${date}
         ORDER BY o.id DESC
       `);
+      
+      console.log('API operazioni per data - Risultati:', operations.length);
       
       return res.json(operations);
     } catch (error) {
@@ -1501,6 +1505,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/diario/size-stats", async (req, res) => {
     try {
       const date = req.query.date as string;
+      
+      console.log('API statistiche per taglia - Data richiesta:', date);
       
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return res.status(400).json({ error: 'Formato data non valido. Utilizzare YYYY-MM-DD' });
@@ -1516,10 +1522,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           COUNT(o.id) AS num_operazioni
         FROM operations o
         LEFT JOIN sizes s ON o.size_id = s.id
-        WHERE o.date = ${date}
+        WHERE o.date::text = ${date}
         GROUP BY s.code
         ORDER BY s.code
       `);
+      
+      console.log('API statistiche per taglia - Risultati:', stats.length);
       
       return res.json(stats);
     } catch (error) {
@@ -1532,6 +1540,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/diario/daily-totals", async (req, res) => {
     try {
       const date = req.query.date as string;
+      
+      console.log('API totali giornalieri - Data richiesta:', date);
       
       if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
         return res.status(400).json({ error: 'Formato data non valido. Utilizzare YYYY-MM-DD' });
@@ -1548,8 +1558,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           SUM(CASE WHEN o.type = 'vendita' THEN o.animal_count ELSE 0 END) AS bilancio_netto,
           COUNT(DISTINCT o.id) AS numero_operazioni
         FROM operations o
-        WHERE o.date = ${date}
+        WHERE o.date::text = ${date}
       `);
+      
+      console.log('API totali giornalieri - Risultati:', totals);
       
       return res.json(totals);
     } catch (error) {
