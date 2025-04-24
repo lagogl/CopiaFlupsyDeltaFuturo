@@ -532,8 +532,15 @@ export default function CycleDetail() {
     return format(new Date(dateString), 'dd MMMM yyyy', { locale: it });
   };
   
+  // Verifica se il ciclo è stato venduto
+  const isSoldCycle = operations?.some(op => op.type === 'vendita' && op.cycleId === cycle.id);
+
   return (
-    <div className="container mx-auto px-4 py-8">
+    <div className={`container mx-auto px-4 py-8 relative ${
+      !cycle.state || cycle.state === 'active' ? '' : 
+      isSoldCycle ? 'after:absolute after:inset-0 after:bg-red-500/10 after:content-[""] after:z-[-1] after:pointer-events-none after:[background-image:repeating-linear-gradient(45deg,transparent,transparent_10px,rgba(255,255,255,0.5)_10px,rgba(255,255,255,0.5)_20px)]' 
+      : ''
+    }`}>
       {/* Header with navigation */}
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-6">
         <div className="flex items-center mb-4 md:mb-0">
@@ -544,7 +551,14 @@ export default function CycleDetail() {
             </Button>
           </Link>
           <div>
-            <h1 className="text-2xl font-bold">Ciclo #{cycle.id}</h1>
+            <h1 className="text-2xl font-bold flex items-center">
+              Ciclo #{cycle.id}
+              {isSoldCycle && (
+                <span className="ml-3 px-2 py-1 text-xs font-semibold rounded-full bg-red-100 text-red-800 border border-red-300">
+                  Venduto
+                </span>
+              )}
+            </h1>
             <div className="text-sm text-muted-foreground flex items-center">
               <span>Cesta #{cycle.basket?.physicalNumber}</span>
               <ChevronRight className="h-3 w-3 mx-1" />
