@@ -1464,6 +1464,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Diario di Bordo API routes ===
+  
+  // API - Ottieni operazioni per data
+  app.get("/api/operations/by-date", async (req, res) => {
+    try {
+      const date = req.query.date as string;
+      
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ error: 'Formato data non valido. Utilizzare YYYY-MM-DD' });
+      }
+      
+      // Query completa con join per ottenere tutti i dettagli delle operazioni per una data specifica
+      const operations = await db.execute(sql`
+        SELECT o.id, o.date, o.type, o.notes, o.basket_id, o.cycle_id, o.size_id, 
+              o.animal_count, o.animals_per_kg, o.created_at,
+              b.physical_number AS basket_number, b.flupsy_id,
+              f.name AS flupsy_name,
+              s.code AS size_code, s.name AS size_name
+        FROM operations o
+        LEFT JOIN baskets b ON o.basket_id = b.id
+        LEFT JOIN flupsys f ON b.flupsy_id = f.id
+        LEFT JOIN sizes s ON o.size_id = s.id
+        WHERE o.date = ${date}
+        ORDER BY o.created_at DESC, o.id DESC
+      `);
+      
+      return res.json(operations);
+    } catch (error) {
+      console.error('Errore nell\'API operazioni per data:', error);
+      return res.status(500).json({ error: 'Errore nel recupero delle operazioni' });
+    }
+  });
+
+  // API - Ottieni statistiche per taglia
+  app.get("/api/operations/size-stats", async (req, res) => {
+    try {
+      const date = req.query.date as string;
+      
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ error: 'Formato data non valido. Utilizzare YYYY-MM-DD' });
+      }
+      
+      // Query per ottenere statistiche raggruppate per taglia
+      const stats = await db.execute(sql`
+        SELECT 
+          COALESCE(s.code, 'Non specificata') AS taglia,
+          SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') 
+              THEN o.animal_count ELSE 0 END) AS entrate,
+          SUM(CASE WHEN o.type = 'vendita' THEN o.animal_count ELSE 0 END) AS uscite,
+          COUNT(o.id) AS num_operazioni
+        FROM operations o
+        LEFT JOIN sizes s ON o.size_id = s.id
+        WHERE o.date = ${date}
+        GROUP BY s.code
+        ORDER BY s.code
+      `);
+      
+      return res.json(stats);
+    } catch (error) {
+      console.error('Errore nell\'API statistiche per taglia:', error);
+      return res.status(500).json({ error: 'Errore nel recupero delle statistiche per taglia' });
+    }
+  });
+
+  // API - Ottieni totali giornalieri
+  app.get("/api/operations/daily-totals", async (req, res) => {
+    try {
+      const date = req.query.date as string;
+      
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ error: 'Formato data non valido. Utilizzare YYYY-MM-DD' });
+      }
+      
+      // Query per ottenere i totali giornalieri
+      const [totals] = await db.execute(sql`
+        SELECT
+          SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') 
+              THEN o.animal_count ELSE 0 END) AS totale_entrate,
+          SUM(CASE WHEN o.type = 'vendita' THEN o.animal_count ELSE 0 END) AS totale_uscite,
+          SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') 
+              THEN o.animal_count ELSE 0 END) - 
+          SUM(CASE WHEN o.type = 'vendita' THEN o.animal_count ELSE 0 END) AS bilancio_netto,
+          COUNT(DISTINCT o.id) AS numero_operazioni
+        FROM operations o
+        WHERE o.date = ${date}
+      `);
+      
+      return res.json(totals);
+    } catch (error) {
+      console.error('Errore nell\'API totali giornalieri:', error);
+      return res.status(500).json({ error: 'Errore nel recupero dei totali giornalieri' });
+    }
+  });
+
   // === Cycle routes ===
   app.get("/api/cycles", async (req, res) => {
     try {

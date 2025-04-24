@@ -120,7 +120,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       color: 'text-purple-600',
       items: [
         { icon: <BarChart className="h-5 w-5 mr-2 text-purple-600" />, label: "Statistiche", path: "/statistics" },
-        { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: "Indici SGR", path: "/sgr" }
+        { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: "Indici SGR", path: "/sgr" },
+        { icon: <FileText className="h-5 w-5 mr-2 text-purple-600" />, label: "Diario di Bordo", path: "/diario-di-bordo" }
       ]
     },
     {
