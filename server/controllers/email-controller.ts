@@ -1,42 +1,105 @@
 import { Request, Response } from "express";
-import { format, subDays } from "date-fns";
+import { format, subDays, parse, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import { db } from "../db";
-import { sql } from "drizzle-orm";
-// Simuliamo nodemailer per l'invio email (in produzione utilizzeremo il modulo reale)
-// Nota: in un ambiente di produzione, installare nodemailer con: npm install nodemailer
-const nodemailer = {
-  createTransport: () => {
-    // Verifica se abbiamo le credenziali email
-    const emailUser = process.env.EMAIL_USER;
-    const emailPassword = process.env.EMAIL_PASSWORD;
-    
-    if (!emailUser || !emailPassword) {
-      console.log('ATTENZIONE: Credenziali email mancanti. Simulazione semplice attiva.');
+import { sql, eq, and } from "drizzle-orm";
+import { emailConfig } from "../shared/schema";
+
+// Tentativo di importare nodemailer e node-cron
+let nodemailer: any;
+let nodeCron: any;
+
+try {
+  nodemailer = require('nodemailer');
+  console.log('Modulo nodemailer caricato correttamente!');
+} catch (err) {
+  console.log('Modulo nodemailer non disponibile, utilizzerò la simulazione');
+  // Simuliamo nodemailer per l'invio email
+  nodemailer = {
+    createTransport: () => {
       return {
         sendMail: async (options: any) => {
-          console.log('SIMULAZIONE INVIO EMAIL (senza credenziali):', options);
+          console.log('==== SIMULAZIONE INVIO EMAIL ====');
+          console.log(`Da: ${options.from}`);
+          console.log(`A: ${options.to}`);
+          if (options.cc) console.log(`CC: ${options.cc}`);
+          console.log(`Oggetto: ${options.subject}`);
+          console.log('Contenuto: [Omesso per brevità]');
+          console.log('================================================');
           return { messageId: 'simulated-message-id-' + Date.now() };
         }
       };
     }
+  };
+}
+
+try {
+  nodeCron = require('node-cron');
+  console.log('Modulo node-cron caricato correttamente!');
+} catch (err) {
+  console.log('Modulo node-cron non disponibile, la pianificazione automatica non sarà attiva');
+  nodeCron = {
+    schedule: (cron: string, fn: Function) => {
+      console.log(`Simulazione schedulazione cron: "${cron}"`);
+      return { start: () => console.log('Simulazione avvio scheduler') };
+    }
+  };
+}
+
+// Funzione per creare un trasportatore reale di nodemailer
+function createRealTransporter() {
+  const emailUser = process.env.EMAIL_USER;
+  const emailPassword = process.env.EMAIL_PASSWORD;
+  
+  if (!emailUser || !emailPassword) {
+    console.log('ATTENZIONE: Credenziali email mancanti. Modalità simulazione attiva.');
+    return null;
+  }
+  
+  // Se abbiamo le credenziali, creiamo un trasportatore reale
+  try {
+    console.log(`Creazione trasportatore email reale per: ${emailUser}`);
     
-    // Se abbiamo le credenziali, restituiamo un simulatore più dettagliato
-    console.log(`Credenziali email trovate per: ${emailUser}`);
-    return {
-      sendMail: async (options: any) => {
-        console.log('==== SIMULAZIONE INVIO EMAIL (con credenziali) ====');
-        console.log(`Da: ${options.from || `"Sistema FLUPSY" <${emailUser}>`}`);
-        console.log(`A: ${options.to}`);
-        if (options.cc) console.log(`CC: ${options.cc}`);
-        console.log(`Oggetto: ${options.subject}`);
-        console.log('Contenuto: [Omesso per brevità]');
-        console.log('================================================');
-        return { messageId: 'simulated-message-id-' + Date.now() };
+    // Determina automaticamente il servizio in base all'indirizzo email
+    let service = '';
+    let host = '';
+    let port = 587;
+    let secure = false;
+    
+    if (emailUser.includes('@gmail.com')) {
+      service = 'gmail';
+    } else if (emailUser.includes('@outlook.com') || emailUser.includes('@hotmail.com')) {
+      service = 'outlook';
+    } else if (emailUser.includes('@yahoo.com')) {
+      service = 'yahoo';
+    } else {
+      // Per altri provider, prova con SMTP standard
+      const domain = emailUser.split('@')[1];
+      host = 'smtp.' + domain;
+    }
+    
+    // Configura il trasportatore in base al servizio rilevato
+    const transporterConfig: any = {
+      auth: {
+        user: emailUser,
+        pass: emailPassword
       }
     };
+    
+    if (service) {
+      transporterConfig.service = service;
+    } else {
+      transporterConfig.host = host;
+      transporterConfig.port = port;
+      transporterConfig.secure = secure;
+    }
+    
+    return nodemailer.createTransport(transporterConfig);
+  } catch (error) {
+    console.error('Errore nella creazione del trasportatore email:', error);
+    return null;
   }
-};
+}
 
 /**
  * Formatta il messaggio Email per il Diario di Bordo
