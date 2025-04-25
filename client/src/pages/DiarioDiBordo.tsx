@@ -275,6 +275,93 @@ export default function DiarioDiBordo() {
     giacenza: giacenza || { totale_giacenza: 0, dettaglio_taglie: [] }
   };
   
+  // Carica la configurazione email all'apertura del dialogo
+  const loadEmailConfig = async () => {
+    setIsLoadingConfig(true);
+    try {
+      const response = await fetch('/api/email/config');
+      
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento della configurazione email');
+      }
+      
+      const config = await response.json();
+      
+      if (config) {
+        // Imposta i valori dai dati configurati
+        setEmailRecipients(config.recipients?.join(', ') || '');
+        setEmailCC(config.cc?.join(', ') || '');
+        setAutoSendEnabled(config.autoSend || false);
+        setScheduledTime(config.scheduledTime || '18:00');
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento della configurazione email:', error);
+      toast({
+        title: 'Errore',
+        description: 'Impossibile caricare la configurazione email',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingConfig(false);
+    }
+  };
+  
+  // Salva la configurazione email
+  const saveEmailConfig = async () => {
+    // Verifica che ci siano destinatari validi
+    if (!emailRecipients.trim()) {
+      toast({
+        title: 'Destinatari obbligatori',
+        description: 'Specifica almeno un indirizzo email come destinatario',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setIsSavingConfig(true);
+    try {
+      const config = {
+        recipients: emailRecipients.split(',').map(email => email.trim()),
+        cc: emailCC ? emailCC.split(',').map(email => email.trim()) : [],
+        autoSend: autoSendEnabled,
+        scheduledTime: scheduledTime
+      };
+      
+      const response = await fetch('/api/email/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Errore nel salvataggio della configurazione email');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: 'Configurazione salvata',
+          description: 'Le impostazioni di invio email sono state salvate con successo',
+          variant: 'default'
+        });
+      } else {
+        throw new Error(result.error || 'Errore durante il salvataggio');
+      }
+    } catch (error) {
+      console.error('Errore nel salvataggio della configurazione email:', error);
+      toast({
+        title: 'Errore',
+        description: error instanceof Error ? error.message : 'Si è verificato un errore imprevisto',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSavingConfig(false);
+    }
+  };
+  
   // Aggiorna il testo di WhatsApp quando cambiano i dati
   useEffect(() => {
     if (operations && sizeStats && totals && giacenza) {
@@ -282,6 +369,13 @@ export default function DiarioDiBordo() {
       setWhatsAppText(text);
     }
   }, [operations, sizeStats, totals, giacenza, selectedDate]);
+  
+  // Carica la configurazione email all'apertura del dialogo
+  useEffect(() => {
+    if (isEmailDialogOpen) {
+      loadEmailConfig();
+    }
+  }, [isEmailDialogOpen]);
   
   // Determina lo stato di caricamento generale
   const isLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza;
@@ -368,8 +462,9 @@ export default function DiarioDiBordo() {
           </DialogHeader>
           
           <Tabs value={emailDialogTab} onValueChange={setEmailDialogTab}>
-            <TabsList className="grid w-full grid-cols-2">
+            <TabsList className="grid w-full grid-cols-3">
               <TabsTrigger value="config">Configurazione</TabsTrigger>
+              <TabsTrigger value="auto">Invio Automatico</TabsTrigger>
               <TabsTrigger value="preview">Anteprima</TabsTrigger>
             </TabsList>
             
@@ -404,6 +499,79 @@ export default function DiarioDiBordo() {
                     value={emailSubject}
                     onChange={(e) => setEmailSubject(e.target.value)}
                   />
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="auto" className="space-y-4 py-4">
+              <div className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-medium mb-2">Configurazione Invio Automatico</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Imposta l'invio automatico del diario di bordo via email ogni giorno all'orario specificato.
+                    L'email sarà inviata con i dati relativi al giorno corrente.
+                  </p>
+                </div>
+                
+                <div className="space-y-2 border-b pb-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="auto-send-enabled" className="font-medium">Attiva invio automatico</Label>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="auto-send-enabled" className={!autoSendEnabled ? 'text-muted-foreground' : ''}>
+                        {autoSendEnabled ? 'Attivo' : 'Disattivato'}
+                      </Label>
+                      <input
+                        type="checkbox"
+                        id="auto-send-enabled"
+                        checked={autoSendEnabled}
+                        onChange={(e) => setAutoSendEnabled(e.target.checked)}
+                        className="form-checkbox h-5 w-5 text-primary rounded"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Quando attivo, il sistema invierà automaticamente le email di riepilogo giornaliero ai destinatari configurati.
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="scheduled-time">Orario di invio giornaliero</Label>
+                  <Input 
+                    id="scheduled-time" 
+                    type="time"
+                    value={scheduledTime}
+                    onChange={(e) => setScheduledTime(e.target.value)}
+                    className="w-full"
+                    disabled={!autoSendEnabled}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    L'email del diario di bordo verrà inviata automaticamente a quest'ora ogni giorno
+                  </p>
+                </div>
+                
+                <div className="pt-2">
+                  <Button 
+                    type="button" 
+                    onClick={saveEmailConfig}
+                    disabled={isSavingConfig || isLoadingConfig}
+                    className="w-full"
+                  >
+                    {isSavingConfig ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        Salvataggio in corso...
+                      </>
+                    ) : (
+                      'Salva Configurazione'
+                    )}
+                  </Button>
+                  
+                  {isLoadingConfig && (
+                    <div className="mt-2 flex justify-center">
+                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                      <span className="ml-2 text-xs text-muted-foreground">Caricamento configurazione...</span>
+                    </div>
+                  )}
                 </div>
               </div>
             </TabsContent>
@@ -490,11 +658,26 @@ export default function DiarioDiBordo() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => setIsEmailDialogOpen(true)}
+                  onClick={() => {
+                    setEmailDialogTab('config');
+                    setIsEmailDialogOpen(true);
+                  }}
                   title="Invia via Email"
                 >
                   <Mail className="h-4 w-4 mr-2" />
                   Email
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setEmailDialogTab('auto');
+                    setIsEmailDialogOpen(true);
+                  }}
+                  title="Configura invio automatico email"
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Auto
                 </Button>
               </div>
             </div>
