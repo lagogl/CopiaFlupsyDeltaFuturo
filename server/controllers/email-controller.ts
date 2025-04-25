@@ -227,20 +227,31 @@ function createRealTransporter() {
   try {
     console.log(`Creazione trasportatore email reale per: ${emailUser}`);
     
-    // Poiché sappiamo che il gestore è Gmail, ottimizziamo la configurazione per esso
+    // Impostazioni ottimizzate per Gmail
     const transporterConfig = {
-      service: 'gmail',
+      // Usiamo direttamente SMTP di Gmail invece di "service: 'gmail'"
+      host: 'smtp.gmail.com',
+      port: 465,
+      secure: true, // true per 465, false per altri porti
       auth: {
         user: emailUser,
         pass: emailPassword
       },
-      // La seguente configurazione serve per Gmail con password delle app
-      // Se non funziona, potrebbe essere necessario abilitare "App meno sicure" nell'account Google
-      // o generare una password specifica per l'app
+      // Debug per aiutare a risolvere problemi
+      logger: true,
+      debug: true, // Mostra log dettagliati per la diagnosi
+      // Configurazione TLS ottimizzata
       tls: {
-        rejectUnauthorized: false
+        // Non rifiutare connessioni non autorizzate
+        rejectUnauthorized: false,
+        // Minimizza verifica certificati
+        minVersion: 'TLSv1'
       }
     };
+    
+    console.log('Configurando trasportatore con impostazioni ottimizzate per Gmail...');
+    console.log('NOTA: Se riscontri problemi, verifica che l\'account Gmail consenta accesso app meno sicure o usa password app');
+    console.log(`      o verifica che esista un file ".env" con EMAIL_USER e EMAIL_PASSWORD`);
     
     return nodemailer.createTransport(transporterConfig);
   } catch (error) {
