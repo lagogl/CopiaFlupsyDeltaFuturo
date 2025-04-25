@@ -37,6 +37,7 @@ const getOperationTypeLabel = (type: string) => {
 // Funzione per creare il testo formattato per WhatsApp
 const createWhatsAppText = (data: any, date: Date) => {
   const dateFormatted = format(date, 'dd MMMM yyyy', { locale: it });
+  const datePrecedente = format(new Date(date.getTime() - 86400000), 'dd MMMM yyyy', { locale: it });
   
   let text = `*DIARIO DI BORDO - ${dateFormatted.toUpperCase()}*\n\n`;
   
@@ -68,12 +69,34 @@ const createWhatsAppText = (data: any, date: Date) => {
   });
   text += '\n';
   
+  // Giacenza precedente
+  if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
+    text += `📈 *GIACENZA AL ${datePrecedente.toUpperCase()}*\n`;
+    text += `Totale: ${data.giacenza.totale_giacenza.toLocaleString('it-IT')} animali\n`;
+    
+    // Dettaglio giacenza per taglia
+    if (data.giacenza.dettaglio_taglie && data.giacenza.dettaglio_taglie.length > 0) {
+      text += `Dettaglio:\n`;
+      data.giacenza.dettaglio_taglie.forEach((taglia: any) => {
+        text += `- ${taglia.taglia}: ${taglia.quantita.toLocaleString('it-IT')} animali\n`;
+      });
+    }
+    text += '\n';
+  }
+  
   // Bilancio giornata
   text += `🧮 *BILANCIO GIORNALIERO*\n`;
   text += `Entrate: ${data.totals.totale_entrate ? data.totals.totale_entrate.toLocaleString('it-IT') : '0'} animali\n`;
   text += `Uscite: ${data.totals.totale_uscite ? data.totals.totale_uscite.toLocaleString('it-IT') : '0'} animali\n`;
   text += `Bilancio netto: ${data.totals.bilancio_netto ? data.totals.bilancio_netto.toLocaleString('it-IT') : '0'} animali\n`;
-  text += `Totale operazioni: ${data.totals.numero_operazioni}\n`;
+  text += `Totale operazioni: ${data.totals.numero_operazioni}\n\n`;
+  
+  // Bilancio finale
+  if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
+    const bilancioFinale = data.giacenza.totale_giacenza + (parseInt(data.totals.bilancio_netto) || 0);
+    text += `🏁 *BILANCIO FINALE*\n`;
+    text += `Giacenza + Bilancio netto: ${bilancioFinale.toLocaleString('it-IT')} animali\n`;
+  }
   
   return text;
 };
@@ -183,23 +206,37 @@ export default function DiarioDiBordo() {
     enabled: !!formattedDate
   });
   
+  // Carica la giacenza al giorno precedente
+  const { data: giacenza, isLoading: isLoadingGiacenza } = useQuery({
+    queryKey: ['/api/diario/giacenza', formattedDate],
+    queryFn: async () => {
+      const response = await fetch(`/api/diario/giacenza?date=${formattedDate}`);
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento della giacenza');
+      }
+      return response.json();
+    },
+    enabled: !!formattedDate
+  });
+  
   // Combina tutti i dati per la visualizzazione e per il testo WhatsApp
   const diaryData = {
     operations: operations || [],
     sizeStats: sizeStats || [],
-    totals: totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 }
+    totals: totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
+    giacenza: giacenza || { totale_giacenza: 0, dettaglio_taglie: [] }
   };
   
   // Aggiorna il testo di WhatsApp quando cambiano i dati
   useEffect(() => {
-    if (operations && sizeStats && totals) {
+    if (operations && sizeStats && totals && giacenza) {
       const text = createWhatsAppText(diaryData, selectedDate);
       setWhatsAppText(text);
     }
-  }, [operations, sizeStats, totals, selectedDate]);
+  }, [operations, sizeStats, totals, giacenza, selectedDate]);
   
   // Determina lo stato di caricamento generale
-  const isLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals;
+  const isLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza;
   
   return (
     <div className="container mx-auto py-6">
@@ -365,31 +402,79 @@ export default function DiarioDiBordo() {
                       </CardHeader>
                       <CardContent className="p-4 pt-0">
                         {totals ? (
-                          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                            <div className="p-3 border rounded-lg">
-                              <p className="text-xs text-muted-foreground">Entrate</p>
-                              <p className="text-lg font-semibold text-emerald-600">
-                                {totals.totale_entrate ? totals.totale_entrate.toLocaleString('it-IT') : '0'}
-                              </p>
+                          <div className="space-y-6">
+                            {/* Giacenza Precedente */}
+                            {!isLoadingGiacenza && giacenza && (
+                              <div className="border rounded-lg p-4 bg-blue-50">
+                                <h3 className="text-md font-semibold mb-3">
+                                  Giacenza al {format(new Date(selectedDate.getTime() - 86400000), 'dd/MM/yyyy', { locale: it })}
+                                </h3>
+                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                                  <div className="p-3 border rounded-lg bg-white">
+                                    <p className="text-xs text-muted-foreground">Totale Giacenza</p>
+                                    <p className="text-lg font-semibold text-blue-600">
+                                      {giacenza.totale_giacenza ? giacenza.totale_giacenza.toLocaleString('it-IT') : '0'} animali
+                                    </p>
+                                  </div>
+                                  
+                                  <div className="p-3 border rounded-lg bg-white">
+                                    <p className="text-xs text-muted-foreground">Dettaglio Giacenza per Taglia</p>
+                                    <div className="mt-1 space-y-1">
+                                      {giacenza.dettaglio_taglie && giacenza.dettaglio_taglie.length > 0 ? (
+                                        giacenza.dettaglio_taglie.map((taglia, idx) => (
+                                          <div key={idx} className="flex justify-between items-center">
+                                            <Badge variant="outline">{taglia.taglia}</Badge>
+                                            <span className="font-medium">{taglia.quantita.toLocaleString('it-IT')}</span>
+                                          </div>
+                                        ))
+                                      ) : (
+                                        <p className="text-sm text-muted-foreground">Nessun dato disponibile</p>
+                                      )}
+                                    </div>
+                                  </div>
+                                </div>
+                              </div>
+                            )}
+                            
+                            {/* Bilancio Giornaliero */}
+                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                              <div className="p-3 border rounded-lg">
+                                <p className="text-xs text-muted-foreground">Entrate</p>
+                                <p className="text-lg font-semibold text-emerald-600">
+                                  {totals.totale_entrate ? totals.totale_entrate.toLocaleString('it-IT') : '0'}
+                                </p>
+                              </div>
+                              <div className="p-3 border rounded-lg">
+                                <p className="text-xs text-muted-foreground">Uscite</p>
+                                <p className="text-lg font-semibold text-red-600">
+                                  {totals.totale_uscite ? totals.totale_uscite.toLocaleString('it-IT') : '0'}
+                                </p>
+                              </div>
+                              <div className="p-3 border rounded-lg">
+                                <p className="text-xs text-muted-foreground">Bilancio Netto</p>
+                                <p className={`text-lg font-semibold ${(totals.bilancio_netto || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
+                                  {totals.bilancio_netto ? totals.bilancio_netto.toLocaleString('it-IT') : '0'}
+                                </p>
+                              </div>
+                              <div className="p-3 border rounded-lg">
+                                <p className="text-xs text-muted-foreground">N° Operazioni</p>
+                                <p className="text-lg font-semibold">
+                                  {totals.numero_operazioni}
+                                </p>
+                              </div>
                             </div>
-                            <div className="p-3 border rounded-lg">
-                              <p className="text-xs text-muted-foreground">Uscite</p>
-                              <p className="text-lg font-semibold text-red-600">
-                                {totals.totale_uscite ? totals.totale_uscite.toLocaleString('it-IT') : '0'}
-                              </p>
-                            </div>
-                            <div className="p-3 border rounded-lg">
-                              <p className="text-xs text-muted-foreground">Bilancio Netto</p>
-                              <p className={`text-lg font-semibold ${(totals.bilancio_netto || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                {totals.bilancio_netto ? totals.bilancio_netto.toLocaleString('it-IT') : '0'}
-                              </p>
-                            </div>
-                            <div className="p-3 border rounded-lg">
-                              <p className="text-xs text-muted-foreground">N° Operazioni</p>
-                              <p className="text-lg font-semibold">
-                                {totals.numero_operazioni}
-                              </p>
-                            </div>
+                            
+                            {/* Bilancio Finale (Giacenza + Bilancio Netto) */}
+                            {!isLoadingGiacenza && giacenza && (
+                              <div className="border-t pt-4 mt-4">
+                                <div className="p-3 border rounded-lg bg-green-50">
+                                  <p className="text-xs text-muted-foreground">Bilancio Finale (Giacenza + Bilancio Netto)</p>
+                                  <p className="text-xl font-bold text-emerald-700">
+                                    {(giacenza.totale_giacenza + (parseInt(totals.bilancio_netto) || 0)).toLocaleString('it-IT')} animali
+                                  </p>
+                                </div>
+                              </div>
+                            )}
                           </div>
                         ) : (
                           <div className="text-center p-6 bg-muted rounded-lg">
