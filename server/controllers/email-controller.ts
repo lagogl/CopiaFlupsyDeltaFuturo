@@ -3,14 +3,39 @@ import { format, subDays } from "date-fns";
 import { it } from "date-fns/locale";
 import { db } from "../db";
 import { sql } from "drizzle-orm";
-// Simuliamo nodemailer
+// Simuliamo nodemailer per l'invio email (in produzione utilizzeremo il modulo reale)
+// Nota: in un ambiente di produzione, installare nodemailer con: npm install nodemailer
 const nodemailer = {
-  createTransport: () => ({
-    sendMail: async (options: any) => {
-      console.log('SIMULAZIONE INVIO EMAIL:', options);
-      return { messageId: 'simulated-message-id-' + Date.now() };
+  createTransport: () => {
+    // Verifica se abbiamo le credenziali email
+    const emailUser = process.env.EMAIL_USER;
+    const emailPassword = process.env.EMAIL_PASSWORD;
+    
+    if (!emailUser || !emailPassword) {
+      console.log('ATTENZIONE: Credenziali email mancanti. Simulazione semplice attiva.');
+      return {
+        sendMail: async (options: any) => {
+          console.log('SIMULAZIONE INVIO EMAIL (senza credenziali):', options);
+          return { messageId: 'simulated-message-id-' + Date.now() };
+        }
+      };
     }
-  })
+    
+    // Se abbiamo le credenziali, restituiamo un simulatore più dettagliato
+    console.log(`Credenziali email trovate per: ${emailUser}`);
+    return {
+      sendMail: async (options: any) => {
+        console.log('==== SIMULAZIONE INVIO EMAIL (con credenziali) ====');
+        console.log(`Da: ${options.from || `"Sistema FLUPSY" <${emailUser}>`}`);
+        console.log(`A: ${options.to}`);
+        if (options.cc) console.log(`CC: ${options.cc}`);
+        console.log(`Oggetto: ${options.subject}`);
+        console.log('Contenuto: [Omesso per brevità]');
+        console.log('================================================');
+        return { messageId: 'simulated-message-id-' + Date.now() };
+      }
+    };
+  }
 };
 
 /**
@@ -458,6 +483,7 @@ export async function sendEmailDiario(req: Request, res: Response) {
     const toAddresses = Array.isArray(to) ? to.join(', ') : to;
     const ccAddresses = cc ? (Array.isArray(cc) ? cc.join(', ') : cc) : undefined;
     const emailSubject = subject || `Diario di Bordo FLUPSY - ${format(new Date(), 'dd/MM/yyyy', { locale: it })}`;
+    // Utilizza direttamente le informazioni per il log
     
     console.log('===== SIMULAZIONE INVIO EMAIL =====');
     console.log(`DA: "Sistema FLUPSY" <${emailUser}>`);
