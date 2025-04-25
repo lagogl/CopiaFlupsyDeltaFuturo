@@ -1480,159 +1480,98 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // La data richiesta è la data per cui vogliamo calcolare la giacenza
       const requestDate = date;
-      console.log('API giacenza - Calcolando animali nei cicli attivi alla data:', requestDate);
-      
-      // NUOVA LOGICA: Calcolare la giacenza basata sui cicli attivi alla data specificata
-      // e sull'ultimo conteggio di animali per ciascun ciclo attivo
-      const giacenzaPerTaglia = await db.execute(sql`
-        WITH cicli_attivi AS (
-          -- Seleziona i cicli che erano attivi alla data specificata o chiusi nella data specificata
-          SELECT c.id AS cycle_id, c.basket_id
-          FROM cycles c
-          WHERE c.start_date <= ${requestDate}
-          AND (
-            -- Ciclo attivo (senza data fine o data fine successiva)
-            (c.state = 'active' AND (c.end_date IS NULL OR c.end_date > ${requestDate}))
-            OR 
-            -- Ciclo chiuso esattamente nella data specificata (va considerato nella giacenza)
-            (c.state = 'closed' AND c.end_date = ${requestDate})
-          )
-        ),
-        tutte_operazioni AS (
-          -- Seleziona tutte le operazioni per ogni ciclo attivo fino alla data richiesta
-          SELECT 
-            o.cycle_id,
-            o.id AS operation_id,
-            o.animal_count,
-            o.size_id,
-            s.code AS taglia,
-            o.date,
-            o.type
-          FROM operations o
-          LEFT JOIN sizes s ON o.size_id = s.id  -- LEFT JOIN per includere operazioni senza taglia
-          JOIN cicli_attivi ca ON o.cycle_id = ca.cycle_id
-          WHERE o.date <= ${requestDate}
-          AND o.animal_count IS NOT NULL
-        ),
-        ultime_operazioni AS (
-          -- Per ogni ciclo, prendi solo l'ultima operazione (data più recente, ID più alto)
-          SELECT 
-            to.*,
-            ROW_NUMBER() OVER (PARTITION BY to.cycle_id ORDER BY to.date DESC, to.operation_id DESC) AS rn
-          FROM tutte_operazioni to
-        ),
-        -- Per le operazioni che non hanno una taglia specificata, prendi la taglia dall'operazione precedente nello stesso ciclo
-        operazioni_con_taglia AS (
-          SELECT
-            uo.cycle_id,
-            uo.operation_id,
-            uo.animal_count,
-            -- Se la taglia è NULL, cerca di trovare la taglia dall'operazione precedente con taglia specificata nello stesso ciclo
-            COALESCE(
-              uo.taglia,
-              (
-                SELECT prev_op.taglia
-                FROM tutte_operazioni prev_op
-                WHERE prev_op.cycle_id = uo.cycle_id
-                  AND prev_op.operation_id < uo.operation_id
-                  AND prev_op.taglia IS NOT NULL
-                ORDER BY prev_op.date DESC, prev_op.operation_id DESC
-                LIMIT 1
-              ),
-              'Non specificata'  -- Se non c'è una taglia precedente, usa 'Non specificata'
-            ) AS taglia
-          FROM ultime_operazioni uo
-          WHERE uo.rn = 1  -- Solo l'ultima operazione per ogni ciclo
-        )
-        SELECT 
-          COALESCE(oct.taglia, 'Non specificata') AS taglia,
-          SUM(oct.animal_count) AS quantita
-        FROM operazioni_con_taglia oct
-        GROUP BY oct.taglia
-        ORDER BY oct.taglia
-      `);
-      
-      // Stampa i cicli attivi per debug (include anche i cicli chiusi nella data specificata)
-      const cicliAttivi = await db.execute(sql`
-        SELECT c.id, c.basket_id, b.physical_number AS basket_number, c.state, c.end_date
-        FROM cycles c
-        JOIN baskets b ON c.basket_id = b.id
-        WHERE c.start_date <= ${requestDate}
+            
+      // Approccio ottimizzato in JavaScript invece che in SQL
+      // Prima otteniamo i cicli attivi alla data richiesta
+      const cicliAttiviQuery = await db.execute(sql`
+        SELECT id AS cycle_id
+        FROM cycles
+        WHERE start_date <= ${requestDate}
         AND (
-          -- Ciclo attivo (senza data fine o data fine successiva)
-          (c.state = 'active' AND (c.end_date IS NULL OR c.end_date > ${requestDate}))
-          OR 
-          -- Ciclo chiuso esattamente nella data specificata (va considerato nella giacenza)
-          (c.state = 'closed' AND c.end_date = ${requestDate})
+          (state = 'active' AND (end_date IS NULL OR end_date > ${requestDate}))
+          OR (state = 'closed' AND end_date = ${requestDate})
         )
       `);
       
-      console.log('Cicli attivi alla data specificata:', cicliAttivi);
+      console.log(`Cicli attivi trovati: ${cicliAttiviQuery.length}`);
       
-      // Otteniamo tutte le operazioni ordinate per ogni ciclo attivo, per scopi di debug
-      const allOperations = await db.execute(sql`
-        SELECT o.id, o.cycle_id, o.animal_count, o.size_id, o.date, o.type
-        FROM operations o
-        JOIN cycles c ON o.cycle_id = c.id
-        WHERE c.id = 3
-        AND o.date <= ${requestDate}
-        ORDER BY o.cycle_id, o.date, o.id
-      `);
+      // Creiamo un oggetto per tenere traccia dei totali per taglia
+      const totaliPerTaglia = {};
+      
+      // Per ogni ciclo, otteniamo l'ultima operazione
+      for (const ciclo of cicliAttiviQuery) {
+        const cycleId = ciclo.cycle_id;
         
-      console.log('TUTTE LE OPERAZIONI DEL CICLO 3:', allOperations);
-      
-      // Debug: Stampa le operazioni che sarebbero selezionate per la giacenza
-      try {
-        const debugOperations = await db.execute(sql`
-          WITH cicli_attivi AS (
-            SELECT c.id AS cycle_id, c.basket_id
-            FROM cycles c
-            WHERE c.start_date <= ${requestDate}
-            AND (
-              (c.state = 'active' AND (c.end_date IS NULL OR c.end_date > ${requestDate}))
-              OR (c.state = 'closed' AND c.end_date = ${requestDate})
-            )
-          )
-          SELECT 
-            o.cycle_id,
-            o.id AS operation_id,
-            o.animal_count,
-            o.size_id,
-            COALESCE(s.code, 'Non specificata') AS taglia,
-            o.date,
-            o.type,
-            ROW_NUMBER() OVER (PARTITION BY o.cycle_id ORDER BY o.date DESC, o.id DESC) AS rn
+        // Query l'ultima operazione per questo ciclo
+        const operazioneQuery = await db.execute(sql`
+          SELECT o.animal_count, o.size_id, s.code AS size_code
           FROM operations o
           LEFT JOIN sizes s ON o.size_id = s.id
-          JOIN cicli_attivi ca ON o.cycle_id = ca.cycle_id
-          WHERE o.date <= ${requestDate}
-          AND o.animal_count IS NOT NULL
-          AND o.cycle_id = 3
+          WHERE o.cycle_id = ${cycleId}
+            AND o.date <= ${requestDate}
+            AND o.animal_count IS NOT NULL
           ORDER BY o.date DESC, o.id DESC
+          LIMIT 1
         `);
         
-        console.log('DEBUG OPERAZIONI CICLO 3 PER LA GIACENZA:', debugOperations);
-      } catch (error) {
-        console.error('Errore nella query di debug:', error);
+        if (operazioneQuery.length > 0) {
+          const operazione = operazioneQuery[0];
+          const animalCount = parseInt(operazione.animal_count);
+          
+          // Determina la taglia
+          let sizeCode = operazione.size_code;
+          
+          // Se l'operazione non ha una taglia specificata (size_id è NULL)
+          if (!operazione.size_id) {
+            // Trova operazioni precedenti con taglia specificata nello stesso ciclo
+            const tagliaQuery = await db.execute(sql`
+              SELECT s.code
+              FROM operations o
+              JOIN sizes s ON o.size_id = s.id
+              WHERE o.cycle_id = ${cycleId}
+                AND o.date <= ${requestDate}
+                AND o.size_id IS NOT NULL
+              ORDER BY o.date DESC, o.id DESC
+              LIMIT 1
+            `);
+            
+            if (tagliaQuery.length > 0) {
+              sizeCode = tagliaQuery[0].code;
+            } else {
+              sizeCode = 'Non specificata';
+            }
+          }
+          
+          // Se siamo arrivati qui, aggiungiamo al conteggio per questa taglia
+          if (!sizeCode) sizeCode = 'Non specificata';
+          
+          if (!totaliPerTaglia[sizeCode]) {
+            totaliPerTaglia[sizeCode] = 0;
+          }
+          
+          totaliPerTaglia[sizeCode] += animalCount;
+        }
       }
       
-      // Calcola il totale complessivo
+      // Trasforma i dati nel formato di risposta
+      const dettaglioTaglie = [];
       let totaleGiacenza = 0;
-      const dettaglioTaglie = giacenzaPerTaglia.map(row => {
-        const quantita = parseInt(row.quantita);
-        totaleGiacenza += quantita;
-        return {
-          taglia: row.taglia,
-          quantita: quantita
-        };
-      });
+      
+      for (const [taglia, quantita] of Object.entries(totaliPerTaglia)) {
+        const quantitaNum = parseInt(String(quantita));
+        totaleGiacenza += quantitaNum;
+        dettaglioTaglie.push({
+          taglia,
+          quantita: quantitaNum
+        });
+      }
       
       const risultato = {
         totale_giacenza: totaleGiacenza,
         dettaglio_taglie: dettaglioTaglie
       };
       
-      console.log('API giacenza - Risultati (NUOVA LOGICA):', risultato);
+      console.log('API giacenza - Risultati:', risultato);
       
       return res.json(risultato);
     } catch (error) {
