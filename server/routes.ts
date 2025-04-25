@@ -1662,14 +1662,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Query per ottenere i totali giornalieri
+      // Includere le operazioni di cessazione come uscite
       const [totals] = await db.execute(sql`
         SELECT
           SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') 
               THEN o.animal_count ELSE 0 END) AS totale_entrate,
-          SUM(CASE WHEN o.type = 'vendita' THEN o.animal_count ELSE 0 END) AS totale_uscite,
+          SUM(CASE WHEN o.type IN ('vendita', 'cessazione') THEN o.animal_count ELSE 0 END) AS totale_uscite,
           SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') 
               THEN o.animal_count ELSE 0 END) - 
-          SUM(CASE WHEN o.type = 'vendita' THEN o.animal_count ELSE 0 END) AS bilancio_netto,
+          SUM(CASE WHEN o.type IN ('vendita', 'cessazione') THEN o.animal_count ELSE 0 END) AS bilancio_netto,
           COUNT(DISTINCT o.id) AS numero_operazioni
         FROM operations o
         WHERE o.date::text = ${date}

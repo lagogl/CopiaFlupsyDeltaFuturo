@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { DatePicker } from "@/components/ui/date-picker";
 
 // Mappa dei tipi di operazione alle loro etichette in italiano
-const operationLabels = {
+const operationLabels: Record<string, string> = {
   'prima-attivazione': 'Prima Attivazione',
   'prima-attivazione-da-vagliatura': 'Prima Attivazione da Vagliatura',
   'pulizia': 'Pulizia',
@@ -37,7 +37,6 @@ const getOperationTypeLabel = (type: string) => {
 // Funzione per creare il testo formattato per WhatsApp
 const createWhatsAppText = (data: any, date: Date) => {
   const dateFormatted = format(date, 'dd MMMM yyyy', { locale: it });
-  const datePrecedente = format(new Date(date.getTime() - 86400000), 'dd MMMM yyyy', { locale: it });
   
   let text = `*DIARIO DI BORDO - ${dateFormatted.toUpperCase()}*\n\n`;
   
