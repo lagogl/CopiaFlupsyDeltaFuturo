@@ -125,39 +125,20 @@ function createRealTransporter() {
   try {
     console.log(`Creazione trasportatore email reale per: ${emailUser}`);
     
-    // Determina automaticamente il servizio in base all'indirizzo email
-    let service = '';
-    let host = '';
-    let port = 587;
-    let secure = false;
-    
-    if (emailUser.includes('@gmail.com')) {
-      service = 'gmail';
-    } else if (emailUser.includes('@outlook.com') || emailUser.includes('@hotmail.com')) {
-      service = 'outlook';
-    } else if (emailUser.includes('@yahoo.com')) {
-      service = 'yahoo';
-    } else {
-      // Per altri provider, prova con SMTP standard
-      const domain = emailUser.split('@')[1];
-      host = 'smtp.' + domain;
-    }
-    
-    // Configura il trasportatore in base al servizio rilevato
-    const transporterConfig: any = {
+    // Poiché sappiamo che il gestore è Gmail, ottimizziamo la configurazione per esso
+    const transporterConfig = {
+      service: 'gmail',
       auth: {
         user: emailUser,
         pass: emailPassword
+      },
+      // La seguente configurazione serve per Gmail con password delle app
+      // Se non funziona, potrebbe essere necessario abilitare "App meno sicure" nell'account Google
+      // o generare una password specifica per l'app
+      tls: {
+        rejectUnauthorized: false
       }
     };
-    
-    if (service) {
-      transporterConfig.service = service;
-    } else {
-      transporterConfig.host = host;
-      transporterConfig.port = port;
-      transporterConfig.secure = secure;
-    }
     
     return nodemailer.createTransport(transporterConfig);
   } catch (error) {

@@ -4768,6 +4768,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API per email - Genera e invia automaticamente il diario via email
   app.get('/api/email/auto-send-diario', EmailController.autoSendEmailDiario);
   
+  // API per email - Ottiene la configurazione email corrente
+  app.get('/api/email/config', EmailController.getEmailConfiguration);
+  
+  // API per email - Salva la configurazione email
+  app.post('/api/email/config', EmailController.saveEmailConfiguration);
+  
   // Endpoint per inviare un messaggio WhatsApp manualmente
   app.post("/api/whatsapp/send", WhatsappController.sendWhatsAppMessage);
   

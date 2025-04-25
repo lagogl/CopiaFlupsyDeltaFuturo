@@ -54,6 +54,16 @@ app.use((req, res, next) => {
   console.log("===== FINE TEST DI CONNESSIONE DATABASE =====\n");
   
   const server = await registerRoutes(app);
+  
+  // Inizializza lo scheduler per l'invio automatico delle email
+  import('./controllers/email-controller').then(EmailController => {
+    try {
+      EmailController.initializeEmailScheduler();
+      console.log('Scheduler email inizializzato con successo');
+    } catch (err) {
+      console.error('Errore durante l\'inizializzazione dello scheduler email:', err);
+    }
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
