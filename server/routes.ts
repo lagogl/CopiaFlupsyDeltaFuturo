@@ -1498,21 +1498,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             (c.state = 'closed' AND c.end_date = ${requestDate})
           )
         ),
-        ultime_operazioni AS (
-          -- Per ogni ciclo attivo, trova l'ultima operazione con conteggio animali
+        tutte_operazioni AS (
+          -- Seleziona tutte le operazioni per ogni ciclo attivo fino alla data richiesta
           SELECT 
             o.cycle_id,
+            o.id AS operation_id,
             o.animal_count,
             o.size_id,
             COALESCE(s.code, 'Non specificata') AS taglia,
             o.date,
-            o.id,
-            ROW_NUMBER() OVER (PARTITION BY o.cycle_id ORDER BY o.date DESC, o.id DESC) AS rn
+            o.type
           FROM operations o
           LEFT JOIN sizes s ON o.size_id = s.id  -- LEFT JOIN per includere operazioni senza taglia
           JOIN cicli_attivi ca ON o.cycle_id = ca.cycle_id
           WHERE o.date <= ${requestDate}
           AND o.animal_count IS NOT NULL
+        ),
+        ultime_operazioni AS (
+          -- Per ogni ciclo, prendi solo l'ultima operazione (data più recente, ID più alto)
+          SELECT 
+            to.*,
+            ROW_NUMBER() OVER (PARTITION BY to.cycle_id ORDER BY to.date DESC, to.operation_id DESC) AS rn
+          FROM tutte_operazioni to
         )
         SELECT 
           uo.taglia,
