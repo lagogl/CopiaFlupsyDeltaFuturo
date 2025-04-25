@@ -15,6 +15,7 @@ import {
 import * as SelectionController from "./controllers/selection-controller";
 import * as ScreeningController from "./controllers/screening-controller";
 import { execFile } from 'child_process';
+import { format } from 'date-fns';
 import { 
   createDatabaseBackup, 
   restoreDatabaseFromBackup, 
@@ -63,7 +64,7 @@ import {
   SelectionBasketHistory,
   SelectionLotReference
 } from "@shared/schema";
-import { format, addDays } from "date-fns";
+import { addDays } from "date-fns";
 import { z } from "zod";
 import { fromZodError } from "zod-validation-error";
 import configureWebSocketServer from "./websocket";
@@ -1465,6 +1466,81 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Diario di Bordo API routes ===
+  
+  // API - Ottieni giacenza alla data (totale fino al giorno precedente alla data richiesta)
+  app.get("/api/diario/giacenza", async (req, res) => {
+    try {
+      const date = req.query.date as string;
+      
+      console.log('API giacenza - Data richiesta:', date);
+      
+      if (!date || !/^\d{4}-\d{2}-\d{2}$/.test(date)) {
+        return res.status(400).json({ error: 'Formato data non valido. Utilizzare YYYY-MM-DD' });
+      }
+      
+      // Calcolo della data precedente alla data richiesta
+      const dateParts = date.split('-');
+      const requestDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
+      requestDate.setDate(requestDate.getDate() - 1); // sottraiamo un giorno
+      
+      const prevDate = format(requestDate, 'yyyy-MM-dd');
+      console.log('API giacenza - Calcolata fino alla data:', prevDate);
+      
+      // Query per calcolare la giacenza fino alla data specificata (inclusa)
+      // Prende in considerazione solo prime attivazioni (escluse quelle da vagliatura) e vendite
+      const giacenzaPerTaglia = await db.execute(sql`
+        WITH movimenti AS (
+          SELECT 
+            s.code as taglia,
+            SUM(
+              CASE 
+                WHEN o.type = 'prima-attivazione' THEN o.animal_count
+                WHEN o.type = 'vendita' THEN -o.animal_count
+                ELSE 0
+              END
+            ) as saldo_animali
+          FROM operations o
+          JOIN sizes s ON o.size_id = s.id
+          WHERE o.date <= ${prevDate}
+          AND o.type IN ('prima-attivazione', 'vendita')
+          AND o.type != 'prima-attivazione-da-vagliatura'
+          GROUP BY s.code
+          HAVING SUM(
+            CASE 
+              WHEN o.type = 'prima-attivazione' THEN o.animal_count
+              WHEN o.type = 'vendita' THEN -o.animal_count
+              ELSE 0
+            END
+          ) != 0
+          ORDER BY s.code
+        )
+        SELECT * FROM movimenti
+      `);
+      
+      // Calcola il totale complessivo
+      let totaleGiacenza = 0;
+      const dettaglioTaglie = giacenzaPerTaglia.map(row => {
+        const quantita = parseInt(row.saldo_animali);
+        totaleGiacenza += quantita;
+        return {
+          taglia: row.taglia,
+          quantita: quantita
+        };
+      });
+      
+      const risultato = {
+        totale_giacenza: totaleGiacenza,
+        dettaglio_taglie: dettaglioTaglie
+      };
+      
+      console.log('API giacenza - Risultati:', risultato);
+      
+      return res.json(risultato);
+    } catch (error) {
+      console.error('Errore nell\'API giacenza:', error);
+      return res.status(500).json({ error: 'Errore nel calcolo della giacenza' });
+    }
+  });
   
   // API - Ottieni operazioni per data
   app.get("/api/diario/operations-by-date", async (req, res) => {
