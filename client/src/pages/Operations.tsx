@@ -1502,8 +1502,36 @@ export default function Operations() {
                             </div>
                           </div>
                         </div>
-                        <div className="flex items-center">
-                          <Badge className="mr-4">
+                        <div className="flex items-center space-x-3">
+                          {/* Aggiungiamo qui il conteggio degli animali in modo prominente */}
+                          {(() => {
+                            // Otteniamo l'ultima operazione per avere il conteggio aggiornato
+                            const lastOp = cycleOps.length > 0 ? cycleOps[cycleOps.length - 1] : null;
+                            
+                            // Se abbiamo un'ultima operazione con dati sugli animali
+                            if (lastOp && lastOp.animalsPerKg && lastOp.animalsCount) {
+                              return (
+                                <div className="flex flex-col items-center mr-3 border rounded-lg p-2 bg-blue-50">
+                                  <span className="text-xs text-gray-500 uppercase font-semibold">Animali</span>
+                                  <span className="text-lg font-bold text-blue-700">{lastOp.animalsCount.toLocaleString()}</span>
+                                </div>
+                              );
+                            } else if (lastOp && lastOp.animalsPerKg) {
+                              // Se non abbiamo il conteggio diretto ma abbiamo animali per kg e peso totale
+                              const totalAnimals = Math.round(lastOp.totalWeightKg * lastOp.animalsPerKg);
+                              if (totalAnimals > 0) {
+                                return (
+                                  <div className="flex flex-col items-center mr-3 border rounded-lg p-2 bg-blue-50">
+                                    <span className="text-xs text-gray-500 uppercase font-semibold">Animali</span>
+                                    <span className="text-lg font-bold text-blue-700">{totalAnimals.toLocaleString()}</span>
+                                  </div>
+                                );
+                              }
+                            }
+                            return null;
+                          })()}
+                          
+                          <Badge className="mr-2">
                             {cycleOps.length} operazioni
                           </Badge>
                           {expandedCycles.includes(cycleId) ? (
