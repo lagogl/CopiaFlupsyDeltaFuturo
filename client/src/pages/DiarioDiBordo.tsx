@@ -73,7 +73,10 @@ const createWhatsAppText = (data: any, date: Date) => {
     const basketNumber = op.basket_number || 'N/D';
     const animalCount = op.animal_count ? op.animal_count.toLocaleString('it-IT') : 'N/D';
     const animalsPerKg = op.animals_per_kg ? op.animals_per_kg.toLocaleString('it-IT') : 'N/D';
-    const sizeCode = op.size_code || 'N/D';
+    let sizeCode = op.size_code || 'N/D';
+    if (sizeCode === 'Non specificata') {
+      sizeCode = 'In attesa di misurazione';
+    }
     
     text += `${index + 1}. ${opTime} - ${getOperationTypeLabel(op.type)} - Cestello #${basketNumber} (${flupsyName})\n`;
     text += `   ${animalCount} animali (${animalsPerKg}/kg)`;
@@ -89,7 +92,8 @@ const createWhatsAppText = (data: any, date: Date) => {
   // Statistiche per taglia
   text += `📊 *RIEPILOGO PER TAGLIA*\n`;
   data.sizeStats.forEach((stat: any) => {
-    text += `${stat.taglia}: ${stat.entrate ? stat.entrate.toLocaleString('it-IT') : '0'} entrate, ${stat.uscite ? stat.uscite.toLocaleString('it-IT') : '0'} uscite\n`;
+    const tagliaMostrata = stat.taglia === 'Non specificata' ? 'In attesa di misurazione' : stat.taglia;
+    text += `${tagliaMostrata}: ${stat.entrate ? stat.entrate.toLocaleString('it-IT') : '0'} entrate, ${stat.uscite ? stat.uscite.toLocaleString('it-IT') : '0'} uscite\n`;
   });
   text += '\n';
   
@@ -102,7 +106,8 @@ const createWhatsAppText = (data: any, date: Date) => {
     if (data.giacenza.dettaglio_taglie && data.giacenza.dettaglio_taglie.length > 0) {
       text += `Dettaglio:\n`;
       data.giacenza.dettaglio_taglie.forEach((taglia: any) => {
-        text += `- ${taglia.taglia}: ${taglia.quantita.toLocaleString('it-IT')} animali\n`;
+        const tagliaMostrata = taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia;
+        text += `- ${tagliaMostrata}: ${taglia.quantita.toLocaleString('it-IT')} animali\n`;
       });
     }
     text += '\n';
@@ -156,7 +161,7 @@ const downloadCSV = (data: any, date: Date) => {
       op.flupsy_name || '',
       op.animal_count || '',
       op.animals_per_kg || '',
-      op.size_code || '',
+      (op.size_code === 'Non specificata' ? 'In attesa di misurazione' : op.size_code) || '',
       (op.notes || '').replace(/,/g, ';') // Sostituisce le virgole nelle note per evitare problemi CSV
     ];
     csvContent += row.join(',') + '\n';
@@ -402,7 +407,7 @@ export default function DiarioDiBordo() {
                             {sizeStats.map((stat: any, index: number) => (
                               <div key={index} className="p-3 border rounded-lg">
                                 <div className="flex justify-between items-center mb-2">
-                                  <Badge>{stat.taglia}</Badge>
+                                  <Badge>{stat.taglia === 'Non specificata' ? 'In attesa di misurazione' : stat.taglia}</Badge>
                                   <span className="text-sm text-muted-foreground">{stat.num_operazioni} operazioni</span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-4">
@@ -457,7 +462,7 @@ export default function DiarioDiBordo() {
                                       {giacenza.dettaglio_taglie && giacenza.dettaglio_taglie.length > 0 ? (
                                         giacenza.dettaglio_taglie.map((taglia, idx) => (
                                           <div key={idx} className="flex justify-between items-center">
-                                            <Badge variant="outline">{taglia.taglia}</Badge>
+                                            <Badge variant="outline">{taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia}</Badge>
                                             <span className="font-medium">{taglia.quantita.toLocaleString('it-IT')}</span>
                                           </div>
                                         ))
