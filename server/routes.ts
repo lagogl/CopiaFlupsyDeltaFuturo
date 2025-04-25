@@ -1597,7 +1597,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         WITH ops AS (
           SELECT 
             o.id, o.date, o.type, o.notes, o.basket_id, o.cycle_id, o.size_id, 
-            o.animal_count, o.animals_per_kg, o.created_at,
+            o.animal_count, o.animals_per_kg,
             b.physical_number AS basket_number, b.flupsy_id,
             f.name AS flupsy_name,
             CASE 
