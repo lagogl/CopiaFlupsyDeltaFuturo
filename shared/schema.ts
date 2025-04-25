@@ -2,6 +2,21 @@ import { pgTable, text, serial, integer, boolean, timestamp, real, date, numeric
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Configurazioni Email
+export const emailConfig = pgTable("email_config", {
+  id: serial("id").primaryKey(),
+  key: text("key").notNull().unique(),
+  value: text("value"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+});
+
+export const insertEmailConfigSchema = createInsertSchema(emailConfig)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertEmailConfig = z.infer<typeof insertEmailConfigSchema>;
+export type EmailConfig = typeof emailConfig.$inferSelect;
+
 // FLUPSY (Floating Upweller System)
 export const flupsys = pgTable("flupsys", {
   id: serial("id").primaryKey(),
