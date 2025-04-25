@@ -1592,18 +1592,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Query completa con join per ottenere tutti i dettagli delle operazioni per una data specifica
+      // e con gestione delle taglie ereditate dalle operazioni precedenti
       const operations = await db.execute(sql`
-        SELECT o.id, o.date, o.type, o.notes, o.basket_id, o.cycle_id, o.size_id, 
-              o.animal_count, o.animals_per_kg,
-              b.physical_number AS basket_number, b.flupsy_id,
-              f.name AS flupsy_name,
-              s.code AS size_code, s.name AS size_name
-        FROM operations o
-        LEFT JOIN baskets b ON o.basket_id = b.id
-        LEFT JOIN flupsys f ON b.flupsy_id = f.id
-        LEFT JOIN sizes s ON o.size_id = s.id
-        WHERE o.date::text = ${date}
-        ORDER BY o.id DESC
+        WITH ops AS (
+          SELECT 
+            o.id, o.date, o.type, o.notes, o.basket_id, o.cycle_id, o.size_id, 
+            o.animal_count, o.animals_per_kg, o.created_at,
+            b.physical_number AS basket_number, b.flupsy_id,
+            f.name AS flupsy_name,
+            CASE 
+              WHEN o.size_id IS NOT NULL THEN s.code
+              ELSE NULL
+            END AS direct_size_code,
+            s.name AS size_name
+          FROM operations o
+          LEFT JOIN baskets b ON o.basket_id = b.id
+          LEFT JOIN flupsys f ON b.flupsy_id = f.id
+          LEFT JOIN sizes s ON o.size_id = s.id
+          WHERE o.date::text = ${date}
+        )
+        SELECT 
+          ops.*,
+          COALESCE(
+            ops.direct_size_code,
+            (
+              SELECT s.code
+              FROM operations o
+              JOIN sizes s ON o.size_id = s.id
+              WHERE o.cycle_id = ops.cycle_id
+                AND o.date <= ops.date
+                AND o.size_id IS NOT NULL
+                AND o.id < ops.id
+              ORDER BY o.date DESC, o.id DESC
+              LIMIT 1
+            ),
+            'Non specificata'
+          ) AS size_code
+        FROM ops
+        ORDER BY ops.id DESC
       `);
       
       console.log('API operazioni per data - Risultati:', operations.length);

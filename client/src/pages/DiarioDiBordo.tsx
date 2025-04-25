@@ -34,6 +34,31 @@ const getOperationTypeLabel = (type: string) => {
     .join(' ');
 };
 
+// Assegna varianti di colore per tipo di operazione
+const getBadgeVariantForOperationType = (type: string): "default" | "secondary" | "destructive" | "outline" => {
+  switch (type) {
+    case 'prima-attivazione':
+    case 'prima-attivazione-da-vagliatura':
+      return "default"; // Blu
+    case 'pulizia':
+      return "secondary"; // Grigio
+    case 'vagliatura':
+      return "destructive"; // Rosso
+    case 'misura':
+    case 'peso':
+      return "outline"; // Nero bordo
+    case 'vendita':
+    case 'selezione-vendita':
+      return "destructive"; // Rosso
+    case 'cessazione':
+      return "destructive"; // Rosso
+    case 'selezione-origine':
+      return "outline"; // Nero bordo
+    default:
+      return "outline";
+  }
+};
+
 // Funzione per creare il testo formattato per WhatsApp
 const createWhatsAppText = (data: any, date: Date) => {
   const dateFormatted = format(date, 'dd MMMM yyyy', { locale: it });
@@ -302,7 +327,10 @@ export default function DiarioDiBordo() {
                       <Card key={op.id} className="p-4">
                         <div className="flex justify-between items-start mb-2">
                           <div className="flex items-center">
-                            <Badge className="mr-2" variant="outline">
+                            <Badge 
+                              className="mr-2" 
+                              variant={getBadgeVariantForOperationType(op.type)}
+                            >
                               {getOperationTypeLabel(op.type)}
                             </Badge>
                             <span className="text-sm text-muted-foreground flex items-center">
@@ -330,7 +358,14 @@ export default function DiarioDiBordo() {
                           </div>
                           <div>
                             <p className="text-xs text-muted-foreground">Taglia</p>
-                            <p className="font-medium">{op.size_code || 'N/D'}</p>
+                            <p className="font-medium">
+                              {op.size_code && op.size_code !== 'Non specificata' 
+                                ? op.size_code 
+                                : op.size_code === 'Non specificata' 
+                                  ? 'In attesa di misurazione' 
+                                  : 'In attesa di misurazione'
+                              }
+                            </p>
                           </div>
                         </div>
                         
