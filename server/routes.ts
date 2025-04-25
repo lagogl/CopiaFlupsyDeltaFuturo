@@ -14,8 +14,9 @@ import {
 // Importazione dei controller
 import * as SelectionController from "./controllers/selection-controller";
 import * as ScreeningController from "./controllers/screening-controller";
+import * as WhatsappController from "./controllers/whatsapp-controller";
 import { execFile } from 'child_process';
-import { format } from 'date-fns';
+import { format, subDays } from 'date-fns';
 import { 
   createDatabaseBackup, 
   restoreDatabaseFromBackup, 
@@ -4752,6 +4753,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   (global as any).broadcastUpdate = (type: string, data: any) => {
     broadcastMessage(type, data);
   };
+
+  // === Route per invio messaggi WhatsApp ===
+  // Endpoint per generare il testo del diario per WhatsApp
+  app.get("/api/whatsapp/diario", WhatsappController.generateWhatsAppDiario);
+  
+  // Endpoint per inviare un messaggio WhatsApp manualmente
+  app.post("/api/whatsapp/send", WhatsappController.sendWhatsAppMessage);
+  
+  // Endpoint per generare e inviare automaticamente il diario WhatsApp
+  app.get("/api/whatsapp/auto-send-diario", WhatsappController.autoSendWhatsAppDiario);
   
   return httpServer;
 }
