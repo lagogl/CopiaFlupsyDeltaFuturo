@@ -1478,49 +1478,61 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ error: 'Formato data non valido. Utilizzare YYYY-MM-DD' });
       }
       
-      // Calcolo della data precedente alla data richiesta
-      const dateParts = date.split('-');
-      const requestDate = new Date(parseInt(dateParts[0]), parseInt(dateParts[1]) - 1, parseInt(dateParts[2]));
-      requestDate.setDate(requestDate.getDate() - 1); // sottraiamo un giorno
+      // La data richiesta è la data per cui vogliamo calcolare la giacenza
+      const requestDate = date;
+      console.log('API giacenza - Calcolando animali nei cicli attivi alla data:', requestDate);
       
-      const prevDate = format(requestDate, 'yyyy-MM-dd');
-      console.log('API giacenza - Calcolata fino alla data:', prevDate);
-      
-      // Query per calcolare la giacenza fino alla data specificata (inclusa)
-      // Prende in considerazione solo prime attivazioni (escluse quelle da vagliatura) e vendite
+      // NUOVA LOGICA: Calcolare la giacenza basata sui cicli attivi alla data specificata
+      // e sull'ultimo conteggio di animali per ciascun ciclo attivo
       const giacenzaPerTaglia = await db.execute(sql`
-        WITH movimenti AS (
+        WITH cicli_attivi AS (
+          -- Seleziona i cicli che erano attivi alla data specificata
+          SELECT c.id AS cycle_id, c.basket_id
+          FROM cycles c
+          WHERE c.start_date <= ${requestDate}
+          AND (c.end_date IS NULL OR c.end_date > ${requestDate})
+          AND c.state = 'active'
+        ),
+        ultime_operazioni AS (
+          -- Per ogni ciclo attivo, trova l'ultima operazione con conteggio animali
           SELECT 
-            s.code as taglia,
-            SUM(
-              CASE 
-                WHEN o.type = 'prima-attivazione' THEN o.animal_count
-                WHEN o.type = 'vendita' THEN -o.animal_count
-                ELSE 0
-              END
-            ) as saldo_animali
+            o.cycle_id,
+            o.animal_count,
+            o.size_id,
+            s.code AS taglia,
+            o.date,
+            ROW_NUMBER() OVER (PARTITION BY o.cycle_id ORDER BY o.date DESC, o.id DESC) AS rn
           FROM operations o
           JOIN sizes s ON o.size_id = s.id
-          WHERE o.date <= ${prevDate}
-          AND o.type IN ('prima-attivazione', 'vendita')
-          AND o.type != 'prima-attivazione-da-vagliatura'
-          GROUP BY s.code
-          HAVING SUM(
-            CASE 
-              WHEN o.type = 'prima-attivazione' THEN o.animal_count
-              WHEN o.type = 'vendita' THEN -o.animal_count
-              ELSE 0
-            END
-          ) != 0
-          ORDER BY s.code
+          JOIN cicli_attivi ca ON o.cycle_id = ca.cycle_id
+          WHERE o.date <= ${requestDate}
+          AND o.animal_count IS NOT NULL
         )
-        SELECT * FROM movimenti
+        SELECT 
+          uo.taglia,
+          SUM(uo.animal_count) AS quantita
+        FROM ultime_operazioni uo
+        WHERE uo.rn = 1  -- Solo l'ultima operazione per ogni ciclo
+        GROUP BY uo.taglia
+        ORDER BY uo.taglia
       `);
+      
+      // Stampa i cicli attivi per debug
+      const cicliAttivi = await db.execute(sql`
+        SELECT c.id, c.basket_id, b.physical_number AS basket_number
+        FROM cycles c
+        JOIN baskets b ON c.basket_id = b.id
+        WHERE c.start_date <= ${requestDate}
+        AND (c.end_date IS NULL OR c.end_date > ${requestDate})
+        AND c.state = 'active'
+      `);
+      
+      console.log('Cicli attivi alla data specificata:', cicliAttivi);
       
       // Calcola il totale complessivo
       let totaleGiacenza = 0;
       const dettaglioTaglie = giacenzaPerTaglia.map(row => {
-        const quantita = parseInt(row.saldo_animali);
+        const quantita = parseInt(row.quantita);
         totaleGiacenza += quantita;
         return {
           taglia: row.taglia,
@@ -1533,7 +1545,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dettaglio_taglie: dettaglioTaglie
       };
       
-      console.log('API giacenza - Risultati:', risultato);
+      console.log('API giacenza - Risultati (NUOVA LOGICA):', risultato);
       
       return res.json(risultato);
     } catch (error) {
