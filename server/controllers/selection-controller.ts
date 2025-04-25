@@ -1450,10 +1450,10 @@ export async function completeSelection(req: Request, res: Response) {
         
         // Se non esiste un ciclo, lo creiamo ora
         if (existingCycles.length === 0) {
-          // Crea operazione di prima attivazione
+          // Crea operazione di prima attivazione da vagliatura
           const [operation] = await tx.insert(operations).values({
             date: selection[0].date,
-            type: 'prima-attivazione',
+            type: 'prima-attivazione-da-vagliatura',
             basketId: destBasket.basketId,
             cycleId: 0, // Placeholder, aggiornato dopo
             animalCount: destBasket.animalCount,
@@ -1465,7 +1465,7 @@ export async function completeSelection(req: Request, res: Response) {
             deadCount: destBasket.deadCount || 0,
             mortalityRate: destBasket.mortalityRate || 0,
             sizeId: actualSizeId,
-            notes: `Nuova cesta da vagliatura #${selection[0].selectionNumber}`
+            notes: `Aperto ciclo da vagliatura #${selection[0].selectionNumber}`
           }).returning();
           
           // Crea nuovo ciclo per la cesta
