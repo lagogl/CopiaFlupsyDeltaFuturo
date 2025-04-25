@@ -15,6 +15,7 @@ import {
 import * as SelectionController from "./controllers/selection-controller";
 import * as ScreeningController from "./controllers/screening-controller";
 import * as WhatsappController from "./controllers/whatsapp-controller";
+import * as EmailController from "./controllers/email-controller";
 import { execFile } from 'child_process';
 import { format, subDays } from 'date-fns';
 import { 
@@ -4763,6 +4764,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Endpoint per generare e inviare automaticamente il diario WhatsApp
   app.get("/api/whatsapp/auto-send-diario", WhatsappController.autoSendWhatsAppDiario);
+  
+  // === Route per invio email ===
+  // Endpoint per generare il contenuto email del diario
+  app.get("/api/email/diario", EmailController.generateEmailDiario);
+  
+  // Endpoint per inviare un'email manualmente
+  app.post("/api/email/send", EmailController.sendEmailDiario);
+  
+  // Endpoint per generare e inviare automaticamente un'email con il diario
+  app.get("/api/email/auto-send-diario", EmailController.autoSendEmailDiario);
   
   return httpServer;
 }
