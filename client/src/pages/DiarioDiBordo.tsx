@@ -206,6 +206,12 @@ export default function DiarioDiBordo() {
   const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false);
   const [emailDialogTab, setEmailDialogTab] = useState<string>('config');
   
+  // Stati per la configurazione automatica
+  const [autoSendEnabled, setAutoSendEnabled] = useState<boolean>(false);
+  const [scheduledTime, setScheduledTime] = useState<string>('18:00');
+  const [isLoadingConfig, setIsLoadingConfig] = useState<boolean>(false);
+  const [isSavingConfig, setIsSavingConfig] = useState<boolean>(false);
+  
   // Formatta la data per la query dell'API
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
   
