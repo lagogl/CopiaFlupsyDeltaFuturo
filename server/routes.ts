@@ -1504,11 +1504,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
             o.cycle_id,
             o.animal_count,
             o.size_id,
-            s.code AS taglia,
+            COALESCE(s.code, 'Non specificata') AS taglia,
             o.date,
+            o.id,
             ROW_NUMBER() OVER (PARTITION BY o.cycle_id ORDER BY o.date DESC, o.id DESC) AS rn
           FROM operations o
-          JOIN sizes s ON o.size_id = s.id
+          LEFT JOIN sizes s ON o.size_id = s.id  -- LEFT JOIN per includere operazioni senza taglia
           JOIN cicli_attivi ca ON o.cycle_id = ca.cycle_id
           WHERE o.date <= ${requestDate}
           AND o.animal_count IS NOT NULL
@@ -1538,6 +1539,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
       `);
       
       console.log('Cicli attivi alla data specificata:', cicliAttivi);
+      
+      // Otteniamo tutte le operazioni ordinate per ogni ciclo attivo, per scopi di debug
+      const allOperations = await db.execute(sql`
+        SELECT o.id, o.cycle_id, o.animal_count, o.size_id, o.date, o.type
+        FROM operations o
+        JOIN cycles c ON o.cycle_id = c.id
+        WHERE c.id = 3
+        AND o.date <= ${requestDate}
+        ORDER BY o.cycle_id, o.date, o.id
+      `);
+        
+      console.log('TUTTE LE OPERAZIONI DEL CICLO 3:', allOperations);
+      
+      // Debug: Stampa le operazioni che sarebbero selezionate per la giacenza
+      try {
+        const debugOperations = await db.execute(sql`
+          WITH cicli_attivi AS (
+            SELECT c.id AS cycle_id, c.basket_id
+            FROM cycles c
+            WHERE c.start_date <= ${requestDate}
+            AND (
+              (c.state = 'active' AND (c.end_date IS NULL OR c.end_date > ${requestDate}))
+              OR (c.state = 'closed' AND c.end_date = ${requestDate})
+            )
+          )
+          SELECT 
+            o.cycle_id,
+            o.id AS operation_id,
+            o.animal_count,
+            o.size_id,
+            COALESCE(s.code, 'Non specificata') AS taglia,
+            o.date,
+            o.type,
+            ROW_NUMBER() OVER (PARTITION BY o.cycle_id ORDER BY o.date DESC, o.id DESC) AS rn
+          FROM operations o
+          LEFT JOIN sizes s ON o.size_id = s.id
+          JOIN cicli_attivi ca ON o.cycle_id = ca.cycle_id
+          WHERE o.date <= ${requestDate}
+          AND o.animal_count IS NOT NULL
+          AND o.cycle_id = 3
+          ORDER BY o.date DESC, o.id DESC
+        `);
+        
+        console.log('DEBUG OPERAZIONI CICLO 3 PER LA GIACENZA:', debugOperations);
+      } catch (error) {
+        console.error('Errore nella query di debug:', error);
+      }
       
       // Calcola il totale complessivo
       let totaleGiacenza = 0;
