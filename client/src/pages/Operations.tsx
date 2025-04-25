@@ -1509,16 +1509,23 @@ export default function Operations() {
                             const lastOp = cycleOps.length > 0 ? cycleOps[cycleOps.length - 1] : null;
                             
                             // Se abbiamo un'ultima operazione con dati sugli animali
-                            if (lastOp && lastOp.animalsPerKg && lastOp.animalsCount) {
+                            if (lastOp && lastOp.animalsPerKg && lastOp.animalCount) {
                               return (
                                 <div className="flex flex-col items-center mr-3 border rounded-lg p-2 bg-blue-50">
                                   <span className="text-xs text-gray-500 uppercase font-semibold">Animali</span>
-                                  <span className="text-lg font-bold text-blue-700">{lastOp.animalsCount.toLocaleString()}</span>
+                                  <span className="text-lg font-bold text-blue-700">{lastOp.animalCount.toLocaleString()}</span>
                                 </div>
                               );
                             } else if (lastOp && lastOp.animalsPerKg) {
                               // Se non abbiamo il conteggio diretto ma abbiamo animali per kg e peso totale
-                              const totalAnimals = Math.round(lastOp.totalWeightKg * lastOp.animalsPerKg);
+                              // Verifichiamo se abbiamo il peso totale in kg o grammi
+                              let totalAnimals = 0;
+                              if (lastOp.totalWeightKg) {
+                                totalAnimals = Math.round(lastOp.totalWeightKg * lastOp.animalsPerKg);
+                              } else if (lastOp.totalWeight) {
+                                // Converto grammi in kg se totalWeight è in grammi
+                                totalAnimals = Math.round((lastOp.totalWeight / 1000) * lastOp.animalsPerKg);
+                              }
                               if (totalAnimals > 0) {
                                 return (
                                   <div className="flex flex-col items-center mr-3 border rounded-lg p-2 bg-blue-50">
