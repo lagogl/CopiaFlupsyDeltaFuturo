@@ -315,12 +315,24 @@ export default function DiarioDiBordo() {
       const result = await response.json();
       
       if (result.success) {
-        toast({
-          title: "Email inviata con successo",
-          description: "Il diario di bordo è stato inviato via email.",
-          variant: "default"
-        });
+        // Chiudiamo il dialogo
         setIsEmailDialogOpen(false);
+        
+        // In modalità simulazione, mostriamo un messaggio specifico
+        if (result.note && result.note.includes("simulata")) {
+          toast({
+            title: "Email simulata correttamente",
+            description: "In questa versione di test, l'email è stata simulata ma non inviata realmente. Il server ha registrato i dettagli dell'invio per verificare il funzionamento.",
+            variant: "default",
+            duration: 5000,
+          });
+        } else {
+          toast({
+            title: "Email inviata con successo",
+            description: "Il diario di bordo è stato inviato via email ai destinatari specificati.",
+            variant: "default"
+          });
+        }
       } else {
         throw new Error(result.error || "Errore durante l'invio dell'email");
       }

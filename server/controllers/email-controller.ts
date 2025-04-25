@@ -501,7 +501,15 @@ export async function sendEmailDiario(req: Request, res: Response) {
       success: true,
       message: "Email simulata inviata con successo",
       simulatedMessageId: messageId,
-      note: "L'email è stata simulata e non realmente inviata. Per inviare email reali, configurare nodemailer."
+      note: "⚠️ ATTENZIONE: L'email è stata solamente simulata (non inviata realmente). In produzione, configurare nodemailer per inviare email vere.",
+      emailPreview: {
+        from: `"Sistema FLUPSY" <${emailUser}>`,
+        to: toAddresses,
+        cc: ccAddresses,
+        subject: emailSubject,
+        textLength: text ? text.length : 0,
+        htmlLength: html ? html.length : 0
+      }
     });
     
   } catch (error) {
