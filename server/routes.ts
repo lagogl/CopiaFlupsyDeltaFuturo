@@ -1486,12 +1486,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // e sull'ultimo conteggio di animali per ciascun ciclo attivo
       const giacenzaPerTaglia = await db.execute(sql`
         WITH cicli_attivi AS (
-          -- Seleziona i cicli che erano attivi alla data specificata
+          -- Seleziona i cicli che erano attivi alla data specificata o chiusi nella data specificata
           SELECT c.id AS cycle_id, c.basket_id
           FROM cycles c
           WHERE c.start_date <= ${requestDate}
-          AND (c.end_date IS NULL OR c.end_date > ${requestDate})
-          AND c.state = 'active'
+          AND (
+            -- Ciclo attivo (senza data fine o data fine successiva)
+            (c.state = 'active' AND (c.end_date IS NULL OR c.end_date > ${requestDate}))
+            OR 
+            -- Ciclo chiuso esattamente nella data specificata (va considerato nella giacenza)
+            (c.state = 'closed' AND c.end_date = ${requestDate})
+          )
         ),
         ultime_operazioni AS (
           -- Per ogni ciclo attivo, trova l'ultima operazione con conteggio animali
@@ -1517,14 +1522,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
         ORDER BY uo.taglia
       `);
       
-      // Stampa i cicli attivi per debug
+      // Stampa i cicli attivi per debug (include anche i cicli chiusi nella data specificata)
       const cicliAttivi = await db.execute(sql`
-        SELECT c.id, c.basket_id, b.physical_number AS basket_number
+        SELECT c.id, c.basket_id, b.physical_number AS basket_number, c.state, c.end_date
         FROM cycles c
         JOIN baskets b ON c.basket_id = b.id
         WHERE c.start_date <= ${requestDate}
-        AND (c.end_date IS NULL OR c.end_date > ${requestDate})
-        AND c.state = 'active'
+        AND (
+          -- Ciclo attivo (senza data fine o data fine successiva)
+          (c.state = 'active' AND (c.end_date IS NULL OR c.end_date > ${requestDate}))
+          OR 
+          -- Ciclo chiuso esattamente nella data specificata (va considerato nella giacenza)
+          (c.state = 'closed' AND c.end_date = ${requestDate})
+        )
       `);
       
       console.log('Cicli attivi alla data specificata:', cicliAttivi);
