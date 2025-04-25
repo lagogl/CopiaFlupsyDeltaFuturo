@@ -15,9 +15,8 @@ interface EmailConfig {
   auto_email_enabled: string;
 }
 
-// Utilizziamo l'API https per inviare email direttamente
+// Utilizziamo l'API https per inviare email direttamente con SendGrid
 import * as https from 'https';
-import * as querystring from 'querystring';
 
 // Definizioni per la funzionalità di pianificazione
 interface CronTask {
@@ -42,48 +41,127 @@ interface Transporter {
   sendMail: (options: MailOptions) => Promise<any>;
 }
 
-// Factory per creare trasportatori di email
-const createGmailTransporter = (user: string, password: string): Transporter => {
+// Factory per creare trasportatori di email con SendGrid
+const createSendGridTransporter = (apiKey: string): Transporter => {
   return {
     sendMail: async (options: MailOptions): Promise<any> => {
       try {
-        console.log(`Tentativo di invio email reale da: ${user} a: ${options.to}`);
+        // Preparazione dei destinatari nel formato richiesto da SendGrid
+        const toEmails = Array.isArray(options.to) 
+          ? options.to.map(email => ({ email })) 
+          : [{ email: options.to }];
         
-        // Impostiamo correttamente gli array di destinatari
-        const toEmails = Array.isArray(options.to) ? options.to.join(',') : options.to;
-        const ccEmails = options.cc ? (Array.isArray(options.cc) ? options.cc.join(',') : options.cc) : '';
+        const ccEmails = options.cc 
+          ? (Array.isArray(options.cc) 
+              ? options.cc.map(email => ({ email })) 
+              : [{ email: options.cc }]) 
+          : [];
         
-        // Prepariamo l'oggetto per la richiesta HTTP
-        const body = JSON.stringify({
-          action: "send_email",
-          sender: user,
-          password: password,
-          to: toEmails,
-          cc: ccEmails,
-          subject: options.subject,
-          text_content: options.text || '',
-          html_content: options.html || '',
-        });
+        // Estrai nome e email dal formato "Nome <email@esempio.com>"
+        let fromName = '';
+        let fromEmail = '';
         
-        // Simuliamo un invio email fino a quando non avremo accesso all'API Gmail
-        console.log('==== INVIO EMAIL DIRETTO ====');
+        const fromMatch = options.from.match(/"([^"]*)"\s+<([^>]*)>/);
+        if (fromMatch) {
+          fromName = fromMatch[1];
+          fromEmail = fromMatch[2];
+        } else {
+          fromEmail = options.from;
+        }
+        
+        // Preparazione del payload per l'API SendGrid
+        const data = {
+          personalizations: [
+            {
+              to: toEmails,
+              cc: ccEmails.length > 0 ? ccEmails : undefined,
+              subject: options.subject
+            }
+          ],
+          from: {
+            email: fromEmail,
+            name: fromName || 'Sistema FLUPSY'
+          },
+          content: [
+            {
+              type: 'text/plain',
+              value: options.text || ''
+            }
+          ]
+        };
+        
+        // Se è presente contenuto HTML, aggiungiamolo
+        if (options.html) {
+          data.content.push({
+            type: 'text/html',
+            value: options.html
+          });
+        }
+        
+        // Registro informazioni sulla richiesta
+        console.log('==== INVIO EMAIL VIA SENDGRID ====');
         console.log(`Da: ${options.from}`);
-        console.log(`A: ${options.to}`);
-        if (options.cc) console.log(`CC: ${options.cc}`);
+        console.log(`A: ${Array.isArray(options.to) ? options.to.join(', ') : options.to}`);
+        if (options.cc) console.log(`CC: ${Array.isArray(options.cc) ? options.cc.join(', ') : options.cc}`);
         console.log(`Oggetto: ${options.subject}`);
-        console.log('Contenuto di testo: disponibile');
-        console.log('Contenuto HTML: disponibile');
         console.log('================================================');
         
-        // Indichiamo che questa è una email reale, non simulata
-        console.log("✓ EMAIL INVIATA REALMENTE ALL'INDIRIZZO CONFIGURATO");
-        console.log("✓ Controllare la cartella Inbox per confermare la ricezione");
+        // Creazione della promessa per fare la richiesta HTTP
+        return new Promise((resolve, reject) => {
+          // Preparazione dei dati da inviare
+          const postData = JSON.stringify(data);
+          
+          // Opzioni per la richiesta HTTP
+          const requestOptions = {
+            hostname: 'api.sendgrid.com',
+            port: 443,
+            path: '/v3/mail/send',
+            method: 'POST',
+            headers: {
+              'Authorization': `Bearer ${apiKey}`,
+              'Content-Type': 'application/json',
+              'Content-Length': Buffer.byteLength(postData)
+            }
+          };
+          
+          // Creazione della richiesta HTTP
+          const req = https.request(requestOptions, (res) => {
+            let responseData = '';
+            
+            // Ricezione dati dalla risposta
+            res.on('data', (chunk) => {
+              responseData += chunk;
+            });
+            
+            // Completamento della richiesta
+            res.on('end', () => {
+              if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
+                console.log('✓ EMAIL INVIATA CORRETTAMENTE VIA SENDGRID');
+                console.log(`✓ Status: ${res.statusCode}`);
+                resolve({
+                  messageId: `sendgrid-${Date.now()}`,
+                  success: true,
+                  response: res.statusCode
+                });
+              } else {
+                console.error(`Errore SendGrid: ${res.statusCode}`);
+                console.error(`Risposta: ${responseData}`);
+                reject(new Error(`SendGrid response error: ${res.statusCode} - ${responseData}`));
+              }
+            });
+          });
+          
+          // Gestione errori nella richiesta
+          req.on('error', (error) => {
+            console.error('Errore nella richiesta SendGrid:', error);
+            reject(error);
+          });
+          
+          // Invio dei dati
+          req.write(postData);
+          req.end();
+        });
         
-        return { 
-          messageId: 'real-message-id-' + Date.now(),
-          success: true,
-          info: 'Email inviata correttamente'
-        };
       } catch (error) {
         console.error('Errore durante l\'invio email:', error);
         throw error;
@@ -133,14 +211,19 @@ const simpleCron: CronScheduler = {
   }
 };
 
-// Esportiamo le implementazioni
+// Struttura per nodemailer compatibilità
 const nodemailer = {
   createTransport: (config: any) => {
-    if (config.auth && config.auth.user && config.auth.pass) {
-      return createGmailTransporter(config.auth.user, config.auth.pass);
+    // Verifica se possiamo usare SendGrid
+    const sendgridApiKey = process.env.SENDGRID_API_KEY;
+    
+    if (sendgridApiKey) {
+      console.log('Utilizzo SendGrid per invio email');
+      return createSendGridTransporter(sendgridApiKey);
     }
     
     // Fallback a simulazione se non ci sono credenziali
+    console.log('ATTENZIONE: API Key SendGrid non trovata. Modalità simulazione attiva.');
     return {
       sendMail: async (options: any) => {
         console.log('==== SIMULAZIONE INVIO EMAIL ====');
@@ -215,6 +298,24 @@ async function getEmailConfig() {
 
 // Funzione per creare un trasportatore reale di nodemailer
 function createRealTransporter() {
+  // Verifica se è disponibile SendGrid
+  const sendgridApiKey = process.env.SENDGRID_API_KEY;
+  
+  if (sendgridApiKey) {
+    console.log('Creazione trasportatore email con SendGrid');
+    
+    try {
+      // Crea trasportatore con SendGrid
+      return nodemailer.createTransport({
+        sendgridApiKey
+      });
+    } catch (error) {
+      console.error('Errore nella creazione del trasportatore SendGrid:', error);
+      return null;
+    }
+  }
+  
+  // Fallback all'email utente/password tradizionale
   const emailUser = process.env.EMAIL_USER;
   const emailPassword = process.env.EMAIL_PASSWORD;
   
@@ -225,7 +326,7 @@ function createRealTransporter() {
   
   // Se abbiamo le credenziali, creiamo un trasportatore reale
   try {
-    console.log(`Creazione trasportatore email reale per: ${emailUser}`);
+    console.log(`Creazione trasportatore email basato su SMTP per: ${emailUser}`);
     
     // Impostazioni ottimizzate per Gmail
     const transporterConfig = {
@@ -249,9 +350,8 @@ function createRealTransporter() {
       }
     };
     
-    console.log('Configurando trasportatore con impostazioni ottimizzate per Gmail...');
-    console.log('NOTA: Se riscontri problemi, verifica che l\'account Gmail consenta accesso app meno sicure o usa password app');
-    console.log(`      o verifica che esista un file ".env" con EMAIL_USER e EMAIL_PASSWORD`);
+    console.log('Configurando trasportatore con impostazioni ottimizzate per SMTP...');
+    console.log('NOTA: Si raccomanda l\'uso di SendGrid per affidabilità; Gmail potrebbe bloccare l\'invio');
     
     return nodemailer.createTransport(transporterConfig);
   } catch (error) {
