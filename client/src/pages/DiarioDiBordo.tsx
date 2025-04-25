@@ -69,9 +69,9 @@ const createWhatsAppText = (data: any, date: Date) => {
   });
   text += '\n';
   
-  // Giacenza precedente
+  // Giacenza alla data corrente
   if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
-    text += `📈 *GIACENZA AL ${datePrecedente.toUpperCase()}*\n`;
+    text += `📈 *GIACENZA AL ${dateFormatted.toUpperCase()}*\n`;
     text += `Totale: ${data.giacenza.totale_giacenza.toLocaleString('it-IT')} animali\n`;
     
     // Dettaglio giacenza per taglia
@@ -206,7 +206,7 @@ export default function DiarioDiBordo() {
     enabled: !!formattedDate
   });
   
-  // Carica la giacenza al giorno precedente
+  // Carica la giacenza alla data selezionata
   const { data: giacenza, isLoading: isLoadingGiacenza } = useQuery({
     queryKey: ['/api/diario/giacenza', formattedDate],
     queryFn: async () => {
@@ -403,11 +403,11 @@ export default function DiarioDiBordo() {
                       <CardContent className="p-4 pt-0">
                         {totals ? (
                           <div className="space-y-6">
-                            {/* Giacenza Precedente */}
+                            {/* Giacenza alla data corrente */}
                             {!isLoadingGiacenza && giacenza && (
                               <div className="border rounded-lg p-4 bg-blue-50">
                                 <h3 className="text-md font-semibold mb-3">
-                                  Giacenza al {format(new Date(selectedDate.getTime() - 86400000), 'dd/MM/yyyy', { locale: it })}
+                                  Giacenza al {format(selectedDate, 'dd/MM/yyyy', { locale: it })}
                                 </h3>
                                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                                   <div className="p-3 border rounded-lg bg-white">
