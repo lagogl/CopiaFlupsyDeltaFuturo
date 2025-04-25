@@ -3,7 +3,17 @@ import { format, subDays, parse, parseISO } from "date-fns";
 import { it } from "date-fns/locale";
 import { db } from "../db";
 import { sql, eq, and } from "drizzle-orm";
-import { emailConfig } from "../shared/schema";
+
+// Importiamo il modello dalla tabella emailConfig
+import { emailConfig } from "@shared/schema";
+
+// Definizioni delle route API per email
+interface EmailConfig {
+  email_recipients: string;
+  email_cc: string;
+  email_send_time: string;
+  auto_email_enabled: string;
+}
 
 // Tentativo di importare nodemailer e node-cron
 let nodemailer: any;
@@ -44,6 +54,61 @@ try {
       return { start: () => console.log('Simulazione avvio scheduler') };
     }
   };
+}
+
+/**
+ * Salva o aggiorna le configurazioni email nel database
+ * @param configData Dati di configurazione da salvare
+ */
+async function saveEmailConfig(configData: Record<string, string>) {
+  try {
+    // Per ogni coppia chiave-valore, aggiorna il database
+    for (const [key, value] of Object.entries(configData)) {
+      // Controlla se la configurazione esiste già
+      const existing = await db.select().from(emailConfig)
+        .where(eq(emailConfig.key, key));
+      
+      if (existing.length > 0) {
+        // Aggiorna la configurazione esistente
+        await db.update(emailConfig)
+          .set({ 
+            value: value,
+            updatedAt: new Date()
+          })
+          .where(eq(emailConfig.key, key));
+      } else {
+        // Inserisci nuova configurazione
+        await db.insert(emailConfig).values({
+          key: key,
+          value: value
+        });
+      }
+    }
+    
+    return true;
+  } catch (error) {
+    console.error('Errore nel salvataggio della configurazione email:', error);
+    return false;
+  }
+}
+
+/**
+ * Ottiene le configurazioni email dal database
+ */
+async function getEmailConfig() {
+  try {
+    const configs = await db.select().from(emailConfig);
+    const result: Record<string, string> = {};
+    
+    configs.forEach(config => {
+      result[config.key] = config.value || '';
+    });
+    
+    return result;
+  } catch (error) {
+    console.error('Errore nel recupero della configurazione email:', error);
+    return {};
+  }
 }
 
 // Funzione per creare un trasportatore reale di nodemailer
@@ -539,47 +604,155 @@ export async function sendEmailDiario(req: Request, res: Response) {
       });
     }
     
-    // Crea il trasportatore per l'invio email (simulato)
-    const transporter = nodemailer.createTransport();
+    // Crea il trasportatore per l'invio email
+    // Prima prova a creare un trasportatore reale, altrimenti usa la simulazione
+    const transporter = createRealTransporter() || nodemailer.createTransport();
     
     // Prepara le opzioni dell'email
     const toAddresses = Array.isArray(to) ? to.join(', ') : to;
     const ccAddresses = cc ? (Array.isArray(cc) ? cc.join(', ') : cc) : undefined;
     const emailSubject = subject || `Diario di Bordo FLUPSY - ${format(new Date(), 'dd/MM/yyyy', { locale: it })}`;
-    // Utilizza direttamente le informazioni per il log
     
-    console.log('===== SIMULAZIONE INVIO EMAIL =====');
-    console.log(`DA: "Sistema FLUPSY" <${emailUser}>`);
-    console.log(`A: ${toAddresses}`);
-    if (ccAddresses) console.log(`CC: ${ccAddresses}`);
-    console.log(`OGGETTO: ${emailSubject}`);
-    console.log('CONTENUTO PLAINTEXT:');
-    console.log(text || "Il contenuto del diario non è stato fornito.");
-    console.log('==================================');
+    // Costruisci il messaggio email
+    const mailOptions = {
+      from: `"Sistema FLUPSY" <${emailUser}>`,
+      to: toAddresses,
+      cc: ccAddresses,
+      subject: emailSubject,
+      text: text || "Il contenuto del diario non è stato fornito.",
+      html: html || `<p>${text || "Il contenuto del diario non è stato fornito."}</p>`
+    };
     
-    // Simula l'invio e genera un ID messaggio fittizio
-    const messageId = 'simulated-message-id-' + Date.now();
+    // Tentativo di invio email
+    console.log(`Tentativo di invio email a: ${toAddresses}`);
+    const info = await transporter.sendMail(mailOptions);
+    
+    // Salva i destinatari come predefiniti nel database per usi futuri
+    try {
+      const saveDest = Array.isArray(to) ? to.join(',') : String(to);
+      const saveCC = cc ? (Array.isArray(cc) ? cc.join(',') : String(cc)) : '';
+      
+      await saveEmailConfig({
+        'email_recipients': saveDest,
+        'email_cc': saveCC
+      });
+      
+      console.log('Configurazione email salvata nel database');
+    } catch (saveError) {
+      console.error('Errore nel salvare le configurazioni email:', saveError);
+      // Continuiamo comunque anche se il salvataggio fallisce
+    }
+    
+    // Determina se è stata inviata realmente o simulata
+    const isSimulated = !('service' in transporter || 'host' in transporter);
     
     return res.status(200).json({
       success: true,
-      message: "Email simulata inviata con successo",
-      simulatedMessageId: messageId,
-      note: "⚠️ ATTENZIONE: L'email è stata solamente simulata (non inviata realmente). In produzione, configurare nodemailer per inviare email vere.",
+      message: isSimulated ? "Email simulata inviata con successo" : "Email inviata con successo",
+      messageId: info.messageId,
+      note: isSimulated ? "L'email è stata simulata per test" : undefined,
       emailPreview: {
         from: `"Sistema FLUPSY" <${emailUser}>`,
         to: toAddresses,
         cc: ccAddresses,
         subject: emailSubject,
-        textLength: text ? text.length : 0,
-        htmlLength: html ? html.length : 0
+        sent: !isSimulated
       }
     });
     
   } catch (error) {
-    console.error("Errore nella simulazione dell'invio dell'email:", error);
+    console.error("Errore nell'invio email:", error);
     return res.status(500).json({
       success: false,
-      error: `Errore nella simulazione dell'invio dell'email: ${error instanceof Error ? error.message : String(error)}`
+      error: `Errore nell'invio email: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}
+
+/**
+ * Gestisce il salvataggio della configurazione email
+ */
+export async function saveEmailConfiguration(req: Request, res: Response) {
+  try {
+    const { 
+      recipients, 
+      cc, 
+      sendTime, 
+      autoEnabled 
+    } = req.body;
+    
+    if (!recipients) {
+      return res.status(400).json({
+        success: false,
+        error: "I destinatari (recipients) sono obbligatori."
+      });
+    }
+    
+    // Controlla che il formato dell'orario sia valido (HH:MM)
+    if (sendTime && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(sendTime)) {
+      return res.status(400).json({
+        success: false,
+        error: "Il formato dell'orario deve essere HH:MM (es. 20:00)"
+      });
+    }
+    
+    // Salva la configurazione
+    const configData: Record<string, string> = {};
+    
+    if (recipients) configData.email_recipients = recipients;
+    if (cc !== undefined) configData.email_cc = cc;
+    if (sendTime) configData.email_send_time = sendTime;
+    if (autoEnabled !== undefined) configData.auto_email_enabled = autoEnabled ? 'true' : 'false';
+    
+    const saved = await saveEmailConfig(configData);
+    
+    if (!saved) {
+      return res.status(500).json({
+        success: false,
+        error: "Errore nel salvare la configurazione email"
+      });
+    }
+    
+    return res.status(200).json({
+      success: true,
+      message: "Configurazione email salvata con successo",
+      config: configData
+    });
+    
+  } catch (error) {
+    console.error("Errore nel salvare la configurazione email:", error);
+    return res.status(500).json({
+      success: false,
+      error: `Errore nel salvare la configurazione email: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}
+
+/**
+ * Recupera la configurazione email corrente
+ */
+export async function getEmailConfiguration(req: Request, res: Response) {
+  try {
+    const config = await getEmailConfig();
+    
+    // Prepara la risposta
+    const response = {
+      recipients: config.email_recipients || '',
+      cc: config.email_cc || '',
+      sendTime: config.email_send_time || '20:00',
+      autoEnabled: config.auto_email_enabled === 'true'
+    };
+    
+    return res.status(200).json({
+      success: true,
+      config: response
+    });
+    
+  } catch (error) {
+    console.error("Errore nel recuperare la configurazione email:", error);
+    return res.status(500).json({
+      success: false,
+      error: `Errore nel recuperare la configurazione email: ${error instanceof Error ? error.message : String(error)}`
     });
   }
 }
@@ -588,6 +761,76 @@ export async function sendEmailDiario(req: Request, res: Response) {
  * Genera e invia automaticamente il diario via email per la data specificata
  * (o per ieri se non specificato)
  */
+/**
+ * Inizializza la pianificazione dell'invio automatico email
+ * Da chiamare all'avvio del server
+ */
+export async function initializeEmailScheduler() {
+  try {
+    console.log("Inizializzazione del sistema di pianificazione email...");
+    
+    // Recupera la configurazione dal database
+    const config = await getEmailConfig();
+    
+    // Verifica se l'invio automatico è abilitato
+    if (config.auto_email_enabled !== 'true') {
+      console.log("Invio automatico email disabilitato nelle impostazioni");
+      return;
+    }
+    
+    // Verifica se ci sono destinatari configurati
+    if (!config.email_recipients) {
+      console.log("Nessun destinatario configurato per l'invio automatico email");
+      return;
+    }
+    
+    // Ottieni l'orario di invio (default: 20:00)
+    const sendTime = config.email_send_time || '20:00';
+    const [hours, minutes] = sendTime.split(':').map(num => parseInt(num, 10));
+    
+    // Crea l'espressione cron per l'orario specificato
+    const cronExpression = `${minutes} ${hours} * * *`;  // Minuti Ore * * * (ogni giorno all'orario specificato)
+    
+    console.log(`Configurazione della pianificazione email: ${cronExpression} (${sendTime})`);
+    
+    // Pianifica l'invio automatico
+    const emailScheduler = nodeCron.schedule(cronExpression, async () => {
+      console.log(`Esecuzione invio automatico email pianificato (${format(new Date(), 'yyyy-MM-dd HH:mm:ss')})`);
+      
+      try {
+        // Prepara la richiesta per l'invio automatico
+        const autoReq = { 
+          query: { 
+            date: format(subDays(new Date(), 1), 'yyyy-MM-dd') 
+          }
+        } as unknown as Request;
+        
+        const autoRes = {
+          status: (code: number) => ({
+            json: (data: any) => {
+              console.log(`Risultato invio automatico: ${code === 200 ? 'Successo' : 'Errore'}`);
+              return autoRes;
+            }
+          })
+        } as unknown as Response;
+        
+        // Invoca la funzione di invio automatico
+        await autoSendEmailDiario(autoReq, autoRes);
+        
+      } catch (error) {
+        console.error("Errore durante l'invio automatico pianificato:", error);
+      }
+    });
+    
+    // Avvia lo scheduler
+    emailScheduler.start();
+    console.log("Pianificazione dell'invio email avviata con successo");
+    
+  } catch (error) {
+    console.error("Errore nell'inizializzazione dello scheduler email:", error);
+  }
+}
+
 export async function autoSendEmailDiario(req: Request, res: Response) {
   try {
     // Usa la data di ieri per default, o la data fornita
