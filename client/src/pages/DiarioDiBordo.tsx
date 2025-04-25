@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Calendar, Download, Share, Filter, Clock, Mail } from 'lucide-react';
+import { Calendar, Download, Share, Filter, Clock, Mail, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -14,6 +14,7 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
+import { Textarea } from "@/components/ui/textarea";
 
 // Mappa dei tipi di operazione alle loro etichette in italiano
 const operationLabels: Record<string, string> = {
@@ -197,6 +198,14 @@ export default function DiarioDiBordo() {
   const [whatsAppText, setWhatsAppText] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('diario');
   
+  // Stati per il dialogo di invio email
+  const [isEmailDialogOpen, setIsEmailDialogOpen] = useState<boolean>(false);
+  const [emailRecipients, setEmailRecipients] = useState<string>('');
+  const [emailCC, setEmailCC] = useState<string>('');
+  const [emailSubject, setEmailSubject] = useState<string>('');
+  const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false);
+  const [emailDialogTab, setEmailDialogTab] = useState<string>('config');
+  
   // Formatta la data per la query dell'API
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
   
@@ -271,9 +280,159 @@ export default function DiarioDiBordo() {
   // Determina lo stato di caricamento generale
   const isLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza;
   
+  // Funzione per inviare l'email
+  const sendEmail = async () => {
+    if (!emailRecipients.trim()) {
+      toast({
+        title: "Destinatario obbligatorio",
+        description: "Devi specificare almeno un indirizzo email come destinatario.",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    setIsSendingEmail(true);
+    
+    try {
+      // Prepara i dati per l'email
+      const emailData = {
+        to: emailRecipients.split(',').map(email => email.trim()),
+        cc: emailCC ? emailCC.split(',').map(email => email.trim()) : undefined,
+        subject: emailSubject || `Diario di Bordo FLUPSY - ${format(selectedDate, 'dd/MM/yyyy', { locale: it })}`,
+        text: whatsAppText,
+        html: `<pre style="font-family: monospace;">${whatsAppText.replace(/\n/g, '<br>').replace(/\*/g, '<strong>').replace(/\*/g, '</strong>')}</pre>`
+      };
+      
+      // Invia l'email tramite l'API
+      const response = await fetch('/api/email/send-diario', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(emailData)
+      });
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: "Email inviata con successo",
+          description: "Il diario di bordo è stato inviato via email.",
+          variant: "default"
+        });
+        setIsEmailDialogOpen(false);
+      } else {
+        throw new Error(result.error || "Errore durante l'invio dell'email");
+      }
+    } catch (error) {
+      console.error("Errore nell'invio email:", error);
+      toast({
+        title: "Errore nell'invio dell'email",
+        description: error instanceof Error ? error.message : "Si è verificato un errore imprevisto",
+        variant: "destructive"
+      });
+    } finally {
+      setIsSendingEmail(false);
+    }
+  };
+
   return (
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold tracking-tight mb-4">Diario di Bordo</h1>
+      
+      <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Invia Diario di Bordo via Email</DialogTitle>
+            <DialogDescription>
+              Inserisci gli indirizzi email dei destinatari e personalizza l'oggetto dell'email.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Tabs value={emailDialogTab} onValueChange={setEmailDialogTab}>
+            <TabsList className="grid w-full grid-cols-2">
+              <TabsTrigger value="config">Configurazione</TabsTrigger>
+              <TabsTrigger value="preview">Anteprima</TabsTrigger>
+            </TabsList>
+            
+            <TabsContent value="config" className="space-y-4 py-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="email-to">Destinatari (obbligatorio)</Label>
+                  <Input 
+                    id="email-to" 
+                    placeholder="email@esempio.com, altro@esempio.com" 
+                    value={emailRecipients}
+                    onChange={(e) => setEmailRecipients(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">Separare più indirizzi con virgole</p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email-cc">CC (opzionale)</Label>
+                  <Input 
+                    id="email-cc" 
+                    placeholder="cc@esempio.com, altro-cc@esempio.com" 
+                    value={emailCC}
+                    onChange={(e) => setEmailCC(e.target.value)}
+                  />
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="email-subject">Oggetto (opzionale)</Label>
+                  <Input 
+                    id="email-subject" 
+                    placeholder={`Diario di Bordo FLUPSY - ${format(selectedDate, 'dd/MM/yyyy', { locale: it })}`}
+                    value={emailSubject}
+                    onChange={(e) => setEmailSubject(e.target.value)}
+                  />
+                </div>
+              </div>
+            </TabsContent>
+            
+            <TabsContent value="preview">
+              <div className="border rounded-lg p-4 my-4 max-h-[300px] overflow-y-auto">
+                <div className="mb-4 p-2 bg-gray-100 rounded">
+                  <p><strong>Da:</strong> Sistema FLUPSY</p>
+                  <p><strong>A:</strong> {emailRecipients || "[Nessun destinatario specificato]"}</p>
+                  {emailCC && <p><strong>CC:</strong> {emailCC}</p>}
+                  <p><strong>Oggetto:</strong> {emailSubject || `Diario di Bordo FLUPSY - ${format(selectedDate, 'dd/MM/yyyy', { locale: it })}`}</p>
+                </div>
+                <div className="whitespace-pre-wrap font-mono text-sm">
+                  {whatsAppText}
+                </div>
+              </div>
+            </TabsContent>
+          </Tabs>
+          
+          <DialogFooter>
+            <Button 
+              type="button" 
+              variant="outline" 
+              onClick={() => setIsEmailDialogOpen(false)}
+            >
+              Annulla
+            </Button>
+            <Button 
+              type="button" 
+              onClick={sendEmail}
+              disabled={isSendingEmail}
+            >
+              {isSendingEmail ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Invio in corso...
+                </>
+              ) : (
+                <>
+                  <Mail className="mr-2 h-4 w-4" />
+                  Invia Email
+                </>
+              )}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
       
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
         <Card className="md:col-span-3">
@@ -309,6 +468,15 @@ export default function DiarioDiBordo() {
                 >
                   <Share className="h-4 w-4 mr-2" />
                   WhatsApp
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => setIsEmailDialogOpen(true)}
+                  title="Invia via Email"
+                >
+                  <Mail className="h-4 w-4 mr-2" />
+                  Email
                 </Button>
               </div>
             </div>
