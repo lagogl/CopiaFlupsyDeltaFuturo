@@ -1505,7 +1505,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             o.id AS operation_id,
             o.animal_count,
             o.size_id,
-            COALESCE(s.code, 'Non specificata') AS taglia,
+            s.code AS taglia,
             o.date,
             o.type
           FROM operations o
@@ -1520,14 +1520,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
             to.*,
             ROW_NUMBER() OVER (PARTITION BY to.cycle_id ORDER BY to.date DESC, to.operation_id DESC) AS rn
           FROM tutte_operazioni to
+        ),
+        -- Per le operazioni che non hanno una taglia specificata, prendi la taglia dall'operazione precedente nello stesso ciclo
+        operazioni_con_taglia AS (
+          SELECT
+            uo.cycle_id,
+            uo.operation_id,
+            uo.animal_count,
+            -- Se la taglia è NULL, cerca di trovare la taglia dall'operazione precedente con taglia specificata nello stesso ciclo
+            COALESCE(
+              uo.taglia,
+              (
+                SELECT prev_op.taglia
+                FROM tutte_operazioni prev_op
+                WHERE prev_op.cycle_id = uo.cycle_id
+                  AND prev_op.operation_id < uo.operation_id
+                  AND prev_op.taglia IS NOT NULL
+                ORDER BY prev_op.date DESC, prev_op.operation_id DESC
+                LIMIT 1
+              ),
+              'Non specificata'  -- Se non c'è una taglia precedente, usa 'Non specificata'
+            ) AS taglia
+          FROM ultime_operazioni uo
+          WHERE uo.rn = 1  -- Solo l'ultima operazione per ogni ciclo
         )
         SELECT 
-          uo.taglia,
-          SUM(uo.animal_count) AS quantita
-        FROM ultime_operazioni uo
-        WHERE uo.rn = 1  -- Solo l'ultima operazione per ogni ciclo
-        GROUP BY uo.taglia
-        ORDER BY uo.taglia
+          COALESCE(oct.taglia, 'Non specificata') AS taglia,
+          SUM(oct.animal_count) AS quantita
+        FROM operazioni_con_taglia oct
+        GROUP BY oct.taglia
+        ORDER BY oct.taglia
       `);
       
       // Stampa i cicli attivi per debug (include anche i cicli chiusi nella data specificata)
