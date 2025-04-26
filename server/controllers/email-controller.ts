@@ -548,37 +548,69 @@ function formatEmailHtml(data: any, date: Date): string {
   // Aggiunta di informazioni sulle operazioni
   if (data.operations && data.operations.length > 0) {
     html += `
-      <div style="margin: 15px 0; padding: 10px; background-color: #fff7ed; border-radius: 5px;">
-        <h2 style="color: #c2410c; margin-top: 0;">OPERAZIONI DEL GIORNO (${data.operations.length})</h2>
-        <table style="width: 100%; border-collapse: collapse;">
+      <div style="margin: 15px 0; padding: 15px; background-color: #fff7ed; border-radius: 5px; border: 1px solid #fed7aa;">
+        <h2 style="color: #c2410c; margin-top: 0; display: flex; align-items: center;">
+          <span style="margin-right: 10px;">📋</span> OPERAZIONI DEL GIORNO (${data.operations.length})
+        </h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <thead>
-            <tr>
-              <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">#</th>
-              <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Tipo</th>
-              <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Cestello</th>
-              <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">FLUPSY</th>
-              <th style="text-align: right; padding: 8px; border-bottom: 1px solid #ddd;">Animali</th>
-              <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Taglia</th>
+            <tr style="background-color: #ffedd5;">
+              <th style="text-align: center; padding: 10px; border: 1px solid #fed7aa;">#</th>
+              <th style="text-align: center; padding: 10px; border: 1px solid #fed7aa;">Data</th>
+              <th style="text-align: left; padding: 10px; border: 1px solid #fed7aa;">Operazione</th>
+              <th style="text-align: center; padding: 10px; border: 1px solid #fed7aa;">Cestello</th>
+              <th style="text-align: center; padding: 10px; border: 1px solid #fed7aa;">Ciclo</th>
+              <th style="text-align: left; padding: 10px; border: 1px solid #fed7aa;">FLUPSY</th>
+              <th style="text-align: right; padding: 10px; border: 1px solid #fed7aa;">Animali</th>
+              <th style="text-align: center; padding: 10px; border: 1px solid #fed7aa;">Taglia</th>
             </tr>
           </thead>
           <tbody>
     `;
     
     data.operations.forEach((op: any, idx: number) => {
+      const operationDate = op.date ? format(new Date(op.date), 'dd/MM', { locale: it }) : '-';
       const tipo = op.type.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-      const cestello = op.basket_number || '';
-      const flupsy = op.flupsy_name || '';
-      const taglia = op.size_code === 'Non specificata' ? 'In attesa di misurazione' : op.size_code || 'Senza taglia';
+      const cestello = op.basket_number || '-';
+      const ciclo = op.cycle_id || '-';
+      const flupsy = op.flupsy_name || '-';
+      const animali = op.animal_count ? op.animal_count.toLocaleString('it-IT') : '0';
+      const animaliPerKg = op.animals_per_kg ? `(${op.animals_per_kg.toLocaleString('it-IT')}/kg)` : '';
+      const taglia = op.size_code === 'Non specificata' ? 'In attesa di misurazione' : op.size_code || '-';
+      const note = op.notes || '';
+      
+      // Definisci colori in base al tipo di operazione
+      let operationColor = '#000000';
+      if (op.type.includes('prima-attivazione')) operationColor = '#047857'; // verde
+      else if (op.type.includes('vendita')) operationColor = '#b91c1c'; // rosso
+      else if (op.type.includes('vagliatura')) operationColor = '#0369a1'; // blu
+      else if (op.type.includes('cessazione')) operationColor = '#7c2d12'; // marrone
+      else if (op.type.includes('selezione')) operationColor = '#6d28d9'; // viola
       
       html += `
-        <tr>
-          <td style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">${idx + 1}</td>
-          <td style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">${tipo}</td>
-          <td style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">${cestello}</td>
-          <td style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">${flupsy}</td>
-          <td style="text-align: right; padding: 8px; border-bottom: 1px solid #eee;">${op.animal_count || 0}</td>
-          <td style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">${taglia}</td>
+        <tr style="background-color: ${idx % 2 === 0 ? '#fff7ed' : '#ffffff'};">
+          <td style="text-align: center; padding: 8px; border: 1px solid #fed7aa;">${idx + 1}</td>
+          <td style="text-align: center; padding: 8px; border: 1px solid #fed7aa;">${operationDate}</td>
+          <td style="text-align: left; padding: 8px; border: 1px solid #fed7aa; font-weight: bold; color: ${operationColor};">${tipo}</td>
+          <td style="text-align: center; padding: 8px; border: 1px solid #fed7aa;">#${cestello}</td>
+          <td style="text-align: center; padding: 8px; border: 1px solid #fed7aa;">${ciclo}</td>
+          <td style="text-align: left; padding: 8px; border: 1px solid #fed7aa;">${flupsy}</td>
+          <td style="text-align: right; padding: 8px; border: 1px solid #fed7aa;">
+            <span style="font-weight: bold;">${animali}</span>
+            <span style="font-size: 12px; color: #666;">${animaliPerKg}</span>
+          </td>
+          <td style="text-align: center; padding: 8px; border: 1px solid #fed7aa;">
+            <span style="display: inline-block; padding: 2px 5px; background-color: #e0f2fe; border-radius: 3px; font-size: 12px;">${taglia}</span>
+          </td>
         </tr>
+        ${note ? `
+        <tr style="background-color: ${idx % 2 === 0 ? '#fff7ed' : '#ffffff'};">
+          <td style="border: 1px solid #fed7aa;"></td>
+          <td colspan="7" style="text-align: left; padding: 4px 8px; border: 1px solid #fed7aa; font-style: italic; font-size: 12px; color: #666;">
+            Note: ${note}
+          </td>
+        </tr>
+        ` : ''}
       `;
     });
     
