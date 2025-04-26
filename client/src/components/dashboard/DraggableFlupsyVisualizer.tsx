@@ -747,7 +747,7 @@ export default function DraggableFlupsyVisualizer() {
               <div className="mb-2 font-semibold flex items-center">
                 <Wind className="h-4 w-4 mr-1" /> Lato DX
               </div>
-              <div className={`grid grid-cols-${Math.min(5, positionsPerRow)} md:grid-cols-${positionsPerRow} gap-2`} style={{ 
+              <div className="grid gap-2" style={{ 
                 gridTemplateColumns: `repeat(${positionsPerRow}, minmax(0, 1fr))` 
               }}>
                 {positions.map(position => {
@@ -762,7 +762,7 @@ export default function DraggableFlupsyVisualizer() {
               <div className="mb-2 font-semibold flex items-center">
                 <Wind className="h-4 w-4 mr-1" /> Lato SX
               </div>
-              <div className={`grid grid-cols-${Math.min(5, positionsPerRow)} md:grid-cols-${positionsPerRow} gap-2`} style={{ 
+              <div className="grid gap-2" style={{ 
                 gridTemplateColumns: `repeat(${positionsPerRow}, minmax(0, 1fr))` 
               }}>
                 {positions.map(position => {
