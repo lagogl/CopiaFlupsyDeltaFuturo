@@ -435,93 +435,139 @@ function formatEmailHtml(data: any, date: Date): string {
   const dateFormatted = format(date, 'dd/MM/yyyy', { locale: it });
   
   let html = `
-    <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
+    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
       <h1 style="color: #2563eb; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">
-        DIARIO DI BORDO - ${dateFormatted}
+        📊 DIARIO DI BORDO - ${dateFormatted}
       </h1>
   `;
   
   // Giacenza alla data corrente
   if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
     html += `
-      <div style="margin: 15px 0; padding: 10px; background-color: #f0f9ff; border-radius: 5px;">
-        <h2 style="color: #0369a1; margin-top: 0;">GIACENZA AL ${dateFormatted.toUpperCase()}</h2>
-        <p style="font-size: 18px; font-weight: bold; color: #1e40af;">
+      <div style="margin: 15px 0; padding: 15px; background-color: #f0f9ff; border-radius: 5px; border: 1px solid #bae6fd;">
+        <h2 style="color: #0369a1; margin-top: 0; display: flex; align-items: center;">
+          <span style="margin-right: 10px;">📈</span> GIACENZA AL ${dateFormatted.toUpperCase()}
+        </h2>
+        
+        <div style="font-size: 18px; font-weight: bold; color: #1e40af; margin-bottom: 15px; background-color: #e0f2fe; padding: 10px; border-radius: 5px; text-align: center;">
           Totale: ${data.giacenza.totale_giacenza.toLocaleString('it-IT')} animali
-        </p>
+        </div>
     `;
     
     // Dettaglio giacenza per taglia
     if (data.giacenza.dettaglio_taglie && data.giacenza.dettaglio_taglie.length > 0) {
-      html += `<div style="margin-top: 10px;"><strong>Dettaglio:</strong>`;
-      html += `<ul style="list-style-type: none; padding-left: 10px;">`;
+      html += `
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <thead>
+            <tr style="background-color: #e0f2fe;">
+              <th style="text-align: left; padding: 8px; border: 1px solid #bae6fd;">Taglia</th>
+              <th style="text-align: right; padding: 8px; border: 1px solid #bae6fd;">Quantità</th>
+              <th style="text-align: right; padding: 8px; border: 1px solid #bae6fd;">% del Totale</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
       data.giacenza.dettaglio_taglie.forEach((taglia: any) => {
         const tagliaMostrata = taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia;
-        html += `<li style="margin: 5px 0; display: flex; justify-content: space-between;">
-          <span style="display: inline-block; padding: 2px 5px; background-color: #e0f2fe; border-radius: 3px;">${tagliaMostrata}</span>
-          <span style="font-weight: bold;">${taglia.quantita.toLocaleString('it-IT')}</span>
-        </li>`;
+        const percentuale = (taglia.quantita / data.giacenza.totale_giacenza * 100).toFixed(1);
+        
+        html += `
+          <tr>
+            <td style="text-align: left; padding: 8px; border: 1px solid #bae6fd;">
+              <span style="display: inline-block; padding: 2px 5px; background-color: #dbeafe; border-radius: 3px;">${tagliaMostrata}</span>
+            </td>
+            <td style="text-align: right; padding: 8px; border: 1px solid #bae6fd; font-weight: bold;">
+              ${taglia.quantita.toLocaleString('it-IT')}
+            </td>
+            <td style="text-align: right; padding: 8px; border: 1px solid #bae6fd;">
+              ${percentuale}%
+            </td>
+          </tr>
+        `;
       });
-      html += `</ul></div>`;
+      
+      html += `
+          </tbody>
+        </table>
+      `;
     }
     
     html += `</div>`;
   }
   
-  // Bilancio giornata
+  // Bilancio giornata e finale
   html += `
-    <div style="margin: 15px 0; display: flex; flex-wrap: wrap; gap: 10px;">
-      <div style="flex: 1; min-width: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-        <h3 style="margin-top: 0; color: #666; font-size: 14px;">Entrate</h3>
-        <p style="margin-bottom: 0; font-size: 18px; font-weight: bold; color: #059669;">
-          ${data.totals.totale_entrate ? data.totals.totale_entrate.toLocaleString('it-IT') : '0'}
-        </p>
+    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin: 15px 0;">
+      <div style="flex: 1; min-width: 300px; padding: 15px; background-color: #f1f5f9; border-radius: 5px; border: 1px solid #cbd5e1;">
+        <h2 style="color: #475569; margin-top: 0; display: flex; align-items: center;">
+          <span style="margin-right: 10px;">🧮</span> BILANCIO GIORNALIERO
+        </h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #cbd5e1;">Entrate:</td>
+            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #cbd5e1; font-weight: bold; color: #059669;">
+              ${data.totals.totale_entrate ? data.totals.totale_entrate.toLocaleString('it-IT') : '0'} animali
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #cbd5e1;">Uscite:</td>
+            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #cbd5e1; font-weight: bold; color: #dc2626;">
+              ${data.totals.totale_uscite ? data.totals.totale_uscite.toLocaleString('it-IT') : '0'} animali
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px; border-bottom: 1px solid #cbd5e1;">Bilancio netto:</td>
+            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #cbd5e1; font-weight: bold; color: ${(data.totals.bilancio_netto || 0) >= 0 ? '#059669' : '#dc2626'};">
+              ${data.totals.bilancio_netto ? data.totals.bilancio_netto.toLocaleString('it-IT') : '0'} animali
+            </td>
+          </tr>
+          <tr>
+            <td style="padding: 8px;">Totale operazioni:</td>
+            <td style="text-align: right; padding: 8px; font-weight: bold;">
+              ${data.totals.numero_operazioni}
+            </td>
+          </tr>
+        </table>
       </div>
-      <div style="flex: 1; min-width: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-        <h3 style="margin-top: 0; color: #666; font-size: 14px;">Uscite</h3>
-        <p style="margin-bottom: 0; font-size: 18px; font-weight: bold; color: #dc2626;">
-          ${data.totals.totale_uscite ? data.totals.totale_uscite.toLocaleString('it-IT') : '0'}
-        </p>
-      </div>
-      <div style="flex: 1; min-width: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-        <h3 style="margin-top: 0; color: #666; font-size: 14px;">Bilancio Netto</h3>
-        <p style="margin-bottom: 0; font-size: 18px; font-weight: bold; color: ${(data.totals.bilancio_netto || 0) >= 0 ? '#059669' : '#dc2626'};">
-          ${data.totals.bilancio_netto ? data.totals.bilancio_netto.toLocaleString('it-IT') : '0'}
-        </p>
-      </div>
-      <div style="flex: 1; min-width: 120px; padding: 10px; border: 1px solid #ddd; border-radius: 5px;">
-        <h3 style="margin-top: 0; color: #666; font-size: 14px;">N° Operazioni</h3>
-        <p style="margin-bottom: 0; font-size: 18px; font-weight: bold;">
-          ${data.totals.numero_operazioni}
-        </p>
-      </div>
-    </div>
   `;
   
   // Bilancio finale
   if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
     const bilancioFinale = data.giacenza.totale_giacenza + (parseInt(data.totals.bilancio_netto) || 0);
     html += `
-      <div style="margin: 15px 0; padding: 10px; background-color: #f0fdf4; border-radius: 5px; border-top: 1px solid #ddd;">
-        <h3 style="margin-top: 0; color: #666; font-size: 14px;">Bilancio Finale (Giacenza + Bilancio Netto)</h3>
-        <p style="margin-bottom: 0; font-size: 20px; font-weight: bold; color: #15803d;">
-          ${bilancioFinale.toLocaleString('it-IT')} animali
-        </p>
+      <div style="flex: 1; min-width: 300px; padding: 15px; background-color: #f0fdf4; border-radius: 5px; border: 1px solid #bbf7d0;">
+        <h2 style="color: #166534; margin-top: 0; display: flex; align-items: center;">
+          <span style="margin-right: 10px;">🏁</span> BILANCIO FINALE
+        </h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
+          <tr>
+            <td style="padding: 8px;">Giacenza + Bilancio netto:</td>
+            <td style="text-align: right; padding: 8px; font-size: 18px; font-weight: bold; color: #15803d;">
+              ${bilancioFinale.toLocaleString('it-IT')} animali
+            </td>
+          </tr>
+        </table>
       </div>
     `;
   }
+  
+  html += `</div>`;
 
   // Se ci sono statistiche per taglia, aggiungiamole
   if (data.sizeStats && data.sizeStats.length > 0) {
     html += `
-      <div style="margin: 15px 0; padding: 10px; background-color: #f5f3ff; border-radius: 5px;">
-        <h2 style="color: #6d28d9; margin-top: 0;">STATISTICHE PER TAGLIA</h2>
-        <table style="width: 100%; border-collapse: collapse;">
+      <div style="margin: 15px 0; padding: 15px; background-color: #f5f3ff; border-radius: 5px; border: 1px solid #ddd4fe;">
+        <h2 style="color: #6d28d9; margin-top: 0; display: flex; align-items: center;">
+          <span style="margin-right: 10px;">📊</span> RIEPILOGO PER TAGLIA
+        </h2>
+        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
           <thead>
-            <tr>
-              <th style="text-align: left; padding: 8px; border-bottom: 1px solid #ddd;">Taglia</th>
-              <th style="text-align: right; padding: 8px; border-bottom: 1px solid #ddd;">Entrate</th>
-              <th style="text-align: right; padding: 8px; border-bottom: 1px solid #ddd;">Uscite</th>
+            <tr style="background-color: #ede9fe;">
+              <th style="text-align: left; padding: 10px; border: 1px solid #ddd4fe;">Taglia</th>
+              <th style="text-align: right; padding: 10px; border: 1px solid #ddd4fe;">Entrate</th>
+              <th style="text-align: right; padding: 10px; border: 1px solid #ddd4fe;">Uscite</th>
+              <th style="text-align: right; padding: 10px; border: 1px solid #ddd4fe;">Bilancio</th>
             </tr>
           </thead>
           <tbody>
@@ -529,11 +575,18 @@ function formatEmailHtml(data: any, date: Date): string {
     
     data.sizeStats.forEach((stat: any) => {
       const tagliaMostrata = stat.taglia === 'Non specificata' ? 'In attesa di misurazione' : stat.taglia;
+      const entrate = stat.entrate || 0;
+      const uscite = stat.uscite || 0;
+      const bilancio = entrate - uscite;
+      
       html += `
         <tr>
-          <td style="text-align: left; padding: 8px; border-bottom: 1px solid #eee;">${tagliaMostrata}</td>
-          <td style="text-align: right; padding: 8px; border-bottom: 1px solid #eee; color: #059669;">${stat.entrate || 0}</td>
-          <td style="text-align: right; padding: 8px; border-bottom: 1px solid #eee; color: #dc2626;">${stat.uscite || 0}</td>
+          <td style="text-align: left; padding: 8px; border: 1px solid #ddd4fe; font-weight: bold;">${tagliaMostrata}</td>
+          <td style="text-align: right; padding: 8px; border: 1px solid #ddd4fe; color: #059669;">${entrate.toLocaleString('it-IT')}</td>
+          <td style="text-align: right; padding: 8px; border: 1px solid #ddd4fe; color: #dc2626;">${uscite.toLocaleString('it-IT')}</td>
+          <td style="text-align: right; padding: 8px; border: 1px solid #ddd4fe; font-weight: bold; color: ${bilancio >= 0 ? '#059669' : '#dc2626'};">
+            ${bilancio.toLocaleString('it-IT')}
+          </td>
         </tr>
       `;
     });
