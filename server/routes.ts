@@ -2769,6 +2769,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to create FLUPSY" });
     }
   });
+  
+  // Update an existing FLUPSY
+  app.patch("/api/flupsys/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid FLUPSY ID" });
+      }
+      
+      // Check if the FLUPSY exists
+      const flupsy = await storage.getFlupsy(id);
+      if (!flupsy) {
+        return res.status(404).json({ message: "FLUPSY not found" });
+      }
+      
+      // Validate the update data
+      const updateData = req.body;
+      
+      // If name is being updated, check for uniqueness
+      if (updateData.name && updateData.name !== flupsy.name) {
+        const existingFlupsy = await storage.getFlupsyByName(updateData.name);
+        if (existingFlupsy && existingFlupsy.id !== id) {
+          return res.status(400).json({ message: "A FLUPSY with this name already exists" });
+        }
+      }
+      
+      // Update the FLUPSY
+      const updatedFlupsy = await storage.updateFlupsy(id, updateData);
+      
+      // Broadcast update if WebSocket is configured
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('flupsy_updated', {
+          flupsy: updatedFlupsy,
+          message: `FLUPSY ${updatedFlupsy.name} aggiornato`
+        });
+      }
+      
+      res.json(updatedFlupsy);
+    } catch (error) {
+      console.error("Error updating FLUPSY:", error);
+      res.status(500).json({ message: "Failed to update FLUPSY" });
+    }
+  });
 
   app.get("/api/flupsys/:id/baskets", async (req, res) => {
     try {
