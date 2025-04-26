@@ -373,6 +373,9 @@ export default function Lots() {
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
             <DialogTitle>Crea Nuovo Lotto</DialogTitle>
+            <DialogDescription>
+              Inserisci i dettagli per creare un nuovo lotto
+            </DialogDescription>
           </DialogHeader>
           <LotForm 
             onSubmit={(data) => createLotMutation.mutate(data)} 
@@ -387,6 +390,9 @@ export default function Lots() {
           <DialogContent className="sm:max-w-[500px]">
             <DialogHeader>
               <DialogTitle>Modifica Lotto #{selectedLot.id}</DialogTitle>
+              <DialogDescription>
+                Modifica i dettagli del lotto selezionato
+              </DialogDescription>
             </DialogHeader>
             <LotForm 
               onSubmit={(data) => {
@@ -416,6 +422,9 @@ export default function Lots() {
           <DialogContent className="sm:max-w-[550px]">
             <DialogHeader>
               <DialogTitle>Dettagli Lotto #{selectedLot.id}</DialogTitle>
+              <DialogDescription>
+                Visualizzazione dettagliata delle informazioni del lotto
+              </DialogDescription>
             </DialogHeader>
             <div className="space-y-4">
               <div className="grid grid-cols-2 gap-4">
