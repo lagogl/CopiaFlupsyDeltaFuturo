@@ -262,6 +262,27 @@ export function implementDirectOperationRoute(app: Express) {
           
           console.log("Operazione creata con successo:", newOperation[0]);
           
+          // 1.1 Crea notifica per operazione di vendita se è di tipo vendita
+          if (operationData.type === 'vendita' && app.locals.createSaleNotification) {
+            try {
+              console.log("Creazione notifica per operazione di vendita...");
+              app.locals.createSaleNotification(newOperation[0].id)
+                .then((notification) => {
+                  if (notification) {
+                    console.log("Notifica di vendita creata con successo:", notification.id);
+                  } else {
+                    console.log("Nessuna notifica creata");
+                  }
+                })
+                .catch((notificationError) => {
+                  console.error("Errore nella creazione della notifica di vendita:", notificationError);
+                });
+            } catch (notificationError) {
+              console.error("Errore durante la creazione della notifica di vendita:", notificationError);
+              // Continuiamo con l'operazione anche se la creazione della notifica fallisce
+            }
+          }
+          
           // 2. Chiudi il ciclo
           console.log("Chiusura ciclo...");
           const updatedCycle = await tx.update(cycles)
