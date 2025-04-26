@@ -396,11 +396,9 @@ export default function Flupsys() {
                       <span className="font-semibold text-blue-600 dark:text-blue-400">Posizione:</span> {flupsy.location}
                     </div>
                   )}
-                  {flupsy.productionCenter && (
-                    <div className="text-sm">
-                      <span className="font-semibold text-green-600 dark:text-green-400">Centro:</span> {flupsy.productionCenter}
-                    </div>
-                  )}
+                  <div className="text-sm">
+                    <span className="font-semibold text-green-600 dark:text-green-400">Centro:</span> {flupsy.productionCenter || 'Non specificato'}
+                  </div>
                 </div>
               </CardHeader>
               <CardContent>
