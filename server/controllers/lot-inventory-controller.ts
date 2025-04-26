@@ -94,7 +94,9 @@ export async function recordMortalityCalculation(req: Request, res: Response) {
       req.body.notes
     );
     
-    console.log(`Registrato calcolo mortalità per lotto ${lotId}: ${(mortalityRecord.mortality_percentage).toFixed(2)}%`);
+    // Assicuriamoci che il valore sia un numero prima di chiamare toFixed
+    const mortalityPercentage = parseFloat(String(mortalityRecord.mortality_percentage || 0));
+    console.log(`Registrato calcolo mortalità per lotto ${lotId}: ${mortalityPercentage.toFixed(2)}%`);
     
     return res.status(201).json({
       success: true,
