@@ -429,7 +429,31 @@ export default function Lots() {
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-gray-500">Qualità</h4>
-                  <p>{selectedLot.quality || '-'}</p>
+                  <p>
+                    {selectedLot.quality ? (
+                      <span className="flex items-center">
+                        {selectedLot.quality === 'teste' && (
+                          <span>
+                            <span className="mr-1">Teste/Head</span>
+                            <span className="text-yellow-500">★★★</span>
+                          </span>
+                        )}
+                        {selectedLot.quality === 'normali' && (
+                          <span>
+                            <span className="mr-1">Normali/Normal</span>
+                            <span className="text-yellow-500">★★</span>
+                          </span>
+                        )}
+                        {selectedLot.quality === 'code' && (
+                          <span>
+                            <span className="mr-1">Code/Codes</span>
+                            <span className="text-yellow-500">★</span>
+                          </span>
+                        )}
+                        {!['teste', 'normali', 'code'].includes(selectedLot.quality) && selectedLot.quality}
+                      </span>
+                    ) : '-'}
+                  </p>
                 </div>
                 <div>
                   <h4 className="font-medium text-sm text-gray-500">Taglia</h4>
