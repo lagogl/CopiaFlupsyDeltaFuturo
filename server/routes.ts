@@ -2578,6 +2578,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update lot" });
     }
   });
+  
+  app.delete("/api/lots/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid lot ID" });
+      }
+
+      // Check if the lot exists
+      const lot = await storage.getLot(id);
+      if (!lot) {
+        return res.status(404).json({ message: "Lot not found" });
+      }
+      
+      // Prima di eliminare il lotto, si potrebbe verificare che non sia usato in cestini attivi
+      // ...
+
+      // Elimina il lotto
+      const result = await storage.deleteLot(id);
+      if (result) {
+        res.status(200).json({ success: true, message: "Lot deleted successfully" });
+      } else {
+        res.status(500).json({ success: false, message: "Failed to delete lot" });
+      }
+    } catch (error) {
+      console.error("Error deleting lot:", error);
+      res.status(500).json({ message: "Failed to delete lot" });
+    }
+  });
 
   // Endpoint per le proiezioni di crescita
   app.get("/api/growth-prediction", async (req, res) => {

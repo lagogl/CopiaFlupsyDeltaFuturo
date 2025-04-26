@@ -115,6 +115,7 @@ export interface IStorage {
   getLot(id: number): Promise<Lot | undefined>;
   createLot(lot: InsertLot): Promise<Lot>;
   updateLot(id: number, lot: Partial<Lot>): Promise<Lot | undefined>;
+  deleteLot(id: number): Promise<boolean>;
   
   // Basket position history methods
   getBasketPositionHistory(basketId: number): Promise<BasketPositionHistory[]>;
@@ -712,6 +713,15 @@ export class MemStorage implements IStorage {
     const updatedLot = { ...currentLot, ...lot };
     this.lots.set(id, updatedLot);
     return updatedLot;
+  }
+  
+  async deleteLot(id: number): Promise<boolean> {
+    // Verifica se il lotto esiste
+    if (!this.lots.has(id)) return false;
+    
+    // Verifica se il lotto è usato in qualche operazione attiva prima di eliminarlo
+    // Per ora lo eliminiamo semplicemente
+    return this.lots.delete(id);
   }
   
   // Basket position history methods
