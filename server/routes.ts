@@ -10,6 +10,14 @@ import {
   selectionSourceBaskets,
   selectionDestinationBaskets
 } from "../shared/schema";
+import { 
+  getNotificationSettings, 
+  getNotificationSettingByType, 
+  updateNotificationSetting
+} from "./controllers/notification-settings-controller";
+import { 
+  checkCyclesForTP3000 
+} from "./controllers/growth-notification-handler";
 
 // Importazione dei controller
 import * as SelectionController from "./controllers/selection-controller";
@@ -4786,6 +4794,85 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/notifications", NotificationController.createNotification);
   app.put("/api/notifications/:id/read", NotificationController.markNotificationAsRead);
   app.put("/api/notifications/read-all", NotificationController.markAllNotificationsAsRead);
+  
+  // === Route per gestione impostazioni notifiche ===
+  // Ottieni tutte le impostazioni di notifica
+  app.get("/api/notification-settings", async (req, res) => {
+    try {
+      const settings = await getNotificationSettings();
+      return res.json({ success: true, settings });
+    } catch (error) {
+      console.error("Errore durante il recupero delle impostazioni di notifica:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Errore durante il recupero delle impostazioni di notifica" 
+      });
+    }
+  });
+
+  // Ottieni un'impostazione specifica
+  app.get("/api/notification-settings/:type", async (req, res) => {
+    try {
+      const { type } = req.params;
+      const setting = await getNotificationSettingByType(type);
+      
+      if (!setting) {
+        return res.json({ 
+          success: true, 
+          setting: { notificationType: type, isEnabled: true }  // Default se non esiste
+        });
+      }
+      
+      return res.json({ success: true, setting });
+    } catch (error) {
+      console.error(`Errore durante il recupero dell'impostazione "${req.params.type}":`, error);
+      return res.status(500).json({ 
+        success: false, 
+        message: `Errore durante il recupero dell'impostazione "${req.params.type}"` 
+      });
+    }
+  });
+
+  // Aggiorna un'impostazione
+  app.put("/api/notification-settings/:type", async (req, res) => {
+    try {
+      const { type } = req.params;
+      const { isEnabled } = req.body;
+      
+      if (typeof isEnabled !== 'boolean') {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Il parametro 'isEnabled' deve essere un booleano" 
+        });
+      }
+      
+      const updated = await updateNotificationSetting(type, isEnabled);
+      return res.json({ success: true, setting: updated });
+    } catch (error) {
+      console.error(`Errore durante l'aggiornamento dell'impostazione "${req.params.type}":`, error);
+      return res.status(500).json({ 
+        success: false, 
+        message: `Errore durante l'aggiornamento dell'impostazione "${req.params.type}"` 
+      });
+    }
+  });
+  
+  // Esegui controllo manuale per cicli che hanno raggiunto TP-3000
+  app.post("/api/check-growth-notifications", async (req, res) => {
+    try {
+      const notificationsCreated = await checkCyclesForTP3000();
+      return res.json({ 
+        success: true, 
+        message: `Check completato, create ${notificationsCreated} notifiche` 
+      });
+    } catch (error) {
+      console.error("Errore durante il controllo delle notifiche di crescita:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Errore durante il controllo delle notifiche di crescita" 
+      });
+    }
+  });
   
   return httpServer;
 }

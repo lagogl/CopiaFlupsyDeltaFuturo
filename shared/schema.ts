@@ -564,3 +564,18 @@ export const insertNotificationSchema = createInsertSchema(notifications)
 
 export type InsertNotification = z.infer<typeof insertNotificationSchema>;
 export type Notification = typeof notifications.$inferSelect;
+
+// Impostazioni per le notifiche
+export const notificationSettings = pgTable("notification_settings", {
+  id: serial("id").primaryKey(),
+  notificationType: text("notification_type").notNull(), // 'vendita', 'accrescimento', etc.
+  isEnabled: boolean("is_enabled").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+});
+
+export const insertNotificationSettingsSchema = createInsertSchema(notificationSettings)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type InsertNotificationSettings = z.infer<typeof insertNotificationSettingsSchema>;
+export type NotificationSettings = typeof notificationSettings.$inferSelect;

@@ -71,6 +71,60 @@ app.use((req, res, next) => {
       console.error('Errore durante l\'inizializzazione dello scheduler email:', err);
     }
   });
+  
+  // Importa il controller per le notifiche di crescita
+  import('./controllers/growth-notification-handler').then(GrowthNotificationHandler => {
+    try {
+      // Esegui un controllo iniziale
+      GrowthNotificationHandler.checkCyclesForTP3000()
+        .then(count => {
+          console.log(`Controllo iniziale notifiche accrescimento completato: create ${count} notifiche`);
+        })
+        .catch(err => {
+          console.error('Errore durante il controllo notifiche accrescimento:', err);
+        });
+      
+      // Imposta un timer giornaliero (esegue il controllo a mezzanotte)
+      const setupDailyCheck = () => {
+        const now = new Date();
+        const nextMidnight = new Date(now);
+        nextMidnight.setDate(now.getDate() + 1);
+        nextMidnight.setHours(0, 0, 0, 0);
+        
+        const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+        
+        // Imposta il timeout per il primo controllo a mezzanotte
+        setTimeout(() => {
+          // Esegui il controllo
+          GrowthNotificationHandler.checkCyclesForTP3000()
+            .then(count => {
+              console.log(`Controllo giornaliero notifiche accrescimento completato: create ${count} notifiche`);
+            })
+            .catch(err => {
+              console.error('Errore durante il controllo giornaliero notifiche accrescimento:', err);
+            });
+          
+          // Imposta il controllo per tutti i giorni successivi (ogni 24 ore)
+          setInterval(() => {
+            GrowthNotificationHandler.checkCyclesForTP3000()
+              .then(count => {
+                console.log(`Controllo giornaliero notifiche accrescimento completato: create ${count} notifiche`);
+              })
+              .catch(err => {
+                console.error('Errore durante il controllo giornaliero notifiche accrescimento:', err);
+              });
+          }, 24 * 60 * 60 * 1000); // 24 ore in millisecondi
+        }, msUntilMidnight);
+        
+        console.log(`Timer per controllo notifiche accrescimento impostato, prossima esecuzione: ${nextMidnight.toLocaleString()}`);
+      };
+      
+      // Avvia il timer
+      setupDailyCheck();
+    } catch (err) {
+      console.error('Errore durante l\'inizializzazione dello scheduler notifiche accrescimento:', err);
+    }
+  });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
