@@ -256,6 +256,100 @@ export default function Flupsys() {
         </Dialog>
       </div>
 
+      {/* Edit FLUPSY Dialog */}
+      <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
+        <DialogContent className="sm:max-w-[550px]">
+          {editingFlupsy && (
+            <form onSubmit={handleEditSubmit}>
+              <DialogHeader>
+                <DialogTitle>Modifica Unità FLUPSY</DialogTitle>
+                <DialogDescription>
+                  Modifica i dettagli dell'unità FLUPSY {editingFlupsy.name}.
+                </DialogDescription>
+              </DialogHeader>
+              <div className="grid gap-4 py-4">
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-name" className="text-right">
+                    Nome*
+                  </Label>
+                  <Input
+                    id="edit-name"
+                    name="name"
+                    value={editingFlupsy.name}
+                    onChange={handleEditChange}
+                    className="col-span-3"
+                    required
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-location" className="text-right">
+                    Posizione
+                  </Label>
+                  <Input
+                    id="edit-location"
+                    name="location"
+                    value={editingFlupsy.location || ''}
+                    onChange={handleEditChange}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-description" className="text-right">
+                    Descrizione
+                  </Label>
+                  <Textarea
+                    id="edit-description"
+                    name="description"
+                    value={editingFlupsy.description || ''}
+                    onChange={handleEditChange}
+                    className="col-span-3"
+                    rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-maxPositions" className="text-right">
+                    Posizioni max
+                  </Label>
+                  <Input
+                    id="edit-maxPositions"
+                    name="maxPositions"
+                    type="number"
+                    min="10"
+                    max="20"
+                    value={editingFlupsy.maxPositions}
+                    onChange={(e) => setEditingFlupsy({...editingFlupsy, maxPositions: Number(e.target.value)})}
+                    className="col-span-3"
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-active" className="text-right">
+                    Attivo
+                  </Label>
+                  <div className="flex items-center col-span-3">
+                    <Switch
+                      id="edit-active"
+                      checked={editingFlupsy.active}
+                      onCheckedChange={handleEditSwitchChange}
+                    />
+                    <span className="ml-2">
+                      {editingFlupsy.active ? "Sì" : "No"}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <DialogFooter>
+                <Button type="button" variant="outline" onClick={() => setIsEditDialogOpen(false)}>
+                  Annulla
+                </Button>
+                <Button type="submit" disabled={updateMutation.isPending}>
+                  {updateMutation.isPending ? "Aggiornamento..." : "Aggiorna FLUPSY"}
+                </Button>
+              </DialogFooter>
+            </form>
+          )}
+        </DialogContent>
+      </Dialog>
+
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {flupsys && flupsys.length > 0 ? (
           flupsys.map((flupsy: any) => (
