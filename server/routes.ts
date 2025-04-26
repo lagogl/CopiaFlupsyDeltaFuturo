@@ -12,7 +12,6 @@ import {
 } from "../shared/schema";
 import { 
   getNotificationSettings, 
-  getNotificationSettingByType, 
   updateNotificationSetting
 } from "./controllers/notification-settings-controller";
 import { 

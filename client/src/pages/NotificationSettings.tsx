@@ -33,7 +33,7 @@ export default function NotificationSettings() {
       apiRequest({
         url: `/api/notification-settings/${type}`,
         method: 'PUT',
-        data: { isEnabled }
+        body: { isEnabled }
       }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/notification-settings'] });

@@ -1,101 +1,106 @@
 import { db } from "../db";
-import { notificationSettings } from "../../shared/schema";
 import { eq } from "drizzle-orm";
+import { sql } from "drizzle-orm";
+import type { Request, Response } from "express";
 
 /**
- * Ottiene tutte le impostazioni di notifica
- * @returns Promise che risolve con la lista delle impostazioni
+ * Recupera tutte le impostazioni delle notifiche
+ * @param req La richiesta HTTP
+ * @param res La risposta HTTP
  */
-export async function getNotificationSettings() {
+export async function getNotificationSettings(req: Request, res: Response) {
   try {
-    const settings = await db.select().from(notificationSettings);
-    return settings;
+    // Esegui una query grezza poiché la tabella potrebbe non essere definita in schema.ts
+    const settings = await db.execute(sql`
+      SELECT * FROM notification_settings
+      ORDER BY notification_type
+    `);
+
+    return res.status(200).json({
+      success: true,
+      settings: settings
+    });
   } catch (error) {
-    console.error("Errore nel recupero delle impostazioni di notifica:", error);
-    throw error;
+    console.error("Errore durante il recupero delle impostazioni notifiche:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Errore durante il recupero delle impostazioni notifiche"
+    });
   }
 }
 
 /**
- * Ottiene l'impostazione per un tipo specifico di notifica
- * @param type Tipo di notifica ('vendita', 'accrescimento', etc.)
- * @returns Promise che risolve con l'impostazione se esiste, altrimenti null
+ * Aggiorna un'impostazione di notifica
+ * @param req La richiesta HTTP
+ * @param res La risposta HTTP
  */
-export async function getNotificationSettingByType(type: string) {
-  try {
-    const [setting] = await db
-      .select()
-      .from(notificationSettings)
-      .where(eq(notificationSettings.notificationType, type));
-    
-    return setting || null;
-  } catch (error) {
-    console.error(`Errore nel recupero dell'impostazione di notifica '${type}':`, error);
-    throw error;
-  }
-}
+export async function updateNotificationSetting(req: Request, res: Response) {
+  const { type } = req.params;
+  const { isEnabled } = req.body;
 
-/**
- * Aggiorna o crea l'impostazione per un tipo specifico di notifica
- * @param type Tipo di notifica
- * @param isEnabled Se le notifiche di questo tipo sono abilitate
- * @returns Promise che risolve con l'impostazione aggiornata o creata
- */
-export async function updateNotificationSetting(type: string, isEnabled: boolean) {
+  if (typeof isEnabled !== 'boolean') {
+    return res.status(400).json({
+      success: false,
+      error: "Il valore 'isEnabled' deve essere un booleano"
+    });
+  }
+
   try {
-    // Verifica se l'impostazione esiste già
-    const existingSetting = await getNotificationSettingByType(type);
-    
-    if (existingSetting) {
-      // Aggiorna l'impostazione esistente
-      const [updated] = await db
-        .update(notificationSettings)
-        .set({ 
-          isEnabled,
-          updatedAt: new Date()
-        })
-        .where(eq(notificationSettings.id, existingSetting.id))
-        .returning();
-      
-      return updated;
+    // Prima verifica se l'impostazione esiste
+    const existingSettings = await db.execute(sql`
+      SELECT * FROM notification_settings
+      WHERE notification_type = ${type}
+    `);
+
+    if (existingSettings.length === 0) {
+      // Se non esiste, crea una nuova impostazione
+      await db.execute(sql`
+        INSERT INTO notification_settings (notification_type, is_enabled)
+        VALUES (${type}, ${isEnabled})
+      `);
     } else {
-      // Crea una nuova impostazione
-      const [created] = await db
-        .insert(notificationSettings)
-        .values({
-          notificationType: type,
-          isEnabled,
-          createdAt: new Date(),
-          updatedAt: new Date()
-        })
-        .returning();
-      
-      return created;
+      // Se esiste, aggiorna l'impostazione
+      await db.execute(sql`
+        UPDATE notification_settings
+        SET is_enabled = ${isEnabled}, updated_at = NOW()
+        WHERE notification_type = ${type}
+      `);
     }
+
+    return res.status(200).json({
+      success: true,
+      message: "Impostazione notifica aggiornata con successo"
+    });
   } catch (error) {
-    console.error(`Errore nell'aggiornamento dell'impostazione di notifica '${type}':`, error);
-    throw error;
+    console.error("Errore durante l'aggiornamento dell'impostazione notifica:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Errore durante l'aggiornamento dell'impostazione notifica"
+    });
   }
 }
 
 /**
- * Controlla se un tipo di notifica è abilitato
- * @param type Tipo di notifica
- * @returns Promise che risolve con true se il tipo è abilitato, false altrimenti
+ * Verifica se un tipo di notifica è abilitato
+ * @param notificationType Il tipo di notifica da verificare
+ * @returns Promise che risolve a true se il tipo di notifica è abilitato, false altrimenti
  */
-export async function isNotificationTypeEnabled(type: string): Promise<boolean> {
+export async function isNotificationTypeEnabled(notificationType: string): Promise<boolean> {
   try {
-    const setting = await getNotificationSettingByType(type);
-    
-    // Se l'impostazione non esiste, considera abilitata per default
-    if (!setting) {
+    const settings = await db.execute(sql`
+      SELECT is_enabled FROM notification_settings
+      WHERE notification_type = ${notificationType}
+    `);
+
+    // Se non esiste un'impostazione, assume che sia abilitata per default
+    if (settings.length === 0) {
       return true;
     }
-    
-    return setting.isEnabled;
+
+    return settings[0].is_enabled === true;
   } catch (error) {
-    console.error(`Errore nel controllo dello stato dell'impostazione '${type}':`, error);
-    // In caso di errore, assumiamo che sia abilitata per sicurezza
+    console.error(`Errore durante la verifica dell'abilitazione della notifica ${notificationType}:`, error);
+    // In caso di errore, assume che le notifiche siano abilitate di default
     return true;
   }
 }

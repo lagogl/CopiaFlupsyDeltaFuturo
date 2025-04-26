@@ -1,6 +1,5 @@
 import { db } from "../db";
-import { and, eq, gte, lt, lte } from "drizzle-orm";
-import { baskets, cycles, operations, sgr, sizes, targetSizeAnnotations } from "../../shared/schema";
+import { sql } from "drizzle-orm";
 import { isNotificationTypeEnabled } from "./notification-settings-controller";
 
 /**
@@ -9,8 +8,8 @@ import { isNotificationTypeEnabled } from "./notification-settings-controller";
  * @returns Percentuale di crescita giornaliera
  */
 function monthlyToDaily(monthlyPercentage: number): number {
-  // Formula: (1 + r)^(1/n) - 1, dove r è il tasso mensile e n è 30 (giorni)
-  return Math.pow(1 + (monthlyPercentage / 100), 1/30) - 1;
+  // Formula: (1 + r_m)^(1/30) - 1
+  return Math.pow(1 + monthlyPercentage / 100, 1 / 30) - 1;
 }
 
 /**
@@ -21,8 +20,7 @@ function monthlyToDaily(monthlyPercentage: number): number {
  * @returns Peso finale dopo il periodo di crescita
  */
 function simulateGrowthWithDailySGR(initialWeight: number, dailyRate: number, days: number): number {
-  // Formula per la crescita composta: FV = PV * (1 + r)^n
-  // dove FV = valore futuro, PV = valore attuale, r = tasso, n = periodo
+  // Simula crescita giorno per giorno
   return initialWeight * Math.pow(1 + dailyRate, days);
 }
 
@@ -33,19 +31,20 @@ function simulateGrowthWithDailySGR(initialWeight: number, dailyRate: number, da
  */
 async function isTP3000Size(animalsPerKg: number): Promise<boolean> {
   try {
-    // Ottieni la taglia TP-3000 dal database
-    const [tp3000Size] = await db
-      .select()
-      .from(sizes)
-      .where(eq(sizes.name, 'TP-3000'));
-    
-    if (!tp3000Size) {
-      console.warn("Taglia TP-3000 non trovata nel database");
+    // Recupera i limiti per la taglia TP-3000
+    const sizeData = await db.execute(sql`
+      SELECT min_value, max_value FROM sizes
+      WHERE name = 'TP-3000'
+    `);
+
+    if (sizeData.length === 0) {
       return false;
     }
+
+    const { min_value, max_value } = sizeData[0];
     
-    // Verifica se il valore di animali per kg rientra nei limiti della taglia TP-3000
-    return animalsPerKg <= tp3000Size.maxAnimalsPerKg && animalsPerKg >= tp3000Size.minAnimalsPerKg;
+    // Verifica se animalsPerKg rientra nell'intervallo
+    return animalsPerKg >= min_value && animalsPerKg <= max_value;
   } catch (error) {
     console.error("Errore nella verifica della taglia TP-3000:", error);
     return false;
@@ -58,7 +57,7 @@ async function isTP3000Size(animalsPerKg: number): Promise<boolean> {
  * @returns Numero del mese (1-12)
  */
 function getMonthFromDate(date: Date): number {
-  return date.getMonth() + 1; // getMonth() ritorna 0-11, aggiungiamo 1 per ottenere 1-12
+  return date.getMonth() + 1; // getMonth() restituisce 0-11
 }
 
 /**
@@ -68,14 +67,18 @@ function getMonthFromDate(date: Date): number {
  */
 async function getMonthlyGrowthRate(month: number): Promise<number | null> {
   try {
-    const [sgrData] = await db
-      .select()
-      .from(sgr)
-      .where(eq(sgr.month, month));
-    
-    return sgrData ? sgrData.percentage : null;
+    const sgrData = await db.execute(sql`
+      SELECT percentage_value FROM sgr_monthly
+      WHERE month_number = ${month}
+    `);
+
+    if (sgrData.length === 0) {
+      return null;
+    }
+
+    return sgrData[0].percentage_value;
   } catch (error) {
-    console.error(`Errore nel recupero del tasso di crescita per il mese ${month}:`, error);
+    console.error(`Errore nel recupero del tasso SGR per il mese ${month}:`, error);
     return null;
   }
 }
@@ -91,57 +94,52 @@ async function getMonthlyGrowthRate(month: number): Promise<number | null> {
 async function createTP3000Notification(
   cycleId: number,
   basketId: number,
-  basketNumber: number,
+  basketNumber: string | number,
   projectedAnimalsPerKg: number
 ): Promise<number | null> {
   try {
-    // Verifica se esiste già una notifica per questo ciclo
-    const existingNotifications = await db
-      .select()
-      .from(targetSizeAnnotations)
-      .where(and(
-        eq(targetSizeAnnotations.cycleId, cycleId),
-        eq(targetSizeAnnotations.targetSize, 'TP-3000')
-      ));
-    
+    // Verifica se esiste già una notifica per questo ciclo/cestello
+    const existingNotifications = await db.execute(sql`
+      SELECT id FROM target_size_annotations
+      WHERE cycle_id = ${cycleId} AND basket_id = ${basketId}
+    `);
+
     if (existingNotifications.length > 0) {
-      console.log(`Notifica già esistente per il ciclo ${cycleId} taglia TP-3000`);
+      // Aggiorna la notifica esistente
+      await db.execute(sql`
+        UPDATE target_size_annotations
+        SET projected_value = ${projectedAnimalsPerKg}, status = 'unread', created_at = NOW()
+        WHERE cycle_id = ${cycleId} AND basket_id = ${basketId}
+      `);
+      return existingNotifications[0].id;
+    }
+
+    // Crea una nuova notifica
+    const result = await db.execute(sql`
+      INSERT INTO target_size_annotations
+      (cycle_id, basket_id, target_size, projected_value, status, created_at)
+      VALUES (${cycleId}, ${basketId}, 'TP-3000', ${projectedAnimalsPerKg}, 'unread', NOW())
+      RETURNING id
+    `);
+
+    if (result.length === 0) {
       return null;
     }
-    
-    // Crea l'annotazione di taglia target raggiunta
-    const [annotation] = await db
-      .insert(targetSizeAnnotations)
-      .values({
-        cycleId,
-        basketId,
-        targetSize: 'TP-3000',
-        createdAt: new Date(),
-        projectedValue: projectedAnimalsPerKg,
-        status: 'unread'
-      })
-      .returning();
-    
-    if (!annotation) {
-      console.error("Errore nella creazione dell'annotazione TP-3000");
-      return null;
-    }
-    
-    // Crea la notifica
-    const [notification] = await db
-      .insert(notifications)
-      .values({
-        title: `Taglia TP-3000 raggiunta!`,
-        message: `Il cestello #${basketNumber} ha raggiunto la taglia TP-3000 con un valore di ${Math.round(projectedAnimalsPerKg)} animali/kg.`,
-        createdAt: new Date(),
-        isRead: false,
-        type: 'accrescimento',
-        referenceId: cycleId,
-        referenceType: 'cycle'
-      })
-      .returning();
-    
-    return notification ? notification.id : null;
+
+    // Crea anche una notifica generale nel sistema di notifiche
+    await db.execute(sql`
+      INSERT INTO notifications
+      (type, content, related_id, status, created_at)
+      VALUES (
+        'accrescimento',
+        ${`Il cestello #${basketNumber} (ciclo #${cycleId}) ha raggiunto la taglia TP-3000 (${Math.round(projectedAnimalsPerKg)} esemplari/kg)`},
+        ${result[0].id},
+        'unread',
+        NOW()
+      )
+    `);
+
+    return result[0].id;
   } catch (error) {
     console.error("Errore nella creazione della notifica TP-3000:", error);
     return null;
@@ -155,90 +153,96 @@ async function createTP3000Notification(
  */
 export async function checkCyclesForTP3000(): Promise<number> {
   try {
-    // Verifica se le notifiche di accrescimento sono abilitate
-    const notificationsEnabled = await isNotificationTypeEnabled('accrescimento');
-    if (!notificationsEnabled) {
-      console.log("Le notifiche di accrescimento sono disabilitate, controllo saltato");
+    // Verifica prima se il tipo di notifica "accrescimento" è abilitato
+    const isEnabled = await isNotificationTypeEnabled('accrescimento');
+    if (!isEnabled) {
+      console.log("Notifiche di accrescimento disabilitate nelle impostazioni");
+      return 0;
+    }
+
+    const currentDate = new Date();
+    const currentMonth = getMonthFromDate(currentDate);
+    
+    // Ottieni il tasso di crescita mensile per il mese corrente
+    const monthlyGrowthRate = await getMonthlyGrowthRate(currentMonth);
+    if (monthlyGrowthRate === null) {
+      console.log(`Nessun tasso di crescita trovato per il mese ${currentMonth}`);
       return 0;
     }
     
-    // Ottieni tutti i cicli attivi
-    const activeCycles = await db
-      .select({
-        cycle: cycles,
-        basket: baskets
-      })
-      .from(cycles)
-      .leftJoin(baskets, eq(cycles.basketId, baskets.id))
-      .where(eq(cycles.state, 'active'));
+    // Converti in tasso giornaliero
+    const dailyGrowthRate = monthlyToDaily(monthlyGrowthRate);
     
-    if (activeCycles.length === 0) {
+    // Ottieni tutti i cicli attivi con l'ultima operazione di peso
+    const activeCyclesWithLastWeightOp = await db.execute(sql`
+      WITH last_weight_operations AS (
+        SELECT 
+          o.cycle_id,
+          o.basket_id,
+          o.sample_weight,
+          o.sample_count,
+          o.date,
+          o.id as operation_id,
+          ROW_NUMBER() OVER (PARTITION BY o.cycle_id ORDER BY o.date DESC, o.id DESC) as rn
+        FROM operations o
+        JOIN cycles c ON o.cycle_id = c.id
+        WHERE o.type = 'peso' AND c.state = 'active' AND o.sample_weight IS NOT NULL AND o.sample_count IS NOT NULL
+      )
+      SELECT 
+        lwo.cycle_id,
+        lwo.basket_id,
+        b.number as basket_number,
+        lwo.sample_weight,
+        lwo.sample_count,
+        lwo.date,
+        lwo.operation_id,
+        CAST(lwo.sample_count::float / lwo.sample_weight * 1000000 AS numeric) as animals_per_kg,
+        c.start_date,
+        s.name as size_name
+      FROM last_weight_operations lwo
+      JOIN cycles c ON lwo.cycle_id = c.id
+      JOIN baskets b ON lwo.basket_id = b.id
+      LEFT JOIN sizes s ON c.size_id = s.id
+      WHERE lwo.rn = 1
+    `);
+
+    if (activeCyclesWithLastWeightOp.length === 0) {
       console.log("Nessun ciclo attivo trovato");
       return 0;
     }
-    
-    const today = new Date();
-    const currentMonth = getMonthFromDate(today);
-    const monthlyGrowthRate = await getMonthlyGrowthRate(currentMonth);
-    
-    if (monthlyGrowthRate === null) {
-      console.error(`Nessun tasso di crescita trovato per il mese ${currentMonth}`);
-      return 0;
-    }
-    
-    // Converti il tasso mensile in tasso giornaliero
-    const dailyGrowthRate = monthlyToDaily(monthlyGrowthRate);
-    console.log(`Tasso di crescita: ${monthlyGrowthRate}% mensile, ${dailyGrowthRate * 100}% giornaliero`);
-    
+
     let notificationsCreated = 0;
-    
-    // Per ogni ciclo attivo, verifica se ha raggiunto la taglia TP-3000
-    for (const { cycle, basket } of activeCycles) {
-      // Trova l'ultima operazione di misurazione per questo ciclo
-      const [lastMeasurement] = await db
-        .select()
-        .from(operations)
-        .where(and(
-          eq(operations.basketId, cycle.basketId),
-          gte(operations.date, cycle.startDate),
-          eq(operations.type, 'misura')
-        ))
-        .orderBy(db.sql`${operations.date} DESC, ${operations.id} DESC`)
-        .limit(1);
+
+    for (const cycle of activeCyclesWithLastWeightOp) {
+      // Calcola i giorni trascorsi dall'ultima operazione di peso
+      const lastWeightDate = new Date(cycle.date);
+      const daysSinceLastWeight = Math.floor((currentDate.getTime() - lastWeightDate.getTime()) / (1000 * 60 * 60 * 24));
       
-      if (!lastMeasurement || !lastMeasurement.animalsPerKg) {
-        continue; // Nessuna misurazione trovata o misurazione senza animalsPerKg
-      }
+      // Calcola il peso proiettato basato sul tasso di crescita
+      const currentAnimalsPerKg = cycle.animals_per_kg;
       
-      // Calcola i giorni trascorsi dall'ultima misurazione
-      const daysSinceLastMeasurement = Math.round(
-        (today.getTime() - new Date(lastMeasurement.date).getTime()) / (1000 * 60 * 60 * 24)
-      );
-      
-      // Simula la crescita fino ad oggi
-      const projectedAnimalsPerKg = lastMeasurement.animalsPerKg / 
-        (simulateGrowthWithDailySGR(1, dailyGrowthRate, daysSinceLastMeasurement));
+      // Simula la crescita per proiettare il nuovo valore di animali/kg
+      // Nota: all'aumentare del peso, diminuisce il numero di animali per kg
+      // per cui usiamo la formula inversa
+      const weightIncreaseRatio = simulateGrowthWithDailySGR(1, dailyGrowthRate, daysSinceLastWeight);
+      const projectedAnimalsPerKg = currentAnimalsPerKg / weightIncreaseRatio;
       
       // Verifica se il valore proiettato rientra nella taglia TP-3000
-      const isNowTP3000 = await isTP3000Size(projectedAnimalsPerKg);
-      
-      if (isNowTP3000) {
-        console.log(`Ciclo ${cycle.id} (cestello #${basket.physicalNumber}) ha raggiunto TP-3000 con ${Math.round(projectedAnimalsPerKg)} animali/kg`);
-        
+      if (await isTP3000Size(projectedAnimalsPerKg)) {
         // Crea una notifica
         const notificationId = await createTP3000Notification(
-          cycle.id,
-          cycle.basketId,
-          basket.physicalNumber,
+          cycle.cycle_id,
+          cycle.basket_id,
+          cycle.basket_number,
           projectedAnimalsPerKg
         );
         
-        if (notificationId) {
+        if (notificationId !== null) {
           notificationsCreated++;
         }
       }
     }
-    
+
     return notificationsCreated;
   } catch (error) {
     console.error("Errore durante il controllo dei cicli per TP-3000:", error);
