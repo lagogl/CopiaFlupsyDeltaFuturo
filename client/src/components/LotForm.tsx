@@ -25,6 +25,7 @@ interface LotFormProps {
   onSubmit: (values: FormValues) => void;
   defaultValues?: Partial<FormValues>;
   isLoading?: boolean;
+  isEditing?: boolean;
 }
 
 export default function LotForm({ 
@@ -32,7 +33,8 @@ export default function LotForm({
   defaultValues = {
     arrivalDate: new Date().toISOString().split('T')[0],
   },
-  isLoading = false
+  isLoading = false,
+  isEditing = false
 }: LotFormProps) {
   // Fetch sizes for dropdown
   const { data: sizes } = useQuery({
@@ -202,7 +204,7 @@ export default function LotForm({
             Annulla
           </Button>
           <Button type="submit" disabled={isLoading}>
-            {isLoading ? "Salvataggio..." : "Crea Lotto"}
+            {isLoading ? "Salvataggio..." : isEditing ? "Conferma" : "Crea Lotto"}
           </Button>
         </div>
       </form>

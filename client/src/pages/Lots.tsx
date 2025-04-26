@@ -366,6 +366,7 @@ export default function Lots() {
                 updateLotMutation.mutate({ ...data, id: selectedLot.id });
               }}
               isLoading={updateLotMutation.isPending}
+              isEditing={true}
               defaultValues={{
                 arrivalDate: selectedLot.arrivalDate,
                 supplier: selectedLot.supplier,
