@@ -689,8 +689,10 @@ export default function BasicFlupsyVisualizer() {
               <div className="text-sm font-medium">Fila DX</div>
             </div>
             
-            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-              {Array.from({ length: 10 }, (_, i) => 
+            <div className="grid gap-2" style={{ 
+                gridTemplateColumns: `repeat(${Math.ceil((flupsy.maxPositions || 10) / 2)}, minmax(0, 1fr))` 
+              }}>
+              {Array.from({ length: Math.ceil((flupsy.maxPositions || 10) / 2) }, (_, i) => 
                 renderBasketPosition(flupsy.id, 'DX', i + 1, flupsyBadges)
               )}
             </div>
@@ -705,8 +707,10 @@ export default function BasicFlupsyVisualizer() {
               <div className="text-sm font-medium">Fila SX</div>
             </div>
             
-            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-              {Array.from({ length: 10 }, (_, i) => 
+            <div className="grid gap-2" style={{ 
+                gridTemplateColumns: `repeat(${Math.ceil((flupsy.maxPositions || 10) / 2)}, minmax(0, 1fr))` 
+              }}>
+              {Array.from({ length: Math.ceil((flupsy.maxPositions || 10) / 2) }, (_, i) => 
                 renderBasketPosition(flupsy.id, 'SX', i + 1, flupsyBadges)
               )}
             </div>
