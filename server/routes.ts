@@ -4796,65 +4796,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // === Route per gestione impostazioni notifiche ===
   // Ottieni tutte le impostazioni di notifica
-  app.get("/api/notification-settings", async (req, res) => {
-    try {
-      const settings = await getNotificationSettings();
-      return res.json({ success: true, settings });
-    } catch (error) {
-      console.error("Errore durante il recupero delle impostazioni di notifica:", error);
-      return res.status(500).json({ 
-        success: false, 
-        message: "Errore durante il recupero delle impostazioni di notifica" 
-      });
-    }
-  });
+  app.get("/api/notification-settings", getNotificationSettings);
 
-  // Ottieni un'impostazione specifica
-  app.get("/api/notification-settings/:type", async (req, res) => {
-    try {
-      const { type } = req.params;
-      const setting = await getNotificationSettingByType(type);
-      
-      if (!setting) {
-        return res.json({ 
-          success: true, 
-          setting: { notificationType: type, isEnabled: true }  // Default se non esiste
-        });
-      }
-      
-      return res.json({ success: true, setting });
-    } catch (error) {
-      console.error(`Errore durante il recupero dell'impostazione "${req.params.type}":`, error);
-      return res.status(500).json({ 
-        success: false, 
-        message: `Errore durante il recupero dell'impostazione "${req.params.type}"` 
-      });
-    }
-  });
-
+  // Rimuovi l'endpoint per ottenere un'impostazione specifica, non necessaria
+  
   // Aggiorna un'impostazione
-  app.put("/api/notification-settings/:type", async (req, res) => {
-    try {
-      const { type } = req.params;
-      const { isEnabled } = req.body;
-      
-      if (typeof isEnabled !== 'boolean') {
-        return res.status(400).json({ 
-          success: false, 
-          message: "Il parametro 'isEnabled' deve essere un booleano" 
-        });
-      }
-      
-      const updated = await updateNotificationSetting(type, isEnabled);
-      return res.json({ success: true, setting: updated });
-    } catch (error) {
-      console.error(`Errore durante l'aggiornamento dell'impostazione "${req.params.type}":`, error);
-      return res.status(500).json({ 
-        success: false, 
-        message: `Errore durante l'aggiornamento dell'impostazione "${req.params.type}"` 
-      });
-    }
-  });
+  app.put("/api/notification-settings/:type", updateNotificationSetting);
   
   // Esegui controllo manuale per cicli che hanno raggiunto TP-3000
   app.post("/api/check-growth-notifications", async (req, res) => {
