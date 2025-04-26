@@ -193,40 +193,95 @@ export default function NotificationBell() {
                   </div>
                   <div className="mt-1 text-gray-700 whitespace-pre-wrap">
                     {notification.message.split('\n').map((line, i) => {
-                      // Cerca codici ANSI per il rosso
-                      const redPattern = /\u001b\[31m(.*?)\u001b\[0m/;
-                      const redMatch = line.match(redPattern);
+                      // Funzione per elaborare la linea di testo in modo sicuro
+                      const processLine = (text: string) => {
+                        // Rimuovi o sostituisci tutti i codici ANSI
+                        return text
+                          .replace(/\u001b\[31m(.*?)\u001b\[0m/g, (_, p1) => `[ROSSO]${p1}[/ROSSO]`)
+                          .replace(/\u001b\[32m(.*?)\u001b\[0m/g, (_, p1) => `[VERDE]${p1}[/VERDE]`);
+                      };
                       
-                      // Cerca codici ANSI per il verde
-                      const greenPattern = /\u001b\[32m(.*?)\u001b\[0m/;
-                      const greenMatch = line.match(greenPattern);
+                      // Elaborazione della linea per rimuovere/sostituire codici ANSI
+                      const processedLine = processLine(line);
                       
-                      if (redMatch) {
-                        // Sostituisci i codici ANSI rossi con uno span colorato
-                        const beforeText = line.substring(0, redMatch.index);
-                        const coloredText = redMatch[1];
-                        const afterText = line.substring(redMatch.index! + redMatch[0].length);
+                      // Suddividi la linea in parti basate sui marcatori di colore
+                      const parts = [];
+                      let currentIndex = 0;
+                      
+                      // Verifica marcatori rosso
+                      const redRegex = /\[ROSSO\](.*?)\[\/ROSSO\]/g;
+                      let redMatch;
+                      while ((redMatch = redRegex.exec(processedLine)) !== null) {
+                        // Testo prima del marcatore
+                        if (redMatch.index > currentIndex) {
+                          parts.push({ 
+                            type: 'text', 
+                            content: processedLine.substring(currentIndex, redMatch.index) 
+                          });
+                        }
                         
-                        return (
-                          <React.Fragment key={i}>
-                            {beforeText}<span className="text-red-600">{coloredText}</span>{afterText}<br/>
-                          </React.Fragment>
-                        );
-                      } else if (greenMatch) {
-                        // Sostituisci i codici ANSI verdi con uno span colorato
-                        const beforeText = line.substring(0, greenMatch.index);
-                        const coloredText = greenMatch[1];
-                        const afterText = line.substring(greenMatch.index! + greenMatch[0].length);
+                        // Testo colorato
+                        parts.push({ 
+                          type: 'red', 
+                          content: redMatch[1] 
+                        });
                         
-                        return (
-                          <React.Fragment key={i}>
-                            {beforeText}<span className="text-green-600">{coloredText}</span>{afterText}<br/>
-                          </React.Fragment>
-                        );
-                      } else {
-                        // Nessun codice di colore, renderizza normalmente
-                        return <React.Fragment key={i}>{line}<br/></React.Fragment>;
+                        currentIndex = redMatch.index + redMatch[0].length;
                       }
+                      
+                      // Verifica marcatori verde (sul testo residuo)
+                      const remainingText = processedLine.substring(currentIndex);
+                      const greenRegex = /\[VERDE\](.*?)\[\/VERDE\]/g;
+                      let greenMatch;
+                      let greenCurrentIndex = 0;
+                      
+                      while ((greenMatch = greenRegex.exec(remainingText)) !== null) {
+                        // Testo prima del marcatore
+                        if (greenMatch.index > greenCurrentIndex) {
+                          parts.push({ 
+                            type: 'text', 
+                            content: remainingText.substring(greenCurrentIndex, greenMatch.index) 
+                          });
+                        }
+                        
+                        // Testo colorato
+                        parts.push({ 
+                          type: 'green', 
+                          content: greenMatch[1] 
+                        });
+                        
+                        greenCurrentIndex = greenMatch.index + greenMatch[0].length;
+                      }
+                      
+                      // Testo rimanente dopo tutti i marcatori
+                      if (currentIndex < processedLine.length && parts.length === 0) {
+                        // Se non ci sono marcatori, aggiungi tutta la linea
+                        parts.push({ 
+                          type: 'text', 
+                          content: processedLine 
+                        });
+                      } else if (greenCurrentIndex < remainingText.length) {
+                        // Aggiungi il testo rimanente dopo l'ultimo marcatore verde
+                        parts.push({ 
+                          type: 'text', 
+                          content: remainingText.substring(greenCurrentIndex) 
+                        });
+                      }
+                      
+                      // Renderizza le parti
+                      return (
+                        <div key={i} className="mb-1">
+                          {parts.map((part, j) => {
+                            if (part.type === 'red') {
+                              return <span key={j} className="text-red-600">{part.content}</span>;
+                            } else if (part.type === 'green') {
+                              return <span key={j} className="text-green-600">{part.content}</span>;
+                            } else {
+                              return <span key={j}>{part.content}</span>;
+                            }
+                          })}
+                        </div>
+                      );
                     })}
                   </div>
                   
