@@ -10,6 +10,7 @@ import {
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
+import NotificationBell from "@/components/NotificationBell";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -155,10 +156,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             <MarineWeather />
           </div>
           <div className="flex items-center space-x-4">
-            <button className="flex items-center hover:bg-primary-dark p-2 rounded-md">
-              <Bell className="h-5 w-5 mr-1" />
-              <span className="text-sm">Notifiche</span>
-            </button>
+            <NotificationBell />
             <div className="flex items-center space-x-2">
               <div className="h-8 w-8 rounded-full bg-primary-dark flex items-center justify-center text-white">
                 <span className="text-sm font-medium">DF</span>

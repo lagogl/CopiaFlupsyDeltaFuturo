@@ -1,11 +1,15 @@
 import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
+import { createSaleNotification } from "./sales-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
 
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
+
+// Rendi disponibile globalmente per l'uso nei controller
+globalThis.app = app;
 
 app.use((req, res, next) => {
   const start = Date.now();
@@ -54,6 +58,9 @@ app.use((req, res, next) => {
   console.log("===== FINE TEST DI CONNESSIONE DATABASE =====\n");
   
   const server = await registerRoutes(app);
+  
+  // Registra il servizio di creazione notifiche per operazioni di vendita
+  app.locals.createSaleNotification = createSaleNotification;
   
   // Inizializza lo scheduler per l'invio automatico delle email
   import('./controllers/email-controller').then(EmailController => {

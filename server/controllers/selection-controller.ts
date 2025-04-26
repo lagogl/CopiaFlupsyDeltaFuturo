@@ -1116,7 +1116,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           const primaryLotId = lotReferences.length > 0 ? lotReferences[0] : null;
           
           // Crea operazione di vendita con il lotto associato
-          await tx.insert(operations).values({
+          const [saleOperation] = await tx.insert(operations).values({
             date: selection[0].date,
             type: 'vendita',
             basketId: destBasket.basketId,
@@ -1126,7 +1126,12 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             animalsPerKg: destBasket.animalsPerKg,
             notes: `Vendita immediata dopo selezione #${selection[0].selectionNumber}`,
             lotId: primaryLotId // Associa il lotto all'operazione di vendita
-          });
+          }).returning();
+          
+          // Se l'app ha la funzione di creazione notifiche, registra la notifica per essere processata dopo il commit
+          if (req.app.locals.createSaleNotification && saleOperation) {
+            saleNotificationsToCreate.push(saleOperation.id);
+          }
           
           // Chiudi il ciclo appena creato
           await tx.update(cycles)
@@ -1322,6 +1327,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
 export async function completeSelection(req: Request, res: Response) {
   try {
     const { id } = req.params;
+    const saleNotificationsToCreate: number[] = [];
     
     if (!id) {
       return res.status(400).json({
@@ -1387,6 +1393,9 @@ export async function completeSelection(req: Request, res: Response) {
     
     // Esecuzione in una transazione
     await db.transaction(async (tx) => {
+      // Salva la transazione per le notifiche post-commit
+      const operationsWithNotifications: number[] = [];
+      
       // Chiudi i cicli delle ceste di origine
       for (const sourceBasket of sourceBaskets) {
         // Crea operazione di chiusura per il ciclo di origine
@@ -1499,7 +1508,7 @@ export async function completeSelection(req: Request, res: Response) {
             ));
           
           if (existingOperation.length === 0) {
-            await tx.insert(operations).values({
+            const [saleOperation] = await tx.insert(operations).values({
               date: selection[0].date,
               type: 'vendita',
               basketId: destBasket.basketId,
@@ -1508,7 +1517,12 @@ export async function completeSelection(req: Request, res: Response) {
               totalWeight: destBasket.totalWeight,
               animalsPerKg: destBasket.animalsPerKg,
               notes: `Vendita immediata dopo selezione #${selection[0].selectionNumber}`
-            });
+            }).returning();
+            
+            // Se l'app ha la funzione di creazione notifiche, aggiungi questo ID operazione alla lista
+            if (req.app.locals.createSaleNotification && saleOperation) {
+              saleNotificationsToCreate.push(saleOperation.id);
+            }
           }
           
           // Chiudi il ciclo se non è già chiuso
