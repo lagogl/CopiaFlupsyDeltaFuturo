@@ -4781,7 +4781,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint per generare e inviare automaticamente il diario WhatsApp
   app.get("/api/whatsapp/auto-send-diario", WhatsappController.autoSendWhatsAppDiario);
   
-
+  // === Route per gestione notifiche ===
+  app.get("/api/notifications", NotificationController.getNotifications);
+  app.post("/api/notifications", NotificationController.createNotification);
+  app.put("/api/notifications/:id/read", NotificationController.markNotificationAsRead);
+  app.put("/api/notifications/read-all", NotificationController.markAllNotificationsAsRead);
   
   return httpServer;
 }
