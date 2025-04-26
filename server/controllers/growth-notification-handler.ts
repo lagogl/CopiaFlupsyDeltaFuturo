@@ -179,24 +179,24 @@ export async function checkCyclesForTP3000(): Promise<number> {
         SELECT 
           o.cycle_id,
           o.basket_id,
-          o.sample_weight,
-          o.sample_count,
+          o.total_weight,
+          o.animal_count,
           o.date,
           o.id as operation_id,
           ROW_NUMBER() OVER (PARTITION BY o.cycle_id ORDER BY o.date DESC, o.id DESC) as rn
         FROM operations o
         JOIN cycles c ON o.cycle_id = c.id
-        WHERE o.type = 'peso' AND c.state = 'active' AND o.sample_weight IS NOT NULL AND o.sample_count IS NOT NULL
+        WHERE o.type = 'peso' AND c.state = 'active' AND o.total_weight IS NOT NULL AND o.animal_count IS NOT NULL
       )
       SELECT 
         lwo.cycle_id,
         lwo.basket_id,
-        b.number as basket_number,
-        lwo.sample_weight,
-        lwo.sample_count,
+        b.physical_number as basket_number,
+        lwo.total_weight,
+        lwo.animal_count,
         lwo.date,
         lwo.operation_id,
-        CAST(lwo.sample_count::float / lwo.sample_weight * 1000000 AS numeric) as animals_per_kg,
+        CAST(lwo.animal_count::float / lwo.total_weight * 1000000 AS numeric) as animals_per_kg,
         c.start_date,
         s.name as size_name
       FROM last_weight_operations lwo
