@@ -1,4 +1,4 @@
-import { pgTable, text, serial, integer, boolean, timestamp, real, date, numeric } from "drizzle-orm/pg-core";
+import { pgTable, text, serial, integer, boolean, timestamp, real, date, numeric, jsonb } from "drizzle-orm/pg-core";
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
@@ -581,3 +581,61 @@ export const insertNotificationSettingsSchema = createInsertSchema(notificationS
 
 export type InsertNotificationSettings = z.infer<typeof insertNotificationSettingsSchema>;
 export type NotificationSettings = typeof notificationSettings.$inferSelect;
+
+// Tipi di transazione dell'inventario
+export const inventoryTransactionTypes = [
+  "arrivo-lotto",         // Registrazione nuovo lotto
+  "vendita",              // Vendita animali
+  "vagliatura-uscita",    // Animali usciti durante vagliatura
+  "vagliatura-ingresso",  // Animali entrati durante vagliatura
+  "mortalità-misurata",   // Mortalità misurata durante un'operazione
+  "aggiustamento-manuale" // Aggiustamento manuale dell'inventario
+] as const;
+
+// Lot Inventory Transactions (Transazioni di inventario per lotto)
+export const lotInventoryTransactions = pgTable("lot_inventory_transactions", {
+  id: serial("id").primaryKey(),
+  lotId: integer("lot_id").notNull(), // Riferimento al lotto
+  date: date("date").notNull(), // Data della transazione
+  transactionType: text("transaction_type", { enum: inventoryTransactionTypes }).notNull(), // Tipo di transazione
+  animalCount: integer("animal_count").notNull(), // Numero di animali (positivo per entrate, negativo per uscite)
+  basketId: integer("basket_id"), // Cestello associato (se applicabile)
+  operationId: integer("operation_id"), // Operazione associata (se applicabile)
+  selectionId: integer("selection_id"), // Selezione associata (se applicabile)
+  screeningId: integer("screening_id"), // Vagliatura associata (se applicabile)
+  notes: text("notes"), // Note aggiuntive
+  metadata: jsonb("metadata"), // Metadati aggiuntivi in formato JSON
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  createdBy: text("created_by"), // Utente che ha creato la transazione
+});
+
+// Lot Mortality Records (Registrazioni della mortalità per lotto)
+export const lotMortalityRecords = pgTable("lot_mortality_records", {
+  id: serial("id").primaryKey(),
+  lotId: integer("lot_id").notNull(), // Riferimento al lotto
+  calculationDate: date("calculation_date").notNull(), // Data del calcolo
+  initialCount: integer("initial_count").notNull(), // Conteggio iniziale degli animali
+  currentCount: integer("current_count").notNull(), // Conteggio attuale degli animali
+  soldCount: integer("sold_count").notNull().default(0), // Numero di animali venduti
+  mortalityCount: integer("mortality_count").notNull(), // Numero di animali morti
+  mortalityPercentage: real("mortality_percentage").notNull(), // Percentuale di mortalità
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  notes: text("notes"), // Note aggiuntive
+});
+
+// Schema di inserimento per le transazioni di inventario
+export const insertLotInventoryTransactionSchema = createInsertSchema(lotInventoryTransactions)
+  .omit({ id: true, createdAt: true });
+
+// Schema di inserimento per le registrazioni della mortalità
+export const insertLotMortalityRecordSchema = createInsertSchema(lotMortalityRecords)
+  .omit({ id: true, createdAt: true });
+
+// Tipi per le transazioni di inventario
+export type InventoryTransactionType = typeof inventoryTransactionTypes[number];
+export type LotInventoryTransaction = typeof lotInventoryTransactions.$inferSelect;
+export type InsertLotInventoryTransaction = z.infer<typeof insertLotInventoryTransactionSchema>;
+
+// Tipi per le registrazioni della mortalità
+export type LotMortalityRecord = typeof lotMortalityRecords.$inferSelect;
+export type InsertLotMortalityRecord = z.infer<typeof insertLotMortalityRecordSchema>;
