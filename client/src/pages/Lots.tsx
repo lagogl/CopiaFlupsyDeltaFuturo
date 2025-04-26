@@ -282,7 +282,29 @@ export default function Lots() {
                         {lot.supplier}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {lot.quality || '-'}
+                        {lot.quality ? (
+                          <span className="flex items-center">
+                            {lot.quality === 'teste' && (
+                              <span>
+                                <span className="mr-1">Teste/Head</span>
+                                <span className="text-yellow-500">★★★</span>
+                              </span>
+                            )}
+                            {lot.quality === 'normali' && (
+                              <span>
+                                <span className="mr-1">Normali/Normal</span>
+                                <span className="text-yellow-500">★★</span>
+                              </span>
+                            )}
+                            {lot.quality === 'code' && (
+                              <span>
+                                <span className="mr-1">Code/Codes</span>
+                                <span className="text-yellow-500">★</span>
+                              </span>
+                            )}
+                            {!['teste', 'normali', 'code'].includes(lot.quality) && lot.quality}
+                          </span>
+                        ) : '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap">
                         <Badge className="bg-blue-100 text-blue-800">

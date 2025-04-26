@@ -15,6 +15,8 @@ import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { lotSchema } from "@shared/schema";
+import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
+import { Label } from "@/components/ui/label";
 
 // Use the lot schema from shared schema
 const formSchema = lotSchema;
@@ -82,10 +84,36 @@ export default function LotForm({
             control={form.control}
             name="quality"
             render={({ field }) => (
-              <FormItem>
+              <FormItem className="space-y-3">
                 <FormLabel>Qualità</FormLabel>
                 <FormControl>
-                  <Input placeholder="Qualità del lotto" {...field} />
+                  <RadioGroup
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                    className="flex flex-col space-y-1"
+                  >
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="teste" id="quality-teste" />
+                      <Label htmlFor="quality-teste" className="flex items-center cursor-pointer">
+                        <span className="mr-2">Teste/Head</span>
+                        <span className="text-yellow-500">★★★</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="normali" id="quality-normali" />
+                      <Label htmlFor="quality-normali" className="flex items-center cursor-pointer">
+                        <span className="mr-2">Normali/Normal</span>
+                        <span className="text-yellow-500">★★</span>
+                      </Label>
+                    </div>
+                    <div className="flex items-center space-x-2">
+                      <RadioGroupItem value="code" id="quality-code" />
+                      <Label htmlFor="quality-code" className="flex items-center cursor-pointer">
+                        <span className="mr-2">Code/Codes</span>
+                        <span className="text-yellow-500">★</span>
+                      </Label>
+                    </div>
+                  </RadioGroup>
                 </FormControl>
                 <FormMessage />
               </FormItem>
