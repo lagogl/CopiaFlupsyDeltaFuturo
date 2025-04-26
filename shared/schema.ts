@@ -25,6 +25,7 @@ export const flupsys = pgTable("flupsys", {
   description: text("description"), // descrizione opzionale
   active: boolean("active").notNull().default(true), // se il FLUPSY è attualmente attivo
   maxPositions: integer("max_positions").notNull().default(10), // numero massimo di posizioni per fila (da 10 a 20)
+  productionCenter: text("production_center"), // centro di produzione (ad es. "Ca Pisani", "Goro", ecc.)
 });
 
 // Baskets (Ceste)
