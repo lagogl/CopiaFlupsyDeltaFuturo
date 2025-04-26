@@ -720,7 +720,11 @@ export default function DraggableFlupsyVisualizer() {
     const flupsyBaskets = baskets.filter(b => b.flupsyId === flupsyId);
     // Utilizziamo maxPositions dal FLUPSY o default a 10 se non definito
     const maxPositions = flupsy.maxPositions || 10;
-    const positions = Array.from({ length: maxPositions }, (_, i) => i + 1); // Posizioni dinamiche in base al FLUPSY
+    
+    // Calcola il numero di posizioni per riga (sempre diviso in 2 file di uguale lunghezza)
+    const positionsPerRow = Math.ceil(maxPositions / 2);
+    // Crea un array con le posizioni per ogni fila
+    const positions = Array.from({ length: positionsPerRow }, (_, i) => i + 1);
     
     return (
       <Card className="mb-6">
@@ -743,7 +747,9 @@ export default function DraggableFlupsyVisualizer() {
               <div className="mb-2 font-semibold flex items-center">
                 <Wind className="h-4 w-4 mr-1" /> Lato DX
               </div>
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+              <div className={`grid grid-cols-${Math.min(5, positionsPerRow)} md:grid-cols-${positionsPerRow} gap-2`} style={{ 
+                gridTemplateColumns: `repeat(${positionsPerRow}, minmax(0, 1fr))` 
+              }}>
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'DX' && b.position === position);
                   return renderBasketBox(basket, position, 'DX', flupsyId);
@@ -756,7 +762,9 @@ export default function DraggableFlupsyVisualizer() {
               <div className="mb-2 font-semibold flex items-center">
                 <Wind className="h-4 w-4 mr-1" /> Lato SX
               </div>
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+              <div className={`grid grid-cols-${Math.min(5, positionsPerRow)} md:grid-cols-${positionsPerRow} gap-2`} style={{ 
+                gridTemplateColumns: `repeat(${positionsPerRow}, minmax(0, 1fr))` 
+              }}>
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
                   return renderBasketBox(basket, position, 'SX', flupsyId);
