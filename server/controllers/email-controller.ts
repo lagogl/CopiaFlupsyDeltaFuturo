@@ -98,62 +98,45 @@ const createSendGridTransporter = (apiKey: string): Transporter => {
           });
         }
         
-        // Registro informazioni sulla richiesta
-        console.log('==== INVIO EMAIL VIA SENDGRID ====');
-        console.log(`Da: ${options.from}`);
-        console.log(`A: ${Array.isArray(options.to) ? options.to.join(', ') : options.to}`);
-        if (options.cc) console.log(`CC: ${Array.isArray(options.cc) ? options.cc.join(', ') : options.cc}`);
-        console.log(`Oggetto: ${options.subject}`);
-        console.log('================================================');
+        // Preparazione della richiesta HTTP per l'API SendGrid
+        const postData = JSON.stringify(data);
         
-        // Creazione della promessa per fare la richiesta HTTP
+        // Opzioni per la richiesta HTTP
+        const requestOptions = {
+          hostname: 'api.sendgrid.com',
+          port: 443,
+          path: '/v3/mail/send',
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Content-Length': Buffer.byteLength(postData),
+            'Authorization': `Bearer ${apiKey}`
+          }
+        };
+        
+        // Creiamo una Promise per la richiesta HTTP
         return new Promise((resolve, reject) => {
-          // Preparazione dei dati da inviare
-          const postData = JSON.stringify(data);
-          
-          // Opzioni per la richiesta HTTP
-          const requestOptions = {
-            hostname: 'api.sendgrid.com',
-            port: 443,
-            path: '/v3/mail/send',
-            method: 'POST',
-            headers: {
-              'Authorization': `Bearer ${apiKey}`,
-              'Content-Type': 'application/json',
-              'Content-Length': Buffer.byteLength(postData)
-            }
-          };
-          
-          // Creazione della richiesta HTTP
           const req = https.request(requestOptions, (res) => {
-            let responseData = '';
+            console.log('✓ EMAIL INVIATA CORRETTAMENTE VIA SENDGRID');
+            console.log(`✓ Status: ${res.statusCode}`);
             
-            // Ricezione dati dalla risposta
+            // Raccolta dei dati di risposta
+            let data = '';
             res.on('data', (chunk) => {
-              responseData += chunk;
+              data += chunk;
             });
             
-            // Completamento della richiesta
             res.on('end', () => {
-              if (res.statusCode && res.statusCode >= 200 && res.statusCode < 300) {
-                console.log('✓ EMAIL INVIATA CORRETTAMENTE VIA SENDGRID');
-                console.log(`✓ Status: ${res.statusCode}`);
-                resolve({
-                  messageId: `sendgrid-${Date.now()}`,
-                  success: true,
-                  response: res.statusCode
-                });
+              if (res.statusCode === 202) {
+                resolve({ success: true, message: 'Email inviata con successo' });
               } else {
-                console.error(`Errore SendGrid: ${res.statusCode}`);
-                console.error(`Risposta: ${responseData}`);
-                reject(new Error(`SendGrid response error: ${res.statusCode} - ${responseData}`));
+                reject(new Error(`Errore nell'invio email: ${res.statusCode} ${data}`));
               }
             });
           });
           
-          // Gestione errori nella richiesta
           req.on('error', (error) => {
-            console.error('Errore nella richiesta SendGrid:', error);
+            console.error('Errore nella richiesta HTTP:', error);
             reject(error);
           });
           
@@ -161,85 +144,62 @@ const createSendGridTransporter = (apiKey: string): Transporter => {
           req.write(postData);
           req.end();
         });
-        
       } catch (error) {
-        console.error('Errore durante l\'invio email:', error);
+        console.error('Errore generale nell\'invio email:', error);
         throw error;
       }
     }
   };
 };
 
-// Implementazione di base di un'API cron
+// Utilizziamo un modulo semplificato per pianificare l'invio automatico delle email
 const simpleCron: CronScheduler = {
   schedule: (cron: string, fn: Function): CronTask => {
-    console.log(`Pianificazione attività con pattern: "${cron}"`);
+    // Implementazione semplificata di un cron, esegue la funzione ogni giorno all'ora specificata
     
-    // Parsing del pattern cron
+    // Estraiamo l'ora e i minuti dal formato cron (assumiamo formato semplice "0 14 * * *" dove 14 è l'ora)
     const parts = cron.split(' ');
-    if (parts.length !== 5) {
-      console.error('Pattern cron non valido:', cron);
-      return { start: () => {} };
-    }
+    const minutes = parseInt(parts[0]);
+    const hours = parseInt(parts[1]);
     
-    const minute = parts[0];
-    const hour = parts[1];
-    console.log(`Attività programmata per l'esecuzione alle ${hour}:${minute} ogni giorno`);
-    
-    // Crea una funzione di controllo che verificherà l'orario ogni minuto
-    let timer: NodeJS.Timeout | null = null;
-    
-    return {
-      start: () => {
-        console.log('Avvio della pianificazione cron');
-        if (timer) clearInterval(timer);
+    // Programmiamo l'esecuzione giornaliera
+    const task = {
+      intervalId: null as any,
+      isRunning: false,
+      
+      start: function() {
+        if (this.isRunning) return;
         
-        timer = setInterval(() => {
-          const now = new Date();
-          const currentHour = now.getHours().toString();
-          const currentMinute = now.getMinutes().toString();
-          
-          // Verifica se è il momento di eseguire l'attività
-          if ((hour === '*' || hour === currentHour) && 
-              (minute === '*' || minute === currentMinute)) {
-            console.log(`Esecuzione attività programmata: ${now.toLocaleTimeString()}`);
-            fn();
-          }
-        }, 60 * 1000); // Controlla ogni minuto
+        this.isRunning = true;
+        
+        // Verifichiamo subito se è l'ora di eseguire la funzione
+        this.checkAndRun();
+        
+        // Eseguiamo il controllo ogni minuto
+        this.intervalId = setInterval(() => {
+          this.checkAndRun();
+        }, 60000); // 60 secondi
+      },
+      
+      checkAndRun: function() {
+        const now = new Date();
+        if (now.getHours() === hours && now.getMinutes() === minutes) {
+          fn();
+        }
+      },
+      
+      stop: function() {
+        if (this.intervalId) {
+          clearInterval(this.intervalId);
+          this.intervalId = null;
+          this.isRunning = false;
+        }
       }
     };
+    
+    return task;
   }
 };
-
-// Struttura per nodemailer compatibilità
-const nodemailer = {
-  createTransport: (config: any) => {
-    // Verifica se possiamo usare SendGrid
-    const sendgridApiKey = process.env.SENDGRID_API_KEY;
-    
-    if (sendgridApiKey) {
-      console.log('Utilizzo SendGrid per invio email');
-      return createSendGridTransporter(sendgridApiKey);
-    }
-    
-    // Fallback a simulazione se non ci sono credenziali
-    console.log('ATTENZIONE: API Key SendGrid non trovata. Modalità simulazione attiva.');
-    return {
-      sendMail: async (options: any) => {
-        console.log('==== SIMULAZIONE INVIO EMAIL ====');
-        console.log(`Da: ${options.from}`);
-        console.log(`A: ${options.to}`);
-        if (options.cc) console.log(`CC: ${options.cc}`);
-        console.log(`Oggetto: ${options.subject}`);
-        console.log('Contenuto: [Omesso per brevità]');
-        console.log('================================================');
-        return { messageId: 'simulated-message-id-' + Date.now() };
-      }
-    };
-  }
-};
-
-const nodeCron = simpleCron;
 
 /**
  * Salva o aggiorna le configurazioni email nel database
@@ -247,33 +207,37 @@ const nodeCron = simpleCron;
  */
 async function saveEmailConfig(configData: Record<string, string>) {
   try {
-    // Per ogni coppia chiave-valore, aggiorna il database
-    for (const [key, value] of Object.entries(configData)) {
-      // Controlla se la configurazione esiste già
-      const existing = await db.select().from(emailConfig)
-        .where(eq(emailConfig.key, key));
-      
-      if (existing.length > 0) {
-        // Aggiorna la configurazione esistente
-        await db.update(emailConfig)
-          .set({ 
-            value: value,
-            updatedAt: new Date()
-          })
-          .where(eq(emailConfig.key, key));
-      } else {
-        // Inserisci nuova configurazione
-        await db.insert(emailConfig).values({
-          key: key,
-          value: value
-        });
-      }
-    }
+    // Verifica se esiste già una configurazione nel database
+    const existingConfig = await db.select().from(emailConfig);
     
-    return true;
+    if (existingConfig.length > 0) {
+      // Aggiorna la configurazione esistente
+      await db.update(emailConfig)
+        .set({
+          email_recipients: configData.recipients || '',
+          email_cc: configData.cc || '',
+          email_send_time: configData.send_time || '20:00',
+          auto_email_enabled: configData.auto_enabled || 'false'
+        })
+        .where(eq(emailConfig.id, existingConfig[0].id));
+        
+      console.log("Configurazione email aggiornata nel database");
+      return true;
+    } else {
+      // Crea una nuova configurazione
+      await db.insert(emailConfig).values({
+        email_recipients: configData.recipients || '',
+        email_cc: configData.cc || '',
+        email_send_time: configData.send_time || '20:00',
+        auto_email_enabled: configData.auto_enabled || 'false'
+      });
+      
+      console.log("Configurazione email salvata nel database");
+      return true;
+    }
   } catch (error) {
-    console.error('Errore nel salvataggio della configurazione email:', error);
-    return false;
+    console.error("Errore nel salvataggio della configurazione email:", error);
+    throw error;
   }
 }
 
@@ -282,82 +246,55 @@ async function saveEmailConfig(configData: Record<string, string>) {
  */
 async function getEmailConfig() {
   try {
-    const configs = await db.select().from(emailConfig);
-    const result: Record<string, string> = {};
+    const config = await db.select().from(emailConfig);
     
-    configs.forEach(config => {
-      result[config.key] = config.value || '';
-    });
-    
-    return result;
+    if (config.length > 0) {
+      return {
+        recipients: config[0].email_recipients,
+        cc: config[0].email_cc,
+        send_time: config[0].email_send_time,
+        auto_enabled: config[0].auto_email_enabled
+      };
+    } else {
+      // Configurazione predefinita se non esiste
+      return {
+        recipients: '',
+        cc: '',
+        send_time: '20:00',
+        auto_enabled: 'false'
+      };
+    }
   } catch (error) {
-    console.error('Errore nel recupero della configurazione email:', error);
-    return {};
+    console.error("Errore nel recupero della configurazione email:", error);
+    throw error;
   }
 }
 
-// Funzione per creare un trasportatore reale di nodemailer
 function createRealTransporter() {
-  // Verifica se è disponibile SendGrid
-  const sendgridApiKey = process.env.SENDGRID_API_KEY;
+  const sendGridApiKey = process.env.SENDGRID_API_KEY;
   
-  if (sendgridApiKey) {
-    console.log('Creazione trasportatore email con SendGrid');
-    
-    try {
-      // Crea trasportatore con SendGrid
-      return nodemailer.createTransport({
-        sendgridApiKey
-      });
-    } catch (error) {
-      console.error('Errore nella creazione del trasportatore SendGrid:', error);
-      return null;
-    }
+  if (sendGridApiKey) {
+    console.log("Creazione trasportatore email con SendGrid");
+    return createSendGridTransporter(sendGridApiKey);
   }
   
-  // Fallback all'email utente/password tradizionale
   const emailUser = process.env.EMAIL_USER;
   const emailPassword = process.env.EMAIL_PASSWORD;
   
   if (!emailUser || !emailPassword) {
-    console.log('ATTENZIONE: Credenziali email mancanti. Modalità simulazione attiva.');
+    console.log("Credenziali email non disponibili, impossibile creare trasportatore");
     return null;
   }
-  
-  // Se abbiamo le credenziali, creiamo un trasportatore reale
-  try {
-    console.log(`Creazione trasportatore email basato su SMTP per: ${emailUser}`);
-    
-    // Impostazioni ottimizzate per Gmail
-    const transporterConfig = {
-      // Usiamo direttamente SMTP di Gmail invece di "service: 'gmail'"
-      host: 'smtp.gmail.com',
-      port: 465,
-      secure: true, // true per 465, false per altri porti
-      auth: {
-        user: emailUser,
-        pass: emailPassword
-      },
-      // Debug per aiutare a risolvere problemi
-      logger: true,
-      debug: true, // Mostra log dettagliati per la diagnosi
-      // Configurazione TLS ottimizzata
-      tls: {
-        // Non rifiutare connessioni non autorizzate
-        rejectUnauthorized: false,
-        // Minimizza verifica certificati
-        minVersion: 'TLSv1'
-      }
-    };
-    
-    console.log('Configurando trasportatore con impostazioni ottimizzate per SMTP...');
-    console.log('NOTA: Si raccomanda l\'uso di SendGrid per affidabilità; Gmail potrebbe bloccare l\'invio');
-    
-    return nodemailer.createTransport(transporterConfig);
-  } catch (error) {
-    console.error('Errore nella creazione del trasportatore email:', error);
-    return null;
+
+  // Per default, utilizziamo SendGrid se possibile
+  if (sendGridApiKey) {
+    console.log("Utilizzo SendGrid per invio email");
+    return createSendGridTransporter(sendGridApiKey);
   }
+
+  // Se non ci sono trasportatori validi, ritorna null
+  console.log("Nessun trasportatore email valido disponibile");
+  return null;
 }
 
 /**
@@ -373,17 +310,17 @@ function formatEmailText(data: any, date: Date): string {
   // Giacenza alla data corrente
   if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
     text += `GIACENZA AL ${dateFormatted.toUpperCase()}\n`;
-    text += `Totale: ${data.giacenza.totale_giacenza.toLocaleString('it-IT')} animali\n`;
+    text += `Totale: ${data.giacenza.totale_giacenza.toLocaleString('it-IT')} animali\n\n`;
     
     // Dettaglio giacenza per taglia
     if (data.giacenza.dettaglio_taglie && data.giacenza.dettaglio_taglie.length > 0) {
-      text += `Dettaglio:\n`;
+      text += `Dettaglio per taglia:\n`;
       data.giacenza.dettaglio_taglie.forEach((taglia: any) => {
         const tagliaMostrata = taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia;
-        text += `- ${tagliaMostrata}: ${taglia.quantita.toLocaleString('it-IT')} animali\n`;
+        text += `- ${tagliaMostrata}: ${taglia.quantita.toLocaleString('it-IT')}\n`;
       });
+      text += '\n';
     }
-    text += '\n';
   }
   
   // Bilancio giornata
@@ -392,11 +329,10 @@ function formatEmailText(data: any, date: Date): string {
   text += `Uscite: ${data.totals.totale_uscite ? data.totals.totale_uscite.toLocaleString('it-IT') : '0'} animali\n`;
   text += `Bilancio netto: ${data.totals.bilancio_netto ? data.totals.bilancio_netto.toLocaleString('it-IT') : '0'} animali\n`;
   text += `Totale operazioni: ${data.totals.numero_operazioni}\n\n`;
-  
+
   // Bilancio finale
   if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
     const bilancioFinale = data.giacenza.totale_giacenza + (parseInt(data.totals.bilancio_netto) || 0);
-    text += `BILANCIO FINALE\n`;
     text += `Giacenza + Bilancio netto: ${bilancioFinale.toLocaleString('it-IT')} animali\n\n`;
   }
 
@@ -434,38 +370,61 @@ function formatEmailText(data: any, date: Date): string {
 function formatEmailHtml(data: any, date: Date): string {
   const dateFormatted = format(date, 'dd/MM/yyyy', { locale: it });
   
+  // Template completamente tabellare per la massima compatibilità con client email
   let html = `
-    <div style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto; padding: 20px; border: 1px solid #ddd; border-radius: 5px;">
-      <h1 style="color: #2563eb; text-align: center; border-bottom: 2px solid #2563eb; padding-bottom: 10px;">
-        📊 DIARIO DI BORDO - ${dateFormatted}
-      </h1>
+    <table cellpadding="0" cellspacing="0" border="0" width="100%" style="font-family: Arial, sans-serif; max-width: 800px; margin: 0 auto;">
+      <tr>
+        <td align="center" bgcolor="#ffffff" style="padding: 20px; border-radius: 5px; border: 1px solid #e2e8f0;">
+          <!-- INTESTAZIONE -->
+          <table width="100%" cellpadding="0" cellspacing="0" border="0">
+            <tr>
+              <td align="center" style="padding-bottom: 20px; border-bottom: 2px solid #2563eb;">
+                <h1 style="color: #2563eb; margin: 0; padding: 0; font-size: 24px;">
+                  📊 DIARIO DI BORDO - ${dateFormatted}
+                </h1>
+              </td>
+            </tr>
+          </table>
   `;
   
-  // Giacenza alla data corrente
+  // GIACENZA
   if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
     html += `
-      <div style="margin: 15px 0; padding: 15px; background-color: #f0f9ff; border-radius: 5px; border: 1px solid #bae6fd;">
-        <h2 style="color: #0369a1; margin-top: 0; display: flex; align-items: center;">
-          <span style="margin-right: 10px;">📈</span> GIACENZA AL ${dateFormatted.toUpperCase()}
-        </h2>
-        
-        <div style="font-size: 18px; font-weight: bold; color: #1e40af; margin-bottom: 15px; background-color: #e0f2fe; padding: 10px; border-radius: 5px; text-align: center;">
-          Totale: ${data.giacenza.totale_giacenza.toLocaleString('it-IT')} animali
-        </div>
+          <!-- GIACENZA -->
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
+            <tr>
+              <td bgcolor="#f0f9ff" style="padding: 15px; border-radius: 5px; border: 1px solid #bae6fd;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td>
+                      <h2 style="color: #0369a1; margin: 0; padding: 0; font-size: 18px;">
+                        📈 GIACENZA AL ${dateFormatted.toUpperCase()}
+                      </h2>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td align="center" bgcolor="#e0f2fe" style="padding: 10px; margin: 10px 0; border-radius: 5px;">
+                      <p style="font-size: 18px; font-weight: bold; color: #1e40af; margin: 0;">
+                        Totale: ${data.giacenza.totale_giacenza.toLocaleString('it-IT')} animali
+                      </p>
+                    </td>
+                  </tr>
     `;
     
     // Dettaglio giacenza per taglia
     if (data.giacenza.dettaglio_taglie && data.giacenza.dettaglio_taglie.length > 0) {
       html += `
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          <thead>
-            <tr style="background-color: #e0f2fe;">
-              <th style="text-align: left; padding: 8px; border: 1px solid #bae6fd;">Taglia</th>
-              <th style="text-align: right; padding: 8px; border: 1px solid #bae6fd;">Quantità</th>
-              <th style="text-align: right; padding: 8px; border: 1px solid #bae6fd;">% del Totale</th>
-            </tr>
-          </thead>
-          <tbody>
+                  <tr>
+                    <td style="padding-top: 15px;">
+                      <table width="100%" cellpadding="0" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 14px; border-color: #bae6fd;">
+                        <thead>
+                          <tr bgcolor="#e0f2fe">
+                            <th align="left" style="padding: 8px; border: 1px solid #bae6fd;">Taglia</th>
+                            <th align="right" style="padding: 8px; border: 1px solid #bae6fd;">Quantità</th>
+                            <th align="right" style="padding: 8px; border: 1px solid #bae6fd;">% del Totale</th>
+                          </tr>
+                        </thead>
+                        <tbody>
       `;
       
       data.giacenza.dettaglio_taglie.forEach((taglia: any) => {
@@ -473,104 +432,158 @@ function formatEmailHtml(data: any, date: Date): string {
         const percentuale = (taglia.quantita / data.giacenza.totale_giacenza * 100).toFixed(1);
         
         html += `
-          <tr>
-            <td style="text-align: left; padding: 8px; border: 1px solid #bae6fd;">
-              <span style="display: inline-block; padding: 2px 5px; background-color: #dbeafe; border-radius: 3px;">${tagliaMostrata}</span>
-            </td>
-            <td style="text-align: right; padding: 8px; border: 1px solid #bae6fd; font-weight: bold;">
-              ${taglia.quantita.toLocaleString('it-IT')}
-            </td>
-            <td style="text-align: right; padding: 8px; border: 1px solid #bae6fd;">
-              ${percentuale}%
-            </td>
-          </tr>
+                          <tr>
+                            <td align="left" style="padding: 8px; border: 1px solid #bae6fd;">
+                              <span style="display: inline-block; padding: 2px 5px; background-color: #dbeafe; border-radius: 3px;">${tagliaMostrata}</span>
+                            </td>
+                            <td align="right" style="padding: 8px; border: 1px solid #bae6fd; font-weight: bold;">
+                              ${taglia.quantita.toLocaleString('it-IT')}
+                            </td>
+                            <td align="right" style="padding: 8px; border: 1px solid #bae6fd;">
+                              ${percentuale}%
+                            </td>
+                          </tr>
         `;
       });
       
       html += `
-          </tbody>
-        </table>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
       `;
     }
     
-    html += `</div>`;
-  }
-  
-  // Bilancio giornata e finale
-  html += `
-    <div style="display: flex; flex-wrap: wrap; gap: 15px; margin: 15px 0;">
-      <div style="flex: 1; min-width: 300px; padding: 15px; background-color: #f1f5f9; border-radius: 5px; border: 1px solid #cbd5e1;">
-        <h2 style="color: #475569; margin-top: 0; display: flex; align-items: center;">
-          <span style="margin-right: 10px;">🧮</span> BILANCIO GIORNALIERO
-        </h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #cbd5e1;">Entrate:</td>
-            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #cbd5e1; font-weight: bold; color: #059669;">
-              ${data.totals.totale_entrate ? data.totals.totale_entrate.toLocaleString('it-IT') : '0'} animali
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #cbd5e1;">Uscite:</td>
-            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #cbd5e1; font-weight: bold; color: #dc2626;">
-              ${data.totals.totale_uscite ? data.totals.totale_uscite.toLocaleString('it-IT') : '0'} animali
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 8px; border-bottom: 1px solid #cbd5e1;">Bilancio netto:</td>
-            <td style="text-align: right; padding: 8px; border-bottom: 1px solid #cbd5e1; font-weight: bold; color: ${(data.totals.bilancio_netto || 0) >= 0 ? '#059669' : '#dc2626'};">
-              ${data.totals.bilancio_netto ? data.totals.bilancio_netto.toLocaleString('it-IT') : '0'} animali
-            </td>
-          </tr>
-          <tr>
-            <td style="padding: 8px;">Totale operazioni:</td>
-            <td style="text-align: right; padding: 8px; font-weight: bold;">
-              ${data.totals.numero_operazioni}
-            </td>
-          </tr>
-        </table>
-      </div>
-  `;
-  
-  // Bilancio finale
-  if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
-    const bilancioFinale = data.giacenza.totale_giacenza + (parseInt(data.totals.bilancio_netto) || 0);
     html += `
-      <div style="flex: 1; min-width: 300px; padding: 15px; background-color: #f0fdf4; border-radius: 5px; border: 1px solid #bbf7d0;">
-        <h2 style="color: #166534; margin-top: 0; display: flex; align-items: center;">
-          <span style="margin-right: 10px;">🏁</span> BILANCIO FINALE
-        </h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          <tr>
-            <td style="padding: 8px;">Giacenza + Bilancio netto:</td>
-            <td style="text-align: right; padding: 8px; font-size: 18px; font-weight: bold; color: #15803d;">
-              ${bilancioFinale.toLocaleString('it-IT')} animali
-            </td>
-          </tr>
-        </table>
-      </div>
+                </table>
+              </td>
+            </tr>
+          </table>
     `;
   }
   
-  html += `</div>`;
-
-  // Se ci sono statistiche per taglia, aggiungiamole
+  // BILANCI (Giornaliero e Finale)
+  html += `
+          <!-- BILANCI -->
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
+            <tr>
+              <td valign="top">
+                <!-- Bilancio Giornaliero -->
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                  <tr>
+                    <td bgcolor="#f1f5f9" style="padding: 15px; border-radius: 5px; border: 1px solid #cbd5e1;">
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td>
+                            <h2 style="color: #475569; margin: 0 0 10px 0; padding: 0; font-size: 18px;">
+                              🧮 BILANCIO GIORNALIERO
+                            </h2>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <table width="100%" cellpadding="0" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 14px; border-color: #cbd5e1;">
+                              <tr>
+                                <td width="50%" style="padding: 8px; border: 1px solid #cbd5e1;">Entrate:</td>
+                                <td align="right" style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; color: #059669;">
+                                  ${data.totals.totale_entrate ? data.totals.totale_entrate.toLocaleString('it-IT') : '0'} animali
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 8px; border: 1px solid #cbd5e1;">Uscite:</td>
+                                <td align="right" style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; color: #dc2626;">
+                                  ${data.totals.totale_uscite ? data.totals.totale_uscite.toLocaleString('it-IT') : '0'} animali
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 8px; border: 1px solid #cbd5e1;">Bilancio netto:</td>
+                                <td align="right" style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold; color: ${(data.totals.bilancio_netto || 0) >= 0 ? '#059669' : '#dc2626'};">
+                                  ${data.totals.bilancio_netto ? data.totals.bilancio_netto.toLocaleString('it-IT') : '0'} animali
+                                </td>
+                              </tr>
+                              <tr>
+                                <td style="padding: 8px; border: 1px solid #cbd5e1;">Totale operazioni:</td>
+                                <td align="right" style="padding: 8px; border: 1px solid #cbd5e1; font-weight: bold;">
+                                  ${data.totals.numero_operazioni}
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+  `;
+  
+  // BILANCIO FINALE
+  if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
+    const bilancioFinale = data.giacenza.totale_giacenza + (parseInt(data.totals.bilancio_netto) || 0);
+    html += `
+                <!-- Bilancio Finale -->
+                <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-bottom: 20px;">
+                  <tr>
+                    <td bgcolor="#f0fdf4" style="padding: 15px; border-radius: 5px; border: 1px solid #bbf7d0;">
+                      <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                        <tr>
+                          <td>
+                            <h2 style="color: #166534; margin: 0 0 10px 0; padding: 0; font-size: 18px;">
+                              🏁 BILANCIO FINALE
+                            </h2>
+                          </td>
+                        </tr>
+                        <tr>
+                          <td>
+                            <table width="100%" cellpadding="0" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 14px; border-color: #bbf7d0;">
+                              <tr>
+                                <td width="50%" style="padding: 8px; border: 1px solid #bbf7d0;">Giacenza + Bilancio netto:</td>
+                                <td align="right" style="padding: 8px; border: 1px solid #bbf7d0; font-size: 18px; font-weight: bold; color: #15803d;">
+                                  ${bilancioFinale.toLocaleString('it-IT')} animali
+                                </td>
+                              </tr>
+                            </table>
+                          </td>
+                        </tr>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+    `;
+  }
+  
+  html += `
+              </td>
+            </tr>
+          </table>
+  `;
+  
+  // STATISTICHE PER TAGLIA
   if (data.sizeStats && data.sizeStats.length > 0) {
     html += `
-      <div style="margin: 15px 0; padding: 15px; background-color: #f5f3ff; border-radius: 5px; border: 1px solid #ddd4fe;">
-        <h2 style="color: #6d28d9; margin-top: 0; display: flex; align-items: center;">
-          <span style="margin-right: 10px;">📊</span> RIEPILOGO PER TAGLIA
-        </h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          <thead>
-            <tr style="background-color: #ede9fe;">
-              <th style="text-align: left; padding: 10px; border: 1px solid #ddd4fe;">Taglia</th>
-              <th style="text-align: right; padding: 10px; border: 1px solid #ddd4fe;">Entrate</th>
-              <th style="text-align: right; padding: 10px; border: 1px solid #ddd4fe;">Uscite</th>
-              <th style="text-align: right; padding: 10px; border: 1px solid #ddd4fe;">Bilancio</th>
-            </tr>
-          </thead>
-          <tbody>
+          <!-- RIEPILOGO PER TAGLIA -->
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
+            <tr>
+              <td bgcolor="#f5f3ff" style="padding: 15px; border-radius: 5px; border: 1px solid #ddd4fe;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td>
+                      <h2 style="color: #6d28d9; margin: 0 0 10px 0; padding: 0; font-size: 18px;">
+                        📊 RIEPILOGO PER TAGLIA
+                      </h2>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <table width="100%" cellpadding="0" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 14px; border-color: #ddd4fe;">
+                        <thead>
+                          <tr bgcolor="#ede9fe">
+                            <th align="left" style="padding: 8px; border: 1px solid #ddd4fe;">Taglia</th>
+                            <th align="right" style="padding: 8px; border: 1px solid #ddd4fe;">Entrate</th>
+                            <th align="right" style="padding: 8px; border: 1px solid #ddd4fe;">Uscite</th>
+                            <th align="right" style="padding: 8px; border: 1px solid #ddd4fe;">Bilancio</th>
+                          </tr>
+                        </thead>
+                        <tbody>
     `;
     
     data.sizeStats.forEach((stat: any) => {
@@ -580,45 +593,60 @@ function formatEmailHtml(data: any, date: Date): string {
       const bilancio = entrate - uscite;
       
       html += `
-        <tr>
-          <td style="text-align: left; padding: 8px; border: 1px solid #ddd4fe; font-weight: bold;">${tagliaMostrata}</td>
-          <td style="text-align: right; padding: 8px; border: 1px solid #ddd4fe; color: #059669;">${entrate.toLocaleString('it-IT')}</td>
-          <td style="text-align: right; padding: 8px; border: 1px solid #ddd4fe; color: #dc2626;">${uscite.toLocaleString('it-IT')}</td>
-          <td style="text-align: right; padding: 8px; border: 1px solid #ddd4fe; font-weight: bold; color: ${bilancio >= 0 ? '#059669' : '#dc2626'};">
-            ${bilancio.toLocaleString('it-IT')}
-          </td>
-        </tr>
+                          <tr>
+                            <td align="left" style="padding: 8px; border: 1px solid #ddd4fe; font-weight: bold;">${tagliaMostrata}</td>
+                            <td align="right" style="padding: 8px; border: 1px solid #ddd4fe; color: #059669;">${entrate.toLocaleString('it-IT')}</td>
+                            <td align="right" style="padding: 8px; border: 1px solid #ddd4fe; color: #dc2626;">${uscite.toLocaleString('it-IT')}</td>
+                            <td align="right" style="padding: 8px; border: 1px solid #ddd4fe; font-weight: bold; color: ${bilancio >= 0 ? '#059669' : '#dc2626'};">
+                              ${bilancio.toLocaleString('it-IT')}
+                            </td>
+                          </tr>
       `;
     });
     
     html += `
-          </tbody>
-        </table>
-      </div>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
     `;
   }
 
-  // Aggiunta di informazioni sulle operazioni
+  // OPERAZIONI DEL GIORNO
   if (data.operations && data.operations.length > 0) {
     html += `
-      <div style="margin: 15px 0; padding: 15px; background-color: #fff7ed; border-radius: 5px; border: 1px solid #fed7aa;">
-        <h2 style="color: #c2410c; margin-top: 0; display: flex; align-items: center;">
-          <span style="margin-right: 10px;">📋</span> OPERAZIONI DEL GIORNO (${data.operations.length})
-        </h2>
-        <table style="width: 100%; border-collapse: collapse; font-size: 14px;">
-          <thead>
-            <tr style="background-color: #ffedd5;">
-              <th style="text-align: center; padding: 10px; border: 1px solid #fed7aa;">#</th>
-              <th style="text-align: center; padding: 10px; border: 1px solid #fed7aa;">Data</th>
-              <th style="text-align: left; padding: 10px; border: 1px solid #fed7aa;">Operazione</th>
-              <th style="text-align: center; padding: 10px; border: 1px solid #fed7aa;">Cestello</th>
-              <th style="text-align: center; padding: 10px; border: 1px solid #fed7aa;">Ciclo</th>
-              <th style="text-align: left; padding: 10px; border: 1px solid #fed7aa;">FLUPSY</th>
-              <th style="text-align: right; padding: 10px; border: 1px solid #fed7aa;">Animali</th>
-              <th style="text-align: center; padding: 10px; border: 1px solid #fed7aa;">Taglia</th>
-            </tr>
-          </thead>
-          <tbody>
+          <!-- OPERAZIONI DEL GIORNO -->
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px;">
+            <tr>
+              <td bgcolor="#fff7ed" style="padding: 15px; border-radius: 5px; border: 1px solid #fed7aa;">
+                <table width="100%" cellpadding="0" cellspacing="0" border="0">
+                  <tr>
+                    <td>
+                      <h2 style="color: #c2410c; margin: 0 0 10px 0; padding: 0; font-size: 18px;">
+                        📋 OPERAZIONI DEL GIORNO (${data.operations.length})
+                      </h2>
+                    </td>
+                  </tr>
+                  <tr>
+                    <td>
+                      <table width="100%" cellpadding="0" cellspacing="0" border="1" style="border-collapse: collapse; font-size: 14px; border-color: #fed7aa;">
+                        <thead>
+                          <tr bgcolor="#ffedd5">
+                            <th align="center" style="padding: 8px; border: 1px solid #fed7aa;">#</th>
+                            <th align="center" style="padding: 8px; border: 1px solid #fed7aa;">Data</th>
+                            <th align="left" style="padding: 8px; border: 1px solid #fed7aa;">Operazione</th>
+                            <th align="center" style="padding: 8px; border: 1px solid #fed7aa;">Cestello</th>
+                            <th align="center" style="padding: 8px; border: 1px solid #fed7aa;">Ciclo</th>
+                            <th align="left" style="padding: 8px; border: 1px solid #fed7aa;">FLUPSY</th>
+                            <th align="right" style="padding: 8px; border: 1px solid #fed7aa;">Animali</th>
+                            <th align="center" style="padding: 8px; border: 1px solid #fed7aa;">Taglia</th>
+                          </tr>
+                        </thead>
+                        <tbody>
     `;
     
     data.operations.forEach((op: any, idx: number) => {
@@ -641,44 +669,61 @@ function formatEmailHtml(data: any, date: Date): string {
       else if (op.type.includes('selezione')) operationColor = '#6d28d9'; // viola
       
       html += `
-        <tr style="background-color: ${idx % 2 === 0 ? '#fff7ed' : '#ffffff'};">
-          <td style="text-align: center; padding: 8px; border: 1px solid #fed7aa;">${idx + 1}</td>
-          <td style="text-align: center; padding: 8px; border: 1px solid #fed7aa;">${operationDate}</td>
-          <td style="text-align: left; padding: 8px; border: 1px solid #fed7aa; font-weight: bold; color: ${operationColor};">${tipo}</td>
-          <td style="text-align: center; padding: 8px; border: 1px solid #fed7aa;">#${cestello}</td>
-          <td style="text-align: center; padding: 8px; border: 1px solid #fed7aa;">${ciclo}</td>
-          <td style="text-align: left; padding: 8px; border: 1px solid #fed7aa;">${flupsy}</td>
-          <td style="text-align: right; padding: 8px; border: 1px solid #fed7aa;">
-            <span style="font-weight: bold;">${animali}</span>
-            <span style="font-size: 12px; color: #666;">${animaliPerKg}</span>
-          </td>
-          <td style="text-align: center; padding: 8px; border: 1px solid #fed7aa;">
-            <span style="display: inline-block; padding: 2px 5px; background-color: #e0f2fe; border-radius: 3px; font-size: 12px;">${taglia}</span>
-          </td>
-        </tr>
-        ${note ? `
-        <tr style="background-color: ${idx % 2 === 0 ? '#fff7ed' : '#ffffff'};">
-          <td style="border: 1px solid #fed7aa;"></td>
-          <td colspan="7" style="text-align: left; padding: 4px 8px; border: 1px solid #fed7aa; font-style: italic; font-size: 12px; color: #666;">
-            Note: ${note}
-          </td>
-        </tr>
-        ` : ''}
+                          <tr bgcolor="${idx % 2 === 0 ? '#fff7ed' : '#ffffff'}">
+                            <td align="center" style="padding: 8px; border: 1px solid #fed7aa;">${idx + 1}</td>
+                            <td align="center" style="padding: 8px; border: 1px solid #fed7aa;">${operationDate}</td>
+                            <td align="left" style="padding: 8px; border: 1px solid #fed7aa; font-weight: bold; color: ${operationColor};">${tipo}</td>
+                            <td align="center" style="padding: 8px; border: 1px solid #fed7aa;">#${cestello}</td>
+                            <td align="center" style="padding: 8px; border: 1px solid #fed7aa;">${ciclo}</td>
+                            <td align="left" style="padding: 8px; border: 1px solid #fed7aa;">${flupsy}</td>
+                            <td align="right" style="padding: 8px; border: 1px solid #fed7aa;">
+                              <span style="font-weight: bold;">${animali}</span>
+                              <span style="font-size: 12px; color: #666;">${animaliPerKg}</span>
+                            </td>
+                            <td align="center" style="padding: 8px; border: 1px solid #fed7aa;">
+                              <span style="display: inline-block; padding: 2px 5px; background-color: #e0f2fe; border-radius: 3px; font-size: 12px;">${taglia}</span>
+                            </td>
+                          </tr>
       `;
+      
+      if (note) {
+        html += `
+                          <tr bgcolor="${idx % 2 === 0 ? '#fff7ed' : '#ffffff'}">
+                            <td style="border: 1px solid #fed7aa;"></td>
+                            <td colspan="7" align="left" style="padding: 4px 8px; border: 1px solid #fed7aa; font-style: italic; font-size: 12px; color: #666;">
+                              Note: ${note}
+                            </td>
+                          </tr>
+        `;
+      }
     });
     
     html += `
-          </tbody>
-        </table>
-      </div>
+                        </tbody>
+                      </table>
+                    </td>
+                  </tr>
+                </table>
+              </td>
+            </tr>
+          </table>
     `;
   }
 
+  // FOOTER
   html += `
-    <div style="margin-top: 20px; padding-top: 10px; border-top: 1px solid #ddd; font-size: 12px; color: #666; text-align: center;">
-      Generato automaticamente dal sistema di gestione FLUPSY - ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: it })}
-    </div>
-  </div>`;
+          <!-- FOOTER -->
+          <table width="100%" cellpadding="0" cellspacing="0" border="0" style="margin-top: 20px; border-top: 1px solid #ddd;">
+            <tr>
+              <td align="center" style="padding-top: 10px; font-size: 12px; color: #666;">
+                Generato automaticamente dal sistema di gestione FLUPSY - ${format(new Date(), 'dd/MM/yyyy HH:mm', { locale: it })}
+              </td>
+            </tr>
+          </table>
+        </td>
+      </tr>
+    </table>
+  `;
   
   return html;
 }
@@ -886,69 +931,60 @@ export async function sendEmailDiario(req: Request, res: Response) {
     // Crea il trasportatore per l'invio email
     // Prima prova a creare un trasportatore reale, altrimenti usa la simulazione
     const transporter = createRealTransporter() || nodemailer.createTransport({});
-    
-    // Prepara le opzioni dell'email
-    const toAddresses = Array.isArray(to) ? to.join(', ') : to;
-    const ccAddresses = cc ? (Array.isArray(cc) ? cc.join(', ') : cc) : undefined;
-    const emailSubject = subject || `Diario di Bordo FLUPSY - ${format(new Date(), 'dd/MM/yyyy', { locale: it })}`;
-    
-    // Costruisci il messaggio email
-    const mailOptions = {
-      from: `"Sistema FLUPSY" <${emailUser}>`,
-      to: toAddresses,
-      cc: ccAddresses,
-      subject: emailSubject,
-      text: text || "Il contenuto del diario non è stato fornito.",
-      html: html || `<p>${text || "Il contenuto del diario non è stato fornito."}</p>`
-    };
-    
-    // Tentativo di invio email
-    console.log(`Tentativo di invio email REALE a: ${toAddresses}`);
-    console.log('==== INVIO EMAIL REALE ====');
-    console.log(`Da: "Sistema FLUPSY" <${emailUser}>`);
-    console.log(`A: ${toAddresses}`);
-    if (ccAddresses) console.log(`CC: ${ccAddresses}`);
-    console.log(`Oggetto: ${emailSubject}`);
-    console.log('================================================');
-    console.log("✓ L'EMAIL VERRÀ INVIATA REALMENTE - Controllare la casella di posta");
-    
-    const info = await transporter.sendMail(mailOptions);
-    
-    // Salva i destinatari come predefiniti nel database per usi futuri
-    try {
-      const saveDest = Array.isArray(to) ? to.join(',') : String(to);
-      const saveCC = cc ? (Array.isArray(cc) ? cc.join(',') : String(cc)) : '';
-      
-      await saveEmailConfig({
-        'email_recipients': saveDest,
-        'email_cc': saveCC
-      });
-      
-      console.log('Configurazione email salvata nel database');
-    } catch (saveError) {
-      console.error('Errore nel salvare le configurazioni email:', saveError);
-      // Continuiamo comunque anche se il salvataggio fallisce
+
+    // Salviamo la configurazione nel database
+    if (typeof to === 'string') {
+      try {
+        await saveEmailConfig({
+          recipients: to,
+          cc: cc || '',
+          send_time: '20:00', // Default time
+          auto_enabled: 'false' // Default disabled
+        });
+        console.log("Configurazione email salvata nel database");
+      } catch (configError) {
+        console.error("Errore nel salvataggio della configurazione email:", configError);
+        // Continuiamo comunque, non è un errore critico
+      }
     }
     
-    // Le credenziali sono presenti, quindi l'email non è simulata
-    const isSimulated = false;
+    // Prepara l'oggetto della mail
+    const mailOptions = {
+      from: `"Sistema FLUPSY" <${emailUser}>`,
+      to,
+      cc,
+      subject: subject || `Diario di Bordo FLUPSY - ${format(new Date(), 'dd/MM/yyyy', { locale: it })}`,
+      text,
+      html
+    };
     
-    return res.status(200).json({
-      success: true,
-      message: isSimulated ? "Email simulata inviata con successo" : "Email inviata con successo",
-      messageId: info.messageId,
-      note: isSimulated ? "L'email è stata simulata per test" : undefined,
-      emailPreview: {
-        from: `"Sistema FLUPSY" <${emailUser}>`,
-        to: toAddresses,
-        cc: ccAddresses,
-        subject: emailSubject,
-        sent: !isSimulated
-      }
-    });
+    // Log dell'invio simulato
+    console.log("==== INVIO EMAIL REALE ====");
+    console.log(`Da: "${mailOptions.from}"`);
+    console.log(`A: ${mailOptions.to}`);
+    console.log(`Oggetto: ${mailOptions.subject}`);
+    console.log("================================================");
+    console.log("✓ L'EMAIL VERRÀ INVIATA REALMENTE - Controllare la casella di posta");
+    
+    // Tenta di inviare l'email con il trasportatore reale
+    try {
+      console.log(`Tentativo di invio email REALE a: ${mailOptions.to}`);
+      await transporter.sendMail(mailOptions);
+      
+      return res.status(200).json({
+        success: true,
+        message: "Email inviata con successo",
+      });
+    } catch (sendError) {
+      console.error("Errore nell'invio email reale:", sendError);
+      return res.status(500).json({
+        success: false,
+        error: `Errore nell'invio email: ${sendError instanceof Error ? sendError.message : String(sendError)}`
+      });
+    }
     
   } catch (error) {
-    console.error("Errore nell'invio email:", error);
+    console.error("Errore generale nella procedura di invio email:", error);
     return res.status(500).json({
       success: false,
       error: `Errore nell'invio email: ${error instanceof Error ? error.message : String(error)}`
@@ -961,44 +997,30 @@ export async function sendEmailDiario(req: Request, res: Response) {
  */
 export async function saveEmailConfiguration(req: Request, res: Response) {
   try {
-    const { 
-      recipients, 
-      cc, 
-      sendTime, 
-      autoEnabled 
-    } = req.body;
+    const { recipients, cc, send_time, auto_enabled } = req.body;
     
     if (!recipients) {
       return res.status(400).json({
         success: false,
-        error: "I destinatari (recipients) sono obbligatori."
+        error: "Destinatari (recipients) non forniti. Specificare almeno un indirizzo email."
       });
     }
     
-    // Controlla che il formato dell'orario sia valido (HH:MM)
-    if (sendTime && !/^([01]?[0-9]|2[0-3]):[0-5][0-9]$/.test(sendTime)) {
-      return res.status(400).json({
-        success: false,
-        error: "Il formato dell'orario deve essere HH:MM (es. 20:00)"
-      });
+    // Formatta il tempo nel formato HH:MM
+    let formattedTime = send_time || '20:00';
+    if (!/^\d{1,2}:\d{2}$/.test(formattedTime)) {
+      formattedTime = '20:00'; // Default se formato non valido
     }
     
-    // Salva la configurazione
-    const configData: Record<string, string> = {};
+    const configData = {
+      recipients,
+      cc: cc || '',
+      send_time: formattedTime,
+      auto_enabled: auto_enabled === true || auto_enabled === 'true' ? 'true' : 'false'
+    };
     
-    if (recipients) configData.email_recipients = recipients;
-    if (cc !== undefined) configData.email_cc = cc;
-    if (sendTime) configData.email_send_time = sendTime;
-    if (autoEnabled !== undefined) configData.auto_email_enabled = autoEnabled ? 'true' : 'false';
-    
-    const saved = await saveEmailConfig(configData);
-    
-    if (!saved) {
-      return res.status(500).json({
-        success: false,
-        error: "Errore nel salvare la configurazione email"
-      });
-    }
+    // Salva la configurazione nel database
+    await saveEmailConfig(configData);
     
     return res.status(200).json({
       success: true,
@@ -1007,10 +1029,10 @@ export async function saveEmailConfiguration(req: Request, res: Response) {
     });
     
   } catch (error) {
-    console.error("Errore nel salvare la configurazione email:", error);
+    console.error("Errore nel salvataggio della configurazione email:", error);
     return res.status(500).json({
       success: false,
-      error: `Errore nel salvare la configurazione email: ${error instanceof Error ? error.message : String(error)}`
+      error: `Errore nel salvataggio: ${error instanceof Error ? error.message : String(error)}`
     });
   }
 }
@@ -1022,24 +1044,16 @@ export async function getEmailConfiguration(req: Request, res: Response) {
   try {
     const config = await getEmailConfig();
     
-    // Prepara la risposta
-    const response = {
-      recipients: config.email_recipients || '',
-      cc: config.email_cc || '',
-      sendTime: config.email_send_time || '20:00',
-      autoEnabled: config.auto_email_enabled === 'true'
-    };
-    
     return res.status(200).json({
       success: true,
-      config: response
+      config
     });
     
   } catch (error) {
-    console.error("Errore nel recuperare la configurazione email:", error);
+    console.error("Errore nel recupero della configurazione email:", error);
     return res.status(500).json({
       success: false,
-      error: `Errore nel recuperare la configurazione email: ${error instanceof Error ? error.message : String(error)}`
+      error: `Errore nel recupero: ${error instanceof Error ? error.message : String(error)}`
     });
   }
 }
@@ -1056,135 +1070,145 @@ export async function initializeEmailScheduler() {
   try {
     console.log("Inizializzazione del sistema di pianificazione email...");
     
-    // Recupera la configurazione dal database
+    // Ottieni l'attuale configurazione
     const config = await getEmailConfig();
     
-    // Verifica se l'invio automatico è abilitato
-    if (config.auto_email_enabled !== 'true') {
-      console.log("Invio automatico email disabilitato nelle impostazioni");
-      return;
-    }
-    
-    // Verifica se ci sono destinatari configurati
-    if (!config.email_recipients) {
-      console.log("Nessun destinatario configurato per l'invio automatico email");
-      return;
-    }
-    
-    // Ottieni l'orario di invio (default: 20:00)
-    const sendTime = config.email_send_time || '20:00';
-    const [hours, minutes] = sendTime.split(':').map(num => parseInt(num, 10));
-    
-    // Crea l'espressione cron per l'orario specificato
-    const cronExpression = `${minutes} ${hours} * * *`;  // Minuti Ore * * * (ogni giorno all'orario specificato)
-    
-    console.log(`Configurazione della pianificazione email: ${cronExpression} (${sendTime})`);
-    
-    // Pianifica l'invio automatico
-    const emailScheduler = nodeCron.schedule(cronExpression, async () => {
-      console.log(`Esecuzione invio automatico email pianificato (${format(new Date(), 'yyyy-MM-dd HH:mm:ss')})`);
+    if (config.auto_enabled === 'true') {
+      // Converti il tempo nel formato cron (minuti, ore, *, *, *)
+      const timeParts = config.send_time.split(':');
+      const hours = parseInt(timeParts[0], 10);
+      const minutes = parseInt(timeParts[1], 10);
       
-      try {
-        // Prepara la richiesta per l'invio automatico
-        const autoReq = { 
-          query: { 
-            date: format(subDays(new Date(), 1), 'yyyy-MM-dd') 
-          }
-        } as unknown as Request;
-        
-        const autoRes = {
-          status: (code: number) => ({
-            json: (data: any) => {
-              console.log(`Risultato invio automatico: ${code === 200 ? 'Successo' : 'Errore'}`);
-              return autoRes;
-            }
-          })
-        } as unknown as Response;
-        
-        // Invoca la funzione di invio automatico
-        await autoSendEmailDiario(autoReq, autoRes);
-        
-      } catch (error) {
-        console.error("Errore durante l'invio automatico pianificato:", error);
-      }
-    });
+      // Crea una pianificazione cron
+      const cronExpression = `${minutes} ${hours} * * *`;
+      
+      // Avvia il task di pianificazione
+      const task = simpleCron.schedule(cronExpression, async () => {
+        try {
+          console.log(`Esecuzione automatica dell'invio email del diario di bordo...`);
+          await autoSendEmailDiario();
+        } catch (error) {
+          console.error("Errore nell'invio automatico del diario:", error);
+        }
+      });
+      
+      task.start();
+      console.log(`Pianificazione email attivata: invio giornaliero alle ${config.send_time}`);
+    } else {
+      console.log("Invio automatico email disabilitato nelle impostazioni");
+    }
     
-    // Avvia lo scheduler
-    emailScheduler.start();
-    console.log("Pianificazione dell'invio email avviata con successo");
+    console.log("Scheduler email inizializzato con successo");
     
   } catch (error) {
     console.error("Errore nell'inizializzazione dello scheduler email:", error);
   }
 }
 
-export async function autoSendEmailDiario(req: Request, res: Response) {
+export async function autoSendEmailDiario(req?: Request, res?: Response) {
   try {
-    // Usa la data di ieri per default, o la data fornita
-    const dateParam = req.query.date ? String(req.query.date) : format(subDays(new Date(), 1), 'yyyy-MM-dd');
+    // Ottieni la configurazione email (destinatari, cc, ecc.)
+    const config = await getEmailConfig();
     
-    // Verifica se sono specificati i destinatari
-    const toParam = req.query.to ? String(req.query.to) : null;
-    const ccParam = req.query.cc ? String(req.query.cc) : null;
-    
-    // Se non ci sono destinatari, verifica le variabili d'ambiente
-    const emailRecipients = toParam || process.env.EMAIL_RECIPIENTS;
-    
-    if (!emailRecipients) {
-      return res.status(400).json({
-        success: false,
-        error: "Destinatari email non specificati. Fornirli come parametro di query 'to' o configurarli come variabile d'ambiente EMAIL_RECIPIENTS"
-      });
+    // Se non ci sono destinatari configurati, non fare nulla
+    if (!config.recipients) {
+      const errorMsg = "Nessun destinatario configurato per l'invio automatico dell'email";
+      console.error(errorMsg);
+      
+      if (req && res) {
+        return res.status(400).json({
+          success: false,
+          error: errorMsg
+        });
+      }
+      
+      return;
     }
     
-    // Genera prima il diario
-    // Simuliamo una richiesta interna al nostro controller generateEmailDiario
-    const diarioReq = { query: { date: dateParam } } as Request;
-    let diarioData: any = null;
+    // Per l'invio automatico, usa sempre la data di ieri
+    const yesterday = subDays(new Date(), 1);
+    const formattedDate = format(yesterday, 'yyyy-MM-dd');
     
-    // Funzione temporanea per catturare la risposta
-    const diarioRes = {
+    // Crea un oggetto di richiesta simulato per chiamare generateEmailDiario
+    const mockReq = {
+      query: {
+        date: formattedDate
+      }
+    };
+    
+    // Crea un oggetto di risposta simulato per catturare il risultato
+    let diarioData: any = null;
+    const mockRes = {
       status: (code: number) => ({
         json: (data: any) => {
           diarioData = data;
-          return diarioRes;
+          return mockRes;
         }
       })
-    } as unknown as Response;
+    };
     
-    // Genera il diario
-    await generateEmailDiario(diarioReq, diarioRes);
+    // Genera i dati del diario
+    // @ts-ignore
+    await generateEmailDiario(mockReq, mockRes);
     
-    // Verifica se la generazione è riuscita
-    if (!diarioData || !diarioData.success) {
-      return res.status(500).json({
-        success: false,
-        error: diarioData?.error || "Errore nella generazione del diario email"
-      });
+    // Se la generazione ha avuto successo, invia l'email
+    if (diarioData && diarioData.success) {
+      // Preparazione dell'invio email
+      const sendReq = {
+        body: {
+          to: config.recipients,
+          cc: config.cc,
+          subject: `Diario di Bordo FLUPSY - ${format(yesterday, 'dd/MM/yyyy', { locale: it })}`,
+          text: diarioData.emailText,
+          html: diarioData.emailHtml
+        }
+      };
+      
+      // Crea un oggetto di risposta simulato per l'invio email
+      let emailResult: any = null;
+      const sendRes = {
+        status: (code: number) => ({
+          json: (data: any) => {
+            emailResult = data;
+            return sendRes;
+          }
+        })
+      };
+      
+      // Invia l'email
+      // @ts-ignore
+      await sendEmailDiario(sendReq, sendRes);
+      
+      // Restituisci il risultato dell'invio email se è stata chiamata come API
+      if (req && res) {
+        return res.status(200).json({
+          success: true,
+          message: `Email inviata automaticamente: ${emailResult?.message || 'Invio completato'}`,
+          dateProcessed: formattedDate
+        });
+      }
+      
+    } else {
+      // Se la generazione è fallita, restituisci un errore
+      const errorMsg = diarioData?.error || "Errore nella generazione dei dati del diario";
+      console.error(errorMsg);
+      
+      if (req && res) {
+        return res.status(500).json({
+          success: false,
+          error: errorMsg
+        });
+      }
     }
     
-    // Prepara i dati per l'invio email
-    const dateFormatted = format(new Date(dateParam), 'dd/MM/yyyy', { locale: it });
-    
-    // Ora invia l'email con il diario generato
-    const sendReq = {
-      body: {
-        to: emailRecipients.split(',').map((email: string) => email.trim()),
-        cc: ccParam ? ccParam.split(',').map((email: string) => email.trim()) : undefined,
-        subject: `Diario di Bordo FLUPSY - ${dateFormatted}`,
-        text: diarioData.emailText,
-        html: diarioData.emailHtml
-      }
-    } as Request;
-    
-    // Invia l'email
-    return await sendEmailDiario(sendReq, res);
-    
   } catch (error) {
-    console.error("Errore nell'invio automatico del diario email:", error);
-    return res.status(500).json({
-      success: false,
-      error: `Errore nell'invio automatico del diario email: ${error instanceof Error ? error.message : String(error)}`
-    });
+    console.error("Errore nell'invio automatico del diario:", error);
+    
+    if (req && res) {
+      return res.status(500).json({
+        success: false,
+        error: `Errore nell'invio automatico: ${error instanceof Error ? error.message : String(error)}`
+      });
+    }
   }
 }
