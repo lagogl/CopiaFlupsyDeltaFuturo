@@ -12,7 +12,7 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Check, Plus, X } from "lucide-react";
+import { Check, Plus, X, Edit } from "lucide-react";
 
 // Definizione del tipo per un'unità Flupsy
 interface Flupsy {
@@ -21,15 +21,19 @@ interface Flupsy {
   location?: string;
   description?: string;
   active: boolean;
+  maxPositions: number;
 }
 
 export default function Flupsys() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
+  const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [editingFlupsy, setEditingFlupsy] = useState<Flupsy | null>(null);
   const [newFlupsy, setNewFlupsy] = useState({
     name: "",
     location: "",
     description: "",
-    active: true
+    active: true,
+    maxPositions: 10
   });
 
   // Fetching FLUPSY units
@@ -52,7 +56,8 @@ export default function Flupsys() {
         name: "",
         location: "",
         description: "",
-        active: true
+        active: true,
+        maxPositions: 10
       });
       toast({
         title: "Success",
@@ -85,6 +90,37 @@ export default function Flupsys() {
     setNewFlupsy(prev => ({ ...prev, active: checked }));
   };
 
+  // Handling edit button click
+  const handleEdit = (flupsy: Flupsy) => {
+    setEditingFlupsy(flupsy);
+    setIsEditDialogOpen(true);
+  };
+
+  // Edit FLUPSY mutation
+  const updateMutation = useMutation({
+    mutationFn: (updatedFlupsy: Flupsy) => apiRequest({
+      url: `/api/flupsys/${updatedFlupsy.id}`,
+      method: 'PATCH',
+      body: updatedFlupsy
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+      setIsEditDialogOpen(false);
+      setEditingFlupsy(null);
+      toast({
+        title: "Success",
+        description: "FLUPSY unit updated successfully",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to update FLUPSY unit",
+        variant: "destructive",
+      });
+    }
+  });
+
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-screen">
@@ -95,6 +131,29 @@ export default function Flupsys() {
       </div>
     );
   }
+
+  // Handle edit form submission
+  const handleEditSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (editingFlupsy) {
+      updateMutation.mutate(editingFlupsy);
+    }
+  };
+
+  // Handle edit input change
+  const handleEditChange = (e: React.ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+    const { name, value } = e.target;
+    if (editingFlupsy) {
+      setEditingFlupsy(prev => prev ? { ...prev, [name]: value } : null);
+    }
+  };
+
+  // Handle edit switch change
+  const handleEditSwitchChange = (checked: boolean) => {
+    if (editingFlupsy) {
+      setEditingFlupsy(prev => prev ? { ...prev, active: checked } : null);
+    }
+  };
 
   return (
     <div className="container mx-auto py-8">
@@ -151,6 +210,21 @@ export default function Flupsys() {
                     onChange={handleChange}
                     className="col-span-3"
                     rows={3}
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="maxPositions" className="text-right">
+                    Posizioni max
+                  </Label>
+                  <Input
+                    id="maxPositions"
+                    name="maxPositions"
+                    type="number"
+                    min="10"
+                    max="20"
+                    value={newFlupsy.maxPositions}
+                    onChange={(e) => setNewFlupsy({...newFlupsy, maxPositions: Number(e.target.value)})}
+                    className="col-span-3"
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
@@ -230,8 +304,13 @@ export default function Flupsys() {
                   ID: {flupsy.id}
                 </div>
                 <div className="flex space-x-2">
-                  <Button variant="outline" size="sm" className="h-8 px-2">
-                    Modifica
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    className="h-8 px-2 flex items-center gap-1"
+                    onClick={() => handleEdit(flupsy)}
+                  >
+                    <Edit className="h-3 w-3" /> Modifica
                   </Button>
                 </div>
               </CardFooter>
