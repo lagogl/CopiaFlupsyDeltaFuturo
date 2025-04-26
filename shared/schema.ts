@@ -545,3 +545,22 @@ export const screeningBasketHistorySchema = insertScreeningBasketHistorySchema.e
 export const screeningLotReferenceSchema = insertScreeningLotReferenceSchema.extend({
   // Regole di validazione se necessarie
 });
+
+// Notifiche di sistema
+export const notifications = pgTable("notifications", {
+  id: serial("id").primaryKey(),
+  type: text("type").notNull(), // 'vendita', 'warning', 'system', ecc.
+  title: text("title").notNull(),
+  message: text("message").notNull(),
+  isRead: boolean("is_read").notNull().default(false),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  relatedEntityType: text("related_entity_type"), // 'operation', 'basket', 'cycle', ecc.
+  relatedEntityId: integer("related_entity_id"), // ID dell'entità correlata
+  data: text("data"), // Dati aggiuntivi in formato JSON (stringified)
+});
+
+export const insertNotificationSchema = createInsertSchema(notifications)
+  .omit({ id: true, createdAt: true });
+
+export type InsertNotification = z.infer<typeof insertNotificationSchema>;
+export type Notification = typeof notifications.$inferSelect;

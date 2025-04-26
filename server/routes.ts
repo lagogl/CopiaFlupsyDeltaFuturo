@@ -16,6 +16,7 @@ import * as SelectionController from "./controllers/selection-controller";
 import * as ScreeningController from "./controllers/screening-controller";
 import * as WhatsappController from "./controllers/whatsapp-controller";
 import * as EmailController from "./controllers/email-controller";
+import * as NotificationController from "./controllers/notification-controller";
 import { execFile } from 'child_process';
 import { format, subDays } from 'date-fns';
 import { 
