@@ -2,6 +2,7 @@ import express, { type Request, Response, NextFunction } from "express";
 import { registerRoutes } from "./routes";
 import { setupVite, serveStatic, log } from "./vite";
 import { createSaleNotification } from "./sales-notification-handler";
+import { registerScreeningNotificationHandler } from "./screening-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
 
 const app = express();
@@ -61,6 +62,9 @@ app.use((req, res, next) => {
   
   // Registra il servizio di creazione notifiche per operazioni di vendita
   app.locals.createSaleNotification = createSaleNotification;
+  
+  // Registra l'handler per le notifiche di vagliatura
+  registerScreeningNotificationHandler(app);
   
   // Inizializza lo scheduler per l'invio automatico delle email
   import('./controllers/email-controller').then(EmailController => {

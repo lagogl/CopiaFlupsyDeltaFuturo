@@ -1705,7 +1705,7 @@ export async function completeSelection(req: Request, res: Response) {
       
       // Prepara dati per la notifica di completamento vagliatura
       const destinationBasketsWithDetails = [];
-      for (const destBasket of destinationBasketsWithValidFlupsyId) {
+      for (const destBasket of destinationBaskets) {
         // Recupera i dettagli del cestello
         const basketDetail = await tx.select({
           id: baskets.id,

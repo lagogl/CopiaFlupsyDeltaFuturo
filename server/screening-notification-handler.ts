@@ -4,6 +4,7 @@
 import { db } from "./db";
 import { notifications } from "../shared/schema";
 import { InsertNotification } from "../shared/schema";
+import { and, eq, or, sql } from "drizzle-orm";
 
 /**
  * Crea una notifica relativa alla vagliatura
@@ -50,19 +51,17 @@ export async function createScreeningNotification(notification: InsertNotificati
  */
 export async function hasUnreadScreeningNotifications(): Promise<boolean> {
   try {
-    const result = await db.execute(
-      db.select({ count: db.$raw('COUNT(*)') })
-        .from(notifications)
-        .where(
-          db.and(
-            db.or(
-              db.eq(notifications.type, 'vagliatura-origine'),
-              db.eq(notifications.type, 'vagliatura-destinazione')
-            ),
-            db.eq(notifications.isRead, false)
-          )
+    const result = await db.select({ count: sql`COUNT(*)`.as('count') })
+      .from(notifications)
+      .where(
+        and(
+          or(
+            eq(notifications.type, 'vagliatura-origine'),
+            eq(notifications.type, 'vagliatura-destinazione')
+          ),
+          eq(notifications.isRead, false)
         )
-    );
+      );
     
     const count = parseInt(result[0]?.count as string, 10);
     return count > 0;
