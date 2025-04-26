@@ -22,6 +22,7 @@ interface Flupsy {
   description?: string;
   active: boolean;
   maxPositions: number;
+  productionCenter?: string;
 }
 
 export default function Flupsys() {
@@ -33,7 +34,8 @@ export default function Flupsys() {
     location: "",
     description: "",
     active: true,
-    maxPositions: 10
+    maxPositions: 10,
+    productionCenter: ""
   });
 
   // Fetching FLUPSY units
@@ -57,7 +59,8 @@ export default function Flupsys() {
         location: "",
         description: "",
         active: true,
-        maxPositions: 10
+        maxPositions: 10,
+        productionCenter: ""
       });
       toast({
         title: "Success",
@@ -228,6 +231,19 @@ export default function Flupsys() {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="productionCenter" className="text-right">
+                    Centro di Produzione
+                  </Label>
+                  <Input
+                    id="productionCenter"
+                    name="productionCenter"
+                    value={newFlupsy.productionCenter}
+                    onChange={handleChange}
+                    className="col-span-3"
+                    placeholder="es. Chioggia, Taranto, ecc."
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="active" className="text-right">
                     Attivo
                   </Label>
@@ -322,6 +338,19 @@ export default function Flupsys() {
                   />
                 </div>
                 <div className="grid grid-cols-4 items-center gap-4">
+                  <Label htmlFor="edit-productionCenter" className="text-right">
+                    Centro di Produzione
+                  </Label>
+                  <Input
+                    id="edit-productionCenter"
+                    name="productionCenter"
+                    value={editingFlupsy.productionCenter || ''}
+                    onChange={handleEditChange}
+                    className="col-span-3"
+                    placeholder="es. Chioggia, Taranto, ecc."
+                  />
+                </div>
+                <div className="grid grid-cols-4 items-center gap-4">
                   <Label htmlFor="edit-active" className="text-right">
                     Attivo
                   </Label>
@@ -361,10 +390,15 @@ export default function Flupsys() {
                     {flupsy.active ? "Attivo" : "Inattivo"}
                   </Badge>
                 </div>
-                <div className="mt-2">
+                <div className="mt-2 space-y-1">
                   {flupsy.location && (
                     <div className="text-sm">
                       <span className="font-semibold text-blue-600 dark:text-blue-400">Posizione:</span> {flupsy.location}
+                    </div>
+                  )}
+                  {flupsy.productionCenter && (
+                    <div className="text-sm">
+                      <span className="font-semibold text-green-600 dark:text-green-400">Centro:</span> {flupsy.productionCenter}
                     </div>
                   )}
                 </div>
