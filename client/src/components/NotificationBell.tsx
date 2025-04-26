@@ -191,7 +191,7 @@ export default function NotificationBell() {
                       {formatDate(notification.createdAt)}
                     </span>
                   </div>
-                  <p className="mt-1 text-gray-700">{notification.message}</p>
+                  <div className="mt-1 text-gray-700 whitespace-pre-wrap">{notification.message}</div>
                   
                   {!notification.isRead && (
                     <div className="mt-2 flex justify-end">
