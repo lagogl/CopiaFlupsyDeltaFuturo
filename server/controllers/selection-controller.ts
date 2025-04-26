@@ -1896,8 +1896,21 @@ export async function completeSelection(req: Request, res: Response) {
           message += `Cestelli venduti:\n${formattedSoldBaskets}\n\n`;
         }
         
-        const totalAnimals = transactionResults.destinationBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
-        message += `Totale animali: ${totalAnimals}`;
+        // Calcolo del bilancio animali
+        // Recupera il totale animali nelle ceste origine
+        const sourceBaskets = await db.select().from(selectionSourceBaskets)
+          .where(eq(selectionSourceBaskets.selectionId, Number(id)));
+        
+        const totalSourceAnimals = sourceBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0);
+        const totalDestAnimals = transactionResults.destinationBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0);
+        const animalDifference = totalDestAnimals - totalSourceAnimals;
+        
+        // Aggiungi il bilancio animali al messaggio
+        message += `Totale animali: ${totalDestAnimals}\n\n`;
+        message += `Bilancio operazione:\n`;
+        message += `• Animali ceste origine: ${totalSourceAnimals}\n`;
+        message += `• Animali ceste destinazione: ${totalDestAnimals}\n`;
+        message += `• Differenza: ${animalDifference < 0 ? `\x1b[31m${animalDifference}\x1b[0m` : animalDifference}`;
         
         // Crea la notifica
         await req.app.locals.createScreeningNotification({
@@ -1911,13 +1924,29 @@ export async function completeSelection(req: Request, res: Response) {
             selectionNumber: transactionResults.selection.selectionNumber,
             date: transactionResults.selection.date,
             baskets: transactionResults.destinationBaskets,
-            totalAnimals
+            totalSourceAnimals,
+            totalDestAnimals,
+            animalDifference
           })
         });
       }
     } catch (notificationError) {
       console.error('Errore durante la creazione della notifica di vagliatura (destinazione):', notificationError);
       // Non blocchiamo il flusso principale se la notifica fallisce
+    }
+    
+    // Processa le notifiche di vendita raccolte durante la transazione
+    if (saleNotificationsToCreate.length > 0 && req.app.locals.createSaleNotification) {
+      try {
+        console.log(`Elaborazione di ${saleNotificationsToCreate.length} notifiche di vendita`);
+        for (const operationId of saleNotificationsToCreate) {
+          await req.app.locals.createSaleNotification(operationId);
+        }
+        console.log(`Notifiche di vendita create con successo per ${saleNotificationsToCreate.length} operazioni`);
+      } catch (notificationError) {
+        console.error("Errore durante la creazione delle notifiche di vendita:", notificationError);
+        // Non bloccare il processo principale se fallisce la creazione di notifiche
+      }
     }
     
     return res.status(200).json({
