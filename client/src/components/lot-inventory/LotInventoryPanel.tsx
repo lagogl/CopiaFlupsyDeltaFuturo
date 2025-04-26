@@ -116,9 +116,10 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
   // Mutation per registrare un nuovo calcolo di mortalità
   const recordMortalityMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest(`/api/lot-inventory/${lotId}/mortality-calculation`, {
+      return apiRequest({
+        url: `/api/lot-inventory/${lotId}/mortality-calculation`,
         method: "POST",
-        data: { notes },
+        body: { notes },
       });
     },
     onSuccess: () => {

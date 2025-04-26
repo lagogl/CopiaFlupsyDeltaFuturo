@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle } from 'lucide-react';
+import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle, BarChart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -11,6 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from "@/hooks/use-toast";
 import LotForm from '@/components/LotForm';
+import LotInventoryPanel from '@/components/lot-inventory/LotInventoryPanel';
 
 export default function Lots() {
   const { toast } = useToast();
@@ -419,101 +420,121 @@ export default function Lots() {
       {/* View Lot Details Dialog */}
       {selectedLot && (
         <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
-          <DialogContent className="sm:max-w-[550px]">
+          <DialogContent className="sm:max-w-[700px]">
             <DialogHeader>
               <DialogTitle>Dettagli Lotto #{selectedLot.id}</DialogTitle>
               <DialogDescription>
                 Visualizzazione dettagliata delle informazioni del lotto
               </DialogDescription>
             </DialogHeader>
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <h4 className="font-medium text-sm text-gray-500">Data Arrivo</h4>
-                  <p>{format(new Date(selectedLot.arrivalDate), 'dd MMMM yyyy', { locale: it })}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-gray-500">Fornitore</h4>
-                  <p>{selectedLot.supplier}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-gray-500">Qualità</h4>
-                  <p>
-                    {selectedLot.quality ? (
-                      <span className="flex items-center">
-                        {selectedLot.quality === 'teste' && (
-                          <span>
-                            <span className="mr-1">Teste/Head</span>
-                            <span className="text-yellow-500">★★★</span>
-                          </span>
-                        )}
-                        {selectedLot.quality === 'normali' && (
-                          <span>
-                            <span className="mr-1">Normali/Normal</span>
-                            <span className="text-yellow-500">★★</span>
-                          </span>
-                        )}
-                        {selectedLot.quality === 'code' && (
-                          <span>
-                            <span className="mr-1">Code/Codes</span>
-                            <span className="text-yellow-500">★</span>
-                          </span>
-                        )}
-                        {!['teste', 'normali', 'code'].includes(selectedLot.quality) && selectedLot.quality}
-                      </span>
-                    ) : '-'}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-gray-500">Taglia</h4>
-                  <p>
-                    {selectedLot.size ? (
-                      <Badge className="bg-blue-100 text-blue-800">
-                        {selectedLot.size.code}
-                      </Badge>
-                    ) : '-'}
-                  </p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-gray-500">Numero Animali</h4>
-                  <p>{selectedLot.animalCount ? selectedLot.animalCount.toLocaleString() : '-'}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-gray-500">Peso (g)</h4>
-                  <p>{selectedLot.weight ? selectedLot.weight.toLocaleString() : '-'}</p>
-                </div>
-                <div>
-                  <h4 className="font-medium text-sm text-gray-500">Stato</h4>
-                  <p>
-                    <Badge className={`${
-                      selectedLot.state === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
-                    }`}>
-                      {selectedLot.state === 'active' ? 'Attivo' : 'Esaurito'}
-                    </Badge>
-                  </p>
-                </div>
-              </div>
+            
+            <Tabs defaultValue="info" className="w-full">
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="info">Informazioni Generali</TabsTrigger>
+                <TabsTrigger value="inventory">
+                  <BarChart className="h-4 w-4 mr-2" />
+                  Inventario e Mortalità
+                </TabsTrigger>
+              </TabsList>
               
-              {selectedLot.notes && (
-                <div>
-                  <h4 className="font-medium text-sm text-gray-500 mb-1">Note</h4>
-                  <p className="text-sm">{selectedLot.notes}</p>
+              <TabsContent value="info">
+                <div className="space-y-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500">Data Arrivo</h4>
+                      <p>{format(new Date(selectedLot.arrivalDate), 'dd MMMM yyyy', { locale: it })}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500">Fornitore</h4>
+                      <p>{selectedLot.supplier}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500">Qualità</h4>
+                      <p>
+                        {selectedLot.quality ? (
+                          <span className="flex items-center">
+                            {selectedLot.quality === 'teste' && (
+                              <span>
+                                <span className="mr-1">Teste/Head</span>
+                                <span className="text-yellow-500">★★★</span>
+                              </span>
+                            )}
+                            {selectedLot.quality === 'normali' && (
+                              <span>
+                                <span className="mr-1">Normali/Normal</span>
+                                <span className="text-yellow-500">★★</span>
+                              </span>
+                            )}
+                            {selectedLot.quality === 'code' && (
+                              <span>
+                                <span className="mr-1">Code/Codes</span>
+                                <span className="text-yellow-500">★</span>
+                              </span>
+                            )}
+                            {!['teste', 'normali', 'code'].includes(selectedLot.quality) && selectedLot.quality}
+                          </span>
+                        ) : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500">Taglia</h4>
+                      <p>
+                        {selectedLot.size ? (
+                          <Badge className="bg-blue-100 text-blue-800">
+                            {selectedLot.size.code}
+                          </Badge>
+                        ) : '-'}
+                      </p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500">Numero Animali</h4>
+                      <p>{selectedLot.animalCount ? selectedLot.animalCount.toLocaleString() : '-'}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500">Peso (g)</h4>
+                      <p>{selectedLot.weight ? selectedLot.weight.toLocaleString() : '-'}</p>
+                    </div>
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500">Stato</h4>
+                      <p>
+                        <Badge className={`${
+                          selectedLot.state === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
+                        }`}>
+                          {selectedLot.state === 'active' ? 'Attivo' : 'Esaurito'}
+                        </Badge>
+                      </p>
+                    </div>
+                  </div>
+                  
+                  {selectedLot.notes && (
+                    <div>
+                      <h4 className="font-medium text-sm text-gray-500 mb-1">Note</h4>
+                      <p className="text-sm">{selectedLot.notes}</p>
+                    </div>
+                  )}
+                  
+                  <div className="flex justify-end space-x-2 pt-4">
+                    <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
+                      Chiudi
+                    </Button>
+                    <Button onClick={() => {
+                      setIsViewDialogOpen(false);
+                      handleEditLot(selectedLot);
+                    }}>
+                      <Edit className="h-4 w-4 mr-2" />
+                      Modifica
+                    </Button>
+                  </div>
                 </div>
-              )}
+              </TabsContent>
               
-              <div className="flex justify-end space-x-2 pt-4">
-                <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
-                  Chiudi
-                </Button>
-                <Button onClick={() => {
-                  setIsViewDialogOpen(false);
-                  handleEditLot(selectedLot);
-                }}>
-                  <Edit className="h-4 w-4 mr-2" />
-                  Modifica
-                </Button>
-              </div>
-            </div>
+              <TabsContent value="inventory">
+                <LotInventoryPanel 
+                  lotId={selectedLot.id}
+                  lotName={`${selectedLot.id} - ${selectedLot.supplier}`}
+                />
+              </TabsContent>
+            </Tabs>
           </DialogContent>
         </Dialog>
       )}
