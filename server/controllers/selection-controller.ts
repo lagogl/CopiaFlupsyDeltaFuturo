@@ -1029,6 +1029,9 @@ export async function addDestinationBaskets(req: Request, res: Response) {
       // Registra i cestelli di destinazione senza chiudere i cicli delle origini
       // I cicli di origine saranno chiusi solo quando la selezione viene completata
       
+      // Array per tenere traccia degli ID operazione vendita per le notifiche
+      const saleNotificationsToCreate = [];
+      
       // Registra le nuove destinazioni nella tabella selectionDestinationBaskets
       for (const destBasket of destinationBasketsWithValidFlupsyId) {
         // Assicura che ogni cesta abbia un valore di sizeId basato su animalsPerKg
