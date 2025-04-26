@@ -1,112 +1,74 @@
-import { eq, sql, and, desc, count, sum } from "drizzle-orm";
 import { db } from "../db";
-import { 
-  lotInventoryTransactions, 
-  lots,
-  operations,
-  LotInventoryTransaction,
-  InsertLotInventoryTransaction,
-  InventoryTransactionType,
-  lotMortalityRecords, 
-  InsertLotMortalityRecord 
-} from "@shared/schema";
+import { eq, sql, desc } from "drizzle-orm";
+import { lotInventoryTransactions, lotMortalityRecords, lots } from "@shared/schema";
 
 /**
  * Servizio per la gestione dell'inventario dei lotti
- * Questo servizio gestisce le transazioni di inventario e il calcolo della mortalità
  */
-class LotInventoryService {
+export class LotInventoryService {
   /**
-   * Registra una transazione di inventario per un lotto
-   * @param transaction - Dati della transazione
-   * @returns La transazione creata
-   */
-  async recordTransaction(transaction: InsertLotInventoryTransaction): Promise<LotInventoryTransaction> {
-    try {
-      // Inserisce la transazione nel database
-      const [newTransaction] = await db
-        .insert(lotInventoryTransactions)
-        .values(transaction)
-        .returning();
-      
-      console.log(`Registrata transazione inventario per lotto ${transaction.lotId}: ${transaction.transactionType}, ${transaction.animalCount} animali`);
-      
-      return newTransaction;
-    } catch (error) {
-      console.error("Errore durante la registrazione della transazione di inventario:", error);
-      throw new Error("Impossibile registrare la transazione di inventario");
-    }
-  }
-
-  /**
-   * Calcola la giacenza attuale di un lotto
+   * Calcola lo stato attuale dell'inventario di un lotto
    * @param lotId - ID del lotto
-   * @returns Oggetto con i conteggi degli animali
+   * @returns Dati di inventario calcolati
    */
-  async calculateCurrentInventory(lotId: number): Promise<{
-    initialCount: number;
-    currentCount: number;
-    soldCount: number;
-    mortalityCount: number;
-    mortalityPercentage: number;
-  }> {
+  async calculateCurrentInventory(lotId: number) {
     try {
-      // Ottiene il conteggio iniziale dal lotto
-      const [lotInfo] = await db
-        .select({
-          animalCount: lots.animalCount
-        })
-        .from(lots)
-        .where(eq(lots.id, lotId));
-
-      if (!lotInfo || !lotInfo.animalCount) {
-        throw new Error(`Lotto ${lotId} non trovato o senza conteggio animali`);
+      // 1. Ottieni i dati di base del lotto
+      const [lot] = await db.select().from(lots).where(eq(lots.id, lotId));
+      
+      if (!lot) {
+        throw new Error("Lotto non trovato");
       }
 
-      const initialCount = lotInfo.animalCount;
-
-      // Calcola il totale delle transazioni di vendita
-      const [soldCountResult] = await db
-        .select({
-          total: sum(lotInventoryTransactions.animalCount).mapWith(Number)
-        })
-        .from(lotInventoryTransactions)
-        .where(
-          and(
-            eq(lotInventoryTransactions.lotId, lotId),
-            eq(lotInventoryTransactions.transactionType, "vendita")
-          )
+      const initialCount = lot.animalCount || 0;
+      
+      // 2. Calcola il conteggio attuale in base alle transazioni
+      // Verificare se la tabella esiste prima di fare la query
+      try {
+        // Calcola le vendite
+        const [soldResult] = await db.execute(
+          sql`SELECT COALESCE(SUM(animal_count), 0) as sold_count FROM lot_inventory_transactions 
+              WHERE lot_id = ${lotId} AND transaction_type = 'vendita'`
         );
-
-      // Calcola il totale di tutte le transazioni (esclusi arrivi)
-      const [allTransactionsResult] = await db
-        .select({
-          total: sum(lotInventoryTransactions.animalCount).mapWith(Number)
-        })
-        .from(lotInventoryTransactions)
-        .where(
-          and(
-            eq(lotInventoryTransactions.lotId, lotId),
-            sql`${lotInventoryTransactions.transactionType} != 'arrivo-lotto'`
-          )
+        const soldCount = Number(soldResult?.sold_count || 0);
+        
+        // Calcola la mortalità (assumiamo che sia sempre negativa)
+        const [mortalityResult] = await db.execute(
+          sql`SELECT COALESCE(SUM(animal_count), 0) as mortality_count FROM lot_inventory_transactions 
+              WHERE lot_id = ${lotId} AND transaction_type = 'mortalita'`
         );
-
-      // Calcola i valori finali
-      const soldCount = Math.abs(soldCountResult?.total || 0);
-      const allTransactions = allTransactionsResult?.total || 0;
-      const currentCount = initialCount + allTransactions; // Le uscite sono negative, quindi sommiamo
-      const mortalityCount = initialCount - currentCount - soldCount;
-      const mortalityPercentage = initialCount > 0 
-        ? (mortalityCount / initialCount) * 100 
-        : 0;
-
-      return {
-        initialCount,
-        currentCount,
-        soldCount,
-        mortalityCount,
-        mortalityPercentage
-      };
+        const mortalityCount = Math.abs(Number(mortalityResult?.mortality_count || 0));
+        
+        // Calcola il totale di tutte le transazioni (escluso arrivo lotto che è già nel conteggio iniziale)
+        const [transactionsResult] = await db.execute(
+          sql`SELECT COALESCE(SUM(animal_count), 0) as total_change FROM lot_inventory_transactions 
+              WHERE lot_id = ${lotId} AND transaction_type != 'arrivo-lotto'`
+        );
+        const totalChange = Number(transactionsResult?.total_change || 0);
+        
+        // Calcolo finale
+        const currentCount = initialCount + totalChange;
+        const mortalityPercentage = initialCount > 0 ? (mortalityCount / initialCount) * 100 : 0;
+        
+        return {
+          initialCount,
+          currentCount,
+          soldCount,
+          mortalityCount,
+          mortalityPercentage
+        };
+      } catch (error) {
+        console.error("Errore durante il calcolo delle transazioni:", error);
+        
+        // Se c'è un errore, restituisci un set di dati base solo con le informazioni del lotto
+        return {
+          initialCount,
+          currentCount: initialCount,
+          soldCount: 0,
+          mortalityCount: 0,
+          mortalityPercentage: 0
+        };
+      }
     } catch (error) {
       console.error("Errore durante il calcolo dell'inventario del lotto:", error);
       throw new Error("Impossibile calcolare l'inventario del lotto");
@@ -114,37 +76,58 @@ class LotInventoryService {
   }
 
   /**
-   * Registra un calcolo di mortalità per un lotto
+   * Registra una transazione di inventario
+   * @param transaction - Dati della transazione
+   * @returns La transazione creata
+   */
+  async createTransaction(transaction: any) {
+    try {
+      // Valida i dati minimi richiesti
+      if (!transaction.lotId || !transaction.transactionType || transaction.animalCount === undefined) {
+        throw new Error("Dati transazione incompleti");
+      }
+
+      // Crea la transazione
+      const [result] = await db.execute(
+        sql`INSERT INTO lot_inventory_transactions 
+            (lot_id, transaction_type, date, animal_count, notes, created_at) 
+            VALUES 
+            (${transaction.lotId}, ${transaction.transactionType}, NOW(), ${transaction.animalCount}, 
+             ${transaction.notes || null}, NOW())
+            RETURNING *`
+      );
+
+      return result;
+    } catch (error) {
+      console.error("Errore durante la creazione della transazione:", error);
+      throw new Error("Impossibile creare la transazione");
+    }
+  }
+
+  /**
+   * Registra un calcolo di mortalità
    * @param lotId - ID del lotto
-   * @param notes - Note opzionali
+   * @param notes - Note sul calcolo
    * @returns Il record di mortalità creato
    */
-  async recordMortalityCalculation(lotId: number, notes?: string): Promise<any> {
+  async recordMortalityCalculation(lotId: number, notes?: string) {
     try {
-      // Calcola l'inventario attuale
+      // Calcola lo stato attuale dell'inventario
       const inventory = await this.calculateCurrentInventory(lotId);
       
-      // Crea il record di mortalità
-      const mortalityRecord: InsertLotMortalityRecord = {
-        lotId,
-        calculationDate: new Date().toISOString().split('T')[0],
-        initialCount: inventory.initialCount,
-        currentCount: inventory.currentCount,
-        soldCount: inventory.soldCount,
-        mortalityCount: inventory.mortalityCount,
-        mortalityPercentage: inventory.mortalityPercentage,
-        notes: notes || null
-      };
+      // Crea un record di mortalità
+      const [result] = await db.execute(
+        sql`INSERT INTO lot_mortality_records 
+            (lot_id, calculation_date, initial_count, current_count, sold_count, 
+             mortality_count, mortality_percentage, notes, created_at) 
+            VALUES 
+            (${lotId}, NOW(), ${inventory.initialCount}, ${inventory.currentCount}, 
+             ${inventory.soldCount}, ${inventory.mortalityCount}, ${inventory.mortalityPercentage}, 
+             ${notes || null}, NOW())
+            RETURNING *`
+      );
       
-      // Inserisce il record nel database
-      const [newRecord] = await db
-        .insert(lotMortalityRecords)
-        .values(mortalityRecord)
-        .returning();
-      
-      console.log(`Registrato calcolo mortalità per lotto ${lotId}: ${inventory.mortalityPercentage.toFixed(2)}%`);
-      
-      return newRecord;
+      return result;
     } catch (error) {
       console.error("Errore durante la registrazione del calcolo di mortalità:", error);
       throw new Error("Impossibile registrare il calcolo di mortalità");
@@ -152,66 +135,47 @@ class LotInventoryService {
   }
 
   /**
-   * Ottiene l'ultimo calcolo di mortalità per un lotto
+   * Ottiene le transazioni di un lotto
    * @param lotId - ID del lotto
-   * @returns L'ultimo record di mortalità, se presente
+   * @returns Lista delle transazioni
    */
-  async getLatestMortalityRecord(lotId: number): Promise<any> {
+  async getLotTransactions(lotId: number) {
     try {
-      const [record] = await db
-        .select()
-        .from(lotMortalityRecords)
-        .where(eq(lotMortalityRecords.lotId, lotId))
-        .orderBy(desc(lotMortalityRecords.calculationDate))
-        .limit(1);
+      // Ottieni le transazioni ordinate per data
+      const results = await db.execute(
+        sql`SELECT * FROM lot_inventory_transactions 
+            WHERE lot_id = ${lotId}
+            ORDER BY date DESC`
+      );
       
-      return record;
-    } catch (error) {
-      console.error("Errore durante il recupero del calcolo di mortalità:", error);
-      throw new Error("Impossibile recuperare il calcolo di mortalità");
-    }
-  }
-
-  /**
-   * Ottiene la cronologia dei calcoli di mortalità per un lotto
-   * @param lotId - ID del lotto
-   * @returns Array di record di mortalità
-   */
-  async getMortalityHistory(lotId: number): Promise<any[]> {
-    try {
-      const records = await db
-        .select()
-        .from(lotMortalityRecords)
-        .where(eq(lotMortalityRecords.lotId, lotId))
-        .orderBy(desc(lotMortalityRecords.calculationDate));
-      
-      return records;
-    } catch (error) {
-      console.error("Errore durante il recupero della cronologia di mortalità:", error);
-      throw new Error("Impossibile recuperare la cronologia di mortalità");
-    }
-  }
-
-  /**
-   * Ottiene tutte le transazioni di inventario per un lotto
-   * @param lotId - ID del lotto
-   * @returns Array di transazioni
-   */
-  async getLotTransactions(lotId: number): Promise<any[]> {
-    try {
-      const transactions = await db
-        .select()
-        .from(lotInventoryTransactions)
-        .where(eq(lotInventoryTransactions.lotId, lotId))
-        .orderBy(desc(lotInventoryTransactions.date));
-      
-      return transactions;
+      return results;
     } catch (error) {
       console.error("Errore durante il recupero delle transazioni del lotto:", error);
       throw new Error("Impossibile recuperare le transazioni del lotto");
     }
   }
+
+  /**
+   * Ottiene la cronologia dei calcoli di mortalità
+   * @param lotId - ID del lotto
+   * @returns Lista dei record di mortalità
+   */
+  async getMortalityHistory(lotId: number) {
+    try {
+      // Ottieni la cronologia dei calcoli di mortalità
+      const results = await db.execute(
+        sql`SELECT * FROM lot_mortality_records 
+            WHERE lot_id = ${lotId}
+            ORDER BY calculation_date DESC`
+      );
+      
+      return results;
+    } catch (error) {
+      console.error("Errore durante il recupero della cronologia di mortalità:", error);
+      throw new Error("Impossibile recuperare la cronologia di mortalità");
+    }
+  }
 }
 
-// Esporta un'istanza singleton del servizio
+// Esporta un'istanza del servizio
 export const lotInventoryService = new LotInventoryService();

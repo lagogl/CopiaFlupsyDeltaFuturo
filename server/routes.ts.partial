@@ -1,0 +1,17 @@
+// Rotte per l'inventario dei lotti
+import { 
+  getCurrentInventory, 
+  createTransaction, 
+  recordMortalityCalculation, 
+  getLotTransactions, 
+  getMortalityHistory 
+} from "./controllers/lot-inventory-controller";
+
+// Aggiungere queste rotte nella sezione appropriata del file routes.ts
+
+// Rotte per l'inventario dei lotti
+app.get("/api/lot-inventory/:lotId/current", getCurrentInventory);
+app.post("/api/lot-inventory/:lotId/transaction", createTransaction);
+app.post("/api/lot-inventory/:lotId/mortality-calculation", recordMortalityCalculation);
+app.get("/api/lot-inventory/:lotId/transactions", getLotTransactions);
+app.get("/api/lot-inventory/:lotId/mortality-history", getMortalityHistory);

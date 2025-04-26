@@ -24,7 +24,7 @@ import * as ScreeningController from "./controllers/screening-controller";
 import * as WhatsappController from "./controllers/whatsapp-controller";
 import * as EmailController from "./controllers/email-controller";
 import * as NotificationController from "./controllers/notification-controller";
-import { lotInventoryController } from "./controllers/lot-inventory-controller";
+import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { execFile } from 'child_process';
 import { format, subDays } from 'date-fns';
 import { 
@@ -4913,22 +4913,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // ===== Inventory Transaction Routes =====
   // Registra una nuova transazione di inventario
-  app.post('/api/lot-inventory/transactions', lotInventoryController.recordTransaction);
+  app.post('/api/lot-inventory/:lotId/transaction', LotInventoryController.createTransaction);
   
   // Ottiene la giacenza attuale di un lotto
-  app.get('/api/lot-inventory/:lotId/current', lotInventoryController.getCurrentInventory);
+  app.get('/api/lot-inventory/:lotId/current', LotInventoryController.getCurrentInventory);
   
   // Registra un calcolo di mortalità per un lotto
-  app.post('/api/lot-inventory/:lotId/mortality-calculation', lotInventoryController.recordMortalityCalculation);
-  
-  // Ottiene l'ultimo calcolo di mortalità per un lotto
-  app.get('/api/lot-inventory/:lotId/latest-mortality', lotInventoryController.getLatestMortalityRecord);
+  app.post('/api/lot-inventory/:lotId/mortality-calculation', LotInventoryController.recordMortalityCalculation);
   
   // Ottiene la cronologia dei calcoli di mortalità per un lotto
-  app.get('/api/lot-inventory/:lotId/mortality-history', lotInventoryController.getMortalityHistory);
+  app.get('/api/lot-inventory/:lotId/mortality-history', LotInventoryController.getMortalityHistory);
   
   // Ottiene tutte le transazioni di inventario per un lotto
-  app.get('/api/lot-inventory/:lotId/transactions', lotInventoryController.getLotTransactions);
+  app.get('/api/lot-inventory/:lotId/transactions', LotInventoryController.getLotTransactions);
   
   return httpServer;
 }
