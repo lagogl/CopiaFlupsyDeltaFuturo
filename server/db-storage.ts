@@ -460,6 +460,24 @@ export class DbStorage implements IStorage {
     return results[0];
   }
   
+  async deleteLot(id: number): Promise<boolean> {
+    try {
+      // Verifica se ci sono cestelli o operazioni associati a questo lotto prima dell'eliminazione
+      // Per sicurezza, potremmo implementare questo controllo
+
+      // Elimina il lotto
+      const results = await db.delete(lots)
+        .where(eq(lots.id, id))
+        .returning({ id: lots.id });
+      
+      // Restituisce true se almeno un record è stato eliminato
+      return results.length > 0;
+    } catch (error) {
+      console.error(`Errore durante l'eliminazione del lotto ID ${id}:`, error);
+      return false;
+    }
+  }
+  
   // BASKET POSITION HISTORY
   async getBasketPositionHistory(basketId: number): Promise<BasketPositionHistory[]> {
     return await db.select()

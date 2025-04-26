@@ -245,6 +245,9 @@ export default function Lots() {
                   Stato
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Note
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Azioni
                 </th>
               </tr>
@@ -298,6 +301,9 @@ export default function Lots() {
                         }`}>
                           {lot.state === 'active' ? 'Attivo' : 'Esaurito'}
                         </Badge>
+                      </td>
+                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-[200px] truncate">
+                        {lot.notes || '-'}
                       </td>
                       <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                         <div className="flex space-x-2">
