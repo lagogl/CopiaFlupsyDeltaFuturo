@@ -6,6 +6,7 @@ import RecentOperations from '@/components/dashboard/RecentOperations';
 import GrowthChart from '@/components/dashboard/GrowthChart';
 import ActiveCycles from '@/components/dashboard/ActiveCycles';
 import FlupsyVisualizer from '@/components/dashboard/BasicFlupsyVisualizer';
+import FlupsyCenterFilter from '@/components/dashboard/FlupsyCenterFilter';
 import { TargetSizePredictions } from '@/components/dashboard/TargetSizePredictions';
 import { Basket, Cycle, Operation, Lot } from '@shared/schema';
 import { TooltipTrigger } from '@/components/ui/tooltip-trigger';
@@ -21,6 +22,10 @@ export default function Dashboard() {
   const [lastRefresh, setLastRefresh] = useState<Date>(new Date());
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
+  
+  // Stato per il filtro dei FLUPSY
+  const [selectedCenter, setSelectedCenter] = useState<string>('Tutti');
+  const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>([]);
   
   // Riferimenti agli elementi che avranno tooltip
   const dashboardTitleRef = useRef<HTMLHeadingElement>(null);
@@ -206,6 +211,14 @@ export default function Dashboard() {
         </div>
       </div>
       
+      {/* Filtro per centro di produzione */}
+      <FlupsyCenterFilter 
+        onFilterChange={(center, flupsyIds) => {
+          setSelectedCenter(center);
+          setSelectedFlupsyIds(flupsyIds);
+        }} 
+      />
+      
       {/* Dashboard Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
         <TooltipTrigger 
@@ -367,7 +380,9 @@ export default function Dashboard() {
         onlyFirstTime={true}
       >
         <div className="mb-8" ref={flupsyVisualizerRef}>
-          <FlupsyVisualizer />
+          <FlupsyVisualizer 
+            selectedFlupsyIds={selectedFlupsyIds}
+          />
         </div>
       </TooltipTrigger>
       

@@ -45,7 +45,11 @@ function getDefaultColorForSize(code: string): string {
   return 'bg-blue-50 border-blue-500 border-2';
 }
 
-export default function BasicFlupsyVisualizer() {
+interface BasicFlupsyVisualizerProps {
+  selectedFlupsyIds?: number[];
+}
+
+export default function BasicFlupsyVisualizer({ selectedFlupsyIds = [] }: BasicFlupsyVisualizerProps) {
   const [, navigate] = useLocation();
   
   // Stato per il livello di zoom
@@ -963,14 +967,33 @@ export default function BasicFlupsyVisualizer() {
       </CardHeader>
       
       <CardContent>
-        {flupsys?.map((flupsy: any) => (
-          <div key={flupsy.id}>
-            {renderFlupsy(flupsy)}
-            {flupsy.id !== flupsys[flupsys.length - 1].id && (
-              <Separator className="my-4" />
-            )}
+        {/* Filtra i FLUPSY in base agli ID selezionati, se presenti */}
+        {flupsys
+          ?.filter((flupsy: any) => 
+            selectedFlupsyIds.length === 0 || selectedFlupsyIds.includes(flupsy.id)
+          )
+          .map((flupsy: any) => (
+            <div key={flupsy.id}>
+              {renderFlupsy(flupsy)}
+              {/* Aggiunge il separatore solo se non è l'ultimo elemento filtrato */}
+              {flupsy.id !== 
+                flupsys
+                  .filter((f: any) => selectedFlupsyIds.length === 0 || selectedFlupsyIds.includes(f.id))
+                  .slice(-1)[0]?.id && (
+                <Separator className="my-4" />
+              )}
+            </div>
+          ))
+        }
+        {/* Messaggio se nessun FLUPSY è selezionato */}
+        {flupsys && 
+          flupsys.filter((flupsy: any) => 
+            selectedFlupsyIds.length === 0 || selectedFlupsyIds.includes(flupsy.id)
+          ).length === 0 && (
+          <div className="py-8 text-center">
+            <p className="text-gray-500">Nessun FLUPSY selezionato. Usa il filtro qui sopra per visualizzare alcuni FLUPSY.</p>
           </div>
-        ))}
+        )}
       </CardContent>
     </Card>
   );
