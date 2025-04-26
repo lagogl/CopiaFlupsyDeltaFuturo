@@ -293,7 +293,7 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                   {transactionsQuery.data.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>
-                        {format(new Date(transaction.date), "dd/MM/yyyy")}
+                        {transaction.date ? format(new Date(transaction.date), "dd/MM/yyyy") : "-"}
                       </TableCell>
                       <TableCell>
                         <Badge variant={
@@ -353,7 +353,7 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                   {mortalityHistoryQuery.data.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell>
-                        {format(new Date(record.calculationDate), "dd/MM/yyyy")}
+                        {record.calculationDate ? format(new Date(record.calculationDate), "dd/MM/yyyy") : "-"}
                       </TableCell>
                       <TableCell className="text-right">
                         {formatNumber(record.initialCount)}
@@ -368,7 +368,7 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                         {formatNumber(record.mortalityCount)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {record.mortalityPercentage.toFixed(2)}%
+                        {(typeof record.mortalityPercentage === 'number' ? record.mortalityPercentage.toFixed(2) : '0.00')}%
                       </TableCell>
                     </TableRow>
                   ))}
