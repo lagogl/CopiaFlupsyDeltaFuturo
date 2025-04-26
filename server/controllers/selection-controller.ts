@@ -692,7 +692,7 @@ export async function getAllAvailablePositions(req: Request, res: Response) {
 }
 
 /**
- * Aggiunge ceste di origine alla selezione (seconda fase)
+ * Aggiunge ceste di origine alla selezione (seconda fase) e crea una notifica per gli operatori
  */
 export async function addSourceBaskets(req: Request, res: Response) {
   try {
@@ -734,7 +734,9 @@ export async function addSourceBaskets(req: Request, res: Response) {
     }
     
     // Esecuzione in una transazione
-    await db.transaction(async (tx) => {
+    const basketsWithDetails = await db.transaction(async (tx) => {
+      const addedBaskets = [];
+      
       // Salva ogni cesta di origine
       for (const sourceBasket of sourceBaskets) {
         // Recupera l'ultima operazione per questo cestello per ottenere i dati correnti
@@ -750,9 +752,26 @@ export async function addSourceBaskets(req: Request, res: Response) {
           .where(eq(cycles.id, sourceBasket.cycleId))
           .limit(1);
         
+        // Recupera i dati del cestello
+        const basketData = await tx.select()
+          .from(baskets)
+          .where(eq(baskets.id, sourceBasket.basketId))
+          .limit(1);
+          
+        // Recupera dati del flupsy
+        let flupsyData = null;
+        if (basketData.length > 0 && basketData[0].flupsyId) {
+          flupsyData = await tx.select()
+            .from(flupsys)
+            .where(eq(flupsys.id, basketData[0].flupsyId))
+            .limit(1);
+        }
+        
         // Usa i dati dell'ultima operazione se disponibili, altrimenti usa i dati forniti (o null)
         const lastOp = latestOperation.length > 0 ? latestOperation[0] : null;
         const cycle = cycleData.length > 0 ? cycleData[0] : null;
+        const basket = basketData.length > 0 ? basketData[0] : null;
+        const flupsy = flupsyData && flupsyData.length > 0 ? flupsyData[0] : null;
         
         await tx.insert(selectionSourceBaskets).values({
           selectionId: Number(id),
@@ -764,12 +783,20 @@ export async function addSourceBaskets(req: Request, res: Response) {
           sizeId: sourceBasket.sizeId || lastOp?.sizeId || null,
           lotId: sourceBasket.lotId || cycle?.lotId || null
         });
+        
+        // Aggiungi dettagli per la notifica
+        if (basket) {
+          addedBaskets.push({
+            id: sourceBasket.basketId,
+            physicalNumber: basket.physicalNumber,
+            flupsyId: basket.flupsyId,
+            flupsyName: flupsy ? flupsy.name : 'Nessun FLUPSY',
+            row: basket.row,
+            position: basket.position,
+            animalCount: sourceBasket.animalCount || lastOp?.animalCount || 0
+          });
+        }
       }
-      
-      // Aggiorna lo stato della selezione (opzionale, può rimanere in draft)
-      // await tx.update(selections)
-      //   .set({ status: 'in_progress' })
-      //   .where(eq(selections.id, Number(id)));
       
       // Invia notifiche WebSocket
       if (typeof (global as any).broadcastUpdate === 'function') {
@@ -778,7 +805,45 @@ export async function addSourceBaskets(req: Request, res: Response) {
           message: `Ceste di origine aggiunte alla selezione #${selection[0].selectionNumber}`
         });
       }
+      
+      return addedBaskets;
     });
+    
+    // Crea una notifica per informare gli operatori sulle ceste origine da prelevare
+    if (basketsWithDetails.length > 0 && req.app.locals.createScreeningNotification) {
+      try {
+        // Preparazione dati per la notifica
+        const formattedBaskets = basketsWithDetails.map(b => {
+          let positionInfo = 'Posizione non specificata';
+          if (b.row && b.position) {
+            positionInfo = `${b.flupsyName} - ${b.row}-${b.position}`;
+          }
+          
+          return `• Cestello #${b.physicalNumber} (${positionInfo}): ${b.animalCount} animali`;
+        }).join('\n');
+        
+        const totalAnimals = basketsWithDetails.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+        
+        // Crea la notifica
+        await req.app.locals.createScreeningNotification({
+          type: 'vagliatura-origine',
+          title: `Vagliatura #${selection[0].selectionNumber} - Cestelli Origine`,
+          message: `È stata iniziata una nuova vagliatura (selezione #${selection[0].selectionNumber}) in data ${format(new Date(selection[0].date), 'dd/MM/yyyy')}. Prelevare i seguenti cestelli:\n${formattedBaskets}\n\nTotale animali: ${totalAnimals}`,
+          relatedEntityType: 'selection',
+          relatedEntityId: selection[0].id,
+          data: JSON.stringify({
+            selectionId: selection[0].id,
+            selectionNumber: selection[0].selectionNumber,
+            date: selection[0].date,
+            baskets: basketsWithDetails,
+            totalAnimals
+          })
+        });
+      } catch (notificationError) {
+        console.error('Errore durante la creazione della notifica di vagliatura (origine):', notificationError);
+        // Non blocchiamo il flusso principale se la notifica fallisce
+      }
+    }
     
     return res.status(200).json({
       success: true,
@@ -1637,7 +1702,220 @@ export async function completeSelection(req: Request, res: Response) {
           message: `Selezione #${selection[0].selectionNumber} completata con successo`
         });
       }
+      
+      // Prepara dati per la notifica di completamento vagliatura
+      const destinationBasketsWithDetails = [];
+      for (const destBasket of destinationBasketsWithValidFlupsyId) {
+        // Recupera i dettagli del cestello
+        const basketDetail = await tx.select({
+          id: baskets.id,
+          physicalNumber: baskets.physicalNumber,
+          flupsyId: baskets.flupsyId,
+          row: baskets.row,
+          position: baskets.position
+        })
+        .from(baskets)
+        .where(eq(baskets.id, destBasket.basketId))
+        .limit(1);
+        
+        // Recupera i dettagli del FLUPSY
+        let flupsyName = 'Nessun FLUPSY';
+        if (basketDetail.length > 0 && basketDetail[0].flupsyId) {
+          const flupsyData = await tx.select()
+            .from(flupsys)
+            .where(eq(flupsys.id, basketDetail[0].flupsyId))
+            .limit(1);
+            
+          if (flupsyData.length > 0) {
+            flupsyName = flupsyData[0].name;
+          }
+        }
+        
+        // Recupera i dettagli della taglia
+        let sizeName = 'Taglia non specificata';
+        if (destBasket.sizeId) {
+          const sizeData = await tx.select()
+            .from(sizes)
+            .where(eq(sizes.id, destBasket.sizeId))
+            .limit(1);
+            
+          if (sizeData.length > 0) {
+            sizeName = sizeData[0].code;
+          }
+        }
+        
+        destinationBasketsWithDetails.push({
+          id: destBasket.basketId,
+          physicalNumber: basketDetail.length > 0 ? basketDetail[0].physicalNumber : 0,
+          flupsyName,
+          row: basketDetail.length > 0 ? basketDetail[0].row : null,
+          position: basketDetail.length > 0 ? basketDetail[0].position : null,
+          animalCount: destBasket.animalCount,
+          sizeId: destBasket.sizeId,
+          sizeName,
+          destinationType: destBasket.destinationType,
+          sold: destBasket.destinationType === 'sold'
+        });
+      }
+      
+      // Collezione dati da restituire
+      return {
+        status: 'completed',
+        selectionId: Number(id),
+        selectionNumber: selection[0].selectionNumber,
+        destinationBaskets: destinationBasketsWithDetails,
+        date: selection[0].date
+      };
     });
+    
+    // Crea una notifica per informare gli operatori sulle ceste destinazione
+    try {
+      // Ottieni i risultati della transazione
+      const transactionResults = await db.transaction(async (tx) => {
+        // Recupera la selezione di nuovo
+        const selectionQuery = await tx.select().from(selections)
+          .where(eq(selections.id, Number(id)))
+          .limit(1);
+          
+        if (!selectionQuery || selectionQuery.length === 0) {
+          return null;
+        }
+        
+        // Recupera tutte le ceste di destinazione
+        const destBaskets = await tx.select({
+          id: selectionDestinationBaskets.id,
+          basketId: selectionDestinationBaskets.basketId,
+          destinationType: selectionDestinationBaskets.destinationType,
+          flupsyId: selectionDestinationBaskets.flupsyId,
+          position: selectionDestinationBaskets.position,
+          animalCount: selectionDestinationBaskets.animalCount,
+          sizeId: selectionDestinationBaskets.sizeId
+        })
+        .from(selectionDestinationBaskets)
+        .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
+        
+        // Array per i dettagli completi
+        const basketsWithDetails = [];
+        
+        // Aggiungi dettagli ai cestelli
+        for (const destBasket of destBaskets) {
+          // Recupera i dettagli del cestello
+          const basketDetail = await tx.select({
+            id: baskets.id,
+            physicalNumber: baskets.physicalNumber,
+            flupsyId: baskets.flupsyId,
+            row: baskets.row,
+            position: baskets.position
+          })
+          .from(baskets)
+          .where(eq(baskets.id, destBasket.basketId))
+          .limit(1);
+          
+          // Recupera i dettagli del FLUPSY
+          let flupsyName = 'Nessun FLUPSY';
+          if (basketDetail.length > 0 && basketDetail[0].flupsyId) {
+            const flupsyData = await tx.select()
+              .from(flupsys)
+              .where(eq(flupsys.id, basketDetail[0].flupsyId))
+              .limit(1);
+              
+            if (flupsyData.length > 0) {
+              flupsyName = flupsyData[0].name;
+            }
+          }
+          
+          // Recupera i dettagli della taglia
+          let sizeName = 'Taglia non specificata';
+          if (destBasket.sizeId) {
+            const sizeData = await tx.select()
+              .from(sizes)
+              .where(eq(sizes.id, destBasket.sizeId))
+              .limit(1);
+              
+            if (sizeData.length > 0) {
+              sizeName = sizeData[0].code;
+            }
+          }
+          
+          basketsWithDetails.push({
+            id: destBasket.basketId,
+            physicalNumber: basketDetail.length > 0 ? basketDetail[0].physicalNumber : 0,
+            flupsyName,
+            row: basketDetail.length > 0 ? basketDetail[0].row : null,
+            position: basketDetail.length > 0 ? basketDetail[0].position : null,
+            animalCount: destBasket.animalCount,
+            sizeId: destBasket.sizeId,
+            sizeName,
+            destinationType: destBasket.destinationType,
+            sold: destBasket.destinationType === 'sold'
+          });
+        }
+        
+        return {
+          selection: selectionQuery[0], 
+          destinationBaskets: basketsWithDetails
+        };
+      });
+      
+      if (transactionResults && transactionResults.selection && req.app.locals.createScreeningNotification) {
+        // Separa i cestelli posizionati e venduti
+        const positionedBaskets = transactionResults.destinationBaskets.filter(b => b.destinationType === 'placed');
+        const soldBaskets = transactionResults.destinationBaskets.filter(b => b.destinationType === 'sold');
+        
+        // Formatta le informazioni sui cestelli
+        let formattedPositionedBaskets = '';
+        if (positionedBaskets.length > 0) {
+          formattedPositionedBaskets = positionedBaskets.map(b => {
+            let positionInfo = 'Posizione non specificata';
+            if (b.row && b.position) {
+              positionInfo = `${b.flupsyName} - ${b.row}-${b.position}`;
+            }
+            
+            return `• Cestello #${b.physicalNumber} (${positionInfo}): ${b.animalCount} animali - ${b.sizeName}`;
+          }).join('\n');
+        }
+        
+        let formattedSoldBaskets = '';
+        if (soldBaskets.length > 0) {
+          formattedSoldBaskets = soldBaskets.map(b => 
+            `• Cestello #${b.physicalNumber}: ${b.animalCount} animali - ${b.sizeName} (venduto)`
+          ).join('\n');
+        }
+        
+        // Messaggio completo
+        let message = `È stata completata una vagliatura (selezione #${transactionResults.selection.selectionNumber}) in data ${format(new Date(transactionResults.selection.date), 'dd/MM/yyyy')}.\n\n`;
+        
+        if (formattedPositionedBaskets) {
+          message += `Cestelli posizionati:\n${formattedPositionedBaskets}\n\n`;
+        }
+        
+        if (formattedSoldBaskets) {
+          message += `Cestelli venduti:\n${formattedSoldBaskets}\n\n`;
+        }
+        
+        const totalAnimals = transactionResults.destinationBaskets.reduce((sum, b) => sum + (b.animalCount || 0), 0);
+        message += `Totale animali: ${totalAnimals}`;
+        
+        // Crea la notifica
+        await req.app.locals.createScreeningNotification({
+          type: 'vagliatura-destinazione',
+          title: `Vagliatura #${transactionResults.selection.selectionNumber} - Completata`,
+          message,
+          relatedEntityType: 'selection',
+          relatedEntityId: transactionResults.selection.id,
+          data: JSON.stringify({
+            selectionId: transactionResults.selection.id,
+            selectionNumber: transactionResults.selection.selectionNumber,
+            date: transactionResults.selection.date,
+            baskets: transactionResults.destinationBaskets,
+            totalAnimals
+          })
+        });
+      }
+    } catch (notificationError) {
+      console.error('Errore durante la creazione della notifica di vagliatura (destinazione):', notificationError);
+      // Non blocchiamo il flusso principale se la notifica fallisce
+    }
     
     return res.status(200).json({
       success: true,
