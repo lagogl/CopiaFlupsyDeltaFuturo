@@ -163,9 +163,9 @@ export default function NotificationBell() {
         <DialogContent className="sm:max-w-[600px] max-h-[80vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-2xl">Notifiche</DialogTitle>
-            <DialogDescription>
+            <div className="text-sm text-muted-foreground">
               Le notifiche di sistema e le operazioni importanti vengono mostrate qui.
-            </DialogDescription>
+            </div>
           </DialogHeader>
 
           <div className="space-y-4 mt-4">
