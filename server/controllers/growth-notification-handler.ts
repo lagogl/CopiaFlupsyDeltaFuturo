@@ -33,7 +33,7 @@ async function isTP3000Size(animalsPerKg: number): Promise<boolean> {
   try {
     // Recupera i limiti per la taglia TP-3000
     const sizeData = await db.execute(sql`
-      SELECT min_value, max_value FROM sizes
+      SELECT min_animals_per_kg, max_animals_per_kg FROM sizes
       WHERE name = 'TP-3000'
     `);
 
@@ -41,10 +41,10 @@ async function isTP3000Size(animalsPerKg: number): Promise<boolean> {
       return false;
     }
 
-    const { min_value, max_value } = sizeData[0];
+    const { min_animals_per_kg, max_animals_per_kg } = sizeData[0];
     
     // Verifica se animalsPerKg rientra nell'intervallo
-    return animalsPerKg >= min_value && animalsPerKg <= max_value;
+    return animalsPerKg >= min_animals_per_kg && animalsPerKg <= max_animals_per_kg;
   } catch (error) {
     console.error("Errore nella verifica della taglia TP-3000:", error);
     return false;
@@ -182,6 +182,7 @@ export async function checkCyclesForTP3000(): Promise<number> {
           o.total_weight,
           o.animal_count,
           o.date,
+          o.size_id,
           o.id as operation_id,
           ROW_NUMBER() OVER (PARTITION BY o.cycle_id ORDER BY o.date DESC, o.id DESC) as rn
         FROM operations o
@@ -202,7 +203,7 @@ export async function checkCyclesForTP3000(): Promise<number> {
       FROM last_weight_operations lwo
       JOIN cycles c ON lwo.cycle_id = c.id
       JOIN baskets b ON lwo.basket_id = b.id
-      LEFT JOIN sizes s ON c.size_id = s.id
+      LEFT JOIN sizes s ON lwo.size_id = s.id
       WHERE lwo.rn = 1
     `);
 

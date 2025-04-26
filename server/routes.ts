@@ -4796,12 +4796,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // === Route per gestione impostazioni notifiche ===
   // Ottieni tutte le impostazioni di notifica
-  app.get("/api/notification-settings", getNotificationSettings);
-
-  // Rimuovi l'endpoint per ottenere un'impostazione specifica, non necessaria
+  app.get("/api/notification-settings", async (req, res) => {
+    try {
+      await getNotificationSettings(req, res);
+    } catch (error) {
+      console.error("Errore durante il recupero delle impostazioni di notifica:", error);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Errore durante il recupero delle impostazioni di notifica" 
+      });
+    }
+  });
   
   // Aggiorna un'impostazione
-  app.put("/api/notification-settings/:type", updateNotificationSetting);
+  app.put("/api/notification-settings/:type", async (req, res) => {
+    try {
+      await updateNotificationSetting(req, res);
+    } catch (error) {
+      console.error(`Errore durante l'aggiornamento dell'impostazione "${req.params.type}":`, error);
+      return res.status(500).json({ 
+        success: false, 
+        message: `Errore durante l'aggiornamento dell'impostazione "${req.params.type}"` 
+      });
+    }
+  });
   
   // Esegui controllo manuale per cicli che hanno raggiunto TP-3000
   app.post("/api/check-growth-notifications", async (req, res) => {
