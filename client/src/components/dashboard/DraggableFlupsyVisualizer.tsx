@@ -718,7 +718,9 @@ export default function DraggableFlupsyVisualizer() {
     
     // Get baskets for this FLUPSY
     const flupsyBaskets = baskets.filter(b => b.flupsyId === flupsyId);
-    const positions = Array.from({ length: 10 }, (_, i) => i + 1); // 10 posizioni per lato
+    // Utilizziamo maxPositions dal FLUPSY o default a 10 se non definito
+    const maxPositions = flupsy.maxPositions || 10;
+    const positions = Array.from({ length: maxPositions }, (_, i) => i + 1); // Posizioni dinamiche in base al FLUPSY
     
     return (
       <Card className="mb-6">
