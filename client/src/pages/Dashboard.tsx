@@ -369,22 +369,43 @@ export default function Dashboard() {
         <TargetSizePredictions />
       </div>
       
-      {/* FLUPSY Visualizer */}
-      <TooltipTrigger 
-        tooltip={{
-          id: 'flupsy-visualizer',
-          content: 'Questa visualizzazione mostra lo stato attuale dei tuoi FLUPSY con la relativa occupazione delle ceste.',
-          position: 'top'
-        }}
-        showOnMount={isFirstTimeUser}
-        onlyFirstTime={true}
-      >
-        <div className="mb-8" ref={flupsyVisualizerRef}>
-          <FlupsyVisualizer 
-            selectedFlupsyIds={selectedFlupsyIds}
-          />
-        </div>
-      </TooltipTrigger>
+      {/* FLUPSY Filter and Visualizer */}
+      <div className="mb-8">
+        <TooltipTrigger 
+          tooltip={{
+            id: 'flupsy-center-filter',
+            content: 'Seleziona il centro di produzione per visualizzare solo i FLUPSY di quel centro.',
+            position: 'top'
+          }}
+          showOnMount={isFirstTimeUser}
+          onlyFirstTime={true}
+        >
+          <div>
+            <FlupsyCenterFilter 
+              onFilterChange={(center, flupsyIds) => {
+                setSelectedCenter(center);
+                setSelectedFlupsyIds(flupsyIds);
+              }}
+            />
+          </div>
+        </TooltipTrigger>
+        
+        <TooltipTrigger 
+          tooltip={{
+            id: 'flupsy-visualizer',
+            content: 'Questa visualizzazione mostra lo stato attuale dei tuoi FLUPSY con la relativa occupazione delle ceste.',
+            position: 'top'
+          }}
+          showOnMount={isFirstTimeUser}
+          onlyFirstTime={true}
+        >
+          <div ref={flupsyVisualizerRef}>
+            <FlupsyVisualizer 
+              selectedFlupsyIds={selectedFlupsyIds}
+            />
+          </div>
+        </TooltipTrigger>
+      </div>
       
       {/* Active Cycles Table */}
       <ActiveCycles activeCycles={activeCycles} />
