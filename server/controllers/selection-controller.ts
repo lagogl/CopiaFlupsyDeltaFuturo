@@ -639,7 +639,10 @@ export async function getAllAvailablePositions(req: Request, res: Response) {
       
       // Generiamo le posizioni in formato "DX-1", "DX-2", "SX-1", "SX-2", ecc.
       const rows = ['DX', 'SX'];
-      const positions = [1, 2, 3, 4, 5, 6, 7, 8, 9, 10];
+      
+      // Usa maxPositions dal flupsy o fallback a 10 se per qualche motivo non è definito
+      const maxPos = flupsy.maxPositions || 10;
+      const positions = Array.from({ length: maxPos }, (_, i) => i + 1); // [1, 2, ..., maxPositions]
       
       rows.forEach(posRow => {
         positions.forEach(pos => {

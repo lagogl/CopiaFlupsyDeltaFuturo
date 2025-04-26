@@ -24,6 +24,7 @@ export const flupsys = pgTable("flupsys", {
   location: text("location"), // posizione/località del FLUPSY
   description: text("description"), // descrizione opzionale
   active: boolean("active").notNull().default(true), // se il FLUPSY è attualmente attivo
+  maxPositions: integer("max_positions").notNull().default(10), // numero massimo di posizioni per fila (da 10 a 20)
 });
 
 // Baskets (Ceste)
