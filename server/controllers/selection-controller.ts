@@ -1910,7 +1910,7 @@ export async function completeSelection(req: Request, res: Response) {
         message += `Bilancio operazione:\n`;
         message += `• Animali ceste origine: ${totalSourceAnimals}\n`;
         message += `• Animali ceste destinazione: ${totalDestAnimals}\n`;
-        message += `• Differenza: ${animalDifference < 0 ? `\x1b[31m${animalDifference}\x1b[0m` : animalDifference}`;
+        message += `• Differenza: ${animalDifference < 0 ? `${animalDifference}` : animalDifference}`;
         
         // Crea la notifica
         await req.app.locals.createScreeningNotification({

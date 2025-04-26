@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { Bell } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
@@ -191,7 +191,44 @@ export default function NotificationBell() {
                       {formatDate(notification.createdAt)}
                     </span>
                   </div>
-                  <div className="mt-1 text-gray-700 whitespace-pre-wrap">{notification.message}</div>
+                  <div className="mt-1 text-gray-700 whitespace-pre-wrap">
+                    {notification.message.split('\n').map((line, i) => {
+                      // Cerca codici ANSI per il rosso
+                      const redPattern = /\u001b\[31m(.*?)\u001b\[0m/;
+                      const redMatch = line.match(redPattern);
+                      
+                      // Cerca codici ANSI per il verde
+                      const greenPattern = /\u001b\[32m(.*?)\u001b\[0m/;
+                      const greenMatch = line.match(greenPattern);
+                      
+                      if (redMatch) {
+                        // Sostituisci i codici ANSI rossi con uno span colorato
+                        const beforeText = line.substring(0, redMatch.index);
+                        const coloredText = redMatch[1];
+                        const afterText = line.substring(redMatch.index! + redMatch[0].length);
+                        
+                        return (
+                          <React.Fragment key={i}>
+                            {beforeText}<span className="text-red-600">{coloredText}</span>{afterText}<br/>
+                          </React.Fragment>
+                        );
+                      } else if (greenMatch) {
+                        // Sostituisci i codici ANSI verdi con uno span colorato
+                        const beforeText = line.substring(0, greenMatch.index);
+                        const coloredText = greenMatch[1];
+                        const afterText = line.substring(greenMatch.index! + greenMatch[0].length);
+                        
+                        return (
+                          <React.Fragment key={i}>
+                            {beforeText}<span className="text-green-600">{coloredText}</span>{afterText}<br/>
+                          </React.Fragment>
+                        );
+                      } else {
+                        // Nessun codice di colore, renderizza normalmente
+                        return <React.Fragment key={i}>{line}<br/></React.Fragment>;
+                      }
+                    })}
+                  </div>
                   
                   {!notification.isRead && (
                     <div className="mt-2 flex justify-end">
