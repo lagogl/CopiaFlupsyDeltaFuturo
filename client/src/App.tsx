@@ -31,6 +31,7 @@ import BasketSelection from "@/pages/BasketSelection";
 import ExportPage from "@/pages/ExportPage";
 import DiarioDiBordo from "@/pages/DiarioDiBordo";
 import NotificationSettings from "@/pages/NotificationSettings";
+import EcoImpact from "@/pages/EcoImpact";
 // Importiamo le pagine per il modulo di vagliatura
 import Screening from "@/pages/Screening";
 import NewScreening from "@/pages/NewScreening";
@@ -83,6 +84,7 @@ function Router() {
       <Route path="/backup" component={BackupPage}/>
       <Route path="/diario-di-bordo" component={DiarioDiBordo}/>
       <Route path="/notification-settings" component={NotificationSettings}/>
+      <Route path="/eco-impact" component={EcoImpact}/>
       
       {/* Redirezione per pagine rimosse */}
       <Route path="/tp3000-forecast">

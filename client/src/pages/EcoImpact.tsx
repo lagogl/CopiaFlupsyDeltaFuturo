@@ -1,6 +1,6 @@
 import React from "react";
 import EcoVisualizer from "@/components/eco-impact/EcoVisualizer";
-import { MainLayout } from "@/layouts/MainLayout";
+import MainLayout from "@/layouts/MainLayout";
 import { Helmet } from "react-helmet";
 
 export default function EcoImpactPage() {

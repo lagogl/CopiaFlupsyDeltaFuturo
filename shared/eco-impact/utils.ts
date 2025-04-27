@@ -9,77 +9,107 @@
  * @returns Oggetto con i valori di impatto calcolati
  */
 export function calculateOperationImpact(operationType: string, parameters: any) {
-  // Valori di base per diversi tipi di operazioni
-  const baseImpacts = {
-    // Consumo acqua (L)
-    water: {
-      cleaning: 200,   // Pulizia utilizza circa 200L d'acqua
-      transfer: 50,    // Trasferimento utilizza circa 50L d'acqua
-      screening: 300,  // Vagliatura utilizza circa 300L d'acqua
-      selection: 200,  // Selezione utilizza circa 200L d'acqua  
-      weight: 10,      // Pesatura utilizza circa 10L d'acqua
-      default: 30,     // Valore predefinito per altre operazioni
+  // Valori base di impatto per tipo di operazione
+  const baseImpacts: Record<string, Record<string, number>> = {
+    "pulizia": {
+      water: 0.5,     // m³ di acqua
+      carbon: 0.2,    // kg CO₂e
+      energy: 0.3,    // kWh
+      waste: 0.1,     // kg
+      biodiversity: 0.05  // indice
     },
-    // Emissioni CO2 (kgCO2e)
-    carbon: {
-      cleaning: 0.5,   // Pulizia emette circa 0.5kg CO2e
-      transfer: 1.2,   // Trasferimento emette circa 1.2kg CO2e (trasporto)
-      screening: 0.8,  // Vagliatura emette circa 0.8kg CO2e
-      selection: 0.7,  // Selezione emette circa 0.7kg CO2e
-      weight: 0.1,     // Pesatura emette circa 0.1kg CO2e
-      default: 0.3,    // Valore predefinito per altre operazioni
+    "vagliatura": {
+      water: 0.3,
+      carbon: 0.15,
+      energy: 0.4,
+      waste: 0.05,
+      biodiversity: 0.03
     },
-    // Energia (kWh)
-    energy: {
-      cleaning: 0.8,   // Pulizia consuma circa 0.8kWh
-      transfer: 1.5,   // Trasferimento consuma circa 1.5kWh
-      screening: 2.0,  // Vagliatura consuma circa 2.0kWh
-      selection: 1.0,  // Selezione consuma circa 1.0kWh
-      weight: 0.2,     // Pesatura consuma circa 0.2kWh
-      default: 0.5,    // Valore predefinito per altre operazioni
+    "trattamento": {
+      water: 0.4,
+      carbon: 0.3,
+      energy: 0.5,
+      waste: 0.2,
+      biodiversity: 0.1
+    },
+    "misura": {
+      water: 0.1,
+      carbon: 0.05,
+      energy: 0.2,
+      waste: 0.02,
+      biodiversity: 0.01
+    },
+    "prima-attivazione": {
+      water: 0.2,
+      carbon: 0.1,
+      energy: 0.3,
+      waste: 0.05,
+      biodiversity: 0.02
+    },
+    "peso": {
+      water: 0.1,
+      carbon: 0.05,
+      energy: 0.1,
+      waste: 0.01,
+      biodiversity: 0.01
+    },
+    "vendita": {
+      water: 0.1,
+      carbon: 0.5,   // maggiore per trasporto
+      energy: 0.3,
+      waste: 0.1,
+      biodiversity: 0.05
+    },
+    "cessazione": {
+      water: 0.2,
+      carbon: 0.1,
+      energy: 0.2,
+      waste: 0.2,
+      biodiversity: 0.03
+    },
+    "selezione-origine": {
+      water: 0.2,
+      carbon: 0.1,
+      energy: 0.2,
+      waste: 0.05,
+      biodiversity: 0.02
+    },
+    "selezione-vendita": {
+      water: 0.1,
+      carbon: 0.5,
+      energy: 0.3,
+      waste: 0.1,
+      biodiversity: 0.05
     }
   };
-  
-  // Calcola l'impatto base in base al tipo di operazione
-  const getBaseImpact = (category: string, type: string) => {
-    const categoryValues = baseImpacts[category as keyof typeof baseImpacts];
-    if (!categoryValues) return 0;
-    
-    return type in categoryValues 
-      ? categoryValues[type as keyof typeof categoryValues] 
-      : categoryValues.default;
+
+  // Impatto predefinito se il tipo non è riconosciuto
+  const defaultImpact = {
+    water: 0.1,
+    carbon: 0.1,
+    energy: 0.1,
+    waste: 0.05,
+    biodiversity: 0.01
   };
+
+  // Seleziona il modello di impatto base in base al tipo di operazione
+  const baseImpact = baseImpacts[operationType] || defaultImpact;
   
-  // Applica moltiplicatori in base ai parametri dell'operazione
-  const applyModifiers = (baseValue: number, parameters: any) => {
-    let modifier = 1.0;
-    
-    // Modifica in base al numero di cestelli coinvolti
-    if (parameters.basketCount) {
-      // Più cestelli = maggiore efficienza (per cestello)
-      if (parameters.basketCount <= 5) {
-        modifier = 1.0; // Nessuna modifica per pochi cestelli
-      } else if (parameters.basketCount <= 20) {
-        modifier = 0.9; // Lieve efficienza per numero medio
-      } else {
-        modifier = 0.8; // Maggiore efficienza per grandi numeri
-      }
-      
-      // Moltiplica per il numero di cestelli
-      return baseValue * parameters.basketCount * modifier;
-    }
-    
-    return baseValue;
-  };
+  // Parametri che influenzano il calcolo
+  const basketCount = parameters.basketCount || 1;
+  const duration = parameters.duration || 30; // durata in minuti
   
-  // Calcola tutti gli impatti per l'operazione
-  return {
-    water: applyModifiers(getBaseImpact('water', operationType), parameters),
-    carbon: applyModifiers(getBaseImpact('carbon', operationType), parameters),
-    energy: applyModifiers(getBaseImpact('energy', operationType), parameters),
-    waste: 0, // Per ora settiamo a 0, implementazione futura
-    biodiversity: 0, // Per ora settiamo a 0, implementazione futura
-  };
+  // Calcola i moltiplicatori basati sui parametri
+  const basketMultiplier = Math.sqrt(basketCount); // Scala sublineare con numero di cestelli
+  const durationMultiplier = duration / 30; // Normalizzato su 30 minuti
+  
+  // Applica i moltiplicatori ai valori base
+  const impacts: Record<string, number> = {};
+  for (const category in baseImpact) {
+    impacts[category] = baseImpact[category] * basketMultiplier * durationMultiplier;
+  }
+  
+  return impacts;
 }
 
 /**
@@ -88,55 +118,42 @@ export function calculateOperationImpact(operationType: string, parameters: any)
  * @returns Punteggio di sostenibilità (0-100, dove 100 è ottimale)
  */
 export function calculateSustainabilityScore(impacts: Record<string, number>) {
-  // Pesi relativi di ogni categoria (la somma deve essere 1)
+  // Pesi relativi delle diverse categorie (somma a 1)
   const weights = {
-    water: 0.25,
-    carbon: 0.30,
-    energy: 0.25,
-    waste: 0.10,
-    biodiversity: 0.10
+    water: 0.2,
+    carbon: 0.25,
+    energy: 0.2,
+    waste: 0.15,
+    biodiversity: 0.2
   };
   
-  // Valori di riferimento per il miglior caso (impatto zero)
-  const bestCase = {
-    water: 0,
-    carbon: 0,
-    energy: 0,
-    waste: 0,
-    biodiversity: 0
+  // Soglie di riferimento per punteggio massimo per categoria
+  // (valori oltre i quali il punteggio peggiora rapidamente)
+  const thresholds = {
+    water: 50, // m³
+    carbon: 100, // kg CO₂e
+    energy: 200, // kWh
+    waste: 30, // kg
+    biodiversity: 5 // indice
   };
   
-  // Valori di riferimento per il caso peggiore
-  const worstCase = {
-    water: 1000,  // 1000L d'acqua
-    carbon: 10,   // 10kg CO2e
-    energy: 5,    // 5kWh
-    waste: 5,     // 5kg rifiuti
-    biodiversity: 10 // 10 unità impatto biodiversità
-  };
+  let weightedScore = 0;
   
-  // Calcola il punteggio normalizzato per ogni categoria (0-100)
-  let totalScore = 0;
-  let totalWeight = 0;
-  
-  Object.keys(impacts).forEach(category => {
-    if (category in weights) {
-      const weight = weights[category as keyof typeof weights];
-      const best = bestCase[category as keyof typeof bestCase];
-      const worst = worstCase[category as keyof typeof worstCase];
-      const actual = impacts[category];
+  // Calcola il punteggio ponderato per ciascuna categoria
+  for (const category in impacts) {
+    if (category in weights && category in thresholds) {
+      // Normalizza il valore (0-1, dove 0 è ottimale)
+      const normalizedValue = Math.min(impacts[category] / thresholds[category], 1);
       
-      // Calcola punteggio normalizzato (0-100, dove 100 è ottimo)
-      // Formula: 100 - ((actual - best) / (worst - best)) * 100
-      const normalizedScore = Math.max(0, Math.min(100, 100 - ((actual - best) / (worst - best)) * 100));
+      // Converti in punteggio (100-0, dove 100 è ottimale)
+      const categoryScore = 100 * (1 - normalizedValue);
       
-      totalScore += normalizedScore * weight;
-      totalWeight += weight;
+      // Aggiungi al punteggio totale ponderato
+      weightedScore += categoryScore * weights[category as keyof typeof weights];
     }
-  });
+  }
   
-  // Restituisci punteggio finale (0-100)
-  return totalWeight > 0 ? Math.round(totalScore / totalWeight) : 0;
+  return weightedScore;
 }
 
 /**
@@ -148,21 +165,23 @@ export function calculateSustainabilityScore(impacts: Record<string, number>) {
 export function calculateImpactTrend(
   currentImpacts: Record<string, number>,
   previousImpacts: Record<string, number>
-) {
+): Record<string, number> {
   const trends: Record<string, number> = {};
   
-  Object.keys(currentImpacts).forEach(category => {
+  // Per ogni categoria di impatto
+  for (const category in currentImpacts) {
     const current = currentImpacts[category];
-    const previous = previousImpacts[category] || 0;
+    const previous = previousImpacts[category];
     
-    if (previous === 0) {
-      trends[category] = 0; // Non c'è un trend se non c'è un valore precedente
+    // Se entrambi i valori sono disponibili e il precedente non è zero
+    if (previous && previous !== 0) {
+      // Calcola la variazione percentuale
+      trends[category] = ((current - previous) / previous) * 100;
     } else {
-      // Calcola variazione percentuale
-      // Nota: un valore negativo significa un miglioramento (riduzione dell'impatto)
-      trends[category] = Math.round(((current - previous) / previous) * 100);
+      // Se non ci sono dati precedenti, non c'è trend
+      trends[category] = 0;
     }
-  });
+  }
   
   return trends;
 }
@@ -175,31 +194,50 @@ export function calculateImpactTrend(
 export function generateSustainabilitySuggestions(impacts: Record<string, number>) {
   const suggestions: string[] = [];
   
-  // Suggerimenti per migliorare il consumo d'acqua
-  if (impacts.water > 500) {
+  // Soglie critiche per categoria
+  const thresholds = {
+    water: 20, // m³
+    carbon: 50, // kg CO₂e
+    energy: 80, // kWh
+    waste: 15, // kg
+    biodiversity: 2 // indice
+  };
+  
+  // Verifica ogni categoria e genera suggerimenti per quelle critiche
+  if (impacts.water > thresholds.water) {
     suggestions.push(
-      'Ridurre il consumo d\'acqua implementando sistemi di ricircolo durante le operazioni di pulizia e vagliatura.'
+      "Ottimizza l'uso dell'acqua durante le operazioni di pulizia e vagliatura. Considera sistemi di riciclo dell'acqua."
     );
   }
   
-  // Suggerimenti per ridurre le emissioni di carbonio
-  if (impacts.carbon > 5) {
+  if (impacts.carbon > thresholds.carbon) {
     suggestions.push(
-      'Ridurre le emissioni di CO₂ ottimizzando i trasporti e utilizzando apparecchiature a basso consumo energetico.'
+      "Riduci le emissioni di carbonio ottimizzando i trasporti e utilizzando energia da fonti rinnovabili."
     );
   }
   
-  // Suggerimenti per il risparmio energetico
-  if (impacts.energy > 3) {
+  if (impacts.energy > thresholds.energy) {
     suggestions.push(
-      'Ridurre il consumo energetico installando dispositivi a risparmio energetico e pianificando le operazioni nei momenti di minor carico.'
+      "Riduci il consumo energetico utilizzando attrezzature più efficienti e pianificando meglio le operazioni."
     );
   }
   
-  // Suggerimenti generali se non ci sono problemi specifici
+  if (impacts.waste > thresholds.waste) {
+    suggestions.push(
+      "Implementa un sistema di gestione dei rifiuti più efficiente. Considera il riutilizzo dei materiali quando possibile."
+    );
+  }
+  
+  if (impacts.biodiversity > thresholds.biodiversity) {
+    suggestions.push(
+      "Monitora attentamente l'impatto sulla biodiversità locale e implementa misure di mitigazione."
+    );
+  }
+  
+  // Se tutte le categorie sono sotto soglia, aggiungi un suggerimento generale
   if (suggestions.length === 0) {
     suggestions.push(
-      'Mantenere le attuali buone pratiche e considerare l\'installazione di sistemi di monitoraggio in tempo reale per tracciare l\'uso delle risorse.'
+      "I tuoi punteggi di sostenibilità sono buoni. Continua a monitorare e cercare opportunità di miglioramento continuo."
     );
   }
   
@@ -213,25 +251,29 @@ export function generateSustainabilitySuggestions(impacts: Record<string, number
  * @returns Stringa formattata
  */
 export function formatImpactValue(value: number, category: string): string {
-  const units: Record<string, string> = {
-    water: 'L',
-    carbon: 'kg CO₂e',
-    energy: 'kWh',
-    waste: 'kg',
-    biodiversity: 'unità'
-  };
-  
-  const unit = units[category] || '';
-  return `${value.toFixed(1)} ${unit}`;
+  switch (category) {
+    case "water":
+      return `${value.toFixed(1)} m³`;
+    case "carbon":
+      return `${value.toFixed(1)} kg CO₂e`;
+    case "energy":
+      return `${value.toFixed(1)} kWh`;
+    case "waste":
+      return `${value.toFixed(1)} kg`;
+    case "biodiversity":
+      return value.toFixed(2);
+    default:
+      return value.toString();
+  }
 }
 
 /**
  * Mappa colori per le visualizzazioni in base alla categoria
  */
 export const impactColors: Record<string, string> = {
-  water: '#2196F3', // Blu
-  carbon: '#4CAF50', // Verde
-  energy: '#FFC107', // Giallo
-  waste: '#FF5722', // Arancione
-  biodiversity: '#9C27B0' // Viola
+  water: "#3b82f6", // blue
+  carbon: "#10b981", // green
+  energy: "#f59e0b", // amber
+  waste: "#ef4444", // red
+  biodiversity: "#8b5cf6", // purple
 };

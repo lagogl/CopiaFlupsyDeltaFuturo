@@ -17,7 +17,7 @@ interface DateRangePickerProps {
   value: DateRange;
   onChange: (date: DateRange) => void;
   className?: string;
-  locale?: Locale;
+  locale?: any;
   align?: "center" | "start" | "end";
 }
 
