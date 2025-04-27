@@ -1,11 +1,10 @@
 import React from "react";
 import EcoVisualizer from "@/components/eco-impact/EcoVisualizer";
-import MainLayout from "@/layouts/MainLayout";
 import { Helmet } from "react-helmet";
 
 export default function EcoImpactPage() {
   return (
-    <MainLayout>
+    <>
       <Helmet>
         <title>Eco-Impact Score | FLUPSY Manager</title>
       </Helmet>
@@ -19,6 +18,6 @@ export default function EcoImpactPage() {
         
         <EcoVisualizer />
       </div>
-    </MainLayout>
+    </>
   );
 }

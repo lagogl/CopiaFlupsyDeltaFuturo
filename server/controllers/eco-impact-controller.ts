@@ -6,7 +6,9 @@ import {
   insertSustainabilityGoalSchema,
   insertSustainabilityReportSchema
 } from '../../shared/eco-impact/schema';
+import { flupsys } from '../../shared/schema';
 import { z } from 'zod';
+import { db } from '../db';
 
 // Servizio per l'impatto ambientale
 const ecoImpactService = new EcoImpactService();
@@ -203,7 +205,7 @@ export class EcoImpactController {
     try {
       // Schema di validazione per i parametri
       const paramsSchema = z.object({
-        flupsyId: z.string().transform(val => parseInt(val))
+        flupsyId: z.string()
       });
       
       // Schema per i query params
@@ -227,17 +229,114 @@ export class EcoImpactController {
       const { flupsyId } = paramsResult.data;
       const { startDate, endDate } = queryResult.data;
       
-      // Calcola il punteggio di sostenibilità
-      const result = await ecoImpactService.calculateFlupsySustainabilityScore(
-        flupsyId,
-        startDate,
-        endDate
-      );
-      
-      return res.status(200).json({
-        success: true,
-        ...result
-      });
+      // Verifico se è richiesto il calcolo per tutti i FLUPSY
+      if (flupsyId === 'all') {
+        // Ottiene tutti i FLUPSY
+        const allFlupsys = await db.select().from(flupsys);
+        
+        // Calcola il punteggio medio di sostenibilità combinando i risultati di tutti i FLUPSY
+        const allResults = await Promise.all(
+          allFlupsys.map(flupsy => 
+            ecoImpactService.calculateFlupsySustainabilityScore(
+              flupsy.id,
+              startDate,
+              endDate
+            ).catch(err => {
+              console.error(`Errore nel calcolo per FLUPSY ${flupsy.id}:`, err);
+              return null;
+            })
+          )
+        );
+        
+        // Filtra i risultati nulli da eventuali errori
+        const validResults = allResults.filter(result => result !== null);
+        
+        if (validResults.length === 0) {
+          return res.status(500).json({
+            success: false,
+            error: 'Errore nel calcolo del punteggio di sostenibilità per tutti i FLUPSY'
+          });
+        }
+        
+        // Calcola la media dei punteggi
+        const avgScore = validResults.reduce((sum, result) => sum + (result?.score || 0), 0) / validResults.length;
+        
+        // Combina gli impatti di tutte le categorie
+        const combinedImpacts = {
+          water: 0,
+          carbon: 0,
+          energy: 0,
+          waste: 0,
+          biodiversity: 0
+        };
+        
+        // Combina i trend
+        const combinedTrends = {
+          water: 0,
+          carbon: 0,
+          energy: 0,
+          waste: 0,
+          biodiversity: 0
+        };
+        
+        // Accumula tutti gli impatti e i trend
+        validResults.forEach(result => {
+          if (result && result.impacts) {
+            Object.keys(combinedImpacts).forEach(key => {
+              combinedImpacts[key] += (result.impacts[key] || 0);
+            });
+          }
+          
+          if (result && result.trends) {
+            Object.keys(combinedTrends).forEach(key => {
+              combinedTrends[key] += (result.trends[key] || 0);
+            });
+          }
+        });
+        
+        // Calcola la media dei trend
+        Object.keys(combinedTrends).forEach(key => {
+          combinedTrends[key] /= validResults.length;
+        });
+        
+        // Raccogli tutti i suggerimenti unici
+        const allSuggestions = new Set<string>();
+        validResults.forEach(result => {
+          if (result && result.suggestions) {
+            result.suggestions.forEach(suggestion => allSuggestions.add(suggestion));
+          }
+        });
+        
+        return res.status(200).json({
+          success: true,
+          score: avgScore,
+          impacts: combinedImpacts,
+          trends: combinedTrends,
+          suggestions: Array.from(allSuggestions)
+        });
+      } else {
+        // Caso singolo FLUPSY - converti l'ID in numero
+        const flupsyIdNum = parseInt(flupsyId);
+        
+        if (isNaN(flupsyIdNum)) {
+          return res.status(400).json({
+            success: false,
+            error: 'ID FLUPSY non valido'
+          });
+        }
+        
+        // Calcola il punteggio di sostenibilità per il singolo FLUPSY
+        const result = await ecoImpactService.calculateFlupsySustainabilityScore(
+          flupsyIdNum,
+          startDate,
+          endDate
+        );
+        
+        return res.status(200).json({
+          success: true,
+          ...result
+        });
+      }
     } catch (error) {
       console.error('Errore nel calcolo del punteggio di sostenibilità:', error);
       return res.status(500).json({
