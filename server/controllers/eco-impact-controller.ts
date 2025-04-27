@@ -245,8 +245,8 @@ export class EcoImpactController {
           allFlupsys.map(flupsy => 
             ecoImpactService.calculateFlupsySustainabilityScore(
               flupsy.id,
-              startDate,
-              endDate
+              startDateObj,
+              endDateObj
             ).catch(err => {
               console.error(`Errore nel calcolo per FLUPSY ${flupsy.id}:`, err);
               return null;
@@ -334,8 +334,8 @@ export class EcoImpactController {
         // Calcola il punteggio di sostenibilità per il singolo FLUPSY
         const result = await ecoImpactService.calculateFlupsySustainabilityScore(
           flupsyIdNum,
-          startDate,
-          endDate
+          startDateObj,
+          endDateObj
         );
         
         return res.status(200).json({

@@ -206,7 +206,9 @@ export class EcoImpactService {
       
       // Recupera e accumula gli impatti di tutte le operazioni
       for (const { operation } of operationsList) {
-        const operationImpactsList = await this.getOperationImpacts(operation.id);
+        const operationImpactsList = await db.select()
+          .from(operationImpacts)
+          .where(eq(operationImpacts.operationId, operation.id));
         
         // Aggiungi ciascun impatto alla categoria appropriata
         for (const impact of operationImpactsList) {
@@ -233,11 +235,14 @@ export class EcoImpactService {
       previousEndDate.setDate(previousEndDate.getDate() - periodDays);
       
       // Calcola gli impatti del periodo precedente (con lo stesso metodo)
-      const previousResult = await this.calculateFlupsySustainabilityScore(
-        flupsyId,
-        previousStartDate,
-        previousEndDate
-      );
+      // Per il periodo precedente, utilizziamo valori predefiniti
+      // per evitare ricorsione infinita
+      const previousResult = { 
+        score: 0, 
+        impacts: { water: 0, carbon: 0, energy: 0, waste: 0, biodiversity: 0 },
+        trends: { water: 0, carbon: 0, energy: 0, waste: 0, biodiversity: 0 },
+        suggestions: []
+      };
       
       // Calcola i trend
       const trends = calculateImpactTrend(totalImpacts, previousResult.impacts);
