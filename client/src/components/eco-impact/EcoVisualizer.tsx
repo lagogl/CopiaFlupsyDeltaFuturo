@@ -521,7 +521,7 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                                defaultValue.operationType === 'trasporto-corto' ? 'Trasporto Corto (meno di 50 km)' :
                                defaultValue.operationType === 'trasporto-medio' ? 'Trasporto Medio (50-200 km)' :
                                defaultValue.operationType === 'trasporto-lungo' ? 'Trasporto Lungo (oltre 200 km)' :
-                               defaultValue.operationType === 'custom' ? 'Personalizzato' :
+                               // Operazioni personalizzate non utilizzano 'custom' come valore ma direttamente il nome inserito
                                defaultValue.operationType}
                             </div>
                             <div>{defaultValue.water}</div>
@@ -555,12 +555,26 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                       onSubmit={(e) => {
                         e.preventDefault();
                         const formData = new FormData(e.currentTarget);
-                        const operationType = formData.get('operationType') as string;
+                        let operationType = formData.get('operationType') as string;
+                        const customOperationType = formData.get('customOperationType') as string;
                         const water = parseFloat(formData.get('water') as string);
                         const carbon = parseFloat(formData.get('carbon') as string);
                         const energy = parseFloat(formData.get('energy') as string);
                         const waste = parseFloat(formData.get('waste') as string);
                         const biodiversity = parseFloat(formData.get('biodiversity') as string);
+                        
+                        // Se è personalizzato, controlla che il nome personalizzato sia stato inserito
+                        if (operationType === 'custom') {
+                          if (!customOperationType || customOperationType.trim() === '') {
+                            toast({
+                              title: "Errore",
+                              description: "Il nome personalizzato è obbligatorio quando si seleziona 'Personalizzato'.",
+                              variant: "destructive",
+                            });
+                            return;
+                          }
+                          operationType = customOperationType;
+                        }
                         
                         if (!operationType || isNaN(water) || isNaN(carbon) || isNaN(energy) || isNaN(waste) || isNaN(biodiversity)) {
                           toast({
@@ -598,8 +612,15 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                             description: "Valore di impatto predefinito salvato con successo.",
                           });
                           refetchDefaults();
-                          // Reset form
-                          e.currentTarget.reset();
+                          
+                          // Reset the form and state
+                          if (e.currentTarget) {
+                            e.currentTarget.reset();
+                          }
+                          
+                          // Reset custom type state
+                          setIsCustomType(false);
+                          setSelectedOperationType("");
                         })
                         .catch(error => {
                           toast({
