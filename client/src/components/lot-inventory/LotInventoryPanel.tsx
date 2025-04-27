@@ -158,10 +158,19 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
   };
 
   // Formatta il numero con 2 decimali e separatore di migliaia
-  const formatNumber = (num: number) => {
+  const formatNumber = (num: number | null | undefined) => {
+    if (num === null || num === undefined) return "-";
     return new Intl.NumberFormat("it-IT", {
       maximumFractionDigits: 2,
     }).format(num);
+  };
+  
+  // Funzione sicura per gestire percentuali che potrebbero essere stringhe o numeri
+  const formatPercentage = (value: any): string => {
+    if (value === null || value === undefined) return "0.00";
+    if (typeof value === 'string') return parseFloat(value).toFixed(2);
+    if (typeof value === 'number') return value.toFixed(2);
+    return "0.00";
   };
 
   return (
@@ -225,7 +234,7 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                   <div className="space-y-2">
                     <Label>Percentuale mortalità</Label>
                     <div className="text-xl">
-                      {inventoryQuery.data.mortalityPercentage.toFixed(2)}%
+                      {formatPercentage(inventoryQuery.data?.mortalityPercentage)}%
                     </div>
                   </div>
                 </div>
@@ -233,7 +242,9 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                 <div className="space-y-2">
                   <Label>Tasso di mortalità</Label>
                   <Progress 
-                    value={inventoryQuery.data.mortalityPercentage} 
+                    value={typeof inventoryQuery.data.mortalityPercentage === 'string' 
+                      ? parseFloat(inventoryQuery.data.mortalityPercentage) 
+                      : inventoryQuery.data.mortalityPercentage} 
                     max={100} 
                     className="h-4"
                   />
@@ -368,7 +379,11 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                         {formatNumber(record.mortalityCount)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {(typeof record.mortalityPercentage === 'number' ? record.mortalityPercentage.toFixed(2) : '0.00')}%
+                        {typeof record.mortalityPercentage === 'string'
+                          ? parseFloat(record.mortalityPercentage).toFixed(2)
+                          : typeof record.mortalityPercentage === 'number'
+                            ? record.mortalityPercentage.toFixed(2)
+                            : '0.00'}%
                       </TableCell>
                     </TableRow>
                   ))}
