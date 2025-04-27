@@ -4957,6 +4957,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API per valori di impatto predefiniti
   app.get("/api/eco-impact/defaults", ecoImpactController.getOperationImpactDefaults.bind(ecoImpactController));
   app.post("/api/eco-impact/defaults", ecoImpactController.createOrUpdateOperationImpactDefault.bind(ecoImpactController));
+  app.delete("/api/eco-impact/defaults/:id", ecoImpactController.deleteOperationImpactDefault.bind(ecoImpactController));
   
   return httpServer;
 }

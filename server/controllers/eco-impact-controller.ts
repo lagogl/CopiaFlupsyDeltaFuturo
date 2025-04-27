@@ -483,6 +483,48 @@ export class EcoImpactController {
   }
   
   /**
+   * Elimina un valore di impatto predefinito
+   */
+  async deleteOperationImpactDefault(req: Request, res: Response) {
+    try {
+      // Valida i parametri
+      const { id } = req.params;
+      const defaultId = parseInt(id);
+      
+      if (isNaN(defaultId)) {
+        return res.status(400).json({
+          success: false,
+          error: 'ID non valido'
+        });
+      }
+      
+      // Elimina il valore predefinito
+      const deleted = await db.delete(operationImpactDefaults)
+        .where(eq(operationImpactDefaults.id, defaultId))
+        .returning();
+      
+      if (deleted.length === 0) {
+        return res.status(404).json({
+          success: false,
+          error: 'Valore predefinito non trovato'
+        });
+      }
+      
+      return res.status(200).json({
+        success: true,
+        message: 'Valore predefinito eliminato con successo',
+        deleted: deleted[0]
+      });
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del valore di impatto predefinito:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Errore nell\'eliminazione del valore di impatto predefinito'
+      });
+    }
+  }
+  
+  /**
    * Crea o aggiorna un valore di impatto predefinito per un tipo di operazione
    */
   async createOrUpdateOperationImpactDefault(req: Request, res: Response) {
