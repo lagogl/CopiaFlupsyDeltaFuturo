@@ -595,6 +595,7 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                           },
                           body: JSON.stringify({
                             operationType,
+                            customName: operationType === 'custom' ? customOperationType : undefined,
                             water,
                             carbon,
                             energy,
