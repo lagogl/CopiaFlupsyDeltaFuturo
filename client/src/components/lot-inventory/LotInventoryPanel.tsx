@@ -402,7 +402,16 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
         <Button 
           variant="outline" 
           onClick={() => {
-            queryClient.invalidateQueries({ queryKey: ["/api/lot-inventory", lotId] });
+            // Invalidare tutte le query relative all'inventario di questo lotto
+            queryClient.invalidateQueries({ queryKey: ["/api/lot-inventory", lotId, "current"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/lot-inventory", lotId, "transactions"] });
+            queryClient.invalidateQueries({ queryKey: ["/api/lot-inventory", lotId, "mortality-history"] });
+            
+            // Mostra una notifica all'utente
+            toast({
+              title: "Aggiornamento in corso",
+              description: "Recupero i dati più recenti dell'inventario...",
+            });
           }}
         >
           Aggiorna
