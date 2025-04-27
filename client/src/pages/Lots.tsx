@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle, BarChart } from 'lucide-react';
+import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle, BarChart, ArrowUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -23,6 +23,8 @@ export default function Lots() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [selectedLot, setSelectedLot] = useState<any>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
+  const [sortField, setSortField] = useState('id');
+  const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   
   // Query lots
   const { data: lots, isLoading } = useQuery({
@@ -124,8 +126,20 @@ export default function Lots() {
     }
   });
 
-  // Filter lots
-  const filteredLots = lots?.filter(lot => {
+  // Function to handle sort click
+  const handleSortClick = (field: string) => {
+    if (sortField === field) {
+      // Toggle direction if already sorting by this field
+      setSortDirection(sortDirection === 'asc' ? 'desc' : 'asc');
+    } else {
+      // Set new sort field and default to ascending
+      setSortField(field);
+      setSortDirection('asc');
+    }
+  };
+
+  // Filter and sort lots
+  const filteredLots = lots && Array.isArray(lots) ? lots.filter((lot: any) => {
     // Filter by search term
     const matchesSearch = searchTerm === '' || 
       `${lot.id}`.includes(searchTerm) || 
@@ -137,7 +151,35 @@ export default function Lots() {
       (statusFilter === 'exhausted' && lot.state === 'exhausted');
     
     return matchesSearch && matchesStatus;
-  }) || [];
+  }).sort((a: any, b: any) => {
+    // Handle special cases for certain fields
+    if (sortField === 'arrivalDate') {
+      const dateA = new Date(a[sortField]);
+      const dateB = new Date(b[sortField]);
+      return sortDirection === 'asc' 
+        ? dateA.getTime() - dateB.getTime() 
+        : dateB.getTime() - dateA.getTime();
+    }
+    
+    if (sortField === 'size') {
+      const sizeA = a.size?.code || '';
+      const sizeB = b.size?.code || '';
+      return sortDirection === 'asc'
+        ? sizeA.localeCompare(sizeB)
+        : sizeB.localeCompare(sizeA);
+    }
+    
+    // Default sorting for string and number fields
+    if (typeof a[sortField] === 'string') {
+      return sortDirection === 'asc'
+        ? a[sortField].localeCompare(b[sortField])
+        : b[sortField].localeCompare(a[sortField]);
+    } else {
+      const valA = a[sortField] || 0;
+      const valB = b[sortField] || 0;
+      return sortDirection === 'asc' ? valA - valB : valB - valA;
+    }
+  }) : [];
 
   const handleToggleLotState = (lot: any) => {
     const newState = lot.state === 'active' ? 'exhausted' : 'active';
@@ -222,32 +264,68 @@ export default function Lots() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID Lotto
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSortClick('id')}
+                >
+                  ID Lotto {sortField === 'id' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Data Arrivo
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSortClick('arrivalDate')}
+                >
+                  Data Arrivo {sortField === 'arrivalDate' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Fornitore
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSortClick('supplier')}
+                >
+                  Fornitore {sortField === 'supplier' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Qualità
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSortClick('quality')}
+                >
+                  Qualità {sortField === 'quality' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Taglia
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSortClick('size')}
+                >
+                  Taglia {sortField === 'size' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  # Animali
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSortClick('animalCount')}
+                >
+                  # Animali {sortField === 'animalCount' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Peso (g)
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSortClick('weight')}
+                >
+                  Peso (g) {sortField === 'weight' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stato
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSortClick('state')}
+                >
+                  Stato {sortField === 'state' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Note
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSortClick('notes')}
+                >
+                  Note {sortField === 'notes' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Azioni
