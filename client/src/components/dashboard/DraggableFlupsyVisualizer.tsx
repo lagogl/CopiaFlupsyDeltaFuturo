@@ -581,6 +581,7 @@ export default function DraggableFlupsyVisualizer() {
     let cycle = null;
     let size = null;
     let animalCount = null;
+    let averageWeight = null;
     let startDate = null;
     
     // Determina se il cestello è trascinabile per applicare indicazioni visive
@@ -607,16 +608,24 @@ export default function DraggableFlupsyVisualizer() {
         }
       }
       
-      // Get size and animal count from latest operation
+      // Get size, average weight and animal count from latest operation
       if (latestOperation) {
         size = latestOperation.size?.code;
         animalCount = latestOperation.animalCount;
+        // Utilizziamo il peso medio direttamente dal campo averageWeight se disponibile
+        averageWeight = latestOperation.averageWeight;
+        
+        // Se averageWeight non è disponibile ma abbiamo animalsPerKg, lo calcoliamo
+        if (!averageWeight && latestOperation.animalsPerKg && parseFloat(latestOperation.animalsPerKg) > 0) {
+          averageWeight = 1000000 / parseFloat(latestOperation.animalsPerKg);
+        }
+        
         if (!animalCount && latestOperation.animalsPerKg) {
           // Calcola il numero di animali solo se non è già presente nel campo animalCount
           const totalWeight = latestOperation.totalWeight || 0;
           if (totalWeight > 0) {
             // totalWeight è in grammi, convertiamo in kg e moltiplichiamo per animali/kg
-            animalCount = Math.round((totalWeight / 1000) * latestOperation.animalsPerKg);
+            animalCount = Math.round((totalWeight / 1000) * parseFloat(latestOperation.animalsPerKg));
           }
         }
       }
@@ -656,6 +665,13 @@ export default function DraggableFlupsyVisualizer() {
               {animalCount && (
                 <div className="text-[10px]">
                   <span className="text-gray-700">Animali:</span> {formatNumberWithCommas(animalCount)}
+                </div>
+              )}
+              
+              {/* Peso medio */}
+              {averageWeight && (
+                <div className="text-[10px]">
+                  <span className="text-gray-700">Peso medio:</span> {formatNumberWithCommas(averageWeight)} mg
                 </div>
               )}
               
