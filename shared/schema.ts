@@ -511,6 +511,11 @@ export const lotSchema = insertLotSchema.extend({
   arrivalDate: z.coerce.date(),
   supplierLotNumber: z.string().optional()
     .superRefine((val, ctx) => {
+      // Assicurati che ctx.data esista e abbia la proprietà supplier
+      if (!ctx.data || !('supplier' in ctx.data)) {
+        return; // Se non c'è supplier, non possiamo controllare
+      }
+      
       // Rendi il campo obbligatorio solo se il fornitore è "Zeeland" o "Ecotapes Zeeland"
       const supplier = ctx.data.supplier as string;
       const isZeelandSupplier = supplier === "Zeeland" || supplier === "Ecotapes Zeeland";

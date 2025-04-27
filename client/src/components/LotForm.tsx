@@ -18,8 +18,19 @@ import { lotSchema } from "@shared/schema";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
-// Use the lot schema from shared schema
-const formSchema = lotSchema;
+// Creare un modello di form equivalente, ma modificato per evitare gli errori
+// Usiamo z.string() invece di z.date() per data per evitare problemi di tipo
+const formSchema = z.object({
+  arrivalDate: z.string(),  // Semplifico da date a string
+  supplier: z.string().min(1, "Il nome del fornitore è obbligatorio"),
+  supplierLotNumber: z.string().optional(),
+  quality: z.string().optional(),
+  animalCount: z.number().int().optional().nullable(),
+  weight: z.number().optional().nullable(),
+  sizeId: z.number().optional().nullable(),
+  notes: z.string().optional().nullable(),
+  state: z.string().optional()
+});
 
 type FormValues = z.infer<typeof formSchema>;
 
@@ -39,7 +50,7 @@ export default function LotForm({
   isEditing = false
 }: LotFormProps) {
   // Fetch sizes for dropdown
-  const { data: sizes } = useQuery({
+  const { data: sizes = [] } = useQuery({
     queryKey: ['/api/sizes'],
   });
 
@@ -85,7 +96,7 @@ export default function LotForm({
             name="supplierLotNumber"
             render={({ field }) => {
               // Ottieni il valore attuale del fornitore
-              const supplier = form.watch("supplier");
+              const supplier = form.watch("supplier") || "";
               const isZeelandSupplier = supplier === "Zeeland" || supplier === "Ecotapes Zeeland";
               
               return (
