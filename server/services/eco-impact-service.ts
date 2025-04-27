@@ -29,7 +29,7 @@ import {
   calculateImpactTrend,
   generateSustainabilitySuggestions
 } from '../../shared/eco-impact/utils';
-import { operations } from '../../shared/schema';
+import { operations, baskets } from '../../shared/schema';
 
 /**
  * Servizio per la gestione degli impatti ambientali
@@ -205,7 +205,7 @@ export class EcoImpactService {
       };
       
       // Recupera e accumula gli impatti di tutte le operazioni
-      for (const operation of operationsList) {
+      for (const { operation } of operationsList) {
         const operationImpactsList = await this.getOperationImpacts(operation.id);
         
         // Aggiungi ciascun impatto alla categoria appropriata

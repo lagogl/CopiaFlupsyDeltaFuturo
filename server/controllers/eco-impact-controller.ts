@@ -210,8 +210,12 @@ export class EcoImpactController {
       
       // Schema per i query params
       const querySchema = z.object({
-        startDate: z.string().transform(val => new Date(val)),
-        endDate: z.string().transform(val => new Date(val))
+        startDate: z.string().refine(val => !isNaN(new Date(val).getTime()), {
+          message: "Data di inizio non valida"
+        }),
+        endDate: z.string().refine(val => !isNaN(new Date(val).getTime()), {
+          message: "Data di fine non valida"
+        })
       });
       
       // Valida i parametri e query
@@ -227,7 +231,9 @@ export class EcoImpactController {
       }
       
       const { flupsyId } = paramsResult.data;
-      const { startDate, endDate } = queryResult.data;
+      // Converti le date da stringhe a oggetti Date
+      const startDateObj = new Date(queryResult.data.startDate);
+      const endDateObj = new Date(queryResult.data.endDate);
       
       // Verifico se è richiesto il calcolo per tutti i FLUPSY
       if (flupsyId === 'all') {
