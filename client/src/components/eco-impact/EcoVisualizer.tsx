@@ -33,6 +33,10 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
   const [selectedFlupsy, setSelectedFlupsy] = useState<number | undefined>(defaultFlupsyId);
   const [dateRange, setDateRange] = useState(defaultDateRange);
   
+  // Stato per form dei valori predefiniti
+  const [selectedOperationType, setSelectedOperationType] = useState<string>("");
+  const [isCustomType, setIsCustomType] = useState(false);
+  
   // Stato per dialogo report
   const [reportDialogOpen, setReportDialogOpen] = useState(false);
   const [selectedReport, setSelectedReport] = useState<any>(null);
@@ -609,7 +613,14 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <Label htmlFor="operationType">Tipo Operazione</Label>
-                          <Select name="operationType" defaultValue="">
+                          <Select 
+                            name="operationType" 
+                            defaultValue=""
+                            onValueChange={(value) => {
+                              setSelectedOperationType(value);
+                              setIsCustomType(value === "custom");
+                            }}
+                          >
                             <SelectTrigger>
                               <SelectValue placeholder="Seleziona tipo operazione" />
                             </SelectTrigger>
@@ -631,6 +642,21 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                             </SelectContent>
                           </Select>
                         </div>
+                        
+                        {/* Campo per il nome personalizzato che appare solo se è selezionato "custom" */}
+                        {isCustomType && (
+                          <div className="space-y-2">
+                            <Label htmlFor="customOperationType">Nome Personalizzato</Label>
+                            <input
+                              type="text"
+                              id="customOperationType"
+                              name="customOperationType"
+                              className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                              placeholder="Inserisci nome personalizzato"
+                              required={isCustomType}
+                            />
+                          </div>
+                        )}
                       </div>
                       
                       <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
