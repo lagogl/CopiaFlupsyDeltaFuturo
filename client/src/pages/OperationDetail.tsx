@@ -98,7 +98,12 @@ export default function OperationDetail() {
 
   // Helper function to format dates
   const formatDate = (dateString: string) => {
-    return format(new Date(dateString), 'dd MMMM yyyy', { locale: it });
+    try {
+      return format(new Date(dateString), 'dd MMMM yyyy', { locale: it });
+    } catch (error) {
+      console.error('Errore nella formattazione della data:', error, dateString);
+      return 'Data non valida';
+    }
   };
 
   return (

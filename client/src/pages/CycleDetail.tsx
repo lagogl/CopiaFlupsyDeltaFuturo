@@ -683,7 +683,7 @@ export default function CycleDetail() {
           <CardContent>
             <div className="flex justify-between items-center">
               <span className="text-2xl font-bold">
-                {latestOperation?.animalsPerKg ? Math.round(1000000 / latestOperation.animalsPerKg) : "N/A"} mg
+                {latestOperation?.averageWeight ? formatNumberWithCommas(parseFloat(latestOperation.averageWeight)) : "N/A"} mg
               </span>
               <Droplets className="h-5 w-5 text-muted-foreground" />
             </div>
