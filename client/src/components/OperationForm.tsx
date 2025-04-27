@@ -1117,13 +1117,34 @@ export default function OperationForm({
         />
 
         <div className="flex justify-end space-x-2 mt-2">
-          <Button variant="outline" type="button" onClick={() => form.reset()}>
+          <Button 
+            variant="outline" 
+            type="button" 
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("Reset form button clicked");
+              
+              // Notifica all'utente che il form verrà resettato
+              const confirmReset = window.confirm("Sei sicuro di voler annullare? Tutte le modifiche andranno perse.");
+              if (confirmReset) {
+                form.reset();
+                // È possibile anche aggiungere una funzione di callback qui per chiudere il dialogo
+                // se passata come prop
+              }
+            }}
+          >
             Annulla
           </Button>
           <Button 
             type="button" 
             disabled={isLoading || !!operationDateError}
-            onClick={onSubmitForm}
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log("Save operation button clicked");
+              onSubmitForm(e);
+            }}
             className="bg-primary hover:bg-primary/90 text-white font-medium"
           >
             {isLoading ? "Salvataggio..." : "Salva Operazione"}
