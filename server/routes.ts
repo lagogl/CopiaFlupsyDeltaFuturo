@@ -25,6 +25,7 @@ import * as WhatsappController from "./controllers/whatsapp-controller";
 import * as EmailController from "./controllers/email-controller";
 import * as NotificationController from "./controllers/notification-controller";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
+import { EcoImpactController } from "./controllers/eco-impact-controller";
 import { execFile } from 'child_process';
 import { format, subDays } from 'date-fns';
 import { 
