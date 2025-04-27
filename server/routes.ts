@@ -1481,6 +1481,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Conserva il tipo originale dell'operazione
       const operationType = operation.type;
       
+      // Prevenzione errore di vincolo not-null per cycleId
+      if (updateData.cycleId === null && operation.cycleId) {
+        console.log(`Mantengo il cycleId originale (${operation.cycleId}) per prevenire violazione di vincolo not-null`);
+        updateData.cycleId = operation.cycleId;
+      }
+      
       // Log dei dati di aggiornamento
       console.log(`Aggiornamento operazione ${id} di tipo ${operationType}:`, JSON.stringify(updateData, null, 2));
       

@@ -107,11 +107,13 @@ export default function OperationForm({
 
   const watchAnimalsPerKg = form.watch('animalsPerKg');
   const watchAnimalCount = form.watch('animalCount');
-  const watchAverageWeight = form.watch('averageWeight');
+  // Rimuoviamo la watch diretta su averageWeight che causa errori
   const watchBasketId = form.watch('basketId');
   const watchCycleId = form.watch('cycleId');
   const watchType = form.watch('type');
   const watchDate = form.watch('date');
+  // Calcoliamo manualmente l'average weight
+  const averageWeight = watchAnimalsPerKg ? (1000000 / Number(watchAnimalsPerKg)) : 0;
   
   // Fetch operations for the selected basket
   const { data: basketOperations } = useQuery({
@@ -144,15 +146,19 @@ export default function OperationForm({
     }
   }, [watchAnimalsPerKg, sizes]);
   
-  // Calculate total weight when animalCount or averageWeight changes
+  // Calculate total weight when animalCount or animalsPerKg changes
   useEffect(() => {
-    if (watchAnimalCount && watchAverageWeight) {
-      const totalWeight = (watchAnimalCount * watchAverageWeight) / 1000; // Convert from mg to g
+    if (watchAnimalCount && watchAnimalsPerKg && watchAnimalsPerKg > 0) {
+      const avgWeight = 1000000 / watchAnimalsPerKg;
+      const totalWeight = (watchAnimalCount * avgWeight) / 1000; // Convert from mg to g
       form.setValue('totalWeight', totalWeight);
     } else {
       form.setValue('totalWeight', null);
     }
-  }, [watchAnimalCount, watchAverageWeight, form]);
+  }, [watchAnimalCount, watchAnimalsPerKg, form]);
+  
+  // Questa variabile viene usata altrove nei calcoli
+  const watchAverageWeight = watchAnimalsPerKg ? (1000000 / Number(watchAnimalsPerKg)) : 0;
   
   // Check for existing operations on the same date
   const [operationDateError, setOperationDateError] = useState<string | null>(null);
