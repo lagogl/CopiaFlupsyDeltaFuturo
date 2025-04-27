@@ -467,7 +467,7 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                       <div>Biodiversità</div>
                     </div>
                     <div className="divide-y">
-                      {impactDefaults?.defaults?.length > 0 ? (
+                      {impactDefaults?.success && impactDefaults.defaults && impactDefaults.defaults.length > 0 ? (
                         impactDefaults.defaults.map((defaultValue: any) => (
                           <div key={defaultValue.id} className="p-3 grid grid-cols-7 gap-4 hover:bg-muted/50">
                             <div className="col-span-2 font-medium">
