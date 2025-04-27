@@ -1456,6 +1456,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  app.patch("/api/operations/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid operation ID" });
+      }
+
+      // Check if the operation exists
+      const operation = await storage.getOperation(id);
+      if (!operation) {
+        return res.status(404).json({ message: "Operation not found" });
+      }
+
+      // Assicurati che tutti i campi numerici siano numeri
+      const updateData = { ...req.body };
+      
+      if (updateData.animalCount) updateData.animalCount = Number(updateData.animalCount);
+      if (updateData.totalWeight) updateData.totalWeight = Number(updateData.totalWeight);
+      if (updateData.animalsPerKg) updateData.animalsPerKg = Number(updateData.animalsPerKg);
+      if (updateData.deadCount) updateData.deadCount = Number(updateData.deadCount);
+      if (updateData.mortalityRate) updateData.mortalityRate = Number(updateData.mortalityRate);
+      
+      // Conserva il tipo originale dell'operazione
+      const operationType = operation.type;
+      
+      // Log dei dati di aggiornamento
+      console.log(`Aggiornamento operazione ${id} di tipo ${operationType}:`, JSON.stringify(updateData, null, 2));
+      
+      // Update the operation
+      const updatedOperation = await storage.updateOperation(id, updateData);
+      
+      // Broadcast operation update event via WebSockets
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('operation_updated', {
+          operation: updatedOperation,
+          message: `Operazione ${id} aggiornata`
+        });
+      }
+      
+      res.json(updatedOperation);
+    } catch (error) {
+      console.error("Error updating operation:", error);
+      res.status(500).json({ message: `Failed to update operation: ${error instanceof Error ? error.message : String(error)}` });
+    }
+  });
+
   app.delete("/api/operations/:id", async (req, res) => {
     try {
       const id = parseInt(req.params.id);
