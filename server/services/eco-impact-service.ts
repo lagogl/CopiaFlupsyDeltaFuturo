@@ -178,12 +178,15 @@ export class EcoImpactService {
     suggestions: string[]
   }> {
     try {
-      // Recupera gli impatti delle operazioni associate a questa FLUPSY nel periodo
-      const operationsList = await db.select()
+      // Recupera gli impatti delle operazioni associate a questa FLUPSY nel periodo attraverso il cestello
+      const operationsList = await db.select({
+        operation: operations
+      })
         .from(operations)
+        .innerJoin(baskets, eq(operations.basketId, baskets.id))
         .where(
           and(
-            eq(operations.flupsyId, flupsyId),
+            eq(baskets.flupsyId, flupsyId),
             between(
               operations.date,
               startDate.toISOString().split('T')[0],
