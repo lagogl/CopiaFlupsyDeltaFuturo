@@ -38,7 +38,7 @@ export default function EditOperation() {
       toast({
         title: 'Operazione aggiornata',
         description: 'L\'operazione è stata aggiornata con successo',
-        variant: 'success',
+        variant: 'default',
       });
       
       // Invalidate relevant queries
