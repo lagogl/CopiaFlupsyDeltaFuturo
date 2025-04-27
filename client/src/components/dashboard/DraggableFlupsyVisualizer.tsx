@@ -678,7 +678,7 @@ export default function DraggableFlupsyVisualizer() {
               {/* Peso medio */}
               {averageWeight && (
                 <div className="text-[10px]">
-                  <span className="text-gray-700">Peso medio:</span> {formatNumberWithCommas(averageWeight * 1000)} mg
+                  <span className="text-gray-700">Peso medio:</span> {formatNumberWithCommas(Math.round(averageWeight * 1000000))} mg
                 </div>
               )}
               
