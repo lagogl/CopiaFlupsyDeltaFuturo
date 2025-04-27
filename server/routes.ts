@@ -4954,5 +4954,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/eco-impact/reports", ecoImpactController.getSustainabilityReports.bind(ecoImpactController));
   app.post("/api/eco-impact/reports", ecoImpactController.createSustainabilityReport.bind(ecoImpactController));
   
+  // API per valori di impatto predefiniti
+  app.get("/api/eco-impact/defaults", ecoImpactController.getOperationImpactDefaults.bind(ecoImpactController));
+  app.post("/api/eco-impact/defaults", ecoImpactController.createOrUpdateOperationImpactDefault.bind(ecoImpactController));
+  
   return httpServer;
 }

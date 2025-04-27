@@ -4,7 +4,9 @@ import {
   insertImpactCategorySchema,
   insertImpactFactorSchema,
   insertSustainabilityGoalSchema,
-  insertSustainabilityReportSchema
+  insertSustainabilityReportSchema,
+  insertOperationImpactDefaultSchema,
+  operationImpactDefaults
 } from '../../shared/eco-impact/schema';
 import { flupsys } from '../../shared/schema';
 import { z } from 'zod';
@@ -455,6 +457,92 @@ export class EcoImpactController {
       return res.status(500).json({
         success: false,
         error: 'Errore nel recupero dei report di sostenibilità'
+      });
+    }
+  }
+
+  /**
+   * Recupera i valori di impatto predefiniti per le operazioni
+   */
+  async getOperationImpactDefaults(req: Request, res: Response) {
+    try {
+      const defaults = await db.select().from(operationImpactDefaults);
+      
+      return res.status(200).json({
+        success: true,
+        defaults
+      });
+    } catch (error) {
+      console.error('Errore nel recupero dei valori di impatto predefiniti:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Errore nel recupero dei valori di impatto predefiniti'
+      });
+    }
+  }
+  
+  /**
+   * Crea o aggiorna un valore di impatto predefinito per un tipo di operazione
+   */
+  async createOrUpdateOperationImpactDefault(req: Request, res: Response) {
+    try {
+      // Valida i dati in ingresso
+      const validationResult = insertOperationImpactDefaultSchema.safeParse(req.body);
+      
+      if (!validationResult.success) {
+        return res.status(400).json({
+          success: false,
+          error: 'Dati non validi',
+          details: validationResult.error.format()
+        });
+      }
+      
+      const { operationType, categoryCode, baseValue } = validationResult.data;
+      
+      // Verifica se esiste già un record per questa combinazione
+      const existingDefault = await db.select()
+        .from(operationImpactDefaults)
+        .where(sql => 
+          sql.and(
+            sql.eq(operationImpactDefaults.operationType, operationType),
+            sql.eq(operationImpactDefaults.categoryCode, categoryCode)
+          )
+        )
+        .limit(1);
+      
+      let result;
+      
+      if (existingDefault.length > 0) {
+        // Aggiorna il record esistente
+        result = await db.update(operationImpactDefaults)
+          .set({ 
+            baseValue,
+            description: validationResult.data.description,
+            updatedAt: new Date()
+          })
+          .where(sql => 
+            sql.and(
+              sql.eq(operationImpactDefaults.operationType, operationType),
+              sql.eq(operationImpactDefaults.categoryCode, categoryCode)
+            )
+          )
+          .returning();
+      } else {
+        // Crea un nuovo record
+        result = await db.insert(operationImpactDefaults)
+          .values(validationResult.data)
+          .returning();
+      }
+      
+      return res.status(201).json({
+        success: true,
+        default: result[0]
+      });
+    } catch (error) {
+      console.error('Errore nella creazione/aggiornamento del valore di impatto predefinito:', error);
+      return res.status(500).json({
+        success: false,
+        error: 'Errore nella creazione/aggiornamento del valore di impatto predefinito'
       });
     }
   }
