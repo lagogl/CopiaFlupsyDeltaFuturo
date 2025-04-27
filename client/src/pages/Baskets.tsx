@@ -170,7 +170,7 @@ export default function Baskets() {
   const flupsysArray = Array.isArray(flupsys) ? flupsys : [];
   
   // Filter baskets
-  const filteredBaskets = basketsArray.filter((basket: any) => {
+  const filteredBaskets = [...basketsArray].filter((basket: any) => {
     // Aggiungiamo il nome del FLUPSY per ogni cesta
     const flupsy = flupsysArray.find((f: any) => f.id === basket.flupsyId);
     if (flupsy) {
@@ -276,7 +276,18 @@ export default function Baskets() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => {
+                    // Ordina le ceste per ID (physicalNumber)
+                    const sortedBaskets = [...filteredBaskets].sort((a, b) => a.physicalNumber - b.physicalNumber);
+                    // Sostituisce filteredBaskets con la versione ordinata
+                    filteredBaskets.splice(0, filteredBaskets.length, ...sortedBaskets);
+                    // Forza il re-render
+                    setSearchTerm(searchTerm);
+                  }}
+                >
                   <div className="flex items-center">
                     ID Cesta
                     <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
