@@ -752,7 +752,11 @@ export default function DraggableFlupsyVisualizer() {
               }}>
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'DX' && b.position === position);
-                  return renderBasketBox(basket, position, 'DX', flupsyId);
+                  return (
+                    <React.Fragment key={`DX-${position}-${flupsyId}`}>
+                      {renderBasketBox(basket, position, 'DX', flupsyId)}
+                    </React.Fragment>
+                  );
                 })}
               </div>
             </div>
@@ -767,7 +771,11 @@ export default function DraggableFlupsyVisualizer() {
               }}>
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
-                  return renderBasketBox(basket, position, 'SX', flupsyId);
+                  return (
+                    <React.Fragment key={`SX-${position}-${flupsyId}`}>
+                      {renderBasketBox(basket, position, 'SX', flupsyId)}
+                    </React.Fragment>
+                  );
                 })}
               </div>
             </div>
@@ -843,7 +851,11 @@ export default function DraggableFlupsyVisualizer() {
       {renderFlupsyMenu()}
       
       {/* Render selected FLUPSY layouts */}
-      {selectedFlupsyIds.map(flupsyId => renderFlupsyLayout(flupsyId))}
+      {selectedFlupsyIds.map(flupsyId => (
+        <React.Fragment key={`flupsy-layout-${flupsyId}`}>
+          {renderFlupsyLayout(flupsyId)}
+        </React.Fragment>
+      ))}
       
       {/* Confirmation dialog */}
       <AlertDialog open={confirmDialogOpen} onOpenChange={setConfirmDialogOpen}>
