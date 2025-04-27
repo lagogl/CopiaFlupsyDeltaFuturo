@@ -6,7 +6,7 @@ import {
   User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
   ChevronRight, LayoutDashboard, PieChart, BarChart, Filter,
-  FileJson, Download, Database
+  FileJson, Download, Database, Leaf
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
@@ -122,7 +122,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
       items: [
         { icon: <BarChart className="h-5 w-5 mr-2 text-purple-600" />, label: "Statistiche", path: "/statistics" },
         { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: "Indici SGR", path: "/sgr" },
-        { icon: <FileText className="h-5 w-5 mr-2 text-purple-600" />, label: "Diario di Bordo", path: "/diario-di-bordo" }
+        { icon: <FileText className="h-5 w-5 mr-2 text-purple-600" />, label: "Diario di Bordo", path: "/diario-di-bordo" },
+        { icon: <Leaf className="h-5 w-5 mr-2 text-purple-600" />, label: "Impatto Ambientale", path: "/eco-impact" }
       ]
     },
     {
