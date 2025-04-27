@@ -1299,10 +1299,10 @@ export default function Operations() {
                                         {cycleOps[cycleOps.length - 1].animalsPerKg && (
                                           <>
                                             <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-                                              {Math.round(1000000 / cycleOps[cycleOps.length - 1].animalsPerKg)} mg
+                                              {Math.round(1000000 / parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg))} mg
                                             </span>
                                             <span className="text-xs ml-1 text-gray-500">
-                                              ({cycleOps[cycleOps.length - 1].animalsPerKg.toLocaleString()} an/kg)
+                                              ({parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg).toLocaleString()} an/kg)
                                             </span>
                                           </>
                                         )}
@@ -1324,7 +1324,7 @@ export default function Operations() {
                                   <span className="text-gray-500 block text-xs">Peso totale:</span>
                                   <span className="font-medium text-gray-700">
                                     {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].totalWeight 
-                                      ? `${cycleOps[cycleOps.length - 1].totalWeight.toLocaleString()} g`
+                                      ? `${parseFloat(cycleOps[cycleOps.length - 1].totalWeight).toLocaleString()} g`
                                       : 'N/D'}
                                   </span>
                                 </div>
@@ -1336,8 +1336,8 @@ export default function Operations() {
                                     const lastOp = cycleOps[cycleOps.length - 1];
                                     
                                     if (firstOp.animalsPerKg && lastOp.animalsPerKg) {
-                                      const firstWeight = 1000000 / firstOp.animalsPerKg;
-                                      const lastWeight = 1000000 / lastOp.animalsPerKg;
+                                      const firstWeight = 1000000 / parseFloat(firstOp.animalsPerKg);
+                                      const lastWeight = 1000000 / parseFloat(lastOp.animalsPerKg);
                                       const weightGain = lastWeight - firstWeight;
                                       const percentGain = ((lastWeight - firstWeight) / firstWeight) * 100;
                                       
@@ -1399,7 +1399,7 @@ export default function Operations() {
                                 <div className="col-span-4">
                                   {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].animalsPerKg && (() => {
                                     // Ottieni il peso attuale dall'ultimo dato registrato
-                                    const currentWeight = 1000000 / cycleOps[cycleOps.length - 1].animalsPerKg;
+                                    const currentWeight = 1000000 / parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg);
                                     
                                     // Verifica se la taglia corrente è già TP-3000 (dal codice della taglia)
                                     const currentSizeCode = cycleOps[cycleOps.length - 1].size?.code || '';
