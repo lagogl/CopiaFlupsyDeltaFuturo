@@ -146,12 +146,14 @@ export type InsertSustainabilityGoal = z.infer<typeof insertSustainabilityGoalSc
 export const sustainabilityReports = pgTable("sustainability_reports", {
   id: serial("id").primaryKey(),
   title: text("title").notNull(),
-  summary: text("summary").notNull(),
-  content: text("content"),
+  reportPeriod: text("report_period").notNull(),
+  summary: text("summary"),
+  highlights: jsonb("highlights"),
+  metrics: jsonb("metrics"),
+  flupsyIds: integer("flupsy_ids").array(),
+  filePath: text("file_path"),
   startDate: date("start_date").notNull(),
   endDate: date("end_date").notNull(),
-  overallScore: real("overall_score"),
-  metadata: jsonb("metadata"),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
 });

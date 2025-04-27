@@ -141,16 +141,16 @@ async function createTestData() {
       VALUES (
         'Report Trimestrale Q1 2025', 'Q1 2025', 
         '2025-01-01', '2025-03-31',
-        'Analisi dell\'impatto ambientale per il primo trimestre del 2025. Osservato un miglioramento del 12% rispetto al trimestre precedente.',
-        '{"points": ["Riduzione del 15% nel consumo di acqua", "Aumento dell\'efficienza energetica del 8%", "Implementazione di nuovi protocolli di sostenibilità"]}',
+        'Analisi della sostenibilità per il primo trimestre del 2025. Osservato un miglioramento del 12% rispetto al trimestre precedente.',
+        '{"points": ["Riduzione del 15% nel consumo di acqua", "Aumento efficienza energetica del 8%", "Implementazione di nuovi protocolli di sostenibilità"]}',
         '{"water": 245.3, "carbon": 132.8, "energy": 456.2}',
         ARRAY[${flupsys.map(f => f.id).join(', ')}]
       ),
       (
         'Report Annuale 2024', 'Anno 2024', 
         '2024-01-01', '2024-12-31',
-        'Report annuale completo sull\'impatto ambientale per l\'anno 2024. Analisi dettagliata di tutte le metriche di sostenibilità con confronto rispetto agli anni precedenti.',
-        '{"points": ["Riduzione complessiva del 22% nelle emissioni di CO2", "Implementazione completa del sistema di monitoraggio in tempo reale", "Certificazione ambientale ottenuta per 3 siti produttivi"]}',
+        'Report annuale completo sulla sostenibilità per anno 2024. Analisi dettagliata di tutte le metriche con confronto rispetto agli anni precedenti.',
+        '{"points": ["Riduzione complessiva del 22% nelle emissioni di CO2", "Implementazione sistema di monitoraggio in tempo reale", "Certificazione ambientale ottenuta per 3 siti produttivi"]}',
         '{"water": 1245.3, "carbon": 832.8, "energy": 2456.2, "waste": 345.6, "biodiversity": 78.3}',
         ARRAY[${flupsys.map(f => f.id).join(', ')}]
       )
