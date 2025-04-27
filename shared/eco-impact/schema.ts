@@ -3,6 +3,12 @@ import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 import { flupsys, operations } from "../schema";
 
+// Enum per i tipi di operazione supportati
+export const operationTypeEnum = pgEnum('operation_type', [
+  'prima-attivazione', 'pulizia', 'vagliatura', 'trattamento', 'misura', 
+  'vendita', 'selezione-vendita', 'cessazione', 'peso', 'selezione-origine'
+]);
+
 // Tabella per le categorie di impatto ambientale
 export const impactCategories = pgTable("impact_categories", {
   id: serial("id").primaryKey(),
@@ -166,3 +172,23 @@ export const insertSustainabilityReportSchema = createInsertSchema(sustainabilit
 
 export type SustainabilityReport = typeof sustainabilityReports.$inferSelect;
 export type InsertSustainabilityReport = z.infer<typeof insertSustainabilityReportSchema>;
+
+// Tabella per i valori di impatto predefiniti per tipo di operazione
+export const operationImpactDefaults = pgTable("operation_impact_defaults", {
+  id: serial("id").primaryKey(),
+  operationType: operationTypeEnum("operation_type").notNull(),
+  categoryCode: text("category_code").notNull(),
+  baseValue: real("base_value").notNull(),
+  description: text("description"),
+  createdAt: timestamp("created_at").defaultNow().notNull(),
+  updatedAt: timestamp("updated_at")
+});
+
+export const insertOperationImpactDefaultSchema = createInsertSchema(operationImpactDefaults).omit({ 
+  id: true,
+  createdAt: true,
+  updatedAt: true
+});
+
+export type OperationImpactDefault = typeof operationImpactDefaults.$inferSelect;
+export type InsertOperationImpactDefault = z.infer<typeof insertOperationImpactDefaultSchema>;
