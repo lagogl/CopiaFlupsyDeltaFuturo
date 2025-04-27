@@ -18,6 +18,13 @@ import { lotSchema } from "@shared/schema";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { Label } from "@/components/ui/label";
 
+// Definire un'interfaccia per le dimensioni
+interface Size {
+  id: number;
+  code: string;
+  name: string;
+}
+
 // Creare un modello di form equivalente, ma modificato per evitare gli errori
 // Usiamo z.string() invece di z.date() per data per evitare problemi di tipo
 const formSchema = z.object({
@@ -50,7 +57,7 @@ export default function LotForm({
   isEditing = false
 }: LotFormProps) {
   // Fetch sizes for dropdown
-  const { data: sizes = [] } = useQuery({
+  const { data: sizes = [] } = useQuery<Size[]>({
     queryKey: ['/api/sizes'],
   });
 
@@ -178,7 +185,7 @@ export default function LotForm({
                   </FormControl>
                   <SelectContent>
                     <SelectItem value="null">Nessuna taglia</SelectItem>
-                    {sizes?.map((size) => (
+                    {Array.isArray(sizes) && sizes.map((size) => (
                       <SelectItem key={size.id} value={size.id.toString()}>
                         {size.code} - {size.name}
                       </SelectItem>
@@ -261,6 +268,7 @@ export default function LotForm({
                   placeholder="Inserisci note aggiuntive" 
                   rows={3}
                   {...field}
+                  value={field.value || ""}
                 />
               </FormControl>
               <FormMessage />
