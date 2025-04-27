@@ -6,16 +6,13 @@
  * 
  * Istruzioni per l'uso:
  * 1. Avviare l'applicazione con 'npm run dev'
- * 2. Eseguire questo script con 'node populate_from_spreadsheet.js'
+ * 2. Eseguire questo script con 'node populate_from_spreadsheet.cjs'
  */
 
-import fs from 'fs';
-import pg from 'pg';
-import { promisify } from 'util';
-import { exec as execCallback } from 'child_process';
-
-const { Pool } = pg;
-const exec = promisify(execCallback);
+const fs = require('fs');
+const { Pool } = require('pg');
+const { promisify } = require('util');
+const exec = promisify(require('child_process').exec);
 
 // Configurazione del client per connessione diretta al database
 // Utilizziamo l'environment variable DATABASE_URL che è già configurata nell'applicazione
