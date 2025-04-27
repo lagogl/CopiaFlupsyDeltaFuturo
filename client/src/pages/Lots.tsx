@@ -443,15 +443,15 @@ export default function Lots() {
                   <div className="grid grid-cols-2 gap-4">
                     <div>
                       <h4 className="font-medium text-sm text-gray-500">Data Arrivo</h4>
-                      <p>{format(new Date(selectedLot.arrivalDate), 'dd MMMM yyyy', { locale: it })}</p>
+                      <div className="mt-1">{format(new Date(selectedLot.arrivalDate), 'dd MMMM yyyy', { locale: it })}</div>
                     </div>
                     <div>
                       <h4 className="font-medium text-sm text-gray-500">Fornitore</h4>
-                      <p>{selectedLot.supplier}</p>
+                      <div className="mt-1">{selectedLot.supplier}</div>
                     </div>
                     <div>
                       <h4 className="font-medium text-sm text-gray-500">Qualità</h4>
-                      <p>
+                      <div className="mt-1">
                         {selectedLot.quality ? (
                           <span className="flex items-center">
                             {selectedLot.quality === 'teste' && (
@@ -475,35 +475,35 @@ export default function Lots() {
                             {!['teste', 'normali', 'code'].includes(selectedLot.quality) && selectedLot.quality}
                           </span>
                         ) : '-'}
-                      </p>
+                      </div>
                     </div>
                     <div>
                       <h4 className="font-medium text-sm text-gray-500">Taglia</h4>
-                      <p>
+                      <div className="mt-1">
                         {selectedLot.size ? (
                           <Badge className="bg-blue-100 text-blue-800">
                             {selectedLot.size.code}
                           </Badge>
                         ) : '-'}
-                      </p>
+                      </div>
                     </div>
                     <div>
                       <h4 className="font-medium text-sm text-gray-500">Numero Animali</h4>
-                      <p>{selectedLot.animalCount ? selectedLot.animalCount.toLocaleString() : '-'}</p>
+                      <div className="mt-1">{selectedLot.animalCount ? selectedLot.animalCount.toLocaleString() : '-'}</div>
                     </div>
                     <div>
                       <h4 className="font-medium text-sm text-gray-500">Peso (g)</h4>
-                      <p>{selectedLot.weight ? selectedLot.weight.toLocaleString() : '-'}</p>
+                      <div className="mt-1">{selectedLot.weight ? selectedLot.weight.toLocaleString() : '-'}</div>
                     </div>
                     <div>
                       <h4 className="font-medium text-sm text-gray-500">Stato</h4>
-                      <p>
+                      <div className="mt-1">
                         <Badge className={`${
                           selectedLot.state === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
                           {selectedLot.state === 'active' ? 'Attivo' : 'Esaurito'}
                         </Badge>
-                      </p>
+                      </div>
                     </div>
                   </div>
                   
