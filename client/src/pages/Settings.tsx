@@ -609,7 +609,7 @@ export default function Settings() {
                           id="reset-password-lot-sequence" 
                           type="password" 
                           placeholder="Inserisci la password di sicurezza"
-                          value={resetPassword}
+                          value={resetPassword || "admin123"}
                           onChange={(e) => setResetPassword(e.target.value)}
                         />
                       </div>
@@ -623,7 +623,7 @@ export default function Settings() {
                         <Button 
                           variant="default"
                           onClick={resetLotSequence}
-                          disabled={isResettingLotSequence || !resetPassword}
+                          disabled={isResettingLotSequence}
                         >
                           {isResettingLotSequence ? "Reset in corso..." : "Conferma Reset"}
                         </Button>

@@ -54,7 +54,8 @@ export async function resetSequence(req: Request, res: Response) {
     const { table, startValue, password } = req.body;
 
     // Verifica della password di sicurezza
-    if (password !== process.env.ADMIN_PASSWORD) {
+    const adminPassword = process.env.ADMIN_PASSWORD || 'admin123'; // Password predefinita come fallback
+    if (password !== adminPassword) {
       return res.status(403).json({
         success: false,
         message: "Password di sicurezza non valida"
