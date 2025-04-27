@@ -481,6 +481,10 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                                defaultValue.operationType === 'selezione-vendita' ? 'Selezione Vendita' :
                                defaultValue.operationType === 'cessazione' ? 'Cessazione' :
                                defaultValue.operationType === 'selezione-origine' ? 'Selezione Origine' :
+                               defaultValue.operationType === 'trasporto-corto' ? 'Trasporto Corto (meno di 50 km)' :
+                               defaultValue.operationType === 'trasporto-medio' ? 'Trasporto Medio (50-200 km)' :
+                               defaultValue.operationType === 'trasporto-lungo' ? 'Trasporto Lungo (oltre 200 km)' :
+                               defaultValue.operationType === 'custom' ? 'Personalizzato' :
                                defaultValue.operationType}
                             </div>
                             <div>{defaultValue.water}</div>
@@ -578,6 +582,10 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                               <SelectItem value="selezione-vendita">Selezione Vendita</SelectItem>
                               <SelectItem value="cessazione">Cessazione</SelectItem>
                               <SelectItem value="selezione-origine">Selezione Origine</SelectItem>
+                              <SelectItem value="trasporto-corto">Trasporto Corto (meno di 50 km)</SelectItem>
+                              <SelectItem value="trasporto-medio">Trasporto Medio (50-200 km)</SelectItem>
+                              <SelectItem value="trasporto-lungo">Trasporto Lungo (oltre 200 km)</SelectItem>
+                              <SelectItem value="custom">Personalizzato</SelectItem>
                             </SelectContent>
                           </Select>
                         </div>

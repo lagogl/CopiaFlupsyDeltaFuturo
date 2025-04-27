@@ -6,7 +6,8 @@ import { flupsys, operations } from "../schema";
 // Enum per i tipi di operazione supportati
 export const operationTypeEnum = pgEnum('operation_type', [
   'prima-attivazione', 'pulizia', 'vagliatura', 'trattamento', 'misura', 
-  'vendita', 'selezione-vendita', 'cessazione', 'peso', 'selezione-origine'
+  'vendita', 'selezione-vendita', 'cessazione', 'peso', 'selezione-origine',
+  'trasporto-corto', 'trasporto-medio', 'trasporto-lungo', 'custom'
 ]);
 
 // Tabella per le categorie di impatto ambientale
