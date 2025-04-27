@@ -43,6 +43,16 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
     staleTime: 60000, // 1 minuto
   });
   
+  // Query per ottenere i valori di impatto predefiniti
+  const {
+    data: impactDefaults,
+    isLoading: isLoadingDefaults,
+    refetch: refetchDefaults
+  } = useQuery({
+    queryKey: ['/api/eco-impact/defaults'],
+    staleTime: 300000, // 5 minuti
+  });
+  
   // Query per ottenere il punteggio di sostenibilità
   const {
     data: sustainabilityData,
@@ -256,10 +266,11 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
       </Card>
       
       <Tabs defaultValue="score" className="w-full">
-        <TabsList className="grid w-full grid-cols-3">
+        <TabsList className="grid w-full grid-cols-4">
           <TabsTrigger value="score">Punteggio di Impatto</TabsTrigger>
           <TabsTrigger value="goals">Obiettivi</TabsTrigger>
           <TabsTrigger value="reports">Report</TabsTrigger>
+          <TabsTrigger value="defaults">Valori Predefiniti</TabsTrigger>
         </TabsList>
         
         <TabsContent value="score" className="space-y-4 pt-4">
@@ -404,6 +415,242 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                   <p className="text-sm mt-2">
                     I report vengono generati automaticamente in base ai dati di impatto ambientale.
                   </p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+        
+        <TabsContent value="defaults" className="space-y-4 pt-4">
+          <Card>
+            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+              <CardTitle>Valori di Impatto Predefiniti</CardTitle>
+              <Button 
+                variant="outline" 
+                size="sm" 
+                onClick={() => refetchDefaults()}
+              >
+                <RefreshCwIcon className="h-4 w-4 mr-2" />
+                Aggiorna
+              </Button>
+            </CardHeader>
+            <CardContent>
+              <div className="mb-4">
+                <p className="text-sm text-muted-foreground">
+                  Configura i valori di impatto ambientale predefiniti per ogni tipo di operazione. 
+                  Questi valori verranno utilizzati per calcolare l'impatto ambientale delle operazioni.
+                </p>
+              </div>
+              
+              {isLoadingDefaults ? (
+                <div className="space-y-4">
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                  <Skeleton className="h-10 w-full" />
+                </div>
+              ) : (
+                <div className="space-y-4">
+                  <div className="border rounded-md">
+                    <div className="bg-muted p-2 font-medium text-sm grid grid-cols-7 gap-4">
+                      <div className="col-span-2">Tipo Operazione</div>
+                      <div>Acqua</div>
+                      <div>Carbonio</div>
+                      <div>Energia</div>
+                      <div>Rifiuti</div>
+                      <div>Biodiversità</div>
+                    </div>
+                    <div className="divide-y">
+                      {impactDefaults?.defaults?.length > 0 ? (
+                        impactDefaults.defaults.map((defaultValue: any) => (
+                          <div key={defaultValue.id} className="p-3 grid grid-cols-7 gap-4 hover:bg-muted/50">
+                            <div className="col-span-2 font-medium">
+                              {defaultValue.operationType === 'prima-attivazione' ? 'Prima Attivazione' :
+                               defaultValue.operationType === 'pulizia' ? 'Pulizia' :
+                               defaultValue.operationType === 'vagliatura' ? 'Vagliatura' :
+                               defaultValue.operationType === 'trattamento' ? 'Trattamento' :
+                               defaultValue.operationType === 'misura' ? 'Misura' :
+                               defaultValue.operationType === 'peso' ? 'Peso' :
+                               defaultValue.operationType === 'vendita' ? 'Vendita' :
+                               defaultValue.operationType === 'selezione-vendita' ? 'Selezione Vendita' :
+                               defaultValue.operationType === 'cessazione' ? 'Cessazione' :
+                               defaultValue.operationType === 'selezione-origine' ? 'Selezione Origine' :
+                               defaultValue.operationType}
+                            </div>
+                            <div>{defaultValue.water}</div>
+                            <div>{defaultValue.carbon}</div>
+                            <div>{defaultValue.energy}</div>
+                            <div>{defaultValue.waste}</div>
+                            <div>{defaultValue.biodiversity}</div>
+                          </div>
+                        ))
+                      ) : (
+                        <div className="p-8 text-center text-muted-foreground">
+                          Nessun valore predefinito configurato.
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                  
+                  <div className="mt-6 border rounded-md p-4">
+                    <h3 className="font-medium mb-4">Aggiungi/Modifica Valore Predefinito</h3>
+                    <form 
+                      className="space-y-4"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        const formData = new FormData(e.currentTarget);
+                        const operationType = formData.get('operationType') as string;
+                        const water = parseFloat(formData.get('water') as string);
+                        const carbon = parseFloat(formData.get('carbon') as string);
+                        const energy = parseFloat(formData.get('energy') as string);
+                        const waste = parseFloat(formData.get('waste') as string);
+                        const biodiversity = parseFloat(formData.get('biodiversity') as string);
+                        
+                        if (!operationType || isNaN(water) || isNaN(carbon) || isNaN(energy) || isNaN(waste) || isNaN(biodiversity)) {
+                          toast({
+                            title: "Errore",
+                            description: "Tutti i campi sono obbligatori e i valori devono essere numerici.",
+                            variant: "destructive",
+                          });
+                          return;
+                        }
+                        
+                        // Invia i dati al server
+                        fetch('/api/eco-impact/defaults', {
+                          method: 'POST',
+                          headers: {
+                            'Content-Type': 'application/json',
+                          },
+                          body: JSON.stringify({
+                            operationType,
+                            water,
+                            carbon,
+                            energy,
+                            waste,
+                            biodiversity
+                          }),
+                        })
+                        .then(response => {
+                          if (!response.ok) {
+                            throw new Error('Errore durante il salvataggio');
+                          }
+                          return response.json();
+                        })
+                        .then(() => {
+                          toast({
+                            title: "Successo",
+                            description: "Valore di impatto predefinito salvato con successo.",
+                          });
+                          refetchDefaults();
+                          // Reset form
+                          e.currentTarget.reset();
+                        })
+                        .catch(error => {
+                          toast({
+                            title: "Errore",
+                            description: error.message,
+                            variant: "destructive",
+                          });
+                        });
+                      }}
+                    >
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="operationType">Tipo Operazione</Label>
+                          <Select name="operationType" defaultValue="">
+                            <SelectTrigger>
+                              <SelectValue placeholder="Seleziona tipo operazione" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="prima-attivazione">Prima Attivazione</SelectItem>
+                              <SelectItem value="pulizia">Pulizia</SelectItem>
+                              <SelectItem value="vagliatura">Vagliatura</SelectItem>
+                              <SelectItem value="trattamento">Trattamento</SelectItem>
+                              <SelectItem value="misura">Misura</SelectItem>
+                              <SelectItem value="peso">Peso</SelectItem>
+                              <SelectItem value="vendita">Vendita</SelectItem>
+                              <SelectItem value="selezione-vendita">Selezione Vendita</SelectItem>
+                              <SelectItem value="cessazione">Cessazione</SelectItem>
+                              <SelectItem value="selezione-origine">Selezione Origine</SelectItem>
+                            </SelectContent>
+                          </Select>
+                        </div>
+                      </div>
+                      
+                      <div className="grid grid-cols-2 md:grid-cols-5 gap-4">
+                        <div className="space-y-2">
+                          <Label htmlFor="water">Acqua</Label>
+                          <input
+                            type="number"
+                            id="water"
+                            name="water"
+                            step="0.01"
+                            min="0"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="0.00"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="carbon">Carbonio</Label>
+                          <input
+                            type="number"
+                            id="carbon"
+                            name="carbon"
+                            step="0.01"
+                            min="0"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="0.00"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="energy">Energia</Label>
+                          <input
+                            type="number"
+                            id="energy"
+                            name="energy"
+                            step="0.01"
+                            min="0"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="0.00"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="waste">Rifiuti</Label>
+                          <input
+                            type="number"
+                            id="waste"
+                            name="waste"
+                            step="0.01"
+                            min="0"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="0.00"
+                            required
+                          />
+                        </div>
+                        <div className="space-y-2">
+                          <Label htmlFor="biodiversity">Biodiversità</Label>
+                          <input
+                            type="number"
+                            id="biodiversity"
+                            name="biodiversity"
+                            step="0.01"
+                            min="0"
+                            className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background file:border-0 file:bg-transparent file:text-sm file:font-medium placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                            placeholder="0.00"
+                            required
+                          />
+                        </div>
+                      </div>
+                      
+                      <div className="flex justify-end">
+                        <Button type="submit">
+                          Salva Valore Predefinito
+                        </Button>
+                      </div>
+                    </form>
+                  </div>
                 </div>
               )}
             </CardContent>
