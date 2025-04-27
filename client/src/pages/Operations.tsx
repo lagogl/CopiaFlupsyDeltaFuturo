@@ -1269,7 +1269,7 @@ export default function Operations() {
                                         {cycleOps[0].animalsPerKg && (
                                           <>
                                             <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-                                              {Math.round((1000000 / parseFloat(cycleOps[0].animalsPerKg)) * 1000)} mg
+                                              {Math.round(1000000 / parseFloat(cycleOps[0].animalsPerKg))} mg
                                             </span>
                                             <span className="text-xs ml-1 text-gray-500">
                                               ({parseFloat(cycleOps[0].animalsPerKg).toLocaleString()} an/kg)
@@ -1299,7 +1299,7 @@ export default function Operations() {
                                         {cycleOps[cycleOps.length - 1].animalsPerKg && (
                                           <>
                                             <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-                                              {Math.round((1000000 / parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg)) * 1000)} mg
+                                              {Math.round(1000000 / parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg))} mg
                                             </span>
                                             <span className="text-xs ml-1 text-gray-500">
                                               ({parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg).toLocaleString()} an/kg)
@@ -1648,7 +1648,7 @@ export default function Operations() {
                                       <p className="text-gray-500">Taglia</p>
                                       <div className="flex items-center">
                                         {getSizeBadge(op.size)}
-                                        <span className="ml-2">{Math.round((1000000 / op.animalsPerKg) * 1000)} mg</span>
+                                        <span className="ml-2">{Math.round(1000000 / op.animalsPerKg)} mg</span>
                                         <span className="ml-2 text-xs text-gray-500">({op.animalsPerKg.toLocaleString()} an/kg)</span>
                                       </div>
                                     </div>
