@@ -320,7 +320,7 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                         <div>
                           <h3 className="font-medium">{report.title}</h3>
                           <p className="text-sm text-muted-foreground">
-                            Periodo: {new Date(report.startDate).toLocaleDateString()} - {new Date(report.endDate).toLocaleDateString()}
+                            {report.reportPeriod || `Periodo: ${new Date(report.startDate).toLocaleDateString()} - ${new Date(report.endDate).toLocaleDateString()}`}
                           </p>
                         </div>
                         <span className="text-xs text-muted-foreground">
@@ -328,7 +328,13 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                         </span>
                       </div>
                       <div className="mt-2">
-                        <p className="text-sm">{report.summary}</p>
+                        <p className="text-sm">{report.summary || 'Nessun dettaglio disponibile'}</p>
+                        {report.highlights && (
+                          <div className="mt-2">
+                            <h4 className="text-xs font-semibold">Highlights</h4>
+                            <div className="mt-1 text-xs">{JSON.stringify(report.highlights)}</div>
+                          </div>
+                        )}
                       </div>
                       <div className="mt-4 flex justify-end">
                         <Button variant="outline" size="sm">
