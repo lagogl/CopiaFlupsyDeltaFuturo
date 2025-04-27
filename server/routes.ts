@@ -26,6 +26,7 @@ import * as EmailController from "./controllers/email-controller";
 import * as NotificationController from "./controllers/notification-controller";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
+import * as SequenceController from "./controllers/sequence-controller";
 import { execFile } from 'child_process';
 import { format, subDays } from 'date-fns';
 import { 
@@ -112,6 +113,10 @@ const getBackupUploadDir = () => {
 export async function registerRoutes(app: Express): Promise<Server> {
   // Registra la route diretta per le operazioni
   implementDirectOperationRoute(app);
+  
+  // === Sequence reset routes ===
+  app.post("/api/sequences/reset", SequenceController.resetSequence);
+  app.get("/api/sequences/info", SequenceController.getSequencesInfo);
   
   // === Basket routes ===
   app.get("/api/baskets", async (req, res) => {

@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { useState, useEffect } from "react";
-import { AlertCircle, DatabaseBackup, Save, Smartphone, Trash2, HelpCircle, RefreshCw } from "lucide-react";
+import { AlertCircle, DatabaseBackup, Save, Smartphone, Trash2, HelpCircle, RefreshCw, RotateCw } from "lucide-react";
 import { Alert, AlertDescription, AlertTitle } from "@/components/ui/alert";
 import NFCReader from "@/components/NFCReader";
 import { useToast } from "@/hooks/use-toast";
@@ -27,6 +27,7 @@ export default function Settings() {
   const [isResetting, setIsResetting] = useState(false);
   const [isResettingScreening, setIsResettingScreening] = useState(false);
   const [isResettingSelections, setIsResettingSelections] = useState(false);
+  const [isResettingLotSequence, setIsResettingLotSequence] = useState(false);
   const { toast } = useToast();
   const [resetPassword, setResetPassword] = useState("");
   const { areTooltipsEnabled, enableAllTooltips, disableAllTooltips, markTooltipAsSeen, setFirstTimeUser } = useTooltip();
@@ -136,6 +137,39 @@ export default function Settings() {
       });
     } finally {
       setIsResettingSelections(false);
+    }
+  };
+  
+  // Funzione per resettare la sequenza ID dei lotti
+  const resetLotSequence = async () => {
+    try {
+      setIsResettingLotSequence(true);
+      const response = await apiRequest('/api/sequences/reset', {
+        method: 'POST',
+        body: {
+          table: 'lots',
+          startValue: 1,
+          password: resetPassword
+        },
+      });
+      
+      if (response.success) {
+        toast({
+          title: "Reset sequenza completato",
+          description: response.message || "La sequenza ID dei lotti è stata resettata con successo.",
+        });
+        setResetPassword("");
+      } else {
+        throw new Error(response.message || 'Errore sconosciuto');
+      }
+    } catch (error) {
+      toast({
+        title: "Errore durante il reset della sequenza",
+        description: error instanceof Error ? error.message : "Si è verificato un errore",
+        variant: "destructive",
+      });
+    } finally {
+      setIsResettingLotSequence(false);
     }
   };
 
