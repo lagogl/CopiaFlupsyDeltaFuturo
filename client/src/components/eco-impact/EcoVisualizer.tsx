@@ -410,6 +410,85 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
           </Card>
         </TabsContent>
       </Tabs>
+      
+      {/* Dialogo per visualizzazione dettagli report */}
+      <Dialog open={reportDialogOpen} onOpenChange={setReportDialogOpen}>
+        <DialogContent className="max-w-3xl">
+          {selectedReport && (
+            <>
+              <DialogHeader>
+                <DialogTitle>{selectedReport.title}</DialogTitle>
+                <DialogDescription>
+                  {selectedReport.reportPeriod || 
+                    `Periodo: ${new Date(selectedReport.startDate).toLocaleDateString()} - ${new Date(selectedReport.endDate).toLocaleDateString()}`}
+                </DialogDescription>
+              </DialogHeader>
+              
+              <div className="space-y-4 py-4">
+                <div>
+                  <h3 className="text-lg font-medium">Riepilogo</h3>
+                  <p className="mt-1">{selectedReport.summary || 'Nessun riepilogo disponibile'}</p>
+                </div>
+                
+                {selectedReport.highlights && (
+                  <div>
+                    <h3 className="text-lg font-medium">Highlights</h3>
+                    <ul className="mt-1 list-disc pl-6 space-y-1">
+                      {Array.isArray(selectedReport.highlights) ? 
+                        selectedReport.highlights.map((highlight: string, idx: number) => (
+                          <li key={idx}>{highlight}</li>
+                        )) : 
+                        typeof selectedReport.highlights === 'object' && selectedReport.highlights.points ? 
+                          selectedReport.highlights.points.map((point: string, idx: number) => (
+                            <li key={idx}>{point}</li>
+                          )) : 
+                          <li>Nessun highlight disponibile</li>
+                      }
+                    </ul>
+                  </div>
+                )}
+                
+                {selectedReport.content && (
+                  <div>
+                    <h3 className="text-lg font-medium">Contenuto Dettagliato</h3>
+                    <div className="mt-1 prose prose-sm max-w-none">
+                      {selectedReport.content}
+                    </div>
+                  </div>
+                )}
+                
+                {selectedReport.recommendations && (
+                  <div>
+                    <h3 className="text-lg font-medium">Raccomandazioni</h3>
+                    <ul className="mt-1 list-disc pl-6 space-y-1">
+                      {Array.isArray(selectedReport.recommendations) ? 
+                        selectedReport.recommendations.map((recommendation: string, idx: number) => (
+                          <li key={idx}>{recommendation}</li>
+                        )) : 
+                        <li>{selectedReport.recommendations}</li>
+                      }
+                    </ul>
+                  </div>
+                )}
+                
+                <div className="flex justify-between items-center text-sm text-muted-foreground">
+                  <span>Creato: {new Date(selectedReport.createdAt).toLocaleDateString()}</span>
+                  <Button variant="outline" size="sm" onClick={() => {
+                    // Qui si potrebbe aggiungere in futuro una funzionalità di download
+                    toast({
+                      title: "Download Report",
+                      description: "Funzionalità di download in fase di sviluppo.",
+                    });
+                  }}>
+                    <DownloadIcon className="mr-2 h-4 w-4" />
+                    Scarica PDF
+                  </Button>
+                </div>
+              </div>
+            </>
+          )}
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
