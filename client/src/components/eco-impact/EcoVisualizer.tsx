@@ -48,11 +48,21 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
   } = useQuery({
     queryKey: [
       `/api/eco-impact/flupsys/${selectedFlupsy || "all"}/sustainability`,
-      {
-        startDate: format(dateRange.from, "yyyy-MM-dd"),
-        endDate: format(dateRange.to, "yyyy-MM-dd"),
-      },
+      { 
+        from: dateRange.from, 
+        to: dateRange.to 
+      }
     ],
+    queryFn: async () => {
+      const startDateStr = format(dateRange.from, "yyyy-MM-dd");
+      const endDateStr = format(dateRange.to, "yyyy-MM-dd");
+      const url = `/api/eco-impact/flupsys/${selectedFlupsy || "all"}/sustainability?startDate=${startDateStr}&endDate=${endDateStr}`;
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${await response.text()}`);
+      }
+      return response.json();
+    },
     enabled: !!dateRange.from && !!dateRange.to,
     staleTime: 300000, // 5 minuti
   });
@@ -66,6 +76,16 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
       '/api/eco-impact/goals',
       { flupsyId: selectedFlupsy }
     ],
+    queryFn: async () => {
+      const url = selectedFlupsy 
+        ? `/api/eco-impact/goals?flupsyId=${selectedFlupsy}` 
+        : '/api/eco-impact/goals';
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${await response.text()}`);
+      }
+      return response.json();
+    },
     staleTime: 300000, // 5 minuti
   });
   
@@ -75,6 +95,13 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
     isLoading: isLoadingReports,
   } = useQuery({
     queryKey: ['/api/eco-impact/reports'],
+    queryFn: async () => {
+      const response = await fetch('/api/eco-impact/reports');
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${await response.text()}`);
+      }
+      return response.json();
+    },
     staleTime: 300000, // 5 minuti
   });
   
