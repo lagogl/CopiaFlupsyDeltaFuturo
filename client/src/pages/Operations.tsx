@@ -1261,7 +1261,7 @@ export default function Operations() {
                                         ) : cycleOps[0].sizeId ? (
                                           <span className="mr-1">{sizes?.find((s: any) => s.id === cycleOps[0].sizeId)?.code || `Size #${cycleOps[0].sizeId}`}</span>
                                         ) : cycleOps[0].animalsPerKg ? (
-                                          <span className="mr-1">{determineSizeFromAnimalsPerKg(cycleOps[0].animalsPerKg)?.code || 'Calcolata'}</span>
+                                          <span className="mr-1">{determineSizeFromAnimalsPerKg(parseFloat(cycleOps[0].animalsPerKg))?.code || 'Calcolata'}</span>
                                         ) : (
                                           <span className="mr-1">N/D</span>
                                         )}
@@ -1269,10 +1269,10 @@ export default function Operations() {
                                         {cycleOps[0].animalsPerKg && (
                                           <>
                                             <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-                                              {Math.round(1000000 / cycleOps[0].animalsPerKg)} mg
+                                              {Math.round(1000000 / parseFloat(cycleOps[0].animalsPerKg))} mg
                                             </span>
                                             <span className="text-xs ml-1 text-gray-500">
-                                              ({cycleOps[0].animalsPerKg.toLocaleString()} an/kg)
+                                              ({parseFloat(cycleOps[0].animalsPerKg).toLocaleString()} an/kg)
                                             </span>
                                           </>
                                         )}
@@ -1291,7 +1291,7 @@ export default function Operations() {
                                         ) : cycleOps[cycleOps.length - 1].sizeId ? (
                                           <span className="mr-1">{sizes?.find((s: any) => s.id === cycleOps[cycleOps.length - 1].sizeId)?.code || `Size #${cycleOps[cycleOps.length - 1].sizeId}`}</span>
                                         ) : cycleOps[cycleOps.length - 1].animalsPerKg ? (
-                                          <span className="mr-1">{determineSizeFromAnimalsPerKg(cycleOps[cycleOps.length - 1].animalsPerKg)?.code || 'Calcolata'}</span>
+                                          <span className="mr-1">{determineSizeFromAnimalsPerKg(parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg))?.code || 'Calcolata'}</span>
                                         ) : (
                                           <span className="mr-1">N/D</span>
                                         )}
