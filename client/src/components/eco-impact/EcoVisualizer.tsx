@@ -9,10 +9,11 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Label } from "@/components/ui/label";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { RefreshCwIcon } from "lucide-react";
+import { RefreshCwIcon, FileTextIcon, DownloadIcon } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Progress } from "@/components/ui/progress";
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 // Il provider di impostazioni non è richiesto per ora
 
 // Default periodo ultimo mese
@@ -31,6 +32,10 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
   // Stato per filtri
   const [selectedFlupsy, setSelectedFlupsy] = useState<number | undefined>(defaultFlupsyId);
   const [dateRange, setDateRange] = useState(defaultDateRange);
+  
+  // Stato per dialogo report
+  const [reportDialogOpen, setReportDialogOpen] = useState(false);
+  const [selectedReport, setSelectedReport] = useState<any>(null);
   
   // Query per ottenere tutti i FLUPSY disponibili
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
@@ -112,6 +117,12 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
       title: "Dati aggiornati",
       description: "I dati di impatto ambientale sono stati aggiornati.",
     });
+  };
+  
+  // Handler per visualizzare il report
+  const handleViewReport = (report: any) => {
+    setSelectedReport(report);
+    setReportDialogOpen(true);
   };
   
   // In caso di errore durante il caricamento dei dati
@@ -359,12 +370,28 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                         {report.highlights && (
                           <div className="mt-2">
                             <h4 className="text-xs font-semibold">Highlights</h4>
-                            <div className="mt-1 text-xs">{JSON.stringify(report.highlights)}</div>
+                            <ul className="mt-1 text-xs list-disc pl-4 space-y-1">
+                              {Array.isArray(report.highlights) ? 
+                                report.highlights.map((highlight, idx) => (
+                                  <li key={idx}>{highlight}</li>
+                                )) : 
+                                typeof report.highlights === 'object' && report.highlights.points ? 
+                                  report.highlights.points.map((point: string, idx: number) => (
+                                    <li key={idx}>{point}</li>
+                                  )) : 
+                                  <li>Nessun highlight disponibile</li>
+                              }
+                            </ul>
                           </div>
                         )}
                       </div>
                       <div className="mt-4 flex justify-end">
-                        <Button variant="outline" size="sm">
+                        <Button 
+                          variant="outline" 
+                          size="sm"
+                          onClick={() => handleViewReport(report)}
+                        >
+                          <FileTextIcon className="mr-2 h-4 w-4" />
                           Visualizza Report
                         </Button>
                       </div>
