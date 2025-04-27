@@ -487,27 +487,26 @@ export class EcoImpactController {
   async createOrUpdateOperationImpactDefault(req: Request, res: Response) {
     try {
       // Valida i dati in ingresso
-      const validationResult = insertOperationImpactDefaultSchema.safeParse(req.body);
+      const { operationType, water, carbon, energy, waste, biodiversity } = req.body;
       
-      if (!validationResult.success) {
+      // Validazione manuale
+      if (!operationType || 
+          typeof water !== 'number' || 
+          typeof carbon !== 'number' || 
+          typeof energy !== 'number' || 
+          typeof waste !== 'number' || 
+          typeof biodiversity !== 'number') {
         return res.status(400).json({
           success: false,
           error: 'Dati non validi',
-          details: validationResult.error.format()
+          details: 'Tutti i campi sono obbligatori e i valori di impatto devono essere numeri'
         });
       }
       
-      const { operationType, categoryCode, baseValue } = validationResult.data;
-      
-      // Verifica se esiste già un record per questa combinazione
+      // Verifica se esiste già un record per questo tipo di operazione
       const existingDefault = await db.select()
         .from(operationImpactDefaults)
-        .where(sql => 
-          sql.and(
-            sql.eq(operationImpactDefaults.operationType, operationType),
-            sql.eq(operationImpactDefaults.categoryCode, categoryCode)
-          )
-        )
+        .where(eq(operationImpactDefaults.operationType, operationType))
         .limit(1);
       
       let result;
@@ -516,21 +515,26 @@ export class EcoImpactController {
         // Aggiorna il record esistente
         result = await db.update(operationImpactDefaults)
           .set({ 
-            baseValue,
-            description: validationResult.data.description,
+            water,
+            carbon,
+            energy,
+            waste,
+            biodiversity,
             updatedAt: new Date()
           })
-          .where(sql => 
-            sql.and(
-              sql.eq(operationImpactDefaults.operationType, operationType),
-              sql.eq(operationImpactDefaults.categoryCode, categoryCode)
-            )
-          )
+          .where(eq(operationImpactDefaults.operationType, operationType))
           .returning();
       } else {
         // Crea un nuovo record
         result = await db.insert(operationImpactDefaults)
-          .values(validationResult.data)
+          .values({
+            operationType,
+            water,
+            carbon,
+            energy,
+            waste,
+            biodiversity
+          })
           .returning();
       }
       

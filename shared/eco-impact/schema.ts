@@ -177,9 +177,11 @@ export type InsertSustainabilityReport = z.infer<typeof insertSustainabilityRepo
 export const operationImpactDefaults = pgTable("operation_impact_defaults", {
   id: serial("id").primaryKey(),
   operationType: operationTypeEnum("operation_type").notNull(),
-  categoryCode: text("category_code").notNull(),
-  baseValue: real("base_value").notNull(),
-  description: text("description"),
+  water: real("water").notNull(),
+  carbon: real("carbon").notNull(),
+  energy: real("energy").notNull(),
+  waste: real("waste").notNull(),
+  biodiversity: real("biodiversity").notNull(),
   createdAt: timestamp("created_at").defaultNow().notNull(),
   updatedAt: timestamp("updated_at")
 });
