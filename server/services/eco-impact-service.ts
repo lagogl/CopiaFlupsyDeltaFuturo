@@ -179,13 +179,13 @@ export class EcoImpactService {
   }> {
     try {
       // Recupera gli impatti delle operazioni associate a questa FLUPSY nel periodo
-      const operations = await db.select()
-        .from(this.db.operations)
+      const operationsList = await db.select()
+        .from(operations)
         .where(
           and(
-            eq(this.db.operations.flupsyId, flupsyId),
+            eq(operations.flupsyId, flupsyId),
             between(
-              this.db.operations.date,
+              operations.date,
               startDate.toISOString().split('T')[0],
               endDate.toISOString().split('T')[0]
             )
@@ -202,7 +202,7 @@ export class EcoImpactService {
       };
       
       // Recupera e accumula gli impatti di tutte le operazioni
-      for (const operation of operations) {
+      for (const operation of operationsList) {
         const operationImpactsList = await this.getOperationImpacts(operation.id);
         
         // Aggiungi ciascun impatto alla categoria appropriata
