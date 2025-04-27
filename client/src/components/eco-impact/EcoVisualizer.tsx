@@ -521,7 +521,9 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                                defaultValue.operationType === 'trasporto-corto' ? 'Trasporto Corto (meno di 50 km)' :
                                defaultValue.operationType === 'trasporto-medio' ? 'Trasporto Medio (50-200 km)' :
                                defaultValue.operationType === 'trasporto-lungo' ? 'Trasporto Lungo (oltre 200 km)' :
-                               // Operazioni personalizzate non utilizzano 'custom' come valore ma direttamente il nome inserito
+                               defaultValue.operationType === 'custom' && defaultValue.customName ? 
+                                 <span>Personalizzato: <em>{defaultValue.customName}</em></span> :
+                               defaultValue.displayName ? defaultValue.displayName : 
                                defaultValue.operationType}
                             </div>
                             <div>{defaultValue.water}</div>

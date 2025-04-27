@@ -229,7 +229,7 @@ export class EcoImpactController {
         return res.status(400).json({
           success: false,
           error: 'Parametri non validi',
-          details: !paramsResult.success ? paramsResult.error.format() : queryResult.error.format()
+          details: !paramsResult.success ? paramsResult.error.format() : queryResult.error?.format()
         });
       }
       
@@ -292,20 +292,20 @@ export class EcoImpactController {
         validResults.forEach(result => {
           if (result && result.impacts) {
             Object.keys(combinedImpacts).forEach(key => {
-              combinedImpacts[key] += (result.impacts[key] || 0);
+              combinedImpacts[key as keyof typeof combinedImpacts] += (result.impacts[key as keyof typeof result.impacts] || 0);
             });
           }
           
           if (result && result.trends) {
             Object.keys(combinedTrends).forEach(key => {
-              combinedTrends[key] += (result.trends[key] || 0);
+              combinedTrends[key as keyof typeof combinedTrends] += (result.trends[key as keyof typeof result.trends] || 0);
             });
           }
         });
         
         // Calcola la media dei trend
         Object.keys(combinedTrends).forEach(key => {
-          combinedTrends[key] /= validResults.length;
+          combinedTrends[key as keyof typeof combinedTrends] /= validResults.length;
         });
         
         // Raccogli tutti i suggerimenti unici
@@ -395,6 +395,7 @@ export class EcoImpactController {
       // Parametro opzionale flupsyId
       const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
       
+      // Recupera gli obiettivi
       const goals = await ecoImpactService.getSustainabilityGoals(flupsyId);
       
       return res.status(200).json({
@@ -447,7 +448,11 @@ export class EcoImpactController {
    */
   async getSustainabilityReports(req: Request, res: Response) {
     try {
-      const reports = await ecoImpactService.getSustainabilityReports();
+      // Parametro opzionale flupsyId
+      const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
+      
+      // Recupera i report
+      const reports = await ecoImpactService.getSustainabilityReports(flupsyId);
       
       return res.status(200).json({
         success: true,
