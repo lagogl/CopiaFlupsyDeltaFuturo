@@ -8,6 +8,7 @@ import Dashboard from "@/pages/Dashboard";
 import Baskets from "@/pages/Baskets";
 import Operations from "@/pages/Operations";
 import OperationDetail from "@/pages/OperationDetail";
+import EditOperation from "@/pages/EditOperation";
 import QuickOperations from "@/pages/QuickOperations";
 import OperationsDragDrop from "@/pages/OperationsDragDrop";
 import Cycles from "@/pages/Cycles";
@@ -62,6 +63,7 @@ function Router() {
       <Route path="/flupsy-comparison-enhanced" component={FlupsyComparisonEnhanced}/>
       <Route path="/baskets" component={Baskets}/>
       <Route path="/operations" component={Operations}/>
+      <Route path="/operations/edit/:id" component={EditOperation}/>
       <Route path="/operations/:id" component={OperationDetail}/>
       <Route path="/quick-operations" component={QuickOperations}/>
       <Route path="/quickoperations" component={QuickOperations}/>
