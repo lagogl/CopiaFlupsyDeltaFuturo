@@ -178,6 +178,7 @@ export type InsertSustainabilityReport = z.infer<typeof insertSustainabilityRepo
 export const operationImpactDefaults = pgTable("operation_impact_defaults", {
   id: serial("id").primaryKey(),
   operationType: operationTypeEnum("operation_type").notNull(),
+  customName: text("custom_name"), // Campo per contenere il nome personalizzato quando operationType è 'custom'
   water: real("water").notNull(),
   carbon: real("carbon").notNull(),
   energy: real("energy").notNull(),
