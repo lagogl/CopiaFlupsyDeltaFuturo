@@ -35,6 +35,11 @@ export function formatNumberWithCommas(value: number, decimals: number = 0): str
     return "0";
   }
   
+  // Gestiamo i numeri molto piccoli - se il valore è minore di 1 e maggiore di zero, usiamo decimali adattabili
+  if (value > 0 && value < 1 && decimals === 0) {
+    decimals = 3; // Default a 3 decimali per i numeri molto piccoli
+  }
+  
   // Arrotonda il valore al numero di decimali specificato
   const roundedValue = decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString();
   
