@@ -363,7 +363,7 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {mortalityHistoryQuery.data.map((record) => (
+                  {mortalityHistoryQuery.data && mortalityHistoryQuery.data.map((record) => (
                     <TableRow key={record.id}>
                       <TableCell>
                         {record.calculationDate ? format(new Date(record.calculationDate), "dd/MM/yyyy") : "-"}
