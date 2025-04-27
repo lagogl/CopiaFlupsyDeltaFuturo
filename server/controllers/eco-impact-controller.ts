@@ -8,10 +8,10 @@ import {
   insertOperationImpactDefaultSchema,
   operationImpactDefaults
 } from '../../shared/eco-impact/schema';
+import { eq, and, sql } from 'drizzle-orm';
 import { flupsys } from '../../shared/schema';
 import { z } from 'zod';
 import { db } from '../db';
-import { eq, sql } from 'drizzle-orm';
 
 // Servizio per l'impatto ambientale
 const ecoImpactService = new EcoImpactService();
@@ -469,9 +469,25 @@ export class EcoImpactController {
     try {
       const defaults = await db.select().from(operationImpactDefaults);
       
+      // Trasforma i risultati per gestire correttamente i valori personalizzati
+      const transformedDefaults = defaults.map(defaultItem => {
+        // Per i valori personalizzati, restituiamo un displayName
+        if (defaultItem.operationType === 'custom' && defaultItem.customName) {
+          return {
+            ...defaultItem,
+            displayName: defaultItem.customName
+          };
+        } else {
+          return {
+            ...defaultItem,
+            displayName: defaultItem.operationType
+          };
+        }
+      });
+      
       return res.status(200).json({
         success: true,
-        defaults
+        defaults: transformedDefaults
       });
     } catch (error) {
       console.error('Errore nel recupero dei valori di impatto predefiniti:', error);
@@ -530,7 +546,7 @@ export class EcoImpactController {
   async createOrUpdateOperationImpactDefault(req: Request, res: Response) {
     try {
       // Valida i dati in ingresso
-      const { operationType, water, carbon, energy, waste, biodiversity } = req.body;
+      const { operationType, water, carbon, energy, waste, biodiversity, customName } = req.body;
       
       // Validazione manuale
       if (!operationType || 
@@ -546,10 +562,34 @@ export class EcoImpactController {
         });
       }
       
+      // Se operationType non è un valore enum, usiamo 'custom' e salviamo il nome personalizzato
+      let actualOperationType = operationType;
+      let actualCustomName = customName;
+      
+      // Controllo se operationType non è uno dei valori predefiniti dell'enum
+      const validOperationTypes = [
+        'prima-attivazione', 'pulizia', 'vagliatura', 'trattamento', 'misura', 
+        'vendita', 'selezione-vendita', 'cessazione', 'peso', 'selezione-origine',
+        'trasporto-corto', 'trasporto-medio', 'trasporto-lungo', 'custom'
+      ];
+      
+      if (!validOperationTypes.includes(operationType)) {
+        // Se non è un valore valido, è un nome personalizzato
+        actualOperationType = 'custom';
+        actualCustomName = operationType;
+      }
+      
       // Verifica se esiste già un record per questo tipo di operazione
       const existingDefault = await db.select()
         .from(operationImpactDefaults)
-        .where(eq(operationImpactDefaults.operationType, operationType))
+        .where(
+          actualOperationType === 'custom' 
+            ? and(
+                eq(operationImpactDefaults.operationType, 'custom'),
+                eq(operationImpactDefaults.customName, actualCustomName || '')
+              )
+            : eq(operationImpactDefaults.operationType, actualOperationType)
+        )
         .limit(1);
       
       let result;
@@ -565,13 +605,21 @@ export class EcoImpactController {
             biodiversity,
             updatedAt: new Date()
           })
-          .where(eq(operationImpactDefaults.operationType, operationType))
+          .where(
+            actualOperationType === 'custom' 
+              ? and(
+                  eq(operationImpactDefaults.operationType, 'custom'),
+                  eq(operationImpactDefaults.customName, actualCustomName || '')
+                )
+              : eq(operationImpactDefaults.operationType, actualOperationType)
+          )
           .returning();
       } else {
         // Crea un nuovo record
         result = await db.insert(operationImpactDefaults)
           .values({
-            operationType,
+            operationType: actualOperationType,
+            customName: actualCustomName,
             water,
             carbon,
             energy,
