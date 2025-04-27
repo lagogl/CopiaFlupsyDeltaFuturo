@@ -623,10 +623,10 @@ const SidebarMenuAction = React.forwardRef<
 SidebarMenuAction.displayName = "SidebarMenuAction"
 
 const SidebarMenuBadge = React.forwardRef<
-  HTMLDivElement,
-  React.ComponentProps<"div">
+  HTMLSpanElement,
+  React.ComponentProps<"span">
 >(({ className, ...props }, ref) => (
-  <div
+  <span
     ref={ref}
     data-sidebar="menu-badge"
     className={cn(
