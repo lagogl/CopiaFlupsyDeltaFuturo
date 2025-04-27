@@ -1269,7 +1269,7 @@ export default function Operations() {
                                         {cycleOps[0].animalsPerKg && (
                                           <>
                                             <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-                                              {(1000000 / parseFloat(cycleOps[0].animalsPerKg)).toFixed(2)} mg
+                                              {parseFloat(cycleOps[0].averageWeight).toFixed(2)} mg
                                             </span>
                                             <span className="text-xs ml-1 text-gray-500">
                                               ({parseFloat(cycleOps[0].animalsPerKg).toLocaleString()} an/kg)
@@ -1299,7 +1299,7 @@ export default function Operations() {
                                         {cycleOps[cycleOps.length - 1].animalsPerKg && (
                                           <>
                                             <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-                                              {(1000000 / parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg)).toFixed(2)} mg
+                                              {parseFloat(cycleOps[cycleOps.length - 1].averageWeight).toFixed(2)} mg
                                             </span>
                                             <span className="text-xs ml-1 text-gray-500">
                                               ({parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg).toLocaleString()} an/kg)
@@ -1336,8 +1336,8 @@ export default function Operations() {
                                     const lastOp = cycleOps[cycleOps.length - 1];
                                     
                                     if (firstOp.animalsPerKg && lastOp.animalsPerKg) {
-                                      const firstWeight = 1000000 / parseFloat(firstOp.animalsPerKg);
-                                      const lastWeight = 1000000 / parseFloat(lastOp.animalsPerKg);
+                                      const firstWeight = parseFloat(firstOp.averageWeight);
+                                      const lastWeight = parseFloat(lastOp.averageWeight);
                                       const weightGain = lastWeight - firstWeight;
                                       const percentGain = ((lastWeight - firstWeight) / firstWeight) * 100;
                                       
@@ -1399,7 +1399,7 @@ export default function Operations() {
                                 <div className="col-span-4">
                                   {cycleOps.length > 0 && cycleOps[cycleOps.length - 1].animalsPerKg && (() => {
                                     // Ottieni il peso attuale dall'ultimo dato registrato
-                                    const currentWeight = 1000000 / parseFloat(cycleOps[cycleOps.length - 1].animalsPerKg);
+                                    const currentWeight = parseFloat(cycleOps[cycleOps.length - 1].averageWeight);
                                     
                                     // Verifica se la taglia corrente è già TP-3000 (dal codice della taglia)
                                     const currentSizeCode = cycleOps[cycleOps.length - 1].size?.code || '';
@@ -1557,8 +1557,8 @@ export default function Operations() {
                           const prevOp = index > 0 ? cycleOps[index - 1] : null;
                           
                           // Calcola il cambio di peso e i giorni tra le operazioni
-                          const prevWeight = prevOp && prevOp.animalsPerKg ? 1000000 / prevOp.animalsPerKg : null;
-                          const currWeight = op.animalsPerKg ? 1000000 / op.animalsPerKg : null;
+                          const prevWeight = prevOp && prevOp.averageWeight ? parseFloat(prevOp.averageWeight) : null;
+                          const currWeight = op.averageWeight ? parseFloat(op.averageWeight) : null;
                           const weightChange = prevWeight && currWeight ? Math.round(currWeight - prevWeight) : null;
                           
                           const prevDate = prevOp ? new Date(prevOp.date) : null;
@@ -1648,7 +1648,7 @@ export default function Operations() {
                                       <p className="text-gray-500">Taglia</p>
                                       <div className="flex items-center">
                                         {getSizeBadge(op.size)}
-                                        <span className="ml-2">{(1000000 / op.animalsPerKg).toFixed(2)} mg</span>
+                                        <span className="ml-2">{parseFloat(op.averageWeight).toFixed(2)} mg</span>
                                         <span className="ml-2 text-xs text-gray-500">({op.animalsPerKg.toLocaleString()} an/kg)</span>
                                       </div>
                                     </div>
