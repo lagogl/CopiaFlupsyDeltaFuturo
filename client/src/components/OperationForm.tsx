@@ -69,6 +69,7 @@ interface OperationFormProps {
   onSubmit: (values: FormValues) => void;
   defaultValues?: Partial<FormValues>;
   isLoading?: boolean;
+  editMode?: boolean;
 }
 
 export default function OperationForm({ 
@@ -77,7 +78,8 @@ export default function OperationForm({
     date: new Date(),
     type: 'misura',
   },
-  isLoading = false
+  isLoading = false,
+  editMode = false
 }: OperationFormProps) {
   // Fetch related data
   const { data: baskets } = useQuery({
