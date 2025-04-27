@@ -11,6 +11,7 @@ import {
 import { flupsys } from '../../shared/schema';
 import { z } from 'zod';
 import { db } from '../db';
+import { eq, sql } from 'drizzle-orm';
 
 // Servizio per l'impatto ambientale
 const ecoImpactService = new EcoImpactService();
