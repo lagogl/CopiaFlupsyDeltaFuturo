@@ -74,13 +74,27 @@ export function initializeWebSocket() {
     if (event.code !== 1000) {
       reconnectTimeout = setTimeout(() => {
         console.log('Tentativo di riconnessione WebSocket...');
-        initializeWebSocket();
+        try {
+          initializeWebSocket();
+        } catch (error) {
+          console.error('Errore durante la riconnessione WebSocket:', error);
+          // Ritenta dopo un intervallo più lungo in caso di errore
+          reconnectTimeout = setTimeout(() => {
+            try {
+              initializeWebSocket();
+            } catch (e) {
+              console.error('Secondo tentativo di riconnessione fallito:', e);
+            }
+          }, RECONNECT_DELAY * 2);
+        }
       }, RECONNECT_DELAY);
     }
   };
   
   socket.onerror = (error) => {
     console.error('Errore WebSocket:', error);
+    // Impedisci all'errore di propagarsi come unhandledrejection
+    return true;
   };
 }
 

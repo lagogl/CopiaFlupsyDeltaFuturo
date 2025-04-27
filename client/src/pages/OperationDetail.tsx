@@ -196,7 +196,7 @@ export default function OperationDetail() {
                 <div className="flex justify-between">
                   <span className="text-sm font-medium text-muted-foreground">Peso medio:</span>
                   <span className="font-medium">
-                    {operation.averageWeight ? formatNumberWithCommas(parseFloat(operation.averageWeight).toFixed(2)) : '0.00'} mg
+                    {operation.averageWeight ? formatNumberWithCommas(parseFloat(operation.averageWeight)) : '0.00'} mg
                   </span>
                 </div>
               )}
