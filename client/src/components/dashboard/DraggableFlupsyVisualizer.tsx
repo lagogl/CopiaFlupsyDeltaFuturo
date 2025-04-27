@@ -613,12 +613,19 @@ export default function DraggableFlupsyVisualizer() {
         size = latestOperation.size?.code;
         animalCount = latestOperation.animalCount;
         // Utilizziamo il peso medio direttamente dal campo averageWeight se disponibile
-        averageWeight = latestOperation.averageWeight;
+        averageWeight = latestOperation.averageWeight ? parseFloat(latestOperation.averageWeight) : null;
         
         // Se averageWeight non è disponibile ma abbiamo animalsPerKg, lo calcoliamo
-        if (!averageWeight && latestOperation.animalsPerKg && parseFloat(latestOperation.animalsPerKg) > 0) {
-          averageWeight = 1000000 / parseFloat(latestOperation.animalsPerKg);
+        if ((!averageWeight || averageWeight === 0) && latestOperation.animalsPerKg) {
+          const animalsPerKgValue = parseFloat(latestOperation.animalsPerKg);
+          if (animalsPerKgValue > 0) {
+            averageWeight = Math.round(1000000 / animalsPerKgValue);
+            console.log('Basket', basket.id, 'calcolato peso medio:', averageWeight, 'da animalsPerKg:', animalsPerKgValue);
+          }
         }
+        
+        // Log di debug per verificare i valori
+        console.log('Basket', basket.id, 'Peso medio:', averageWeight, 'AnimalsPerKg:', latestOperation.animalsPerKg);
         
         if (!animalCount && latestOperation.animalsPerKg) {
           // Calcola il numero di animali solo se non è già presente nel campo animalCount
