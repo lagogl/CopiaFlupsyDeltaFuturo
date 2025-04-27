@@ -510,7 +510,7 @@ export default function Lots() {
                   {selectedLot.notes && (
                     <div>
                       <h4 className="font-medium text-sm text-gray-500 mb-1">Note</h4>
-                      <p className="text-sm">{selectedLot.notes}</p>
+                      <div className="text-sm mt-1">{selectedLot.notes}</div>
                     </div>
                   )}
                   
