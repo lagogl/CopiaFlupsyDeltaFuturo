@@ -207,13 +207,13 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                   <div className="space-y-2">
                     <Label>Conteggio iniziale</Label>
                     <div className="text-2xl font-bold">
-                      {formatNumber(inventoryQuery.data.initialCount)}
+                      {formatNumber(inventoryQuery.data?.initialCount)}
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Conteggio attuale</Label>
                     <div className="text-2xl font-bold">
-                      {formatNumber(inventoryQuery.data.currentCount)}
+                      {formatNumber(inventoryQuery.data?.currentCount)}
                     </div>
                   </div>
                 </div>
@@ -222,13 +222,13 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                   <div className="space-y-2">
                     <Label>Venduti</Label>
                     <div className="text-xl">
-                      {formatNumber(inventoryQuery.data.soldCount)}
+                      {formatNumber(inventoryQuery.data?.soldCount)}
                     </div>
                   </div>
                   <div className="space-y-2">
                     <Label>Mortalità</Label>
                     <div className="text-xl">
-                      {formatNumber(inventoryQuery.data.mortalityCount)}
+                      {formatNumber(inventoryQuery.data?.mortalityCount)}
                     </div>
                   </div>
                   <div className="space-y-2">
@@ -242,9 +242,11 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                 <div className="space-y-2">
                   <Label>Tasso di mortalità</Label>
                   <Progress 
-                    value={typeof inventoryQuery.data.mortalityPercentage === 'string' 
-                      ? parseFloat(inventoryQuery.data.mortalityPercentage) 
-                      : inventoryQuery.data.mortalityPercentage} 
+                    value={typeof inventoryQuery.data?.mortalityPercentage === 'string'
+                      ? parseFloat(inventoryQuery.data?.mortalityPercentage || '0') 
+                      : typeof inventoryQuery.data?.mortalityPercentage === 'number'
+                        ? inventoryQuery.data?.mortalityPercentage || 0
+                        : 0} 
                     max={100} 
                     className="h-4"
                   />
@@ -285,7 +287,7 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
               <div className="py-4 text-center text-destructive">
                 Errore nel caricamento delle transazioni
               </div>
-            ) : transactionsQuery.data.length === 0 ? (
+            ) : !transactionsQuery.data || transactionsQuery.data.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
                 Nessuna transazione registrata
               </div>
@@ -301,7 +303,7 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {transactionsQuery.data.map((transaction) => (
+                  {transactionsQuery.data && transactionsQuery.data.map((transaction) => (
                     <TableRow key={transaction.id}>
                       <TableCell>
                         {transaction.date ? format(new Date(transaction.date), "dd/MM/yyyy") : "-"}
@@ -343,7 +345,7 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
               <div className="py-4 text-center text-destructive">
                 Errore nel caricamento dei dati di mortalità
               </div>
-            ) : mortalityHistoryQuery.data.length === 0 ? (
+            ) : !mortalityHistoryQuery.data || mortalityHistoryQuery.data.length === 0 ? (
               <div className="py-8 text-center text-muted-foreground">
                 Nessun calcolo di mortalità registrato
               </div>
@@ -379,11 +381,7 @@ export default function LotInventoryPanel({ lotId, lotName }: LotInventoryPanelP
                         {formatNumber(record.mortalityCount)}
                       </TableCell>
                       <TableCell className="text-right font-medium">
-                        {typeof record.mortalityPercentage === 'string'
-                          ? parseFloat(record.mortalityPercentage).toFixed(2)
-                          : typeof record.mortalityPercentage === 'number'
-                            ? record.mortalityPercentage.toFixed(2)
-                            : '0.00'}%
+                        {formatPercentage(record.mortalityPercentage)}%
                       </TableCell>
                     </TableRow>
                   ))}
