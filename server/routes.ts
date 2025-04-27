@@ -4928,5 +4928,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ottiene tutte le transazioni di inventario per un lotto
   app.get('/api/lot-inventory/:lotId/transactions', LotInventoryController.getLotTransactions);
   
+  // === Eco-Impact Routes ===
+  const ecoImpactController = new EcoImpactController();
+  
+  // API per categorie di impatto
+  app.get("/api/eco-impact/categories", ecoImpactController.getImpactCategories.bind(ecoImpactController));
+  app.post("/api/eco-impact/categories", ecoImpactController.createImpactCategory.bind(ecoImpactController));
+  
+  // API per fattori di impatto
+  app.get("/api/eco-impact/factors", ecoImpactController.getImpactFactors.bind(ecoImpactController));
+  app.post("/api/eco-impact/factors", ecoImpactController.createImpactFactor.bind(ecoImpactController));
+  
+  // API per impatto ambientale delle operazioni
+  app.get("/api/eco-impact/operations/:operationId/impacts", ecoImpactController.getOperationImpacts.bind(ecoImpactController));
+  app.post("/api/eco-impact/operations/:operationId/calculate", ecoImpactController.calculateOperationImpact.bind(ecoImpactController));
+  
+  // API per punteggio di sostenibilità FLUPSY
+  app.get("/api/eco-impact/flupsys/:flupsyId/sustainability", ecoImpactController.calculateFlupsySustainability.bind(ecoImpactController));
+  
+  // API per obiettivi di sostenibilità
+  app.get("/api/eco-impact/goals", ecoImpactController.getSustainabilityGoals.bind(ecoImpactController));
+  app.post("/api/eco-impact/goals", ecoImpactController.createSustainabilityGoal.bind(ecoImpactController));
+  
+  // API per report di sostenibilità
+  app.get("/api/eco-impact/reports", ecoImpactController.getSustainabilityReports.bind(ecoImpactController));
+  app.post("/api/eco-impact/reports", ecoImpactController.createSustainabilityReport.bind(ecoImpactController));
+  
   return httpServer;
 }
