@@ -91,6 +91,15 @@ export function useWebSocketMessage<T = any>(
 ): { connected: boolean } {
   const [connected, setConnected] = useState(false);
   
+  // Wrapper per il gestore che cattura le eccezioni
+  const safeHandler = useCallback((data: T) => {
+    try {
+      handler(data);
+    } catch (error) {
+      console.error(`Errore nel gestore WebSocket per "${messageType}":`, error);
+    }
+  }, [messageType, handler]);
+  
   // Effetto per registrare il gestore e monitorare la connessione
   useEffect(() => {
     // Assicurati che il WebSocket sia inizializzato
@@ -117,20 +126,20 @@ export function useWebSocketMessage<T = any>(
     if (!messageHandlers[messageType]) {
       messageHandlers[messageType] = new Set();
     }
-    messageHandlers[messageType].add(handler);
+    messageHandlers[messageType].add(safeHandler);
     
     // Pulizia quando il componente viene smontato
     return () => {
       clearInterval(interval);
       if (messageHandlers[messageType]) {
-        messageHandlers[messageType].delete(handler);
+        messageHandlers[messageType].delete(safeHandler);
         // Rimuovi il set se è vuoto
         if (messageHandlers[messageType].size === 0) {
           delete messageHandlers[messageType];
         }
       }
     };
-  }, [messageType, handler]);
+  }, [messageType, safeHandler]);
   
   return { connected };
 }

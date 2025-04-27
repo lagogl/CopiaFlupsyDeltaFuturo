@@ -1,5 +1,5 @@
 // Integrazione tra WebSocket e TanStack Query
-import { useEffect } from 'react';
+import { useEffect, useCallback } from 'react';
 import { useWebSocketMessage } from './websocket';
 import { queryClient } from './queryClient';
 
@@ -24,9 +24,9 @@ const messageTypeToQueryKeys: Record<string, string[]> = {
  * Quando arriva un messaggio WebSocket, invalida le query appropriate.
  */
 export function useWebSocketQueryIntegration() {
-  // Configura gli handler per tutti i tipi di messaggi che ci interessano
-  Object.keys(messageTypeToQueryKeys).forEach(messageType => {
-    useWebSocketMessage(messageType, (data) => {
+  // Crea un handler per ogni tipo di messaggio
+  const createHandler = useCallback((messageType: string) => {
+    return (data: any) => {
       // Quando riceviamo un messaggio di questo tipo, invalidiamo le query appropriate
       const queriesToInvalidate = messageTypeToQueryKeys[messageType];
       
@@ -35,8 +35,29 @@ export function useWebSocketQueryIntegration() {
       queriesToInvalidate.forEach(queryKey => {
         queryClient.invalidateQueries({ queryKey: [queryKey] });
       });
-    });
-  });
+    };
+  }, []);
+  
+  // Registra handler per 'operation_created'
+  useWebSocketMessage('operation_created', createHandler('operation_created'));
+  
+  // Registra handler per 'operation_updated'
+  useWebSocketMessage('operation_updated', createHandler('operation_updated'));
+  
+  // Registra handler per 'operation_deleted'
+  useWebSocketMessage('operation_deleted', createHandler('operation_deleted'));
+  
+  // Registra handler per 'cycle_created'
+  useWebSocketMessage('cycle_created', createHandler('cycle_created'));
+  
+  // Registra handler per 'cycle_updated'
+  useWebSocketMessage('cycle_updated', createHandler('cycle_updated'));
+  
+  // Registra handler per 'cycle_deleted'
+  useWebSocketMessage('cycle_deleted', createHandler('cycle_deleted'));
+  
+  // Registra handler per 'statistics_updated'
+  useWebSocketMessage('statistics_updated', createHandler('statistics_updated'));
   
   return null;
 }
