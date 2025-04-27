@@ -258,6 +258,14 @@ export class DbStorage implements IStorage {
 
   async updateOperation(id: number, operationUpdate: Partial<Operation>): Promise<Operation | undefined> {
     try {
+      // Prima, ottieni l'operazione corrente per riferimento
+      const [currentOperation] = await db.select().from(operations)
+        .where(eq(operations.id, id));
+        
+      if (!currentOperation) {
+        throw new Error(`Operazione con ID ${id} non trovata`);
+      }
+      
       // Convert any dates to string format
       if (operationUpdate.date && typeof operationUpdate.date === 'object' && 'toISOString' in operationUpdate.date) {
         operationUpdate.date = operationUpdate.date.toISOString().split('T')[0];
@@ -270,6 +278,14 @@ export class DbStorage implements IStorage {
         const averageWeight = 1000000 / updateData.animalsPerKg;
         updateData.averageWeight = averageWeight;
       }
+      
+      // Prevenzione errore di vincolo not-null per cycleId
+      if (updateData.cycleId === null) {
+        console.log(`PREVENZIONE VINCOLO NOT-NULL: Mantengo il cycleId originale (${currentOperation.cycleId}) per operazione ${id}`);
+        updateData.cycleId = currentOperation.cycleId;
+      }
+      
+      console.log(`DATI AGGIORNAMENTO OPERAZIONE ${id}:`, JSON.stringify(updateData, null, 2));
       
       const results = await db.update(operations)
         .set(updateData)

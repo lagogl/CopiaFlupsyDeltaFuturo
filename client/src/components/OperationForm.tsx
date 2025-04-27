@@ -394,6 +394,16 @@ export default function OperationForm({
       values.totalWeight = Number(values.totalWeight);
     }
     
+    // **IMPORTANTE:** Conserva il cycleId per operazioni di prima-attivazione
+    // Utilizza la conoscenza del cestello per determinare il cycleId corretto
+    const selectedBasket = baskets?.find(b => b.id === Number(values.basketId));
+    if (values.type === 'prima-attivazione' && selectedBasket?.currentCycleId) {
+      console.log('Prima attivazione con cestello che ha già un ciclo attivo:', selectedBasket.currentCycleId);
+      // In questo caso, manteniamo il cycleId del cestello anziché impostarlo a null
+      values.cycleId = selectedBasket.currentCycleId;
+      console.log('Utilizzo il cycleId esistente per prevenire errori database:', values.cycleId);
+    }
+    
     // Calcola automaticamente il peso totale se non è stato specificato
     if (values.animalCount && values.animalsPerKg && !values.totalWeight) {
       const averageWeight = 1000000 / values.animalsPerKg; // mg
@@ -495,8 +505,10 @@ export default function OperationForm({
       sgrId: values.sgrId ? Number(values.sgrId) : null,
       sizeId: values.sizeId ? Number(values.sizeId) : null,
       lotId: values.lotId ? Number(values.lotId) : null,
-      // Per prima-attivazione, assicuriamoci che cycleId non sia richiesto
-      cycleId: values.type === 'prima-attivazione' ? null : (values.cycleId ? Number(values.cycleId) : null)
+      // Per prima-attivazione, controlla se il cestello ha già un ciclo attivo
+      cycleId: values.type === 'prima-attivazione' ? 
+        (selectedBasket?.currentCycleId || null) : 
+        (values.cycleId ? Number(values.cycleId) : null)
     };
     
     console.log("Valori formattati:", formattedValues);
