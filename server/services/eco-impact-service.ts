@@ -234,12 +234,36 @@ export class EcoImpactService {
       previousStartDate.setDate(previousStartDate.getDate() - periodDays);
       previousEndDate.setDate(previousEndDate.getDate() - periodDays);
       
-      // Calcola gli impatti del periodo precedente (con lo stesso metodo)
-      // Per il periodo precedente, utilizziamo valori predefiniti
-      // per evitare ricorsione infinita
+      // Implementazione statica senza ricorsione per il calcolo del periodo precedente
+      const previousOperationsList = await db.select({
+        operation: operations
+      })
+        .from(operations)
+        .innerJoin(baskets, eq(operations.basketId, baskets.id))
+        .where(
+          and(
+            eq(baskets.flupsyId, flupsyId),
+            between(
+              operations.date,
+              previousStartDate.toISOString().split('T')[0],
+              previousEndDate.toISOString().split('T')[0]
+            )
+          )
+        );
+      
+      // Mappa per accumulare gli impatti totali del periodo precedente
+      const previousTotalImpacts: Record<string, number> = {
+        water: 0,
+        carbon: 0,
+        energy: 0,
+        waste: 0,
+        biodiversity: 0
+      };
+      
+      // Se non ci sono operazioni nel periodo precedente, usiamo valori predefiniti
       const previousResult = { 
         score: 0, 
-        impacts: { water: 0, carbon: 0, energy: 0, waste: 0, biodiversity: 0 },
+        impacts: previousTotalImpacts,
         trends: { water: 0, carbon: 0, energy: 0, waste: 0, biodiversity: 0 },
         suggestions: []
       };
