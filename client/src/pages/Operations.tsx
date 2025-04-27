@@ -1765,6 +1765,8 @@ export default function Operations() {
                 animalsPerKg: data.animalsPerKg ? Number(data.animalsPerKg) : null,
                 totalWeight: data.totalWeight ? Number(data.totalWeight) : null,
                 date: data.date instanceof Date ? data.date : new Date(data.date),
+                // Assicuriamoci che le note siano salvate correttamente anche per nuove operazioni
+                notes: data.notes || null
               };
               
               console.log('Formatted operation data:', formattedData);
