@@ -144,23 +144,28 @@ export default function Settings() {
   const resetLotSequence = async () => {
     try {
       setIsResettingLotSequence(true);
-      const response = await apiRequest('/api/sequences/reset', {
+      const response = await fetch('/api/sequences/reset', {
         method: 'POST',
-        body: {
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
           table: 'lots',
           startValue: 1,
           password: resetPassword
-        },
+        }),
       });
       
-      if (response.success) {
+      if (response.ok) {
+        const data = await response.json();
         toast({
           title: "Reset sequenza completato",
-          description: response.message || "La sequenza ID dei lotti è stata resettata con successo.",
+          description: data.message || "La sequenza ID dei lotti è stata resettata con successo.",
         });
         setResetPassword("");
       } else {
-        throw new Error(response.message || 'Errore sconosciuto');
+        const errorData = await response.json();
+        throw new Error(errorData.message || 'Errore sconosciuto');
       }
     } catch (error) {
       toast({
@@ -564,6 +569,63 @@ export default function Settings() {
                           disabled={isResettingSelections || !resetPassword}
                         >
                           {isResettingSelections ? "Azzeramento in corso..." : "Conferma Azzeramento"}
+                        </Button>
+                      </DialogFooter>
+                    </DialogContent>
+                  </Dialog>
+                </div>
+              </div>
+              
+              <div className="border border-border rounded-lg p-4 space-y-4">
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h3 className="text-lg font-medium mb-1">Reset Sequenza ID Lotti</h3>
+                    <p className="text-sm text-gray-500">
+                      Reimposta il contatore degli ID dei lotti. Questa operazione non elimina i lotti esistenti
+                      ma fa ripartire la numerazione dal valore specificato per i nuovi lotti.
+                    </p>
+                  </div>
+                  <Dialog>
+                    <DialogTrigger asChild>
+                      <Button 
+                        variant="outline" 
+                        className="whitespace-nowrap ml-4"
+                      >
+                        <RotateCw className="h-4 w-4 mr-2" />
+                        Reset Sequenza Lotti
+                      </Button>
+                    </DialogTrigger>
+                    <DialogContent>
+                      <DialogHeader>
+                        <DialogTitle>Conferma reset sequenza ID lotti</DialogTitle>
+                        <DialogDescription>
+                          Questa operazione reimposta il contatore degli ID dei lotti. I lotti esistenti
+                          manterranno i loro ID attuali, ma i nuovi lotti inizieranno dalla numerazione specificata.
+                        </DialogDescription>
+                      </DialogHeader>
+                      <div className="space-y-4 py-4">
+                        <Label htmlFor="reset-password-lot-sequence">Password di sicurezza</Label>
+                        <Input 
+                          id="reset-password-lot-sequence" 
+                          type="password" 
+                          placeholder="Inserisci la password di sicurezza"
+                          value={resetPassword}
+                          onChange={(e) => setResetPassword(e.target.value)}
+                        />
+                      </div>
+                      <DialogFooter>
+                        <Button 
+                          variant="outline" 
+                          onClick={() => setResetPassword("")}
+                        >
+                          Annulla
+                        </Button>
+                        <Button 
+                          variant="default"
+                          onClick={resetLotSequence}
+                          disabled={isResettingLotSequence || !resetPassword}
+                        >
+                          {isResettingLotSequence ? "Reset in corso..." : "Conferma Reset"}
                         </Button>
                       </DialogFooter>
                     </DialogContent>
