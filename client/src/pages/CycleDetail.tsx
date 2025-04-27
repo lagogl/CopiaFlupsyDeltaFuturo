@@ -513,11 +513,11 @@ export default function CycleDetail() {
   const firstOp = sortedOperations.length > 0 ? sortedOperations[sortedOperations.length - 1] : null;
   const lastOp = sortedOperations.length > 0 ? sortedOperations[0] : null;
   
-  // Calculate growth rate if we have at least two operations with animalsPerKg
+  // Calculate growth rate if we have at least two operations with weight data
   let growthRate = null;
-  if (firstOp && lastOp && firstOp.animalsPerKg && lastOp.animalsPerKg && firstOp.id !== lastOp.id) {
-    const firstWeight = 1000000 / firstOp.animalsPerKg; // in mg
-    const lastWeight = 1000000 / lastOp.animalsPerKg; // in mg
+  if (firstOp && lastOp && firstOp.averageWeight && lastOp.averageWeight && firstOp.id !== lastOp.id) {
+    const firstWeight = parseFloat(firstOp.averageWeight); // already in mg
+    const lastWeight = parseFloat(lastOp.averageWeight); // already in mg
     const growthPercentage = ((lastWeight - firstWeight) / firstWeight) * 100;
     growthRate = {
       startWeight: firstWeight,
@@ -529,7 +529,12 @@ export default function CycleDetail() {
   
   // Helper function to format dates
   const formatDate = (dateString) => {
-    return format(new Date(dateString), 'dd MMMM yyyy', { locale: it });
+    try {
+      return format(new Date(dateString), 'dd MMMM yyyy', { locale: it });
+    } catch (error) {
+      console.error('Errore nella formattazione della data:', error, dateString);
+      return 'Data non valida';
+    }
   };
   
   // Verifica se il ciclo è stato venduto
