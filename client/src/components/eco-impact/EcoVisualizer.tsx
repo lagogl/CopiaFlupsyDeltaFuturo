@@ -142,6 +142,38 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
     setReportDialogOpen(true);
   };
   
+  // Handler per eliminare un valore predefinito
+  const handleDeleteDefault = (id: number) => {
+    if (!confirm("Sei sicuro di voler eliminare questo valore predefinito? Questa azione non può essere annullata.")) {
+      return;
+    }
+    
+    fetch(`/api/eco-impact/defaults/${id}`, {
+      method: 'DELETE',
+    })
+    .then(response => {
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${response.statusText}`);
+      }
+      return response.json();
+    })
+    .then(() => {
+      toast({
+        title: "Successo",
+        description: "Valore predefinito eliminato con successo.",
+      });
+      // Aggiorna la lista dei valori predefiniti
+      refetchDefaults();
+    })
+    .catch(error => {
+      toast({
+        title: "Errore",
+        description: `Errore durante l'eliminazione: ${error.message}`,
+        variant: "destructive",
+      });
+    });
+  };
+  
   // In caso di errore durante il caricamento dei dati
   if (isErrorSustainability) {
     return (
@@ -458,18 +490,19 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
               ) : (
                 <div className="space-y-4">
                   <div className="border rounded-md">
-                    <div className="bg-muted p-2 font-medium text-sm grid grid-cols-7 gap-4">
+                    <div className="bg-muted p-2 font-medium text-sm grid grid-cols-8 gap-4">
                       <div className="col-span-2">Tipo Operazione</div>
                       <div>Acqua</div>
                       <div>Carbonio</div>
                       <div>Energia</div>
                       <div>Rifiuti</div>
                       <div>Biodiversità</div>
+                      <div>Azioni</div>
                     </div>
                     <div className="divide-y">
                       {impactDefaults?.success && impactDefaults.defaults && impactDefaults.defaults.length > 0 ? (
                         impactDefaults.defaults.map((defaultValue: any) => (
-                          <div key={defaultValue.id} className="p-3 grid grid-cols-7 gap-4 hover:bg-muted/50">
+                          <div key={defaultValue.id} className="p-3 grid grid-cols-8 gap-4 hover:bg-muted/50">
                             <div className="col-span-2 font-medium">
                               {defaultValue.operationType === 'prima-attivazione' ? 'Prima Attivazione' :
                                defaultValue.operationType === 'pulizia' ? 'Pulizia' :
@@ -492,6 +525,15 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
                             <div>{defaultValue.energy}</div>
                             <div>{defaultValue.waste}</div>
                             <div>{defaultValue.biodiversity}</div>
+                            <div>
+                              <Button 
+                                variant="destructive" 
+                                size="sm"
+                                onClick={() => handleDeleteDefault(defaultValue.id)}
+                              >
+                                Elimina
+                              </Button>
+                            </div>
                           </div>
                         ))
                       ) : (
