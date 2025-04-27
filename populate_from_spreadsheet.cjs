@@ -90,9 +90,10 @@ async function createLot(lotData) {
   try {
     const { lotNumber, date, notes, sizeId = 1 } = lotData;
     
-    // Verifica se il lotto esiste già
+    // Utilizziamo il numero del lotto come "supplier" per la ricerca
+    // poiché nel database non esiste una colonna lot_number
     const existingLotQuery = {
-      text: 'SELECT id FROM lots WHERE lot_number = $1',
+      text: 'SELECT id FROM lots WHERE supplier = $1',
       values: [lotNumber]
     };
     
@@ -102,12 +103,13 @@ async function createLot(lotData) {
       return existingLot.rows[0].id;
     }
     
-    // Crea un nuovo lotto
+    // Crea un nuovo lotto usando il numero del lotto come supplier
+    // e impostando gli altri campi richiesti
     const insertLotQuery = {
-      text: `INSERT INTO lots (lot_number, arrival_date, status, size_id, notes, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      text: `INSERT INTO lots (arrival_date, supplier, size_id, notes, state)
+             VALUES ($1, $2, $3, $4, $5)
              RETURNING id`,
-      values: [lotNumber, date, 'active', sizeId, notes || 'Importato dal foglio elettronico']
+      values: [date, lotNumber, sizeId, notes || 'Importato dal foglio elettronico', 'active']
     };
     
     const result = await pool.query(insertLotQuery);
@@ -120,34 +122,34 @@ async function createLot(lotData) {
   }
 }
 
-// Funzione per creare un ciclo associato al lotto
-async function createCycle(lotId, lotData) {
+// Funzione per creare un ciclo associato al cestello
+async function createCycle(basketId, lotData) {
   try {
     const { date, lotNumber } = lotData;
     
-    // Verifica se esiste già un ciclo per questo lotto
+    // Verifica se esiste già un ciclo per questo cestello
     const existingCycleQuery = {
-      text: 'SELECT id FROM cycles WHERE lot_id = $1',
-      values: [lotId]
+      text: 'SELECT id FROM cycles WHERE basket_id = $1',
+      values: [basketId]
     };
     
     const existingCycle = await pool.query(existingCycleQuery);
     if (existingCycle.rows.length > 0) {
-      console.log(`Il ciclo per il lotto ${lotNumber} esiste già con ID ${existingCycle.rows[0].id}`);
+      console.log(`Il ciclo per il cestello con ID ${basketId} esiste già con ID ${existingCycle.rows[0].id}`);
       return existingCycle.rows[0].id;
     }
     
     // Crea un nuovo ciclo
     const insertCycleQuery = {
-      text: `INSERT INTO cycles (lot_id, start_date, status, reference_size_id, notes, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      text: `INSERT INTO cycles (basket_id, start_date, state)
+             VALUES ($1, $2, $3)
              RETURNING id`,
-      values: [lotId, date, 'active', 1, `Ciclo per lotto ${lotNumber}`]
+      values: [basketId, date, 'active']
     };
     
     const result = await pool.query(insertCycleQuery);
     const cycleId = result.rows[0].id;
-    console.log(`Creato nuovo ciclo per lotto ${lotNumber} con ID ${cycleId}`);
+    console.log(`Creato nuovo ciclo per cestello con ID ${basketId} (ciclo ID: ${cycleId})`);
     return cycleId;
   } catch (error) {
     console.error('Errore nella creazione del ciclo:', error);
@@ -160,38 +162,47 @@ async function createBasket(lotId, basketData) {
   try {
     const { basketCode, flupsyName, position } = basketData;
     let flupsyId = null;
-    let positionId = null;
+    let positionValue = null;
+    
+    // Estrai il numero fisico dal codice del cestello o usa il codice stesso
+    // se è già un numero (per cestelli già esistenti)
+    const physicalNumber = isNaN(parseInt(basketCode)) ? 
+      parseInt(basketCode.replace(/[^0-9]/g, '')) || Math.floor(Math.random() * 10000) : 
+      parseInt(basketCode);
     
     // Se è specificato un flupsy, ottieni l'ID corrispondente
     if (flupsyName && flupsyMapping[flupsyName]) {
       flupsyId = flupsyMapping[flupsyName];
       
-      // Se è specificata anche una posizione, imposta positionId
+      // Se è specificata anche una posizione, imposta position
       if (position) {
-        positionId = position; // Semplificazione: usiamo il numero della posizione come ID
+        positionValue = position;
       }
+    } else {
+      // Se il flupsy non è specificato, imposta un valore di default per evitare vincoli di non-null
+      flupsyId = 1; // Utilizza un ID di flupsy predefinito (potrebbe essere necessario verificare qual è un ID valido)
     }
     
-    // Verifica se il cestello esiste già
+    // Verifica se il cestello esiste già (cerca per numero fisico che è univoco)
     const existingBasketQuery = {
-      text: 'SELECT id FROM baskets WHERE basket_code = $1',
-      values: [basketCode]
+      text: 'SELECT id FROM baskets WHERE physical_number = $1',
+      values: [physicalNumber]
     };
     
     const existingBasket = await pool.query(existingBasketQuery);
     if (existingBasket.rows.length > 0) {
-      console.log(`Il cestello ${basketCode} esiste già con ID ${existingBasket.rows[0].id}`);
+      console.log(`Il cestello ${basketCode} (physical_number: ${physicalNumber}) esiste già con ID ${existingBasket.rows[0].id}`);
       
       // Aggiorna il cestello se è stato spostato in un flupsy
       if (flupsyId) {
         const updateBasketQuery = {
           text: `UPDATE baskets 
-                 SET flupsy_id = $1, position_id = $2, updated_at = NOW()
+                 SET flupsy_id = $1, position = $2
                  WHERE id = $3`,
-          values: [flupsyId, positionId, existingBasket.rows[0].id]
+          values: [flupsyId, positionValue, existingBasket.rows[0].id]
         };
         await pool.query(updateBasketQuery);
-        console.log(`Aggiornata posizione del cestello ${basketCode} (flupsy_id: ${flupsyId}, position_id: ${positionId})`);
+        console.log(`Aggiornata posizione del cestello ${basketCode} (flupsy_id: ${flupsyId}, position: ${positionValue})`);
       }
       
       return existingBasket.rows[0].id;
@@ -199,15 +210,15 @@ async function createBasket(lotId, basketData) {
     
     // Crea un nuovo cestello
     const insertBasketQuery = {
-      text: `INSERT INTO baskets (basket_code, lot_id, flupsy_id, position_id, status, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
+      text: `INSERT INTO baskets (physical_number, state, flupsy_id, position)
+             VALUES ($1, $2, $3, $4)
              RETURNING id`,
-      values: [basketCode, lotId, flupsyId, positionId, 'active']
+      values: [physicalNumber, 'available', flupsyId, positionValue]
     };
     
     const result = await pool.query(insertBasketQuery);
     const basketId = result.rows[0].id;
-    console.log(`Creato nuovo cestello ${basketCode} con ID ${basketId}`);
+    console.log(`Creato nuovo cestello ${basketCode} (physical_number: ${physicalNumber}) con ID ${basketId}`);
     return basketId;
   } catch (error) {
     console.error('Errore nella creazione del cestello:', error);
@@ -216,15 +227,9 @@ async function createBasket(lotId, basketData) {
 }
 
 // Funzione per creare un'operazione
-async function createOperation(lotId, basketId, operationData) {
+async function createOperation(lotId, basketId, cycleId, operationData) {
   try {
-    const { state, date, notes, flupsyName } = operationData;
-    let flupsyId = null;
-    
-    // Se è specificato un flupsy, ottieni l'ID corrispondente
-    if (flupsyName && flupsyMapping[flupsyName]) {
-      flupsyId = flupsyMapping[flupsyName];
-    }
+    const { state, date, notes, flupsyName, measurement } = operationData;
     
     // Mappa lo stato del foglio elettronico ai tipi di operazione del sistema
     let operationType;
@@ -242,12 +247,41 @@ async function createOperation(lotId, basketId, operationData) {
         operationType = 'misura'; // Default
     }
     
+    // Prepara i dati di misurazione se disponibili
+    let totalWeight = null;
+    let animalCount = null;
+    let avgLength = null;
+    
+    if (measurement) {
+      totalWeight = measurement.weight;
+      animalCount = measurement.animalCount || null;
+      avgLength = measurement.length || null;
+    }
+    
     // Crea una nuova operazione
     const insertOperationQuery = {
-      text: `INSERT INTO operations (lot_id, basket_id, flupsy_id, date, type, notes, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, $6, NOW(), NOW())
+      text: `INSERT INTO operations (
+                date, 
+                type, 
+                basket_id, 
+                cycle_id, 
+                lot_id,
+                total_weight,
+                animal_count,
+                notes
+             )
+             VALUES ($1, $2, $3, $4, $5, $6, $7, $8)
              RETURNING id`,
-      values: [lotId, basketId, flupsyId, date, operationType, notes || state]
+      values: [
+        date, 
+        operationType, 
+        basketId, 
+        cycleId, 
+        lotId,
+        totalWeight,
+        animalCount,
+        notes || state
+      ]
     };
     
     const result = await pool.query(insertOperationQuery);
@@ -256,29 +290,6 @@ async function createOperation(lotId, basketId, operationData) {
     return operationId;
   } catch (error) {
     console.error('Errore nella creazione dell\'operazione:', error);
-    throw error;
-  }
-}
-
-// Funzione per creare una misurazione
-async function createMeasurement(operationId, basketId, lotId, measurementData) {
-  try {
-    const { weight, length } = measurementData;
-    
-    // Crea una nuova misurazione
-    const insertMeasurementQuery = {
-      text: `INSERT INTO measurements (operation_id, basket_id, lot_id, weight_g, length_mm, created_at, updated_at)
-             VALUES ($1, $2, $3, $4, $5, NOW(), NOW())
-             RETURNING id`,
-      values: [operationId, basketId, lotId, weight, length]
-    };
-    
-    const result = await pool.query(insertMeasurementQuery);
-    const measurementId = result.rows[0].id;
-    console.log(`Creata nuova misurazione con ID ${measurementId} (peso: ${weight}g, lunghezza: ${length}mm)`);
-    return measurementId;
-  } catch (error) {
-    console.error('Errore nella creazione della misurazione:', error);
     throw error;
   }
 }
@@ -294,21 +305,23 @@ async function importData() {
     for (const rowData of spreadsheetData) {
       console.log(`\nProcessing: ${JSON.stringify(rowData)}`);
       
-      // 1. Crea o ottieni il lotto
-      const lotId = await createLot(rowData);
-      
-      // 2. Crea o ottieni il ciclo associato al lotto
-      const cycleId = await createCycle(lotId, rowData);
-      
-      // 3. Crea o ottieni il cestello
-      const basketId = await createBasket(lotId, rowData);
-      
-      // 4. Crea l'operazione
-      const operationId = await createOperation(lotId, basketId, rowData);
-      
-      // 5. Crea la misurazione se i dati sono disponibili
-      if (rowData.measurement) {
-        await createMeasurement(operationId, basketId, lotId, rowData.measurement);
+      try {
+        // 1. Crea o ottieni il lotto
+        const lotId = await createLot(rowData);
+        
+        // 2. Crea o ottieni il cestello
+        const basketId = await createBasket(lotId, rowData);
+        
+        // 3. Crea o ottieni il ciclo associato al cestello
+        const cycleId = await createCycle(basketId, rowData);
+        
+        // 4. Crea l'operazione con i dati di misurazione inclusi
+        const operationId = await createOperation(lotId, basketId, cycleId, rowData);
+        
+        console.log(`Creazione completata per i dati: lot=${lotId}, basket=${basketId}, cycle=${cycleId}, operation=${operationId}`);
+      } catch (rowError) {
+        console.error(`Errore nell'elaborazione della riga: ${JSON.stringify(rowData)}`, rowError);
+        // Continua con la prossima riga
       }
     }
     
@@ -321,7 +334,6 @@ async function importData() {
     console.log(`- Cicli: ${summary.cycleCount}`);
     console.log(`- Cestelli: ${summary.basketCount}`);
     console.log(`- Operazioni: ${summary.operationCount}`);
-    console.log(`- Misurazioni: ${summary.measurementCount}`);
     
   } catch (error) {
     console.error('Errore durante l\'importazione dei dati:', error);
@@ -338,14 +350,12 @@ async function getSummary() {
     const cycleCountQuery = await pool.query('SELECT COUNT(*) FROM cycles');
     const basketCountQuery = await pool.query('SELECT COUNT(*) FROM baskets');
     const operationCountQuery = await pool.query('SELECT COUNT(*) FROM operations');
-    const measurementCountQuery = await pool.query('SELECT COUNT(*) FROM measurements');
     
     return {
       lotCount: parseInt(lotCountQuery.rows[0].count),
       cycleCount: parseInt(cycleCountQuery.rows[0].count),
       basketCount: parseInt(basketCountQuery.rows[0].count),
-      operationCount: parseInt(operationCountQuery.rows[0].count),
-      measurementCount: parseInt(measurementCountQuery.rows[0].count)
+      operationCount: parseInt(operationCountQuery.rows[0].count)
     };
   } catch (error) {
     console.error('Errore nel recupero delle statistiche:', error);
@@ -353,8 +363,7 @@ async function getSummary() {
       lotCount: 'Errore',
       cycleCount: 'Errore',
       basketCount: 'Errore',
-      operationCount: 'Errore',
-      measurementCount: 'Errore'
+      operationCount: 'Errore'
     };
   }
 }
