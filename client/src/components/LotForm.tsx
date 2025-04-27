@@ -82,6 +82,36 @@ export default function LotForm({
 
           <FormField
             control={form.control}
+            name="supplierLotNumber"
+            render={({ field }) => {
+              // Ottieni il valore attuale del fornitore
+              const supplier = form.watch("supplier");
+              const isZeelandSupplier = supplier === "Zeeland" || supplier === "Ecotapes Zeeland";
+              
+              return (
+                <FormItem>
+                  <FormLabel>
+                    Numero Lotto Fornitore
+                    {isZeelandSupplier && <span className="text-red-500 ml-1">*</span>}
+                  </FormLabel>
+                  <FormControl>
+                    <Input 
+                      placeholder={isZeelandSupplier 
+                        ? "Numero lotto obbligatorio" 
+                        : "Numero lotto del fornitore (opzionale)"
+                      } 
+                      {...field} 
+                      value={field.value || ""} 
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+
+          <FormField
+            control={form.control}
             name="quality"
             render={({ field }) => (
               <FormItem className="space-y-3">

@@ -268,6 +268,7 @@ export const lots = pgTable("lots", {
   id: serial("id").primaryKey(),
   arrivalDate: date("arrival_date").notNull(),
   supplier: text("supplier").notNull(),
+  supplierLotNumber: text("supplier_lot_number"), // Numero di lotto di provenienza del fornitore
   quality: text("quality"),
   animalCount: integer("animal_count"),
   weight: real("weight"), // in grams
@@ -507,7 +508,20 @@ export const cycleSchema = insertCycleSchema.extend({
 });
 
 export const lotSchema = insertLotSchema.extend({
-  arrivalDate: z.coerce.date()
+  arrivalDate: z.coerce.date(),
+  supplierLotNumber: z.string().optional()
+    .superRefine((val, ctx) => {
+      // Rendi il campo obbligatorio solo se il fornitore è "Zeeland" o "Ecotapes Zeeland"
+      const supplier = ctx.data.supplier as string;
+      const isZeelandSupplier = supplier === "Zeeland" || supplier === "Ecotapes Zeeland";
+      
+      if (isZeelandSupplier && (!val || val.trim() === "")) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Il numero di lotto del fornitore è obbligatorio per i fornitori Zeeland o Ecotapes Zeeland",
+        });
+      }
+    })
 });
 
 export const basketPositionHistorySchema = insertBasketPositionHistorySchema.extend({
