@@ -449,11 +449,16 @@ export default function OperationForm({
     
     console.log("FORM SUBMIT MANUALE ATTIVATO");
     
-    // Verifica se c'è un errore di operazione sulla stessa data
+    // Verifica se c'è un errore di operazione sulla stessa data, ma consenti di procedere con conferma
     if (operationDateError) {
-      console.error("Operazione non permessa sulla stessa data:", operationDateError);
-      alert(operationDateError);
-      return;
+      console.warn("Potenziale problema con operazione sulla stessa data:", operationDateError);
+      const confirmProceed = window.confirm(
+        "Esiste già un'operazione registrata oggi per questo cestello. Vuoi comunque procedere con il salvataggio?"
+      );
+      if (!confirmProceed) {
+        return;
+      }
+      // Se l'utente conferma, procediamo ignorando l'errore
     }
     
     // Ottieni i valori dal form
@@ -1138,7 +1143,7 @@ export default function OperationForm({
           </Button>
           <Button 
             type="button" 
-            disabled={isLoading || !!operationDateError}
+            disabled={isLoading}
             onClick={(e) => {
               e.preventDefault();
               e.stopPropagation();
