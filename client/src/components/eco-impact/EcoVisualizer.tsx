@@ -50,6 +50,13 @@ const EcoVisualizer: React.FC<EcoVisualizerProps> = ({ defaultFlupsyId }) => {
     refetch: refetchDefaults
   } = useQuery({
     queryKey: ['/api/eco-impact/defaults'],
+    queryFn: async () => {
+      const response = await fetch('/api/eco-impact/defaults');
+      if (!response.ok) {
+        throw new Error(`${response.status}: ${await response.text()}`);
+      }
+      return response.json();
+    },
     staleTime: 300000, // 5 minuti
   });
   
