@@ -4964,5 +4964,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.post("/api/eco-impact/defaults", ecoImpactController.createOrUpdateOperationImpactDefault.bind(ecoImpactController));
   app.delete("/api/eco-impact/defaults/:id", ecoImpactController.deleteOperationImpactDefault.bind(ecoImpactController));
   
+  // API per gestione sequenze ID database
+  app.get("/api/sequences", SequenceController.getSequencesInfo);
+  app.post("/api/sequences/reset", SequenceController.resetSequence);
+  
   return httpServer;
 }
