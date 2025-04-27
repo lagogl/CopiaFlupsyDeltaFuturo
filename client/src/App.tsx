@@ -31,8 +31,6 @@ import BasketSelection from "@/pages/BasketSelection";
 import ExportPage from "@/pages/ExportPage";
 import DiarioDiBordo from "@/pages/DiarioDiBordo";
 import NotificationSettings from "@/pages/NotificationSettings";
-// Importiamo la nuova pagina per la gestione avanzata di NFC
-import NfcManagerPage from "@/nfc-features/pages/NfcManagerPage";
 // Importiamo le pagine per il modulo di vagliatura
 import Screening from "@/pages/Screening";
 import NewScreening from "@/pages/NewScreening";
@@ -80,16 +78,18 @@ function Router() {
       <Route path="/nfc-scan" component={NFCScan}/>
       <Route path="/nfc-scan/basket/:id" component={NFCScan}/>
       <Route path="/nfc-tags" component={NFCTagManager}/>
-      <Route path="/nfc-manager" component={NfcManagerPage}/>
       <Route path="/grow-journey" component={GrowJourney}/>
       <Route path="/basket-selection" component={BasketSelection}/>
       <Route path="/backup" component={BackupPage}/>
       <Route path="/diario-di-bordo" component={DiarioDiBordo}/>
       <Route path="/notification-settings" component={NotificationSettings}/>
       
-      {/* Redirezione per la pagina TP3000 rimossa */}
+      {/* Redirezione per pagine rimosse */}
       <Route path="/tp3000-forecast">
         {() => <Redirect to="/" />}
+      </Route>
+      <Route path="/nfc-manager">
+        {() => <Redirect to="/nfc-tags" />}
       </Route>
       
       {/* Screening (Vagliatura) routes */}
