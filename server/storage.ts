@@ -16,10 +16,20 @@ import {
   ScreeningSourceBasket, InsertScreeningSourceBasket,
   ScreeningDestinationBasket, InsertScreeningDestinationBasket,
   ScreeningBasketHistory, InsertScreeningBasketHistory,
-  ScreeningLotReference, InsertScreeningLotReference
+  ScreeningLotReference, InsertScreeningLotReference,
+  // Importazioni per l'autenticazione
+  User, InsertUser
 } from "@shared/schema";
 
 export interface IStorage {
+  // Auth methods
+  getUsers(): Promise<User[]>;
+  getUserById(id: number): Promise<User | undefined>;
+  getUserByUsername(username: string): Promise<User | undefined>;
+  createUser(user: InsertUser): Promise<User>;
+  updateUserLastLogin(id: number): Promise<void>;
+  validateUser(username: string, password: string): Promise<User | null>;
+  
   // FLUPSY methods
   getFlupsys(): Promise<Flupsy[]>;
   getFlupsy(id: number): Promise<Flupsy | undefined>;

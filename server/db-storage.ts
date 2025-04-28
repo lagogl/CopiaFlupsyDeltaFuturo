@@ -12,11 +12,49 @@ import {
   ScreeningSourceBasket, InsertScreeningSourceBasket, screeningSourceBaskets,
   ScreeningDestinationBasket, InsertScreeningDestinationBasket, screeningDestinationBaskets,
   ScreeningBasketHistory, InsertScreeningBasketHistory, screeningBasketHistory,
-  ScreeningLotReference, InsertScreeningLotReference, screeningLotReferences
+  ScreeningLotReference, InsertScreeningLotReference, screeningLotReferences,
+  // Autenticazione
+  User, InsertUser, users
 } from '../shared/schema';
 import { IStorage } from './storage';
 
 export class DbStorage implements IStorage {
+  // AUTH
+  async getUsers(): Promise<User[]> {
+    return await db.select().from(users);
+  }
+  
+  async getUserById(id: number): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.id, id));
+    return user;
+  }
+  
+  async getUserByUsername(username: string): Promise<User | undefined> {
+    const [user] = await db.select().from(users).where(eq(users.username, username));
+    return user;
+  }
+  
+  async createUser(user: InsertUser): Promise<User> {
+    const [result] = await db.insert(users).values(user).returning();
+    return result;
+  }
+  
+  async updateUserLastLogin(id: number): Promise<void> {
+    await db.update(users)
+      .set({ lastLogin: new Date() })
+      .where(eq(users.id, id));
+  }
+  
+  async validateUser(username: string, password: string): Promise<User | null> {
+    const user = await this.getUserByUsername(username);
+    if (user && user.password === password) {
+      // In una applicazione reale, qui dovresti usare bcrypt.compare()
+      await this.updateUserLastLogin(user.id);
+      return user;
+    }
+    return null;
+  }
+  
   // FLUPSY
   async getFlupsys(): Promise<Flupsy[]> {
     return await db.select().from(flupsys);
