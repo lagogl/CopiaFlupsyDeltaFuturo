@@ -67,6 +67,8 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setError(null);
     
     try {
+      console.log("Tentativo di login con:", credentials.username);
+      
       const response = await fetch('/api/login', {
         method: 'POST',
         headers: {
@@ -76,6 +78,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
       
       const data = await response.json();
+      console.log("Risposta login:", data);
       
       if (response.ok && data.success) {
         setUser(data.user);

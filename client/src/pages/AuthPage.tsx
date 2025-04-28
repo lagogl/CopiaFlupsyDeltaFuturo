@@ -116,33 +116,25 @@ const AuthPage: React.FC = () => {
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+      console.log("Form login submit:", data);
+      
+      const success = await login({
+        username: data.username,
+        password: data.password
       });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
-        // Salva le informazioni dell'utente in localStorage o in un context
-        localStorage.setItem('user', JSON.stringify(result.user));
-        // Reindirizza alla dashboard
-        setLocation('/');
+      
+      if (success) {
+        console.log("Login riuscito, reindirizzamento alla dashboard");
+        // Forziamo il reindirizzamento alla dashboard usando window.location invece di wouter
+        window.location.href = '/';
+        
         toast({
           title: 'Accesso effettuato',
           description: 'Benvenuto nel sistema FLUPSY',
         });
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Errore di accesso',
-          description: result.message || 'Credenziali non valide',
-        });
       }
     } catch (error) {
+      console.error("Errore durante il login:", error);
       toast({
         variant: 'destructive',
         title: 'Errore',
