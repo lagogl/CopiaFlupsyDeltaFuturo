@@ -2,6 +2,22 @@ import { pgTable, text, serial, integer, boolean, timestamp, real, date, numeric
 import { createInsertSchema } from "drizzle-zod";
 import { z } from "zod";
 
+// Utenti per autenticazione
+export const users = pgTable("users", {
+  id: serial("id").primaryKey(),
+  username: text("username").notNull().unique(),
+  password: text("password").notNull(),
+  role: text("role", { enum: ["admin", "user", "visitor"] }).notNull().default("user"),
+  lastLogin: timestamp("last_login"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+});
+
+export const insertUserSchema = createInsertSchema(users)
+  .omit({ id: true, createdAt: true, lastLogin: true });
+
+export type InsertUser = z.infer<typeof insertUserSchema>;
+export type User = typeof users.$inferSelect;
+
 // Configurazioni Email
 export const emailConfig = pgTable("email_config", {
   id: serial("id").primaryKey(),
