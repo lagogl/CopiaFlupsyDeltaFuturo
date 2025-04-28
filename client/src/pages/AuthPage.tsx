@@ -118,7 +118,7 @@ const AuthPage: React.FC = () => {
     try {
       console.log("Form login submit:", data);
       
-      const success = await login({
+      const success = await auth.login({
         username: data.username,
         password: data.password
       });
@@ -148,17 +148,14 @@ const AuthPage: React.FC = () => {
   const onRegisterSubmit = async (data: RegisterFormValues) => {
     setIsLoading(true);
     try {
-      const response = await fetch('/api/register', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(data),
+      const success = await auth.register({
+        username: data.username,
+        password: data.password,
+        role: data.role,
+        language: data.language
       });
-
-      const result = await response.json();
-
-      if (response.ok && result.success) {
+      
+      if (success) {
         toast({
           title: 'Registrazione completata',
           description: 'Account creato con successo. Ora puoi accedere.',
@@ -168,7 +165,7 @@ const AuthPage: React.FC = () => {
         toast({
           variant: 'destructive',
           title: 'Errore di registrazione',
-          description: result.message || 'Errore durante la registrazione',
+          description: 'Errore durante la registrazione',
         });
       }
     } catch (error) {
@@ -409,8 +406,15 @@ const AuthPage: React.FC = () => {
         {/* Hero section */}
         <div className="flex-1 bg-gradient-to-br from-blue-600 to-indigo-800 rounded-lg shadow-md p-6 text-white flex flex-col justify-center">
           <div className="max-w-md mx-auto">
-            <h1 className="text-4xl font-bold mb-4">FLUPSY Manager</h1>
-            <p className="text-xl mb-6">Sistema avanzato per la gestione dell'acquacoltura marina</p>
+            <div className="flex flex-col items-center mb-6">
+              <img 
+                src="/images/mito_logo.png" 
+                alt="Logo MITO SRL" 
+                className="h-28 mb-4"
+              />
+              <h1 className="text-3xl font-bold text-center">FLUPSY Manager</h1>
+              <p className="text-xl text-center">Sistema per la gestione del preingrasso molluschi</p>
+            </div>
             <div className="space-y-4">
               <div className="flex items-start">
                 <svg className="h-6 w-6 mr-2 text-blue-300" fill="none" stroke="currentColor" viewBox="0 0 24 24" xmlns="http://www.w3.org/2000/svg">
