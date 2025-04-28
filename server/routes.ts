@@ -115,35 +115,68 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Autenticazione routes ===
   app.post("/api/login", async (req, res) => {
     try {
-      const { username, password } = req.body;
+      let { username, password } = req.body;
+      
+      // Pulizia dei dati di input
+      if (username) username = username.trim();
+      if (password) password = password.trim();
+      
+      // Log per debug
+      console.log(`Tentativo di login - Username: '${username}', Password: ${password ? '******' : 'undefined'}`);
+      
       if (!username || !password) {
+        console.log("Login fallito: username o password mancanti");
         return res.status(400).json({ 
           success: false, 
           message: "Username e password sono richiesti" 
         });
       }
       
-      const user = await storage.validateUser(username, password);
-      if (!user) {
+      // Verifica se l'utente esiste nel database
+      console.log(`Verifica utente: '${username}'`);
+      const foundUser = await storage.getUserByUsername(username);
+      
+      if (!foundUser) {
+        console.log(`Utente '${username}' non trovato nel database`);
         return res.status(401).json({
           success: false,
           message: "Credenziali non valide"
         });
       }
       
-      // Crea un oggetto user senza la password per la risposta
-      const userResponse = {
-        id: user.id,
-        username: user.username,
-        role: user.role,
-        language: user.language,
-        lastLogin: user.lastLogin
-      };
+      console.log(`Utente '${username}' trovato, verifico password`);
+      console.log(`Password inserita: ${password.length} caratteri`);
+      console.log(`Password nel DB: ${foundUser.password.length} caratteri`);
       
-      res.json({
-        success: true,
-        user: userResponse
-      });
+      // Verifica diretta della password per debugging
+      if (foundUser.password === password) {
+        console.log("Password corretta!");
+        
+        // Aggiorna ultimo login
+        await storage.updateUserLastLogin(foundUser.id);
+        
+        // Crea un oggetto user senza la password per la risposta
+        const userResponse = {
+          id: foundUser.id,
+          username: foundUser.username,
+          role: foundUser.role,
+          language: foundUser.language,
+          lastLogin: foundUser.lastLogin
+        };
+        
+        console.log(`Login riuscito per l'utente: ${username}`);
+        return res.json({
+          success: true,
+          user: userResponse
+        });
+      } else {
+        console.log(`Password errata per l'utente: ${username}`);
+        console.log(`Confronto diretto: '${password}' vs '${foundUser.password}'`);
+        return res.status(401).json({
+          success: false,
+          message: "Credenziali non valide"
+        });
+      }
     } catch (error) {
       console.error("Error during login:", error);
       res.status(500).json({
