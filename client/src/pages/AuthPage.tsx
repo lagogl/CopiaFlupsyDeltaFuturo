@@ -82,6 +82,7 @@ const translations = {
 const AuthPage: React.FC = () => {
   const [, setLocation] = useLocation();
   const { toast } = useToast();
+  const { login } = useAuth(); // Aggiungiamo l'hook useAuth
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   // Non abbiamo più bisogno di gestire le schede dal momento che c'è solo il login
@@ -112,44 +113,19 @@ const AuthPage: React.FC = () => {
       
       console.log("Form login submit (pulito):", cleanData);
       
-      // Chiamata API diretta invece di usare auth.login
-      const response = await fetch('/api/login', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(cleanData),
-      });
+      // Usiamo l'hook login dalla funzione useAuth
+      const success = await login(cleanData);
       
-      console.log("Status risposta login:", response.status, response.statusText);
-      
-      const responseText = await response.text();
-      console.log("Risposta completa:", responseText);
-      
-      let data;
-      try {
-        data = JSON.parse(responseText);
-        console.log("Dati parsati:", data);
-      } catch (e) {
-        console.error("Errore parsing JSON:", e);
-        throw new Error("Errore nel formato della risposta");
-      }
-      
-      if (response.ok && data.success && data.user) {
+      if (success) {
         console.log("Login riuscito, reindirizzamento alla dashboard");
         
-        // Salva l'utente nel localStorage
-        localStorage.setItem('user', JSON.stringify(data.user));
-        
-        // Forziamo il reindirizzamento alla dashboard usando window.location invece di wouter
+        // Forziamo il reindirizzamento alla dashboard usando window.location
         window.location.href = '/';
         
         toast({
           title: 'Accesso effettuato',
           description: 'Benvenuto nel sistema FLUPSY',
         });
-      } else {
-        throw new Error(data.message || "Credenziali non valide");
       }
     } catch (error) {
       console.error("Errore durante il login:", error);
