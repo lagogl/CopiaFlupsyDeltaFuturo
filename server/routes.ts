@@ -866,6 +866,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Basket not found" });
       }
       
+      // Verifica se il cestello ha un ciclo attivo
+      const hasActiveCycle = basket.currentCycleId !== null;
+      
       // Parse and validate the update data
       const updateSchema = z.object({
         physicalNumber: z.number().optional(),
@@ -881,6 +884,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!parsedData.success) {
         const errorMessage = fromZodError(parsedData.error).message;
         return res.status(400).json({ message: errorMessage });
+      }
+      
+      // Se il cestello non è attivo e si sta cercando di cambiare la posizione
+      if (!hasActiveCycle && 
+          ((parsedData.data.row !== undefined && parsedData.data.row !== basket.row) || 
+           (parsedData.data.position !== undefined && parsedData.data.position !== basket.position))) {
+        return res.status(400).json({ 
+          message: "Impossibile cambiare la posizione di un cestello non attivo. Solo i cestelli con ciclo attivo possono essere riposizionati." 
+        });
       }
       
       // If position data is changing, verify no duplicates
