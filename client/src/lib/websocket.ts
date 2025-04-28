@@ -9,10 +9,36 @@ export interface WebSocketMessage {
   message?: string;
 }
 
+// Crea un WebSocket finto per gestire il caso in cui il WebSocket non sia disponibile
+const createDummySocket = (): WebSocket => {
+  return {
+    readyState: 3, // CLOSED
+    close: () => {},
+    send: () => false,
+    addEventListener: () => {},
+    removeEventListener: () => {},
+    dispatchEvent: () => true,
+    onopen: null,
+    onmessage: null,
+    onclose: null,
+    onerror: null,
+    CONNECTING: 0,
+    OPEN: 1,
+    CLOSING: 2,
+    CLOSED: 3,
+    url: '',
+    protocol: '',
+    extensions: '',
+    binaryType: 'blob',
+    bufferedAmount: 0,
+  } as unknown as WebSocket;
+};
+
 // Gestione connessione WebSocket
 let socket: WebSocket | null = null;
 let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 const RECONNECT_DELAY = 3000; // 3 secondi
+let wsConnectionFailed = false; // Flag per tenere traccia dei tentativi falliti
 
 // Lista dei gestori di messaggi registrati
 const messageHandlers: Record<string, Set<(data: any) => void>> = {};
@@ -24,11 +50,45 @@ export function initializeWebSocket() {
     socket.close();
   }
   
-  // Crea la URL del WebSocket utilizzando lo stesso host ma cambiando il protocollo
-  const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
-  const wsUrl = `${protocol}//${window.location.host}/ws`;
-  
-  socket = new WebSocket(wsUrl);
+  try {
+    // Determina il protocollo appropriato
+    const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+    const host = window.location.host;
+    
+    // In ambiente di sviluppo, usa direttamente l'URL del server
+    let wsUrl;
+    
+    // Prima opzione: prova su /ws
+    wsUrl = `${protocol}//${host}/ws`;
+    console.log("Tentativo di connessione WebSocket:", wsUrl);
+    socket = new WebSocket(wsUrl);
+  } catch (err) {
+    console.error("Errore nella creazione WebSocket:", err);
+    
+    try {
+      // Seconda opzione: prova alla radice
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const host = window.location.host;
+      const altWsUrl = `${protocol}//${host}`;
+      
+      console.log("Tentativo alternativo WebSocket:", altWsUrl);
+      socket = new WebSocket(altWsUrl);
+    } catch (secondError) {
+      console.error("Secondo tentativo fallito:", secondError);
+      
+      // In caso di errore, crea un socket "finto" che non fa nulla
+      // ma evita errori nel resto dell'applicazione
+      socket = {
+        readyState: 3, // CLOSED
+        close: () => {},
+        send: () => {},
+        onopen: null,
+        onmessage: null,
+        onclose: null,
+        onerror: null
+      } as any;
+    }
+  }
   
   // Gestisci gli eventi della connessione WebSocket
   socket.onopen = () => {
