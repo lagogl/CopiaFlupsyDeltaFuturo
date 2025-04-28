@@ -2,14 +2,14 @@ import React, { useState } from 'react';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
-import { Link, useLocation } from 'wouter';
-import { Eye, EyeOff, LogIn, UserPlus } from 'lucide-react';
+import { useLocation } from 'wouter';
+import { Eye, EyeOff, LogIn } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/use-auth';
 
 // Schema di validazione per il login
 const loginSchema = z.object({
@@ -17,16 +17,9 @@ const loginSchema = z.object({
   password: z.string().min(1, { message: 'La password è obbligatoria' }),
 });
 
-// Schema di validazione per la registrazione
-const registerSchema = z.object({
-  username: z.string().min(3, { message: 'Il nome utente deve contenere almeno 3 caratteri' }),
-  password: z.string().min(6, { message: 'La password deve contenere almeno 6 caratteri' }),
-  role: z.enum(['user', 'visitor']).default('user'),
-  language: z.enum(['it', 'en', 'pt']).default('it')
-});
-
 type LoginFormValues = z.infer<typeof loginSchema>;
-type RegisterFormValues = z.infer<typeof registerSchema>;
+// Non abbiamo più bisogno della registrazione
+type RegisterFormValues = {};
 
 // Configurazione multilingue
 const translations = {
@@ -91,7 +84,7 @@ const AuthPage: React.FC = () => {
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
-  const [activeTab, setActiveTab] = useState<string>('login');
+  // Non abbiamo più bisogno di gestire le schede dal momento che c'è solo il login
   const [language, setLanguage] = useState<'it' | 'en' | 'pt'>('it');
   const t = translations[language];
 
@@ -103,15 +96,10 @@ const AuthPage: React.FC = () => {
     },
   });
 
-  const registerForm = useForm<RegisterFormValues>({
-    resolver: zodResolver(registerSchema),
-    defaultValues: {
-      username: '',
-      password: '',
-      role: 'user',
-      language: 'it'
-    },
-  });
+  // Non abbiamo più bisogno del form di registrazione
+  const registerForm = {
+    setValue: (name: string, value: any) => {}
+  } as any;
 
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
@@ -145,39 +133,8 @@ const AuthPage: React.FC = () => {
     }
   };
 
-  const onRegisterSubmit = async (data: RegisterFormValues) => {
-    setIsLoading(true);
-    try {
-      const success = await auth.register({
-        username: data.username,
-        password: data.password,
-        role: data.role,
-        language: data.language
-      });
-      
-      if (success) {
-        toast({
-          title: 'Registrazione completata',
-          description: 'Account creato con successo. Ora puoi accedere.',
-        });
-        setActiveTab('login');
-      } else {
-        toast({
-          variant: 'destructive',
-          title: 'Errore di registrazione',
-          description: 'Errore durante la registrazione',
-        });
-      }
-    } catch (error) {
-      toast({
-        variant: 'destructive',
-        title: 'Errore',
-        description: 'Si è verificato un errore durante la registrazione',
-      });
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  // La funzione di registrazione non è più necessaria, ma la manteniamo vuota per compatibilità
+  const onRegisterSubmit = async (data: RegisterFormValues) => {};
 
   const togglePasswordVisibility = () => {
     setShowPassword(!showPassword);
