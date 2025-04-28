@@ -586,14 +586,14 @@ export default function GrowJourney() {
                                         <>
                                           <ArrowUpRight className="h-3 w-3 text-emerald-500 mr-1" />
                                           <span className="text-emerald-500">
-                                            +{(((entry.weight - weightHistory[index - 1].weight) / weightHistory[index - 1].weight) * 100).toFixed(1)}%
+                                            +{entry.weight && weightHistory[index - 1] && weightHistory[index - 1].weight ? (((entry.weight - weightHistory[index - 1].weight) / weightHistory[index - 1].weight) * 100).toFixed(1) : '0'}%
                                           </span>
                                         </>
                                       ) : (
                                         <>
                                           <ArrowDownRight className="h-3 w-3 text-rose-500 mr-1" />
                                           <span className="text-rose-500">
-                                            {(((entry.weight - weightHistory[index - 1].weight) / weightHistory[index - 1].weight) * 100).toFixed(1)}%
+                                            {entry.weight && weightHistory[index - 1] && weightHistory[index - 1].weight ? (((entry.weight - weightHistory[index - 1].weight) / weightHistory[index - 1].weight) * 100).toFixed(1) : '0'}%
                                           </span>
                                         </>
                                       )}
@@ -659,7 +659,7 @@ export default function GrowJourney() {
                                       <div className="flex items-center">
                                         <ArrowUpRight className="h-3 w-3 text-emerald-500 mr-1" />
                                         <span className="text-emerald-500">
-                                          +{(((projectedWeight - currentWeight) / currentWeight) * 100).toFixed(1)}%
+                                          +{projectedWeight && currentWeight && currentWeight > 0 ? (((projectedWeight - currentWeight) / currentWeight) * 100).toFixed(1) : '0'}%
                                         </span>
                                       </div>
                                       <span className="text-muted-foreground ml-2">
