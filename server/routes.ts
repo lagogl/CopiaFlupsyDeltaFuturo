@@ -1493,6 +1493,37 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Conserva il tipo originale dell'operazione
       const operationType = operation.type;
       
+      // Verifica speciale per operazioni di prima-attivazione
+      if (operationType === 'prima-attivazione') {
+        console.log("Verifica delle protezioni per modifiche a operazione di prima-attivazione");
+        
+        // Protezione campi critici per prima-attivazione
+        const protectedFields = ['type', 'basketId', 'cycleId', 'lotId'];
+        const changedProtectedFields = [];
+        
+        // Verifica se ci sono tentativi di modifica di campi protetti
+        for (const field of protectedFields) {
+          if (updateData[field] !== undefined && updateData[field] !== operation[field]) {
+            changedProtectedFields.push(field);
+            // Ripristina il valore originale per garantire l'integrità
+            updateData[field] = operation[field];
+            console.log(`Protetto campo ${field} da modifica non consentita (tentativo di cambio da ${operation[field]} a ${updateData[field]})`);
+          }
+        }
+        
+        // Se ci sono stati tentativi di modifica di campi protetti, avvisa l'utente
+        if (changedProtectedFields.length > 0) {
+          console.warn(`Tentativo di modifica di campi protetti in un'operazione di prima-attivazione: ${changedProtectedFields.join(', ')}`);
+          // Continua comunque l'aggiornamento con i campi protetti ripristinati ai valori originali
+        }
+      } else {
+        // Per altri tipi di operazione, solamente proteggi il tipo
+        if (updateData.type !== undefined && updateData.type !== operationType) {
+          console.warn(`Tentativo di modifica del tipo operazione da ${operationType} a ${updateData.type} - Non permesso`);
+          updateData.type = operationType;
+        }
+      }
+      
       // Prevenzione errore di vincolo not-null per cycleId
       if (updateData.cycleId === null && operation.cycleId) {
         console.log(`Mantengo il cycleId originale (${operation.cycleId}) per prevenire violazione di vincolo not-null`);
