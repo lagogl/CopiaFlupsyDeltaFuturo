@@ -207,13 +207,7 @@ const AuthPage: React.FC = () => {
               </select>
             </div>
             
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="login">{t.loginTab}</TabsTrigger>
-                <TabsTrigger value="register">{t.registerTab}</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="login">
+            <div className="w-full">
                 <Card>
                   <CardHeader>
                     <CardTitle>{t.title}</CardTitle>
@@ -278,127 +272,6 @@ const AuthPage: React.FC = () => {
                     </form>
                   </CardContent>
                 </Card>
-              </TabsContent>
-              
-              <TabsContent value="register">
-                <Card>
-                  <CardHeader>
-                    <CardTitle>{t.createAccount}</CardTitle>
-                    <CardDescription>{t.description}</CardDescription>
-                  </CardHeader>
-                  <CardContent>
-                    <form onSubmit={registerForm.handleSubmit(onRegisterSubmit)} className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="reg-username">{t.username}</Label>
-                        <Input
-                          id="reg-username"
-                          {...registerForm.register('username')}
-                        />
-                        {registerForm.formState.errors.username && (
-                          <p className="text-sm text-red-500">{registerForm.formState.errors.username.message}</p>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="reg-password">{t.password}</Label>
-                        <div className="relative">
-                          <Input
-                            id="reg-password"
-                            type={showPassword ? 'text' : 'password'}
-                            {...registerForm.register('password')}
-                          />
-                          <button
-                            type="button"
-                            onClick={togglePasswordVisibility}
-                            className="absolute inset-y-0 right-0 pr-3 flex items-center"
-                          >
-                            {showPassword ? (
-                              <EyeOff className="h-5 w-5 text-gray-400" />
-                            ) : (
-                              <Eye className="h-5 w-5 text-gray-400" />
-                            )}
-                          </button>
-                        </div>
-                        {registerForm.formState.errors.password && (
-                          <p className="text-sm text-red-500">{registerForm.formState.errors.password.message}</p>
-                        )}
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="reg-role">{t.roleLabel}</Label>
-                        <select
-                          id="reg-role"
-                          {...registerForm.register('role')}
-                          className="w-full p-2 border rounded"
-                        >
-                          <option value="user">{t.roleUser}</option>
-                          <option value="visitor">{t.roleVisitor}</option>
-                        </select>
-                      </div>
-                      
-                      <div className="space-y-2">
-                        <Label htmlFor="reg-language">{t.languageLabel}</Label>
-                        <select
-                          id="reg-language"
-                          {...registerForm.register('language')}
-                          className="w-full p-2 border rounded"
-                          value={language}
-                          onChange={(e) => {
-                            handleLanguageChange(e);
-                          }}
-                        >
-                          <option value="it">Italiano</option>
-                          <option value="en">English</option>
-                          <option value="pt">Português</option>
-                        </select>
-                      </div>
-                      
-                      <Button type="submit" className="w-full" disabled={isLoading}>
-                        {isLoading ? (
-                          <div className="flex items-center">
-                            <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            <span>Caricamento...</span>
-                          </div>
-                        ) : (
-                          <div className="flex items-center justify-center">
-                            <UserPlus className="mr-2 h-4 w-4" />
-                            <span>{t.registerButton}</span>
-                          </div>
-                        )}
-                      </Button>
-                    </form>
-                  </CardContent>
-                </Card>
-              </TabsContent>
-            </Tabs>
-            
-            <div className="mt-4 text-center text-sm">
-              {activeTab === 'login' ? (
-                <p>
-                  {t.noAccount}{' '}
-                  <button
-                    type="button"
-                    className="text-blue-600 hover:underline"
-                    onClick={() => setActiveTab('register')}
-                  >
-                    {t.createAccount}
-                  </button>
-                </p>
-              ) : (
-                <p>
-                  {t.alreadyHaveAccount}{' '}
-                  <button
-                    type="button"
-                    className="text-blue-600 hover:underline"
-                    onClick={() => setActiveTab('login')}
-                  >
-                    {t.loginHere}
-                  </button>
-                </p>
-              )}
             </div>
           </div>
         </div>
