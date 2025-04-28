@@ -112,10 +112,35 @@ const AuthPage: React.FC = () => {
       
       console.log("Form login submit (pulito):", cleanData);
       
-      const success = await auth.login(cleanData);
+      // Chiamata API diretta invece di usare auth.login
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(cleanData),
+      });
       
-      if (success) {
+      console.log("Status risposta login:", response.status, response.statusText);
+      
+      const responseText = await response.text();
+      console.log("Risposta completa:", responseText);
+      
+      let data;
+      try {
+        data = JSON.parse(responseText);
+        console.log("Dati parsati:", data);
+      } catch (e) {
+        console.error("Errore parsing JSON:", e);
+        throw new Error("Errore nel formato della risposta");
+      }
+      
+      if (response.ok && data.success && data.user) {
         console.log("Login riuscito, reindirizzamento alla dashboard");
+        
+        // Salva l'utente nel localStorage
+        localStorage.setItem('user', JSON.stringify(data.user));
+        
         // Forziamo il reindirizzamento alla dashboard usando window.location invece di wouter
         window.location.href = '/';
         
@@ -123,6 +148,8 @@ const AuthPage: React.FC = () => {
           title: 'Accesso effettuato',
           description: 'Benvenuto nel sistema FLUPSY',
         });
+      } else {
+        throw new Error(data.message || "Credenziali non valide");
       }
     } catch (error) {
       console.error("Errore durante il login:", error);

@@ -77,23 +77,40 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         body: JSON.stringify(credentials),
       });
       
-      const data = await response.json();
-      console.log("Risposta login:", data);
+      console.log("Status risposta:", response.status, response.statusText);
       
-      if (response.ok && data.success) {
+      // Ottieni il testo della risposta invece di assumere che sia JSON
+      const responseText = await response.text();
+      console.log("Testo risposta completo:", responseText);
+      
+      // Prova a parsare il JSON solo se c'è del contenuto
+      let data;
+      try {
+        data = responseText ? JSON.parse(responseText) : {};
+        console.log("Risposta login (parsata):", data);
+      } catch (jsonError) {
+        console.error("Errore nel parsing JSON della risposta:", jsonError);
+        console.error("Testo risposta che ha causato errore:", responseText);
+        throw new Error('Risposta del server non è in formato JSON valido');
+      }
+      
+      if (response.ok && data.success && data.user) {
+        console.log("Login riuscito con utente:", data.user);
         setUser(data.user);
         localStorage.setItem('user', JSON.stringify(data.user));
         return true;
       } else {
+        console.error("Login fallito:", data);
         throw new Error(data.message || 'Credenziali non valide');
       }
     } catch (err) {
+      console.error("Eccezione durante il login:", err);
       const error = err as Error;
       setError(error);
       toast({
         variant: 'destructive',
         title: 'Errore di accesso',
-        description: error.message,
+        description: error.message || 'Errore sconosciuto durante il login',
       });
       return false;
     } finally {
