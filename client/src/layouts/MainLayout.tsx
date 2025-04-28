@@ -6,11 +6,20 @@ import {
   User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
   ChevronRight, LayoutDashboard, PieChart, BarChart, Filter,
-  FileJson, Download, Database, Leaf
+  FileJson, Download, Database, Leaf, LogOut
 } from "lucide-react";
 import { useIsMobile } from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
 import NotificationBell from "@/components/NotificationBell";
+import { useAuth } from "@/hooks/use-auth";
+import { 
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 
 interface MainLayoutProps {
   children: ReactNode;
@@ -38,6 +47,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [location, setLocation] = useLocation();
+  const { user, logout } = useAuth(); // Aggiungiamo l'hook useAuth
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     'operational': true,
     'monitoring': true,
@@ -158,12 +168,46 @@ export default function MainLayout({ children }: MainLayoutProps) {
           </div>
           <div className="flex items-center space-x-4">
             <NotificationBell />
-            <div className="flex items-center space-x-2">
-              <div className="h-8 w-8 rounded-full bg-primary-dark flex items-center justify-center text-white">
-                <span className="text-sm font-medium">DF</span>
-              </div>
-              <span className="text-sm font-medium">Admin</span>
-            </div>
+            
+            {/* Menu a tendina per l'utente */}
+            <DropdownMenu>
+              <DropdownMenuTrigger asChild>
+                <div className="flex items-center space-x-2 cursor-pointer hover:bg-primary-dark px-2 py-1 rounded-md">
+                  <div className="h-8 w-8 rounded-full bg-primary-dark flex items-center justify-center text-white">
+                    <span className="text-sm font-medium">
+                      {user?.username ? user.username.substring(0, 2).toUpperCase() : "DF"}
+                    </span>
+                  </div>
+                  <span className="text-sm font-medium">{user?.username || "Utente"}</span>
+                </div>
+              </DropdownMenuTrigger>
+              <DropdownMenuContent className="w-56" align="end">
+                <DropdownMenuLabel>Il mio account</DropdownMenuLabel>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem
+                  className="text-gray-700 cursor-pointer"
+                  onClick={() => setLocation("/settings")}
+                >
+                  <SettingsIcon className="mr-2 h-4 w-4" />
+                  <span>Impostazioni</span>
+                </DropdownMenuItem>
+                <DropdownMenuItem
+                  className="text-red-600 cursor-pointer"
+                  onClick={async () => {
+                    try {
+                      await logout();
+                      // Non c'è bisogno di reindirizzare qui poiché la funzione di logout
+                      // già reindirizza alla pagina di login
+                    } catch (error) {
+                      console.error("Errore durante il logout:", error);
+                    }
+                  }}
+                >
+                  <LogOut className="mr-2 h-4 w-4" />
+                  <span>Logout</span>
+                </DropdownMenuItem>
+              </DropdownMenuContent>
+            </DropdownMenu>
           </div>
         </div>
       </header>
