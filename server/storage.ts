@@ -598,7 +598,113 @@ export class MemStorage implements IStorage {
         }
       }
       
-      // 2. Elimina il ciclo
+      // 2. Elimina i record correlati al ciclo in tutte le tabelle
+      console.log(`Eliminazione dati correlati al ciclo ID: ${cycleId} in tutte le tabelle`);
+      
+      // 2.1 Impatti ambientali
+      const cycleImpactsToRemove = [];
+      for (const [impactId, impact] of this.cycleImpacts.entries()) {
+        if (impact.cycleId === cycleId) {
+          cycleImpactsToRemove.push(impactId);
+        }
+      }
+      
+      for (const impactId of cycleImpactsToRemove) {
+        console.log(`Eliminazione impatto ambientale ID: ${impactId} per il ciclo ${cycleId}`);
+        this.cycleImpacts.delete(impactId);
+      }
+      
+      // 2.2 Gestione dati di vagliatura correlati
+      // Aggiorna ceste di origine della vagliatura
+      for (const [sourceId, source] of this.screeningSourceBaskets.entries()) {
+        if (source.cycleId === cycleId) {
+          console.log(`Pulizia riferimento al ciclo ${cycleId} nella cesta di origine vagliatura ID: ${sourceId}`);
+          this.screeningSourceBaskets.set(sourceId, {
+            ...source,
+            cycleId: null
+          });
+        }
+      }
+      
+      // Aggiorna ceste di destinazione della vagliatura
+      for (const [destId, dest] of this.screeningDestinationBaskets.entries()) {
+        if (dest.cycleId === cycleId) {
+          console.log(`Pulizia riferimento al ciclo ${cycleId} nella cesta di destinazione vagliatura ID: ${destId}`);
+          this.screeningDestinationBaskets.set(destId, {
+            ...dest,
+            cycleId: null
+          });
+        }
+      }
+      
+      // Aggiorna storia delle ceste nella vagliatura
+      for (const [historyId, history] of this.screeningBasketHistory.entries()) {
+        let updated = false;
+        let newHistory = { ...history };
+        
+        if (history.sourceCycleId === cycleId) {
+          console.log(`Pulizia riferimento al ciclo di origine ${cycleId} nella storia ceste vagliatura ID: ${historyId}`);
+          newHistory.sourceCycleId = null;
+          updated = true;
+        }
+        
+        if (history.destinationCycleId === cycleId) {
+          console.log(`Pulizia riferimento al ciclo di destinazione ${cycleId} nella storia ceste vagliatura ID: ${historyId}`);
+          newHistory.destinationCycleId = null;
+          updated = true;
+        }
+        
+        if (updated) {
+          this.screeningBasketHistory.set(historyId, newHistory);
+        }
+      }
+      
+      // 2.3 Gestione dati di selezione correlati
+      // Aggiorna ceste di origine della selezione
+      for (const [sourceId, source] of this.selectionSourceBaskets.entries()) {
+        if (source.cycleId === cycleId) {
+          console.log(`Pulizia riferimento al ciclo ${cycleId} nella cesta di origine selezione ID: ${sourceId}`);
+          this.selectionSourceBaskets.set(sourceId, {
+            ...source,
+            cycleId: null
+          });
+        }
+      }
+      
+      // Aggiorna ceste di destinazione della selezione
+      for (const [destId, dest] of this.selectionDestinationBaskets.entries()) {
+        if (dest.cycleId === cycleId) {
+          console.log(`Pulizia riferimento al ciclo ${cycleId} nella cesta di destinazione selezione ID: ${destId}`);
+          this.selectionDestinationBaskets.set(destId, {
+            ...dest,
+            cycleId: null
+          });
+        }
+      }
+      
+      // Aggiorna storia delle ceste nella selezione
+      for (const [historyId, history] of this.selectionBasketHistory.entries()) {
+        let updated = false;
+        let newHistory = { ...history };
+        
+        if (history.sourceCycleId === cycleId) {
+          console.log(`Pulizia riferimento al ciclo di origine ${cycleId} nella storia ceste selezione ID: ${historyId}`);
+          newHistory.sourceCycleId = null;
+          updated = true;
+        }
+        
+        if (history.destinationCycleId === cycleId) {
+          console.log(`Pulizia riferimento al ciclo di destinazione ${cycleId} nella storia ceste selezione ID: ${historyId}`);
+          newHistory.destinationCycleId = null;
+          updated = true;
+        }
+        
+        if (updated) {
+          this.selectionBasketHistory.set(historyId, newHistory);
+        }
+      }
+      
+      // 2.4 Infine, elimina il ciclo
       console.log(`Eliminazione ciclo ID: ${cycleId}`);
       this.cycles.delete(cycleId);
       

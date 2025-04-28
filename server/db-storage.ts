@@ -335,7 +335,78 @@ export class DbStorage implements IStorage {
           }
         }
         
-        // 2. Elimina il ciclo
+        // 2. Elimina i record correlati al ciclo in tutte le tabelle
+        console.log(`Eliminazione dati correlati al ciclo ID: ${cycleId} in tutte le tabelle`);
+        
+        // 2.1 Elimina eventuali impatti ambientali associati al ciclo
+        try {
+          const { cycleImpacts } = await import('@shared/schema');
+          console.log(`Eliminazione impatti ambientali per il ciclo ID: ${cycleId}`);
+          await db.delete(cycleImpacts)
+            .where(eq(cycleImpacts.cycleId, cycleId));
+        } catch (error) {
+          console.error(`Errore durante eliminazione impatti del ciclo: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        // 2.2 Gestione dati di vagliatura correlati
+        try {
+          const { screeningSourceBaskets, screeningDestinationBaskets, screeningBasketHistory } = await import('@shared/schema');
+          
+          // Elimina riferimenti nelle ceste di origine della vagliatura
+          console.log(`Pulizia riferimenti al ciclo ${cycleId} nelle ceste di origine della vagliatura`);
+          await db.update(screeningSourceBaskets)
+            .set({ cycleId: null })
+            .where(eq(screeningSourceBaskets.cycleId, cycleId));
+          
+          // Elimina riferimenti nelle ceste di destinazione della vagliatura
+          console.log(`Pulizia riferimenti al ciclo ${cycleId} nelle ceste di destinazione della vagliatura`);
+          await db.update(screeningDestinationBaskets)
+            .set({ cycleId: null })
+            .where(eq(screeningDestinationBaskets.cycleId, cycleId));
+          
+          // Aggiorna storia delle ceste nella vagliatura
+          console.log(`Pulizia riferimenti al ciclo ${cycleId} nella storia delle ceste di vagliatura`);
+          await db.update(screeningBasketHistory)
+            .set({ sourceCycleId: null })
+            .where(eq(screeningBasketHistory.sourceCycleId, cycleId));
+          
+          await db.update(screeningBasketHistory)
+            .set({ destinationCycleId: null })
+            .where(eq(screeningBasketHistory.destinationCycleId, cycleId));
+        } catch (error) {
+          console.error(`Errore durante pulizia riferimenti alla vagliatura: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        // 2.3 Gestione dati di selezione correlati
+        try {
+          const { selectionSourceBaskets, selectionDestinationBaskets, selectionBasketHistory } = await import('@shared/schema');
+          
+          // Elimina riferimenti nelle ceste di origine della selezione
+          console.log(`Pulizia riferimenti al ciclo ${cycleId} nelle ceste di origine della selezione`);
+          await db.update(selectionSourceBaskets)
+            .set({ cycleId: null })
+            .where(eq(selectionSourceBaskets.cycleId, cycleId));
+          
+          // Elimina riferimenti nelle ceste di destinazione della selezione
+          console.log(`Pulizia riferimenti al ciclo ${cycleId} nelle ceste di destinazione della selezione`);
+          await db.update(selectionDestinationBaskets)
+            .set({ cycleId: null })
+            .where(eq(selectionDestinationBaskets.cycleId, cycleId));
+          
+          // Aggiorna storia delle ceste nella selezione
+          console.log(`Pulizia riferimenti al ciclo ${cycleId} nella storia delle ceste di selezione`);
+          await db.update(selectionBasketHistory)
+            .set({ sourceCycleId: null })
+            .where(eq(selectionBasketHistory.sourceCycleId, cycleId));
+          
+          await db.update(selectionBasketHistory)
+            .set({ destinationCycleId: null })
+            .where(eq(selectionBasketHistory.destinationCycleId, cycleId));
+        } catch (error) {
+          console.error(`Errore durante pulizia riferimenti alla selezione: ${error instanceof Error ? error.message : String(error)}`);
+        }
+        
+        // 2.4 Infine, elimina il ciclo
         console.log(`Eliminazione ciclo ID: ${cycleId}`);
         await db.delete(cycles)
           .where(eq(cycles.id, cycleId));
