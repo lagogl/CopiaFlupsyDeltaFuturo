@@ -8,7 +8,8 @@ import { eq, and, isNull, sql } from "drizzle-orm";
 import { 
   selections, 
   selectionSourceBaskets,
-  selectionDestinationBaskets
+  selectionDestinationBaskets,
+  insertUserSchema
 } from "../shared/schema";
 import { 
   getNotificationSettings, 
@@ -111,6 +112,103 @@ const getBackupUploadDir = () => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // === Autenticazione routes ===
+  app.post("/api/login", async (req, res) => {
+    try {
+      const { username, password } = req.body;
+      if (!username || !password) {
+        return res.status(400).json({ 
+          success: false, 
+          message: "Username e password sono richiesti" 
+        });
+      }
+      
+      const user = await storage.validateUser(username, password);
+      if (!user) {
+        return res.status(401).json({
+          success: false,
+          message: "Credenziali non valide"
+        });
+      }
+      
+      // Crea un oggetto user senza la password per la risposta
+      const userResponse = {
+        id: user.id,
+        username: user.username,
+        role: user.role,
+        language: user.language,
+        lastLogin: user.lastLogin
+      };
+      
+      res.json({
+        success: true,
+        user: userResponse
+      });
+    } catch (error) {
+      console.error("Error during login:", error);
+      res.status(500).json({
+        success: false,
+        message: "Errore durante l'autenticazione"
+      });
+    }
+  });
+  
+  app.post("/api/register", async (req, res) => {
+    try {
+      // Validazione dei dati dell'utente
+      const validationResult = insertUserSchema.safeParse(req.body);
+      if (!validationResult.success) {
+        return res.status(400).json({
+          success: false,
+          message: "Dati non validi",
+          errors: validationResult.error.errors
+        });
+      }
+      
+      // Verifica se l'utente esiste già
+      const existingUser = await storage.getUserByUsername(req.body.username);
+      if (existingUser) {
+        return res.status(409).json({
+          success: false,
+          message: "Username già in uso"
+        });
+      }
+      
+      // Crea il nuovo utente
+      const newUser = await storage.createUser(req.body);
+      
+      // Crea un oggetto user senza la password per la risposta
+      const userResponse = {
+        id: newUser.id,
+        username: newUser.username,
+        role: newUser.role,
+        language: newUser.language
+      };
+      
+      res.status(201).json({
+        success: true,
+        user: userResponse
+      });
+    } catch (error) {
+      console.error("Error during registration:", error);
+      res.status(500).json({
+        success: false,
+        message: "Errore durante la registrazione"
+      });
+    }
+  });
+  
+  app.get("/api/users/current", async (req, res) => {
+    // In una implementazione reale, qui dovresti verificare l'autenticazione
+    // e restituire i dati dell'utente basandosi su session/JWT
+    
+    // Per questa versione semplificata, simuliamo la risposta
+    res.json({
+      success: false,
+      message: "Non autenticato"
+    });
+  });
+  
   // Registra la route diretta per le operazioni
   implementDirectOperationRoute(app);
   

@@ -33,6 +33,7 @@ import ExportPage from "@/pages/ExportPage";
 import DiarioDiBordo from "@/pages/DiarioDiBordo";
 import NotificationSettings from "@/pages/NotificationSettings";
 import EcoImpact from "@/pages/EcoImpact";
+import AuthPage from "@/pages/AuthPage";
 // Importiamo le pagine per il modulo di vagliatura
 import Screening from "@/pages/Screening";
 import NewScreening from "@/pages/NewScreening";
@@ -50,43 +51,49 @@ import { WebSocketIndicator } from "@/components/WebSocketIndicator";
 // Importiamo il sistema di tooltip contestuali
 import { TooltipProvider } from "@/contexts/TooltipContext";
 import { ContextualTooltip } from "@/components/ui/contextual-tooltip";
+// Importiamo il sistema di autenticazione
+import { AuthProvider } from "@/hooks/use-auth";
+import { ProtectedRoute } from "@/lib/protected-route";
 
 function Router() {
   return (
     <Switch>
-      {/* Assicuriamoci che la root vada alla dashboard */}
-      <Route path="/" component={Dashboard} />
-      <Route path="/flupsys" component={Flupsys}/>
-      <Route path="/flupsy-view" component={FlupsyFullView}/>
-      <Route path="/flupsy-positions" component={FlupsyPositions}/>
-      <Route path="/flupsy-comparison" component={FlupsyComparison}/>
-      <Route path="/flupsy-comparison-enhanced" component={FlupsyComparisonEnhanced}/>
-      <Route path="/baskets" component={Baskets}/>
-      <Route path="/operations" component={Operations}/>
-      <Route path="/operations/edit/:id" component={EditOperation}/>
-      <Route path="/operations/:id" component={OperationDetail}/>
-      <Route path="/quick-operations" component={QuickOperations}/>
-      <Route path="/quickoperations" component={QuickOperations}/>
-      <Route path="/operations-drag-drop" component={OperationsDragDrop}/>
-      <Route path="/cycles" component={Cycles}/>
-      <Route path="/cycles/:id" component={CycleDetail}/>
-      <Route path="/lots" component={Lots}/>
-      <Route path="/statistics" component={Statistics}/>
-      <Route path="/inventory" component={Inventory}/>
-      <Route path="/export" component={ExportPage}/>
-      <Route path="/sizes" component={Sizes}/>
-      <Route path="/sgr" component={Sgr}/>
-      <Route path="/settings" component={Settings}/>
-      <Route path="/test" component={TestView}/>
-      <Route path="/nfc-scan" component={NFCScan}/>
-      <Route path="/nfc-scan/basket/:id" component={NFCScan}/>
-      <Route path="/nfc-tags" component={NFCTagManager}/>
-      <Route path="/grow-journey" component={GrowJourney}/>
-      <Route path="/basket-selection" component={BasketSelection}/>
-      <Route path="/backup" component={BackupPage}/>
-      <Route path="/diario-di-bordo" component={DiarioDiBordo}/>
-      <Route path="/notification-settings" component={NotificationSettings}/>
-      <Route path="/eco-impact" component={EcoImpact}/>
+      {/* Pagina di autenticazione */}
+      <Route path="/auth" component={AuthPage} />
+      
+      {/* Pagine protette */}
+      <ProtectedRoute path="/" component={Dashboard} />
+      <ProtectedRoute path="/flupsys" component={Flupsys}/>
+      <ProtectedRoute path="/flupsy-view" component={FlupsyFullView}/>
+      <ProtectedRoute path="/flupsy-positions" component={FlupsyPositions}/>
+      <ProtectedRoute path="/flupsy-comparison" component={FlupsyComparison}/>
+      <ProtectedRoute path="/flupsy-comparison-enhanced" component={FlupsyComparisonEnhanced}/>
+      <ProtectedRoute path="/baskets" component={Baskets}/>
+      <ProtectedRoute path="/operations" component={Operations}/>
+      <ProtectedRoute path="/operations/edit/:id" component={EditOperation}/>
+      <ProtectedRoute path="/operations/:id" component={OperationDetail}/>
+      <ProtectedRoute path="/quick-operations" component={QuickOperations}/>
+      <ProtectedRoute path="/quickoperations" component={QuickOperations}/>
+      <ProtectedRoute path="/operations-drag-drop" component={OperationsDragDrop}/>
+      <ProtectedRoute path="/cycles" component={Cycles}/>
+      <ProtectedRoute path="/cycles/:id" component={CycleDetail}/>
+      <ProtectedRoute path="/lots" component={Lots}/>
+      <ProtectedRoute path="/statistics" component={Statistics}/>
+      <ProtectedRoute path="/inventory" component={Inventory}/>
+      <ProtectedRoute path="/export" component={ExportPage}/>
+      <ProtectedRoute path="/sizes" component={Sizes}/>
+      <ProtectedRoute path="/sgr" component={Sgr}/>
+      <ProtectedRoute path="/settings" component={Settings} requiredRole="admin" />
+      <ProtectedRoute path="/test" component={TestView}/>
+      <ProtectedRoute path="/nfc-scan" component={NFCScan}/>
+      <ProtectedRoute path="/nfc-scan/basket/:id" component={NFCScan}/>
+      <ProtectedRoute path="/nfc-tags" component={NFCTagManager}/>
+      <ProtectedRoute path="/grow-journey" component={GrowJourney}/>
+      <ProtectedRoute path="/basket-selection" component={BasketSelection}/>
+      <ProtectedRoute path="/backup" component={BackupPage} requiredRole="admin" />
+      <ProtectedRoute path="/diario-di-bordo" component={DiarioDiBordo}/>
+      <ProtectedRoute path="/notification-settings" component={NotificationSettings} requiredRole="admin" />
+      <ProtectedRoute path="/eco-impact" component={EcoImpact}/>
       
       {/* Redirezione per pagine rimosse */}
       <Route path="/tp3000-forecast">
@@ -97,16 +104,16 @@ function Router() {
       </Route>
       
       {/* Screening (Vagliatura) routes */}
-      <Route path="/screening" component={Screening}/>
-      <Route path="/screening/new" component={NewScreening}/>
-      <Route path="/screening/:id" component={ScreeningDetail}/>
-      <Route path="/screening/:id/add-source" component={ScreeningAddSource}/>
-      <Route path="/screening/:id/add-destination" component={ScreeningAddDestination}/>
+      <ProtectedRoute path="/screening" component={Screening}/>
+      <ProtectedRoute path="/screening/new" component={NewScreening}/>
+      <ProtectedRoute path="/screening/:id" component={ScreeningDetail}/>
+      <ProtectedRoute path="/screening/:id/add-source" component={ScreeningAddSource}/>
+      <ProtectedRoute path="/screening/:id/add-destination" component={ScreeningAddDestination}/>
       
       {/* Selection (Selezione) routes */}
-      <Route path="/selection" component={Selection}/>
-      <Route path="/selection/new" component={NewSelection}/>
-      <Route path="/selection/:id" component={SelectionDetail}/>
+      <ProtectedRoute path="/selection" component={Selection}/>
+      <ProtectedRoute path="/selection/new" component={NewSelection}/>
+      <ProtectedRoute path="/selection/:id" component={SelectionDetail}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
@@ -133,26 +140,29 @@ import { WebSocketQueryIntegration } from './lib/websocketQueryIntegration';
 function App() {
   return (
     <QueryClientProvider client={queryClient}>
-      {/* Inizializza il WebSocket all'avvio dell'app */}
-      <WebSocketListener />
-      
-      {/* Integrazione tra WebSocket e React Query */}
-      <WebSocketQueryIntegration />
-      
-      {/* Provider per i tooltip contestuali personalizzati */}
-      <TooltipProvider>
-        <MainLayout>
-          <Router />
-        </MainLayout>
+      {/* Provider per l'autenticazione */}
+      <AuthProvider>
+        {/* Inizializza il WebSocket all'avvio dell'app */}
+        <WebSocketListener />
         
-        {/* Componente che renderizza i tooltip attivi */}
-        <ContextualTooltip />
+        {/* Integrazione tra WebSocket e React Query */}
+        <WebSocketQueryIntegration />
         
-        {/* Indicatore di stato della connessione WebSocket */}
-        <WebSocketIndicator />
-        
-        <Toaster />
-      </TooltipProvider>
+        {/* Provider per i tooltip contestuali personalizzati */}
+        <TooltipProvider>
+          <MainLayout>
+            <Router />
+          </MainLayout>
+          
+          {/* Componente che renderizza i tooltip attivi */}
+          <ContextualTooltip />
+          
+          {/* Indicatore di stato della connessione WebSocket */}
+          <WebSocketIndicator />
+          
+          <Toaster />
+        </TooltipProvider>
+      </AuthProvider>
     </QueryClientProvider>
   );
 }
