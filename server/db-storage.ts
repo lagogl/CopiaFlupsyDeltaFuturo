@@ -343,10 +343,45 @@ export class DbStorage implements IStorage {
         // 3. Libera il cestello e resetta la posizione
         if (basketId) {
           console.log(`Aggiornamento stato cestello ID: ${basketId} a disponibile`);
+          
+          // 3.1. Chiudi qualsiasi posizione attiva nella cronologia
+          try {
+            // Cerca posizioni attive (senza data di fine)
+            const activePositions = await db.select()
+              .from(basketPositionHistory)
+              .where(and(
+                eq(basketPositionHistory.basketId, basketId),
+                isNull(basketPositionHistory.endDate)
+              ));
+            
+            if (activePositions && activePositions.length > 0) {
+              console.log(`Trovate ${activePositions.length} posizioni attive per il cestello ${basketId}`);
+              
+              // Imposta la data di fine alla data corrente per tutte le posizioni attive
+              const currentDate = new Date().toISOString().split('T')[0];
+              
+              for (const position of activePositions) {
+                console.log(`Chiusura della posizione attiva ID: ${position.id} per il cestello ${basketId}`);
+                await db.update(basketPositionHistory)
+                  .set({
+                    endDate: currentDate
+                  })
+                  .where(eq(basketPositionHistory.id, position.id));
+              }
+            } else {
+              console.log(`Nessuna posizione attiva trovata per il cestello ${basketId}`);
+            }
+          } catch (error) {
+            console.error(`Errore durante la gestione della cronologia posizioni per il cestello ${basketId}:`, error);
+          }
+          
+          // 3.2. Aggiorna lo stato del cestello
           await this.updateBasket(basketId, {
             state: 'available',
             currentCycleId: null,
-            nfcData: null
+            nfcData: null,
+            row: null,
+            position: null
           });
         }
       }

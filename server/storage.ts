@@ -605,13 +605,43 @@ export class MemStorage implements IStorage {
       // 3. Libera il cestello e resetta la posizione
       if (basketId) {
         console.log(`Aggiornamento stato cestello ID: ${basketId} a disponibile`);
+        
+        // 3.1. Chiudi qualsiasi posizione attiva nella cronologia
+        try {
+          // Cerca posizioni attive (senza data di fine)
+          const activePositions = Array.from(this.basketPositions.values())
+            .filter(pos => pos.basketId === basketId && pos.endDate === null);
+          
+          if (activePositions && activePositions.length > 0) {
+            console.log(`Trovate ${activePositions.length} posizioni attive per il cestello ${basketId}`);
+            
+            // Imposta la data di fine alla data corrente per tutte le posizioni attive
+            const currentDate = new Date();
+            
+            for (const position of activePositions) {
+              console.log(`Chiusura della posizione attiva ID: ${position.id} per il cestello ${basketId}`);
+              this.basketPositions.set(position.id, {
+                ...position,
+                endDate: currentDate
+              });
+            }
+          } else {
+            console.log(`Nessuna posizione attiva trovata per il cestello ${basketId}`);
+          }
+        } catch (error) {
+          console.error(`Errore durante la gestione della cronologia posizioni per il cestello ${basketId}:`, error);
+        }
+        
+        // 3.2. Aggiorna lo stato del cestello
         const basket = this.baskets.get(basketId);
         if (basket) {
           this.baskets.set(basketId, {
             ...basket,
             state: 'available',
             currentCycleId: null,
-            nfcData: null
+            nfcData: null,
+            row: null,
+            position: null
           });
         }
       }
