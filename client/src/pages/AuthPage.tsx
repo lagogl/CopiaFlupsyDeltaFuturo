@@ -104,12 +104,15 @@ const AuthPage: React.FC = () => {
   const onLoginSubmit = async (data: LoginFormValues) => {
     setIsLoading(true);
     try {
-      console.log("Form login submit:", data);
+      // Rimuoviamo eventuali spazi extra da username e password
+      const cleanData = {
+        username: data.username.trim(),
+        password: data.password.trim()
+      };
       
-      const success = await auth.login({
-        username: data.username,
-        password: data.password
-      });
+      console.log("Form login submit (pulito):", cleanData);
+      
+      const success = await auth.login(cleanData);
       
       if (success) {
         console.log("Login riuscito, reindirizzamento alla dashboard");
