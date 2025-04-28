@@ -1521,16 +1521,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(404).json({ message: "Operation not found" });
       }
 
-      // Delete the operation
+      console.log(`Richiesta eliminazione operazione ID: ${id}, tipo: ${operation.type}`);
+      
+      // Verifica se è un'operazione di prima-attivazione
+      if (operation.type === 'prima-attivazione') {
+        console.log(`ATTENZIONE: L'operazione ID: ${id} è una prima-attivazione`);
+        console.log(`La cancellazione di questa operazione comporterà l'eliminazione del ciclo associato ID: ${operation.cycleId}`);
+        console.log(`e di tutte le operazioni correlate a questo ciclo.`);
+      }
+
+      // Delete the operation con cascade handling
       const success = await storage.deleteOperation(id);
+      
       if (success) {
-        return res.status(200).json({ message: "Operation deleted successfully" });
+        if (operation.type === 'prima-attivazione') {
+          // Notifica il frontend che c'è stata una cancellazione a cascata
+          if (req.app.locals.webSocketServer) {
+            req.app.locals.webSocketServer.broadcastMessage('operation-cascade-delete', {
+              operationId: id,
+              cycleId: operation.cycleId,
+              type: operation.type,
+              message: "Operazione e ciclo associato eliminati con successo"
+            });
+          }
+          return res.status(200).json({
+            message: "Operazione e ciclo associato eliminati con successo",
+            cascadeDelete: true,
+            operationType: operation.type,
+            cycleId: operation.cycleId
+          });
+        } else {
+          // Notifica il frontend che c'è stata una cancellazione
+          if (req.app.locals.webSocketServer) {
+            req.app.locals.webSocketServer.broadcastMessage('operation-delete', {
+              operationId: id,
+              type: operation.type
+            });
+          }
+          return res.status(200).json({ message: "Operation deleted successfully" });
+        }
       } else {
         return res.status(500).json({ message: "Failed to delete operation" });
       }
     } catch (error) {
       console.error("Error deleting operation:", error);
-      res.status(500).json({ message: "Failed to delete operation" });
+      res.status(500).json({ 
+        message: "Failed to delete operation", 
+        error: error instanceof Error ? error.message : String(error)
+      });
     }
   });
 

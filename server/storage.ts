@@ -563,12 +563,63 @@ export class MemStorage implements IStorage {
   }
   
   async deleteOperation(id: number): Promise<boolean> {
-    const exists = this.operations.has(id);
-    if (exists) {
-      this.operations.delete(id);
-      return true;
+    const operation = this.operations.get(id);
+    if (!operation) {
+      return false;
     }
-    return false;
+    
+    // Verifica se l'operazione è di tipo "prima-attivazione"
+    const isPrimaAttivazione = operation.type === 'prima-attivazione';
+    const cycleId = operation.cycleId;
+    let basketId = operation.basketId;
+    
+    // Se l'operazione è una prima-attivazione, gestisce la cancellazione speciale
+    if (isPrimaAttivazione && cycleId) {
+      console.log(`Operazione di prima-attivazione rilevata (ID: ${id}). Procedendo con la cancellazione a cascata.`);
+      
+      // Ottiene il ciclo associato per recuperare il cestello
+      if (!basketId) {
+        const cycle = this.cycles.get(cycleId);
+        if (cycle) {
+          basketId = cycle.basketId;
+        }
+      }
+      
+      // 1. Elimina tutte le operazioni associate al ciclo
+      const cycleOperations = Array.from(this.operations.values())
+        .filter(op => op.cycleId === cycleId);
+      
+      console.log(`Trovate ${cycleOperations.length} operazioni associate al ciclo ${cycleId}`);
+      
+      for (const op of cycleOperations) {
+        if (op.id !== id) { // Evita di eliminare due volte l'operazione corrente
+          console.log(`Eliminazione operazione correlata ID: ${op.id}`);
+          this.operations.delete(op.id);
+        }
+      }
+      
+      // 2. Elimina il ciclo
+      console.log(`Eliminazione ciclo ID: ${cycleId}`);
+      this.cycles.delete(cycleId);
+      
+      // 3. Libera il cestello e resetta la posizione
+      if (basketId) {
+        console.log(`Aggiornamento stato cestello ID: ${basketId} a disponibile`);
+        const basket = this.baskets.get(basketId);
+        if (basket) {
+          this.baskets.set(basketId, {
+            ...basket,
+            state: 'available',
+            currentCycleId: null,
+            nfcData: null
+          });
+        }
+      }
+    }
+    
+    // Elimina l'operazione richiesta
+    this.operations.delete(id);
+    return true;
   }
   
   // Cycle methods
