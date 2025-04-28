@@ -44,7 +44,7 @@ interface NavCategory {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  const isMobile = useIsMobile();
+  const isMobile = useIsMobile ? useIsMobile() : false;
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth(); // Aggiungiamo l'hook useAuth
