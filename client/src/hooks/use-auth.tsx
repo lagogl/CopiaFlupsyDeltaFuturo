@@ -123,20 +123,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setIsLoading(true);
     
     try {
-      // Opzionalmente chiama l'API di logout se necessario
-      // await fetch('/api/logout', { method: 'POST' });
+      // Chiamiamo l'API di logout sul server
+      await fetch('/api/logout', { 
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
       
       // Rimuovi l'utente dal localStorage e dallo stato
       localStorage.removeItem('user');
       setUser(null);
+      
+      // Reindirizza alla pagina di login
+      window.location.href = '/auth';
+      
+      toast({
+        title: 'Logout effettuato',
+        description: 'Hai effettuato il logout con successo',
+      });
     } catch (err) {
       const error = err as Error;
       setError(error);
       toast({
         variant: 'destructive',
         title: 'Errore durante il logout',
-        description: error.message,
+        description: error.message || 'Si è verificato un errore durante il logout',
       });
+      
+      // Anche in caso di errore, proviamo a fare logout lato client
+      localStorage.removeItem('user');
+      setUser(null);
+      window.location.href = '/auth';
     } finally {
       setIsLoading(false);
     }

@@ -186,6 +186,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint per il logout
+  app.post("/api/logout", async (req, res) => {
+    try {
+      // Qui potresti aggiungere logica per gestire la sessione se necessario
+      return res.status(200).json({
+        success: true,
+        message: "Logout effettuato con successo"
+      });
+    } catch (error) {
+      console.error("Errore durante il logout:", error);
+      return res.status(500).json({
+        success: false,
+        message: "Errore durante il logout"
+      });
+    }
+  });
+  
   app.post("/api/register", async (req, res) => {
     try {
       // Validazione dei dati dell'utente
