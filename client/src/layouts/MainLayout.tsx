@@ -8,7 +8,7 @@ import {
   ChevronRight, LayoutDashboard, PieChart, BarChart, Filter,
   FileJson, Download, Database, Leaf, LogOut
 } from "lucide-react";
-import { useIsMobile } from "@/hooks/use-mobile";
+import useIsMobile from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
 import NotificationBell from "@/components/NotificationBell";
 import { useAuth } from "@/hooks/use-auth";
@@ -44,7 +44,7 @@ interface NavCategory {
 }
 
 export default function MainLayout({ children }: MainLayoutProps) {
-  const isMobile = useIsMobile ? useIsMobile() : false;
+  const isMobile = useIsMobile();
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth(); // Aggiungiamo l'hook useAuth
