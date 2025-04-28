@@ -377,7 +377,7 @@ export default function GrowJourney() {
                   <div className="flex justify-between text-sm">
                     <span className="text-muted-foreground">Tasso di crescita:</span>
                     <span className={`font-medium ${dailyGrowthRate > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                      {dailyGrowthRate.toFixed(2)}% al giorno
+                      {dailyGrowthRate ? dailyGrowthRate.toFixed(2) : '0'}% al giorno
                     </span>
                   </div>
                   {previousMeasurement && (
@@ -390,7 +390,7 @@ export default function GrowJourney() {
                           <ArrowDownRight className="h-3 w-3 text-rose-500 mr-1" />
                         )}
                         <span className={`font-medium ${growthPercentage > 0 ? 'text-emerald-500' : 'text-rose-500'}`}>
-                          {growthPercentage.toFixed(1)}%
+                          {growthPercentage ? growthPercentage.toFixed(1) : '0'}%
                         </span>
                       </div>
                     </div>
@@ -418,7 +418,7 @@ export default function GrowJourney() {
             <CardHeader>
               <CardTitle>Curva di Crescita</CardTitle>
               <CardDescription>
-                {growthData ? (
+                {growthData && growthData.sgrPercentage ? (
                   `Proiezione di crescita per ${projectionDays} giorni (SGR: ${(growthData.sgrPercentage * 100).toFixed(1)}%)`
                 ) : (
                   'Caricamento proiezioni...'
@@ -705,7 +705,7 @@ export default function GrowJourney() {
                                     <div className="flex items-center">
                                       <ArrowUpRight className="h-3 w-3 text-emerald-500 mr-1" />
                                       <span className="text-emerald-500">
-                                        +{growthData && growthData.summary ? growthData.summary.growthPercentageTheoretical.toFixed(1) : '0'}%
+                                        +{growthData && growthData.summary && growthData.summary.growthPercentageTheoretical !== null ? growthData.summary.growthPercentageTheoretical.toFixed(1) : '0'}%
                                       </span>
                                     </div>
                                     <span className="text-muted-foreground ml-2">
