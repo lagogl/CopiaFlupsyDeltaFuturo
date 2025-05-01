@@ -115,23 +115,26 @@ export async function generateExportGiacenze(
       const startDate = format(new Date(cycle.startDate), 'yyyy-MM-dd');
       console.log(`Data iniziale ciclo: ${startDate}`);
       
-      // Calcola il peso medio della vongola in mg
-      // Il peso medio è 1kg (1.000.000 mg) diviso il numero di vongole per kg
+      // Usa average_weight (peso medio in grammi) e converti in mg (x1000)
       let mgVongola = 0;
-      if (lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0) {
-        // Converta il valore a Number per sicurezza e fissa a 3 cifre decimali per precisione
+      if (lastOperation.averageWeight && lastOperation.averageWeight > 0) {
+        // average_weight è espresso in grammi, converti in mg moltiplicando per 1000
+        mgVongola = Math.round(lastOperation.averageWeight * 1000);
+        console.log(`Utilizzo average_weight: ${lastOperation.averageWeight}g = ${mgVongola} mg`);
+      } else if (lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0) {
+        // Calcolo alternativo se average_weight non è disponibile
         const animalsPerKg = parseFloat(String(lastOperation.animalsPerKg));
         if (animalsPerKg > 0) {
-          // Utilizza calcolo diretto invece di Math.round che potrebbe arrotondare a 0
-          // Con valori grandi di animalsPerKg
           mgVongola = Math.ceil(1000000 / animalsPerKg);
-          // Assicurati che ci sia sempre almeno 1mg
-          if (mgVongola < 1) {
-            mgVongola = 1;
-          }
+          console.log(`Calcolo mg_vongola da animalsPerKg: 1.000.000 / ${lastOperation.animalsPerKg} = ${mgVongola} mg`);
         }
       }
-      console.log(`Calcolo mg_vongola: 1.000.000 / ${lastOperation.animalsPerKg} = ${mgVongola} mg`);
+      
+      // Assicurati che ci sia sempre almeno 1mg
+      if (mgVongola < 1) {
+        mgVongola = 1;
+        console.log(`Peso corretto al minimo di 1 mg`);
+      }
       
       // Genera identificativo univoco (prefisso flupsy + codice ciclo)
       const prefix = flupsy.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase();
