@@ -84,6 +84,7 @@ export async function generateExportGiacenze(
       const startDate = format(new Date(cycle.startDate), 'yyyy-MM-dd');
       
       // Calcola il peso medio della vongola in mg
+      // Il peso medio è 1kg (1.000.000 mg) diviso il numero di vongole per kg
       const mgVongola = lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0 ? 
         Math.round(1000000 / lastOperation.animalsPerKg) : 0;
       
