@@ -1,8 +1,8 @@
 import { db } from './db';
 import fs from 'fs';
 import path from 'path';
-import { baskets, lots, flupsy, operations, measurements, basketTypes, sizes } from '@shared/schema';
-import { createBackup } from './database-service';
+import { baskets, lots, flupsys, operations, cycles, sizes } from '@shared/schema';
+import { createDatabaseBackup } from './database-service';
 import { eq, and } from 'drizzle-orm';
 import { createId } from '@paralleldrive/cuid2';
 
@@ -107,8 +107,8 @@ export async function analyzeImport(importFilePath: string): Promise<ImportPlan>
     }
     
     // Verifica i flupsy esistenti
-    const existingFlupsyNames = (await db.select({ name: flupsy.name }).from(flupsy)).map(f => f.name);
-    const importFlupsyNames = new Set(importData.ceste.map(basket => basket.flupsy));
+    const existingFlupsyNames = (await db.select({ name: flupsys.name }).from(flupsys)).map(f => f.name);
+    const importFlupsyNames = Array.from(new Set(importData.ceste.map(basket => basket.flupsy)));
     for (const flupsyName of importFlupsyNames) {
       if (!existingFlupsyNames.includes(flupsyName)) {
         plan.newFlupsy.push(flupsyName);
@@ -116,7 +116,7 @@ export async function analyzeImport(importFilePath: string): Promise<ImportPlan>
     }
     
     // Verifica le potenziali collisioni di cestelli
-    const existingBasketNumbers = (await db.select({ number: baskets.number }).from(baskets)).map(b => b.number);
+    const existingBasketNumbers = (await db.select({ physicalNumber: baskets.physicalNumber }).from(baskets)).map(b => b.physicalNumber);
     for (const basket of importData.ceste) {
       if (existingBasketNumbers.includes(basket.numero_cesta)) {
         plan.potentialConflicts.push({
@@ -160,7 +160,7 @@ export async function executeImport(importFilePath: string, confirmImport: boole
     }
 
     // Crea un backup del database prima dell'importazione
-    const backupResult = await createBackup();
+    const backupResult = await createDatabaseBackup();
     if (!backupResult.success) {
       return {
         success: false,
@@ -185,39 +185,31 @@ export async function executeImport(importFilePath: string, confirmImport: boole
 
     // Ottiene i dati esistenti dal database
     const existingLotIds = (await db.select({ id: lots.id }).from(lots)).map(lot => lot.id);
-    const existingFlupsyNames = (await db.select({ name: flupsy.name }).from(flupsy)).map(f => f.name);
-    const existingBasketNumbers = (await db.select({ number: baskets.number }).from(baskets)).map(b => b.number);
-    const existingSizes = (await db.select().from(sizes)).map(s => s.code);
+    const existingFlupsyNames = (await db.select({ name: flupsys.name }).from(flupsys)).map(f => f.name);
+    const existingBasketNumbers = (await db.select({ physicalNumber: baskets.physicalNumber }).from(baskets)).map(b => b.physicalNumber);
+    const existingSizes = (await db.select({ code: sizes.code }).from(sizes)).map(s => s.code);
 
     // 1. Importa i lotti mancanti
     for (const lot of importData.lotti) {
-      if (!existingLotIds.includes(lot.id)) {
+      if (!existingLotIds.includes(Number(lot.id))) {
         await db.insert(lots).values({
-          id: lot.id,
-          created_at: new Date(lot.data_creazione),
+          arrivalDate: new Date(lot.data_creazione),
           supplier: lot.fornitore,
           notes: lot.descrizione,
-          origin: lot.origine,
-          status: 'active'
+          state: 'active'
         });
         result.details!.createdLots++;
       }
     }
 
     // 2. Importa i flupsy mancanti
-    for (const flupsyName of new Set(importData.ceste.map(basket => basket.flupsy))) {
+    for (const flupsyName of Array.from(new Set(importData.ceste.map(basket => basket.flupsy)))) {
       if (!existingFlupsyNames.includes(flupsyName)) {
-        // Genera un ID unico per il nuovo flupsy
-        const flupsyId = createId();
-        await db.insert(flupsy).values({
-          id: flupsyId,
+        await db.insert(flupsys).values({
           name: flupsyName,
           description: `Flupsy importato da ${importData.fonte}`,
-          status: 'active',
-          created_at: new Date(),
-          updated_at: new Date(),
-          type: 'standard',
-          capacity: 20,
+          active: true,
+          maxPositions: 20,
           location: 'Importazione'
         });
         result.details!.createdFlupsy++;
@@ -257,8 +249,8 @@ export async function executeImport(importFilePath: string, confirmImport: boole
       // Ottieni il flupsy dal database
       const [flupsyRecord] = await db
         .select()
-        .from(flupsy)
-        .where(eq(flupsy.name, basketData.flupsy));
+        .from(flupsys)
+        .where(eq(flupsys.name, basketData.flupsy));
 
       if (!flupsyRecord) {
         result.details!.skippedBaskets++;
