@@ -56,6 +56,8 @@ export const baskets = pgTable("baskets", {
   nfcData: text("nfc_data"), // data to be stored in NFC tag
   row: text("row"), // fila in cui si trova la cesta (DX o SX)
   position: integer("position"), // posizione numerica nella fila (1, 2, 3, ecc.)
+  active: boolean("active").notNull().default(true), // se la cesta è attiva o dismessa
+  externalId: text("external_id"), // ID esterno per integrazioni con altri sistemi
 });
 
 // Operation Types (Tipologie operazioni)
