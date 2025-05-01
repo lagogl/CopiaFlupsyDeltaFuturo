@@ -916,7 +916,15 @@ export default function Inventory() {
                   <Button 
                     variant="outline" 
                     className="gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800"
-                    onClick={() => window.location.href = '/api/export/basket-details-csv'}
+                    onClick={() => {
+                      // Crea un link temporaneo per il download
+                      const downloadLink = document.createElement('a');
+                      downloadLink.href = '/api/export/basket-details-csv';
+                      downloadLink.setAttribute('download', `dettaglio_ceste_${new Date().toISOString().split('T')[0]}.csv`);
+                      document.body.appendChild(downloadLink);
+                      downloadLink.click();
+                      document.body.removeChild(downloadLink);
+                    }}
                   >
                     <FileDown className="h-4 w-4" />
                     Esporta CSV
