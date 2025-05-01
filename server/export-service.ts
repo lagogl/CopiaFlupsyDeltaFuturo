@@ -117,8 +117,20 @@ export async function generateExportGiacenze(
       
       // Calcola il peso medio della vongola in mg
       // Il peso medio è 1kg (1.000.000 mg) diviso il numero di vongole per kg
-      const mgVongola = lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0 ? 
-        Math.round(1000000 / lastOperation.animalsPerKg) : 0;
+      let mgVongola = 0;
+      if (lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0) {
+        // Converta il valore a Number per sicurezza e fissa a 3 cifre decimali per precisione
+        const animalsPerKg = parseFloat(String(lastOperation.animalsPerKg));
+        if (animalsPerKg > 0) {
+          // Utilizza calcolo diretto invece di Math.round che potrebbe arrotondare a 0
+          // Con valori grandi di animalsPerKg
+          mgVongola = Math.ceil(1000000 / animalsPerKg);
+          // Assicurati che ci sia sempre almeno 1mg
+          if (mgVongola < 1) {
+            mgVongola = 1;
+          }
+        }
+      }
       console.log(`Calcolo mg_vongola: 1.000.000 / ${lastOperation.animalsPerKg} = ${mgVongola} mg`);
       
       // Genera identificativo univoco (prefisso flupsy + codice ciclo)
