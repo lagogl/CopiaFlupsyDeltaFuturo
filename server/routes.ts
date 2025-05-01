@@ -116,6 +116,10 @@ const getBackupUploadDir = () => {
   return uploadDir;
 };
 
+import multer from 'multer';
+import path from 'path';
+import { analyzeImport, executeImport } from './import-service';
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // === Autenticazione routes ===
   app.post("/api/login", async (req, res) => {

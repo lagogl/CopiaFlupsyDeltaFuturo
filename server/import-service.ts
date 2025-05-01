@@ -1,10 +1,17 @@
-import { db } from './db';
 import fs from 'fs';
 import path from 'path';
-import { baskets, lots, flupsys, operations, cycles, sizes } from '@shared/schema';
-import { createDatabaseBackup } from './database-service';
-import { eq, and } from 'drizzle-orm';
-import { createId } from '@paralleldrive/cuid2';
+import { eq, and, sql } from 'drizzle-orm';
+import { db } from './db';
+import {
+  baskets,
+  flupsys,
+  lots,
+  operations,
+  sizes,
+  measurements
+} from '@shared/schema';
+import { backupDatabase } from './backup-service';
+import { format } from 'date-fns';
 
 interface ImportBasket {
   numero_cesta: number;
@@ -74,6 +81,9 @@ interface ImportResult {
 
 interface ImportPlan {
   totalBaskets: number;
+  sourceName: string;
+  importDate: string;
+  lotCount: number;
   newLots: string[];
   newFlupsy: string[];
   potentialConflicts: {
@@ -85,52 +95,82 @@ interface ImportPlan {
 /**
  * Verifica se l'importazione è fattibile e crea un piano di importazione
  */
-export async function analyzeImport(importFilePath: string): Promise<ImportPlan> {
+export async function analyzeImport(importFilePath: string): Promise<{ success: boolean, message: string, analysis?: ImportPlan }> {
   try {
-    // Legge il file JSON
     const importData: ImportData = JSON.parse(fs.readFileSync(importFilePath, 'utf8'));
     
-    // Piano di importazione
-    const plan: ImportPlan = {
-      totalBaskets: importData.ceste.length,
-      newLots: [],
-      newFlupsy: [],
-      potentialConflicts: []
-    };
+    // Verifica che ci siano dati
+    if (!importData.ceste || importData.ceste.length === 0) {
+      return {
+        success: false,
+        message: 'Il file non contiene cestelli da importare'
+      };
+    }
     
-    // Verifica i lotti esistenti
-    const existingLotIds = (await db.select({ id: lots.id }).from(lots)).map(lot => lot.id);
-    for (const lot of importData.lotti) {
-      if (!existingLotIds.includes(lot.id)) {
-        plan.newLots.push(lot.id);
+    // Crea l'analisi dell'importazione
+    const newLots = new Set<string>();
+    const newFlupsy = new Set<string>();
+    const potentialConflicts: { basketNumber: number; reason: string }[] = [];
+    
+    // Verifica quali lotti sono nuovi
+    for (const lot of importData.lotti || []) {
+      const existingLot = await db.query.lots.findFirst({
+        where: eq(lots.externalId, lot.id)
+      });
+      
+      if (!existingLot) {
+        newLots.add(lot.id);
       }
     }
     
-    // Verifica i flupsy esistenti
-    const existingFlupsyNames = (await db.select({ name: flupsys.name }).from(flupsys)).map(f => f.name);
-    const importFlupsyNames = Array.from(new Set(importData.ceste.map(basket => basket.flupsy)));
-    for (const flupsyName of importFlupsyNames) {
-      if (!existingFlupsyNames.includes(flupsyName)) {
-        plan.newFlupsy.push(flupsyName);
-      }
-    }
-    
-    // Verifica le potenziali collisioni di cestelli
-    const existingBasketNumbers = (await db.select({ physicalNumber: baskets.physicalNumber }).from(baskets)).map(b => b.physicalNumber);
+    // Verifica quali flupsy sono nuovi
     for (const basket of importData.ceste) {
-      if (existingBasketNumbers.includes(basket.numero_cesta)) {
-        plan.potentialConflicts.push({
+      const existingFlupsy = await db.query.flupsys.findFirst({
+        where: eq(flupsys.name, basket.flupsy)
+      });
+      
+      if (!existingFlupsy) {
+        newFlupsy.add(basket.flupsy);
+      }
+      
+      // Verifica conflitti di cestelli
+      const existingBasket = await db.query.baskets.findFirst({
+        where: and(
+          eq(baskets.physicalNumber, basket.numero_cesta),
+          eq(baskets.active, true)
+        )
+      });
+      
+      if (existingBasket) {
+        potentialConflicts.push({
           basketNumber: basket.numero_cesta,
-          reason: 'Numero cesta già presente nel database'
+          reason: 'Cestello già esistente nel sistema'
         });
       }
     }
-
-    // Restituisce il piano di importazione
-    return plan;
+    
+    const plan: ImportPlan = {
+      totalBaskets: importData.ceste.length,
+      sourceName: importData.fonte,
+      importDate: importData.data_importazione,
+      lotCount: importData.lotti?.length || 0,
+      newLots: Array.from(newLots),
+      newFlupsy: Array.from(newFlupsy),
+      potentialConflicts
+    };
+    
+    return {
+      success: true,
+      message: 'Analisi completata',
+      analysis: plan
+    };
+    
   } catch (error) {
     console.error('Errore durante l\'analisi dell\'importazione:', error);
-    throw new Error('Impossibile analizzare il file di importazione: ' + error.message);
+    return {
+      success: false,
+      message: `Errore durante l'analisi: ${(error as Error).message}`
+    };
   }
 }
 
@@ -138,37 +178,30 @@ export async function analyzeImport(importFilePath: string): Promise<ImportPlan>
  * Esegue l'importazione effettiva dei dati nel database
  */
 export async function executeImport(importFilePath: string, confirmImport: boolean = false): Promise<ImportResult> {
+  if (!confirmImport) {
+    return {
+      success: false,
+      message: 'Importazione non confermata. Usa confirm=true per confermare l\'importazione.'
+    };
+  }
+  
   try {
-    // Legge il file JSON
-    const importData: ImportData = JSON.parse(fs.readFileSync(importFilePath, 'utf8'));
+    // Crea un backup prima dell'importazione
+    console.log('Creazione backup pre-importazione...');
+    const backupInfo = await backupDatabase(`pre_import_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
     
-    // Se non è confermato, restituisce solo il risultato dell'analisi
-    if (!confirmImport) {
-      const plan = await analyzeImport(importFilePath);
-      return {
-        success: true,
-        message: 'Analisi dell\'importazione completata. Confermare per procedere con l\'importazione effettiva.',
-        details: {
-          processedBaskets: 0,
-          skippedBaskets: 0,
-          skippedDetails: [],
-          createdLots: plan.newLots.length,
-          createdOperations: 0,
-          createdFlupsy: plan.newFlupsy.length,
-        }
-      };
-    }
-
-    // Crea un backup del database prima dell'importazione
-    const backupResult = await createDatabaseBackup();
-    if (!backupResult.success) {
+    if (!backupInfo.success) {
       return {
         success: false,
-        message: 'Impossibile creare un backup del database prima dell\'importazione.',
+        message: 'Errore durante la creazione del backup. Importazione annullata.'
       };
     }
-
-    // Inizializza i risultati dell'importazione
+    
+    console.log('Backup creato, ID:', backupInfo.backupId);
+    
+    const importData: ImportData = JSON.parse(fs.readFileSync(importFilePath, 'utf8'));
+    
+    // Inizializza contatori per le statistiche
     const result: ImportResult = {
       success: true,
       message: 'Importazione completata con successo',
@@ -179,175 +212,253 @@ export async function executeImport(importFilePath: string, confirmImport: boole
         createdLots: 0,
         createdOperations: 0,
         createdFlupsy: 0,
-        backupId: backupResult.backupId,
+        backupId: backupInfo.backupId
       }
     };
-
-    // Ottiene i dati esistenti dal database
-    const existingLotIds = (await db.select({ id: lots.id }).from(lots)).map(lot => lot.id);
-    const existingFlupsyNames = (await db.select({ name: flupsys.name }).from(flupsys)).map(f => f.name);
-    const existingBasketNumbers = (await db.select({ physicalNumber: baskets.physicalNumber }).from(baskets)).map(b => b.physicalNumber);
-    const existingSizes = (await db.select({ code: sizes.code }).from(sizes)).map(s => s.code);
-
-    // 1. Importa i lotti mancanti
-    for (const lot of importData.lotti) {
-      if (!existingLotIds.includes(Number(lot.id))) {
-        await db.insert(lots).values({
+    
+    // Crea o aggiorna i lotti
+    const lotMap = new Map<string, number>(); // Mappa externalId -> id del DB
+    
+    for (const lot of importData.lotti || []) {
+      const existingLot = await db.query.lots.findFirst({
+        where: eq(lots.externalId, lot.id)
+      });
+      
+      if (existingLot) {
+        lotMap.set(lot.id, existingLot.id);
+      } else {
+        // Crea un nuovo lotto
+        const [newLot] = await db.insert(lots).values({
           arrivalDate: new Date(lot.data_creazione),
           supplier: lot.fornitore,
-          notes: lot.descrizione,
-          state: 'active'
-        });
+          description: lot.descrizione,
+          origin: lot.origine,
+          externalId: lot.id,
+          active: true,
+          createdAt: new Date()
+        }).returning();
+        
+        lotMap.set(lot.id, newLot.id);
         result.details!.createdLots++;
       }
     }
-
-    // 2. Importa i flupsy mancanti
-    for (const flupsyName of Array.from(new Set(importData.ceste.map(basket => basket.flupsy)))) {
-      if (!existingFlupsyNames.includes(flupsyName)) {
-        await db.insert(flupsys).values({
+    
+    // Crea o trova i flupsy
+    const flupsyMap = new Map<string, number>(); // Mappa nome -> id del DB
+    
+    for (const flupsyName of new Set(importData.ceste.map(b => b.flupsy))) {
+      const existingFlupsy = await db.query.flupsys.findFirst({
+        where: eq(flupsys.name, flupsyName)
+      });
+      
+      if (existingFlupsy) {
+        flupsyMap.set(flupsyName, existingFlupsy.id);
+      } else {
+        // Crea un nuovo flupsy
+        const [newFlupsy] = await db.insert(flupsys).values({
           name: flupsyName,
-          description: `Flupsy importato da ${importData.fonte}`,
+          location: 'Importato',
+          description: `Flupsy creato da importazione ${importData.fonte}`,
           active: true,
-          maxPositions: 20,
-          location: 'Importazione'
-        });
+          maxPositions: 48
+        }).returning();
+        
+        flupsyMap.set(flupsyName, newFlupsy.id);
         result.details!.createdFlupsy++;
       }
     }
-
-    // 3. Importa le taglie mancanti
-    const sizeCodesToAdd = new Set<string>();
-    for (const basket of importData.ceste) {
-      if (!existingSizes.includes(basket.taglia_codice)) {
-        sizeCodesToAdd.add(basket.taglia_codice);
-      }
-    }
-
-    for (const sizeCode of sizeCodesToAdd) {
-      await db.insert(sizes).values({
-        code: sizeCode,
-        description: `Taglia importata ${sizeCode}`,
-        created_at: new Date(),
-        updated_at: new Date()
-      });
-    }
-
-    // 4. Importa i cestelli
-    for (const basketData of importData.ceste) {
-      // Se il cestello esiste già e la politica è "skip", salta l'importazione
-      if (existingBasketNumbers.includes(basketData.numero_cesta) && 
-          importData.istruzioni_importazione.gestione_conflitti === 'Saltare le ceste con numero già esistente') {
-        result.details!.skippedBaskets++;
-        result.details!.skippedDetails.push({
-          reason: 'Numero cesta già presente nel database',
-          basketNumber: basketData.numero_cesta
-        });
-        continue;
-      }
-
-      // Ottieni il flupsy dal database
-      const [flupsyRecord] = await db
-        .select()
-        .from(flupsys)
-        .where(eq(flupsys.name, basketData.flupsy));
-
-      if (!flupsyRecord) {
-        result.details!.skippedBaskets++;
-        result.details!.skippedDetails.push({
-          reason: `Flupsy ${basketData.flupsy} non trovato`,
-          basketNumber: basketData.numero_cesta
-        });
-        continue;
-      }
-
-      // Crea il cestello
-      const basketId = createId();
-      await db.insert(baskets).values({
-        id: basketId,
-        number: basketData.numero_cesta,
-        status: basketData.stato,
-        flupsy_id: flupsyRecord.id,
-        row: basketData.fila,
-        position: basketData.posizione,
-        lot_id: basketData.lotto_id,
-        created_at: new Date(basketData.data_attivazione),
-        updated_at: new Date(),
-        notes: basketData.note,
-        external_id: basketData.id_sistema_esterno
-      });
-
-      // Crea l'operazione di prima attivazione
-      const operationId = createId();
-      await db.insert(operations).values({
-        id: operationId,
-        type: 'prima-attivazione',
-        date: new Date(basketData.data_attivazione),
-        basket_id: basketId,
-        lot_id: basketData.lotto_id,
-        notes: basketData.note,
-        status: 'completed',
-        created_at: new Date(),
-        updated_at: new Date()
-      });
-
-      // Crea la misurazione per l'operazione
-      await db.insert(measurements).values({
-        id: createId(),
-        operation_id: operationId,
-        basket_id: basketId,
-        lot_id: basketData.lotto_id,
-        average_weight: basketData.peso_medio_mg,
-        total_animals: basketData.animali_totali,
-        created_at: new Date(),
-        updated_at: new Date(),
-        size_code: basketData.taglia_codice
+    
+    // Crea o trova le taglie
+    const sizeMap = new Map<string, number>(); // Mappa codice -> id del DB
+    
+    for (const sizeCode of new Set(importData.ceste.map(b => b.taglia_codice))) {
+      const existingSize = await db.query.sizes.findFirst({
+        where: eq(sizes.code, sizeCode)
       });
       
-      // Se ha un'ultima operazione, creala
-      if (basketData.ultima_operazione) {
-        const lastOperationId = createId();
-        await db.insert(operations).values({
-          id: lastOperationId,
-          type: basketData.ultima_operazione.tipo.toLowerCase(),
-          date: new Date(basketData.ultima_operazione.data),
-          basket_id: basketId,
-          lot_id: basketData.lotto_id,
-          notes: basketData.note,
-          status: 'completed',
-          created_at: new Date(),
-          updated_at: new Date()
-        });
+      if (existingSize) {
+        sizeMap.set(sizeCode, existingSize.id);
+      } else {
+        // Crea una nuova taglia
+        const [newSize] = await db.insert(sizes).values({
+          code: sizeCode,
+          name: `Taglia ${sizeCode}`,
+          minWeight: 0,
+          maxWeight: 10000,
+          minAnimalsPerKg: 0,
+          maxAnimalsPerKg: 10000,
+          active: true
+        }).returning();
         
-        // Se l'operazione è una misurazione o un'operazione che include una misurazione
-        // aggiungiamo anche la misurazione più recente
-        if (['misura', 'peso', 'vagliatura', 'conta'].includes(basketData.ultima_operazione.tipo.toLowerCase())) {
-          await db.insert(measurements).values({
-            id: createId(),
-            operation_id: lastOperationId,
-            basket_id: basketId,
-            lot_id: basketData.lotto_id,
-            average_weight: basketData.peso_medio_mg,
-            total_animals: basketData.animali_totali,
-            created_at: new Date(basketData.ultima_operazione.data),
-            updated_at: new Date(),
-            size_code: basketData.taglia_codice
-          });
+        sizeMap.set(sizeCode, newSize.id);
+      }
+    }
+    
+    // Processa i cestelli
+    for (const basketData of importData.ceste) {
+      try {
+        const flupsyId = flupsyMap.get(basketData.flupsy);
+        const lotId = basketData.lotto_id ? lotMap.get(basketData.lotto_id) : null;
+        const sizeId = sizeMap.get(basketData.taglia_codice);
+        
+        if (!flupsyId) {
+          throw new Error(`FLUPSY non trovato: ${basketData.flupsy}`);
         }
         
+        if (basketData.lotto_id && !lotId) {
+          throw new Error(`Lotto non trovato: ${basketData.lotto_id}`);
+        }
+        
+        if (!sizeId) {
+          throw new Error(`Taglia non trovata: ${basketData.taglia_codice}`);
+        }
+        
+        // Verifica se il cestello esiste già
+        const existingBasket = await db.query.baskets.findFirst({
+          where: and(
+            eq(baskets.physicalNumber, basketData.numero_cesta),
+            eq(baskets.active, true)
+          )
+        });
+        
+        if (existingBasket) {
+          result.details!.skippedBaskets++;
+          result.details!.skippedDetails.push({
+            basketNumber: basketData.numero_cesta,
+            reason: 'Cestello già esistente nel sistema'
+          });
+          continue;
+        }
+        
+        // Crea il cestello
+        const [newBasket] = await db.insert(baskets).values({
+          physicalNumber: basketData.numero_cesta,
+          flupsyId: flupsyId,
+          row: basketData.fila,
+          position: basketData.posizione,
+          lotId: lotId,
+          active: true,
+          notes: basketData.note,
+          externalId: basketData.id_sistema_esterno,
+          status: basketData.stato,
+          createdAt: new Date()
+        }).returning();
+        
+        // Crea l'operazione di prima attivazione
+        const [newOperation] = await db.insert(operations).values({
+          id: undefined,
+          type: 'prima-attivazione',
+          date: basketData.data_attivazione,
+          basketId: newBasket.id,
+          lotId: lotId,
+          flupsyId: flupsyId,
+          sizeId: sizeId,
+          totalAnimals: basketData.animali_totali,
+          animalsPerKg: basketData.animali_per_kg,
+          averageWeight: basketData.peso_medio_mg,
+          notes: `Importato da ${importData.fonte}`,
+          createdAt: new Date(),
+          weight: null,
+          mortality: null,
+          mortanimalslity: null,
+          status: 'completata'
+        }).returning();
+        
+        // Crea la misurazione associata all'operazione
+        const [newMeasurement] = await db.insert(measurements).values({
+          operationId: newOperation.id,
+          basketId: newBasket.id,
+          lotId: lotId,
+          totalAnimals: basketData.animali_totali,
+          animalsPerKg: basketData.animali_per_kg,
+          averageWeight: basketData.peso_medio_mg,
+          measureDate: basketData.data_attivazione,
+          createdAt: new Date()
+        }).returning();
+        
+        result.details!.processedBaskets++;
         result.details!.createdOperations++;
+        
+        // Se c'è un'operazione aggiuntiva nell'importazione, la aggiungiamo
+        if (basketData.ultima_operazione && basketData.ultima_operazione.tipo && basketData.ultima_operazione.data) {
+          const [additionalOperation] = await db.insert(operations).values({
+            id: undefined,
+            type: mapOperationType(basketData.ultima_operazione.tipo),
+            date: basketData.ultima_operazione.data,
+            basketId: newBasket.id,
+            lotId: lotId,
+            flupsyId: flupsyId,
+            sizeId: sizeId,
+            totalAnimals: basketData.animali_totali,
+            animalsPerKg: basketData.animali_per_kg,
+            averageWeight: basketData.peso_medio_mg,
+            notes: `Importato da ${importData.fonte} (ultima operazione)`,
+            createdAt: new Date(),
+            weight: null,
+            mortality: null,
+            mortanimalslity: null,
+            status: 'completata'
+          }).returning();
+          
+          // Crea la misurazione associata all'operazione aggiuntiva
+          const [additionalMeasurement] = await db.insert(measurements).values({
+            operationId: additionalOperation.id,
+            basketId: newBasket.id,
+            lotId: lotId,
+            totalAnimals: basketData.animali_totali,
+            animalsPerKg: basketData.animali_per_kg,
+            averageWeight: basketData.peso_medio_mg,
+            measureDate: basketData.ultima_operazione.data,
+            createdAt: new Date()
+          }).returning();
+          
+          result.details!.createdOperations++;
+        }
+        
+      } catch (error) {
+        console.error(`Errore durante l'importazione del cestello ${basketData.numero_cesta}:`, error);
+        result.details!.skippedBaskets++;
+        result.details!.skippedDetails.push({
+          basketNumber: basketData.numero_cesta,
+          reason: (error as Error).message
+        });
       }
-      
-      result.details!.processedBaskets++;
-      result.details!.createdOperations++;
     }
-
+    
     return result;
+    
   } catch (error) {
     console.error('Errore durante l\'importazione:', error);
     return {
       success: false,
-      message: 'Errore durante l\'importazione: ' + error.message,
+      message: `Errore durante l'importazione: ${(error as Error).message}`
     };
   }
+}
+
+/**
+ * Mappa i tipi di operazione dal formato di importazione ai tipi interni
+ */
+function mapOperationType(externalType: string): "prima-attivazione" | "pulizia" | "vagliatura" | "trattamento" | "misura" | "vendita" | "selezione-vendita" | "cessazione" | "peso" | "selezione-origine" {
+  const typeMap: Record<string, "prima-attivazione" | "pulizia" | "vagliatura" | "trattamento" | "misura" | "vendita" | "selezione-vendita" | "cessazione" | "peso" | "selezione-origine"> = {
+    'attivazione': 'prima-attivazione',
+    'pulizia': 'pulizia',
+    'vagliatura': 'vagliatura',
+    'screening': 'vagliatura',
+    'trattamento': 'trattamento',
+    'misura': 'misura',
+    'misurazione': 'misura',
+    'vendita': 'vendita',
+    'selezione-vendita': 'selezione-vendita',
+    'cessazione': 'cessazione',
+    'peso': 'peso',
+    'pesata': 'peso',
+    'selezione-origine': 'selezione-origine'
+  };
+  
+  // Normalizza il tipo (minuscolo, senza spazi)
+  const normalizedType = externalType.toLowerCase().trim().replace(/\s+/g, '-');
+  
+  // Restituisci il tipo mappato o il default
+  return typeMap[normalizedType] || 'misura';
 }
