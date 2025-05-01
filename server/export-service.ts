@@ -115,36 +115,28 @@ export async function generateExportGiacenze(
       const startDate = format(new Date(cycle.startDate), 'yyyy-MM-dd');
       console.log(`Data iniziale ciclo: ${startDate}`);
       
-      // Estrai o calcola il valore mg_vongola dai dati dell'operazione
-      // mantenendo il valore decimale esatto
-      let mgVongola: number;
+      // Ottieni o calcola il valore per mg_vongola dai dati dell'operazione
+      // IMPORTANTE: manteniamo il valore ESATTO come nel database, senza arrotondare o modificare
+      let mgVongola = 0.1; // Valore di default che verrà sovrascritto
       
-      try {
-        console.log(`Verifico average_weight: type=${typeof lastOperation.averageWeight}, value=${lastOperation.averageWeight}`);
-        
-        if (lastOperation.averageWeight !== undefined && lastOperation.averageWeight !== null) {
-          // Preserva esattamente il valore originale di averageWeight
-          mgVongola = parseFloat(String(lastOperation.averageWeight));
-          console.log(`Utilizzo average_weight originale: ${mgVongola} mg (senza modifiche)`);
-        } else if (lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0) {
-          // Calcolo alternativo se average_weight non è disponibile
-          const animalsPerKg = parseFloat(String(lastOperation.animalsPerKg));
-          mgVongola = 1000000 / animalsPerKg;
-          console.log(`Calcolato mg_vongola da animalsPerKg: 1.000.000 / ${lastOperation.animalsPerKg} = ${mgVongola} mg`);
-        } else {
-          // Valore di default se nessun dato è disponibile
-          mgVongola = 0.1;
-          console.log(`Nessun dato disponibile, impostato valore di default: ${mgVongola} mg`);
-        }
-        
-        // Validazione finale: assicurati che sia un numero valido e positivo
-        if (isNaN(mgVongola) || !isFinite(mgVongola) || mgVongola < 0.1) {
-          mgVongola = 0.1;
-          console.log(`Valore non valido corretto a: ${mgVongola} mg`);
-        }
-      } catch (err) {
-        console.error(`Errore nel calcolo di mg_vongola:`, err);
-        mgVongola = 0.1; // Valore predefinito in caso di errori
+      console.log(`Verifico average_weight: type=${typeof lastOperation.averageWeight}, value=${lastOperation.averageWeight}`);
+      
+      // Determiniamo il valore corretto per mg_vongola
+      if (lastOperation.averageWeight !== undefined && lastOperation.averageWeight !== null) {
+        // Preserva esattamente il valore originale di averageWeight senza alcuna modifica
+        mgVongola = Number(lastOperation.averageWeight);
+        console.log(`Utilizzo average_weight originale: ${mgVongola} mg (ESATTO)`);
+      } else if (lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0) {
+        // Calcolo alternativo se average_weight non è disponibile
+        mgVongola = 1000000 / Number(lastOperation.animalsPerKg);
+        console.log(`Calcolato mg_vongola da animalsPerKg: ${mgVongola} mg`);
+      }
+      
+      // Controllo solo per valori non validi o negativi
+      // NON applichiamo più alcun limite minimo, preserviamo il valore esatto originale
+      if (isNaN(mgVongola) || !isFinite(mgVongola) || mgVongola <= 0) {
+        console.warn(`Valore non valido o negativo (${mgVongola}), impostato a 0.001 mg`);
+        mgVongola = 0.001; // valore minimo positivo solo in caso di errore
       }
       
       // Genera identificativo univoco (prefisso flupsy + codice ciclo)
