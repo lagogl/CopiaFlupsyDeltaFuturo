@@ -42,6 +42,26 @@ import {
   restoreDatabaseFromUploadedFile,
   deleteBackup
 } from './database-service';
+
+// Configurazione multer per i file di importazione
+const importStorage = multer.diskStorage({
+  destination: function (req, file, cb) {
+    // Assicurati che la directory esista
+    const uploadDir = path.join(process.cwd(), 'uploads/imports');
+    if (!fs.existsSync(uploadDir)) {
+      fs.mkdirSync(uploadDir, { recursive: true });
+    }
+    cb(null, 'uploads/imports/');
+  },
+  filename: function (req, file, cb) {
+    const timestamp = Date.now();
+    const originalName = file.originalname;
+    cb(null, `import_${timestamp}_${originalName}`);
+  }
+});
+
+// Istanza multer per l'importazione
+const importUpload = multer({ storage: importStorage });
 import { 
   insertFlupsySchema,
   insertBasketSchema, 
@@ -5469,41 +5489,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sequences", SequenceController.getSequencesInfo);
   app.post("/api/sequences/reset", SequenceController.resetSequence);
 
-  // Configura il middleware per l'upload dei file di importazione
-  const importStorage = multer.diskStorage({
-    destination: function (req, file, cb) {
-      cb(null, 'uploads/imports/')
-    },
-    filename: function (req, file, cb) {
-      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
-      cb(null, uniqueSuffix + path.extname(file.originalname))
-    }
-  });
-  
-  const importUpload = multer({ storage: importStorage });
-  
   // === API Importazione ===
   
   // Endpoint per caricare il file di importazione
-  app.post('/api/import/upload', importUpload.single('file'), (req, res) => {
+  app.post("/api/import/upload", importUpload.single("file"), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({
           success: false,
-          message: 'Nessun file caricato'
+          message: "Nessun file caricato"
         });
+      }
+      
+      const filePath = req.file.path;
+      
+      // Controlla se il file è in formato CSV
+      if (filePath.toLowerCase().endsWith('.csv')) {
+        console.log("File CSV rilevato, sarà convertito in JSON");
+        // Qui verrà aggiunta la logica per convertire il CSV in JSON
       }
       
       res.json({
         success: true,
-        message: 'File caricato con successo',
-        filePath: req.file.path
+        message: "File caricato con successo",
+        filePath: filePath
       });
     } catch (error) {
-      console.error('Errore durante il caricamento del file:', error);
+      console.error("Errore durante il caricamento del file:", error);
       res.status(500).json({
         success: false,
-        message: 'Errore durante il caricamento del file'
+        message: "Errore durante il caricamento del file"
       });
     }
   });

@@ -397,17 +397,8 @@ export async function executeImport(importFilePath: string, confirmImport: boole
             status: 'completata'
           }).returning();
           
-          // Crea la misurazione associata all'operazione aggiuntiva
-          const [additionalMeasurement] = await db.insert(measurements).values({
-            operationId: additionalOperation.id,
-            basketId: newBasket.id,
-            lotId: lotId,
-            totalAnimals: basketData.animali_totali,
-            animalsPerKg: basketData.animali_per_kg,
-            averageWeight: basketData.peso_medio_mg,
-            measureDate: basketData.ultima_operazione.data,
-            createdAt: new Date()
-          }).returning();
+          // Nota: La tabella measurements non è presente nello schema attuale
+          // Utilizziamo solo le operazioni per registrare i dati aggiuntivi
           
           result.details!.createdOperations++;
         }

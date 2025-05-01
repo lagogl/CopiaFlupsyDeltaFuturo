@@ -4,8 +4,13 @@ import { exec } from 'child_process';
 import { promisify } from 'util';
 import { format } from 'date-fns';
 import { v4 as uuidv4 } from 'uuid';
+import { fileURLToPath } from 'url';
 
 const execPromise = promisify(exec);
+
+// Per ottenere __dirname in moduli ES
+const __filename = fileURLToPath(import.meta.url);
+const __dirname = path.dirname(__filename);
 
 // Assicurati che le directory esistano
 const backupDir = path.join(__dirname, '../database_backups');
