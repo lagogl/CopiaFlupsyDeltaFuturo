@@ -216,7 +216,9 @@ export default function ExportPage() {
                                         {giacenza.data_iniziale}
                                       </td>
                                       <td className="px-4 py-2 whitespace-nowrap text-sm text-gray-500">
-                                        {giacenza.mg_vongola}
+                                        {typeof giacenza.mg_vongola === 'number' 
+                                          ? giacenza.mg_vongola.toFixed(2) 
+                                          : giacenza.mg_vongola}
                                       </td>
                                     </tr>
                                   ))}

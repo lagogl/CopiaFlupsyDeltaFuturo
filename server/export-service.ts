@@ -117,24 +117,36 @@ export async function generateExportGiacenze(
       
       // Usa average_weight che è già espresso in milligrammi
       let mgVongola = 0;
-      if (lastOperation.averageWeight && lastOperation.averageWeight > 0) {
-        // average_weight è già espresso in milligrammi, usa direttamente il valore
-        // mantenendo i decimali
-        mgVongola = parseFloat(String(lastOperation.averageWeight));
-        console.log(`Utilizzo average_weight: ${mgVongola} mg`);
-      } else if (lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0) {
-        // Calcolo alternativo se average_weight non è disponibile
-        const animalsPerKg = parseFloat(String(lastOperation.animalsPerKg));
-        if (animalsPerKg > 0) {
-          mgVongola = 1000000 / animalsPerKg; // Conserva i decimali
-          console.log(`Calcolo mg_vongola da animalsPerKg: 1.000.000 / ${lastOperation.animalsPerKg} = ${mgVongola} mg`);
+      try {
+        if (lastOperation.averageWeight && lastOperation.averageWeight > 0) {
+          // average_weight è già espresso in milligrammi, usa direttamente il valore
+          // mantenendo i decimali e assicurandoti che sia un numero
+          mgVongola = parseFloat(String(lastOperation.averageWeight));
+          console.log(`Utilizzo average_weight: ${mgVongola} mg (valore originale: ${lastOperation.averageWeight})`);
+        } else if (lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0) {
+          // Calcolo alternativo se average_weight non è disponibile
+          const animalsPerKg = parseFloat(String(lastOperation.animalsPerKg));
+          if (animalsPerKg > 0) {
+            // Utilizza un numero con precisione a 2 decimali
+            mgVongola = +(1000000 / animalsPerKg).toFixed(2);
+            console.log(`Calcolo mg_vongola da animalsPerKg: 1.000.000 / ${lastOperation.animalsPerKg} = ${mgVongola} mg`);
+          }
         }
-      }
-      
-      // Assicurati che ci sia sempre almeno 0.1mg
-      if (mgVongola < 0.1) {
-        mgVongola = 0.1;
-        console.log(`Peso corretto al minimo di 0.1 mg`);
+        
+        // Assicurati che ci sia sempre almeno 0.1mg e che sia un numero valido
+        if (mgVongola < 0.1 || isNaN(mgVongola)) {
+          mgVongola = 0.1;
+          console.log(`Peso corretto al minimo di 0.1 mg (era: ${mgVongola})`);
+        }
+        
+        // Verifica che sia un numero finito
+        if (!isFinite(mgVongola)) {
+          mgVongola = 0.1;
+          console.log(`Peso corretto perché non era un numero finito`);
+        }
+      } catch (err) {
+        console.error(`Errore nel calcolo di mg_vongola:`, err);
+        mgVongola = 0.1; // Valore predefinito in caso di errori
       }
       
       // Genera identificativo univoco (prefisso flupsy + codice ciclo)
