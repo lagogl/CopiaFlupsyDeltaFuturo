@@ -295,13 +295,12 @@ export async function executeImport(importFilePath: string, confirmImport: boole
         // Crea una nuova taglia
         const [newSize] = await db.insert(sizes).values({
           name: `Taglia ${sizeCode}`,
-          minWeight: Math.max(0, sizeValue * 0.8),
-          maxWeight: sizeValue * 1.2,
+          code: sizeCode,
+          sizeMm: sizeValue / 10, // Convertito da micron a mm
           minAnimalsPerKg: Math.max(0, Math.floor(1000000 / (sizeValue * 1.2))),
           maxAnimalsPerKg: Math.floor(1000000 / Math.max(1, sizeValue * 0.8)),
-          category: "standard",
-          code: sizeCode,
-          color: "#" + Math.floor(Math.random()*16777215).toString(16)
+          color: "#" + Math.floor(Math.random()*16777215).toString(16),
+          notes: `Taglia creata da importazione ${importData.fonte}`
         }).returning();
         
         sizeMap.set(sizeCode, newSize.id);
@@ -383,16 +382,13 @@ export async function executeImport(importFilePath: string, confirmImport: boole
             type: mapOperationType(basketData.ultima_operazione.tipo),
             date: basketData.ultima_operazione.data,
             basketId: newBasket.id,
+            cycleId: 1, // Ciclo predefinito iniziale
             lotId: lotId,
-            flupsyId: flupsyId,
             sizeId: sizeId,
-            totalAnimals: basketData.animali_totali,
+            animalCount: basketData.animali_totali,
             animalsPerKg: basketData.animali_per_kg,
             averageWeight: basketData.peso_medio_mg,
-            notes: `Importato da ${importData.fonte} (ultima operazione)`,
-            weight: null,
-            mortality: null,
-            status: 'completata'
+            notes: `Importato da ${importData.fonte} (ultima operazione)`
           }).returning();
           
           // Nota: La tabella measurements non è presente nello schema attuale
