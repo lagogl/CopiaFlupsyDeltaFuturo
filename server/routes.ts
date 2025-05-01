@@ -18,6 +18,10 @@ import {
 import { 
   checkCyclesForTP3000 
 } from "./controllers/growth-notification-handler";
+import {
+  analyzeImport,
+  executeImport
+} from "./import-service";
 
 // Importazione dei controller
 import * as SelectionController from "./controllers/selection-controller";
