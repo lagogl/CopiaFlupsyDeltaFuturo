@@ -1,6 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
+import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
 import {
   Card,
@@ -108,6 +109,7 @@ interface MortalityRate {
 }
 
 export default function Inventory() {
+  const { toast } = useToast();
   // Stato per le statistiche di inventario
   const [inventoryStats, setInventoryStats] = useState<{
     totalBaskets: number;
@@ -920,10 +922,20 @@ export default function Inventory() {
                       // Crea un link temporaneo per il download
                       const downloadLink = document.createElement('a');
                       downloadLink.href = '/api/export/basket-details-csv';
-                      downloadLink.setAttribute('download', `dettaglio_ceste_${new Date().toISOString().split('T')[0]}.csv`);
+                      const today = new Date().toISOString().split('T')[0];
+                      const filename = `dettaglio_ceste_${today}.csv`;
+                      downloadLink.setAttribute('download', filename);
                       document.body.appendChild(downloadLink);
                       downloadLink.click();
                       document.body.removeChild(downloadLink);
+                      
+                      // Mostra una notifica di conferma all'utente
+                      toast({
+                        title: "Esportazione completata",
+                        description: `Il file "${filename}" è stato scaricato correttamente.`,
+                        variant: "default",
+                        duration: 5000,
+                      });
                     }}
                   >
                     <FileDown className="h-4 w-4" />
