@@ -139,11 +139,15 @@ export async function generateExportGiacenze(
         mgVongola = 0.001; // valore minimo positivo solo in caso di errore
       }
       
-      // Genera identificativo univoco (prefisso flupsy + codice ciclo)
-      const prefix = flupsy.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase();
+      // Genera identificativo univoco con nome flupsy + codice ciclo
+      // Usiamo il nome completo del FLUPSY invece dell'abbreviazione
+      // Rimuoviamo spazi e caratteri speciali dal nome flupsy
+      const prefixSanitized = flupsy.name.replace(/[^a-zA-Z0-9]/g, '');
+      
+      // Creazione dell'identificativo
       const identifier = lot ? 
-        `${prefix}-${'L' + lot.id}` : 
-        `${prefix}-${cycle.id}`;
+        `${prefixSanitized}-${'L' + lot.id}` : 
+        `${prefixSanitized}-${cycle.id}`;
       console.log(`Identificativo generato: ${identifier}`);
       
       // Calcola pezzi per kg (animalsPerKg)
