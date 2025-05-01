@@ -361,16 +361,14 @@ export async function executeImport(importFilePath: string, confirmImport: boole
           type: 'prima-attivazione',
           date: basketData.data_attivazione,
           basketId: newBasket.id,
+          cycleId: 1, // Ciclo predefinito iniziale
           lotId: lotId,
           flupsyId: flupsyId,
           sizeId: sizeId,
-          totalAnimals: basketData.animali_totali,
+          animalCount: basketData.animali_totali,
           animalsPerKg: basketData.animali_per_kg,
           averageWeight: basketData.peso_medio_mg,
-          notes: `Importato da ${importData.fonte}`,
-          weight: null,
-          mortality: null,
-          status: 'completata'
+          notes: `Importato da ${importData.fonte}`
         }).returning();
         
         // Nota: La tabella measurements non è presente nello schema attuale
