@@ -115,25 +115,26 @@ export async function generateExportGiacenze(
       const startDate = format(new Date(cycle.startDate), 'yyyy-MM-dd');
       console.log(`Data iniziale ciclo: ${startDate}`);
       
-      // Usa average_weight (peso medio in grammi) e converti in mg (x1000)
+      // Usa average_weight che è già espresso in milligrammi
       let mgVongola = 0;
       if (lastOperation.averageWeight && lastOperation.averageWeight > 0) {
-        // average_weight è espresso in grammi, converti in mg moltiplicando per 1000
-        mgVongola = Math.round(lastOperation.averageWeight * 1000);
-        console.log(`Utilizzo average_weight: ${lastOperation.averageWeight}g = ${mgVongola} mg`);
+        // average_weight è già espresso in milligrammi, usa direttamente il valore
+        // mantenendo i decimali
+        mgVongola = parseFloat(String(lastOperation.averageWeight));
+        console.log(`Utilizzo average_weight: ${mgVongola} mg`);
       } else if (lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0) {
         // Calcolo alternativo se average_weight non è disponibile
         const animalsPerKg = parseFloat(String(lastOperation.animalsPerKg));
         if (animalsPerKg > 0) {
-          mgVongola = Math.ceil(1000000 / animalsPerKg);
+          mgVongola = 1000000 / animalsPerKg; // Conserva i decimali
           console.log(`Calcolo mg_vongola da animalsPerKg: 1.000.000 / ${lastOperation.animalsPerKg} = ${mgVongola} mg`);
         }
       }
       
-      // Assicurati che ci sia sempre almeno 1mg
-      if (mgVongola < 1) {
-        mgVongola = 1;
-        console.log(`Peso corretto al minimo di 1 mg`);
+      // Assicurati che ci sia sempre almeno 0.1mg
+      if (mgVongola < 0.1) {
+        mgVongola = 0.1;
+        console.log(`Peso corretto al minimo di 0.1 mg`);
       }
       
       // Genera identificativo univoco (prefisso flupsy + codice ciclo)
