@@ -16,13 +16,11 @@ import {
   getNotificationSettings, 
   updateNotificationSetting
 } from "./controllers/notification-settings-controller";
+import { analyzeImport, executeImport } from './import-service';
 import { 
   checkCyclesForTP3000 
 } from "./controllers/growth-notification-handler";
-import {
-  analyzeImport,
-  executeImport
-} from "./import-service";
+
 
 // Importazione dei controller
 import * as SelectionController from "./controllers/selection-controller";
@@ -116,9 +114,17 @@ const getBackupUploadDir = () => {
   return uploadDir;
 };
 
-import multer from 'multer';
-import path from 'path';
-import { analyzeImport, executeImport } from './import-service';
+// Preparazione per la gestione dei file di importazione
+const getImportUploadDir = () => {
+  const uploadDir = path.join(process.cwd(), 'uploads/imports');
+  
+  // Assicurati che la directory esista
+  if (!fs.existsSync(uploadDir)) {
+    fs.mkdirSync(uploadDir, { recursive: true });
+  }
+  
+  return uploadDir;
+};
 
 export async function registerRoutes(app: Express): Promise<Server> {
   // === Autenticazione routes ===
@@ -4602,7 +4608,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     fs.mkdirSync(uploadDir, { recursive: true });
   }
   
-  const upload = multer({ 
+  const backupUpload = multer({ 
     dest: uploadDir,
     limits: { fileSize: 10 * 1024 * 1024 }, // Limite 10MB
   });
@@ -4727,7 +4733,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // Upload del file per l'importazione
-  app.post("/api/import/upload", upload.single("file"), async (req, res) => {
+  app.post("/api/import/upload", importUpload.single("file"), async (req, res) => {
     try {
       if (!req.file) {
         return res.status(400).json({
@@ -5462,6 +5468,101 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API per gestione sequenze ID database
   app.get("/api/sequences", SequenceController.getSequencesInfo);
   app.post("/api/sequences/reset", SequenceController.resetSequence);
+
+  // Configura il middleware per l'upload dei file di importazione
+  const importStorage = multer.diskStorage({
+    destination: function (req, file, cb) {
+      cb(null, 'uploads/imports/')
+    },
+    filename: function (req, file, cb) {
+      const uniqueSuffix = Date.now() + '-' + Math.round(Math.random() * 1E9)
+      cb(null, uniqueSuffix + path.extname(file.originalname))
+    }
+  });
+  
+  const importUpload = multer({ storage: importStorage });
+  
+  // === API Importazione ===
+  
+  // Endpoint per caricare il file di importazione
+  app.post('/api/import/upload', importUpload.single('file'), (req, res) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({
+          success: false,
+          message: 'Nessun file caricato'
+        });
+      }
+      
+      res.json({
+        success: true,
+        message: 'File caricato con successo',
+        filePath: req.file.path
+      });
+    } catch (error) {
+      console.error('Errore durante il caricamento del file:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore durante il caricamento del file'
+      });
+    }
+  });
+  
+  // Endpoint per analizzare il file importato
+  app.post('/api/import/analyze', async (req, res) => {
+    try {
+      const { filePath } = req.body;
+      
+      if (!filePath) {
+        return res.status(400).json({
+          success: false,
+          message: 'Percorso del file mancante'
+        });
+      }
+      
+      const result = await analyzeImport(filePath);
+      
+      if (!result.success) {
+        return res.status(400).json(result);
+      }
+      
+      res.json({
+        success: true,
+        message: 'Analisi completata con successo',
+        analysis: result.analysis
+      });
+    } catch (error) {
+      console.error('Errore durante l\'analisi del file:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore durante l\'analisi del file'
+      });
+    }
+  });
+  
+  // Endpoint per eseguire l'importazione
+  app.post('/api/import/execute', async (req, res) => {
+    try {
+      const { filePath, confirm } = req.body;
+      
+      if (!filePath) {
+        return res.status(400).json({
+          success: false,
+          message: 'Percorso del file mancante'
+        });
+      }
+      
+      const result = await executeImport(filePath, confirm);
+      
+      res.json(result);
+    } catch (error) {
+      console.error('Errore durante l\'importazione:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore durante l\'importazione'
+      });
+    }
+  });
   
   return httpServer;
 }

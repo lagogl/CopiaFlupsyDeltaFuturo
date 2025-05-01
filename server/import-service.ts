@@ -7,10 +7,9 @@ import {
   flupsys,
   lots,
   operations,
-  sizes,
-  measurements
+  sizes
 } from '@shared/schema';
-import { backupDatabase } from './backup-service';
+import { createDatabaseBackup } from './backup-service';
 import { format } from 'date-fns';
 
 interface ImportBasket {
@@ -188,16 +187,23 @@ export async function executeImport(importFilePath: string, confirmImport: boole
   try {
     // Crea un backup prima dell'importazione
     console.log('Creazione backup pre-importazione...');
-    const backupInfo = await backupDatabase(`pre_import_${format(new Date(), 'yyyyMMdd_HHmmss')}`);
     
-    if (!backupInfo.success) {
+    // Dichiariamo backupId fuori dal blocco try per renderlo disponibile globalmente nella funzione
+    let backupId: string = '';
+    
+    try {
+      const backupInfo = await createDatabaseBackup();
+      console.log('Backup creato, ID:', backupInfo.id);
+      
+      // Salva l'ID del backup per possibili rollback
+      backupId = backupInfo.id;
+    } catch (backupError) {
+      console.error('Errore durante la creazione del backup:', backupError);
       return {
         success: false,
         message: 'Errore durante la creazione del backup. Importazione annullata.'
       };
     }
-    
-    console.log('Backup creato, ID:', backupInfo.backupId);
     
     const importData: ImportData = JSON.parse(fs.readFileSync(importFilePath, 'utf8'));
     
@@ -212,7 +218,7 @@ export async function executeImport(importFilePath: string, confirmImport: boole
         createdLots: 0,
         createdOperations: 0,
         createdFlupsy: 0,
-        backupId: backupInfo.backupId
+        backupId: backupId // Utilizziamo la variabile backupId dichiarata sopra
       }
     };
     
@@ -364,17 +370,8 @@ export async function executeImport(importFilePath: string, confirmImport: boole
           status: 'completata'
         }).returning();
         
-        // Crea la misurazione associata all'operazione
-        const [newMeasurement] = await db.insert(measurements).values({
-          operationId: newOperation.id,
-          basketId: newBasket.id,
-          lotId: lotId,
-          totalAnimals: basketData.animali_totali,
-          animalsPerKg: basketData.animali_per_kg,
-          averageWeight: basketData.peso_medio_mg,
-          measureDate: basketData.data_attivazione,
-          createdAt: new Date()
-        }).returning();
+        // Nota: La tabella measurements non è presente nello schema attuale
+        // Utilizziamo solo le operazioni per registrare i dati
         
         result.details!.processedBaskets++;
         result.details!.createdOperations++;
