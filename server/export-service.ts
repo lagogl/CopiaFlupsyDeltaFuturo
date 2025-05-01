@@ -12,12 +12,23 @@ interface GiacenzaItem {
   quantita: number;
   data_iniziale: string;
   mg_vongola: number;
+  flupsy?: string;
+  basket_id?: number;
+  basket_number?: number;
+  position?: string;
+  peso_totale_kg?: number;
 }
 
 interface GiacenzeExport {
   data_importazione: string;
   fornitore: string;
+  versione: string;
   giacenze: GiacenzaItem[];
+  statistiche?: {
+    totale_quantita: number;
+    totale_peso_kg: number;
+    taglie: Record<string, number>;
+  };
 }
 
 /**
