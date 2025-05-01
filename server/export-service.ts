@@ -116,37 +116,38 @@ export async function generateExportGiacenze(
       console.log(`Data iniziale ciclo: ${startDate}`);
       
       // Usa average_weight che è già espresso in milligrammi
-      let mgVongola = 0;
+      // Assegna direttamente il valore di average_weight senza alcuna modifica
       try {
-        if (lastOperation.averageWeight && lastOperation.averageWeight > 0) {
-          // average_weight è già espresso in milligrammi, usa direttamente il valore
-          // mantenendo i decimali e assicurandoti che sia un numero
-          mgVongola = parseFloat(String(lastOperation.averageWeight));
-          console.log(`Utilizzo average_weight: ${mgVongola} mg (valore originale: ${lastOperation.averageWeight})`);
+        if (lastOperation.averageWeight !== undefined && lastOperation.averageWeight !== null) {
+          // Usiamo direttamente il valore originale senza alcuna modifica
+          console.log(`Utilizzo average_weight originale: ${lastOperation.averageWeight} mg`);
+          
+          // Nota: se esportazione fallisce perché richiede un numero, decommentare queste righe
+          // ma l'obiettivo è mantenere il valore esatto inclusi tutti i decimali
+          
+          // Verifica che sia un numero valido
+          if (isNaN(Number(lastOperation.averageWeight)) || !isFinite(Number(lastOperation.averageWeight))) {
+            console.log(`Valore non valido, impostato a 0.1`);
+            lastOperation.averageWeight = 0.1;
+          }
         } else if (lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0) {
           // Calcolo alternativo se average_weight non è disponibile
           const animalsPerKg = parseFloat(String(lastOperation.animalsPerKg));
           if (animalsPerKg > 0) {
-            // Utilizza un numero con precisione a 2 decimali
-            mgVongola = +(1000000 / animalsPerKg).toFixed(2);
-            console.log(`Calcolo mg_vongola da animalsPerKg: 1.000.000 / ${lastOperation.animalsPerKg} = ${mgVongola} mg`);
+            // Calcoliamo il peso
+            lastOperation.averageWeight = 1000000 / animalsPerKg;
+            console.log(`Calcolato mg_vongola da animalsPerKg: 1.000.000 / ${lastOperation.animalsPerKg} = ${lastOperation.averageWeight} mg`);
           }
         }
         
         // Assicurati che ci sia sempre almeno 0.1mg e che sia un numero valido
-        if (mgVongola < 0.1 || isNaN(mgVongola)) {
-          mgVongola = 0.1;
-          console.log(`Peso corretto al minimo di 0.1 mg (era: ${mgVongola})`);
-        }
-        
-        // Verifica che sia un numero finito
-        if (!isFinite(mgVongola)) {
-          mgVongola = 0.1;
-          console.log(`Peso corretto perché non era un numero finito`);
+        if (!lastOperation.averageWeight || lastOperation.averageWeight < 0.1) {
+          lastOperation.averageWeight = 0.1;
+          console.log(`Peso corretto al minimo di 0.1 mg`);
         }
       } catch (err) {
-        console.error(`Errore nel calcolo di mg_vongola:`, err);
-        mgVongola = 0.1; // Valore predefinito in caso di errori
+        console.error(`Errore nell'uso di average_weight:`, err);
+        lastOperation.averageWeight = 0.1; // Valore predefinito in caso di errori
       }
       
       // Genera identificativo univoco (prefisso flupsy + codice ciclo)
@@ -166,7 +167,7 @@ export async function generateExportGiacenze(
         taglia: size.code,
         quantita: lastOperation.animalCount || 0,
         data_iniziale: startDate,
-        mg_vongola: mgVongola,
+        mg_vongola: lastOperation.averageWeight, // Usa direttamente il valore di averageWeight
         pezzi_kg_attuali: pezziKgAttuali
       };
       console.log(`Aggiungo elemento giacenza:`, giacenzaItem);
