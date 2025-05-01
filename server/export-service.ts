@@ -12,23 +12,13 @@ interface GiacenzaItem {
   quantita: number;
   data_iniziale: string;
   mg_vongola: number;
-  flupsy?: string;
-  basket_id?: number;
-  basket_number?: number;
-  position?: string;
-  peso_totale_kg?: number;
+  pezzi_kg_attuali: number;
 }
 
 interface GiacenzeExport {
   data_importazione: string;
   fornitore: string;
-  versione: string;
   giacenze: GiacenzaItem[];
-  statistiche?: {
-    totale_quantita: number;
-    totale_peso_kg: number;
-    taglie: Record<string, number>;
-  };
 }
 
 /**
@@ -103,13 +93,17 @@ export async function generateExportGiacenze(
         `${prefix}-${'L' + lot.id}` : 
         `${prefix}-${cycle.id}`;
       
+      // Calcola pezzi per kg (animalsPerKg)
+      const pezziKgAttuali = lastOperation.animalsPerKg || 0;
+      
       // Aggiungi all'array delle giacenze
       giacenze.push({
-        identificativo: identifier,
+        identificativo: identifier + "-B" + basket.physicalNumber, // Identificativo unico che include il numero del cestello
         taglia: size.code,
         quantita: lastOperation.animalCount || 0,
         data_iniziale: startDate,
-        mg_vongola: mgVongola
+        mg_vongola: mgVongola,
+        pezzi_kg_attuali: pezziKgAttuali
       });
     }
     
