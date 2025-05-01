@@ -294,6 +294,11 @@ export const lots = pgTable("lots", {
   sizeId: integer("size_id"), // reference to the size
   notes: text("notes"),
   state: text("state").notNull().default("active"), // active, exhausted
+  active: boolean("active").notNull().default(true), // se il lotto è attivo o dismesso
+  externalId: text("external_id"), // ID esterno per integrazioni con altri sistemi
+  description: text("description"), // Descrizione del lotto
+  origin: text("origin"), // Origine del lotto (es. Importazione, Vagliatura, ecc.)
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
 });
 
 // Position History (Cronologia delle posizioni delle ceste)
@@ -367,7 +372,8 @@ export const insertSgrGiornalieriSchema = createInsertSchema(sgrGiornalieri).omi
 
 export const insertLotSchema = createInsertSchema(lots).omit({ 
   id: true,
-  state: true 
+  state: true,
+  createdAt: true
 });
 
 export const insertBasketPositionHistorySchema = createInsertSchema(basketPositionHistory).omit({
