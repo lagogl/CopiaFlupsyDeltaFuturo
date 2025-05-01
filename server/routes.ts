@@ -4621,6 +4621,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint per esportare i dati dettagliati delle ceste in formato CSV
+  app.get("/api/export/basket-details-csv", async (req, res) => {
+    try {
+      // Importa il servizio di esportazione on-demand
+      const { generateBasketDetailCSV } = await import("./export-service");
+      
+      // Genera il contenuto CSV
+      const csvContent = await generateBasketDetailCSV(storage);
+      
+      // Imposta header per il download del file
+      const dateStr = new Date().toISOString().split('T')[0];
+      const filename = `dettaglio_ceste_${dateStr}.csv`;
+      
+      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
+      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+      
+      // Invia il CSV come risposta
+      res.status(200).send(csvContent);
+    } catch (error) {
+      console.error("Errore durante l'esportazione CSV dei dettagli ceste:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: `Errore durante l'esportazione CSV: ${(error as Error).message}`
+      });
+    }
+  });
+  
   // API per Backup e Ripristino del Database
   // ==============================================================
   
