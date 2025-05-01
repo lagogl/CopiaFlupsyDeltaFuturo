@@ -235,13 +235,12 @@ export async function executeImport(importFilePath: string, confirmImport: boole
       } else {
         // Crea un nuovo lotto
         const [newLot] = await db.insert(lots).values({
-          arrivalDate: new Date(lot.data_creazione),
+          arrivalDate: lot.data_creazione,
           supplier: lot.fornitore,
           description: lot.descrizione,
           origin: lot.origine,
           externalId: lot.id,
-          active: true,
-          createdAt: new Date()
+          active: true
         }).returning();
         
         lotMap.set(lot.id, newLot.id);
@@ -251,8 +250,10 @@ export async function executeImport(importFilePath: string, confirmImport: boole
     
     // Crea o trova i flupsy
     const flupsyMap = new Map<string, number>(); // Mappa nome -> id del DB
+    // Evita i duplicati con un set e lo trasforma in array
+    const flupsyNames = [...new Set(importData.ceste.map(b => b.flupsy).filter(Boolean))];
     
-    for (const flupsyName of new Set(importData.ceste.map(b => b.flupsy))) {
+    for (const flupsyName of flupsyNames) {
       const existingFlupsy = await db.query.flupsys.findFirst({
         where: eq(flupsys.name, flupsyName)
       });
@@ -276,8 +277,10 @@ export async function executeImport(importFilePath: string, confirmImport: boole
     
     // Crea o trova le taglie
     const sizeMap = new Map<string, number>(); // Mappa codice -> id del DB
+    // Evita i duplicati con un set e lo trasforma in array
+    const sizeCodes = [...new Set(importData.ceste.map(b => b.taglia_codice).filter(Boolean))];
     
-    for (const sizeCode of new Set(importData.ceste.map(b => b.taglia_codice))) {
+    for (const sizeCode of sizeCodes) {
       const existingSize = await db.query.sizes.findFirst({
         where: eq(sizes.code, sizeCode)
       });
@@ -285,15 +288,20 @@ export async function executeImport(importFilePath: string, confirmImport: boole
       if (existingSize) {
         sizeMap.set(sizeCode, existingSize.id);
       } else {
+        // Estrai il valore numerico dalla taglia (es. TP-500 -> 500)
+        const sizeParts = sizeCode.split('-');
+        const sizeValue = sizeParts.length > 1 ? parseInt(sizeParts[1], 10) : 0;
+        
         // Crea una nuova taglia
         const [newSize] = await db.insert(sizes).values({
-          code: sizeCode,
           name: `Taglia ${sizeCode}`,
-          minWeight: 0,
-          maxWeight: 10000,
-          minAnimalsPerKg: 0,
-          maxAnimalsPerKg: 10000,
-          active: true
+          minWeight: Math.max(0, sizeValue * 0.8),
+          maxWeight: sizeValue * 1.2,
+          minAnimalsPerKg: Math.max(0, Math.floor(1000000 / (sizeValue * 1.2))),
+          maxAnimalsPerKg: Math.floor(1000000 / Math.max(1, sizeValue * 0.8)),
+          category: "standard",
+          code: sizeCode,
+          color: "#" + Math.floor(Math.random()*16777215).toString(16)
         }).returning();
         
         sizeMap.set(sizeCode, newSize.id);
@@ -342,17 +350,14 @@ export async function executeImport(importFilePath: string, confirmImport: boole
           flupsyId: flupsyId,
           row: basketData.fila,
           position: basketData.posizione,
-          lotId: lotId,
+          state: basketData.stato,
           active: true,
           notes: basketData.note,
-          externalId: basketData.id_sistema_esterno,
-          status: basketData.stato,
-          createdAt: new Date()
+          externalId: basketData.id_sistema_esterno
         }).returning();
         
         // Crea l'operazione di prima attivazione
         const [newOperation] = await db.insert(operations).values({
-          id: undefined,
           type: 'prima-attivazione',
           date: basketData.data_attivazione,
           basketId: newBasket.id,
@@ -363,10 +368,8 @@ export async function executeImport(importFilePath: string, confirmImport: boole
           animalsPerKg: basketData.animali_per_kg,
           averageWeight: basketData.peso_medio_mg,
           notes: `Importato da ${importData.fonte}`,
-          createdAt: new Date(),
           weight: null,
           mortality: null,
-          mortanimalslity: null,
           status: 'completata'
         }).returning();
         
@@ -379,7 +382,6 @@ export async function executeImport(importFilePath: string, confirmImport: boole
         // Se c'è un'operazione aggiuntiva nell'importazione, la aggiungiamo
         if (basketData.ultima_operazione && basketData.ultima_operazione.tipo && basketData.ultima_operazione.data) {
           const [additionalOperation] = await db.insert(operations).values({
-            id: undefined,
             type: mapOperationType(basketData.ultima_operazione.tipo),
             date: basketData.ultima_operazione.data,
             basketId: newBasket.id,
@@ -390,10 +392,8 @@ export async function executeImport(importFilePath: string, confirmImport: boole
             animalsPerKg: basketData.animali_per_kg,
             averageWeight: basketData.peso_medio_mg,
             notes: `Importato da ${importData.fonte} (ultima operazione)`,
-            createdAt: new Date(),
             weight: null,
             mortality: null,
-            mortanimalslity: null,
             status: 'completata'
           }).returning();
           
