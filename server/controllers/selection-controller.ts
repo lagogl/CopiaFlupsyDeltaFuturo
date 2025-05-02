@@ -1396,9 +1396,15 @@ export async function addDestinationBaskets(req: Request, res: Response) {
  * Completa definitivamente una selezione e processa i cestelli
  */
 export async function completeSelection(req: Request, res: Response) {
+  // Variabile per tracciare errori post-commit per logging
+  let postCommitErrors: Error[] = [];
+  
   try {
     const { id } = req.params;
     const saleNotificationsToCreate: number[] = [];
+    
+    // Logging avanzato per tracciare l'operazione
+    console.log(`Avvio completamento selezione ID: ${id}. Timestamp: ${new Date().toISOString()}`);
     
     if (!id) {
       return res.status(400).json({
@@ -1630,25 +1636,48 @@ export async function completeSelection(req: Request, res: Response) {
               const positionStr = String(destBasket.position || '');
               const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
               
-              if (rowMatch) {
-                const row = rowMatch[1];
-                const positionNumber = parseInt(rowMatch[2]);
-                
-                if (!isNaN(positionNumber)) {
-                  // Aggiorna lo stato del cestello a active e setta la posizione
-                  await tx.update(baskets)
-                    .set({ 
-                      state: 'active',
-                      currentCycleId: cycleId,
-                      flupsyId: destBasket.flupsyId,
-                      position: positionNumber,
-                      row: row
-                    })
-                    .where(eq(baskets.id, destBasket.basketId));
-                }
+              if (!rowMatch) {
+                throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
               }
+              
+              const row = rowMatch[1];
+              const positionNumber = parseInt(rowMatch[2]);
+              
+              if (isNaN(positionNumber)) {
+                throw new Error(`Numero posizione non valido in: ${positionStr}`);
+              }
+              
+              // Verifica che la posizione sia disponibile prima di assegnarla
+              const basketInPosition = await tx.select()
+                .from(baskets)
+                .where(and(
+                  eq(baskets.flupsyId, destBasket.flupsyId),
+                  eq(baskets.row, row),
+                  eq(baskets.position, positionNumber),
+                  eq(baskets.state, 'active'),
+                  sql`${baskets.id} != ${destBasket.basketId}` // Esclude il cestello corrente
+                ));
+              
+              if (basketInPosition.length > 0) {
+                console.warn(`Posizione ${row}${positionNumber} nel FLUPSY ${destBasket.flupsyId} già occupata da cestello ${basketInPosition[0].id}. Verifica conflitto.`);
+                throw new Error(`La posizione ${row}${positionNumber} nel FLUPSY ${destBasket.flupsyId} è già occupata da un altro cestello`);
+              }
+              
+              // Aggiorna lo stato del cestello a active e setta la posizione
+              await tx.update(baskets)
+                .set({ 
+                  state: 'active',
+                  currentCycleId: cycleId,
+                  flupsyId: destBasket.flupsyId,
+                  position: positionNumber,
+                  row: row
+                })
+                .where(eq(baskets.id, destBasket.basketId));
+              
+              console.log(`Cestello ${destBasket.basketId} posizionato correttamente in ${row}${positionNumber} del FLUPSY ${destBasket.flupsyId}`);
             } catch (error) {
               console.error(`Errore nell'elaborazione della posizione per il cestello ${destBasket.basketId}:`, error);
+              throw new Error(`Errore durante il posizionamento del cestello ${destBasket.basketId}: ${error instanceof Error ? error.message : String(error)}`);
             }
           }
         }
