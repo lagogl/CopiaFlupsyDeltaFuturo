@@ -442,15 +442,6 @@ export default function CycleDetail() {
     enabled: !!cycleId
   });
   
-  // Fetch flupsy details if we have a cycle with basket data
-  const { data: flupsy, isLoading: flupsyLoading } = useQuery({
-    queryKey: ['/api/flupsys', cycle?.basket?.flupsyId],
-    queryFn: cycle?.basket?.flupsyId 
-      ? () => fetch(`/api/flupsys/${cycle.basket.flupsyId}`).then(res => res.json()) 
-      : undefined,
-    enabled: !!cycle?.basket?.flupsyId
-  });
-  
   // Function to handle operation deletion
   const handleDeleteOperation = async (operationId: number) => {
     try {
@@ -467,7 +458,7 @@ export default function CycleDetail() {
   };
   
   // Loading state
-  if (cycleLoading || opsLoading || (cycle?.basket?.flupsyId && flupsyLoading)) {
+  if (cycleLoading || opsLoading) {
     return (
       <div className="container mx-auto px-4 py-8">
         <div className="flex items-center mb-6">
@@ -576,7 +567,7 @@ export default function CycleDetail() {
             <div className="text-sm text-muted-foreground flex items-center">
               <span>Cesta #{cycle.basket?.physicalNumber}</span>
               <ChevronRight className="h-3 w-3 mx-1" />
-              <span>Flupsy {flupsy ? flupsy.name : `#${cycle.basket?.flupsyId}`}</span>
+              <span>Flupsy #{cycle.basket?.flupsyId}</span>
               <ChevronRight className="h-3 w-3 mx-1" />
               <span>{cycle.cycleCode || `ID ${cycle.id}`}</span>
             </div>

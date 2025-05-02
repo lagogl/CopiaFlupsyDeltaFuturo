@@ -4,7 +4,6 @@ import { storage } from "./storage";
 import path from 'path';
 import fs from 'fs';
 import { db } from "./db";
-import multer from 'multer';
 import { eq, and, isNull, sql } from "drizzle-orm";
 import { 
   selections, 
@@ -16,11 +15,9 @@ import {
   getNotificationSettings, 
   updateNotificationSetting
 } from "./controllers/notification-settings-controller";
-import { analyzeImport, executeImport } from './import-service';
 import { 
   checkCyclesForTP3000 
 } from "./controllers/growth-notification-handler";
-
 
 // Importazione dei controller
 import * as SelectionController from "./controllers/selection-controller";
@@ -42,26 +39,6 @@ import {
   restoreDatabaseFromUploadedFile,
   deleteBackup
 } from './database-service';
-
-// Configurazione multer per i file di importazione
-const importStorage = multer.diskStorage({
-  destination: function (req, file, cb) {
-    // Assicurati che la directory esista
-    const uploadDir = path.join(process.cwd(), 'uploads/imports');
-    if (!fs.existsSync(uploadDir)) {
-      fs.mkdirSync(uploadDir, { recursive: true });
-    }
-    cb(null, 'uploads/imports/');
-  },
-  filename: function (req, file, cb) {
-    const timestamp = Date.now();
-    const originalName = file.originalname;
-    cb(null, `import_${timestamp}_${originalName}`);
-  }
-});
-
-// Istanza multer per l'importazione
-const importUpload = multer({ storage: importStorage });
 import { 
   insertFlupsySchema,
   insertBasketSchema, 
@@ -125,18 +102,6 @@ import {
 // Preparazione per la gestione dei file di backup
 const getBackupUploadDir = () => {
   const uploadDir = path.join(process.cwd(), 'uploads/backups');
-  
-  // Assicurati che la directory esista
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-  
-  return uploadDir;
-};
-
-// Preparazione per la gestione dei file di importazione
-const getImportUploadDir = () => {
-  const uploadDir = path.join(process.cwd(), 'uploads/imports');
   
   // Assicurati che la directory esista
   if (!fs.existsSync(uploadDir)) {
@@ -4621,184 +4586,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === Endpoint di importazione dati ===
-  // Configurazione per l'upload di file
-  const uploadDir = path.join(process.cwd(), 'uploads/import');
-  if (!fs.existsSync(uploadDir)) {
-    fs.mkdirSync(uploadDir, { recursive: true });
-  }
-  
-  const backupUpload = multer({ 
-    dest: uploadDir,
-    limits: { fileSize: 10 * 1024 * 1024 }, // Limite 10MB
-  });
-  
-  // Analizza il file di importazione (senza eseguire le modifiche)
-  app.post("/api/import/analyze", async (req, res) => {
-    try {
-      const { filePath } = req.body;
-      
-      if (!filePath) {
-        return res.status(400).json({
-          success: false,
-          message: "Il percorso del file è obbligatorio"
-        });
-      }
-      
-      // Verifica che il file esista
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({
-          success: false,
-          message: "File non trovato"
-        });
-      }
-      
-      try {
-        // In questa fase iniziale, leggiamo solo il file JSON
-        const importData = JSON.parse(fs.readFileSync(filePath, 'utf8'));
-        
-        // Analisi di base
-        const analysis = {
-          totalBaskets: importData.ceste?.length || 0,
-          sourceName: importData.fonte || 'Sconosciuta',
-          lotCount: importData.lotti?.length || 0,
-          importDate: importData.data_importazione || new Date().toISOString().split('T')[0],
-          // In una versione futura qui implementeremo l'analisi completa con analyzeImport
-        };
-        
-        res.json({
-          success: true,
-          analysis
-        });
-      } catch (parseError) {
-        return res.status(400).json({
-          success: false,
-          message: "Il file non è un JSON valido: " + (parseError instanceof Error ? parseError.message : String(parseError))
-        });
-      }
-    } catch (error) {
-      console.error("Errore durante l'analisi dell'importazione:", error);
-      res.status(500).json({
-        success: false,
-        message: "Errore durante l'analisi dell'importazione: " + (error instanceof Error ? error.message : String(error))
-      });
-    }
-  });
-  
-  // Esegui l'importazione
-  app.post("/api/import/execute", async (req, res) => {
-    try {
-      const { filePath, confirm } = req.body;
-      
-      if (!filePath) {
-        return res.status(400).json({
-          success: false,
-          message: "Il percorso del file è obbligatorio"
-        });
-      }
-      
-      // Verifica che il file esista
-      if (!fs.existsSync(filePath)) {
-        return res.status(404).json({
-          success: false,
-          message: "File non trovato"
-        });
-      }
-      
-      // Se confirm non è true, restituisci solo un'anteprima
-      if (confirm !== true) {
-        res.json({
-          success: true,
-          message: "Anteprima importazione. Invia 'confirm: true' per eseguire l'importazione effettiva.",
-          // In una versione futura qui implementeremo l'importazione vera con executeImport
-          preview: true
-        });
-        return;
-      }
-      
-      // Crea un backup del database prima dell'importazione
-      let backupInfo;
-      try {
-        backupInfo = await createDatabaseBackup();
-        console.log("Backup del database creato con successo:", backupInfo);
-      } catch (backupError) {
-        console.error("Errore durante la creazione del backup:", backupError);
-        return res.status(500).json({
-          success: false,
-          message: "Impossibile creare un backup del database prima dell'importazione"
-        });
-      }
-      
-      // Qui implementeremo la logica di importazione effettiva in una versione futura
-      
-      res.json({
-        success: true,
-        message: "Importazione simulata completata con successo.",
-        backupId: backupInfo.filename,
-        details: {
-          processedBaskets: 0,
-          skippedBaskets: 0,
-          createdLots: 0,
-          createdOperations: 0,
-          note: "Questa è solo una simulazione. L'implementazione completa sarà disponibile in una versione futura."
-        }
-      });
-    } catch (error) {
-      console.error("Errore durante l'esecuzione dell'importazione:", error);
-      res.status(500).json({
-        success: false,
-        message: "Errore durante l'esecuzione dell'importazione: " + (error instanceof Error ? error.message : String(error))
-      });
-    }
-  });
-  
-  // Upload del file per l'importazione
-  app.post("/api/import/upload", importUpload.single("file"), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "Nessun file caricato"
-        });
-      }
-      
-      const filePath = req.file.path;
-      const isCSV = req.file.originalname.toLowerCase().endsWith(".csv");
-      
-      // Se è un file CSV, convertilo in JSON
-      if (isCSV) {
-        try {
-          // Per ora restituisci solo il percorso del file
-          // In una versione futura implementeremo la conversione da CSV a JSON
-          res.json({
-            success: true,
-            message: "File CSV ricevuto. La conversione a JSON sarà implementata in una versione futura.",
-            filePath
-          });
-        } catch (csvError) {
-          return res.status(500).json({
-            success: false,
-            message: "Errore nella conversione del file CSV: " + (csvError instanceof Error ? csvError.message : String(csvError))
-          });
-        }
-      } else {
-        // Se è un file JSON, restituisci il percorso
-        res.json({
-          success: true,
-          message: "File JSON ricevuto correttamente",
-          filePath
-        });
-      }
-    } catch (error) {
-      console.error("Errore durante il caricamento del file:", error);
-      res.status(500).json({
-        success: false,
-        message: "Errore durante il caricamento del file: " + (error instanceof Error ? error.message : String(error))
-      });
-    }
-  });
-  
-  // === Endpoint di esportazione dati ===
   // Endpoint per l'esportazione delle giacenze
   app.get("/api/export/giacenze", async (req, res) => {
     try {
@@ -4830,33 +4617,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ 
         message: "Si è verificato un errore durante l'esportazione delle giacenze",
         error: (error as Error).message
-      });
-    }
-  });
-  
-  // Endpoint per esportare i dati dettagliati delle ceste in formato CSV
-  app.get("/api/export/basket-details-csv", async (req, res) => {
-    try {
-      // Importa il servizio di esportazione on-demand
-      const { generateBasketDetailCSV } = await import("./export-service");
-      
-      // Genera il contenuto CSV
-      const csvContent = await generateBasketDetailCSV(storage);
-      
-      // Imposta header per il download del file
-      const dateStr = new Date().toISOString().split('T')[0];
-      const filename = `dettaglio_ceste_${dateStr}.csv`;
-      
-      res.setHeader('Content-Disposition', `attachment; filename=${filename}`);
-      res.setHeader('Content-Type', 'text/csv; charset=utf-8');
-      
-      // Invia il CSV come risposta
-      res.status(200).send(csvContent);
-    } catch (error) {
-      console.error("Errore durante l'esportazione CSV dei dettagli ceste:", error);
-      res.status(500).json({ 
-        success: false, 
-        error: `Errore durante l'esportazione CSV: ${(error as Error).message}`
       });
     }
   });
@@ -5488,96 +5248,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API per gestione sequenze ID database
   app.get("/api/sequences", SequenceController.getSequencesInfo);
   app.post("/api/sequences/reset", SequenceController.resetSequence);
-
-  // === API Importazione ===
-  
-  // Endpoint per caricare il file di importazione
-  app.post("/api/import/upload", importUpload.single("file"), async (req, res) => {
-    try {
-      if (!req.file) {
-        return res.status(400).json({
-          success: false,
-          message: "Nessun file caricato"
-        });
-      }
-      
-      const filePath = req.file.path;
-      
-      // Controlla se il file è in formato CSV
-      if (filePath.toLowerCase().endsWith('.csv')) {
-        console.log("File CSV rilevato, sarà convertito in JSON");
-        // Qui verrà aggiunta la logica per convertire il CSV in JSON
-      }
-      
-      res.json({
-        success: true,
-        message: "File caricato con successo",
-        filePath: filePath
-      });
-    } catch (error) {
-      console.error("Errore durante il caricamento del file:", error);
-      res.status(500).json({
-        success: false,
-        message: "Errore durante il caricamento del file"
-      });
-    }
-  });
-  
-  // Endpoint per analizzare il file importato
-  app.post('/api/import/analyze', async (req, res) => {
-    try {
-      const { filePath } = req.body;
-      
-      if (!filePath) {
-        return res.status(400).json({
-          success: false,
-          message: 'Percorso del file mancante'
-        });
-      }
-      
-      const result = await analyzeImport(filePath);
-      
-      if (!result.success) {
-        return res.status(400).json(result);
-      }
-      
-      res.json({
-        success: true,
-        message: 'Analisi completata con successo',
-        analysis: result.analysis
-      });
-    } catch (error) {
-      console.error('Errore durante l\'analisi del file:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Errore durante l\'analisi del file'
-      });
-    }
-  });
-  
-  // Endpoint per eseguire l'importazione
-  app.post('/api/import/execute', async (req, res) => {
-    try {
-      const { filePath, confirm } = req.body;
-      
-      if (!filePath) {
-        return res.status(400).json({
-          success: false,
-          message: 'Percorso del file mancante'
-        });
-      }
-      
-      const result = await executeImport(filePath, confirm);
-      
-      res.json(result);
-    } catch (error) {
-      console.error('Errore durante l\'importazione:', error);
-      res.status(500).json({
-        success: false,
-        message: 'Errore durante l\'importazione'
-      });
-    }
-  });
   
   return httpServer;
 }

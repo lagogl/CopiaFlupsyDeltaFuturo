@@ -30,7 +30,6 @@ import NFCTagManager from "@/pages/NFCTagManager";
 import GrowJourney from "@/pages/GrowJourney";
 import BasketSelection from "@/pages/BasketSelection";
 import ExportPage from "@/pages/ExportPage";
-import ImportPage from "@/pages/ImportPage";
 import DiarioDiBordo from "@/pages/DiarioDiBordo";
 import NotificationSettings from "@/pages/NotificationSettings";
 import EcoImpact from "@/pages/EcoImpact";
@@ -82,7 +81,6 @@ function Router() {
       <ProtectedRoute path="/statistics" component={Statistics}/>
       <ProtectedRoute path="/inventory" component={Inventory}/>
       <ProtectedRoute path="/export" component={ExportPage}/>
-      <ProtectedRoute path="/import" component={ImportPage} requiredRole="admin" />
       <ProtectedRoute path="/sizes" component={Sizes}/>
       <ProtectedRoute path="/sgr" component={Sgr}/>
       <ProtectedRoute path="/settings" component={Settings} requiredRole="admin" />

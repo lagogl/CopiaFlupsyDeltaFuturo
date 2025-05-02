@@ -1,7 +1,6 @@
 import { useState, useEffect, useMemo } from "react";
 import { useQuery } from "@tanstack/react-query";
 import { getQueryFn } from "@/lib/queryClient";
-import { useToast } from "@/hooks/use-toast";
 import { Helmet } from "react-helmet";
 import {
   Card,
@@ -26,7 +25,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { format, addMonths, isValid, differenceInDays } from "date-fns";
 import { it } from "date-fns/locale";
-import { FileDown } from "lucide-react";
 
 // Importazione dei componenti
 import InventorySummary from "@/components/inventory/InventorySummary";
@@ -109,7 +107,6 @@ interface MortalityRate {
 }
 
 export default function Inventory() {
-  const { toast } = useToast();
   // Stato per le statistiche di inventario
   const [inventoryStats, setInventoryStats] = useState<{
     totalBaskets: number;
@@ -905,43 +902,13 @@ export default function Inventory() {
           <TabsContent value="details">
             <Card className="border border-indigo-100 shadow-md">
               <CardHeader className="bg-gradient-to-r from-indigo-50 to-white border-b border-indigo-100">
-                <div className="flex justify-between items-start">
-                  <div>
-                    <CardTitle className="text-indigo-800 flex items-center gap-2">
-                      <ListFilter className="h-5 w-5 text-indigo-500" />
-                      Dettaglio Ceste
-                    </CardTitle>
-                    <CardDescription className="text-indigo-600">
-                      Elenco dettagliato di tutte le ceste attive
-                    </CardDescription>
-                  </div>
-                  <Button 
-                    variant="outline" 
-                    className="gap-2 border-indigo-300 text-indigo-700 hover:bg-indigo-50 hover:text-indigo-800"
-                    onClick={() => {
-                      // Crea un link temporaneo per il download
-                      const downloadLink = document.createElement('a');
-                      downloadLink.href = '/api/export/basket-details-csv';
-                      const today = new Date().toISOString().split('T')[0];
-                      const filename = `dettaglio_ceste_${today}.csv`;
-                      downloadLink.setAttribute('download', filename);
-                      document.body.appendChild(downloadLink);
-                      downloadLink.click();
-                      document.body.removeChild(downloadLink);
-                      
-                      // Mostra una notifica di conferma all'utente
-                      toast({
-                        title: "Esportazione completata",
-                        description: `Il file "${filename}" è stato scaricato correttamente.`,
-                        variant: "default",
-                        duration: 5000,
-                      });
-                    }}
-                  >
-                    <FileDown className="h-4 w-4" />
-                    Esporta CSV
-                  </Button>
-                </div>
+                <CardTitle className="text-indigo-800 flex items-center gap-2">
+                  <ListFilter className="h-5 w-5 text-indigo-500" />
+                  Dettaglio Ceste
+                </CardTitle>
+                <CardDescription className="text-indigo-600">
+                  Elenco dettagliato di tutte le ceste attive
+                </CardDescription>
                 <div className="flex flex-wrap gap-4 mt-4">
                   <div className="relative">
                     <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
