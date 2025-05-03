@@ -28,6 +28,9 @@ import * as NotificationController from "./controllers/notification-controller";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
+
+// Importazione del router per le API esterne
+import { registerExternalApiRoutes } from "./external-api-routes";
 import { execFile } from 'child_process';
 import { format, subDays } from 'date-fns';
 import { 
@@ -112,6 +115,9 @@ const getBackupUploadDir = () => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
+  // Registra le API esterne per l'integrazione con altre applicazioni
+  registerExternalApiRoutes(app);
+  
   // === Autenticazione routes ===
   app.post("/api/login", async (req, res) => {
     try {
