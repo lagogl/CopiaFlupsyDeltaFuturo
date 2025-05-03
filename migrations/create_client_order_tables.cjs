@@ -1,5 +1,10 @@
-// migrations/create_client_order_tables.js
-const { db } = require('../server/db');
+// migrations/create_client_order_tables.cjs
+const { Pool } = require('pg');
+
+// Creiamo una connessione al database
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
 /**
  * Script di migrazione per creare le tabelle di clienti e ordini
