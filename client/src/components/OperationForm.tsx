@@ -321,6 +321,8 @@ export default function OperationForm({
     { value: 'vagliatura', label: 'Vagliatura' },
     { value: 'trattamento', label: 'Trattamento' },
     { value: 'misura', label: 'Misura' },
+    { value: 'vendita', label: 'Vendita' },
+    { value: 'selezione-vendita', label: 'Selezione per Vendita' },
     { value: 'cessazione', label: 'Cessazione' },
   ];
   
