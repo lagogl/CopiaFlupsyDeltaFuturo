@@ -45,11 +45,6 @@ import Selection from "@/pages/Selection";
 import NewSelection from "@/pages/NewSelection";
 import SelectionDetail from "@/pages/SelectionDetail";
 import BackupPage from "@/pages/BackupPage";
-// Importiamo le pagine per la gestione di clienti, ordini e report
-import Clients from "@/pages/Clients";
-import Orders from "@/pages/Orders";
-import OrderDetail from "@/pages/OrderDetail";
-import Reports from "@/pages/Reports";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -119,12 +114,6 @@ function Router() {
       <ProtectedRoute path="/selection" component={Selection}/>
       <ProtectedRoute path="/selection/new" component={NewSelection}/>
       <ProtectedRoute path="/selection/:id" component={SelectionDetail}/>
-      
-      {/* Gestione Clienti, Ordini e Report */}
-      <ProtectedRoute path="/clients" component={Clients}/>
-      <ProtectedRoute path="/orders" component={Orders}/>
-      <ProtectedRoute path="/orders/:id" component={OrderDetail}/>
-      <ProtectedRoute path="/reports" component={Reports}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

@@ -28,9 +28,6 @@ import * as NotificationController from "./controllers/notification-controller";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
-import { ClientController } from "./controllers/client-controller";
-import { OrderController } from "./controllers/order-controller";
-import { ReportController } from "./controllers/report-controller";
 import { execFile } from 'child_process';
 import { format, subDays } from 'date-fns';
 import { 
@@ -4043,41 +4040,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // ===== GESTIONE CLIENTI E ORDINI =====
-  
-  // API routes per i clienti
-  app.get("/api/clients", ClientController.getClients);
-  app.get("/api/clients/:id", ClientController.getClientById);
-  app.post("/api/clients", ClientController.createClient);
-  app.put("/api/clients/:id", ClientController.updateClient);
-  app.patch("/api/clients/:id/toggle-status", ClientController.toggleClientStatus);
-  app.get("/api/clients-stats", ClientController.getClientStats);
-  app.delete("/api/clients/:id", ClientController.deleteClient);
-  
-  // API routes per gli ordini
-  app.get("/api/orders", OrderController.getOrders);
-  app.get("/api/orders/:id", OrderController.getOrderById);
-  app.post("/api/orders", OrderController.createOrder);
-  app.put("/api/orders/:id", OrderController.updateOrder);
-  app.patch("/api/orders/:id/status", OrderController.updateOrderStatus);
-  app.post("/api/orders/:id/payments", OrderController.addPayment);
-  app.delete("/api/orders/:id", OrderController.deleteOrder);
-  app.get("/api/orders-stats", OrderController.getOrderStats);
-  
-  // API routes per i report
-  app.get("/api/reports", ReportController.getReports);
-  app.get("/api/reports/:id", ReportController.getReportById);
-  app.post("/api/reports/sales", ReportController.generateSalesReport);
-  app.post("/api/reports/delivery", ReportController.generateDeliveryReport);
-  app.get("/api/reports/:id/download", ReportController.getReportFile);
-  app.delete("/api/reports/:id", ReportController.deleteReport);
-  
-  // API routes per i template di report
-  app.get("/api/report-templates", ReportController.getReportTemplates);
-  app.post("/api/report-templates", ReportController.createReportTemplate);
-  app.put("/api/report-templates/:id", ReportController.updateReportTemplate);
-  app.delete("/api/report-templates/:id", ReportController.deleteReportTemplate);
-  
   // Create HTTP server
   const httpServer = createServer(app);
   
