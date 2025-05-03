@@ -146,8 +146,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       items: [
         { icon: <Users className="h-5 w-5 mr-2 text-amber-600" />, label: "Clienti", path: "/clients" },
         { icon: <ShoppingCart className="h-5 w-5 mr-2 text-amber-600" />, label: "Ordini", path: "/orders" },
-        { icon: <FileBarChart2 className="h-5 w-5 mr-2 text-amber-600" />, label: "Report Vendite", path: "/reports" },
-        { icon: <Receipt className="h-5 w-5 mr-2 text-amber-600" />, label: "Documenti", path: "/reports" }
+        { icon: <FileBarChart2 className="h-5 w-5 mr-2 text-amber-600" />, label: "Report Vendite", path: "/reports" }
       ]
     },
     {
