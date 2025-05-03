@@ -686,8 +686,7 @@ export default function Operations() {
                   <SelectItem value="vagliatura">Vagliatura</SelectItem>
                   <SelectItem value="trattamento">Trattamento</SelectItem>
                   <SelectItem value="misura">Misura</SelectItem>
-                  <SelectItem value="vendita">Vendita</SelectItem>
-                  <SelectItem value="selezione-vendita">Selezione per Vendita</SelectItem>
+                  <SelectItem value="cessazione">Cessazione</SelectItem>
                 </SelectContent>
               </Select>
               <Input 
