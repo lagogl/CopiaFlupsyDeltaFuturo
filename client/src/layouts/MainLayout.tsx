@@ -6,7 +6,8 @@ import {
   User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
   ChevronRight, LayoutDashboard, PieChart, BarChart, Filter,
-  FileJson, Download, Database, Leaf, LogOut
+  FileJson, Download, Database, Leaf, LogOut, Users, ShoppingCart,
+  FileBarChart2, Receipt
 } from "lucide-react";
 import useIsMobile from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
@@ -53,6 +54,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
     'monitoring': true,
     'inventory': true,
     'analysis': true,
+    'commercial': true,
     'system': true
   });
 
@@ -134,6 +136,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: "Indici SGR", path: "/sgr" },
         { icon: <FileText className="h-5 w-5 mr-2 text-purple-600" />, label: "Diario di Bordo", path: "/diario-di-bordo" },
         { icon: <Leaf className="h-5 w-5 mr-2 text-purple-600" />, label: "Impatto Ambientale", path: "/eco-impact" }
+      ]
+    },
+    {
+      id: 'commercial',
+      label: 'COMMERCIALE',
+      icon: <ShoppingCart className="h-5 w-5" />,
+      color: 'text-amber-600',
+      items: [
+        { icon: <Users className="h-5 w-5 mr-2 text-amber-600" />, label: "Clienti", path: "/clients" },
+        { icon: <ShoppingCart className="h-5 w-5 mr-2 text-amber-600" />, label: "Ordini", path: "/orders" },
+        { icon: <FileBarChart2 className="h-5 w-5 mr-2 text-amber-600" />, label: "Report Vendite", path: "/reports" },
+        { icon: <Receipt className="h-5 w-5 mr-2 text-amber-600" />, label: "Documenti", path: "/reports" }
       ]
     },
     {
