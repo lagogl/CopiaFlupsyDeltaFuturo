@@ -675,3 +675,274 @@ export type InsertLotInventoryTransaction = z.infer<typeof insertLotInventoryTra
 // Tipi per le registrazioni della mortalità
 export type LotMortalityRecord = typeof lotMortalityRecords.$inferSelect;
 export type InsertLotMortalityRecord = z.infer<typeof insertLotMortalityRecordSchema>;
+
+// =========== SISTEMA DI GESTIONE CLIENTI E ORDINI ===========
+
+// Clienti
+export const clients = pgTable("clients", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // Nome del cliente o dell'azienda
+  taxId: text("tax_id"), // Codice fiscale o partita IVA
+  email: text("email"), // Email di contatto principale
+  phone: text("phone"), // Numero di telefono principale
+  address: text("address"), // Indirizzo completo
+  city: text("city"), // Città
+  province: text("province"), // Provincia
+  zipCode: text("zip_code"), // CAP
+  country: text("country").default("Italia"), // Paese
+  contactPerson: text("contact_person"), // Persona di riferimento
+  clientType: text("client_type", { enum: ["business", "individual", "government"] }).notNull().default("business"), // Tipo di cliente
+  notes: text("notes"), // Note aggiuntive
+  active: boolean("active").notNull().default(true), // Se il cliente è attivo
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento
+});
+
+export const insertClientSchema = createInsertSchema(clients)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type Client = typeof clients.$inferSelect;
+export type InsertClient = z.infer<typeof insertClientSchema>;
+
+// Stati dell'ordine
+export const orderStatuses = [
+  "draft", // Bozza (in preparazione)
+  "confirmed", // Confermato (ordine accettato)
+  "processing", // In lavorazione (preparazione in corso)
+  "ready", // Pronto (pronto per la consegna)
+  "shipped", // Spedito (in transito)
+  "delivered", // Consegnato (arrivato al cliente)
+  "completed", // Completato (ordine concluso e fatturato)
+  "cancelled", // Annullato (ordine cancellato)
+] as const;
+
+// Tipi di pagamento
+export const paymentTypes = [
+  "bank_transfer", // Bonifico bancario
+  "cash", // Contanti
+  "card", // Carta di credito/debito
+  "check", // Assegno
+  "deferred", // Pagamento differito
+] as const;
+
+// Ordini
+export const orders = pgTable("orders", {
+  id: serial("id").primaryKey(),
+  orderNumber: text("order_number").notNull().unique(), // Numero d'ordine (formato: ORD-YYYYMMDD-XXX)
+  clientId: integer("client_id").notNull(), // Riferimento al cliente
+  orderDate: date("order_date").notNull(), // Data dell'ordine
+  requestedDeliveryDate: date("requested_delivery_date"), // Data di consegna richiesta
+  actualDeliveryDate: date("actual_delivery_date"), // Data di consegna effettiva
+  status: text("status", { enum: orderStatuses }).notNull().default("draft"), // Stato dell'ordine
+  totalAmount: numeric("total_amount", { precision: 10, scale: 2 }).notNull().default("0"), // Importo totale
+  vatAmount: numeric("vat_amount", { precision: 10, scale: 2 }).notNull().default("0"), // Importo IVA
+  vatRate: numeric("vat_rate", { precision: 5, scale: 2 }).notNull().default("22"), // Aliquota IVA (%)
+  discountAmount: numeric("discount_amount", { precision: 10, scale: 2 }).default("0"), // Importo sconto
+  discountRate: numeric("discount_rate", { precision: 5, scale: 2 }).default("0"), // Percentuale sconto (%)
+  shippingAmount: numeric("shipping_amount", { precision: 10, scale: 2 }).default("0"), // Costo di spedizione
+  paymentType: text("payment_type", { enum: paymentTypes }), // Tipo di pagamento
+  paymentStatus: text("payment_status", { enum: ["pending", "partial", "paid"] }).notNull().default("pending"), // Stato del pagamento
+  paymentDueDate: date("payment_due_date"), // Data di scadenza del pagamento
+  invoiceNumber: text("invoice_number"), // Numero di fattura
+  invoiceDate: date("invoice_date"), // Data di fatturazione
+  notes: text("notes"), // Note generali sull'ordine
+  internalNotes: text("internal_notes"), // Note interne (non visibili al cliente)
+  shippingAddress: text("shipping_address"), // Indirizzo di spedizione completo
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento
+});
+
+export const insertOrderSchema = createInsertSchema(orders)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type Order = typeof orders.$inferSelect;
+export type InsertOrder = z.infer<typeof insertOrderSchema>;
+export type OrderStatus = typeof orderStatuses[number];
+export type PaymentType = typeof paymentTypes[number];
+
+// Voci d'ordine (Prodotti ordinati)
+export const orderItems = pgTable("order_items", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull(), // Riferimento all'ordine
+  description: text("description").notNull(), // Descrizione del prodotto
+  quantity: numeric("quantity", { precision: 10, scale: 3 }).notNull(), // Quantità ordinata
+  unit: text("unit").notNull().default("kg"), // Unità di misura (kg, g, pz, ecc.)
+  unitPrice: numeric("unit_price", { precision: 10, scale: 2 }).notNull(), // Prezzo unitario
+  totalPrice: numeric("total_price", { precision: 10, scale: 2 }).notNull(), // Prezzo totale (quantità * prezzo unitario)
+  vatRate: numeric("vat_rate", { precision: 5, scale: 2 }).notNull().default("22"), // Aliquota IVA (%)
+  lotId: integer("lot_id"), // Riferimento al lotto (se applicabile)
+  sizeId: integer("size_id"), // Riferimento alla taglia (se applicabile)
+  selectionId: integer("selection_id"), // Riferimento all'operazione di selezione (se applicabile)
+  notes: text("notes"), // Note specifiche per questo articolo
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento
+});
+
+export const insertOrderItemSchema = createInsertSchema(orderItems)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type OrderItem = typeof orderItems.$inferSelect;
+export type InsertOrderItem = z.infer<typeof insertOrderItemSchema>;
+
+// Pagamenti
+export const payments = pgTable("payments", {
+  id: serial("id").primaryKey(),
+  orderId: integer("order_id").notNull(), // Riferimento all'ordine
+  amount: numeric("amount", { precision: 10, scale: 2 }).notNull(), // Importo del pagamento
+  paymentDate: date("payment_date").notNull(), // Data del pagamento
+  paymentType: text("payment_type", { enum: paymentTypes }).notNull(), // Tipo di pagamento
+  reference: text("reference"), // Riferimento del pagamento (es. numero bonifico)
+  notes: text("notes"), // Note sul pagamento
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento
+});
+
+export const insertPaymentSchema = createInsertSchema(payments)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type Payment = typeof payments.$inferSelect;
+export type InsertPayment = z.infer<typeof insertPaymentSchema>;
+
+// Documenti allegati (per ordini e clienti)
+export const documents = pgTable("documents", {
+  id: serial("id").primaryKey(),
+  fileName: text("file_name").notNull(), // Nome del file
+  originalName: text("original_name").notNull(), // Nome originale del file
+  mimeType: text("mime_type").notNull(), // Tipo MIME del file
+  size: integer("size").notNull(), // Dimensione in bytes
+  path: text("path").notNull(), // Percorso di archiviazione
+  entityType: text("entity_type", { enum: ["client", "order", "payment"] }).notNull(), // Tipo di entità a cui è allegato
+  entityId: integer("entity_id").notNull(), // ID dell'entità a cui è allegato
+  documentType: text("document_type", { enum: ["invoice", "ddt", "offer", "contract", "other"] }).notNull(), // Tipo di documento
+  uploadDate: timestamp("upload_date").notNull().defaultNow(), // Data e ora di caricamento
+  notes: text("notes"), // Note sul documento
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento
+});
+
+export const insertDocumentSchema = createInsertSchema(documents)
+  .omit({ id: true, createdAt: true, updatedAt: true, uploadDate: true });
+
+export type Document = typeof documents.$inferSelect;
+export type InsertDocument = z.infer<typeof insertDocumentSchema>;
+
+// =========== SISTEMA DI RAPPORTI E REPORT ===========
+
+// Tipi di report
+export const reportTypes = [
+  "sales", // Report di vendite
+  "delivery", // Report di consegna
+  "production", // Report di produzione
+  "inventory", // Report di inventario
+  "financial", // Report finanziario
+  "custom", // Report personalizzato
+] as const;
+
+// Formato dei report
+export const reportFormats = [
+  "pdf", // PDF
+  "excel", // Excel
+  "csv", // CSV
+  "json", // JSON
+  "html", // HTML
+] as const;
+
+// Report
+export const reports = pgTable("reports", {
+  id: serial("id").primaryKey(),
+  title: text("title").notNull(), // Titolo del report
+  description: text("description"), // Descrizione del report
+  type: text("type", { enum: reportTypes }).notNull(), // Tipo di report
+  format: text("format", { enum: reportFormats }).notNull().default("pdf"), // Formato del report
+  parameters: jsonb("parameters"), // Parametri utilizzati per generare il report (in formato JSON)
+  filePath: text("file_path"), // Percorso del file generato
+  fileSize: integer("file_size"), // Dimensione del file in bytes
+  generatedBy: integer("generated_by"), // ID dell'utente che ha generato il report
+  startDate: date("start_date"), // Data di inizio del periodo di riferimento
+  endDate: date("end_date"), // Data di fine del periodo di riferimento
+  status: text("status", { enum: ["pending", "processing", "completed", "failed"] }).notNull().default("pending"), // Stato del report
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  completedAt: timestamp("completed_at"), // Data e ora di completamento
+  error: text("error"), // Eventuale errore durante la generazione
+  metadata: jsonb("metadata"), // Metadati aggiuntivi
+});
+
+export const insertReportSchema = createInsertSchema(reports)
+  .omit({ id: true, createdAt: true, completedAt: true, fileSize: true });
+
+export type Report = typeof reports.$inferSelect;
+export type InsertReport = z.infer<typeof insertReportSchema>;
+export type ReportType = typeof reportTypes[number];
+export type ReportFormat = typeof reportFormats[number];
+
+// Delivery Reports (Report di consegna specifici)
+export const deliveryReports = pgTable("delivery_reports", {
+  id: serial("id").primaryKey(),
+  reportId: integer("report_id").notNull(), // Riferimento al report generale
+  orderId: integer("order_id").notNull(), // Riferimento all'ordine
+  clientId: integer("client_id").notNull(), // Riferimento al cliente
+  deliveryDate: date("delivery_date").notNull(), // Data di consegna
+  totalItems: integer("total_items").notNull(), // Numero totale di articoli
+  totalWeight: numeric("total_weight", { precision: 10, scale: 3 }), // Peso totale
+  transportInfo: text("transport_info"), // Informazioni sul trasporto
+  notes: text("notes"), // Note sulla consegna
+  signedBy: text("signed_by"), // Nome di chi ha firmato la consegna
+  signatureImagePath: text("signature_image_path"), // Percorso dell'immagine della firma
+  gpsCoordinates: text("gps_coordinates"), // Coordinate GPS del luogo di consegna
+  metadata: jsonb("metadata"), // Metadati aggiuntivi
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+});
+
+export const insertDeliveryReportSchema = createInsertSchema(deliveryReports)
+  .omit({ id: true, createdAt: true });
+
+export type DeliveryReport = typeof deliveryReports.$inferSelect;
+export type InsertDeliveryReport = z.infer<typeof insertDeliveryReportSchema>;
+
+// Sales Reports (Report di vendita specifici)
+export const salesReports = pgTable("sales_reports", {
+  id: serial("id").primaryKey(),
+  reportId: integer("report_id").notNull(), // Riferimento al report generale
+  startDate: date("start_date").notNull(), // Data di inizio del periodo
+  endDate: date("end_date").notNull(), // Data di fine del periodo
+  totalSales: numeric("total_sales", { precision: 12, scale: 2 }).notNull(), // Vendite totali
+  totalVat: numeric("total_vat", { precision: 12, scale: 2 }), // IVA totale
+  totalOrders: integer("total_orders").notNull(), // Numero totale di ordini
+  completedOrders: integer("completed_orders").notNull(), // Numero di ordini completati
+  cancelledOrders: integer("cancelled_orders").notNull(), // Numero di ordini annullati
+  topSizeId: integer("top_size_id"), // Taglia più venduta
+  topLotId: integer("top_lot_id"), // Lotto più venduto
+  topClientId: integer("top_client_id"), // Cliente migliore
+  totalWeight: numeric("total_weight", { precision: 12, scale: 3 }), // Peso totale venduto
+  avgOrderValue: numeric("avg_order_value", { precision: 10, scale: 2 }), // Valore medio degli ordini
+  metadata: jsonb("metadata"), // Metadati aggiuntivi
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+});
+
+export const insertSalesReportSchema = createInsertSchema(salesReports)
+  .omit({ id: true, createdAt: true });
+
+export type SalesReport = typeof salesReports.$inferSelect;
+export type InsertSalesReport = z.infer<typeof insertSalesReportSchema>;
+
+// Report Templates (Modelli di report)
+export const reportTemplates = pgTable("report_templates", {
+  id: serial("id").primaryKey(),
+  name: text("name").notNull(), // Nome del modello
+  description: text("description"), // Descrizione del modello
+  type: text("type", { enum: reportTypes }).notNull(), // Tipo di report
+  format: text("format", { enum: reportFormats }).notNull().default("pdf"), // Formato del report
+  template: text("template").notNull(), // Template HTML/CSS o altro formato
+  parameters: jsonb("parameters"), // Parametri predefiniti
+  isDefault: boolean("is_default").default(false), // Se è il modello predefinito per questo tipo
+  createdBy: integer("created_by"), // ID dell'utente che ha creato il modello
+  createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
+  updatedAt: timestamp("updated_at"), // Data e ora di ultimo aggiornamento
+  active: boolean("active").notNull().default(true), // Se il modello è attivo
+});
+
+export const insertReportTemplateSchema = createInsertSchema(reportTemplates)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export type ReportTemplate = typeof reportTemplates.$inferSelect;
+export type InsertReportTemplate = z.infer<typeof insertReportTemplateSchema>;
