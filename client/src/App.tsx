@@ -102,6 +102,15 @@ function Router() {
       <Route path="/nfc-manager">
         {() => <Redirect to="/nfc-tags" />}
       </Route>
+      <Route path="/orders">
+        {() => <Redirect to="/" />}
+      </Route>
+      <Route path="/clients">
+        {() => <Redirect to="/" />}
+      </Route>
+      <Route path="/sales-reports">
+        {() => <Redirect to="/" />}
+      </Route>
       
       {/* Screening (Vagliatura) routes */}
       <ProtectedRoute path="/screening" component={Screening}/>
