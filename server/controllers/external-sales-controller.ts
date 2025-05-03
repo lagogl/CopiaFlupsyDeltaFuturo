@@ -62,7 +62,9 @@ export function verifyApiKey(req: Request, res: Response, next: Function) {
  */
 export async function getAvailableBasketsForSale(req: Request, res: Response) {
   try {
-    // Cerca cestelli con ciclo attivo
+    console.log("Cercando cestelli disponibili per vendita...");
+
+    // Semplifichiamo la query per debug
     const availableBaskets = await db
       .select({
         id: baskets.id,
@@ -72,62 +74,79 @@ export async function getAvailableBasketsForSale(req: Request, res: Response) {
         state: baskets.state,
       })
       .from(baskets)
-      .where(and(
-        eq(baskets.state, 'active'),
-        isNull(baskets.currentCycleId).not(),
-      ));
+      .where(eq(baskets.state, 'active'));
+    
+    console.log(`Trovati ${availableBaskets.length} cestelli attivi`);
+    
+    // Filtriamo solo quelli con ciclo attivo
+    const basketsWithCycles = availableBaskets.filter(b => b.cycleId !== null);
+    console.log(`Di cui ${basketsWithCycles.length} hanno un ciclo attivo`);
 
     // Arricchisci con dati aggiuntivi
     const enrichedBaskets = await Promise.all(
-      availableBaskets.map(async (basket) => {
-        // Ottieni il ciclo
-        const cycle = await db
-          .select()
-          .from(cycles)
-          .where(eq(cycles.id, basket.cycleId as number))
-          .then((res) => res[0] || null);
-
-        // Ottieni l'ultima operazione con misurazioni
-        const lastMeasurement = await db
-          .select()
-          .from(operations)
-          .where(and(
-            eq(operations.basketId, basket.id),
-            eq(operations.cycleId, basket.cycleId as number),
-          ))
-          .orderBy(desc(operations.date))
-          .limit(1)
-          .then((res) => res[0] || null);
-
-        // Ottieni il lotto associato
-        let lot = null;
-        if (lastMeasurement && lastMeasurement.lotId) {
-          lot = await db
+      basketsWithCycles.map(async (basket) => {
+        try {
+          // Ottieni il ciclo
+          const cycle = await db
             .select()
-            .from(lots)
-            .where(eq(lots.id, lastMeasurement.lotId))
+            .from(cycles)
+            .where(eq(cycles.id, basket.cycleId as number))
             .then((res) => res[0] || null);
-        }
+  
+          if (!cycle) {
+            console.log(`Ciclo non trovato per basket ${basket.id} con cycleId ${basket.cycleId}`);
+            return null;
+          }
 
-        // Ottieni la taglia attuale
-        let size = null;
-        if (lastMeasurement && lastMeasurement.sizeId) {
-          size = await db
+          // Ottieni l'ultima operazione con misurazioni
+          const lastMeasurement = await db
             .select()
-            .from(sizes)
-            .where(eq(sizes.id, lastMeasurement.sizeId))
+            .from(operations)
+            .where(and(
+              eq(operations.basketId, basket.id),
+              eq(operations.cycleId, basket.cycleId as number),
+            ))
+            .orderBy(desc(operations.date))
+            .limit(1)
             .then((res) => res[0] || null);
+  
+          // Ottieni il lotto associato
+          let lot = null;
+          if (lastMeasurement && lastMeasurement.lotId) {
+            lot = await db
+              .select()
+              .from(lots)
+              .where(eq(lots.id, lastMeasurement.lotId))
+              .then((res) => res[0] || null);
+          }
+  
+          // Ottieni la taglia attuale
+          let size = null;
+          if (lastMeasurement && lastMeasurement.sizeId) {
+            size = await db
+              .select()
+              .from(sizes)
+              .where(eq(sizes.id, lastMeasurement.sizeId))
+              .then((res) => res[0] || null);
+          }
+  
+          return {
+            ...basket,
+            cycle,
+            lot,
+            size,
+            lastMeasurement,
+          };
+        } catch (err) {
+          console.error(`Errore nell'arricchimento del cestello ${basket.id}:`, err);
+          return null;
         }
-
-        return {
-          ...basket,
-          cycle,
-          lot,
-          size,
-          lastMeasurement,
-        };
       })
     );
+    
+    // Filtra eventuali null
+    const validEnrichedBaskets = enrichedBaskets.filter(b => b !== null);
+    console.log(`Ritornati ${validEnrichedBaskets.length} cestelli arricchiti validi`);
 
     res.json({
       success: true,
@@ -171,7 +190,7 @@ export async function createExternalSaleOperation(req: Request, res: Response) {
       .where(and(
         inArray(baskets.id, basketIds),
         eq(baskets.state, 'active'),
-        isNull(baskets.currentCycleId).not()
+        not(isNull(baskets.currentCycleId))
       ));
 
     // Verifica che tutti i cestelli richiesti siano stati trovati
@@ -272,7 +291,7 @@ export async function getExternalSaleHistory(req: Request, res: Response) {
       .from(operations)
       .where(and(
         eq(operations.type, "vendita"),
-        isNull(operations.metadata).not()
+        not(isNull(operations.metadata))
       ))
       .orderBy(desc(operations.date));
 
