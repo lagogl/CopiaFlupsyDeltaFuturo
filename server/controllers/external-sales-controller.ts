@@ -8,7 +8,7 @@
 
 import { Request, Response } from "express";
 import { db } from "../db";
-import { eq, and, isNull, desc } from "drizzle-orm";
+import { eq, and, isNull, desc, not, inArray } from "drizzle-orm";
 import { operations, baskets, cycles, sizes, lots, operationTypes } from "@shared/schema";
 import { z } from "zod";
 import { v4 as uuidv4 } from 'uuid';
@@ -68,8 +68,8 @@ export async function getAvailableBasketsForSale(req: Request, res: Response) {
       })
       .from(baskets)
       .where(and(
-        baskets.state === 'active',
-        baskets.currentCycleId !== null,
+        eq(baskets.state, 'active'),
+        isNull(baskets.currentCycleId).not(),
       ));
 
     // Arricchisci con dati aggiuntivi
@@ -164,9 +164,9 @@ export async function createExternalSaleOperation(req: Request, res: Response) {
       .select()
       .from(baskets)
       .where(and(
-        baskets.id.in(basketIds),
-        baskets.state === 'active',
-        baskets.currentCycleId !== null
+        inArray(baskets.id, basketIds),
+        eq(baskets.state, 'active'),
+        isNull(baskets.currentCycleId).not()
       ));
 
     // Verifica che tutti i cestelli richiesti siano stati trovati
@@ -267,7 +267,7 @@ export async function getExternalSaleHistory(req: Request, res: Response) {
       .from(operations)
       .where(and(
         eq(operations.type, "vendita"),
-        operations.metadata.isNotNull()
+        isNull(operations.metadata).not()
       ))
       .orderBy(desc(operations.date));
 

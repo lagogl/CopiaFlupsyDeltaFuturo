@@ -237,6 +237,7 @@ export const operations = pgTable("operations", {
   deadCount: integer("dead_count"), // numero di animali morti
   mortalityRate: real("mortality_rate"), // percentuale di mortalità
   notes: text("notes"),
+  metadata: text("metadata"), // metadati aggiuntivi in formato JSON (per API esterne)
 });
 
 // Cycles (Cicli Produttivi)
@@ -341,7 +342,8 @@ export const insertBasketSchema = createInsertSchema(baskets).omit({
 
 export const insertOperationSchema = createInsertSchema(operations).omit({ 
   id: true,
-  averageWeight: true 
+  averageWeight: true,
+  metadata: true
 });
 
 export const insertCycleSchema = createInsertSchema(cycles).omit({ 
