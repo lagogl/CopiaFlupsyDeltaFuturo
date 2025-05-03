@@ -35,13 +35,18 @@ const API_KEYS = {
   'app-esterna': process.env.EXTERNAL_APP_API_KEY || 'chiave-test-per-sviluppo',
 };
 
+// Chiave di test da utilizzare durante lo sviluppo 
+const TEST_API_KEY = 'chiave-test-per-sviluppo';
+
 /**
  * Middleware per verificare l'API key
  */
 export function verifyApiKey(req: Request, res: Response, next: Function) {
   const apiKey = req.headers['x-api-key'] || req.body.apiKey;
 
-  if (!apiKey || !Object.values(API_KEYS).includes(apiKey as string)) {
+  // Accetta sia le chiavi configurate che la chiave di test
+  if (!apiKey || 
+      !(Object.values(API_KEYS).includes(apiKey as string) || apiKey === TEST_API_KEY)) {
     console.error(`Tentativo di accesso con API key non valida: ${apiKey}`);
     return res.status(401).json({
       success: false,
