@@ -28,9 +28,9 @@ import * as NotificationController from "./controllers/notification-controller";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
-import * as ClientController from "./controllers/client-controller";
-import * as OrderController from "./controllers/order-controller";
-import * as ReportController from "./controllers/report-controller";
+import { ClientController } from "./controllers/client-controller";
+import { OrderController } from "./controllers/order-controller";
+import { ReportController } from "./controllers/report-controller";
 import { execFile } from 'child_process';
 import { format, subDays } from 'date-fns';
 import { 
@@ -4069,8 +4069,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/reports/:id", ReportController.getReportById);
   app.post("/api/reports/sales", ReportController.generateSalesReport);
   app.post("/api/reports/delivery", ReportController.generateDeliveryReport);
-  app.get("/api/reports/:id/download", ReportController.downloadReport);
+  app.get("/api/reports/:id/download", ReportController.getReportFile);
   app.delete("/api/reports/:id", ReportController.deleteReport);
+  
+  // API routes per i template di report
+  app.get("/api/report-templates", ReportController.getReportTemplates);
+  app.post("/api/report-templates", ReportController.createReportTemplate);
+  app.put("/api/report-templates/:id", ReportController.updateReportTemplate);
+  app.delete("/api/report-templates/:id", ReportController.deleteReportTemplate);
   
   // Create HTTP server
   const httpServer = createServer(app);

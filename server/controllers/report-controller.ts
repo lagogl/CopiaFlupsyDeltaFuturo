@@ -1,695 +1,831 @@
-// server/controllers/report-controller.ts
 import { Request, Response } from 'express';
 import { db } from '../db';
-import {
-  reports, deliveryReports, salesReports, reportTemplates,
-  orders, orderItems, clients, payments,
-  insertReportSchema, insertDeliveryReportSchema, insertSalesReportSchema,
-  Report, DeliveryReport, SalesReport
-} from '@shared/schema';
-import { eq, like, ilike, and, or, desc, asc, sql, gte, lte, isNotNull, inArray } from 'drizzle-orm';
-import { z } from 'zod';
+import { 
+  reports, 
+  salesReports, 
+  deliveryReports, 
+  reportTemplates,
+  orders,
+  orderItems,
+  clients,
+  insertReportSchema,
+  insertSalesReportSchema,
+  insertDeliveryReportSchema,
+  insertReportTemplateSchema
+} from '../../shared/schema';
+
+// Estendi l'interfaccia Request per includere l'utente
+interface AuthRequest extends Request {
+  user?: {
+    id: number;
+    username: string;
+    role: string;
+  }
+}
+import { eq, like, desc, count, sql, or, and, not, asc, inArray, isNull, isNotNull, between } from 'drizzle-orm';
+import { fromZodError } from 'zod-validation-error';
 import * as fs from 'fs';
 import * as path from 'path';
 
-// Directory per salvare i report generati
-const REPORTS_DIR = path.join(process.cwd(), 'reports');
+/**
+ * Controller per la gestione dei report
+ */
+export class ReportController {
+  /**
+   * Directory in cui vengono salvati i report generati
+   */
+  private static REPORTS_DIR = path.join(process.cwd(), 'reports');
 
-// Assicurati che la directory esista
-if (!fs.existsSync(REPORTS_DIR)) {
-  fs.mkdirSync(REPORTS_DIR, { recursive: true });
-}
-
-// Ottiene la lista dei report
-export async function getReports(req: Request, res: Response) {
-  try {
-    const { type, status, search, startDate, endDate, limit, offset, sortBy, sortDirection } = req.query;
-    
-    // Costruisci la query di base
-    let query = db.select().from(reports);
-    
-    // Applica i filtri
-    const whereConditions = [];
-    
-    if (type) {
-      whereConditions.push(eq(reports.type, type as string));
+  /**
+   * Inizializza la directory dei report se non esiste
+   */
+  private static initReportsDir() {
+    if (!fs.existsSync(ReportController.REPORTS_DIR)) {
+      fs.mkdirSync(ReportController.REPORTS_DIR, { recursive: true });
     }
-    
-    if (status) {
-      whereConditions.push(eq(reports.status, status as string));
-    }
-    
-    if (search) {
-      const searchTerm = `%${search}%`;
-      whereConditions.push(
-        or(
-          ilike(reports.title, searchTerm),
-          ilike(reports.description, searchTerm)
-        )
-      );
-    }
-    
-    if (startDate) {
-      whereConditions.push(gte(reports.createdAt, new Date(startDate as string)));
-    }
-    
-    if (endDate) {
-      whereConditions.push(lte(reports.createdAt, new Date(endDate as string)));
-    }
-    
-    if (whereConditions.length > 0) {
-      query = query.where(and(...whereConditions));
-    }
-    
-    // Applica ordinamento
-    if (sortBy && typeof sortBy === 'string') {
-      const direction = sortDirection === 'desc' ? desc : asc;
-      
-      // Utilizza la colonna specificata per l'ordinamento
-      switch (sortBy) {
-        case 'createdAt':
-          query = query.orderBy(direction(reports.createdAt));
-          break;
-        case 'title':
-          query = query.orderBy(direction(reports.title));
-          break;
-        case 'type':
-          query = query.orderBy(direction(reports.type));
-          break;
-        case 'status':
-          query = query.orderBy(direction(reports.status));
-          break;
-        default:
-          query = query.orderBy(desc(reports.createdAt));
-      }
-    } else {
-      // Ordinamento predefinito
-      query = query.orderBy(desc(reports.createdAt));
-    }
-    
-    // Applica paginazione
-    if (limit !== undefined) {
-      const limitNum = parseInt(limit as string);
-      const offsetNum = offset ? parseInt(offset as string) : 0;
-      
-      if (!isNaN(limitNum)) {
-        query = query.limit(limitNum);
-        if (!isNaN(offsetNum)) {
-          query = query.offset(offsetNum);
-        }
-      }
-    }
-    
-    const result = await query;
-    
-    res.json(result);
-  } catch (error) {
-    console.error('Errore nel recupero dei report:', error);
-    res.status(500).json({ message: 'Errore nel recupero dei report', error: error.message });
   }
-}
 
-// Ottiene i dettagli di un report specifico
-export async function getReportById(req: Request, res: Response) {
-  try {
-    const { id } = req.params;
-    const reportId = parseInt(id);
-    
-    if (isNaN(reportId)) {
-      return res.status(400).json({ message: 'ID report non valido' });
-    }
-    
-    // Recupera il report base
-    const reportResult = await db.select().from(reports).where(eq(reports.id, reportId));
-    
-    if (reportResult.length === 0) {
-      return res.status(404).json({ message: 'Report non trovato' });
-    }
-    
-    const report = reportResult[0];
-    let additionalData = null;
-    
-    // Recupera dati specifici in base al tipo di report
-    if (report.type === 'sales') {
-      const salesReportResult = await db.select().from(salesReports).where(eq(salesReports.reportId, reportId));
-      if (salesReportResult.length > 0) {
-        additionalData = salesReportResult[0];
+  /**
+   * Ottiene l'elenco di tutti i report
+   */
+  static async getReports(req: Request, res: Response) {
+    try {
+      const { type, status, startDate, endDate } = req.query;
+      
+      // Query di base con join per ottenere il nome dell'utente che ha generato il report
+      let query = db.select({
+        id: reports.id,
+        title: reports.title,
+        type: reports.type,
+        format: reports.format,
+        status: reports.status,
+        createdAt: reports.createdAt,
+        completedAt: reports.completedAt,
+        startDate: reports.startDate,
+        endDate: reports.endDate,
+        filePath: reports.filePath
+      })
+      .from(reports)
+      .orderBy(desc(reports.createdAt));
+      
+      // Applicazione dei filtri
+      const filters = [];
+      
+      // Filtro per tipo di report
+      if (type && typeof type === 'string') {
+        filters.push(eq(reports.type, type));
       }
-    } else if (report.type === 'delivery') {
-      const deliveryReportResult = await db.select().from(deliveryReports).where(eq(deliveryReports.reportId, reportId));
-      if (deliveryReportResult.length > 0) {
-        additionalData = deliveryReportResult[0];
-        
-        // Recupera anche i dati del cliente e dell'ordine
-        if (additionalData.clientId) {
-          const clientResult = await db.select().from(clients).where(eq(clients.id, additionalData.clientId));
-          if (clientResult.length > 0) {
-            additionalData.client = clientResult[0];
-          }
-        }
-        
-        if (additionalData.orderId) {
-          const orderResult = await db.select().from(orders).where(eq(orders.id, additionalData.orderId));
-          if (orderResult.length > 0) {
-            additionalData.order = orderResult[0];
-          }
-        }
+      
+      // Filtro per stato del report
+      if (status && typeof status === 'string') {
+        filters.push(eq(reports.status, status));
       }
+      
+      // Filtro per data di inizio periodo
+      if (startDate && typeof startDate === 'string') {
+        filters.push(sql`${reports.createdAt} >= ${startDate}`);
+      }
+      
+      // Filtro per data di fine periodo
+      if (endDate && typeof endDate === 'string') {
+        filters.push(sql`${reports.createdAt} <= ${endDate}`);
+      }
+      
+      // Applica tutti i filtri se presenti
+      const finalQuery = filters.length > 0 
+        ? query.where(and(...filters))
+        : query;
+      
+      const result = await finalQuery;
+      res.json(result);
+    } catch (error) {
+      console.error('Errore nel recupero dei report:', error);
+      res.status(500).json({ message: 'Errore nel recupero dei report' });
     }
-    
-    // Costruisci la risposta
-    const response = {
-      ...report,
-      additionalData
-    };
-    
-    res.json(response);
-  } catch (error) {
-    console.error('Errore nel recupero del report:', error);
-    res.status(500).json({ message: 'Errore nel recupero del report', error: error.message });
   }
-}
 
-// Genera un report di vendita
-export async function generateSalesReport(req: Request, res: Response) {
-  try {
-    const { title, description, startDate, endDate, format = 'pdf' } = req.body;
-    
-    if (!startDate || !endDate) {
-      return res.status(400).json({ message: 'I parametri startDate e endDate sono obbligatori' });
+  /**
+   * Ottiene un report specifico con tutti i dettagli
+   */
+  static async getReportById(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const reportId = parseInt(id, 10);
+
+      if (isNaN(reportId)) {
+        return res.status(400).json({ message: 'ID report non valido' });
+      }
+
+      // Recupera i dati del report
+      const [reportData] = await db.select()
+        .from(reports)
+        .where(eq(reports.id, reportId));
+
+      if (!reportData) {
+        return res.status(404).json({ message: 'Report non trovato' });
+      }
+
+      // In base al tipo di report, recupera dati specifici
+      let specificReport = null;
+      if (reportData.type === 'sales') {
+        const [salesReportData] = await db.select()
+          .from(salesReports)
+          .where(eq(salesReports.reportId, reportId));
+        specificReport = salesReportData;
+      } else if (reportData.type === 'delivery') {
+        const [deliveryReportData] = await db.select()
+          .from(deliveryReports)
+          .where(eq(deliveryReports.reportId, reportId));
+        specificReport = deliveryReportData;
+      }
+
+      // Componi la risposta completa
+      const response = {
+        ...reportData,
+        specificData: specificReport
+      };
+
+      res.json(response);
+    } catch (error) {
+      console.error('Errore nel recupero del report:', error);
+      res.status(500).json({ message: 'Errore nel recupero del report' });
     }
-    
-    // Crea un nuovo report
-    const report = {
-      title: title || `Report Vendite ${startDate} - ${endDate}`,
-      description: description || `Report delle vendite dal ${startDate} al ${endDate}`,
-      type: 'sales',
-      format,
-      parameters: {
+  }
+
+  /**
+   * Ottiene il file del report
+   */
+  static async getReportFile(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const reportId = parseInt(id, 10);
+
+      if (isNaN(reportId)) {
+        return res.status(400).json({ message: 'ID report non valido' });
+      }
+
+      // Recupera i dati del report
+      const [reportData] = await db.select()
+        .from(reports)
+        .where(eq(reports.id, reportId));
+
+      if (!reportData) {
+        return res.status(404).json({ message: 'Report non trovato' });
+      }
+
+      if (!reportData.filePath) {
+        return res.status(404).json({ message: 'File del report non trovato' });
+      }
+
+      // Verifica se il file esiste
+      const filePath = reportData.filePath;
+      if (!fs.existsSync(filePath)) {
+        return res.status(404).json({ message: 'File del report non trovato sul server' });
+      }
+
+      // Determina il tipo di contenuto in base al formato del report
+      let contentType = 'application/octet-stream';
+      if (reportData.format === 'pdf') {
+        contentType = 'application/pdf';
+      } else if (reportData.format === 'excel') {
+        contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
+      } else if (reportData.format === 'csv') {
+        contentType = 'text/csv';
+      } else if (reportData.format === 'json') {
+        contentType = 'application/json';
+      } else if (reportData.format === 'html') {
+        contentType = 'text/html';
+      }
+
+      // Invia il file
+      res.setHeader('Content-Type', contentType);
+      res.setHeader('Content-Disposition', `attachment; filename=${path.basename(filePath)}`);
+      
+      const fileStream = fs.createReadStream(filePath);
+      fileStream.pipe(res);
+    } catch (error) {
+      console.error('Errore nel recupero del file del report:', error);
+      res.status(500).json({ message: 'Errore nel recupero del file del report' });
+    }
+  }
+
+  /**
+   * Genera un nuovo report di vendita
+   */
+  static async generateSalesReport(req: AuthRequest, res: Response) {
+    try {
+      ReportController.initReportsDir();
+      
+      const { title, format, startDate, endDate, parameters } = req.body;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: 'Le date di inizio e fine sono obbligatorie' });
+      }
+      
+      // Validazione dei dati del report
+      const reportData = {
+        title: title || `Report vendite ${startDate} - ${endDate}`,
+        description: `Report vendite dal ${startDate} al ${endDate}`,
+        type: 'sales',
+        format: format || 'pdf',
+        parameters: parameters || {},
         startDate,
-        endDate
-      },
-      startDate,
-      endDate,
-      status: 'processing',
-      generatedBy: req.user?.id // Assumendo che req.user contenga l'utente autenticato
-    };
-    
-    // Validazione con Zod
-    const validatedReport = insertReportSchema.parse(report);
-    
-    // Inserisci il report nel database
-    const [createdReport] = await db.insert(reports).values(validatedReport).returning();
-    
-    if (!createdReport) {
-      return res.status(500).json({ message: 'Errore nella creazione del report' });
-    }
-    
-    // Avvia la generazione del report in modo asincrono
-    generateSalesReportAsync(createdReport.id, startDate, endDate)
-      .then(() => console.log(`Report di vendita ${createdReport.id} generato con successo`))
-      .catch(error => console.error(`Errore nella generazione del report ${createdReport.id}:`, error));
-    
-    res.status(202).json({
-      message: 'Generazione del report avviata',
-      reportId: createdReport.id
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Dati del report non validi', 
-        errors: error.errors 
+        endDate,
+        status: 'processing',
+        generatedBy: req.user?.id
+      };
+      
+      const validatedReport = insertReportSchema.safeParse(reportData);
+      if (!validatedReport.success) {
+        const validationError = fromZodError(validatedReport.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      // Crea il report nel database
+      const [newReport] = await db.insert(reports)
+        .values(validatedReport.data)
+        .returning();
+      
+      // Raccoglie i dati per il report
+      const salesData = await ReportController.collectSalesData(startDate, endDate);
+      
+      // Crea i dati specifici del report vendite
+      const salesReportData = {
+        reportId: newReport.id,
+        startDate,
+        endDate,
+        totalSales: salesData.totalSales,
+        totalVat: salesData.totalVat,
+        totalOrders: salesData.totalOrders,
+        completedOrders: salesData.completedOrders,
+        cancelledOrders: salesData.cancelledOrders,
+        topSizeId: salesData.topSizeId,
+        topLotId: salesData.topLotId,
+        topClientId: salesData.topClientId,
+        totalWeight: salesData.totalWeight,
+        avgOrderValue: salesData.avgOrderValue,
+        metadata: { detailedData: salesData.detailedData }
+      };
+      
+      const validatedSalesReport = insertSalesReportSchema.safeParse(salesReportData);
+      if (!validatedSalesReport.success) {
+        const validationError = fromZodError(validatedSalesReport.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      // Inserisci i dati specifici del report vendite
+      const [newSalesReport] = await db.insert(salesReports)
+        .values(validatedSalesReport.data)
+        .returning();
+      
+      // Genera il file del report (simulato per ora)
+      const fileName = `sales_report_${newReport.id}_${new Date().getTime()}.${format}`;
+      const filePath = path.join(ReportController.REPORTS_DIR, fileName);
+      
+      // Qui dovrebbe andare la logica di generazione del file
+      // Per ora generiamo un file JSON di esempio
+      const jsonData = {
+        reportInfo: newReport,
+        salesData: salesData
+      };
+      
+      // Scriviamo i dati su file
+      fs.writeFileSync(filePath, JSON.stringify(jsonData, null, 2));
+      
+      // Aggiorna il report con il percorso del file e lo stato
+      const [updatedReport] = await db.update(reports)
+        .set({
+          filePath,
+          fileSize: fs.statSync(filePath).size,
+          status: 'completed',
+          completedAt: new Date()
+        })
+        .where(eq(reports.id, newReport.id))
+        .returning();
+      
+      // Restituisci il report completato
+      res.status(201).json({
+        ...updatedReport,
+        salesReport: newSalesReport
       });
+    } catch (error) {
+      console.error('Errore nella generazione del report vendite:', error);
+      res.status(500).json({ message: 'Errore nella generazione del report vendite' });
     }
-    
-    console.error('Errore nell\'avvio della generazione del report:', error);
-    res.status(500).json({ message: 'Errore nell\'avvio della generazione del report', error: error.message });
   }
-}
 
-// Funzione asincrona per generare il report di vendita
-async function generateSalesReportAsync(reportId: number, startDate: string, endDate: string) {
-  try {
-    // Recupera tutti gli ordini nel periodo specificato
-    const ordersInPeriod = await db
-      .select()
-      .from(orders)
-      .where(
-        and(
-          gte(orders.orderDate, startDate),
-          lte(orders.orderDate, endDate),
-          // Considera solo gli ordini completati o consegnati
-          inArray(orders.status, ['completed', 'delivered'])
-        )
+  /**
+   * Raccoglie i dati per il report di vendita
+   */
+  private static async collectSalesData(startDate: string, endDate: string) {
+    try {
+      // Filtro per il periodo
+      const dateFilter = and(
+        sql`${orders.orderDate} >= ${startDate}`,
+        sql`${orders.orderDate} <= ${endDate}`
       );
-    
-    if (ordersInPeriod.length === 0) {
-      await updateReportStatus(reportId, 'completed', 'Nessun ordine trovato nel periodo specificato');
-      return;
-    }
-    
-    // Calcola statistiche di vendita
-    const totalSales = ordersInPeriod.reduce(
-      (sum, order) => sum + parseFloat(order.totalAmount as string),
-      0
-    );
-    
-    const totalVat = ordersInPeriod.reduce(
-      (sum, order) => sum + parseFloat(order.vatAmount as string),
-      0
-    );
-    
-    const totalOrders = ordersInPeriod.length;
-    
-    const completedOrders = ordersInPeriod.filter(order => order.status === 'completed').length;
-    const deliveredOrders = ordersInPeriod.filter(order => order.status === 'delivered').length;
-    const cancelledOrders = ordersInPeriod.filter(order => order.status === 'cancelled').length;
-    
-    // Calcola l'importo medio degli ordini
-    const avgOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
-    
-    // Identifica il cliente con più ordini/acquisti
-    const clientOrders = ordersInPeriod.reduce((acc, order) => {
-      const clientId = order.clientId;
-      acc[clientId] = acc[clientId] || { count: 0, total: 0 };
-      acc[clientId].count++;
-      acc[clientId].total += parseFloat(order.totalAmount as string);
-      return acc;
-    }, {} as Record<number, { count: number, total: number }>);
-    
-    let topClientId = null;
-    let maxTotal = 0;
-    
-    for (const [clientId, data] of Object.entries(clientOrders)) {
-      if (data.total > maxTotal) {
-        maxTotal = data.total;
-        topClientId = parseInt(clientId);
-      }
-    }
-    
-    // Crea o aggiorna il record di report di vendita
-    const salesReportData = {
-      reportId,
-      startDate,
-      endDate,
-      totalSales: totalSales.toFixed(2),
-      totalVat: totalVat.toFixed(2),
-      totalOrders,
-      completedOrders,
-      cancelledOrders,
-      topClientId,
-      avgOrderValue: avgOrderValue.toFixed(2),
-      metadata: {
-        ordersByStatus: {
-          completed: completedOrders,
-          delivered: deliveredOrders,
-          cancelled: cancelledOrders
-        }
-      }
-    };
-    
-    // Verifica se esiste già un record
-    const existingSalesReport = await db
-      .select({ id: salesReports.id })
-      .from(salesReports)
-      .where(eq(salesReports.reportId, reportId));
-    
-    if (existingSalesReport.length > 0) {
-      // Aggiorna il record esistente
-      await db
-        .update(salesReports)
-        .set(salesReportData)
-        .where(eq(salesReports.id, existingSalesReport[0].id));
-    } else {
-      // Crea un nuovo record
-      await db.insert(salesReports).values(salesReportData);
-    }
-    
-    // Genera il file di report
-    const fileName = `sales_report_${reportId}_${Date.now()}.json`;
-    const filePath = path.join(REPORTS_DIR, fileName);
-    
-    // Dati per il report
-    const reportData = {
-      reportInfo: {
-        id: reportId,
-        title: `Report Vendite ${startDate} - ${endDate}`,
-        generatedAt: new Date().toISOString(),
-        period: { startDate, endDate }
-      },
-      summary: {
-        totalSales,
-        totalVat,
+      
+      // Conteggio totale degli ordini nel periodo
+      const [totalOrdersResult] = await db
+        .select({ count: count() })
+        .from(orders)
+        .where(dateFilter);
+      
+      const totalOrders = totalOrdersResult.count;
+      
+      // Ordini completati
+      const [completedOrdersResult] = await db
+        .select({ count: count() })
+        .from(orders)
+        .where(and(
+          dateFilter,
+          eq(orders.status, 'completed')
+        ));
+      
+      const completedOrders = completedOrdersResult.count;
+      
+      // Ordini annullati
+      const [cancelledOrdersResult] = await db
+        .select({ count: count() })
+        .from(orders)
+        .where(and(
+          dateFilter,
+          eq(orders.status, 'cancelled')
+        ));
+      
+      const cancelledOrders = cancelledOrdersResult.count;
+      
+      // Importo totale vendite
+      const [totalSalesResult] = await db
+        .select({
+          totalSales: sql`SUM(${orders.totalAmount})`,
+          totalVat: sql`SUM(${orders.vatAmount})`
+        })
+        .from(orders)
+        .where(and(
+          dateFilter,
+          not(eq(orders.status, 'cancelled'))
+        ));
+      
+      const totalSales = Number(totalSalesResult.totalSales || 0);
+      const totalVat = Number(totalSalesResult.totalVat || 0);
+      
+      // Valore medio ordini
+      const avgOrderValue = totalOrders > 0 ? totalSales / totalOrders : 0;
+      
+      // Peso totale venduto
+      const [totalWeightResult] = await db
+        .select({
+          totalWeight: sql`SUM(${orderItems.quantity})`
+        })
+        .from(orderItems)
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .where(and(
+          dateFilter,
+          not(eq(orders.status, 'cancelled'))
+        ));
+      
+      const totalWeight = Number(totalWeightResult.totalWeight || 0);
+      
+      // Cliente con più acquisti
+      const clientPurchases = await db
+        .select({
+          clientId: orders.clientId,
+          total: sql`SUM(${orders.totalAmount})`,
+          count: count()
+        })
+        .from(orders)
+        .where(and(
+          dateFilter,
+          not(eq(orders.status, 'cancelled'))
+        ))
+        .groupBy(orders.clientId)
+        .orderBy(desc(sql`SUM(${orders.totalAmount})`))
+        .limit(1);
+      
+      const topClientId = clientPurchases.length > 0 ? clientPurchases[0].clientId : null;
+      
+      // Top taglia e lotto più venduti (se applicabile)
+      const topSize = await db
+        .select({
+          sizeId: orderItems.sizeId,
+          count: count(),
+          totalQuantity: sql`SUM(${orderItems.quantity})`
+        })
+        .from(orderItems)
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .where(and(
+          dateFilter,
+          not(eq(orders.status, 'cancelled')),
+          isNotNull(orderItems.sizeId)
+        ))
+        .groupBy(orderItems.sizeId)
+        .orderBy(desc(sql`SUM(${orderItems.quantity})`))
+        .limit(1);
+      
+      const topSizeId = topSize.length > 0 ? topSize[0].sizeId : null;
+      
+      const topLot = await db
+        .select({
+          lotId: orderItems.lotId,
+          count: count(),
+          totalQuantity: sql`SUM(${orderItems.quantity})`
+        })
+        .from(orderItems)
+        .innerJoin(orders, eq(orderItems.orderId, orders.id))
+        .where(and(
+          dateFilter,
+          not(eq(orders.status, 'cancelled')),
+          isNotNull(orderItems.lotId)
+        ))
+        .groupBy(orderItems.lotId)
+        .orderBy(desc(sql`SUM(${orderItems.quantity})`))
+        .limit(1);
+      
+      const topLotId = topLot.length > 0 ? topLot[0].lotId : null;
+      
+      // Dati dettagliati per il report
+      const detailedData = {
+        orders: await db
+          .select({
+            id: orders.id,
+            orderNumber: orders.orderNumber,
+            clientId: orders.clientId,
+            clientName: clients.name,
+            orderDate: orders.orderDate,
+            status: orders.status,
+            totalAmount: orders.totalAmount,
+            vatAmount: orders.vatAmount
+          })
+          .from(orders)
+          .leftJoin(clients, eq(orders.clientId, clients.id))
+          .where(dateFilter)
+          .orderBy(desc(orders.orderDate)),
+        
+        clientSummary: await db
+          .select({
+            clientId: orders.clientId,
+            clientName: clients.name,
+            orderCount: count(),
+            totalAmount: sql`SUM(${orders.totalAmount})`
+          })
+          .from(orders)
+          .leftJoin(clients, eq(orders.clientId, clients.id))
+          .where(and(
+            dateFilter,
+            not(eq(orders.status, 'cancelled'))
+          ))
+          .groupBy(orders.clientId, clients.name)
+          .orderBy(desc(sql`SUM(${orders.totalAmount})`))
+      };
+      
+      return {
         totalOrders,
         completedOrders,
-        deliveredOrders,
         cancelledOrders,
-        avgOrderValue
-      },
-      orders: ordersInPeriod
-    };
-    
-    // Scrivi il file
-    fs.writeFileSync(filePath, JSON.stringify(reportData, null, 2));
-    
-    // Aggiorna il record del report
-    await db
-      .update(reports)
-      .set({
-        status: 'completed',
-        filePath,
-        fileSize: fs.statSync(filePath).size,
-        completedAt: new Date()
-      })
-      .where(eq(reports.id, reportId));
-    
-  } catch (error) {
-    console.error('Errore nella generazione del report di vendita:', error);
-    await updateReportStatus(reportId, 'failed', error.message);
-  }
-}
-
-// Genera un report di consegna
-export async function generateDeliveryReport(req: Request, res: Response) {
-  try {
-    const { 
-      title, description, orderId, clientId, deliveryDate, 
-      totalItems, totalWeight, transportInfo, notes, format = 'pdf' 
-    } = req.body;
-    
-    if (!orderId || !clientId) {
-      return res.status(400).json({ message: 'I parametri orderId e clientId sono obbligatori' });
-    }
-    
-    // Verifica che l'ordine esista
-    const orderExists = await db
-      .select({ id: orders.id })
-      .from(orders)
-      .where(eq(orders.id, orderId));
-    
-    if (orderExists.length === 0) {
-      return res.status(404).json({ message: 'Ordine non trovato' });
-    }
-    
-    // Verifica che il cliente esista
-    const clientExists = await db
-      .select({ id: clients.id })
-      .from(clients)
-      .where(eq(clients.id, clientId));
-    
-    if (clientExists.length === 0) {
-      return res.status(404).json({ message: 'Cliente non trovato' });
-    }
-    
-    // Crea un nuovo report
-    const report = {
-      title: title || `DDT Ordine #${orderId}`,
-      description: description || `Documento di trasporto per l'ordine #${orderId}`,
-      type: 'delivery',
-      format,
-      parameters: {
-        orderId,
-        clientId,
-        deliveryDate
-      },
-      status: 'processing',
-      generatedBy: req.user?.id // Assumendo che req.user contenga l'utente autenticato
-    };
-    
-    // Validazione con Zod
-    const validatedReport = insertReportSchema.parse(report);
-    
-    // Inserisci il report nel database
-    const [createdReport] = await db.insert(reports).values(validatedReport).returning();
-    
-    if (!createdReport) {
-      return res.status(500).json({ message: 'Errore nella creazione del report' });
-    }
-    
-    // Crea i dati del report di consegna
-    const deliveryReportData = {
-      reportId: createdReport.id,
-      orderId,
-      clientId,
-      deliveryDate: deliveryDate || new Date().toISOString().slice(0, 10),
-      totalItems,
-      totalWeight,
-      transportInfo,
-      notes
-    };
-    
-    // Validazione con Zod
-    const validatedDeliveryReport = insertDeliveryReportSchema.parse(deliveryReportData);
-    
-    // Inserisci i dati del report di consegna
-    await db.insert(deliveryReports).values(validatedDeliveryReport);
-    
-    // Avvia la generazione del report in modo asincrono
-    generateDeliveryReportAsync(createdReport.id, orderId, clientId)
-      .then(() => console.log(`Report di consegna ${createdReport.id} generato con successo`))
-      .catch(error => console.error(`Errore nella generazione del report ${createdReport.id}:`, error));
-    
-    res.status(202).json({
-      message: 'Generazione del report avviata',
-      reportId: createdReport.id
-    });
-  } catch (error) {
-    if (error instanceof z.ZodError) {
-      return res.status(400).json({ 
-        message: 'Dati del report non validi', 
-        errors: error.errors 
-      });
-    }
-    
-    console.error('Errore nell\'avvio della generazione del report:', error);
-    res.status(500).json({ message: 'Errore nell\'avvio della generazione del report', error: error.message });
-  }
-}
-
-// Funzione asincrona per generare il report di consegna
-async function generateDeliveryReportAsync(reportId: number, orderId: number, clientId: number) {
-  try {
-    // Recupera i dati dell'ordine
-    const orderResult = await db.select().from(orders).where(eq(orders.id, orderId));
-    
-    if (orderResult.length === 0) {
-      await updateReportStatus(reportId, 'failed', 'Ordine non trovato');
-      return;
-    }
-    
-    const order = orderResult[0];
-    
-    // Recupera i dati del cliente
-    const clientResult = await db.select().from(clients).where(eq(clients.id, clientId));
-    
-    if (clientResult.length === 0) {
-      await updateReportStatus(reportId, 'failed', 'Cliente non trovato');
-      return;
-    }
-    
-    const client = clientResult[0];
-    
-    // Recupera le voci dell'ordine
-    const orderItemsResult = await db.select().from(orderItems).where(eq(orderItems.orderId, orderId));
-    
-    // Calcola il totale degli articoli e il peso totale
-    const totalItems = orderItemsResult.length;
-    const totalWeight = orderItemsResult.reduce(
-      (sum, item) => sum + parseFloat(item.quantity as string),
-      0
-    );
-    
-    // Aggiorna il record di consegna con i dati calcolati
-    await db
-      .update(deliveryReports)
-      .set({
-        totalItems,
-        totalWeight: totalWeight.toFixed(3)
-      })
-      .where(eq(deliveryReports.reportId, reportId));
-    
-    // Genera il file di report
-    const fileName = `delivery_report_${reportId}_${Date.now()}.json`;
-    const filePath = path.join(REPORTS_DIR, fileName);
-    
-    // Dati per il report
-    const reportData = {
-      reportInfo: {
-        id: reportId,
-        title: `DDT Ordine #${orderId}`,
-        generatedAt: new Date().toISOString()
-      },
-      order,
-      client,
-      items: orderItemsResult,
-      deliveryInfo: {
-        totalItems,
+        totalSales,
+        totalVat,
+        avgOrderValue,
         totalWeight,
-        deliveryDate: order.actualDeliveryDate || new Date().toISOString().slice(0, 10)
-      }
-    };
-    
-    // Scrivi il file
-    fs.writeFileSync(filePath, JSON.stringify(reportData, null, 2));
-    
-    // Aggiorna il record del report
-    await db
-      .update(reports)
-      .set({
-        status: 'completed',
-        filePath,
-        fileSize: fs.statSync(filePath).size,
-        completedAt: new Date()
-      })
-      .where(eq(reports.id, reportId));
-    
-    // Se l'ordine non è ancora stato segnato come consegnato, aggiornalo
-    if (order.status !== 'delivered' && order.status !== 'completed') {
-      await db
-        .update(orders)
-        .set({
-          status: 'delivered',
-          actualDeliveryDate: order.actualDeliveryDate || new Date().toISOString().slice(0, 10),
-          updatedAt: new Date()
-        })
-        .where(eq(orders.id, orderId));
+        topClientId,
+        topSizeId,
+        topLotId,
+        detailedData
+      };
+    } catch (error) {
+      console.error('Errore nella raccolta dei dati di vendita:', error);
+      throw error;
     }
-    
-  } catch (error) {
-    console.error('Errore nella generazione del report di consegna:', error);
-    await updateReportStatus(reportId, 'failed', error.message);
   }
-}
 
-// Funzione di utility per aggiornare lo stato di un report
-async function updateReportStatus(reportId: number, status: 'pending' | 'processing' | 'completed' | 'failed', error?: string) {
-  try {
-    const updateData: any = {
-      status,
-      updatedAt: new Date()
-    };
-    
-    if (status === 'completed') {
-      updateData.completedAt = new Date();
-    }
-    
-    if (error) {
-      updateData.error = error;
-    }
-    
-    await db
-      .update(reports)
-      .set(updateData)
-      .where(eq(reports.id, reportId));
-  } catch (updateError) {
-    console.error(`Errore nell'aggiornamento dello stato del report ${reportId}:`, updateError);
-  }
-}
-
-// Scarica un report
-export async function downloadReport(req: Request, res: Response) {
-  try {
-    const { id } = req.params;
-    const reportId = parseInt(id);
-    
-    if (isNaN(reportId)) {
-      return res.status(400).json({ message: 'ID report non valido' });
-    }
-    
-    // Recupera il report
-    const reportResult = await db.select().from(reports).where(eq(reports.id, reportId));
-    
-    if (reportResult.length === 0) {
-      return res.status(404).json({ message: 'Report non trovato' });
-    }
-    
-    const report = reportResult[0];
-    
-    // Verifica che il report sia completato
-    if (report.status !== 'completed') {
-      return res.status(400).json({ 
-        message: `Il report non è pronto per il download (stato attuale: ${report.status})` 
-      });
-    }
-    
-    // Verifica che il file esista
-    if (!report.filePath || !fs.existsSync(report.filePath)) {
-      return res.status(404).json({ message: 'File del report non trovato' });
-    }
-    
-    // Determina il tipo di contenuto in base al formato
-    let contentType = 'application/octet-stream';
-    switch (report.format) {
-      case 'pdf':
-        contentType = 'application/pdf';
-        break;
-      case 'excel':
-        contentType = 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet';
-        break;
-      case 'csv':
-        contentType = 'text/csv';
-        break;
-      case 'json':
-        contentType = 'application/json';
-        break;
-      case 'html':
-        contentType = 'text/html';
-        break;
-    }
-    
-    // Imposta gli header della risposta
-    res.setHeader('Content-Type', contentType);
-    res.setHeader('Content-Disposition', `attachment; filename=${path.basename(report.filePath)}`);
-    
-    // Invia il file
-    const fileStream = fs.createReadStream(report.filePath);
-    fileStream.pipe(res);
-  } catch (error) {
-    console.error('Errore nel download del report:', error);
-    res.status(500).json({ message: 'Errore nel download del report', error: error.message });
-  }
-}
-
-// Elimina un report
-export async function deleteReport(req: Request, res: Response) {
-  try {
-    const { id } = req.params;
-    const reportId = parseInt(id);
-    
-    if (isNaN(reportId)) {
-      return res.status(400).json({ message: 'ID report non valido' });
-    }
-    
-    // Recupera il report
-    const reportResult = await db.select().from(reports).where(eq(reports.id, reportId));
-    
-    if (reportResult.length === 0) {
-      return res.status(404).json({ message: 'Report non trovato' });
-    }
-    
-    const report = reportResult[0];
-    
-    // Elimina il file se esiste
-    if (report.filePath && fs.existsSync(report.filePath)) {
-      fs.unlinkSync(report.filePath);
-    }
-    
-    // Usa una transazione per eliminare i dati correlati
-    await db.transaction(async (tx) => {
-      // Elimina report specifici in base al tipo
-      if (report.type === 'sales') {
-        await tx.delete(salesReports).where(eq(salesReports.reportId, reportId));
-      } else if (report.type === 'delivery') {
-        await tx.delete(deliveryReports).where(eq(deliveryReports.reportId, reportId));
+  /**
+   * Genera un nuovo report di consegna
+   */
+  static async generateDeliveryReport(req: AuthRequest, res: Response) {
+    try {
+      ReportController.initReportsDir();
+      
+      const { title, format, orderId, deliveryDate, parameters } = req.body;
+      
+      if (!orderId) {
+        return res.status(400).json({ message: 'ID ordine obbligatorio' });
       }
       
+      // Ottieni i dati dell'ordine
+      const [orderData] = await db.select({
+        ...orders,
+        clientName: clients.name
+      })
+      .from(orders)
+      .leftJoin(clients, eq(orders.clientId, clients.id))
+      .where(eq(orders.id, orderId));
+      
+      if (!orderData) {
+        return res.status(404).json({ message: 'Ordine non trovato' });
+      }
+      
+      // Ottieni gli articoli dell'ordine
+      const orderItemsData = await db.select()
+        .from(orderItems)
+        .where(eq(orderItems.orderId, orderId));
+      
+      // Calcola il numero totale di articoli e il peso totale
+      const totalItems = orderItemsData.length;
+      const totalWeight = orderItemsData.reduce((sum, item) => sum + Number(item.quantity), 0);
+      
+      // Validazione dei dati del report
+      const reportData = {
+        title: title || `DDT ordine ${orderData.orderNumber}`,
+        description: `Documento di trasporto per l'ordine ${orderData.orderNumber}`,
+        type: 'delivery',
+        format: format || 'pdf',
+        parameters: parameters || {},
+        status: 'processing',
+        generatedBy: req.user?.id
+      };
+      
+      const validatedReport = insertReportSchema.safeParse(reportData);
+      if (!validatedReport.success) {
+        const validationError = fromZodError(validatedReport.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      // Crea il report nel database
+      const [newReport] = await db.insert(reports)
+        .values(validatedReport.data)
+        .returning();
+      
+      // Crea i dati specifici del report di consegna
+      const deliveryReportData = {
+        reportId: newReport.id,
+        orderId,
+        clientId: orderData.clientId,
+        deliveryDate: deliveryDate || new Date().toISOString().split('T')[0],
+        totalItems,
+        totalWeight,
+        transportInfo: parameters?.transportInfo || '',
+        notes: parameters?.notes || '',
+        signedBy: parameters?.signedBy || '',
+        metadata: { items: orderItemsData }
+      };
+      
+      const validatedDeliveryReport = insertDeliveryReportSchema.safeParse(deliveryReportData);
+      if (!validatedDeliveryReport.success) {
+        const validationError = fromZodError(validatedDeliveryReport.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      // Inserisci i dati specifici del report di consegna
+      const [newDeliveryReport] = await db.insert(deliveryReports)
+        .values(validatedDeliveryReport.data)
+        .returning();
+      
+      // Genera il file del report (simulato per ora)
+      const fileName = `delivery_report_${newReport.id}_${new Date().getTime()}.${format}`;
+      const filePath = path.join(ReportController.REPORTS_DIR, fileName);
+      
+      // Qui dovrebbe andare la logica di generazione del file
+      // Per ora generiamo un file JSON di esempio
+      const jsonData = {
+        reportInfo: newReport,
+        orderData: orderData,
+        items: orderItemsData,
+        deliveryInfo: newDeliveryReport
+      };
+      
+      // Scriviamo i dati su file
+      fs.writeFileSync(filePath, JSON.stringify(jsonData, null, 2));
+      
+      // Aggiorna il report con il percorso del file e lo stato
+      const [updatedReport] = await db.update(reports)
+        .set({
+          filePath,
+          fileSize: fs.statSync(filePath).size,
+          status: 'completed',
+          completedAt: new Date()
+        })
+        .where(eq(reports.id, newReport.id))
+        .returning();
+      
+      // Se l'ordine non ha ancora una data di consegna effettiva, aggiornala
+      if (!orderData.actualDeliveryDate) {
+        await db.update(orders)
+          .set({
+            actualDeliveryDate: deliveryDate || new Date().toISOString().split('T')[0],
+            status: orderData.status === 'ready' ? 'shipped' : orderData.status,
+            updatedAt: new Date()
+          })
+          .where(eq(orders.id, orderId));
+      }
+      
+      // Restituisci il report completato
+      res.status(201).json({
+        ...updatedReport,
+        deliveryReport: newDeliveryReport
+      });
+    } catch (error) {
+      console.error('Errore nella generazione del report di consegna:', error);
+      res.status(500).json({ message: 'Errore nella generazione del report di consegna' });
+    }
+  }
+
+  /**
+   * Elimina un report
+   */
+  static async deleteReport(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const reportId = parseInt(id, 10);
+
+      if (isNaN(reportId)) {
+        return res.status(400).json({ message: 'ID report non valido' });
+      }
+
+      // Verifica che il report esista e ottieni il percorso del file
+      const [reportData] = await db.select()
+        .from(reports)
+        .where(eq(reports.id, reportId));
+
+      if (!reportData) {
+        return res.status(404).json({ message: 'Report non trovato' });
+      }
+
+      // Se esiste il file, eliminalo
+      if (reportData.filePath && fs.existsSync(reportData.filePath)) {
+        fs.unlinkSync(reportData.filePath);
+      }
+
+      // Elimina i dati specifici del report in base al tipo
+      if (reportData.type === 'sales') {
+        await db.delete(salesReports)
+          .where(eq(salesReports.reportId, reportId));
+      } else if (reportData.type === 'delivery') {
+        await db.delete(deliveryReports)
+          .where(eq(deliveryReports.reportId, reportId));
+      }
+
       // Elimina il report principale
-      await tx.delete(reports).where(eq(reports.id, reportId));
-    });
-    
-    res.json({ message: 'Report eliminato con successo' });
-  } catch (error) {
-    console.error('Errore nell\'eliminazione del report:', error);
-    res.status(500).json({ message: 'Errore nell\'eliminazione del report', error: error.message });
+      const [deletedReport] = await db.delete(reports)
+        .where(eq(reports.id, reportId))
+        .returning();
+
+      res.json(deletedReport);
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del report:', error);
+      res.status(500).json({ message: 'Errore nell\'eliminazione del report' });
+    }
+  }
+
+  /**
+   * Ottiene l'elenco dei modelli di report
+   */
+  static async getReportTemplates(req: Request, res: Response) {
+    try {
+      const { type } = req.query;
+      
+      let query = db.select()
+        .from(reportTemplates)
+        .where(eq(reportTemplates.active, true))
+        .orderBy(desc(reportTemplates.isDefault), asc(reportTemplates.name));
+      
+      // Filtro per tipo di report
+      if (type && typeof type === 'string') {
+        query = query.where(eq(reportTemplates.type, type));
+      }
+      
+      const result = await query;
+      res.json(result);
+    } catch (error) {
+      console.error('Errore nel recupero dei modelli di report:', error);
+      res.status(500).json({ message: 'Errore nel recupero dei modelli di report' });
+    }
+  }
+
+  /**
+   * Crea un nuovo modello di report
+   */
+  static async createReportTemplate(req: AuthRequest, res: Response) {
+    try {
+      // Validazione dei dati del template
+      const validatedData = insertReportTemplateSchema.safeParse(req.body);
+      
+      if (!validatedData.success) {
+        const validationError = fromZodError(validatedData.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      // Se è impostato come predefinito, rimuovi il flag dagli altri template dello stesso tipo
+      if (validatedData.data.isDefault) {
+        await db.update(reportTemplates)
+          .set({ isDefault: false })
+          .where(and(
+            eq(reportTemplates.type, validatedData.data.type),
+            eq(reportTemplates.isDefault, true)
+          ));
+      }
+      
+      // Crea il template
+      const [newTemplate] = await db.insert(reportTemplates)
+        .values({
+          ...validatedData.data,
+          createdBy: req.user?.id,
+          updatedAt: new Date()
+        })
+        .returning();
+      
+      res.status(201).json(newTemplate);
+    } catch (error) {
+      console.error('Errore nella creazione del modello di report:', error);
+      res.status(500).json({ message: 'Errore nella creazione del modello di report' });
+    }
+  }
+
+  /**
+   * Aggiorna un modello di report esistente
+   */
+  static async updateReportTemplate(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const templateId = parseInt(id, 10);
+
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: 'ID modello non valido' });
+      }
+
+      // Verifica che il template esista
+      const [existingTemplate] = await db.select()
+        .from(reportTemplates)
+        .where(eq(reportTemplates.id, templateId));
+
+      if (!existingTemplate) {
+        return res.status(404).json({ message: 'Modello di report non trovato' });
+      }
+
+      // Validazione dei dati del template
+      const validatedData = insertReportTemplateSchema.partial().safeParse(req.body);
+      
+      if (!validatedData.success) {
+        const validationError = fromZodError(validatedData.error);
+        return res.status(400).json({ message: validationError.message });
+      }
+      
+      // Se è impostato come predefinito, rimuovi il flag dagli altri template dello stesso tipo
+      if (validatedData.data.isDefault) {
+        await db.update(reportTemplates)
+          .set({ isDefault: false })
+          .where(and(
+            eq(reportTemplates.type, existingTemplate.type),
+            eq(reportTemplates.isDefault, true),
+            not(eq(reportTemplates.id, templateId))
+          ));
+      }
+      
+      // Aggiorna il template
+      const [updatedTemplate] = await db.update(reportTemplates)
+        .set({
+          ...validatedData.data,
+          updatedAt: new Date()
+        })
+        .where(eq(reportTemplates.id, templateId))
+        .returning();
+      
+      res.json(updatedTemplate);
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento del modello di report:', error);
+      res.status(500).json({ message: 'Errore nell\'aggiornamento del modello di report' });
+    }
+  }
+
+  /**
+   * Elimina un modello di report
+   */
+  static async deleteReportTemplate(req: Request, res: Response) {
+    try {
+      const { id } = req.params;
+      const templateId = parseInt(id, 10);
+
+      if (isNaN(templateId)) {
+        return res.status(400).json({ message: 'ID modello non valido' });
+      }
+
+      // Verifica che il template esista
+      const [existingTemplate] = await db.select()
+        .from(reportTemplates)
+        .where(eq(reportTemplates.id, templateId));
+
+      if (!existingTemplate) {
+        return res.status(404).json({ message: 'Modello di report non trovato' });
+      }
+
+      // Elimina il template
+      const [deletedTemplate] = await db.delete(reportTemplates)
+        .where(eq(reportTemplates.id, templateId))
+        .returning();
+
+      res.json(deletedTemplate);
+    } catch (error) {
+      console.error('Errore nell\'eliminazione del modello di report:', error);
+      res.status(500).json({ message: 'Errore nell\'eliminazione del modello di report' });
+    }
   }
 }
