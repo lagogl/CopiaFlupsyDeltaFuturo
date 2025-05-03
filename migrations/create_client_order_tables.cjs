@@ -22,7 +22,7 @@ async function createTables() {
   
   try {
     // Crea la tabella clients
-    await db.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS clients (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
@@ -45,7 +45,7 @@ async function createTables() {
     console.log('✓ Tabella clients creata');
     
     // Crea la tabella orders
-    await db.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS orders (
         id SERIAL PRIMARY KEY,
         order_number TEXT NOT NULL UNIQUE,
@@ -75,7 +75,7 @@ async function createTables() {
     console.log('✓ Tabella orders creata');
     
     // Crea la tabella order_items
-    await db.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS order_items (
         id SERIAL PRIMARY KEY,
         order_id INTEGER NOT NULL,
@@ -96,7 +96,7 @@ async function createTables() {
     console.log('✓ Tabella order_items creata');
     
     // Crea la tabella payments
-    await db.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS payments (
         id SERIAL PRIMARY KEY,
         order_id INTEGER NOT NULL,
@@ -112,7 +112,7 @@ async function createTables() {
     console.log('✓ Tabella payments creata');
     
     // Crea la tabella documents
-    await db.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS documents (
         id SERIAL PRIMARY KEY,
         file_name TEXT NOT NULL,
@@ -132,7 +132,7 @@ async function createTables() {
     console.log('✓ Tabella documents creata');
     
     // Crea indici per le relazioni
-    await db.execute(`
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_orders_client_id ON orders(client_id);
       CREATE INDEX IF NOT EXISTS idx_order_items_order_id ON order_items(order_id);
       CREATE INDEX IF NOT EXISTS idx_payments_order_id ON payments(order_id);
@@ -141,7 +141,7 @@ async function createTables() {
     console.log('✓ Indici creati');
     
     // Crea vincoli di chiave esterna
-    await db.execute(`
+    await pool.query(`
       ALTER TABLE orders 
         ADD CONSTRAINT fk_orders_client_id 
         FOREIGN KEY (client_id) 
@@ -163,7 +163,7 @@ async function createTables() {
     console.log('✓ Vincoli di chiave esterna creati');
     
     // Aggiungi vincoli opzionali per order_items
-    await db.execute(`
+    await pool.query(`
       ALTER TABLE order_items 
         ADD CONSTRAINT fk_order_items_lot_id 
         FOREIGN KEY (lot_id) 
