@@ -1,5 +1,10 @@
 // migrations/create_report_tables.cjs
-const { db } = require('../server/db');
+const { Pool } = require('pg');
+
+// Creiamo una connessione al database
+const pool = new Pool({
+  connectionString: process.env.DATABASE_URL,
+});
 
 /**
  * Script di migrazione per creare le tabelle di report e rapporti
@@ -16,7 +21,7 @@ async function createTables() {
   
   try {
     // Crea la tabella reports
-    await db.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS reports (
         id SERIAL PRIMARY KEY,
         title TEXT NOT NULL,
@@ -39,7 +44,7 @@ async function createTables() {
     console.log('✓ Tabella reports creata');
     
     // Crea la tabella delivery_reports
-    await db.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS delivery_reports (
         id SERIAL PRIMARY KEY,
         report_id INTEGER NOT NULL,
@@ -60,7 +65,7 @@ async function createTables() {
     console.log('✓ Tabella delivery_reports creata');
     
     // Crea la tabella sales_reports
-    await db.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS sales_reports (
         id SERIAL PRIMARY KEY,
         report_id INTEGER NOT NULL,
@@ -83,7 +88,7 @@ async function createTables() {
     console.log('✓ Tabella sales_reports creata');
     
     // Crea la tabella report_templates
-    await db.execute(`
+    await pool.query(`
       CREATE TABLE IF NOT EXISTS report_templates (
         id SERIAL PRIMARY KEY,
         name TEXT NOT NULL,
@@ -102,7 +107,7 @@ async function createTables() {
     console.log('✓ Tabella report_templates creata');
     
     // Crea indici per le relazioni
-    await db.execute(`
+    await pool.query(`
       CREATE INDEX IF NOT EXISTS idx_reports_type ON reports(type);
       CREATE INDEX IF NOT EXISTS idx_delivery_reports_report_id ON delivery_reports(report_id);
       CREATE INDEX IF NOT EXISTS idx_delivery_reports_order_id ON delivery_reports(order_id);
@@ -113,7 +118,7 @@ async function createTables() {
     console.log('✓ Indici creati');
     
     // Crea vincoli di chiave esterna
-    await db.execute(`
+    await pool.query(`
       ALTER TABLE delivery_reports 
         ADD CONSTRAINT fk_delivery_reports_report_id 
         FOREIGN KEY (report_id) 
@@ -141,7 +146,7 @@ async function createTables() {
     console.log('✓ Vincoli di chiave esterna creati');
     
     // Aggiungi vincoli opzionali
-    await db.execute(`
+    await pool.query(`
       ALTER TABLE sales_reports 
         ADD CONSTRAINT fk_sales_reports_top_client_id 
         FOREIGN KEY (top_client_id) 
