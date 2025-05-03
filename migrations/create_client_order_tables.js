@@ -1,5 +1,5 @@
 // migrations/create_client_order_tables.js
-import { db } from '../server/db.js';
+const { db } = require('../server/db');
 
 /**
  * Script di migrazione per creare le tabelle di clienti e ordini
