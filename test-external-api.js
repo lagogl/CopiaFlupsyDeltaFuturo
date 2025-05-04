@@ -4,23 +4,19 @@
  * Questo script verifica le funzionalità delle API esterne per le operazioni di vendita.
  * Da eseguire quando l'applicazione è in esecuzione.
  */
-
 import fetch from 'node-fetch';
 
-// Configurazione
-const BASE_URL = 'http://localhost:5000/api/external';
-const API_KEY = 'chiave-test-per-sviluppo'; // Usa la stessa chiave definita nel controller TEST_API_KEY
+const BASE_URL = 'https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-3mc8v3rnvi3q8.kirk.replit.dev/api/external';
+const API_KEY = 'flupsy-api-key-2025';
 
-// Funzione per eseguire una richiesta API
+// Funzione per effettuare richieste API
 async function apiRequest(endpoint, method = 'GET', body = null) {
-  const headers = {
-    'Content-Type': 'application/json',
-    'X-API-Key': API_KEY
-  };
-
   const options = {
     method,
-    headers
+    headers: {
+      'Authorization': `Bearer ${API_KEY}`,
+      'Content-Type': 'application/json'
+    }
   };
 
   if (body) {
@@ -29,80 +25,91 @@ async function apiRequest(endpoint, method = 'GET', body = null) {
 
   try {
     const response = await fetch(`${BASE_URL}${endpoint}`, options);
-    const data = await response.json();
-    return { status: response.status, data };
+    const status = response.status;
+    const contentType = response.headers.get('content-type');
+    
+    let data;
+    if (contentType && contentType.includes('application/json')) {
+      data = await response.json();
+    } else {
+      data = await response.text();
+    }
+    
+    return { status, data };
   } catch (error) {
-    console.error(`Errore nella richiesta a ${endpoint}:`, error);
-    return { status: 500, error: error.message };
+    console.error(`Errore nella richiesta a ${endpoint}:`, error.message);
+    return { status: 'error', data: error.message };
   }
 }
 
-// Funzione principale per i test
+// Funzione principale per eseguire i test
 async function runTests() {
-  console.log('=== Test API Esterne ===');
+  console.log('=== TEST API ESTERNE PER VENDITE ===\n');
   
   // Test 1: Verifica stato API
-  console.log('\n1. Verifica stato API:');
-  const statusResponse = await apiRequest('/status');
-  console.log('Stato:', statusResponse.status);
-  console.log('Risposta:', statusResponse.data);
+  console.log('Test 1: Verifica stato API');
+  const statusResult = await apiRequest('/status');
+  console.log(`Stato: ${statusResult.status}`);
+  console.log('Risposta:', JSON.stringify(statusResult.data, null, 2));
+  console.log('');
   
-  // Test 2: Ottieni cestelli disponibili
-  console.log('\n2. Ottieni cestelli disponibili:');
-  const basketsResponse = await apiRequest('/sales/available-baskets');
-  console.log('Stato:', basketsResponse.status);
-  console.log('Numero cestelli disponibili:', basketsResponse.data?.baskets?.length || 0);
+  // Test 2: Verifica cestelli disponibili
+  console.log('Test 2: Verifica cestelli disponibili per la vendita');
+  const basketsResult = await apiRequest('/sales/available-baskets');
+  console.log(`Stato: ${basketsResult.status}`);
+  console.log(`Numero cestelli disponibili: ${basketsResult.data.baskets ? basketsResult.data.baskets.length : 0}`);
+  if (basketsResult.data.baskets && basketsResult.data.baskets.length > 0) {
+    console.log('Esempio primo cestello:', JSON.stringify(basketsResult.data.baskets[0], null, 2));
+  }
+  console.log('');
   
-  // Ottieni un ID di cestello se disponibile
-  let basketId = null;
-  if (basketsResponse.data?.baskets?.length > 0) {
-    basketId = basketsResponse.data.baskets[0].id;
-    console.log('ID cestello per test:', basketId);
-  } else {
-    console.log('Nessun cestello disponibile per i test di vendita');
-    return;
+  // Test 3: Dettaglio di un lotto (se disponibile)
+  console.log('Test 3: Dettaglio di un lotto');
+  let lotId = 1; // Default lot ID
+  
+  // Se abbiamo cestelli disponibili, usiamo l'ID del lotto del primo cestello
+  if (basketsResult.data.baskets && basketsResult.data.baskets.length > 0) {
+    lotId = basketsResult.data.baskets[0].lotId;
   }
   
-  // Test 3: Crea operazione di vendita
-  console.log('\n3. Crea operazione di vendita:');
-  const saleData = {
-    apiKey: API_KEY,
-    basketIds: [basketId],
-    date: new Date().toISOString().split('T')[0],
-    notes: 'Test di vendita da API esterna',
-    client: 'Cliente Test',
-    invoiceNumber: 'TEST-123',
-    totalWeight: 2500, // in grammi
-    totalPrice: 150.0, // in euro
-    transportType: 'Camion',
-    destination: 'Azienda Test SpA'
-  };
+  const lotResult = await apiRequest(`/lots/${lotId}`);
+  console.log(`Stato: ${lotResult.status}`);
+  console.log('Dettaglio lotto:', JSON.stringify(lotResult.data, null, 2));
+  console.log('');
   
-  const saleResponse = await apiRequest('/sales/create', 'POST', saleData);
-  console.log('Stato:', saleResponse.status);
-  console.log('Risposta:', saleResponse.data);
+  // Test 4: Cronologia vendite
+  console.log('Test 4: Cronologia vendite');
+  const historyResult = await apiRequest('/sales/history');
+  console.log(`Stato: ${historyResult.status}`);
+  console.log(`Numero vendite registrate: ${historyResult.data.sales ? historyResult.data.sales.length : 0}`);
+  if (historyResult.data.sales && historyResult.data.sales.length > 0) {
+    console.log('Esempio prima vendita:', JSON.stringify(historyResult.data.sales[0], null, 2));
+  }
+  console.log('');
   
-  // Test 4: Ottieni storico vendite
-  console.log('\n4. Ottieni storico vendite:');
-  const historyResponse = await apiRequest('/sales/history');
-  console.log('Stato:', historyResponse.status);
-  console.log('Numero gruppi di vendite:', historyResponse.data?.salesHistory?.length || 0);
-
-  // Test 5: Se disponibile, ottieni dettagli di un lotto
-  if (basketsResponse.data?.baskets?.length > 0 && 
-      basketsResponse.data.baskets[0].lot?.id) {
-    const lotId = basketsResponse.data.baskets[0].lot.id;
+  // Test 5: Creazione vendita (solo se ci sono cestelli disponibili)
+  if (basketsResult.data.baskets && basketsResult.data.baskets.length > 0) {
+    const basketToSell = basketsResult.data.baskets[0];
     
-    console.log('\n5. Ottieni dettagli lotto:');
-    const lotResponse = await apiRequest(`/lots/${lotId}`);
-    console.log('Stato:', lotResponse.status);
-    console.log('Dettagli lotto disponibili:', !!lotResponse.data?.lot);
+    console.log('Test 5: Creazione vendita');
+    console.log(`Tentativo di vendita del cestello ID ${basketToSell.id}`);
+    
+    const saleData = {
+      buyerName: "Cliente Test API",
+      buyerEmail: "test@example.com",
+      buyerPhone: "123456789",
+      basketId: basketToSell.id,
+      price: 150.00,
+      notes: "Vendita di test tramite API esterna"
+    };
+    
+    const saleResult = await apiRequest('/sales/create', 'POST', saleData);
+    console.log(`Stato: ${saleResult.status}`);
+    console.log('Risposta creazione vendita:', JSON.stringify(saleResult.data, null, 2));
+  } else {
+    console.log('Test 5: Creazione vendita SALTATO (nessun cestello disponibile)');
   }
-  
-  console.log('\n=== Test Completati ===');
 }
 
 // Esegui i test
-runTests().catch(error => {
-  console.error('Errore durante l\'esecuzione dei test:', error);
-});
+runTests();
