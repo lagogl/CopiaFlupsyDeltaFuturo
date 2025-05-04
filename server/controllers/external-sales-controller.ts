@@ -150,7 +150,7 @@ export async function getAvailableBasketsForSale(req: Request, res: Response) {
 
     res.json({
       success: true,
-      baskets: enrichedBaskets,
+      baskets: validEnrichedBaskets,
     });
   } catch (error) {
     console.error("Errore nel recupero dei cestelli disponibili:", error);
