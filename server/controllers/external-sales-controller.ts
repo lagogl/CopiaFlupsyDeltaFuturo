@@ -32,11 +32,11 @@ export type ExternalSaleOperation = z.infer<typeof externalSaleSchema>;
 
 // Configurazione API Key (in un'implementazione reale dovresti usare una soluzione più sicura)
 const API_KEYS = {
-  'app-esterna': process.env.EXTERNAL_APP_API_KEY || 'chiave-test-per-sviluppo',
+  'app-esterna': process.env.EXTERNAL_APP_API_KEY || 'flupsy-api-key-2025',
 };
 
 // Chiave di test da utilizzare durante lo sviluppo 
-const TEST_API_KEY = 'chiave-test-per-sviluppo';
+const TEST_API_KEY = 'flupsy-api-key-2025';
 
 /**
  * Middleware per verificare l'API key
