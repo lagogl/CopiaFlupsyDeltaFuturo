@@ -50,8 +50,23 @@ function logAPIRequest(req: Request, status: number, error?: string) {
     'user-agent': req.headers['user-agent'],
     'content-type': req.headers['content-type'],
     'accept': req.headers['accept'],
+    'authorization': req.headers['authorization'],
+    'x-api-key': req.headers['x-api-key']
   });
-  const apiKey = req.headers['x-api-key'] || req.body?.apiKey || req.query?.apiKey || 'missing';
+  
+  // Estrai API key da tutti i possibili luoghi
+  let apiKey = req.headers['x-api-key'] || req.body?.apiKey || req.query?.apiKey || 'missing';
+  
+  // Controlla anche nell'header Authorization
+  const authHeader = req.headers['authorization'];
+  if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    const bearerToken = authHeader.substring(7); // Rimuovi "Bearer " dal token
+    if (bearerToken) {
+      console.log(`Trovato token Bearer nell'header Authorization: ${bearerToken}`);
+      apiKey = bearerToken;
+    }
+  }
+  
   const bodyKeys = req.body ? Object.keys(req.body).filter(k => k !== 'apiKey') : [];
   
   // Log dettagliato
@@ -59,7 +74,7 @@ function logAPIRequest(req: Request, status: number, error?: string) {
   console.log(`Status: ${status}, IP: ${clientIP}, Method: ${method}, Path: ${path}`);
   console.log(`Query: ${query}`);
   console.log(`Headers: ${headers}`);
-  console.log(`API Key: ${apiKey}`);
+  console.log(`API Key estratta: ${apiKey}`);
   console.log(`Body Fields: ${JSON.stringify(bodyKeys)}`);
   
   if (error) {
@@ -73,7 +88,18 @@ function logAPIRequest(req: Request, status: number, error?: string) {
  * Middleware per verificare l'API key
  */
 export function verifyApiKey(req: Request, res: Response, next: Function) {
-  const apiKey = req.headers['x-api-key'] || req.body?.apiKey || req.query?.apiKey;
+  // Estrai API key da tutti i possibili punti
+  let apiKey = req.headers['x-api-key'] || req.body?.apiKey || req.query?.apiKey;
+  
+  // Controlla anche l'header Authorization
+  const authHeader = req.headers['authorization'];
+  if (authHeader && typeof authHeader === 'string' && authHeader.startsWith('Bearer ')) {
+    const bearerToken = authHeader.substring(7); // Rimuovi "Bearer " dal token
+    if (bearerToken) {
+      console.log(`Trovato token Bearer nell'header Authorization: ${bearerToken}`);
+      apiKey = bearerToken;
+    }
+  }
 
   // Accetta sia le chiavi configurate che la chiave di test
   if (!apiKey || 
