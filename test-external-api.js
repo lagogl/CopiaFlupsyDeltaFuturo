@@ -69,7 +69,8 @@ async function runTests() {
   
   // Se abbiamo cestelli disponibili, usiamo l'ID del lotto del primo cestello
   if (basketsResult.data.baskets && basketsResult.data.baskets.length > 0) {
-    lotId = basketsResult.data.baskets[0].lotId;
+    lotId = basketsResult.data.baskets[0].lot?.id || 1;
+    console.log(`Usando ID lotto: ${lotId} dal cestello`);
   }
   
   const lotResult = await apiRequest(`/lots/${lotId}`);
@@ -94,11 +95,14 @@ async function runTests() {
     console.log('Test 5: Creazione vendita');
     console.log(`Tentativo di vendita del cestello ID ${basketToSell.id}`);
     
+    // La struttura dati corretta secondo l'API
     const saleData = {
+      apiKey: API_KEY, // È richiesto anche se lo passiamo nell'header
+      date: new Date().toISOString().split('T')[0], // Formato YYYY-MM-DD
+      basketIds: [basketToSell.id], // Array di ID cestelli
       buyerName: "Cliente Test API",
       buyerEmail: "test@example.com",
       buyerPhone: "123456789",
-      basketId: basketToSell.id,
       price: 150.00,
       notes: "Vendita di test tramite API esterna"
     };
