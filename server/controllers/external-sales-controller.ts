@@ -39,21 +39,58 @@ const API_KEYS = {
 const TEST_API_KEY = 'flupsy-api-key-2025';
 
 /**
+ * Sistema di logging avanzato per le API esterne
+ */
+function logAPIRequest(req: Request, status: number, error?: string) {
+  const clientIP = req.headers['x-forwarded-for'] || req.ip || 'unknown';
+  const method = req.method;
+  const path = req.path;
+  const query = JSON.stringify(req.query);
+  const headers = JSON.stringify({
+    'user-agent': req.headers['user-agent'],
+    'content-type': req.headers['content-type'],
+    'accept': req.headers['accept'],
+  });
+  const apiKey = req.headers['x-api-key'] || req.body?.apiKey || req.query?.apiKey || 'missing';
+  const bodyKeys = req.body ? Object.keys(req.body).filter(k => k !== 'apiKey') : [];
+  
+  // Log dettagliato
+  console.log(`=== EXTERNAL API ACCESS [${new Date().toISOString()}] ===`);
+  console.log(`Status: ${status}, IP: ${clientIP}, Method: ${method}, Path: ${path}`);
+  console.log(`Query: ${query}`);
+  console.log(`Headers: ${headers}`);
+  console.log(`API Key: ${apiKey}`);
+  console.log(`Body Fields: ${JSON.stringify(bodyKeys)}`);
+  
+  if (error) {
+    console.error(`Error: ${error}`);
+  }
+  
+  console.log(`=== END API ACCESS LOG ===`);
+}
+
+/**
  * Middleware per verificare l'API key
  */
 export function verifyApiKey(req: Request, res: Response, next: Function) {
-  const apiKey = req.headers['x-api-key'] || req.body.apiKey;
+  const apiKey = req.headers['x-api-key'] || req.body?.apiKey || req.query?.apiKey;
 
   // Accetta sia le chiavi configurate che la chiave di test
   if (!apiKey || 
       !(Object.values(API_KEYS).includes(apiKey as string) || apiKey === TEST_API_KEY)) {
-    console.error(`Tentativo di accesso con API key non valida: ${apiKey}`);
+    
+    // Log dell'accesso fallito
+    logAPIRequest(req, 401, `API key non valida o mancante: ${apiKey}`);
+    
     return res.status(401).json({
       success: false,
       message: "API Key non valida o mancante"
     });
   }
-
+  
+  // Log dell'accesso riuscito
+  logAPIRequest(req, 200);
+  
   next();
 }
 
@@ -63,6 +100,12 @@ export function verifyApiKey(req: Request, res: Response, next: Function) {
 export async function getAvailableBasketsForSale(req: Request, res: Response) {
   try {
     console.log("Cercando cestelli disponibili per vendita...");
+    
+    // Log della richiesta con dettagli completi
+    console.log(`=== API REQUEST: GET AVAILABLE BASKETS [${new Date().toISOString()}] ===`);
+    console.log(`Query Params: ${JSON.stringify(req.query)}`);
+    console.log(`Headers: ${JSON.stringify(req.headers)}`);
+    console.log(`=== END REQUEST LOG ===`);
 
     // Semplifichiamo la query per debug
     const availableBaskets = await db
@@ -169,6 +212,12 @@ export async function createExternalSaleOperation(req: Request, res: Response) {
     // Validazione dei dati
     const validationResult = externalSaleSchema.safeParse(req.body);
     if (!validationResult.success) {
+      // Log dettagliato dell'errore di validazione
+      console.log(`=== VALIDATION ERROR [${new Date().toISOString()}] ===`);
+      console.log(`Request Body: ${JSON.stringify(req.body)}`);
+      console.log(`Validation Errors: ${JSON.stringify(validationResult.error.errors)}`);
+      console.log(`=== END VALIDATION ERROR LOG ===`);
+      
       return res.status(400).json({
         success: false,
         message: "Dati non validi",
