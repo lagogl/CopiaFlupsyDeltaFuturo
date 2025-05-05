@@ -24,6 +24,7 @@ import * as SelectionController from "./controllers/selection-controller";
 import * as ScreeningController from "./controllers/screening-controller";
 import * as WhatsappController from "./controllers/whatsapp-controller";
 import * as EmailController from "./controllers/email-controller";
+import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
@@ -5155,6 +5156,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API per email - Salva la configurazione email
   app.post('/api/email/config', EmailController.saveEmailConfiguration);
+  
+  // API per Telegram - Invia un messaggio Telegram con il diario di bordo
+  app.post('/api/telegram/send-diario', TelegramController.sendTelegramDiario);
+  
+  // API per Telegram - Ottiene la configurazione Telegram corrente
+  app.get('/api/telegram/config', TelegramController.getTelegramConfiguration);
+  
+  // API per Telegram - Salva la configurazione Telegram
+  app.post('/api/telegram/config', TelegramController.saveTelegramConfiguration);
   
   // Endpoint per inviare un messaggio WhatsApp manualmente
   app.post("/api/whatsapp/send", WhatsappController.sendWhatsAppMessage);
