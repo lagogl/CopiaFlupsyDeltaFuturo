@@ -3,6 +3,8 @@ import { format, subDays } from "date-fns";
 import { it } from "date-fns/locale";
 import { db } from "../db";
 import { sql } from "drizzle-orm";
+import { emailConfig } from "@shared/schema";
+import { eq } from "drizzle-orm";
 
 /**
  * Formatta il messaggio WhatsApp per il Diario di Bordo
@@ -389,6 +391,113 @@ export async function autoSendWhatsAppDiario(req: Request, res: Response) {
     return res.status(500).json({
       success: false,
       error: `Errore nell'invio automatico del diario WhatsApp: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}
+
+/**
+ * Ottiene la configurazione WhatsApp dal database
+ */
+export async function getWhatsAppConfig(req: Request, res: Response) {
+  try {
+    // Leggi le configurazioni dal database
+    const phoneNumberConfig = await db.query.emailConfig.findFirst({
+      where: eq(emailConfig.key, 'whatsapp_phone_number')
+    });
+
+    const enabledConfig = await db.query.emailConfig.findFirst({
+      where: eq(emailConfig.key, 'whatsapp_enabled')
+    });
+
+    const timeConfig = await db.query.emailConfig.findFirst({
+      where: eq(emailConfig.key, 'whatsapp_time')
+    });
+
+    // Prepara la risposta con valori predefiniti se non trovati
+    const config = {
+      phoneNumber: phoneNumberConfig ? phoneNumberConfig.value : '',
+      enabled: enabledConfig ? enabledConfig.value === 'true' : false,
+      time: timeConfig ? timeConfig.value : '18:00'
+    };
+
+    return res.status(200).json({
+      success: true,
+      config
+    });
+  } catch (error) {
+    console.error("Errore nel recupero della configurazione WhatsApp:", error);
+    return res.status(500).json({
+      success: false,
+      error: `Errore nel recupero della configurazione WhatsApp: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}
+
+/**
+ * Aggiorna la configurazione WhatsApp nel database
+ */
+export async function updateWhatsAppConfig(req: Request, res: Response) {
+  try {
+    const { phoneNumber, enabled, time } = req.body;
+
+    // Validazione dei dati ricevuti
+    if (phoneNumber === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: "Numero di telefono non specificato"
+      });
+    }
+
+    if (enabled === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: "Stato abilitazione non specificato"
+      });
+    }
+
+    if (time === undefined) {
+      return res.status(400).json({
+        success: false,
+        error: "Orario non specificato"
+      });
+    }
+
+    // Aggiorna il numero di telefono
+    await db
+      .insert(email_config)
+      .values({ key: 'whatsapp_phone_number', value: phoneNumber })
+      .onConflictDoUpdate({
+        target: email_config.key,
+        set: { value: phoneNumber }
+      });
+
+    // Aggiorna lo stato di abilitazione
+    await db
+      .insert(email_config)
+      .values({ key: 'whatsapp_enabled', value: enabled ? 'true' : 'false' })
+      .onConflictDoUpdate({
+        target: email_config.key,
+        set: { value: enabled ? 'true' : 'false' }
+      });
+
+    // Aggiorna l'orario
+    await db
+      .insert(email_config)
+      .values({ key: 'whatsapp_time', value: time })
+      .onConflictDoUpdate({
+        target: email_config.key,
+        set: { value: time }
+      });
+
+    return res.status(200).json({
+      success: true,
+      message: "Configurazione WhatsApp aggiornata con successo"
+    });
+  } catch (error) {
+    console.error("Errore nell'aggiornamento della configurazione WhatsApp:", error);
+    return res.status(500).json({
+      success: false,
+      error: `Errore nell'aggiornamento della configurazione WhatsApp: ${error instanceof Error ? error.message : String(error)}`
     });
   }
 }
