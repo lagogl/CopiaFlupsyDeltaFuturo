@@ -212,14 +212,14 @@ export default function DiarioDiBordo() {
   const [isLoadingConfig, setIsLoadingConfig] = useState<boolean>(false);
   const [isSavingConfig, setIsSavingConfig] = useState<boolean>(false);
   
-  // Stati per la configurazione Telegram
-  const [isTelegramDialogOpen, setIsTelegramDialogOpen] = useState<boolean>(false);
-  const [telegramChatIds, setTelegramChatIds] = useState<string>('');
-  const [autoTelegramEnabled, setAutoTelegramEnabled] = useState<boolean>(false);
-  const [telegramTime, setTelegramTime] = useState<string>('20:00');
-  const [isLoadingTelegramConfig, setIsLoadingTelegramConfig] = useState<boolean>(false);
-  const [isSavingTelegramConfig, setIsSavingTelegramConfig] = useState<boolean>(false);
-  const [isSendingTelegram, setIsSendingTelegram] = useState<boolean>(false);
+  // Stati per la configurazione WhatsApp
+  const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState<boolean>(false);
+  const [whatsAppNumber, setWhatsAppNumber] = useState<string>('');
+  const [autoWhatsAppEnabled, setAutoWhatsAppEnabled] = useState<boolean>(false);
+  const [whatsAppTime, setWhatsAppTime] = useState<string>('20:00');
+  const [isLoadingWhatsAppConfig, setIsLoadingWhatsAppConfig] = useState<boolean>(false);
+  const [isSavingWhatsAppConfig, setIsSavingWhatsAppConfig] = useState<boolean>(false);
+  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState<boolean>(false);
   
   // Formatta la data per la query dell'API
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
