@@ -2,15 +2,17 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Calendar, Download, Share, Filter, Clock, Mail, Loader2 } from 'lucide-react';
+import { Download, Share, Filter, Clock, Mail, Loader2 } from 'lucide-react';
+import { CalendarIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
 import { Separator } from "@/components/ui/separator";
-import { DatePicker } from "@/components/ui/date-picker";
 import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
+import { Calendar as CalendarComponent } from "@/components/ui/calendar";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { toast } from "@/hooks/use-toast";
@@ -627,11 +629,29 @@ export default function DiarioDiBordo() {
         </div>
         
         <div className="flex flex-wrap gap-2">
-          <DatePicker
-            date={selectedDate}
-            setDate={setSelectedDate}
-            className="min-w-[280px]"
-          />
+          {/* Wrapper del DatePicker per evitare errori di tipo */}
+          <div className="min-w-[280px]">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button
+                  variant={"outline"}
+                  className="w-full justify-start text-left font-normal"
+                >
+                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  {selectedDate ? format(selectedDate, "PPP", { locale: it }) : <span>Seleziona una data</span>}
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="w-auto p-0">
+                <CalendarComponent
+                  mode="single"
+                  selected={selectedDate}
+                  onSelect={(date) => date && setSelectedDate(date)}
+                  initialFocus
+                  locale={it}
+                />
+              </PopoverContent>
+            </Popover>
+          </div>
           
           <Button
             variant="outline"

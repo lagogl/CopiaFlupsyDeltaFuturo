@@ -15,7 +15,7 @@ import {
 interface DatePickerProps {
   date: Date | undefined;
   setDate?: ((date: Date | undefined) => void) | React.Dispatch<React.SetStateAction<Date | undefined>> | React.Dispatch<React.SetStateAction<Date>>;
-  mode?: string;
+  mode?: "single" | "range" | "multiple" | undefined;
   onSelect?: ((date: Date | undefined) => void) | React.Dispatch<React.SetStateAction<Date>>;
   className?: string;
 }
