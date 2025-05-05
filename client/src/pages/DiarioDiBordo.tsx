@@ -139,7 +139,7 @@ const createWhatsAppText = (data: any, date: Date) => {
 const copyToClipboard = (text: string) => {
   navigator.clipboard.writeText(text)
     .then(() => {
-      alert('Testo copiato negli appunti! Puoi incollarlo direttamente su Telegram.');
+      alert('Testo copiato negli appunti! Puoi incollarlo direttamente su WhatsApp.');
     })
     .catch(err => {
       console.error('Errore durante la copia: ', err);
