@@ -1,0 +1,110 @@
+{
+  "data_importazione": "2025-05-05",
+  "fornitore": "Flupsy Manager",
+  "giacenze": [
+    {
+      "vasca_id": "EXT-RACE-L22",
+      "codice_sezione": "A",
+      "taglia": "TP-315",
+      "numero_animali": 3278655,
+      "peso_medio_mg": 315,
+      "note": "Data iniziale: 2025-04-28"
+    },
+    {
+      "vasca_id": "EXT-BINS-L21",
+      "codice_sezione": "B",
+      "taglia": "TP-450",
+      "numero_animali": 2766421,
+      "peso_medio_mg": 450,
+      "note": "Data iniziale: 2025-04-27"
+    },
+    {
+      "vasca_id": "EXT-RACE-L23",
+      "codice_sezione": "C",
+      "taglia": "TP-315",
+      "numero_animali": 1327133,
+      "peso_medio_mg": 315,
+      "note": "Data iniziale: 2025-05-05"
+    },
+    {
+      "vasca_id": "EXT-RACE-L25",
+      "codice_sezione": "D",
+      "taglia": "TP-315",
+      "numero_animali": 1742442,
+      "peso_medio_mg": 315,
+      "note": "Data iniziale: 2025-04-28"
+    },
+    {
+      "vasca_id": "EXT-RACE-L24",
+      "codice_sezione": "E",
+      "taglia": "TP-500",
+      "numero_animali": 751680,
+      "peso_medio_mg": 500,
+      "note": "Data iniziale: 2025-04-28"
+    },
+    {
+      "vasca_id": "EXT-RACE-L31",
+      "codice_sezione": "A",
+      "taglia": "TP-315",
+      "numero_animali": 6633660,
+      "peso_medio_mg": 315,
+      "note": "Data iniziale: 2025-04-28"
+    },
+    {
+      "vasca_id": "EXT-RACE-L30",
+      "codice_sezione": "B",
+      "taglia": "TP-500",
+      "numero_animali": 3753560,
+      "peso_medio_mg": 500,
+      "note": "Data iniziale: 2025-04-29"
+    },
+    {
+      "vasca_id": "EXT-RACE-L33",
+      "codice_sezione": "C",
+      "taglia": "TP-450",
+      "numero_animali": 1801130,
+      "peso_medio_mg": 450,
+      "note": "Data iniziale: 2025-04-29"
+    },
+    {
+      "vasca_id": "EXT-RACE-L34",
+      "codice_sezione": "D",
+      "taglia": "TP-315",
+      "numero_animali": 1077314,
+      "peso_medio_mg": 315,
+      "note": "Data iniziale: 2025-04-29"
+    },
+    {
+      "vasca_id": "EXT-RACE-L34",
+      "codice_sezione": "D",
+      "taglia": "TP-200",
+      "numero_animali": 2301925,
+      "peso_medio_mg": 200,
+      "note": "Data iniziale: 2025-04-29"
+    },
+    {
+      "vasca_id": "EXT-RACE-L30",
+      "codice_sezione": "B",
+      "taglia": "TP-450",
+      "numero_animali": 1162040,
+      "peso_medio_mg": 450,
+      "note": "Data iniziale: 2025-05-05"
+    },
+    {
+      "vasca_id": "EXT-BINS-L16",
+      "codice_sezione": "E",
+      "taglia": "TP-315",
+      "numero_animali": 739459,
+      "peso_medio_mg": 315,
+      "note": "Data iniziale: 2025-04-27"
+    },
+    {
+      "vasca_id": "EXT-BINS-L19",
+      "codice_sezione": "A",
+      "taglia": "TP-450",
+      "numero_animali": 210250,
+      "peso_medio_mg": 450,
+      "note": "Data iniziale: 2025-04-27"
+    }
+  ]
+}
