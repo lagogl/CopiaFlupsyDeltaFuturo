@@ -81,7 +81,7 @@ async function saveTelegramConfig(config: {
       updates.push(
         db
           .update(emailConfig)
-          .set({ value: config.chat_ids, updated_at: new Date() })
+          .set({ value: config.chat_ids, updatedAt: new Date() })
           .where(eq(emailConfig.key, 'telegram_chat_ids'))
       );
     }
@@ -90,7 +90,7 @@ async function saveTelegramConfig(config: {
       updates.push(
         db
           .update(emailConfig)
-          .set({ value: config.send_time, updated_at: new Date() })
+          .set({ value: config.send_time, updatedAt: new Date() })
           .where(eq(emailConfig.key, 'telegram_send_time'))
       );
     }
@@ -101,7 +101,7 @@ async function saveTelegramConfig(config: {
           .update(emailConfig)
           .set({ 
             value: config.auto_enabled.toString(), 
-            updated_at: new Date() 
+            updatedAt: new Date() 
           })
           .where(eq(emailConfig.key, 'auto_telegram_enabled'))
       );
@@ -120,70 +120,88 @@ async function saveTelegramConfig(config: {
  * Utilizza il markdown di Telegram per il formatting
  */
 function formatTelegramMessage(data: any, date: Date): string {
-  const dateFormatted = format(date, 'dd/MM/yyyy', { locale: it });
-  
-  let text = `*📊 DIARIO DI BORDO - ${dateFormatted}*\n\n`;
-  
-  // Giacenza alla data corrente
-  if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
-    text += `*GIACENZA AL ${dateFormatted}*\n`;
-    text += `Totale: *${data.giacenza.totale_giacenza.toLocaleString('it-IT')}* animali\n\n`;
+  try {
+    console.log('Inizio formattazione messaggio Telegram con data:', date);
+    const dateFormatted = format(date, 'dd/MM/yyyy', { locale: it });
+    console.log('Data formattata:', dateFormatted);
     
-    // Dettaglio giacenza per taglia
-    if (data.giacenza.dettaglio_taglie && data.giacenza.dettaglio_taglie.length > 0) {
-      text += `*Dettaglio per taglia:*\n`;
-      data.giacenza.dettaglio_taglie.forEach((taglia: any) => {
-        const tagliaMostrata = taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia;
-        text += `- ${tagliaMostrata}: *${taglia.quantita.toLocaleString('it-IT')}*\n`;
+    // Inizia con il titolo
+    let text = `*DIARIO DI BORDO - ${dateFormatted}*\n\n`;
+    
+    // Giacenza alla data corrente
+    if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
+      text += `*GIACENZA AL ${dateFormatted}*\n`;
+      text += `Totale: *${data.giacenza.totale_giacenza.toLocaleString('it-IT')}* animali\n\n`;
+      
+      // Dettaglio giacenza per taglia
+      if (data.giacenza.dettaglio_taglie && data.giacenza.dettaglio_taglie.length > 0) {
+        text += `*Dettaglio per taglia:*\n`;
+        data.giacenza.dettaglio_taglie.forEach((taglia: any) => {
+          const tagliaMostrata = taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia;
+          text += `- ${tagliaMostrata}: *${taglia.quantita.toLocaleString('it-IT')}*\n`;
+        });
+        text += '\n';
+      }
+    }
+    
+    // Bilancio giornata
+    text += `*BILANCIO GIORNALIERO*\n`;
+    text += `Entrate: *${data.totals.totale_entrate ? data.totals.totale_entrate.toLocaleString('it-IT') : '0'}* animali\n`;
+    text += `Uscite: *${data.totals.totale_uscite ? data.totals.totale_uscite.toLocaleString('it-IT') : '0'}* animali\n`;
+    text += `Bilancio netto: *${data.totals.bilancio_netto ? data.totals.bilancio_netto.toLocaleString('it-IT') : '0'}* animali\n`;
+    text += `Totale operazioni: *${data.totals.numero_operazioni}*\n\n`;
+
+    // Bilancio finale
+    if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
+      const bilancioFinale = data.giacenza.totale_giacenza + (parseInt(data.totals.bilancio_netto) || 0);
+      text += `Giacenza + Bilancio netto: *${bilancioFinale.toLocaleString('it-IT')}* animali\n\n`;
+    }
+
+    // Se ci sono statistiche per taglia, aggiungiamole
+    if (data.sizeStats && data.sizeStats.length > 0) {
+      text += `*STATISTICHE PER TAGLIA*\n`;
+      data.sizeStats.forEach((stat: any) => {
+        const tagliaMostrata = stat.taglia === 'Non specificata' ? 'In attesa di misurazione' : stat.taglia;
+        text += `- ${tagliaMostrata}: Entrate: *${stat.entrate || 0}*, Uscite: *${stat.uscite || 0}*\n`;
       });
       text += '\n';
     }
-  }
-  
-  // Bilancio giornata
-  text += `*BILANCIO GIORNALIERO*\n`;
-  text += `Entrate: *${data.totals.totale_entrate ? data.totals.totale_entrate.toLocaleString('it-IT') : '0'}* animali\n`;
-  text += `Uscite: *${data.totals.totale_uscite ? data.totals.totale_uscite.toLocaleString('it-IT') : '0'}* animali\n`;
-  text += `Bilancio netto: *${data.totals.bilancio_netto ? data.totals.bilancio_netto.toLocaleString('it-IT') : '0'}* animali\n`;
-  text += `Totale operazioni: *${data.totals.numero_operazioni}*\n\n`;
 
-  // Bilancio finale
-  if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
-    const bilancioFinale = data.giacenza.totale_giacenza + (parseInt(data.totals.bilancio_netto) || 0);
-    text += `Giacenza + Bilancio netto: *${bilancioFinale.toLocaleString('it-IT')}* animali\n\n`;
-  }
-
-  // Se ci sono statistiche per taglia, aggiungiamole
-  if (data.sizeStats && data.sizeStats.length > 0) {
-    text += `*STATISTICHE PER TAGLIA*\n`;
-    data.sizeStats.forEach((stat: any) => {
-      const tagliaMostrata = stat.taglia === 'Non specificata' ? 'In attesa di misurazione' : stat.taglia;
-      text += `- ${tagliaMostrata}: Entrate: *${stat.entrate || 0}*, Uscite: *${stat.uscite || 0}*\n`;
-    });
-    text += '\n';
-  }
-
-  // Aggiunta di informazioni sulle operazioni (limitate per evitare messaggi troppo lunghi)
-  if (data.operations && data.operations.length > 0) {
-    const maxOps = Math.min(data.operations.length, 10); // Limita a 10 operazioni
-    text += `*OPERAZIONI DEL GIORNO* (${data.operations.length}, mostrando le prime ${maxOps})\n`;
-    
-    for (let i = 0; i < maxOps; i++) {
-      const op = data.operations[i];
-      const tipo = op.type.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
-      const cestello = op.basket_number ? `#${op.basket_number}` : '';
-      const flupsy = op.flupsy_name ? `in ${op.flupsy_name}` : '';
-      const taglia = op.size_code === 'Non specificata' ? 'In attesa di misurazione' : op.size_code;
+    // Aggiunta di informazioni sulle operazioni (limitate per evitare messaggi troppo lunghi)
+    if (data.operations && data.operations.length > 0) {
+      const maxOps = Math.min(data.operations.length, 5); // Limita a 5 operazioni per evitare messaggi troppo lunghi
+      text += `*OPERAZIONI DEL GIORNO* (${data.operations.length}, mostrando le prime ${maxOps})\n`;
       
-      text += `${i + 1}. ${tipo} ${cestello} ${flupsy} - *${op.animal_count || 0}* animali (${taglia || 'Senza taglia'})\n`;
+      for (let i = 0; i < maxOps; i++) {
+        const op = data.operations[i];
+        let tipo = 'Operazione';
+        try {
+          tipo = op.type.split('-').map((word: string) => word.charAt(0).toUpperCase() + word.slice(1)).join(' ');
+        } catch (e) {
+          console.error('Errore nella formattazione del tipo operazione:', e);
+        }
+        
+        const cestello = op.basket_number ? `#${op.basket_number}` : '';
+        const flupsy = op.flupsy_name ? `in ${op.flupsy_name}` : '';
+        const taglia = op.size_code === 'Non specificata' ? 'In attesa di misurazione' : op.size_code;
+        
+        text += `${i + 1}. ${tipo} ${cestello} ${flupsy} - *${op.animal_count || 0}* animali (${taglia || 'Senza taglia'})\n`;
+      }
+      
+      if (data.operations.length > maxOps) {
+        text += `_... e altre ${data.operations.length - maxOps} operazioni_\n`;
+      }
     }
     
-    if (data.operations.length > maxOps) {
-      text += `_... e altre ${data.operations.length - maxOps} operazioni_\n`;
-    }
+    // Evita caratteri che potrebbero causare problemi con Markdown
+    text = text.replace(/([_*[\]()~`>#+\-=|{}.!])/g, '\\$1');
+
+    console.log('Messaggio formattato completato. Lunghezza:', text.length);
+    return text;
+  } catch (error) {
+    console.error('Errore nella formattazione del messaggio Telegram:', error);
+    return `*ERRORE DI FORMATTAZIONE*\nSi è verificato un errore nella formattazione del messaggio. Controllare i log del server.`;
   }
-  
-  return text;
 }
 
 /**
@@ -201,13 +219,24 @@ async function sendTelegramMessage(message: string, chatIds: string[]): Promise<
   }
 
   try {
-    // Invia il messaggio a tutti i chat ID configurati
-    const sendPromises = chatIds.map(chatId => 
-      telegramBot.sendMessage(chatId, message, { parse_mode: 'Markdown' })
-    );
+    console.log('Tentativo di invio messaggio Telegram con i seguenti parametri:');
+    console.log('- Chat IDs:', chatIds);
+    console.log('- Lunghezza messaggio:', message.length, 'caratteri');
+    console.log('- Primi 100 caratteri del messaggio:', message.substring(0, 100));
     
-    await Promise.all(sendPromises);
-    console.log(`Messaggio Telegram inviato a ${chatIds.length} chat`);
+    // Invia il messaggio a tutti i chat ID configurati
+    for (const chatId of chatIds) {
+      try {
+        console.log(`Invio messaggio a chat ID: ${chatId}`);
+        await telegramBot.sendMessage(chatId, message, { parse_mode: 'Markdown' });
+        console.log(`Messaggio inviato con successo a ${chatId}`);
+      } catch (chatError) {
+        console.error(`Errore nell'invio a chat ID ${chatId}:`, chatError);
+        // Continua con gli altri chat ID anche se questo fallisce
+      }
+    }
+    
+    console.log(`Processo di invio Telegram completato per ${chatIds.length} chat`);
     return true;
   } catch (error) {
     console.error('Errore nell\'invio del messaggio Telegram:', error);
@@ -222,6 +251,13 @@ export async function sendTelegramDiario(req: Request, res: Response) {
   try {
     const { data, date } = req.body;
     
+    console.log('Richiesta di invio Telegram ricevuta:', {
+      dataPresente: !!data,
+      dataType: data ? typeof data : 'undefined',
+      datePresente: !!date,
+      dateValue: date
+    });
+    
     if (!data || !date) {
       return res.status(400).json({
         success: false,
@@ -231,6 +267,7 @@ export async function sendTelegramDiario(req: Request, res: Response) {
     
     // Verifica che il bot sia inizializzato
     if (!telegramBot) {
+      console.error('Bot Telegram non inizializzato. Token presente:', !!process.env.TELEGRAM_BOT_TOKEN);
       return res.status(500).json({
         success: false,
         error: 'Bot Telegram non inizializzato. Verifica la configurazione del token.'
@@ -239,7 +276,8 @@ export async function sendTelegramDiario(req: Request, res: Response) {
     
     // Recupera i chat ID configurati
     const config = await getTelegramConfig();
-    const chatIds = config.telegram_chat_ids.split(',').map(id => id.trim()).filter(id => id);
+    console.log('Configurazione Telegram recuperata:', config);
+    const chatIds = (config.telegram_chat_ids || '').split(',').map(id => id.trim()).filter(id => id);
     
     if (chatIds.length === 0) {
       return res.status(400).json({
@@ -249,15 +287,20 @@ export async function sendTelegramDiario(req: Request, res: Response) {
     }
     
     // Formatta e invia il messaggio
+    console.log('Formattazione messaggio Telegram con data:', new Date(date));
     const message = formatTelegramMessage(data, new Date(date));
+    console.log('Messaggio formattato, inizio invio...');
+    
     const success = await sendTelegramMessage(message, chatIds);
     
     if (success) {
+      console.log('Invio Telegram completato con successo');
       return res.status(200).json({
         success: true,
         message: `Messaggio Telegram inviato con successo a ${chatIds.length} chat`
       });
     } else {
+      console.error('Invio Telegram fallito');
       return res.status(500).json({
         success: false,
         error: 'Errore nell\'invio del messaggio Telegram'
@@ -343,7 +386,7 @@ export async function autoSendTelegramDiario(diarioData: any, date: Date): Promi
       return false;
     }
     
-    const chatIds = config.telegram_chat_ids.split(',').map(id => id.trim()).filter(id => id);
+    const chatIds = (config.telegram_chat_ids || '').split(',').map(id => id.trim()).filter(id => id);
     
     if (chatIds.length === 0) {
       console.error('Nessun ID chat configurato per Telegram.');
