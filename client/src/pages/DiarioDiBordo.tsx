@@ -206,11 +206,20 @@ export default function DiarioDiBordo() {
   const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false);
   const [emailDialogTab, setEmailDialogTab] = useState<string>('config');
   
-  // Stati per la configurazione automatica
+  // Stati per la configurazione automatica email
   const [autoSendEnabled, setAutoSendEnabled] = useState<boolean>(false);
   const [scheduledTime, setScheduledTime] = useState<string>('18:00');
   const [isLoadingConfig, setIsLoadingConfig] = useState<boolean>(false);
   const [isSavingConfig, setIsSavingConfig] = useState<boolean>(false);
+  
+  // Stati per la configurazione Telegram
+  const [isTelegramDialogOpen, setIsTelegramDialogOpen] = useState<boolean>(false);
+  const [telegramChatIds, setTelegramChatIds] = useState<string>('');
+  const [autoTelegramEnabled, setAutoTelegramEnabled] = useState<boolean>(false);
+  const [telegramTime, setTelegramTime] = useState<string>('20:00');
+  const [isLoadingTelegramConfig, setIsLoadingTelegramConfig] = useState<boolean>(false);
+  const [isSavingTelegramConfig, setIsSavingTelegramConfig] = useState<boolean>(false);
+  const [isSendingTelegram, setIsSendingTelegram] = useState<boolean>(false);
   
   // Formatta la data per la query dell'API
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
@@ -381,6 +390,144 @@ export default function DiarioDiBordo() {
       loadEmailConfig();
     }
   }, [isEmailDialogOpen]);
+  
+  // Carica la configurazione Telegram all'apertura del dialogo
+  useEffect(() => {
+    if (isTelegramDialogOpen) {
+      loadTelegramConfig();
+    }
+  }, [isTelegramDialogOpen]);
+  
+  // Carica la configurazione Telegram
+  const loadTelegramConfig = async () => {
+    setIsLoadingTelegramConfig(true);
+    try {
+      const response = await fetch('/api/telegram/config');
+      
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento della configurazione Telegram');
+      }
+      
+      const config = await response.json();
+      
+      if (config && config.config) {
+        setTelegramChatIds(config.config.chat_ids?.split(',').join(', ') || '');
+        
+        // Gestione corretta del valore stringa per l'abilitazione
+        const autoEnabled = config.config.auto_enabled === 'true' || config.config.auto_enabled === true;
+        setAutoTelegramEnabled(autoEnabled);
+        
+        setTelegramTime(config.config.send_time || '20:00');
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento della configurazione Telegram:', error);
+      toast({
+        title: 'Errore',
+        description: 'Impossibile caricare la configurazione Telegram',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingTelegramConfig(false);
+    }
+  };
+  
+  // Salva la configurazione Telegram
+  const saveTelegramConfig = async () => {
+    // Verifica che ci siano chat ID validi
+    if (!telegramChatIds.trim()) {
+      toast({
+        title: 'Chat ID obbligatori',
+        description: 'Specifica almeno un ID chat Telegram',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setIsSavingTelegramConfig(true);
+    try {
+      const config = {
+        chat_ids: telegramChatIds.split(',').map(id => id.trim()).join(','),
+        auto_enabled: autoTelegramEnabled,
+        send_time: telegramTime
+      };
+      
+      const response = await fetch('/api/telegram/config', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(config)
+      });
+      
+      if (!response.ok) {
+        throw new Error('Errore nel salvataggio della configurazione Telegram');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: 'Configurazione salvata',
+          description: 'Le impostazioni di invio Telegram sono state salvate con successo',
+          variant: 'default'
+        });
+      } else {
+        throw new Error(result.error || 'Errore durante il salvataggio');
+      }
+    } catch (error) {
+      console.error('Errore nel salvataggio della configurazione Telegram:', error);
+      toast({
+        title: 'Errore',
+        description: error instanceof Error ? error.message : 'Si è verificato un errore imprevisto',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSavingTelegramConfig(false);
+    }
+  };
+  
+  // Funzione per inviare il messaggio Telegram manualmente
+  const sendTelegramMessage = async () => {
+    setIsSendingTelegram(true);
+    try {
+      const response = await fetch('/api/telegram/send-diario', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          data: diaryData,
+          date: selectedDate.toISOString()
+        })
+      });
+      
+      if (!response.ok) {
+        throw new Error('Errore nell\'invio del messaggio Telegram');
+      }
+      
+      const result = await response.json();
+      
+      if (result.success) {
+        toast({
+          title: 'Messaggio inviato',
+          description: 'Il diario di bordo è stato inviato via Telegram con successo',
+          variant: 'default'
+        });
+        setIsTelegramDialogOpen(false);
+      } else {
+        throw new Error(result.error || 'Errore durante l\'invio');
+      }
+    } catch (error) {
+      console.error('Errore nell\'invio del messaggio Telegram:', error);
+      toast({
+        title: 'Errore',
+        description: error instanceof Error ? error.message : 'Si è verificato un errore imprevisto',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsSendingTelegram(false);
+    }
+  };
   
   // Determina lo stato di caricamento generale
   const isLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza;
