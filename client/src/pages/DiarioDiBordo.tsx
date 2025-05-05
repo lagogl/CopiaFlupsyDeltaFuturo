@@ -287,12 +287,17 @@ export default function DiarioDiBordo() {
       
       const config = await response.json();
       
-      if (config) {
+      if (config && config.config) {  // Nota: il server risponde con config.config
         // Imposta i valori dai dati configurati
-        setEmailRecipients(config.recipients?.join(', ') || '');
-        setEmailCC(config.cc?.join(', ') || '');
-        setAutoSendEnabled(config.auto_enabled === 'true' || config.auto_enabled === true);
-        setScheduledTime(config.send_time || '18:00');
+        setEmailRecipients(config.config.recipients?.split(',').join(', ') || '');
+        setEmailCC(config.config.cc?.split(',').join(', ') || '');
+        
+        // Gestione corretta del valore stringa per l'abilitazione
+        const autoEnabled = config.config.auto_enabled === 'true' || config.config.auto_enabled === true;
+        console.log('Stato auto_enabled ricevuto:', config.config.auto_enabled, '→ interpretato come:', autoEnabled);
+        setAutoSendEnabled(autoEnabled);
+        
+        setScheduledTime(config.config.send_time || '18:00');
       }
     } catch (error) {
       console.error('Errore nel caricamento della configurazione email:', error);
