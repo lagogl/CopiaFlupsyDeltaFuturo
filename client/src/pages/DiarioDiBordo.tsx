@@ -320,6 +320,41 @@ export default function DiarioDiBordo() {
     }
   };
   
+  // Carica la configurazione Telegram all'apertura del dialogo
+  const loadTelegramConfig = async () => {
+    setIsLoadingTelegramConfig(true);
+    try {
+      const response = await fetch('/api/telegram/config');
+      
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento della configurazione Telegram');
+      }
+      
+      const config = await response.json();
+      
+      if (config && config.config) {
+        // Imposta gli ID chat
+        setTelegramChatIds(config.config.telegram_chat_ids?.split(',').join(', ') || '');
+        
+        // Imposta lo stato di abilitazione automatica
+        const autoTelegramEnabledValue = config.config.telegram_auto_enabled === 'true' || config.config.telegram_auto_enabled === true;
+        setAutoTelegramEnabled(autoTelegramEnabledValue);
+        
+        // Imposta l'orario programmato
+        setTelegramTime(config.config.telegram_send_time || '20:00');
+      }
+    } catch (error) {
+      console.error('Errore nel caricamento della configurazione Telegram:', error);
+      toast({
+        title: 'Errore',
+        description: 'Impossibile caricare la configurazione Telegram',
+        variant: 'destructive'
+      });
+    } finally {
+      setIsLoadingTelegramConfig(false);
+    }
+  };
+  
   // Salva la configurazione email
   const saveEmailConfig = async () => {
     // Verifica che ci siano destinatari validi
@@ -397,39 +432,6 @@ export default function DiarioDiBordo() {
       loadTelegramConfig();
     }
   }, [isTelegramDialogOpen]);
-  
-  // Carica la configurazione Telegram
-  const loadTelegramConfig = async () => {
-    setIsLoadingTelegramConfig(true);
-    try {
-      const response = await fetch('/api/telegram/config');
-      
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento della configurazione Telegram');
-      }
-      
-      const config = await response.json();
-      
-      if (config && config.config) {
-        setTelegramChatIds(config.config.chat_ids?.split(',').join(', ') || '');
-        
-        // Gestione corretta del valore stringa per l'abilitazione
-        const autoEnabled = config.config.auto_enabled === 'true' || config.config.auto_enabled === true;
-        setAutoTelegramEnabled(autoEnabled);
-        
-        setTelegramTime(config.config.send_time || '20:00');
-      }
-    } catch (error) {
-      console.error('Errore nel caricamento della configurazione Telegram:', error);
-      toast({
-        title: 'Errore',
-        description: 'Impossibile caricare la configurazione Telegram',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoadingTelegramConfig(false);
-    }
-  };
   
   // Salva la configurazione Telegram
   const saveTelegramConfig = async () => {
