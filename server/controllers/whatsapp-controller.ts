@@ -211,10 +211,10 @@ export async function generateWhatsAppDiario(req: Request, res: Response) {
     
     // Prepara i dati per la risposta
     const giacenza = {
-      totale_giacenza: parseInt(totaleGiacenza[0]?.totale_giacenza || '0'),
+      totale_giacenza: parseInt(totaleGiacenza[0]?.totale_giacenza as string || '0'),
       dettaglio_taglie: giacenzaPerTaglia.map(item => ({
-        taglia: item.taglia,
-        quantita: parseInt(item.quantita)
+        taglia: item.taglia as string,
+        quantita: parseInt(item.quantita as string)
       }))
     };
     
@@ -464,28 +464,28 @@ export async function updateWhatsAppConfig(req: Request, res: Response) {
 
     // Aggiorna il numero di telefono
     await db
-      .insert(email_config)
+      .insert(emailConfig)
       .values({ key: 'whatsapp_phone_number', value: phoneNumber })
       .onConflictDoUpdate({
-        target: email_config.key,
+        target: emailConfig.key,
         set: { value: phoneNumber }
       });
 
     // Aggiorna lo stato di abilitazione
     await db
-      .insert(email_config)
+      .insert(emailConfig)
       .values({ key: 'whatsapp_enabled', value: enabled ? 'true' : 'false' })
       .onConflictDoUpdate({
-        target: email_config.key,
+        target: emailConfig.key,
         set: { value: enabled ? 'true' : 'false' }
       });
 
     // Aggiorna l'orario
     await db
-      .insert(email_config)
+      .insert(emailConfig)
       .values({ key: 'whatsapp_time', value: time })
       .onConflictDoUpdate({
-        target: email_config.key,
+        target: emailConfig.key,
         set: { value: time }
       });
 
