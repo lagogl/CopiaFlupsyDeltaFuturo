@@ -64,8 +64,8 @@ const getBadgeVariantForOperationType = (type: string): "default" | "secondary" 
   }
 };
 
-// Funzione per creare il testo formattato per WhatsApp
-const createWhatsAppText = (data: any, date: Date) => {
+// Funzione per creare il testo formattato per Telegram
+const createTelegramText = (data: any, date: Date) => {
   const dateFormatted = format(date, 'dd MMMM yyyy', { locale: it });
   
   let text = `*DIARIO DI BORDO - ${dateFormatted.toUpperCase()}*\n\n`;
@@ -139,7 +139,7 @@ const createWhatsAppText = (data: any, date: Date) => {
 const copyToClipboard = (text: string) => {
   navigator.clipboard.writeText(text)
     .then(() => {
-      alert('Testo copiato negli appunti! Puoi incollarlo direttamente su WhatsApp.');
+      alert('Testo copiato negli appunti! Puoi incollarlo direttamente su Telegram.');
     })
     .catch(err => {
       console.error('Errore durante la copia: ', err);
@@ -182,20 +182,20 @@ const downloadCSV = (data: any, date: Date) => {
   document.body.removeChild(link);
 };
 
-// Funzione principale per condividere su WhatsApp
-const shareOnWhatsApp = (text: string) => {
+// Funzione principale per condividere su Telegram
+const shareOnTelegram = (text: string) => {
   // Codifica il testo per URL
   const encodedText = encodeURIComponent(text);
-  // Crea URL per WhatsApp web
-  const whatsappUrl = `https://web.whatsapp.com/send?text=${encodedText}`;
+  // Crea URL per Telegram web
+  const telegramUrl = `https://t.me/share/url?url=&text=${encodedText}`;
   
   // Apri in una nuova finestra
-  window.open(whatsappUrl, '_blank');
+  window.open(telegramUrl, '_blank');
 };
 
 export default function DiarioDiBordo() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [whatsAppText, setWhatsAppText] = useState<string>('');
+  const [telegramText, setTelegramText] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('diario');
   
   // Stati per il dialogo di invio email
@@ -267,7 +267,7 @@ export default function DiarioDiBordo() {
     enabled: !!formattedDate
   });
   
-  // Combina tutti i dati per la visualizzazione e per il testo WhatsApp
+  // Combina tutti i dati per la visualizzazione e per il testo Telegram
   const diaryData = {
     operations: operations || [],
     sizeStats: sizeStats || [],
@@ -367,11 +367,11 @@ export default function DiarioDiBordo() {
     }
   };
   
-  // Aggiorna il testo di WhatsApp quando cambiano i dati
+  // Aggiorna il testo di Telegram quando cambiano i dati
   useEffect(() => {
     if (operations && sizeStats && totals && giacenza) {
-      const text = createWhatsAppText(diaryData, selectedDate);
-      setWhatsAppText(text);
+      const text = createTelegramText(diaryData, selectedDate);
+      setTelegramText(text);
     }
   }, [operations, sizeStats, totals, giacenza, selectedDate]);
   
