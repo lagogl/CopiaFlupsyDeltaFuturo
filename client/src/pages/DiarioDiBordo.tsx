@@ -994,7 +994,7 @@ export default function DiarioDiBordo() {
                   CSV
                 </Button>
                 <Button 
-                  variant="default" 
+                  variant="outline" 
                   size="sm"
                   onClick={() => shareOnWhatsApp(whatsAppText)}
                   title="Condividi su WhatsApp"
