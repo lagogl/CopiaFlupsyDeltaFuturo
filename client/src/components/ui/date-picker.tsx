@@ -14,11 +14,18 @@ import {
 
 interface DatePickerProps {
   date: Date | undefined;
-  setDate: (date: Date | undefined) => void;
+  setDate?: ((date: Date | undefined) => void) | React.Dispatch<React.SetStateAction<Date | undefined>> | React.Dispatch<React.SetStateAction<Date>>;
+  mode?: string;
+  onSelect?: ((date: Date | undefined) => void) | React.Dispatch<React.SetStateAction<Date>>;
   className?: string;
 }
 
-export function DatePicker({ date, setDate, className }: DatePickerProps) {
+export function DatePicker({ date, setDate, onSelect, mode, className }: DatePickerProps) {
+  // Se onSelect è fornito, usalo invece di setDate
+  const handleDateChange = (newDate: Date | undefined) => {
+    if (onSelect) onSelect(newDate);
+    else if (setDate) setDate(newDate);
+  };
   return (
     <Popover>
       <PopoverTrigger asChild>
@@ -36,9 +43,9 @@ export function DatePicker({ date, setDate, className }: DatePickerProps) {
       </PopoverTrigger>
       <PopoverContent className="w-auto p-0">
         <Calendar
-          mode="single"
+          mode={mode || "single"}
           selected={date}
-          onSelect={setDate}
+          onSelect={handleDateChange}
           initialFocus
           locale={it}
         />

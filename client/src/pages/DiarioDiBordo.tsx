@@ -629,8 +629,7 @@ export default function DiarioDiBordo() {
         <div className="flex flex-wrap gap-2">
           <DatePicker
             date={selectedDate}
-            onSelect={(date) => date && setSelectedDate(date)}
-            mode="single"
+            setDate={setSelectedDate}
             className="min-w-[280px]"
           />
           
