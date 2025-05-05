@@ -22,7 +22,7 @@ import {
 // Importazione dei controller
 import * as SelectionController from "./controllers/selection-controller";
 import * as ScreeningController from "./controllers/screening-controller";
-import * as WhatsappController from "./controllers/whatsapp-controller";
+// WhatsApp controller rimosso
 import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
@@ -5138,9 +5138,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     broadcastMessage(type, data);
   };
 
-  // === Route per invio messaggi WhatsApp ===
-  // Endpoint per generare il testo del diario per WhatsApp
-  app.get("/api/whatsapp/diario", WhatsappController.generateWhatsAppDiario);
+  // === Route per invio email (WhatsApp rimosso) ===
+  // Rotta WhatsApp rimossa: app.get("/api/whatsapp/diario")
   
   // API per email - Genera l'email con il diario di bordo
   app.get('/api/email/generate-diario', EmailController.generateEmailDiario);
@@ -5166,17 +5165,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API per Telegram - Salva la configurazione Telegram
   app.post('/api/telegram/config', TelegramController.saveTelegramConfiguration);
   
-  // Endpoint per inviare un messaggio WhatsApp manualmente
-  app.post("/api/whatsapp/send", WhatsappController.sendWhatsAppMessage);
+  // Rotta WhatsApp rimossa: app.post("/api/whatsapp/send")
   
-  // Endpoint per generare e inviare automaticamente il diario WhatsApp
-  app.get("/api/whatsapp/auto-send-diario", WhatsappController.autoSendWhatsAppDiario);
+  // Rotta WhatsApp rimossa: app.get("/api/whatsapp/auto-send-diario")
   
-  // Endpoint per ottenere la configurazione WhatsApp
-  app.get("/api/whatsapp/config", WhatsappController.getWhatsAppConfig);
+  // Rotta WhatsApp rimossa: app.get("/api/whatsapp/config")
   
-  // Endpoint per aggiornare la configurazione WhatsApp
-  app.post("/api/whatsapp/config", WhatsappController.updateWhatsAppConfig);
+  // Rotta WhatsApp rimossa: app.post("/api/whatsapp/config")
   
   // === Route per gestione notifiche ===
   app.get("/api/notifications", NotificationController.getNotifications);
