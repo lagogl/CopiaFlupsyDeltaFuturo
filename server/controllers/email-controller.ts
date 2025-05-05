@@ -259,7 +259,7 @@ async function upsertConfigValue(key: string, value: string) {
 }
 
 /**
- * Ottiene le configurazioni email dal database
+ * Ottiene le configurazioni email e whatsapp dal database
  */
 async function getEmailConfig() {
   try {
@@ -273,22 +273,34 @@ async function getEmailConfig() {
       };
       
       return {
+        // Email config
         recipients: getConfigValue('email_recipients', ''),
         cc: getConfigValue('email_cc', ''),
         send_time: getConfigValue('email_send_time', '20:00'),
-        auto_enabled: getConfigValue('auto_email_enabled', 'false')
+        auto_enabled: getConfigValue('auto_email_enabled', 'false'),
+        
+        // WhatsApp config
+        whatsapp_recipients: getConfigValue('whatsapp_recipients', ''),
+        whatsapp_send_time: getConfigValue('whatsapp_send_time', '20:00'),
+        auto_whatsapp_enabled: getConfigValue('auto_whatsapp_enabled', 'false')
       };
     } else {
       // Configurazione predefinita se non esiste
       return {
+        // Email
         recipients: '',
         cc: '',
         send_time: '20:00',
-        auto_enabled: 'false'
+        auto_enabled: 'false',
+        
+        // WhatsApp
+        whatsapp_recipients: '',
+        whatsapp_send_time: '20:00',
+        auto_whatsapp_enabled: 'false'
       };
     }
   } catch (error) {
-    console.error("Errore nel recupero della configurazione email:", error);
+    console.error("Errore nel recupero della configurazione messaggistica:", error);
     throw error;
   }
 }
