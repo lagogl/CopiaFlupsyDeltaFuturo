@@ -1284,14 +1284,14 @@ export default function DiarioDiBordo() {
                 ) : (
                   <Card>
                     <CardHeader className="p-4 pb-2">
-                      <CardTitle className="text-lg">Anteprima Messaggio Telegram</CardTitle>
+                      <CardTitle className="text-lg">Anteprima Messaggio WhatsApp</CardTitle>
                       <CardDescription>
-                        Così apparirà il tuo messaggio su Telegram
+                        Così apparirà il tuo messaggio su WhatsApp
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
                       <ScrollArea className="h-[400px] w-full rounded border p-4 bg-blue-50">
-                        <pre className="whitespace-pre-wrap font-sans text-sm">{telegramText}</pre>
+                        <pre className="whitespace-pre-wrap font-sans text-sm">{whatsAppText}</pre>
                       </ScrollArea>
                     </CardContent>
                   </Card>
