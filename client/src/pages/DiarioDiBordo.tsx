@@ -404,8 +404,8 @@ export default function DiarioDiBordo() {
         to: emailRecipients.split(',').map(email => email.trim()),
         cc: emailCC ? emailCC.split(',').map(email => email.trim()) : undefined,
         subject: emailSubject || `Diario di Bordo FLUPSY - ${format(selectedDate, 'dd/MM/yyyy', { locale: it })}`,
-        text: whatsAppText,
-        html: `<pre style="font-family: monospace;">${whatsAppText.replace(/\n/g, '<br>').replace(/\*/g, '<strong>').replace(/\*/g, '</strong>')}</pre>`
+        text: telegramText,
+        html: `<pre style="font-family: monospace;">${telegramText.replace(/\n/g, '<br>').replace(/\*/g, '<strong>').replace(/\*/g, '</strong>')}</pre>`
       };
       
       // Invia l'email tramite l'API
@@ -590,7 +590,7 @@ export default function DiarioDiBordo() {
                   <p><strong>Oggetto:</strong> {emailSubject || `Diario di Bordo FLUPSY - ${format(selectedDate, 'dd/MM/yyyy', { locale: it })}`}</p>
                 </div>
                 <div className="whitespace-pre-wrap font-mono text-sm">
-                  {whatsAppText}
+                  {telegramText}
                 </div>
               </div>
             </TabsContent>
@@ -636,8 +636,8 @@ export default function DiarioDiBordo() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => copyToClipboard(whatsAppText)}
-                  title="Copia testo per WhatsApp"
+                  onClick={() => copyToClipboard(telegramText)}
+                  title="Copia testo per Telegram"
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   Copia
@@ -654,11 +654,11 @@ export default function DiarioDiBordo() {
                 <Button 
                   variant="default" 
                   size="sm"
-                  onClick={() => shareOnWhatsApp(whatsAppText)}
-                  title="Condividi su WhatsApp"
+                  onClick={() => shareOnTelegram(telegramText)}
+                  title="Condividi su Telegram"
                 >
                   <Share className="h-4 w-4 mr-2" />
-                  WhatsApp
+                  Telegram
                 </Button>
                 <Button 
                   variant="outline" 
@@ -696,7 +696,7 @@ export default function DiarioDiBordo() {
               <TabsList className="mb-4">
                 <TabsTrigger value="diario">Diario</TabsTrigger>
                 <TabsTrigger value="statistiche">Statistiche</TabsTrigger>
-                <TabsTrigger value="anteprima">Anteprima WhatsApp</TabsTrigger>
+                <TabsTrigger value="anteprima">Anteprima Telegram</TabsTrigger>
               </TabsList>
               
               <TabsContent value="diario" className="space-y-4">
@@ -912,14 +912,14 @@ export default function DiarioDiBordo() {
                 ) : (
                   <Card>
                     <CardHeader className="p-4 pb-2">
-                      <CardTitle className="text-lg">Anteprima Messaggio WhatsApp</CardTitle>
+                      <CardTitle className="text-lg">Anteprima Messaggio Telegram</CardTitle>
                       <CardDescription>
-                        Così apparirà il tuo messaggio su WhatsApp
+                        Così apparirà il tuo messaggio su Telegram
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
-                      <ScrollArea className="h-[400px] w-full rounded border p-4 bg-green-50">
-                        <pre className="whitespace-pre-wrap font-sans text-sm">{whatsAppText}</pre>
+                      <ScrollArea className="h-[400px] w-full rounded border p-4 bg-blue-50">
+                        <pre className="whitespace-pre-wrap font-sans text-sm">{telegramText}</pre>
                       </ScrollArea>
                     </CardContent>
                   </Card>
