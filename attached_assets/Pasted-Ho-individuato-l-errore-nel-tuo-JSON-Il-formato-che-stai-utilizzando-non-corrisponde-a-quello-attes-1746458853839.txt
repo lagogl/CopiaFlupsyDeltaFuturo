@@ -1,0 +1,81 @@
+Ho individuato l'errore nel tuo JSON. Il formato che stai utilizzando non corrisponde a quello atteso dal sistema per l'importazione delle giacenze. Ecco i problemi specifici:
+
+Problemi nel formato JSON:
+Nei tuoi elementi giacenze mancano i campi obbligatori:
+
+vasca_id (deve iniziare con "EXT-")
+codice_sezione (deve essere una lettera tra A-E)
+peso_medio_mg è presente ma sempre a 0 (questo è ok ma i pesi medi andrebbero specificati quando disponibili)
+Il tuo JSON usa campi non riconosciuti:
+
+identificativo (invece di vasca_id)
+quantita (invece di numero_animali)
+data_iniziale (non richiesto dal sistema)
+Soluzione:
+Devi convertire il tuo JSON al formato corretto. Ecco un esempio di come dovrebbe essere strutturato basandomi sui tuoi dati originali:
+
+{
+  "data_importazione": "2025-05-05",
+  "fornitore": "Flupsy Manager",
+  "giacenze": [
+    {
+      "vasca_id": "EXT-RACE-L22",  // Trasformato "RACE-L22" in "EXT-RACE-L22"
+      "codice_sezione": "A",        // Aggiungi una sezione (A-E)
+      "taglia": "TP-315",           // Mantenuto uguale
+      "numero_animali": 731745,     // Rinominato da "quantita"
+      "peso_medio_mg": 315,         // Peso medio basato sulla taglia (modificare secondo necessità)
+      "note": "Data iniziale: 2025-04-27" // Opzionale, per mantenere informazioni sul dato originale
+    },
+    {
+      "vasca_id": "EXT-BINS-L21",
+      "codice_sezione": "A",
+      "taglia": "TP-450",
+      "numero_animali": 719600,
+      "peso_medio_mg": 450,
+      "note": "Data iniziale: 2025-04-27"
+    },
+    // Continua con gli altri elementi...
+  ]
+}
+Raccomandazioni per la trasformazione:
+Codice per la conversione: Ti suggerisco di scrivere uno script che converta automaticamente il tuo formato in quello richiesto. Ecco una logica di base:
+
+function convertiGiacenze(datiOriginali) {
+  const risultato = {
+    data_importazione: datiOriginali.data_importazione,
+    fornitore: datiOriginali.fornitore,
+    giacenze: []
+  };
+  
+  // Mappa per assegnare sezioni in modo coerente agli stessi identificativi
+  const mappaSezioni = {};
+  let contatoreSezioni = 0;
+  const sezioni = ['A', 'B', 'C', 'D', 'E'];
+  
+  datiOriginali.giacenze.forEach(g => {
+    // Assegna una sezione coerente allo stesso identificativo
+    if (!mappaSezioni[g.identificativo]) {
+      mappaSezioni[g.identificativo] = sezioni[contatoreSezioni % sezioni.length];
+      contatoreSezioni++;
+    }
+    
+    // Estrai il peso medio dalla taglia (assumendo che la taglia sia tipo "TP-315" dove 315 è il peso in mg)
+    const pesoMedio = parseInt(g.taglia.split('-')[1]) || g.mg_vongola || 0;
+    
+    risultato.giacenze.push({
+      vasca_id: `EXT-${g.identificativo}`,
+      codice_sezione: mappaSezioni[g.identificativo],
+      taglia: g.taglia,
+      numero_animali: g.quantita,
+      peso_medio_mg: pesoMedio,
+      note: g.data_iniziale ? `Data iniziale: ${g.data_iniziale}` : ""
+    });
+  });
+  
+  return risultato;
+}
+Consolidamento: Se hai più voci con lo stesso identificativo e taglia, considera di consolidarle sommando le quantità per evitare di creare troppe sezioni virtuali.
+
+Mappatura delle vasche: Per mantenere una struttura organizzata, potresti voler mappare sistematicamente i tuoi identificativi (come "RACE-L22") a specifiche vasche esterne con un pattern predefinito.
+
+Implementando queste modifiche, dovresti essere in grado di importare correttamente le giacenze esterne nel tuo sistema.

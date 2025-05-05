@@ -1,0 +1,237 @@
+{
+  "data_importazione": "2025-05-05",
+  "fornitore": "Flupsy Manager",
+  "giacenze": [
+    {
+      "identificativo": "RACE-L22",
+      "taglia": "TP-315",
+      "quantita": 731745,
+      "data_iniziale": "2025-04-27",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "BINS-L21",
+      "taglia": "TP-450",
+      "quantita": 719600,
+      "data_iniziale": "2025-04-27",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "BINS-L21",
+      "taglia": "TP-450",
+      "quantita": 681050,
+      "data_iniziale": "2025-04-27",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L23",
+      "taglia": "TP-315",
+      "quantita": 446054,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L22",
+      "taglia": "TP-315",
+      "quantita": 614884,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L22",
+      "taglia": "TP-315",
+      "quantita": 673861,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L22",
+      "taglia": "TP-315",
+      "quantita": 631267,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L25",
+      "taglia": "TP-315",
+      "quantita": 1742442,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L24",
+      "taglia": "TP-500",
+      "quantita": 751680,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L31",
+      "taglia": "TP-315",
+      "quantita": 1664234,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L31",
+      "taglia": "TP-315",
+      "quantita": 1617682,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L31",
+      "taglia": "TP-315",
+      "quantita": 1664234,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L31",
+      "taglia": "TP-315",
+      "quantita": 1687510,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L30",
+      "taglia": "TP-500",
+      "quantita": 761720,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L30",
+      "taglia": "TP-500",
+      "quantita": 934640,
+      "data_iniziale": "2025-04-28",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L30",
+      "taglia": "TP-500",
+      "quantita": 961880,
+      "data_iniziale": "2025-04-29",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L30",
+      "taglia": "TP-500",
+      "quantita": 1095320,
+      "data_iniziale": "2025-04-29",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L33",
+      "taglia": "TP-450",
+      "quantita": 451876,
+      "data_iniziale": "2025-04-29",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L33",
+      "taglia": "TP-450",
+      "quantita": 460460,
+      "data_iniziale": "2025-04-29",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L33",
+      "taglia": "TP-450",
+      "quantita": 449751,
+      "data_iniziale": "2025-04-29",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L33",
+      "taglia": "TP-450",
+      "quantita": 439043,
+      "data_iniziale": "2025-04-29",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L34",
+      "taglia": "TP-315",
+      "quantita": 582332,
+      "data_iniziale": "2025-04-29",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L34",
+      "taglia": "TP-315",
+      "quantita": 494982,
+      "data_iniziale": "2025-04-29",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L34",
+      "taglia": "TP-200",
+      "quantita": 1057180,
+      "data_iniziale": "2025-04-29",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L34",
+      "taglia": "TP-200",
+      "quantita": 1244745,
+      "data_iniziale": "2025-04-29",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L23",
+      "taglia": "TP-315",
+      "quantita": 498747,
+      "data_iniziale": "2025-05-05",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L30",
+      "taglia": "TP-450",
+      "quantita": 1162040,
+      "data_iniziale": "2025-05-05",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "BINS-L16",
+      "taglia": "TP-315",
+      "quantita": 739459,
+      "data_iniziale": "2025-04-27",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "BINS-L21",
+      "taglia": "TP-450",
+      "quantita": 697571,
+      "data_iniziale": "2025-04-27",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "BINS-L21",
+      "taglia": "TP-450",
+      "quantita": 668200,
+      "data_iniziale": "2025-04-27",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "BINS-L19",
+      "taglia": "TP-450",
+      "quantita": 210250,
+      "data_iniziale": "2025-04-27",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L23",
+      "taglia": "TP-315",
+      "quantita": 382332,
+      "data_iniziale": "2025-04-27",
+      "mg_vongola": 0
+    },
+    {
+      "identificativo": "RACE-L22",
+      "taglia": "TP-315",
+      "quantita": 626898,
+      "data_iniziale": "2025-04-27",
+      "mg_vongola": 0
+    }
+  ]
+}
