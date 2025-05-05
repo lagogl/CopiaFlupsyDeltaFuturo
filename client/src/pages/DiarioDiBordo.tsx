@@ -492,11 +492,19 @@ export default function DiarioDiBordo() {
   const sendWhatsAppMessage = async () => {
     if (!whatsAppNumber.trim()) {
       toast({
-        title: 'Numero di telefono obbligatorio',
-        description: 'Specifica un numero di telefono WhatsApp con prefisso internazionale (es. +39...)',
+        title: 'Destinatario obbligatorio',
+        description: 'Specifica un numero di telefono o un ID gruppo WhatsApp',
         variant: 'destructive'
       });
       return;
+    }
+    
+    // Formatta l'ID del gruppo se necessario (aggiunge prefix group: se manca)
+    let formattedDestination = whatsAppNumber.trim();
+    
+    // Se sembra essere un ID gruppo ma non ha il prefisso, aggiungilo
+    if (formattedDestination.match(/^\d+$/) && !formattedDestination.startsWith('+') && !formattedDestination.startsWith('group:')) {
+      formattedDestination = `group:${formattedDestination}`;
     }
     
     setIsSendingWhatsApp(true);
@@ -507,7 +515,7 @@ export default function DiarioDiBordo() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          phoneNumber: whatsAppNumber.trim(),
+          phoneNumber: formattedDestination,
           data: diaryData,
           date: selectedDate.toISOString()
         })
@@ -637,17 +645,21 @@ export default function DiarioDiBordo() {
             <TabsContent value="config" className="space-y-4 py-4">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="whatsapp-number">Numero di telefono (obbligatorio)</Label>
+                  <Label htmlFor="whatsapp-number">Numero di telefono o ID gruppo (obbligatorio)</Label>
                   <Input 
                     id="whatsapp-number" 
-                    placeholder="+391234567890" 
+                    placeholder="+391234567890 o group:123456789" 
                     value={whatsAppNumber}
                     onChange={(e) => setWhatsAppNumber(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Inserisci il numero di telefono WhatsApp a cui inviare i messaggi, comprensivo di prefisso internazionale.
+                    <strong>Per inviare a un numero individuale:</strong> Inserisci il numero di telefono WhatsApp comprensivo di prefisso internazionale.
                     <br />
-                    Formato corretto: +391234567890 (senza spazi o altri caratteri).
+                    Formato corretto: <code>+391234567890</code> (senza spazi o altri caratteri).
+                    <br /><br />
+                    <strong>Per inviare a un gruppo WhatsApp Business:</strong> Inserisci l'ID del gruppo con il prefisso "group:".
+                    <br />
+                    Formato corretto: <code>group:123456789</code> dove 123456789 è l'ID del gruppo.
                   </p>
                 </div>
                 

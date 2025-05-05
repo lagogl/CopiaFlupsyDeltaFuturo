@@ -281,9 +281,13 @@ export async function sendWhatsAppMessage(req: Request, res: Response) {
     const formattedPhoneNumber = phoneNumber.replace(/\s+/g, '');
     
     // Prepara i dati per l'API WhatsApp
+    // WhatsApp Business Cloud API supporta l'invio a gruppi tramite l'ID del gruppo
+    // Se il numero inizia con "group:" trattiamo come ID gruppo, altrimenti come numero individuale
+    const isGroup = formattedPhoneNumber.startsWith('group:');
+    
     const payload = {
       messaging_product: "whatsapp",
-      recipient_type: "individual",
+      recipient_type: isGroup ? "group" : "individual",
       to: formattedPhoneNumber,
       type: "text",
       text: {
@@ -339,8 +343,8 @@ export async function autoSendWhatsAppDiario(req: Request, res: Response) {
     const dateParam = req.query.date ? String(req.query.date) : format(subDays(new Date(), 1), 'yyyy-MM-dd');
     const groupIdParam = req.query.groupId ? String(req.query.groupId) : null;
     
-    // Verifica se è specificato un numero di telefono per il gruppo
-    const whatsappGroupId = groupIdParam || process.env.WHATSAPP_GROUP_ID;
+    // Verifica se è specificato un ID per il gruppo WhatsApp Business
+    let whatsappGroupId = groupIdParam || process.env.WHATSAPP_GROUP_ID;
     
     if (!whatsappGroupId) {
       return res.status(400).json({
@@ -349,9 +353,14 @@ export async function autoSendWhatsAppDiario(req: Request, res: Response) {
       });
     }
     
+    // Assicurati che l'ID del gruppo abbia il prefisso 'group:' come richiesto dall'API WhatsApp Business
+    if (!whatsappGroupId.startsWith('group:')) {
+      whatsappGroupId = `group:${whatsappGroupId}`;
+    }
+    
     // Genera prima il diario
     // Simuliamo una richiesta interna al nostro controller generateWhatsAppDiario
-    const diarioReq = { query: { date: dateParam } } as Request;
+    const diarioReq = { query: { date: dateParam } } as unknown as Request;
     let diarioData: any = null;
     
     // Funzione temporanea per catturare la risposta
