@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Calendar, Download, Share, Filter, Clock, Mail, Loader2 } from 'lucide-react';
+import { Calendar, Download, Share, Filter, Clock, Mail, Loader2, MessageCircle } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -604,6 +604,189 @@ export default function DiarioDiBordo() {
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold tracking-tight mb-4">Diario di Bordo</h1>
       
+      {/* Dialog per configurazione e invio Telegram */}
+      <Dialog open={isTelegramDialogOpen} onOpenChange={setIsTelegramDialogOpen}>
+        <DialogContent className="sm:max-w-[600px]">
+          <DialogHeader>
+            <DialogTitle>Configura Telegram</DialogTitle>
+            <DialogDescription>
+              Imposta le configurazioni per l'invio automatico dei resoconti giornalieri via Telegram.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Tabs defaultValue="config">
+            <TabsList className="grid w-full grid-cols-3">
+              <TabsTrigger value="config">Configurazione</TabsTrigger>
+              <TabsTrigger value="auto">Invio Automatico</TabsTrigger>
+              <TabsTrigger value="preview">Anteprima</TabsTrigger>
+            </TabsList>
+            
+            {/* Tab Configurazione */}
+            <TabsContent value="config" className="space-y-4 py-4">
+              <div className="space-y-4">
+                <div className="space-y-2">
+                  <Label htmlFor="telegram-chat-ids">ID Chat (obbligatorio)</Label>
+                  <Input 
+                    id="telegram-chat-ids" 
+                    placeholder="12345678, -1001234567890" 
+                    value={telegramChatIds}
+                    onChange={(e) => setTelegramChatIds(e.target.value)}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Inserisci gli ID delle chat Telegram a cui inviare i messaggi. Puoi ottenere gli ID utilizzando il @DeltaFuturo_bot.
+                    <br />
+                    Se vuoi inviare i messaggi a un gruppo, aggiungilo prima al bot come amministratore.
+                  </p>
+                </div>
+                
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={saveTelegramConfig}
+                  disabled={isSavingTelegramConfig}
+                >
+                  {isSavingTelegramConfig ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvataggio in corso...
+                    </>
+                  ) : (
+                    'Salva Configurazione'
+                  )}
+                </Button>
+                
+                {isLoadingTelegramConfig && (
+                  <div className="mt-2 flex justify-center">
+                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
+                    <span className="ml-2 text-xs text-muted-foreground">Caricamento configurazione...</span>
+                  </div>
+                )}
+              </div>
+            </TabsContent>
+            
+            {/* Tab Invio Automatico */}
+            <TabsContent value="auto" className="space-y-4 py-4">
+              <div className="space-y-6">
+                <div className="bg-blue-50 p-4 rounded-lg">
+                  <h3 className="font-medium mb-2">Configurazione Invio Automatico Telegram</h3>
+                  <p className="text-sm text-muted-foreground">
+                    Imposta l'invio automatico del diario di bordo via Telegram ogni giorno all'orario specificato.
+                    I messaggi saranno inviati con i dati relativi al giorno corrente.
+                  </p>
+                </div>
+                
+                <div className="space-y-2 border-b pb-4">
+                  <div className="flex items-center justify-between">
+                    <Label htmlFor="auto-telegram-enabled" className="font-medium">Attiva invio automatico</Label>
+                    <div className="flex items-center space-x-2">
+                      <Label htmlFor="auto-telegram-enabled" className={!autoTelegramEnabled ? 'text-muted-foreground' : ''}>
+                        {autoTelegramEnabled ? 'Attivo' : 'Disattivato'}
+                      </Label>
+                      <input
+                        type="checkbox"
+                        id="auto-telegram-enabled"
+                        checked={autoTelegramEnabled}
+                        onChange={(e) => setAutoTelegramEnabled(e.target.checked)}
+                        className="form-checkbox h-5 w-5 text-primary rounded"
+                      />
+                    </div>
+                  </div>
+                  <p className="text-xs text-muted-foreground">
+                    Quando attivo, il sistema invierà automaticamente i messaggi di riepilogo giornaliero su Telegram.
+                  </p>
+                </div>
+                
+                <div className="space-y-2">
+                  <Label htmlFor="telegram-time">Orario di invio giornaliero</Label>
+                  <Input 
+                    id="telegram-time" 
+                    type="time"
+                    value={telegramTime}
+                    onChange={(e) => setTelegramTime(e.target.value)}
+                    className="w-full"
+                    disabled={!autoTelegramEnabled}
+                  />
+                  <p className="text-xs text-muted-foreground">
+                    Seleziona l'orario in cui inviare automaticamente il messaggio Telegram ogni giorno.
+                  </p>
+                </div>
+                
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={saveTelegramConfig}
+                  disabled={isSavingTelegramConfig}
+                >
+                  {isSavingTelegramConfig ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvataggio in corso...
+                    </>
+                  ) : (
+                    'Salva Configurazione'
+                  )}
+                </Button>
+              </div>
+            </TabsContent>
+            
+            {/* Tab Anteprima */}
+            <TabsContent value="preview" className="space-y-4 py-4">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+                </div>
+              ) : (
+                <>
+                  <Card>
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-lg">Anteprima Messaggio Telegram</CardTitle>
+                      <CardDescription>
+                        Così apparirà il tuo messaggio su Telegram
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <ScrollArea className="h-[300px] w-full rounded border p-4 bg-blue-50">
+                        <pre className="whitespace-pre-wrap font-sans text-sm">{telegramText}</pre>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                  
+                  <div className="flex justify-end space-x-2 mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => copyToClipboard(telegramText)}
+                    >
+                      Copia testo
+                    </Button>
+                    <Button
+                      variant="default"
+                      onClick={sendTelegramMessage}
+                      disabled={isSendingTelegram || !telegramChatIds.trim()}
+                    >
+                      {isSendingTelegram ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Invio in corso...
+                        </>
+                      ) : (
+                        'Invia via Telegram'
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
+            </TabsContent>
+          </Tabs>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsTelegramDialogOpen(false)}>
+              Chiudi
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+            
+      {/* Dialog per configurazione e invio Email */}
       <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
@@ -829,7 +1012,37 @@ export default function DiarioDiBordo() {
                   title="Configura invio automatico email"
                 >
                   <Clock className="h-4 w-4 mr-2" />
-                  Auto
+                  Auto Email
+                </Button>
+
+                {/* Pulsanti per Telegram */}
+                <Separator orientation="vertical" className="h-8 mx-2" />
+                
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    // Apre il dialogo Telegram direttamente sulla tab di anteprima per inviare il messaggio
+                    setIsTelegramDialogOpen(true);
+                  }}
+                  title="Invia via Telegram"
+                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                >
+                  <Share className="h-4 w-4 mr-2" />
+                  Telegram
+                </Button>
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    // Apre il dialogo Telegram sulla tab di configurazione
+                    setIsTelegramDialogOpen(true);
+                  }}
+                  title="Configura Telegram"
+                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                >
+                  <Clock className="h-4 w-4 mr-2" />
+                  Auto Telegram
                 </Button>
               </div>
             </div>
