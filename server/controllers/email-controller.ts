@@ -207,36 +207,53 @@ const simpleCron: CronScheduler = {
  */
 async function saveEmailConfig(configData: Record<string, string>) {
   try {
-    // Verifica se esiste già una configurazione nel database
-    const existingConfig = await db.select().from(emailConfig);
+    // Aggiorna o crea i singoli record di configurazione
+    // Per ogni tipo di configurazione (recipients, cc, ecc.) manteniamo un record separato
+    
+    // Destinatari email
+    await upsertConfigValue('email_recipients', configData.recipients || '');
+    
+    // CC email
+    await upsertConfigValue('email_cc', configData.cc || '');
+    
+    // Orario di invio
+    await upsertConfigValue('email_send_time', configData.send_time || '20:00');
+    
+    // Abilitazione invio automatico
+    await upsertConfigValue('auto_email_enabled', configData.auto_enabled || 'false');
+    
+    console.log("Configurazione email aggiornata nel database");
+    return true;
+  } catch (error) {
+    console.error("Errore nel salvataggio della configurazione email:", error);
+    throw error;
+  }
+}
+
+// Funzione di utilità per aggiornare o creare una configurazione
+async function upsertConfigValue(key: string, value: string) {
+  try {
+    // Verifica se esiste già la configurazione con quella chiave
+    const existingConfig = await db
+      .select()
+      .from(emailConfig)
+      .where(eq(emailConfig.key, key));
     
     if (existingConfig.length > 0) {
       // Aggiorna la configurazione esistente
       await db.update(emailConfig)
-        .set({
-          email_recipients: configData.recipients || '',
-          email_cc: configData.cc || '',
-          email_send_time: configData.send_time || '20:00',
-          auto_email_enabled: configData.auto_enabled || 'false'
-        })
+        .set({ value, updatedAt: new Date() })
         .where(eq(emailConfig.id, existingConfig[0].id));
-        
-      console.log("Configurazione email aggiornata nel database");
-      return true;
     } else {
       // Crea una nuova configurazione
       await db.insert(emailConfig).values({
-        email_recipients: configData.recipients || '',
-        email_cc: configData.cc || '',
-        email_send_time: configData.send_time || '20:00',
-        auto_email_enabled: configData.auto_enabled || 'false'
+        key,
+        value,
+        createdAt: new Date()
       });
-      
-      console.log("Configurazione email salvata nel database");
-      return true;
     }
   } catch (error) {
-    console.error("Errore nel salvataggio della configurazione email:", error);
+    console.error(`Errore nell'upsert della configurazione (${key}):`, error);
     throw error;
   }
 }
@@ -246,14 +263,20 @@ async function saveEmailConfig(configData: Record<string, string>) {
  */
 async function getEmailConfig() {
   try {
-    const config = await db.select().from(emailConfig);
+    const configRows = await db.select().from(emailConfig);
     
-    if (config.length > 0) {
+    if (configRows.length > 0) {
+      // Recupera i valori specifici dalla configurazione
+      const getConfigValue = (key: string, defaultValue: string = '') => {
+        const row = configRows.find(row => row.key === key);
+        return row ? row.value : defaultValue;
+      };
+      
       return {
-        recipients: config[0].email_recipients,
-        cc: config[0].email_cc,
-        send_time: config[0].email_send_time,
-        auto_enabled: config[0].auto_email_enabled
+        recipients: getConfigValue('email_recipients', ''),
+        cc: getConfigValue('email_cc', ''),
+        send_time: getConfigValue('email_send_time', '20:00'),
+        auto_enabled: getConfigValue('auto_email_enabled', 'false')
       };
     } else {
       // Configurazione predefinita se non esiste
