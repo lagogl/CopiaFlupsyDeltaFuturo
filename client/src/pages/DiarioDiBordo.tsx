@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Calendar, Download, Share, Filter, Clock, Mail, Loader2, MessageCircle } from 'lucide-react';
+import { Calendar, Download, Share, Filter, Clock, Mail, Loader2 } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
@@ -48,24 +48,16 @@ const getBadgeVariantForOperationType = (type: string): "default" | "secondary" 
     case 'pulizia':
       return "secondary"; // Grigio
     case 'vagliatura':
-      return "destructive"; // Rosso
-    case 'misura':
-    case 'peso':
-      return "outline"; // Nero bordo
-    case 'vendita':
     case 'selezione-vendita':
-      return "destructive"; // Rosso
-    case 'cessazione':
-      return "destructive"; // Rosso
     case 'selezione-origine':
-      return "outline"; // Nero bordo
+      return "destructive"; // Rosso
     default:
       return "outline";
   }
 };
 
-// Funzione per creare il testo formattato per WhatsApp
-const createWhatsAppText = (data: any, date: Date) => {
+// Funzione per creare il testo formattato per email e altre visualizzazioni
+const createFormattedText = (data: any, date: Date) => {
   const dateFormatted = format(date, 'dd MMMM yyyy', { locale: it });
   
   let text = `*DIARIO DI BORDO - ${dateFormatted.toUpperCase()}*\n\n`;
@@ -139,7 +131,7 @@ const createWhatsAppText = (data: any, date: Date) => {
 const copyToClipboard = (text: string) => {
   navigator.clipboard.writeText(text)
     .then(() => {
-      alert('Testo copiato negli appunti! Puoi incollarlo direttamente su WhatsApp.');
+      alert('Testo copiato negli appunti!');
     })
     .catch(err => {
       console.error('Errore durante la copia: ', err);
@@ -182,20 +174,9 @@ const downloadCSV = (data: any, date: Date) => {
   document.body.removeChild(link);
 };
 
-// Funzione principale per condividere su WhatsApp
-const shareOnWhatsApp = (text: string) => {
-  // Codifica il testo per URL
-  const encodedText = encodeURIComponent(text);
-  // Crea URL per WhatsApp web
-  const whatsAppUrl = `https://wa.me/?text=${encodedText}`;
-  
-  // Apri in una nuova finestra
-  window.open(whatsAppUrl, '_blank');
-};
-
 export default function DiarioDiBordo() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
-  const [whatsAppText, setWhatsAppText] = useState<string>('');
+  const [formattedText, setFormattedText] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('diario');
   
   // Stati per il dialogo di invio email
@@ -211,15 +192,6 @@ export default function DiarioDiBordo() {
   const [scheduledTime, setScheduledTime] = useState<string>('18:00');
   const [isLoadingConfig, setIsLoadingConfig] = useState<boolean>(false);
   const [isSavingConfig, setIsSavingConfig] = useState<boolean>(false);
-  
-  // Stati per la configurazione WhatsApp
-  const [isWhatsAppDialogOpen, setIsWhatsAppDialogOpen] = useState<boolean>(false);
-  const [whatsAppNumber, setWhatsAppNumber] = useState<string>('');
-  const [autoWhatsAppEnabled, setAutoWhatsAppEnabled] = useState<boolean>(false);
-  const [whatsAppTime, setWhatsAppTime] = useState<string>('20:00');
-  const [isLoadingWhatsAppConfig, setIsLoadingWhatsAppConfig] = useState<boolean>(false);
-  const [isSavingWhatsAppConfig, setIsSavingWhatsAppConfig] = useState<boolean>(false);
-  const [isSendingWhatsApp, setIsSendingWhatsApp] = useState<boolean>(false);
   
   // Formatta la data per la query dell'API
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
@@ -276,7 +248,7 @@ export default function DiarioDiBordo() {
     enabled: !!formattedDate
   });
   
-  // Combina tutti i dati per la visualizzazione e per il testo WhatsApp
+  // Combina tutti i dati per la visualizzazione
   const diaryData = {
     operations: operations || [],
     sizeStats: sizeStats || [],
@@ -317,41 +289,6 @@ export default function DiarioDiBordo() {
       });
     } finally {
       setIsLoadingConfig(false);
-    }
-  };
-  
-  // Carica la configurazione WhatsApp all'apertura del dialogo
-  const loadWhatsAppConfig = async () => {
-    setIsLoadingWhatsAppConfig(true);
-    try {
-      const response = await fetch('/api/whatsapp/config');
-      
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento della configurazione WhatsApp');
-      }
-      
-      const config = await response.json();
-      
-      if (config && config.config) {
-        // Imposta il numero di telefono
-        setWhatsAppNumber(config.config.whatsapp_number || '');
-        
-        // Imposta lo stato di abilitazione automatica
-        const autoWhatsAppEnabledValue = config.config.whatsapp_auto_enabled === 'true' || config.config.whatsapp_auto_enabled === true;
-        setAutoWhatsAppEnabled(autoWhatsAppEnabledValue);
-        
-        // Imposta l'orario programmato
-        setWhatsAppTime(config.config.whatsapp_send_time || '20:00');
-      }
-    } catch (error) {
-      console.error('Errore nel caricamento della configurazione WhatsApp:', error);
-      toast({
-        title: 'Errore',
-        description: 'Impossibile caricare la configurazione WhatsApp',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsLoadingWhatsAppConfig(false);
     }
   };
   
@@ -411,11 +348,11 @@ export default function DiarioDiBordo() {
     }
   };
   
-  // Aggiorna il testo di WhatsApp quando cambiano i dati
+  // Aggiorna il testo formattato quando cambiano i dati
   useEffect(() => {
     if (operations && sizeStats && totals && giacenza) {
-      const text = createWhatsAppText(diaryData, selectedDate);
-      setWhatsAppText(text);
+      const text = createFormattedText(diaryData, selectedDate);
+      setFormattedText(text);
     }
   }, [operations, sizeStats, totals, giacenza, selectedDate]);
   
@@ -425,129 +362,6 @@ export default function DiarioDiBordo() {
       loadEmailConfig();
     }
   }, [isEmailDialogOpen]);
-  
-  // Carica la configurazione WhatsApp all'apertura del dialogo
-  useEffect(() => {
-    if (isWhatsAppDialogOpen) {
-      loadWhatsAppConfig();
-    }
-  }, [isWhatsAppDialogOpen]);
-  
-  // Salva la configurazione WhatsApp
-  const saveWhatsAppConfig = async () => {
-    // Verifica che ci sia un numero di telefono valido
-    if (!whatsAppNumber.trim()) {
-      toast({
-        title: 'Numero di telefono obbligatorio',
-        description: 'Specifica un numero di telefono WhatsApp con prefisso internazionale (es. +39...)',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    setIsSavingWhatsAppConfig(true);
-    try {
-      const config = {
-        phone_number: whatsAppNumber.trim(),
-        auto_enabled: autoWhatsAppEnabled,
-        send_time: whatsAppTime
-      };
-      
-      const response = await fetch('/api/whatsapp/config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify(config)
-      });
-      
-      if (!response.ok) {
-        throw new Error('Errore nel salvataggio della configurazione WhatsApp');
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        toast({
-          title: 'Configurazione salvata',
-          description: 'Le impostazioni di invio WhatsApp sono state salvate con successo',
-          variant: 'default'
-        });
-      } else {
-        throw new Error(result.error || 'Errore durante il salvataggio');
-      }
-    } catch (error) {
-      console.error('Errore nel salvataggio della configurazione WhatsApp:', error);
-      toast({
-        title: 'Errore',
-        description: error instanceof Error ? error.message : 'Si è verificato un errore imprevisto',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsSavingWhatsAppConfig(false);
-    }
-  };
-  
-  // Funzione per inviare il messaggio WhatsApp manualmente
-  const sendWhatsAppMessage = async () => {
-    if (!whatsAppNumber.trim()) {
-      toast({
-        title: 'Destinatario obbligatorio',
-        description: 'Specifica un numero di telefono o un ID gruppo WhatsApp',
-        variant: 'destructive'
-      });
-      return;
-    }
-    
-    // Formatta l'ID del gruppo se necessario (aggiunge prefix group: se manca)
-    let formattedDestination = whatsAppNumber.trim();
-    
-    // Se sembra essere un ID gruppo ma non ha il prefisso, aggiungilo
-    if (formattedDestination.match(/^\d+$/) && !formattedDestination.startsWith('+') && !formattedDestination.startsWith('group:')) {
-      formattedDestination = `group:${formattedDestination}`;
-    }
-    
-    setIsSendingWhatsApp(true);
-    try {
-      const response = await fetch('/api/whatsapp/send-diario', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          phoneNumber: formattedDestination,
-          data: diaryData,
-          date: selectedDate.toISOString()
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error('Errore nell\'invio del messaggio WhatsApp');
-      }
-      
-      const result = await response.json();
-      
-      if (result.success) {
-        toast({
-          title: 'Messaggio inviato',
-          description: 'Il diario di bordo è stato inviato via WhatsApp con successo',
-          variant: 'default'
-        });
-        setIsWhatsAppDialogOpen(false);
-      } else {
-        throw new Error(result.error || 'Errore durante l\'invio');
-      }
-    } catch (error) {
-      console.error('Errore nell\'invio del messaggio WhatsApp:', error);
-      toast({
-        title: 'Errore',
-        description: error instanceof Error ? error.message : 'Si è verificato un errore imprevisto',
-        variant: 'destructive'
-      });
-    } finally {
-      setIsSendingWhatsApp(false);
-    }
-  };
   
   // Determina lo stato di caricamento generale
   const isLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza;
@@ -571,8 +385,8 @@ export default function DiarioDiBordo() {
         to: emailRecipients.split(',').map(email => email.trim()),
         cc: emailCC ? emailCC.split(',').map(email => email.trim()) : undefined,
         subject: emailSubject || `Diario di Bordo FLUPSY - ${format(selectedDate, 'dd/MM/yyyy', { locale: it })}`,
-        text: whatsAppText,
-        html: `<pre style="font-family: monospace;">${whatsAppText.replace(/\n/g, '<br>').replace(/\*/g, '<strong>').replace(/\*/g, '</strong>')}</pre>`
+        text: formattedText,
+        html: `<pre style="font-family: monospace;">${formattedText.replace(/\n/g, '<br>').replace(/\*/g, '<strong>').replace(/\*/g, '</strong>')}</pre>`
       };
       
       // Invia l'email tramite l'API
@@ -624,192 +438,6 @@ export default function DiarioDiBordo() {
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold tracking-tight mb-4">Diario di Bordo</h1>
       
-      {/* Dialog per configurazione e invio WhatsApp */}
-      <Dialog open={isWhatsAppDialogOpen} onOpenChange={setIsWhatsAppDialogOpen}>
-        <DialogContent className="sm:max-w-[600px]">
-          <DialogHeader>
-            <DialogTitle>Configura WhatsApp</DialogTitle>
-            <DialogDescription>
-              Imposta le configurazioni per l'invio automatico dei resoconti giornalieri via WhatsApp.
-            </DialogDescription>
-          </DialogHeader>
-          
-          <Tabs defaultValue="config">
-            <TabsList className="grid w-full grid-cols-3">
-              <TabsTrigger value="config">Configurazione</TabsTrigger>
-              <TabsTrigger value="auto">Invio Automatico</TabsTrigger>
-              <TabsTrigger value="preview">Anteprima</TabsTrigger>
-            </TabsList>
-            
-            {/* Tab Configurazione */}
-            <TabsContent value="config" className="space-y-4 py-4">
-              <div className="space-y-4">
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp-number">Numero di telefono o ID gruppo (obbligatorio)</Label>
-                  <Input 
-                    id="whatsapp-number" 
-                    placeholder="+391234567890 o group:123456789" 
-                    value={whatsAppNumber}
-                    onChange={(e) => setWhatsAppNumber(e.target.value)}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    <strong>Per inviare a un numero individuale:</strong> Inserisci il numero di telefono WhatsApp comprensivo di prefisso internazionale.
-                    <br />
-                    Formato corretto: <code>+391234567890</code> (senza spazi o altri caratteri).
-                    <br /><br />
-                    <strong>Per inviare a un gruppo WhatsApp Business:</strong> Inserisci l'ID del gruppo con il prefisso "group:".
-                    <br />
-                    Formato corretto: <code>group:123456789</code> dove 123456789 è l'ID del gruppo.
-                  </p>
-                </div>
-                
-                <Button
-                  type="button"
-                  className="w-full"
-                  onClick={saveWhatsAppConfig}
-                  disabled={isSavingWhatsAppConfig}
-                >
-                  {isSavingWhatsAppConfig ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvataggio in corso...
-                    </>
-                  ) : (
-                    'Salva Configurazione'
-                  )}
-                </Button>
-                
-                {isLoadingWhatsAppConfig && (
-                  <div className="mt-2 flex justify-center">
-                    <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                    <span className="ml-2 text-xs text-muted-foreground">Caricamento configurazione...</span>
-                  </div>
-                )}
-              </div>
-            </TabsContent>
-            
-            {/* Tab Invio Automatico */}
-            <TabsContent value="auto" className="space-y-4 py-4">
-              <div className="space-y-6">
-                <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-medium mb-2">Configurazione Invio Automatico WhatsApp</h3>
-                  <p className="text-sm text-muted-foreground">
-                    Imposta l'invio automatico del diario di bordo via WhatsApp ogni giorno all'orario specificato.
-                    I messaggi saranno inviati con i dati relativi al giorno corrente.
-                  </p>
-                </div>
-                
-                <div className="space-y-2 border-b pb-4">
-                  <div className="flex items-center justify-between">
-                    <Label htmlFor="auto-whatsapp-enabled" className="font-medium">Attiva invio automatico</Label>
-                    <div className="flex items-center space-x-2">
-                      <Label htmlFor="auto-whatsapp-enabled" className={!autoWhatsAppEnabled ? 'text-muted-foreground' : ''}>
-                        {autoWhatsAppEnabled ? 'Attivo' : 'Disattivato'}
-                      </Label>
-                      <input
-                        type="checkbox"
-                        id="auto-whatsapp-enabled"
-                        checked={autoWhatsAppEnabled}
-                        onChange={(e) => setAutoWhatsAppEnabled(e.target.checked)}
-                        className="form-checkbox h-5 w-5 text-primary rounded"
-                      />
-                    </div>
-                  </div>
-                  <p className="text-xs text-muted-foreground">
-                    Quando attivo, il sistema invierà automaticamente i messaggi di riepilogo giornaliero su WhatsApp.
-                  </p>
-                </div>
-                
-                <div className="space-y-2">
-                  <Label htmlFor="whatsapp-time">Orario di invio giornaliero</Label>
-                  <Input 
-                    id="whatsapp-time" 
-                    type="time"
-                    value={whatsAppTime}
-                    onChange={(e) => setWhatsAppTime(e.target.value)}
-                    className="w-full"
-                    disabled={!autoWhatsAppEnabled}
-                  />
-                  <p className="text-xs text-muted-foreground">
-                    Seleziona l'orario in cui inviare automaticamente il messaggio WhatsApp ogni giorno.
-                  </p>
-                </div>
-                
-                <Button
-                  type="button"
-                  className="w-full"
-                  onClick={saveWhatsAppConfig}
-                  disabled={isSavingWhatsAppConfig}
-                >
-                  {isSavingWhatsAppConfig ? (
-                    <>
-                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                      Salvataggio in corso...
-                    </>
-                  ) : (
-                    'Salva Configurazione'
-                  )}
-                </Button>
-              </div>
-            </TabsContent>
-            
-            {/* Tab Anteprima */}
-            <TabsContent value="preview" className="space-y-4 py-4">
-              {isLoading ? (
-                <div className="flex justify-center items-center h-40">
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                </div>
-              ) : (
-                <>
-                  <Card>
-                    <CardHeader className="p-4 pb-2">
-                      <CardTitle className="text-lg">Anteprima Messaggio WhatsApp</CardTitle>
-                      <CardDescription>
-                        Così apparirà il tuo messaggio su WhatsApp
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                      <ScrollArea className="h-[300px] w-full rounded border p-4 bg-blue-50">
-                        <pre className="whitespace-pre-wrap font-sans text-sm">{whatsAppText}</pre>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                  
-                  <div className="flex justify-end space-x-2 mt-4">
-                    <Button
-                      variant="outline"
-                      onClick={() => copyToClipboard(whatsAppText)}
-                    >
-                      Copia testo
-                    </Button>
-                    <Button
-                      variant="default"
-                      onClick={sendWhatsAppMessage}
-                      disabled={isSendingWhatsApp || !whatsAppNumber.trim()}
-                    >
-                      {isSendingWhatsApp ? (
-                        <>
-                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Invio in corso...
-                        </>
-                      ) : (
-                        'Invia via WhatsApp'
-                      )}
-                    </Button>
-                  </div>
-                </>
-              )}
-            </TabsContent>
-          </Tabs>
-          
-          <DialogFooter>
-            <Button variant="outline" onClick={() => setIsWhatsAppDialogOpen(false)}>
-              Chiudi
-            </Button>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
-            
       {/* Dialog per configurazione e invio Email */}
       <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
@@ -904,459 +532,522 @@ export default function DiarioDiBordo() {
                     disabled={!autoSendEnabled}
                   />
                   <p className="text-xs text-muted-foreground">
-                    L'email del diario di bordo verrà inviata automaticamente a quest'ora ogni giorno
+                    Seleziona l'orario in cui inviare automaticamente l'email ogni giorno.
                   </p>
                 </div>
                 
-                <div className="pt-2">
-                  <Button 
-                    type="button" 
-                    onClick={saveEmailConfig}
-                    disabled={isSavingConfig || isLoadingConfig}
-                    className="w-full"
-                  >
-                    {isSavingConfig ? (
-                      <>
-                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                        Salvataggio in corso...
-                      </>
-                    ) : (
-                      'Salva Configurazione'
-                    )}
-                  </Button>
-                  
-                  {isLoadingConfig && (
-                    <div className="mt-2 flex justify-center">
-                      <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
-                      <span className="ml-2 text-xs text-muted-foreground">Caricamento configurazione...</span>
-                    </div>
+                <Button
+                  type="button"
+                  className="w-full"
+                  onClick={saveEmailConfig}
+                  disabled={isSavingConfig}
+                >
+                  {isSavingConfig ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Salvataggio in corso...
+                    </>
+                  ) : (
+                    'Salva Configurazione'
                   )}
-                </div>
+                </Button>
               </div>
             </TabsContent>
             
-            <TabsContent value="preview">
-              <div className="border rounded-lg p-4 my-4 max-h-[300px] overflow-y-auto">
-                <div className="mb-4 p-2 bg-gray-100 rounded">
-                  <p><strong>Da:</strong> Sistema FLUPSY</p>
-                  <p><strong>A:</strong> {emailRecipients || "[Nessun destinatario specificato]"}</p>
-                  {emailCC && <p><strong>CC:</strong> {emailCC}</p>}
-                  <p><strong>Oggetto:</strong> {emailSubject || `Diario di Bordo FLUPSY - ${format(selectedDate, 'dd/MM/yyyy', { locale: it })}`}</p>
+            <TabsContent value="preview" className="space-y-4 py-4">
+              {isLoading ? (
+                <div className="flex justify-center items-center h-40">
+                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
-                <div className="whitespace-pre-wrap font-mono text-sm">
-                  {whatsAppText}
-                </div>
-              </div>
+              ) : (
+                <>
+                  <Card>
+                    <CardHeader className="p-4 pb-2">
+                      <CardTitle className="text-lg">Anteprima Email</CardTitle>
+                      <CardDescription>
+                        Così apparirà la tua email
+                      </CardDescription>
+                    </CardHeader>
+                    <CardContent className="p-4 pt-0">
+                      <ScrollArea className="h-[300px] w-full rounded border p-4 bg-blue-50">
+                        <pre className="whitespace-pre-wrap font-sans text-sm">{formattedText}</pre>
+                      </ScrollArea>
+                    </CardContent>
+                  </Card>
+                  
+                  <div className="flex justify-end space-x-2 mt-4">
+                    <Button
+                      variant="outline"
+                      onClick={() => copyToClipboard(formattedText)}
+                    >
+                      Copia testo
+                    </Button>
+                    <Button
+                      variant="default"
+                      onClick={sendEmail}
+                      disabled={isSendingEmail || !emailRecipients.trim()}
+                    >
+                      {isSendingEmail ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Invio in corso...
+                        </>
+                      ) : (
+                        'Invia via Email'
+                      )}
+                    </Button>
+                  </div>
+                </>
+              )}
             </TabsContent>
           </Tabs>
           
           <DialogFooter>
-            <Button 
-              type="button" 
-              variant="outline" 
-              onClick={() => setIsEmailDialogOpen(false)}
-            >
-              Annulla
-            </Button>
-            <Button 
-              type="button" 
-              onClick={sendEmail}
-              disabled={isSendingEmail}
-            >
-              {isSendingEmail ? (
-                <>
-                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                  Invio in corso...
-                </>
-              ) : (
-                <>
-                  <Mail className="mr-2 h-4 w-4" />
-                  Invia Email
-                </>
-              )}
+            <Button variant="outline" onClick={() => setIsEmailDialogOpen(false)}>
+              Chiudi
             </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
       
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-6">
-        <Card className="md:col-span-3">
-          <CardHeader className="p-4 pb-2">
-            <div className="flex justify-between items-center">
-              <CardTitle className="text-xl">
-                Attività del {format(selectedDate, 'dd MMMM yyyy', { locale: it })}
-              </CardTitle>
-              <div className="flex space-x-2">
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => copyToClipboard(whatsAppText)}
-                  title="Copia testo per WhatsApp"
-                >
-                  <Filter className="h-4 w-4 mr-2" />
-                  Copia
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => downloadCSV(diaryData, selectedDate)}
-                  title="Scarica come CSV"
-                >
-                  <Download className="h-4 w-4 mr-2" />
-                  CSV
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => shareOnWhatsApp(whatsAppText)}
-                  title="Condividi su WhatsApp"
-                >
-                  <Share className="h-4 w-4 mr-2" />
-                  WhatsApp
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    setEmailDialogTab('config');
-                    setIsEmailDialogOpen(true);
-                  }}
-                  title="Invia via Email"
-                >
-                  <Mail className="h-4 w-4 mr-2" />
-                  Email
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    setEmailDialogTab('auto');
-                    setIsEmailDialogOpen(true);
-                  }}
-                  title="Configura invio automatico email"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Auto Email
-                </Button>
-
-                {/* Pulsanti per WhatsApp */}
-                <Separator orientation="vertical" className="h-8 mx-2" />
-                
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    // Apre il dialogo WhatsApp direttamente sulla tab di anteprima per inviare il messaggio
-                    setIsWhatsAppDialogOpen(true);
-                  }}
-                  title="Invia via WhatsApp"
-                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-                >
-                  <Share className="h-4 w-4 mr-2" />
-                  WhatsApp
-                </Button>
-                <Button 
-                  variant="outline" 
-                  size="sm"
-                  onClick={() => {
-                    // Apre il dialogo WhatsApp sulla tab di configurazione
-                    setIsWhatsAppDialogOpen(true);
-                  }}
-                  title="Configura WhatsApp"
-                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
-                >
-                  <Clock className="h-4 w-4 mr-2" />
-                  Auto WhatsApp
-                </Button>
-              </div>
-            </div>
-            <CardDescription>
-              Riepilogo delle operazioni, statistiche e bilancio giornaliero.
-            </CardDescription>
-          </CardHeader>
+      {/* Intestazione pagina con data e controlli */}
+      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
+        <div className="flex items-center space-x-4">
+          <div className="bg-primary/10 p-2 rounded-lg">
+            <Calendar className="h-6 w-6 text-primary" />
+          </div>
+          <div>
+            <h2 className="text-xl font-semibold tracking-tight">
+              Diario del {format(selectedDate, 'dd MMMM yyyy', { locale: it })}
+            </h2>
+            <p className="text-sm text-muted-foreground">
+              Riepilogo delle operazioni e statistiche giornaliere
+            </p>
+          </div>
+        </div>
+        
+        <div className="flex flex-wrap gap-2">
+          <DatePicker
+            date={selectedDate}
+            onSelect={setSelectedDate}
+            mode="single"
+            className="min-w-[280px]"
+          />
           
-          <CardContent className="p-4 pt-0">
-            <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
-              <TabsList className="mb-4">
-                <TabsTrigger value="diario">Diario</TabsTrigger>
-                <TabsTrigger value="statistiche">Statistiche</TabsTrigger>
-                <TabsTrigger value="anteprima">Anteprima WhatsApp</TabsTrigger>
-              </TabsList>
-              
-              <TabsContent value="diario" className="space-y-4">
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-40">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => downloadCSV(diaryData, selectedDate)}
+            disabled={isLoading}
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Esporta CSV
+          </Button>
+          
+          <Button
+            variant="outline"
+            size="sm"
+            onClick={() => setIsEmailDialogOpen(true)}
+            disabled={isLoading}
+          >
+            <Mail className="h-4 w-4 mr-2" />
+            Invia via Email
+          </Button>
+
+          <Button 
+            variant="outline"
+            size="sm"
+            onClick={() => copyToClipboard(formattedText)}
+            disabled={isLoading}
+          >
+            <Share className="h-4 w-4 mr-2" />
+            Copia Testo
+          </Button>
+        </div>
+      </div>
+
+      {/* Tabs per i diversi tipi di vista */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
+        <TabsList className="grid grid-cols-3 md:grid-cols-3 lg:w-[400px]">
+          <TabsTrigger value="diario">Diario</TabsTrigger>
+          <TabsTrigger value="statistiche">Statistiche</TabsTrigger>
+          <TabsTrigger value="operazioni">Operazioni</TabsTrigger>
+        </TabsList>
+        
+        {/* Tab Diario - Mostra il diario completo */}
+        <TabsContent value="diario" className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <Card>
+              <CardContent className="p-6">
+                <ScrollArea className="h-[600px] pr-4">
+                  <div className="space-y-6">
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center mb-2">
+                        <Filter className="h-5 w-5 mr-2 text-primary" />
+                        Operazioni Effettuate
+                      </h3>
+                      {operations && operations.length > 0 ? (
+                        <div className="space-y-4">
+                          {operations.map((op: any, idx: number) => (
+                            <div key={op.id || idx} className="border rounded-lg p-4 bg-card">
+                              <div className="flex flex-wrap justify-between items-start gap-2 mb-2">
+                                <div className="flex items-center">
+                                  <Badge variant={getBadgeVariantForOperationType(op.type)} className="mr-2">
+                                    {getOperationTypeLabel(op.type)}
+                                  </Badge>
+                                  <span className="text-sm text-muted-foreground">
+                                    {op.created_at ? format(new Date(op.created_at), 'HH:mm') : ''}
+                                  </span>
+                                </div>
+                                <div className="flex items-center">
+                                  <span className="text-sm font-medium">
+                                    Cestello #{op.basket_number} ({op.flupsy_name})
+                                  </span>
+                                </div>
+                              </div>
+                              
+                              <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
+                                <div>
+                                  <span className="font-semibold">N. Animali:</span> {op.animal_count?.toLocaleString('it-IT') || 'N/D'}
+                                </div>
+                                
+                                {op.animals_per_kg && (
+                                  <div>
+                                    <span className="font-semibold">Animali/Kg:</span> {op.animals_per_kg.toLocaleString('it-IT')}
+                                  </div>
+                                )}
+                                
+                                {op.size_code && (
+                                  <div>
+                                    <span className="font-semibold">Taglia:</span> {op.size_code === 'Non specificata' ? 'In attesa di misurazione' : op.size_code}
+                                  </div>
+                                )}
+                              </div>
+                              
+                              {op.notes && (
+                                <div className="mt-2 text-sm">
+                                  <span className="font-semibold">Note:</span> {op.notes}
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      ) : (
+                        <div className="text-center py-8 text-muted-foreground">
+                          Nessuna operazione registrata per questa data.
+                        </div>
+                      )}
+                    </div>
+                    
+                    <Separator />
+                    
+                    <div>
+                      <h3 className="text-lg font-semibold flex items-center mb-4">
+                        <Clock className="h-5 w-5 mr-2 text-primary" />
+                        Riepilogo Giornaliero
+                      </h3>
+                      
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                        {/* Statistiche per Taglia */}
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-base">Statistiche per Taglia</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            {sizeStats && sizeStats.length > 0 ? (
+                              <div className="space-y-2">
+                                {sizeStats.map((taglia: any, idx: number) => (
+                                  <div key={idx} className="flex justify-between items-center text-sm">
+                                    <span className="font-medium">
+                                      {taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia}:
+                                    </span>
+                                    <span>
+                                      {taglia.entrate ? (<><span className="text-green-600">+{taglia.entrate.toLocaleString('it-IT')}</span>{' '}</>) : null}
+                                      {taglia.uscite ? (<><span className="text-red-600">-{taglia.uscite.toLocaleString('it-IT')}</span>{' '}</>) : null}
+                                    </span>
+                                  </div>
+                                ))}
+                              </div>
+                            ) : (
+                              <div className="text-center py-4 text-muted-foreground text-sm">
+                                Nessuna statistica disponibile.
+                              </div>
+                            )}
+                          </CardContent>
+                        </Card>
+                        
+                        {/* Bilancio Giornata */}
+                        <Card>
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-base">Bilancio Giornaliero</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-2">
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Entrate:</span>
+                                <span className="text-green-600 font-medium">
+                                  +{totals?.totale_entrate?.toLocaleString('it-IT') || '0'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm">
+                                <span>Uscite:</span>
+                                <span className="text-red-600 font-medium">
+                                  -{totals?.totale_uscite?.toLocaleString('it-IT') || '0'}
+                                </span>
+                              </div>
+                              <Separator className="my-1" />
+                              <div className="flex justify-between items-center text-sm font-medium">
+                                <span>Bilancio netto:</span>
+                                <span className={parseInt(totals?.bilancio_netto || '0') >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {parseInt(totals?.bilancio_netto || '0') >= 0 ? '+' : ''}{totals?.bilancio_netto?.toLocaleString('it-IT') || '0'}
+                                </span>
+                              </div>
+                              <div className="flex justify-between items-center text-sm mt-4">
+                                <span>Operazioni totali:</span>
+                                <span className="font-medium">{totals?.numero_operazioni || '0'}</span>
+                              </div>
+                            </div>
+                          </CardContent>
+                        </Card>
+                        
+                        {/* Giacenza alla data */}
+                        <Card className="md:col-span-2">
+                          <CardHeader className="pb-2">
+                            <CardTitle className="text-base">Giacenza al {format(selectedDate, 'dd/MM/yyyy', { locale: it })}</CardTitle>
+                          </CardHeader>
+                          <CardContent>
+                            <div className="space-y-4">
+                              <div className="flex justify-between items-center">
+                                <span className="font-medium">Totale animali:</span>
+                                <span className="text-lg font-bold">{giacenza?.totale_giacenza?.toLocaleString('it-IT') || '0'}</span>
+                              </div>
+                              
+                              {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.length > 0 && (
+                                <div>
+                                  <h4 className="text-sm font-semibold mb-2">Dettaglio per taglia:</h4>
+                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                    {giacenza.dettaglio_taglie.map((taglia: any, idx: number) => (
+                                      <div key={idx} className="flex justify-between items-center text-sm border-b pb-1">
+                                        <span>{taglia.taglia === 'Non specificata' ? 'In attesa' : taglia.taglia}:</span>
+                                        <span className="font-medium">{taglia.quantita.toLocaleString('it-IT')}</span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              )}
+                              
+                              {giacenza?.totale_giacenza !== undefined && totals?.bilancio_netto !== undefined && (
+                                <div className="pt-2 border-t">
+                                  <div className="flex justify-between items-center text-sm font-semibold">
+                                    <span>Bilancio finale (giacenza + bilancio netto):</span>
+                                    <span className="text-primary">
+                                      {(giacenza.totale_giacenza + parseInt(totals.bilancio_netto)).toLocaleString('it-IT')}
+                                    </span>
+                                  </div>
+                                </div>
+                              )}
+                            </div>
+                          </CardContent>
+                        </Card>
+                      </div>
+                    </div>
                   </div>
-                ) : operations && operations.length > 0 ? (
-                  <div className="space-y-4">
-                    {operations.map((op: any) => (
-                      <Card key={op.id} className="p-4">
-                        <div className="flex justify-between items-start mb-2">
-                          <div className="flex items-center">
-                            <Badge 
-                              className="mr-2" 
-                              variant={getBadgeVariantForOperationType(op.type)}
-                            >
-                              {getOperationTypeLabel(op.type)}
-                            </Badge>
-                            <span className="text-sm text-muted-foreground flex items-center">
-                              <Clock className="h-3 w-3 mr-1" />
-                              {format(new Date(op.date), 'HH:mm')}
+                </ScrollArea>
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+        
+        {/* Tab Statistiche - Mostra solo le statistiche */}
+        <TabsContent value="statistiche" className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {/* Statistiche per Taglia */}
+              <Card>
+                <CardHeader>
+                  <CardTitle>Statistiche per Taglia</CardTitle>
+                  <CardDescription>
+                    Movimentazione giornaliera per ogni taglia
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  {sizeStats && sizeStats.length > 0 ? (
+                    <div className="space-y-4">
+                      {sizeStats.map((taglia: any, idx: number) => (
+                        <div key={idx} className="border-b pb-3 last:border-0">
+                          <div className="flex justify-between items-center mb-2">
+                            <span className="font-medium text-base">
+                              {taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia}
                             </span>
                           </div>
-                          <Badge variant="secondary">
-                            Cestello #{op.basket_number || 'N/D'}
-                          </Badge>
-                        </div>
-                        
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3 mb-2">
-                          <div>
-                            <p className="text-xs text-muted-foreground">Flupsy</p>
-                            <p className="font-medium">{op.flupsy_name || 'N/D'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Animali</p>
-                            <p className="font-medium">{op.animal_count ? op.animal_count.toLocaleString('it-IT') : 'N/D'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Animali/kg</p>
-                            <p className="font-medium">{op.animals_per_kg ? op.animals_per_kg.toLocaleString('it-IT') : 'N/D'}</p>
-                          </div>
-                          <div>
-                            <p className="text-xs text-muted-foreground">Taglia</p>
-                            <p className="font-medium">
-                              {op.size_code && op.size_code !== 'Non specificata' 
-                                ? op.size_code 
-                                : op.size_code === 'Non specificata' 
-                                  ? 'In attesa di misurazione' 
-                                  : 'In attesa di misurazione'
-                              }
-                            </p>
+                          <div className="grid grid-cols-2 gap-2 text-sm">
+                            <div className="flex items-center">
+                              <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md mr-2">Entrate</span>
+                              <span className="font-medium">{taglia.entrate?.toLocaleString('it-IT') || '0'}</span>
+                            </div>
+                            <div className="flex items-center">
+                              <span className="bg-red-100 text-red-800 px-2 py-1 rounded-md mr-2">Uscite</span>
+                              <span className="font-medium">{taglia.uscite?.toLocaleString('it-IT') || '0'}</span>
+                            </div>
                           </div>
                         </div>
-                        
-                        {op.notes && (
-                          <div className="mt-2 pt-2 border-t">
-                            <p className="text-xs text-muted-foreground">Note</p>
-                            <p className="text-sm">{op.notes}</p>
-                          </div>
-                        )}
-                      </Card>
-                    ))}
-                  </div>
-                ) : (
-                  <div className="text-center p-6 bg-muted rounded-lg">
-                    <p className="text-muted-foreground">Nessuna operazione registrata per questa data.</p>
-                  </div>
-                )}
-              </TabsContent>
+                      ))}
+                    </div>
+                  ) : (
+                    <div className="text-center py-8 text-muted-foreground">
+                      Nessuna statistica disponibile per questa data.
+                    </div>
+                  )}
+                </CardContent>
+              </Card>
               
-              <TabsContent value="statistiche">
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-40">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : (
-                  <>
-                    <Card className="mb-6">
-                      <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-lg">Statistiche per Taglia</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        {sizeStats && sizeStats.length > 0 ? (
+              {/* Giacenza e Bilancio */}
+              <div className="space-y-4">
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Bilancio Giornaliero</CardTitle>
+                    <CardDescription>
+                      Riepilogo delle entrate e uscite del giorno
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="grid grid-cols-2 gap-4">
+                        <div className="bg-green-50 p-4 rounded-lg text-center">
+                          <div className="text-green-800 text-sm font-medium mb-1">Entrate</div>
+                          <div className="text-2xl font-bold">{totals?.totale_entrate?.toLocaleString('it-IT') || '0'}</div>
+                        </div>
+                        <div className="bg-red-50 p-4 rounded-lg text-center">
+                          <div className="text-red-800 text-sm font-medium mb-1">Uscite</div>
+                          <div className="text-2xl font-bold">{totals?.totale_uscite?.toLocaleString('it-IT') || '0'}</div>
+                        </div>
+                      </div>
+                      
+                      <div className="border-t pt-4">
+                        <div className="flex justify-between items-center mb-2">
+                          <span className="text-sm font-medium">Bilancio netto:</span>
+                          <span className={`text-xl font-bold ${parseInt(totals?.bilancio_netto || '0') >= 0 ? 'text-green-600' : 'text-red-600'}`}>
+                            {parseInt(totals?.bilancio_netto || '0') >= 0 ? '+' : ''}{totals?.bilancio_netto?.toLocaleString('it-IT') || '0'}
+                          </span>
+                        </div>
+                        <div className="flex justify-between items-center text-sm">
+                          <span>Operazioni effettuate:</span>
+                          <span className="font-medium">{totals?.numero_operazioni || '0'}</span>
+                        </div>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+                
+                <Card>
+                  <CardHeader>
+                    <CardTitle>Giacenza</CardTitle>
+                    <CardDescription>
+                      Situazione animali al {format(selectedDate, 'dd/MM/yyyy', { locale: it })}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <div className="space-y-4">
+                      <div className="bg-blue-50 p-4 rounded-lg text-center">
+                        <div className="text-blue-800 text-sm font-medium mb-1">Totale animali</div>
+                        <div className="text-3xl font-bold">{giacenza?.totale_giacenza?.toLocaleString('it-IT') || '0'}</div>
+                      </div>
+                      
+                      {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.length > 0 && (
+                        <div>
+                          <h4 className="text-sm font-semibold mb-2">Dettaglio per taglia:</h4>
                           <div className="space-y-2">
-                            {sizeStats.map((stat: any, index: number) => (
-                              <div key={index} className="p-3 border rounded-lg">
-                                <div className="flex justify-between items-center mb-2">
-                                  <Badge>{stat.taglia === 'Non specificata' ? 'In attesa di misurazione' : stat.taglia}</Badge>
-                                  <span className="text-sm text-muted-foreground">{stat.num_operazioni} operazioni</span>
-                                </div>
-                                <div className="grid grid-cols-2 gap-4">
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Entrate</p>
-                                    <p className="text-lg font-semibold text-emerald-600">
-                                      {stat.entrate ? stat.entrate.toLocaleString('it-IT') : '0'}
-                                    </p>
-                                  </div>
-                                  <div>
-                                    <p className="text-xs text-muted-foreground">Uscite</p>
-                                    <p className="text-lg font-semibold text-red-600">
-                                      {stat.uscite ? stat.uscite.toLocaleString('it-IT') : '0'}
-                                    </p>
-                                  </div>
-                                </div>
+                            {giacenza.dettaglio_taglie.map((taglia: any, idx: number) => (
+                              <div key={idx} className="flex justify-between items-center">
+                                <span className="text-sm">{taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia}:</span>
+                                <span className="font-medium">{taglia.quantita.toLocaleString('it-IT')}</span>
                               </div>
                             ))}
                           </div>
-                        ) : (
-                          <div className="text-center p-6 bg-muted rounded-lg">
-                            <p className="text-muted-foreground">Nessuna statistica disponibile per questa data.</p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                    
-                    <Card>
-                      <CardHeader className="p-4 pb-2">
-                        <CardTitle className="text-lg">Bilancio Giornaliero</CardTitle>
-                      </CardHeader>
-                      <CardContent className="p-4 pt-0">
-                        {totals ? (
-                          <div className="space-y-6">
-                            {/* Giacenza alla data corrente */}
-                            {!isLoadingGiacenza && giacenza && (
-                              <div className="border rounded-lg p-4 bg-blue-50">
-                                <h3 className="text-md font-semibold mb-3">
-                                  Giacenza al {format(selectedDate, 'dd/MM/yyyy', { locale: it })}
-                                </h3>
-                                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                                  <div className="p-3 border rounded-lg bg-white">
-                                    <p className="text-xs text-muted-foreground">Totale Giacenza</p>
-                                    <p className="text-lg font-semibold text-blue-600">
-                                      {giacenza.totale_giacenza ? giacenza.totale_giacenza.toLocaleString('it-IT') : '0'} animali
-                                    </p>
-                                  </div>
-                                  
-                                  <div className="p-3 border rounded-lg bg-white">
-                                    <p className="text-xs text-muted-foreground">Dettaglio Giacenza per Taglia</p>
-                                    <div className="mt-1 space-y-1">
-                                      {giacenza.dettaglio_taglie && giacenza.dettaglio_taglie.length > 0 ? (
-                                        giacenza.dettaglio_taglie.map((taglia, idx) => (
-                                          <div key={idx} className="flex justify-between items-center">
-                                            <Badge variant="outline">{taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia}</Badge>
-                                            <span className="font-medium">{taglia.quantita.toLocaleString('it-IT')}</span>
-                                          </div>
-                                        ))
-                                      ) : (
-                                        <p className="text-sm text-muted-foreground">Nessun dato disponibile</p>
-                                      )}
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            )}
-                            
-                            {/* Bilancio Giornaliero */}
-                            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                              <div className="p-3 border rounded-lg">
-                                <p className="text-xs text-muted-foreground">Entrate</p>
-                                <p className="text-lg font-semibold text-emerald-600">
-                                  {totals.totale_entrate ? totals.totale_entrate.toLocaleString('it-IT') : '0'}
-                                </p>
-                              </div>
-                              <div className="p-3 border rounded-lg">
-                                <p className="text-xs text-muted-foreground">Uscite</p>
-                                <p className="text-lg font-semibold text-red-600">
-                                  {totals.totale_uscite ? totals.totale_uscite.toLocaleString('it-IT') : '0'}
-                                </p>
-                              </div>
-                              <div className="p-3 border rounded-lg">
-                                <p className="text-xs text-muted-foreground">Bilancio Netto</p>
-                                <p className={`text-lg font-semibold ${(totals.bilancio_netto || 0) >= 0 ? 'text-emerald-600' : 'text-red-600'}`}>
-                                  {totals.bilancio_netto ? totals.bilancio_netto.toLocaleString('it-IT') : '0'}
-                                </p>
-                              </div>
-                              <div className="p-3 border rounded-lg">
-                                <p className="text-xs text-muted-foreground">N° Operazioni</p>
-                                <p className="text-lg font-semibold">
-                                  {totals.numero_operazioni}
-                                </p>
-                              </div>
-                            </div>
-                            
-                            {/* Bilancio Finale (Giacenza + Bilancio Netto) */}
-                            {!isLoadingGiacenza && giacenza && (
-                              <div className="border-t pt-4 mt-4">
-                                <div className="p-3 border rounded-lg bg-green-50">
-                                  <p className="text-xs text-muted-foreground">Bilancio Finale (Giacenza + Bilancio Netto)</p>
-                                  <p className="text-xl font-bold text-emerald-700">
-                                    {(giacenza.totale_giacenza + (parseInt(totals.bilancio_netto) || 0)).toLocaleString('it-IT')} animali
-                                  </p>
-                                </div>
-                              </div>
-                            )}
-                          </div>
-                        ) : (
-                          <div className="text-center p-6 bg-muted rounded-lg">
-                            <p className="text-muted-foreground">Nessun dato di bilancio disponibile.</p>
-                          </div>
-                        )}
-                      </CardContent>
-                    </Card>
-                  </>
-                )}
-              </TabsContent>
-              
-              <TabsContent value="anteprima">
-                {isLoading ? (
-                  <div className="flex justify-center items-center h-40">
-                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
-                  </div>
-                ) : (
-                  <Card>
-                    <CardHeader className="p-4 pb-2">
-                      <CardTitle className="text-lg">Anteprima Messaggio WhatsApp</CardTitle>
-                      <CardDescription>
-                        Così apparirà il tuo messaggio su WhatsApp
-                      </CardDescription>
-                    </CardHeader>
-                    <CardContent className="p-4 pt-0">
-                      <ScrollArea className="h-[400px] w-full rounded border p-4 bg-blue-50">
-                        <pre className="whitespace-pre-wrap font-sans text-sm">{whatsAppText}</pre>
-                      </ScrollArea>
-                    </CardContent>
-                  </Card>
-                )}
-              </TabsContent>
-            </Tabs>
-          </CardContent>
-        </Card>
-        
-        <Card>
-          <CardHeader className="p-4 pb-2">
-            <CardTitle className="text-lg">Seleziona data</CardTitle>
-          </CardHeader>
-          <CardContent className="p-4 pt-0">
-            <div className="space-y-4">
-              <div className="flex flex-col space-y-2">
-                <span className="text-sm text-muted-foreground">Data</span>
-                <DatePicker
-                  date={selectedDate}
-                  setDate={setSelectedDate}
-                  className="w-full"
-                />
-              </div>
-              
-              <Separator />
-              
-              <div className="space-y-2">
-                <h4 className="text-sm font-medium text-muted-foreground">Azioni rapide</h4>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => setSelectedDate(new Date())}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Oggi
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="w-full justify-start"
-                  onClick={() => {
-                    const yesterday = new Date();
-                    yesterday.setDate(yesterday.getDate() - 1);
-                    setSelectedDate(yesterday);
-                  }}
-                >
-                  <Calendar className="mr-2 h-4 w-4" />
-                  Ieri
-                </Button>
+                        </div>
+                      )}
+                    </div>
+                  </CardContent>
+                </Card>
               </div>
             </div>
-          </CardContent>
-        </Card>
-      </div>
+          )}
+        </TabsContent>
+        
+        {/* Tab Operazioni - Mostra solo le operazioni */}
+        <TabsContent value="operazioni" className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <Card>
+              <CardHeader>
+                <CardTitle>Operazioni Giornaliere</CardTitle>
+                <CardDescription>
+                  Elenco dettagliato di tutte le operazioni del {format(selectedDate, 'dd/MM/yyyy', { locale: it })}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                {operations && operations.length > 0 ? (
+                  <div className="overflow-auto">
+                    <table className="w-full">
+                      <thead>
+                        <tr className="border-b">
+                          <th className="text-left py-2 px-3 font-medium">Ora</th>
+                          <th className="text-left py-2 px-3 font-medium">Tipo</th>
+                          <th className="text-left py-2 px-3 font-medium">Cestello</th>
+                          <th className="text-left py-2 px-3 font-medium">Flupsy</th>
+                          <th className="text-right py-2 px-3 font-medium">Animali</th>
+                          <th className="text-right py-2 px-3 font-medium">Animali/Kg</th>
+                          <th className="text-left py-2 px-3 font-medium">Taglia</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {operations.map((op: any, idx: number) => (
+                          <tr key={op.id || idx} className="border-b hover:bg-muted/50">
+                            <td className="py-2 px-3 text-sm">
+                              {op.created_at ? format(new Date(op.created_at), 'HH:mm') : '-'}
+                            </td>
+                            <td className="py-2 px-3">
+                              <Badge variant={getBadgeVariantForOperationType(op.type)}>
+                                {getOperationTypeLabel(op.type)}
+                              </Badge>
+                            </td>
+                            <td className="py-2 px-3 text-sm">{op.basket_number || '-'}</td>
+                            <td className="py-2 px-3 text-sm">{op.flupsy_name || '-'}</td>
+                            <td className="py-2 px-3 text-right font-medium">
+                              {op.animal_count?.toLocaleString('it-IT') || '-'}
+                            </td>
+                            <td className="py-2 px-3 text-right">
+                              {op.animals_per_kg?.toLocaleString('it-IT') || '-'}
+                            </td>
+                            <td className="py-2 px-3 text-sm">
+                              {op.size_code === 'Non specificata' ? 'In attesa' : op.size_code || '-'}
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                  </div>
+                ) : (
+                  <div className="text-center py-10 text-muted-foreground">
+                    Nessuna operazione registrata per questa data.
+                  </div>
+                )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
