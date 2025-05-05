@@ -563,8 +563,8 @@ export default function DiarioDiBordo() {
         to: emailRecipients.split(',').map(email => email.trim()),
         cc: emailCC ? emailCC.split(',').map(email => email.trim()) : undefined,
         subject: emailSubject || `Diario di Bordo FLUPSY - ${format(selectedDate, 'dd/MM/yyyy', { locale: it })}`,
-        text: telegramText,
-        html: `<pre style="font-family: monospace;">${telegramText.replace(/\n/g, '<br>').replace(/\*/g, '<strong>').replace(/\*/g, '</strong>')}</pre>`
+        text: whatsAppText,
+        html: `<pre style="font-family: monospace;">${whatsAppText.replace(/\n/g, '<br>').replace(/\*/g, '<strong>').replace(/\*/g, '</strong>')}</pre>`
       };
       
       // Invia l'email tramite l'API
@@ -758,7 +758,7 @@ export default function DiarioDiBordo() {
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
                       <ScrollArea className="h-[300px] w-full rounded border p-4 bg-blue-50">
-                        <pre className="whitespace-pre-wrap font-sans text-sm">{telegramText}</pre>
+                        <pre className="whitespace-pre-wrap font-sans text-sm">{whatsAppText}</pre>
                       </ScrollArea>
                     </CardContent>
                   </Card>
@@ -766,7 +766,7 @@ export default function DiarioDiBordo() {
                   <div className="flex justify-end space-x-2 mt-4">
                     <Button
                       variant="outline"
-                      onClick={() => copyToClipboard(telegramText)}
+                      onClick={() => copyToClipboard(whatsAppText)}
                     >
                       Copia testo
                     </Button>
@@ -932,7 +932,7 @@ export default function DiarioDiBordo() {
                   <p><strong>Oggetto:</strong> {emailSubject || `Diario di Bordo FLUPSY - ${format(selectedDate, 'dd/MM/yyyy', { locale: it })}`}</p>
                 </div>
                 <div className="whitespace-pre-wrap font-mono text-sm">
-                  {telegramText}
+                  {whatsAppText}
                 </div>
               </div>
             </TabsContent>
@@ -978,8 +978,8 @@ export default function DiarioDiBordo() {
                 <Button 
                   variant="outline" 
                   size="sm"
-                  onClick={() => copyToClipboard(telegramText)}
-                  title="Copia testo per Telegram"
+                  onClick={() => copyToClipboard(whatsAppText)}
+                  title="Copia testo per WhatsApp"
                 >
                   <Filter className="h-4 w-4 mr-2" />
                   Copia
@@ -996,11 +996,11 @@ export default function DiarioDiBordo() {
                 <Button 
                   variant="default" 
                   size="sm"
-                  onClick={() => shareOnTelegram(telegramText)}
-                  title="Condividi su Telegram"
+                  onClick={() => shareOnWhatsApp(whatsAppText)}
+                  title="Condividi su WhatsApp"
                 >
                   <Share className="h-4 w-4 mr-2" />
-                  Telegram
+                  WhatsApp
                 </Button>
                 <Button 
                   variant="outline" 
@@ -1027,7 +1027,7 @@ export default function DiarioDiBordo() {
                   Auto Email
                 </Button>
 
-                {/* Pulsanti per Telegram */}
+                {/* Pulsanti per WhatsApp */}
                 <Separator orientation="vertical" className="h-8 mx-2" />
                 
                 <Button 
