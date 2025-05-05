@@ -23,6 +23,7 @@ Lo script `convert_giacenze.js` è stato creato per convertire automaticamente i
 3. **Formato corretto dei dati**: Genera il JSON nel formato esatto richiesto dal sistema
 4. **Prevenzione valori nulli**: Garantisce che non ci siano mai valori zero nel peso medio
 5. **Gestione delle sezioni**: Assegna automaticamente un codice sezione (A-E) a ciascun identificativo
+6. **Doppio output**: Genera sia il file nel formato richiesto dal sistema che una versione aggiornata del file originale con pesi medi corretti
 
 ### Come usare lo script:
 
@@ -32,7 +33,12 @@ node convert_giacenze.js input.json output.json
 
 Dove:
 - `input.json`: file JSON originale con le giacenze
-- `output.json`: file JSON di output che verrà creato nel formato corretto
+- `output.json`: file JSON di output che verrà creato nel formato corretto per l'importazione
+
+Lo script genera automaticamente anche un file chiamato `giacenze_output_originale.json` che mantiene il formato originale ma con i pesi medi aggiornati. Questo file può essere utile per:
+- Visualizzare i dati nell'interfaccia di anteprima
+- Mantenere il formato originale durante la conversione
+- Verificare i pesi medi calcolati prima dell'importazione finale
 
 ### Prerequisiti:
 
@@ -60,7 +66,7 @@ Prima di eseguire lo script, assicurarsi che:
 }
 ```
 
-### Esempio di formato di output:
+### Esempio di formato di output per l'importazione:
 
 ```json
 {
@@ -72,8 +78,27 @@ Prima di eseguire lo script, assicurarsi che:
       "codice_sezione": "A",
       "taglia": "TP-315",
       "numero_animali": 731745,
-      "peso_medio_mg": 315.4521,
+      "peso_medio_mg": 0.0916,
       "note": "Data iniziale: 2025-04-27"
+    },
+    ...
+  ]
+}
+```
+
+### Esempio di formato di output originale aggiornato:
+
+```json
+{
+  "data_importazione": "2025-05-05",
+  "fornitore": "Flupsy Manager",
+  "giacenze": [
+    {
+      "identificativo": "RACE-L22",
+      "taglia": "TP-315",
+      "quantita": 731745,
+      "data_iniziale": "2025-04-27",
+      "mg_vongola": 0.0916
     },
     ...
   ]
@@ -91,10 +116,17 @@ Il peso medio viene determinato nell'ordine seguente:
 
 ## Note importanti:
 
-1. Il prefisso "EXT-" viene aggiunto automaticamente agli identificativi
+1. Il prefisso "EXT-" viene aggiunto automaticamente agli identificativi nel formato di importazione
 2. I codici sezione vengono assegnati ciclicamente da A a E per ogni diverso identificativo
 3. I pesi medi vengono arrotondati a 4 decimali di precisione
 4. La data iniziale viene mantenuta nel campo "note" per riferimento
+5. **Utilizzare il file `giacenze_output_originale.json` per visualizzare l'anteprima dei dati con pesi medi corretti**
+
+## Risoluzione dei problemi comuni:
+
+- **Pesi medi a zero nell'anteprima**: Usare il file `giacenze_output_originale.json` invece del file di input originale
+- **Errore di connessione al database**: Verificare che la variabile `DATABASE_URL` sia impostata correttamente
+- **Errore durante l'importazione**: Verificare che i pesi medi non siano zero e che tutti i campi obbligatori siano presenti
 
 ## Assistenza
 

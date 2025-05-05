@@ -145,7 +145,21 @@ async function convertiGiacenze(datiOriginali) {
   // Recupera i pesi medi dal database
   const pesiMediDB = await recuperaPesiMediDaOperazioni();
   
-  const risultato = {
+  // Crea un indice per mappare identificativo+taglia ai pesi medi calcolati
+  const mappaPesiMedi = {};
+  
+  // Prima creiamo un indice per consolidare elementi con stesso identificativo e taglia
+  const elementiConsolidati = {};
+  
+  // Risultato finale nel formato richiesto dal sistema
+  const risultatoFinale = {
+    data_importazione: datiOriginali.data_importazione,
+    fornitore: datiOriginali.fornitore,
+    giacenze: []
+  };
+  
+  // Risultato mantenendo il formato originale ma con pesi medi aggiornati
+  const risultatoOriginale = {
     data_importazione: datiOriginali.data_importazione,
     fornitore: datiOriginali.fornitore,
     giacenze: []
@@ -156,9 +170,7 @@ async function convertiGiacenze(datiOriginali) {
   let contatoreSezioni = 0;
   const sezioni = ['A', 'B', 'C', 'D', 'E'];
   
-  // Prima creiamo un indice per consolidare elementi con stesso identificativo e taglia
-  const elementiConsolidati = {};
-  
+  // Fase 1: Consolidare gli elementi con stesso identificativo e taglia
   datiOriginali.giacenze.forEach(g => {
     const chiave = `${g.identificativo}|${g.taglia}`;
     
@@ -181,15 +193,9 @@ async function convertiGiacenze(datiOriginali) {
     }
   });
   
-  // Array di promesse per elaborare gli elementi consolidati in parallelo
-  const promesse = Object.values(elementiConsolidati).map(async (g) => {
-    // Assegna una sezione coerente allo stesso identificativo
-    if (!mappaSezioni[g.identificativo]) {
-      mappaSezioni[g.identificativo] = sezioni[contatoreSezioni % sezioni.length];
-      contatoreSezioni++;
-    }
-    
-    // Determina il peso medio in base alle diverse fonti disponibili
+  // Fase 2: Determina i pesi medi per ogni combinazione identificativo+taglia
+  const promesseCalcoloPesi = Object.values(elementiConsolidati).map(async (g) => {
+    const chiave = `${g.identificativo}|${g.taglia}`;
     let pesoMedio;
     
     // 1. Se il valore è fornito nell'input ed è maggiore di zero, usalo
@@ -216,20 +222,51 @@ async function convertiGiacenze(datiOriginali) {
     // Arrotonda a 4 decimali per mantenere precisione
     pesoMedio = parseFloat(pesoMedio.toFixed(4));
     
-    return {
+    // Salva il peso medio nella mappa
+    mappaPesiMedi[chiave] = pesoMedio;
+    
+    // Assegna una sezione coerente allo stesso identificativo
+    if (!mappaSezioni[g.identificativo]) {
+      mappaSezioni[g.identificativo] = sezioni[contatoreSezioni % sezioni.length];
+      contatoreSezioni++;
+    }
+    
+    // Aggiungi al risultato nel formato richiesto dal sistema
+    risultatoFinale.giacenze.push({
       vasca_id: `EXT-${g.identificativo}`,
       codice_sezione: mappaSezioni[g.identificativo],
       taglia: g.taglia,
       numero_animali: g.quantita,
       peso_medio_mg: pesoMedio,
       note: g.data_iniziale ? `Data iniziale: ${g.data_iniziale}` : ""
-    };
+    });
   });
   
-  // Attendi che tutte le promesse siano risolte
-  risultato.giacenze = await Promise.all(promesse);
+  await Promise.all(promesseCalcoloPesi);
   
-  return risultato;
+  // Fase 3: Crea anche una versione che mantiene il formato originale ma con pesi medi aggiornati
+  datiOriginali.giacenze.forEach(g => {
+    const chiave = `${g.identificativo}|${g.taglia}`;
+    const pesoMedio = mappaPesiMedi[chiave] || 0.0001;
+    
+    risultatoOriginale.giacenze.push({
+      identificativo: g.identificativo,
+      taglia: g.taglia,
+      quantita: g.quantita,
+      data_iniziale: g.data_iniziale,
+      mg_vongola: pesoMedio
+    });
+  });
+  
+  // Salva il risultato che mantiene il formato originale
+  await fs.promises.writeFile(
+    'giacenze_output_originale.json', 
+    JSON.stringify(risultatoOriginale, null, 2)
+  );
+  
+  console.log("Creato anche file di output in formato originale con pesi medi aggiornati: giacenze_output_originale.json");
+  
+  return risultatoFinale;
 }
 
 // Funzione principale per eseguire la conversione

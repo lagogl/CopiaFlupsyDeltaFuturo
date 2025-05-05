@@ -82,9 +82,33 @@ export async function generateExportGiacenze(
       // Data iniziale del ciclo
       const startDate = format(new Date(cycle.startDate), 'yyyy-MM-dd');
       
-      // Calcola il peso medio della vongola in mg
-      const mgVongola = lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0 ? 
-        Math.round(1000000 / lastOperation.animalsPerKg) : 0;
+      // Calcola il peso medio della vongola in mg direttamente dall'operazione
+      let mgVongola = 0;
+      
+      // Usa average_weight se disponibile (campo corretto nella tabella operations)
+      if (lastOperation.average_weight && lastOperation.average_weight > 0) {
+        mgVongola = parseFloat(lastOperation.average_weight.toFixed(4));
+      } 
+      // Altrimenti calcola dal campo animalsPerKg ma con più precisione
+      else if (lastOperation.animalsPerKg && lastOperation.animalsPerKg > 0) {
+        mgVongola = parseFloat((1000000 / lastOperation.animalsPerKg).toFixed(4));
+      }
+      
+      // Verifica sempre che il peso non sia zero
+      if (mgVongola <= 0) {
+        // Se la taglia è nel formato TP-XXX, estrai il valore numerico
+        const tagliaParts = size.code.split('-');
+        if (tagliaParts.length === 2 && tagliaParts[0] === 'TP') {
+          const valoreTaglia = parseFloat(tagliaParts[1]);
+          if (!isNaN(valoreTaglia) && valoreTaglia > 0) {
+            mgVongola = valoreTaglia;
+          } else {
+            mgVongola = 0.0001; // Valore minimo di fallback
+          }
+        } else {
+          mgVongola = 0.0001; // Valore minimo di fallback
+        }
+      }
       
       // Genera identificativo univoco (prefisso flupsy + codice ciclo)
       const prefix = flupsy.name.replace(/[^a-zA-Z0-9]/g, '').substring(0, 4).toUpperCase();
