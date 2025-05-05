@@ -320,38 +320,38 @@ export default function DiarioDiBordo() {
     }
   };
   
-  // Carica la configurazione Telegram all'apertura del dialogo
-  const loadTelegramConfig = async () => {
-    setIsLoadingTelegramConfig(true);
+  // Carica la configurazione WhatsApp all'apertura del dialogo
+  const loadWhatsAppConfig = async () => {
+    setIsLoadingWhatsAppConfig(true);
     try {
-      const response = await fetch('/api/telegram/config');
+      const response = await fetch('/api/whatsapp/config');
       
       if (!response.ok) {
-        throw new Error('Errore nel caricamento della configurazione Telegram');
+        throw new Error('Errore nel caricamento della configurazione WhatsApp');
       }
       
       const config = await response.json();
       
       if (config && config.config) {
-        // Imposta gli ID chat
-        setTelegramChatIds(config.config.telegram_chat_ids?.split(',').join(', ') || '');
+        // Imposta il numero di telefono
+        setWhatsAppNumber(config.config.whatsapp_number || '');
         
         // Imposta lo stato di abilitazione automatica
-        const autoTelegramEnabledValue = config.config.telegram_auto_enabled === 'true' || config.config.telegram_auto_enabled === true;
-        setAutoTelegramEnabled(autoTelegramEnabledValue);
+        const autoWhatsAppEnabledValue = config.config.whatsapp_auto_enabled === 'true' || config.config.whatsapp_auto_enabled === true;
+        setAutoWhatsAppEnabled(autoWhatsAppEnabledValue);
         
         // Imposta l'orario programmato
-        setTelegramTime(config.config.telegram_send_time || '20:00');
+        setWhatsAppTime(config.config.whatsapp_send_time || '20:00');
       }
     } catch (error) {
-      console.error('Errore nel caricamento della configurazione Telegram:', error);
+      console.error('Errore nel caricamento della configurazione WhatsApp:', error);
       toast({
         title: 'Errore',
-        description: 'Impossibile caricare la configurazione Telegram',
+        description: 'Impossibile caricare la configurazione WhatsApp',
         variant: 'destructive'
       });
     } finally {
-      setIsLoadingTelegramConfig(false);
+      setIsLoadingWhatsAppConfig(false);
     }
   };
   
@@ -426,34 +426,34 @@ export default function DiarioDiBordo() {
     }
   }, [isEmailDialogOpen]);
   
-  // Carica la configurazione Telegram all'apertura del dialogo
+  // Carica la configurazione WhatsApp all'apertura del dialogo
   useEffect(() => {
-    if (isTelegramDialogOpen) {
-      loadTelegramConfig();
+    if (isWhatsAppDialogOpen) {
+      loadWhatsAppConfig();
     }
-  }, [isTelegramDialogOpen]);
+  }, [isWhatsAppDialogOpen]);
   
-  // Salva la configurazione Telegram
-  const saveTelegramConfig = async () => {
-    // Verifica che ci siano chat ID validi
-    if (!telegramChatIds.trim()) {
+  // Salva la configurazione WhatsApp
+  const saveWhatsAppConfig = async () => {
+    // Verifica che ci sia un numero di telefono valido
+    if (!whatsAppNumber.trim()) {
       toast({
-        title: 'Chat ID obbligatori',
-        description: 'Specifica almeno un ID chat Telegram',
+        title: 'Numero di telefono obbligatorio',
+        description: 'Specifica un numero di telefono WhatsApp con prefisso internazionale (es. +39...)',
         variant: 'destructive'
       });
       return;
     }
     
-    setIsSavingTelegramConfig(true);
+    setIsSavingWhatsAppConfig(true);
     try {
       const config = {
-        chat_ids: telegramChatIds.split(',').map(id => id.trim()).join(','),
-        auto_enabled: autoTelegramEnabled,
-        send_time: telegramTime
+        phone_number: whatsAppNumber.trim(),
+        auto_enabled: autoWhatsAppEnabled,
+        send_time: whatsAppTime
       };
       
-      const response = await fetch('/api/telegram/config', {
+      const response = await fetch('/api/whatsapp/config', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -462,7 +462,7 @@ export default function DiarioDiBordo() {
       });
       
       if (!response.ok) {
-        throw new Error('Errore nel salvataggio della configurazione Telegram');
+        throw new Error('Errore nel salvataggio della configurazione WhatsApp');
       }
       
       const result = await response.json();
@@ -470,41 +470,51 @@ export default function DiarioDiBordo() {
       if (result.success) {
         toast({
           title: 'Configurazione salvata',
-          description: 'Le impostazioni di invio Telegram sono state salvate con successo',
+          description: 'Le impostazioni di invio WhatsApp sono state salvate con successo',
           variant: 'default'
         });
       } else {
         throw new Error(result.error || 'Errore durante il salvataggio');
       }
     } catch (error) {
-      console.error('Errore nel salvataggio della configurazione Telegram:', error);
+      console.error('Errore nel salvataggio della configurazione WhatsApp:', error);
       toast({
         title: 'Errore',
         description: error instanceof Error ? error.message : 'Si è verificato un errore imprevisto',
         variant: 'destructive'
       });
     } finally {
-      setIsSavingTelegramConfig(false);
+      setIsSavingWhatsAppConfig(false);
     }
   };
   
-  // Funzione per inviare il messaggio Telegram manualmente
-  const sendTelegramMessage = async () => {
-    setIsSendingTelegram(true);
+  // Funzione per inviare il messaggio WhatsApp manualmente
+  const sendWhatsAppMessage = async () => {
+    if (!whatsAppNumber.trim()) {
+      toast({
+        title: 'Numero di telefono obbligatorio',
+        description: 'Specifica un numero di telefono WhatsApp con prefisso internazionale (es. +39...)',
+        variant: 'destructive'
+      });
+      return;
+    }
+    
+    setIsSendingWhatsApp(true);
     try {
-      const response = await fetch('/api/telegram/send-diario', {
+      const response = await fetch('/api/whatsapp/send-diario', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
+          phoneNumber: whatsAppNumber.trim(),
           data: diaryData,
           date: selectedDate.toISOString()
         })
       });
       
       if (!response.ok) {
-        throw new Error('Errore nell\'invio del messaggio Telegram');
+        throw new Error('Errore nell\'invio del messaggio WhatsApp');
       }
       
       const result = await response.json();
@@ -512,22 +522,22 @@ export default function DiarioDiBordo() {
       if (result.success) {
         toast({
           title: 'Messaggio inviato',
-          description: 'Il diario di bordo è stato inviato via Telegram con successo',
+          description: 'Il diario di bordo è stato inviato via WhatsApp con successo',
           variant: 'default'
         });
-        setIsTelegramDialogOpen(false);
+        setIsWhatsAppDialogOpen(false);
       } else {
         throw new Error(result.error || 'Errore durante l\'invio');
       }
     } catch (error) {
-      console.error('Errore nell\'invio del messaggio Telegram:', error);
+      console.error('Errore nell\'invio del messaggio WhatsApp:', error);
       toast({
         title: 'Errore',
         description: error instanceof Error ? error.message : 'Si è verificato un errore imprevisto',
         variant: 'destructive'
       });
     } finally {
-      setIsSendingTelegram(false);
+      setIsSendingWhatsApp(false);
     }
   };
   
@@ -606,13 +616,13 @@ export default function DiarioDiBordo() {
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold tracking-tight mb-4">Diario di Bordo</h1>
       
-      {/* Dialog per configurazione e invio Telegram */}
-      <Dialog open={isTelegramDialogOpen} onOpenChange={setIsTelegramDialogOpen}>
+      {/* Dialog per configurazione e invio WhatsApp */}
+      <Dialog open={isWhatsAppDialogOpen} onOpenChange={setIsWhatsAppDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Configura Telegram</DialogTitle>
+            <DialogTitle>Configura WhatsApp</DialogTitle>
             <DialogDescription>
-              Imposta le configurazioni per l'invio automatico dei resoconti giornalieri via Telegram.
+              Imposta le configurazioni per l'invio automatico dei resoconti giornalieri via WhatsApp.
             </DialogDescription>
           </DialogHeader>
           
@@ -627,27 +637,27 @@ export default function DiarioDiBordo() {
             <TabsContent value="config" className="space-y-4 py-4">
               <div className="space-y-4">
                 <div className="space-y-2">
-                  <Label htmlFor="telegram-chat-ids">ID Chat (obbligatorio)</Label>
+                  <Label htmlFor="whatsapp-number">Numero di telefono (obbligatorio)</Label>
                   <Input 
-                    id="telegram-chat-ids" 
-                    placeholder="12345678, -1001234567890" 
-                    value={telegramChatIds}
-                    onChange={(e) => setTelegramChatIds(e.target.value)}
+                    id="whatsapp-number" 
+                    placeholder="+391234567890" 
+                    value={whatsAppNumber}
+                    onChange={(e) => setWhatsAppNumber(e.target.value)}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Inserisci gli ID delle chat Telegram a cui inviare i messaggi. Puoi ottenere gli ID utilizzando il @DeltaFuturo_bot.
+                    Inserisci il numero di telefono WhatsApp a cui inviare i messaggi, comprensivo di prefisso internazionale.
                     <br />
-                    Se vuoi inviare i messaggi a un gruppo, aggiungilo prima al bot come amministratore.
+                    Formato corretto: +391234567890 (senza spazi o altri caratteri).
                   </p>
                 </div>
                 
                 <Button
                   type="button"
                   className="w-full"
-                  onClick={saveTelegramConfig}
-                  disabled={isSavingTelegramConfig}
+                  onClick={saveWhatsAppConfig}
+                  disabled={isSavingWhatsAppConfig}
                 >
-                  {isSavingTelegramConfig ? (
+                  {isSavingWhatsAppConfig ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Salvataggio in corso...
@@ -657,7 +667,7 @@ export default function DiarioDiBordo() {
                   )}
                 </Button>
                 
-                {isLoadingTelegramConfig && (
+                {isLoadingWhatsAppConfig && (
                   <div className="mt-2 flex justify-center">
                     <Loader2 className="h-4 w-4 animate-spin text-muted-foreground" />
                     <span className="ml-2 text-xs text-muted-foreground">Caricamento configurazione...</span>
@@ -670,56 +680,56 @@ export default function DiarioDiBordo() {
             <TabsContent value="auto" className="space-y-4 py-4">
               <div className="space-y-6">
                 <div className="bg-blue-50 p-4 rounded-lg">
-                  <h3 className="font-medium mb-2">Configurazione Invio Automatico Telegram</h3>
+                  <h3 className="font-medium mb-2">Configurazione Invio Automatico WhatsApp</h3>
                   <p className="text-sm text-muted-foreground">
-                    Imposta l'invio automatico del diario di bordo via Telegram ogni giorno all'orario specificato.
+                    Imposta l'invio automatico del diario di bordo via WhatsApp ogni giorno all'orario specificato.
                     I messaggi saranno inviati con i dati relativi al giorno corrente.
                   </p>
                 </div>
                 
                 <div className="space-y-2 border-b pb-4">
                   <div className="flex items-center justify-between">
-                    <Label htmlFor="auto-telegram-enabled" className="font-medium">Attiva invio automatico</Label>
+                    <Label htmlFor="auto-whatsapp-enabled" className="font-medium">Attiva invio automatico</Label>
                     <div className="flex items-center space-x-2">
-                      <Label htmlFor="auto-telegram-enabled" className={!autoTelegramEnabled ? 'text-muted-foreground' : ''}>
-                        {autoTelegramEnabled ? 'Attivo' : 'Disattivato'}
+                      <Label htmlFor="auto-whatsapp-enabled" className={!autoWhatsAppEnabled ? 'text-muted-foreground' : ''}>
+                        {autoWhatsAppEnabled ? 'Attivo' : 'Disattivato'}
                       </Label>
                       <input
                         type="checkbox"
-                        id="auto-telegram-enabled"
-                        checked={autoTelegramEnabled}
-                        onChange={(e) => setAutoTelegramEnabled(e.target.checked)}
+                        id="auto-whatsapp-enabled"
+                        checked={autoWhatsAppEnabled}
+                        onChange={(e) => setAutoWhatsAppEnabled(e.target.checked)}
                         className="form-checkbox h-5 w-5 text-primary rounded"
                       />
                     </div>
                   </div>
                   <p className="text-xs text-muted-foreground">
-                    Quando attivo, il sistema invierà automaticamente i messaggi di riepilogo giornaliero su Telegram.
+                    Quando attivo, il sistema invierà automaticamente i messaggi di riepilogo giornaliero su WhatsApp.
                   </p>
                 </div>
                 
                 <div className="space-y-2">
-                  <Label htmlFor="telegram-time">Orario di invio giornaliero</Label>
+                  <Label htmlFor="whatsapp-time">Orario di invio giornaliero</Label>
                   <Input 
-                    id="telegram-time" 
+                    id="whatsapp-time" 
                     type="time"
-                    value={telegramTime}
-                    onChange={(e) => setTelegramTime(e.target.value)}
+                    value={whatsAppTime}
+                    onChange={(e) => setWhatsAppTime(e.target.value)}
                     className="w-full"
-                    disabled={!autoTelegramEnabled}
+                    disabled={!autoWhatsAppEnabled}
                   />
                   <p className="text-xs text-muted-foreground">
-                    Seleziona l'orario in cui inviare automaticamente il messaggio Telegram ogni giorno.
+                    Seleziona l'orario in cui inviare automaticamente il messaggio WhatsApp ogni giorno.
                   </p>
                 </div>
                 
                 <Button
                   type="button"
                   className="w-full"
-                  onClick={saveTelegramConfig}
-                  disabled={isSavingTelegramConfig}
+                  onClick={saveWhatsAppConfig}
+                  disabled={isSavingWhatsAppConfig}
                 >
-                  {isSavingTelegramConfig ? (
+                  {isSavingWhatsAppConfig ? (
                     <>
                       <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Salvataggio in corso...
@@ -741,9 +751,9 @@ export default function DiarioDiBordo() {
                 <>
                   <Card>
                     <CardHeader className="p-4 pb-2">
-                      <CardTitle className="text-lg">Anteprima Messaggio Telegram</CardTitle>
+                      <CardTitle className="text-lg">Anteprima Messaggio WhatsApp</CardTitle>
                       <CardDescription>
-                        Così apparirà il tuo messaggio su Telegram
+                        Così apparirà il tuo messaggio su WhatsApp
                       </CardDescription>
                     </CardHeader>
                     <CardContent className="p-4 pt-0">
@@ -762,16 +772,16 @@ export default function DiarioDiBordo() {
                     </Button>
                     <Button
                       variant="default"
-                      onClick={sendTelegramMessage}
-                      disabled={isSendingTelegram || !telegramChatIds.trim()}
+                      onClick={sendWhatsAppMessage}
+                      disabled={isSendingWhatsApp || !whatsAppNumber.trim()}
                     >
-                      {isSendingTelegram ? (
+                      {isSendingWhatsApp ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                           Invio in corso...
                         </>
                       ) : (
-                        'Invia via Telegram'
+                        'Invia via WhatsApp'
                       )}
                     </Button>
                   </div>
@@ -781,7 +791,7 @@ export default function DiarioDiBordo() {
           </Tabs>
           
           <DialogFooter>
-            <Button variant="outline" onClick={() => setIsTelegramDialogOpen(false)}>
+            <Button variant="outline" onClick={() => setIsWhatsAppDialogOpen(false)}>
               Chiudi
             </Button>
           </DialogFooter>
@@ -1024,27 +1034,27 @@ export default function DiarioDiBordo() {
                   variant="outline" 
                   size="sm"
                   onClick={() => {
-                    // Apre il dialogo Telegram direttamente sulla tab di anteprima per inviare il messaggio
-                    setIsTelegramDialogOpen(true);
+                    // Apre il dialogo WhatsApp direttamente sulla tab di anteprima per inviare il messaggio
+                    setIsWhatsAppDialogOpen(true);
                   }}
-                  title="Invia via Telegram"
-                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                  title="Invia via WhatsApp"
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
                 >
                   <Share className="h-4 w-4 mr-2" />
-                  Telegram
+                  WhatsApp
                 </Button>
                 <Button 
                   variant="outline" 
                   size="sm"
                   onClick={() => {
-                    // Apre il dialogo Telegram sulla tab di configurazione
-                    setIsTelegramDialogOpen(true);
+                    // Apre il dialogo WhatsApp sulla tab di configurazione
+                    setIsWhatsAppDialogOpen(true);
                   }}
-                  title="Configura Telegram"
-                  className="bg-blue-50 hover:bg-blue-100 text-blue-700 border-blue-300"
+                  title="Configura WhatsApp"
+                  className="bg-green-50 hover:bg-green-100 text-green-700 border-green-300"
                 >
                   <Clock className="h-4 w-4 mr-2" />
-                  Auto Telegram
+                  Auto WhatsApp
                 </Button>
               </div>
             </div>
@@ -1058,7 +1068,7 @@ export default function DiarioDiBordo() {
               <TabsList className="mb-4">
                 <TabsTrigger value="diario">Diario</TabsTrigger>
                 <TabsTrigger value="statistiche">Statistiche</TabsTrigger>
-                <TabsTrigger value="anteprima">Anteprima Telegram</TabsTrigger>
+                <TabsTrigger value="anteprima">Anteprima WhatsApp</TabsTrigger>
               </TabsList>
               
               <TabsContent value="diario" className="space-y-4">
