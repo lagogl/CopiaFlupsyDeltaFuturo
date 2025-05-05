@@ -616,7 +616,7 @@ export default function DiarioDiBordo() {
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div className="flex items-center space-x-4">
           <div className="bg-primary/10 p-2 rounded-lg">
-            <Calendar className="h-6 w-6 text-primary" />
+            <CalendarIcon className="h-6 w-6 text-primary" />
           </div>
           <div>
             <h2 className="text-xl font-semibold tracking-tight">
