@@ -291,8 +291,8 @@ export default function DiarioDiBordo() {
         // Imposta i valori dai dati configurati
         setEmailRecipients(config.recipients?.join(', ') || '');
         setEmailCC(config.cc?.join(', ') || '');
-        setAutoSendEnabled(config.autoSend || false);
-        setScheduledTime(config.scheduledTime || '18:00');
+        setAutoSendEnabled(config.auto_enabled === 'true' || config.auto_enabled === true);
+        setScheduledTime(config.send_time || '18:00');
       }
     } catch (error) {
       console.error('Errore nel caricamento della configurazione email:', error);
@@ -323,8 +323,8 @@ export default function DiarioDiBordo() {
       const config = {
         recipients: emailRecipients.split(',').map(email => email.trim()),
         cc: emailCC ? emailCC.split(',').map(email => email.trim()) : [],
-        autoSend: autoSendEnabled,
-        scheduledTime: scheduledTime
+        auto_enabled: autoSendEnabled,
+        send_time: scheduledTime
       };
       
       const response = await fetch('/api/email/config', {
