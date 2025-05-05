@@ -1,0 +1,115 @@
+Ecco esattamente come viene scritto il codice per l'accesso alle API esterne che possiamo mostrare allo sviluppatore:
+
+// Configurazione API 
+const API_BASE_URL = process.env.PRODUCTION_API_URL || 'https://flupsy-system.replit.app/api/external';
+const PRODUCTION_API_KEY = process.env.PRODUCTION_API_KEY || 'flupsy-api-key-production-2025';
+// Genera headers di autenticazione
+const generateAuthHeaders = (apiKey: string) => {
+  // Rimuovi eventuali spazi iniziali o finali dalla chiave
+  const cleanApiKey = apiKey.trim();
+  
+  console.log('Utilizzo API key:', cleanApiKey);
+  
+  return {
+    'Authorization': `Bearer ${cleanApiKey}`,
+    'X-API-Key': cleanApiKey
+  };
+};
+// Esempio di chiamata GET con tutti i formati di autenticazione
+async getAvailableBaskets(req: Request, res: Response) {
+  try {
+    // Ottieni API key da header o usa quella predefinita
+    const apiKey = req.headers['x-api-key'] || PRODUCTION_API_KEY;
+    
+    // Cerca configurazione nel DB
+    const [configurazione] = await db
+      .select()
+      .from(api_configurazioni)
+      .where(eq(api_configurazioni.api_key, apiKey))
+      .limit(1);
+    
+    // Usa configurazione dal DB o quella predefinita
+    const validApiKey = configurazione?.api_key || PRODUCTION_API_KEY;
+    
+    // Crea headers di autenticazione
+    const headers = generateAuthHeaders(validApiKey);
+    
+    // Costruisci URL con parametri di query per l'autenticazione
+    const url = new URL(`${API_BASE_URL}/sales/available-baskets`);
+    url.searchParams.append('apiKey', validApiKey);
+    url.searchParams.append('api_key', validApiKey);
+    url.searchParams.append('key', validApiKey);
+    
+    // Esegui la richiesta HTTP
+    const response = await fetch(url.toString(), {
+      headers: headers
+    });
+    
+    // Gestione della risposta...
+  } catch (error) {
+    // Gestione errori...
+  }
+}
+// Esempio di chiamata POST con autenticazione completa
+async createSale(req: Request, res: Response) {
+  try {
+    // Ottieni API key da header o usa quella predefinita
+    const apiKey = req.headers['x-api-key'] || PRODUCTION_API_KEY;
+    
+    // Cerca configurazione nel DB
+    const [configurazione] = await db
+      .select()
+      .from(api_configurazioni)
+      .where(eq(api_configurazioni.api_key, apiKey))
+      .limit(1);
+    
+    // Usa configurazione dal DB o quella predefinita
+    const validApiKey = configurazione?.api_key || PRODUCTION_API_KEY;
+    
+    // Include la chiave API nel body in più formati
+    const requestBody = {
+      ...req.body,
+      apiKey: validApiKey,
+      api_key: validApiKey,
+      key: validApiKey,
+      authorization: `Bearer ${validApiKey}`
+    };
+    // Crea headers di autenticazione
+    const authHeaders = generateAuthHeaders(validApiKey);
+    
+    // Aggiungi Content-Type per JSON
+    const headers = {
+      ...authHeaders,
+      'Content-Type': 'application/json'
+    };
+    
+    // Esegui la richiesta HTTP
+    const response = await fetch(`${API_BASE_URL}/sales/create`, {
+      method: 'POST',
+      headers: headers,
+      body: JSON.stringify(requestBody)
+    });
+    
+    // Gestione della risposta...
+  } catch (error) {
+    // Gestione errori...
+  }
+}
+I punti chiave da notare per il developer delle API sono:
+
+Header di autenticazione:
+
+Authorization: Bearer flupsy-api-key-production-2025
+X-API-Key: flupsy-api-key-production-2025
+Query parameters (per richieste GET):
+
+?apiKey=flupsy-api-key-production-2025
+&api_key=flupsy-api-key-production-2025
+&key=flupsy-api-key-production-2025
+Body parameters (per richieste POST):
+
+"apiKey": "flupsy-api-key-production-2025"
+"api_key": "flupsy-api-key-production-2025"
+"key": "flupsy-api-key-production-2025"
+"authorization": "Bearer flupsy-api-key-production-2025"
+Stiamo usando questi diversi formati contemporaneamente per massimizzare la compatibilità, ma il server risponde con errore 401 "API Key non valida".

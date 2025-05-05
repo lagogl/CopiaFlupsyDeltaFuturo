@@ -30,7 +30,8 @@ import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
 
 // Importazione del router per le API esterne
-import { registerExternalApiRoutes } from "./external-api-routes";
+// API esterne disabilitate
+// import { registerExternalApiRoutes } from "./external-api-routes";
 import { execFile } from 'child_process';
 import { format, subDays } from 'date-fns';
 import { 
@@ -115,8 +116,15 @@ const getBackupUploadDir = () => {
 };
 
 export async function registerRoutes(app: Express): Promise<Server> {
-  // Registra le API esterne per l'integrazione con altre applicazioni
-  registerExternalApiRoutes(app);
+  // API esterne disabilitate - Aggiungi solo una risposta di status per evitare errori 401
+  app.all("/api/external/*", (req, res) => {
+    return res.status(503).json({
+      success: false,
+      message: "Le API esterne sono temporaneamente disabilitate per manutenzione",
+      status: "maintenance",
+      timestamp: new Date().toISOString(),
+    });
+  });
   
   // === Autenticazione routes ===
   app.post("/api/login", async (req, res) => {
