@@ -35,7 +35,7 @@ const createDummySocket = (): WebSocket => {
 };
 
 // Gestione connessione WebSocket
-let socket: WebSocket | null = null;
+let socket: WebSocket = createDummySocket(); // Inizializziamo con un socket dummy
 let reconnectTimeout: ReturnType<typeof setTimeout> | null = null;
 const RECONNECT_DELAY = 3000; // 3 secondi
 let wsConnectionFailed = false; // Flag per tenere traccia dei tentativi falliti
@@ -56,14 +56,24 @@ export function initializeWebSocket() {
     const host = window.location.host;
     
     // In ambiente di sviluppo, usa direttamente l'URL del server
-    let wsUrl;
+    let wsUrl = `${protocol}//${host}/ws`;
     
-    // Prima opzione: prova su /ws
-    wsUrl = `${protocol}//${host}/ws`;
-    console.log("Tentativo di connessione WebSocket:", wsUrl);
+    // Log più discreto in ambiente di sviluppo
+    if (process.env.NODE_ENV !== 'development' || !wsConnectionFailed) {
+      console.log("Tentativo di connessione WebSocket:", wsUrl);
+    }
+    
+    // Creiamo il socket
     socket = new WebSocket(wsUrl);
+    
+    // Se arriviamo qui, impostiamo i gestori eventi
+    configureSocketHandlers();
+    
+    return socket;
   } catch (err) {
-    console.error("Errore nella creazione WebSocket:", err);
+    if (process.env.NODE_ENV !== 'development') {
+      console.error("Errore nella creazione WebSocket:", err);
+    }
     
     try {
       // Seconda opzione: prova alla radice
@@ -71,24 +81,32 @@ export function initializeWebSocket() {
       const host = window.location.host;
       const altWsUrl = `${protocol}//${host}`;
       
-      console.log("Tentativo alternativo WebSocket:", altWsUrl);
+      if (process.env.NODE_ENV !== 'development') {
+        console.log("Tentativo alternativo WebSocket:", altWsUrl);
+      }
+      
       socket = new WebSocket(altWsUrl);
+      
+      // Se arriviamo qui, impostiamo i gestori eventi
+      configureSocketHandlers();
+      
+      return socket;
     } catch (secondError) {
-      console.error("Secondo tentativo fallito:", secondError);
+      if (process.env.NODE_ENV !== 'development') {
+        console.error("Secondo tentativo fallito:", secondError);
+      }
       
       // In caso di errore, crea un socket "finto" che non fa nulla
       // ma evita errori nel resto dell'applicazione
-      socket = {
-        readyState: 3, // CLOSED
-        close: () => {},
-        send: () => {},
-        onopen: null,
-        onmessage: null,
-        onclose: null,
-        onerror: null
-      } as any;
+      socket = createDummySocket();
+      return socket;
     }
   }
+}
+
+// Configura i gestori degli eventi per il socket
+function configureSocketHandlers() {
+  // Il socket è sempre definito grazie all'inizializzazione con il dummy socket
   
   // Gestisci gli eventi della connessione WebSocket
   socket.onopen = () => {
@@ -128,22 +146,40 @@ export function initializeWebSocket() {
   };
   
   socket.onclose = (event) => {
-    console.log('WebSocket disconnesso', event.code, event.reason);
+    // Riduci i messaggi di log in ambiente di sviluppo
+    if (process.env.NODE_ENV === 'development') {
+      // Log ridotto che mostra solo alla prima chiusura
+      if (!wsConnectionFailed) {
+        console.log('WebSocket disconnesso. Tentativi di riconnessione attivi...');
+        wsConnectionFailed = true;
+      }
+    } else {
+      // Log completo in produzione
+      console.log('WebSocket disconnesso', event.code, event.reason);
+    }
     
     // Riconnetti dopo un ritardo, a meno che non sia stata una chiusura normale
     if (event.code !== 1000) {
+      // Pulisci eventuali timeout esistenti
+      if (reconnectTimeout) {
+        clearTimeout(reconnectTimeout);
+      }
+      
       reconnectTimeout = setTimeout(() => {
-        console.log('Tentativo di riconnessione WebSocket...');
+        // Riduci i log in ambiente di sviluppo
+        if (process.env.NODE_ENV !== 'development' || !wsConnectionFailed) {
+          console.log('Tentativo di riconnessione WebSocket...');
+        }
+        
         try {
           initializeWebSocket();
         } catch (error) {
-          console.error('Errore durante la riconnessione WebSocket:', error);
-          // Ritenta dopo un intervallo più lungo in caso di errore
+          // Ritenta dopo un intervallo più lungo in caso di errore senza log aggiuntivi
           reconnectTimeout = setTimeout(() => {
             try {
               initializeWebSocket();
             } catch (e) {
-              console.error('Secondo tentativo di riconnessione fallito:', e);
+              // Nessun log aggiuntivo per non inquinare la console
             }
           }, RECONNECT_DELAY * 2);
         }
@@ -152,7 +188,15 @@ export function initializeWebSocket() {
   };
   
   socket.onerror = (error) => {
-    console.error('Errore WebSocket:', error);
+    // Log più discreto in console per gli errori di WebSocket in ambiente di sviluppo
+    if (process.env.NODE_ENV === 'development') {
+      // Versione ridotta del log per l'ambiente di sviluppo
+      console.log('WebSocket ha riscontrato un errore di connessione. Riconnessione in corso...');
+    } else {
+      // Log completo in produzione
+      console.error('Errore WebSocket:', error);
+    }
+    
     // Impedisci all'errore di propagarsi come unhandledrejection
     return true;
   };
@@ -176,18 +220,16 @@ export function useWebSocketMessage<T = any>(
   
   // Effetto per registrare il gestore e monitorare la connessione
   useEffect(() => {
-    // Assicurati che il WebSocket sia inizializzato
-    if (!socket) {
+    // Il socket è sempre definito, ma possiamo comunque assicurarci che sia inizializzato
+    // correttamente
+    if (socket.readyState === WebSocket.CLOSED) {
       initializeWebSocket();
     }
     
     // Funzione per monitorare lo stato della connessione
     const checkConnection = () => {
-      if (socket) {
-        setConnected(socket.readyState === WebSocket.OPEN);
-      } else {
-        setConnected(false);
-      }
+      // Socket è sempre definito
+      setConnected(socket.readyState === WebSocket.OPEN);
     };
     
     // Verifica lo stato iniziale
