@@ -246,9 +246,25 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   
   return (
     <div className="container mx-auto py-6 px-4 max-w-4xl">
-      <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold mb-6 text-center md:text-left`}>
+      {/* Intestazione principale dell'app */}
+      <h1 className={`${isMobile ? 'text-2xl' : 'text-3xl'} font-bold mb-2 text-center md:text-left`}>
         {isMobile ? 'FlupsyScan' : 'FlupsyScan Mobile'}
       </h1>
+
+      {/* Aggiunta delle informazioni in rosso sul ciclo e FLUPSY */}
+      {basketData && basketData.currentCycle && basketData.flupsy && (
+        <div className="bg-red-50 border border-red-200 rounded-md p-2 mb-4 shadow-sm">
+          <div className="flex flex-col md:flex-row md:items-center md:justify-between">
+            <div className="flex items-center">
+              <span className="font-bold text-red-600 mr-2">Ciclo #{basketData.currentCycle.id}</span>
+              <span className="text-red-500">({new Date(basketData.currentCycle.startDate).toLocaleDateString('it-IT')})</span>
+            </div>
+            <div className="mt-1 md:mt-0">
+              <span className="font-bold text-red-600">{basketData.flupsy.name}</span>
+            </div>
+          </div>
+        </div>
+      )}
       
       {!scannedBasketId ? (
         <Card className="mb-6">
