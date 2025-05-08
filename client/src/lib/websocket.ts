@@ -47,6 +47,7 @@ const messageHandlers: Record<string, Set<(data: any) => void>> = {};
 export function initializeWebSocket() {
   // Chiudi la connessione esistente, se presente
   if (socket && (socket.readyState === WebSocket.OPEN || socket.readyState === WebSocket.CONNECTING)) {
+    console.log("Chiusura socket WebSocket esistente");
     socket.close();
   }
   
@@ -55,13 +56,23 @@ export function initializeWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     
+    // Verifica che l'host sia definito correttamente
+    if (!host || host === 'undefined') {
+      console.error("Errore di inizializzazione WebSocket: host non definito", {
+        locationProtocol: window.location.protocol,
+        locationHost: window.location.host,
+        fullLocation: window.location.href
+      });
+      // Imposta un socket finto per evitare errori
+      socket = createDummySocket();
+      return socket;
+    }
+    
     // In ambiente di sviluppo, usa direttamente l'URL del server
     let wsUrl = `${protocol}//${host}/ws`;
     
-    // Log più discreto in ambiente di sviluppo
-    if (process.env.NODE_ENV !== 'development' || !wsConnectionFailed) {
-      console.log("Tentativo di connessione WebSocket:", wsUrl);
-    }
+    // Log sempre l'URL per diagnostica
+    console.log("Tentativo di connessione WebSocket:", wsUrl);
     
     // Creiamo il socket
     socket = new WebSocket(wsUrl);
@@ -71,19 +82,23 @@ export function initializeWebSocket() {
     
     return socket;
   } catch (err) {
-    if (process.env.NODE_ENV !== 'development') {
-      console.error("Errore nella creazione WebSocket:", err);
-    }
+    console.error("Errore nella creazione WebSocket:", err);
     
     try {
       // Seconda opzione: prova alla radice
       const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
       const host = window.location.host;
-      const altWsUrl = `${protocol}//${host}`;
       
-      if (process.env.NODE_ENV !== 'development') {
-        console.log("Tentativo alternativo WebSocket:", altWsUrl);
+      // Verifica che l'host sia definito
+      if (!host || host === 'undefined') {
+        console.error("Host non definito durante il tentativo di fallback WebSocket");
+        socket = createDummySocket();
+        return socket;
       }
+      
+      const altWsUrl = `${protocol}//${host}/ws`;
+      
+      console.log("Tentativo alternativo WebSocket:", altWsUrl);
       
       socket = new WebSocket(altWsUrl);
       
@@ -92,9 +107,7 @@ export function initializeWebSocket() {
       
       return socket;
     } catch (secondError) {
-      if (process.env.NODE_ENV !== 'development') {
-        console.error("Secondo tentativo fallito:", secondError);
-      }
+      console.error("Secondo tentativo fallito:", secondError);
       
       // In caso di errore, crea un socket "finto" che non fa nulla
       // ma evita errori nel resto dell'applicazione
