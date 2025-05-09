@@ -78,6 +78,7 @@ export default function Baskets() {
       toast({
         title: "Operazione completata",
         description: "La cesta è stata creata con successo",
+        variant: "success",
       });
     },
     onError: (error: any) => {
@@ -134,6 +135,7 @@ export default function Baskets() {
       toast({
         title: "Operazione completata",
         description: "La cesta è stata aggiornata con successo",
+        variant: "success",
       });
     },
     onError: (error: any) => {
@@ -158,6 +160,7 @@ export default function Baskets() {
       toast({
         title: "Operazione completata",
         description: "La cesta è stata eliminata con successo",
+        variant: "success",
       });
     },
     onError: (error: any) => {
