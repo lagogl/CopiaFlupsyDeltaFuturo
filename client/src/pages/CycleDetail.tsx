@@ -694,6 +694,8 @@ export default function CycleDetail() {
             {(() => {
               // Trova l'operazione di prima attivazione che contiene i dati del lotto
               const firstActivation = operations?.find(op => op.type === 'prima-attivazione');
+              
+              // Caso 1: L'operazione ha già il lotto completo
               if (firstActivation?.lot) {
                 return (
                   <div className="text-sm text-muted-foreground mt-1">
@@ -707,6 +709,37 @@ export default function CycleDetail() {
                   </div>
                 );
               }
+              
+              // Caso 2: L'operazione ha solo il lotId, ma non l'oggetto lot completo
+              if (firstActivation?.lotId) {
+                // Cerca il lotto completo tra tutte le operazioni
+                const operationWithCompleteLot = operations?.find(op => 
+                  op.lotId === firstActivation.lotId && op.lot
+                );
+                
+                if (operationWithCompleteLot?.lot) {
+                  // Abbiamo trovato il lotto completo in un'altra operazione
+                  return (
+                    <div className="text-sm text-muted-foreground mt-1">
+                      <span>Lotto: #{firstActivation.lotId}</span>
+                      {operationWithCompleteLot.lot.supplierLotNumber && (
+                        <span className="ml-1">{operationWithCompleteLot.lot.supplierLotNumber}</span>
+                      )}
+                      {operationWithCompleteLot.lot.supplier && (
+                        <span className="ml-2">(Fornitore: {operationWithCompleteLot.lot.supplier})</span>
+                      )}
+                    </div>
+                  );
+                }
+                
+                // Se ancora non abbiamo trovato il lotto, mostriamo almeno l'ID
+                return (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    <span>Lotto: #{firstActivation.lotId}</span>
+                  </div>
+                );
+              }
+              
               return null;
             })()}
           </div>
@@ -803,6 +836,7 @@ export default function CycleDetail() {
               // Trova l'operazione di prima attivazione che contiene i dati del lotto
               const firstActivation = operations?.find(op => op.type === 'prima-attivazione');
               
+              // Caso 1: L'operazione ha già il lotto completo
               if (firstActivation?.lot) {
                 const lotData = firstActivation.lot;
                 return (
@@ -831,6 +865,60 @@ export default function CycleDetail() {
                         </span>
                       </div>
                     )}
+                  </div>
+                );
+              }
+              
+              // Caso 2: L'operazione ha solo il lotId, ma non l'oggetto lot completo
+              if (firstActivation?.lotId) {
+                // Cerca il lotto completo tra tutte le operazioni
+                const operationWithCompleteLot = operations?.find(op => 
+                  op.lotId === firstActivation.lotId && op.lot
+                );
+                
+                if (operationWithCompleteLot?.lot) {
+                  // Abbiamo trovato il lotto completo in un'altra operazione
+                  const lotData = operationWithCompleteLot.lot;
+                  return (
+                    <div className="space-y-1">
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">ID:</span>
+                        <span className="font-medium">#{lotData.id}</span>
+                      </div>
+                      {lotData.supplierLotNumber && (
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium text-muted-foreground">Numero:</span>
+                          <span className="font-medium">{lotData.supplierLotNumber}</span>
+                        </div>
+                      )}
+                      {lotData.supplier && (
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium text-muted-foreground">Fornitore:</span>
+                          <span className="font-medium">{lotData.supplier}</span>
+                        </div>
+                      )}
+                      {lotData.arrivalDate && (
+                        <div className="flex justify-between">
+                          <span className="text-sm font-medium text-muted-foreground">Arrivo:</span>
+                          <span className="font-medium">
+                            {new Date(lotData.arrivalDate).toLocaleDateString('it-IT')}
+                          </span>
+                        </div>
+                      )}
+                    </div>
+                  );
+                }
+                
+                // Se ancora non abbiamo trovato il lotto, mostriamo almeno l'ID
+                return (
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">ID:</span>
+                      <span className="font-medium">#{firstActivation.lotId}</span>
+                    </div>
+                    <div className="text-center text-muted-foreground mt-2 text-sm">
+                      Dettagli lotto non completi
+                    </div>
                   </div>
                 );
               }
