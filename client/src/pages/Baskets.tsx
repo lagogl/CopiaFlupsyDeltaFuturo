@@ -359,6 +359,34 @@ export default function Baskets() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Taglia Attuale
                 </th>
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => requestSort('animalCount')}
+                >
+                  <div className="flex items-center">
+                    N° Animali
+                    {sortConfig.key === 'animalCount' ? (
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-4 w-4 ml-1" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        {sortConfig.direction === 'asc' ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        )}
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                    )}
+                  </div>
+                </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Data Attivazione
                 </th>
@@ -370,138 +398,158 @@ export default function Baskets() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                     Caricamento ceste...
                   </td>
                 </tr>
               ) : filteredBaskets.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                  <td colSpan={10} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                     Nessuna cesta trovata
                   </td>
                 </tr>
               ) : (
-                filteredBaskets.map((basket) => {
-                  let statusBadge;
-                  if (basket.state === 'active' && basket.currentCycleId) {
-                    statusBadge = <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Ciclo attivo</Badge>;
-                  } else if (basket.state === 'active' && !basket.currentCycleId) {
-                    statusBadge = <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200">Attiva, senza ciclo</Badge>;
-                  } else {
-                    statusBadge = <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">Disponibile</Badge>;
-                  }
+                <>
+                  {filteredBaskets.map((basket) => {
+                    let statusBadge;
+                    if (basket.state === 'active' && basket.currentCycleId) {
+                      statusBadge = <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Ciclo attivo</Badge>;
+                    } else if (basket.state === 'active' && !basket.currentCycleId) {
+                      statusBadge = <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200">Attiva, senza ciclo</Badge>;
+                    } else {
+                      statusBadge = <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">Disponibile</Badge>;
+                    }
 
-                  return (
-                    <tr key={basket.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                        #{basket.physicalNumber}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                        <div className="flex flex-col">
-                          <span>{basket.flupsyName || `FLUPSY #${basket.flupsyId}`}</span>
-                          {basket.row && basket.position && (
-                            <span className="text-xs text-muted-foreground">
-                              Pos: {basket.row}-{basket.position}
-                            </span>
-                          )}
-                        </div>
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
-                        {basket.cycleCode ? basket.cycleCode : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-primary">
-                        {basket.currentCycleId ? `#${basket.currentCycleId}` : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {statusBadge}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {basket.lastOperation ? (
+                    return (
+                      <tr key={basket.id}>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          #{basket.physicalNumber}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
                           <div className="flex flex-col">
-                            <span>{basket.lastOperation.type}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {new Date(basket.lastOperation.date).toLocaleDateString('it-IT')}
-                            </span>
-                          </div>
-                        ) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        {basket.size ? (
-                          <div className="flex flex-col">
-                            <Badge 
-                              className="size-badge"
-                              style={getSizeBadgeStyle(basket.size.code)}
-                            >
-                              {basket.size.code}
-                            </Badge>
-                            {basket.animalCount && (
-                              <span className="text-xs text-muted-foreground mt-1">
-                                <span className="font-bold">{basket.animalCount.toLocaleString('it-IT')}</span> animali
+                            <span>{basket.flupsyName || `FLUPSY #${basket.flupsyId}`}</span>
+                            {basket.row && basket.position && (
+                              <span className="text-xs text-muted-foreground">
+                                Pos: {basket.row}-{basket.position}
                               </span>
                             )}
                           </div>
-                        ) : (
-                          <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">-</Badge>
-                        )}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        {basket.currentCycle?.startDate ? (
-                          <div className="flex flex-col">
-                            <span>{new Date(basket.currentCycle.startDate).toLocaleDateString('it-IT')}</span>
-                            <span className="text-xs text-muted-foreground">
-                              {Math.floor((new Date().getTime() - new Date(basket.currentCycle.startDate).getTime()) / (1000 * 60 * 60 * 24))} giorni
-                            </span>
-                          </div>
-                        ) : '-'}
-                      </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
-                          <Button 
-                            variant="ghost" 
-                            size="icon"
-                            onClick={() => {
-                              setSelectedBasket(basket);
-                              setIsViewDialogOpen(true);
-                            }}
-                          >
-                            <Eye className="h-5 w-5 text-primary" />
-                          </Button>
-                          <Button
-                            variant="ghost"
-                            size="icon"
-                            onClick={() => {
-                              setSelectedBasket(basket);
-                              setIsEditDialogOpen(true);
-                            }}
-                          >
-                            <Pencil className="h-5 w-5 text-gray-600" />
-                          </Button>
-                          {basket.state === 'available' ? (
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
+                          {basket.cycleCode ? basket.cycleCode : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-primary">
+                          {basket.currentCycleId ? `#${basket.currentCycleId}` : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {statusBadge}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {basket.lastOperation ? (
+                            <div className="flex flex-col">
+                              <span>{basket.lastOperation.type}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {new Date(basket.lastOperation.date).toLocaleDateString('it-IT')}
+                              </span>
+                            </div>
+                          ) : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap">
+                          {basket.size ? (
+                            <div className="flex flex-col">
+                              <Badge 
+                                className="size-badge"
+                                style={getSizeBadgeStyle(basket.size.code)}
+                              >
+                                {basket.size.code}
+                              </Badge>
+                            </div>
+                          ) : (
+                            <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">-</Badge>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                          {basket.animalCount ? (
+                            <span className="font-semibold">{basket.animalCount.toLocaleString('it-IT')}</span>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {basket.currentCycle?.startDate ? (
+                            <div className="flex flex-col">
+                              <span>{new Date(basket.currentCycle.startDate).toLocaleDateString('it-IT')}</span>
+                              <span className="text-xs text-muted-foreground">
+                                {Math.floor((new Date().getTime() - new Date(basket.currentCycle.startDate).getTime()) / (1000 * 60 * 60 * 24))} giorni
+                              </span>
+                            </div>
+                          ) : '-'}
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                          <div className="flex space-x-2">
                             <Button 
                               variant="ghost" 
                               size="icon"
                               onClick={() => {
                                 setSelectedBasket(basket);
-                                setIsDeleteDialogOpen(true);
+                                setIsViewDialogOpen(true);
                               }}
                             >
-                              <Trash2 className="h-5 w-5 text-destructive" />
+                              <Eye className="h-5 w-5 text-primary" />
                             </Button>
-                          ) : (
-                            <div className="relative group">
-                              <Button variant="ghost" size="icon" disabled>
-                                <Trash2 className="h-5 w-5 text-muted-foreground" />
+                            <Button
+                              variant="ghost"
+                              size="icon"
+                              onClick={() => {
+                                setSelectedBasket(basket);
+                                setIsEditDialogOpen(true);
+                              }}
+                            >
+                              <Pencil className="h-5 w-5 text-gray-600" />
+                            </Button>
+                            {basket.state === 'available' ? (
+                              <Button 
+                                variant="ghost" 
+                                size="icon"
+                                onClick={() => {
+                                  setSelectedBasket(basket);
+                                  setIsDeleteDialogOpen(true);
+                                }}
+                              >
+                                <Trash2 className="h-5 w-5 text-destructive" />
                               </Button>
-                              <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
-                                Non puoi eliminare una cesta con un ciclo attivo
+                            ) : (
+                              <div className="relative group">
+                                <Button variant="ghost" size="icon" disabled>
+                                  <Trash2 className="h-5 w-5 text-muted-foreground" />
+                                </Button>
+                                <div className="absolute bottom-full mb-2 left-1/2 transform -translate-x-1/2 hidden group-hover:block bg-black text-white text-xs rounded py-1 px-2 whitespace-nowrap z-10">
+                                  Non puoi eliminare una cesta con un ciclo attivo
+                                </div>
                               </div>
-                            </div>
-                          )}
-                        </div>
+                            )}
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                  
+                  {/* Riga totale */}
+                  {filteredBaskets.length > 0 && (
+                    <tr className="bg-muted/30 font-medium border-t-2 border-gray-300">
+                      <td colSpan={6} className="px-6 py-4 text-right whitespace-nowrap text-sm font-bold text-gray-900">
+                        Totale:
                       </td>
+                      <td colSpan={1} className="px-6 py-4 whitespace-nowrap text-sm">
+                        <span className="text-xs text-muted-foreground">{filteredBaskets.length} ceste</span>
+                      </td>
+                      <td colSpan={1} className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
+                        {filteredBaskets.reduce((total, basket) => total + (basket.animalCount || 0), 0).toLocaleString('it-IT')}
+                      </td>
+                      <td colSpan={2}></td>
                     </tr>
-                  );
-                })
+                  )}
+                </>
               )}
             </tbody>
           </table>
