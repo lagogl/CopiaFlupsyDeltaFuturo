@@ -157,6 +157,7 @@ interface PendingBasketMove {
 export default function DraggableFlupsyVisualizer() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  // Inizializza con array vuoto, così il pulsante "Deseleziona tutti" sarà correttamente evidenziato
   const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>([]);
   const [showFlupsySelector, setShowFlupsySelector] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
@@ -167,6 +168,14 @@ export default function DraggableFlupsyVisualizer() {
     queryKey: ['/api/flupsys'],
     queryFn: getQueryFn({ on401: "throw" })
   });
+  
+  // Quando i dati dei FLUPSY sono caricati, seleziona automaticamente tutti i FLUPSY
+  useEffect(() => {
+    if (flupsys && Array.isArray(flupsys) && flupsys.length > 0 && selectedFlupsyIds.length === 0) {
+      // Solo se non ci sono già FLUPSY selezionati (per evitare loop)
+      setSelectedFlupsyIds(flupsys.map(f => f.id));
+    }
+  }, [flupsys, selectedFlupsyIds.length]);
 
   const { data: baskets, isLoading: isLoadingBaskets, refetch: refetchBaskets } = useQuery({
     queryKey: ['/api/baskets'],
@@ -288,14 +297,7 @@ export default function DraggableFlupsyVisualizer() {
     }
   });
 
-  // Initialize selected FLUPSYs on data load
-  useEffect(() => {
-    if (flupsys && Array.isArray(flupsys) && flupsys.length > 0 && selectedFlupsyIds.length === 0) {
-      // Seleziona tutti i flupsy disponibili invece di solo il primo
-      const allFlupsyIds = flupsys.map((flupsy: any) => flupsy.id);
-      setSelectedFlupsyIds(allFlupsyIds);
-    }
-  }, [flupsys, selectedFlupsyIds]);
+  // Rimuoviamo il secondo useEffect duplicato
 
   // Handle drop event
   const handleBasketDrop = useCallback(async (item: BasketDragItem, targetRow: string, targetPosition: number, dropFlupsyId: number) => {
