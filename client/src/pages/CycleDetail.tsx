@@ -571,6 +571,13 @@ export default function CycleDetail() {
               <ChevronRight className="h-3 w-3 mx-1" />
               <span>{cycle.cycleCode || `ID ${cycle.id}`}</span>
             </div>
+            {cycle.lotId && (
+              <div className="text-sm text-muted-foreground mt-1">
+                <span>Lotto: #{cycle.lotId}</span>
+                {cycle.lotName && <span className="ml-1">{cycle.lotName}</span>}
+                {cycle.lotSupplier && <span className="ml-2">(Fornitore: {cycle.lotSupplier})</span>}
+              </div>
+            )}
           </div>
         </div>
         
