@@ -29,6 +29,10 @@ export default function Baskets() {
   const [selectedBasket, setSelectedBasket] = useState<any>(null);
   const [location] = useLocation();
   const [urlParamsLoaded, setUrlParamsLoaded] = useState(false);
+  const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'}>({
+    key: 'physicalNumber',
+    direction: 'asc'
+  });
   
   // Carica il flupsyId dal localStorage (impostato dalla pagina Flupsys)
   useEffect(() => {
@@ -169,8 +173,42 @@ export default function Baskets() {
   const basketsArray = Array.isArray(baskets) ? baskets : [];
   const flupsysArray = Array.isArray(flupsys) ? flupsys : [];
   
+  // Funzione di ordinamento dei dati
+  const sortData = (data: any[], config = sortConfig) => {
+    if (!config.key) return data;
+    
+    return [...data].sort((a, b) => {
+      // Per campi numerici
+      if (config.key === 'physicalNumber') {
+        if (config.direction === 'asc') {
+          return a.physicalNumber - b.physicalNumber;
+        }
+        return b.physicalNumber - a.physicalNumber;
+      }
+      
+      // Per campi stringa
+      if (typeof a[config.key] === 'string' && typeof b[config.key] === 'string') {
+        if (config.direction === 'asc') {
+          return a[config.key].localeCompare(b[config.key]);
+        }
+        return b[config.key].localeCompare(a[config.key]);
+      }
+      
+      return 0;
+    });
+  };
+  
+  // Funzione per cambiare l'ordinamento
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
+
   // Filter baskets
-  const filteredBaskets = [...basketsArray].filter((basket: any) => {
+  let filteredBaskets = [...basketsArray].filter((basket: any) => {
     // Aggiungiamo il nome del FLUPSY per ogni cesta
     const flupsy = flupsysArray.find((f: any) => f.id === basket.flupsyId);
     if (flupsy) {
@@ -199,6 +237,9 @@ export default function Baskets() {
     
     return matchesSearch && matchesState && matchesFlupsy;
   });
+  
+  // Applichiamo l'ordinamento
+  filteredBaskets = sortData(filteredBaskets);
 
   return (
     <div>
