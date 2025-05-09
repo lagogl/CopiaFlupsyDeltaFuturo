@@ -615,6 +615,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const maxPositions = flupsy.maxPositions || 10; // Default a 10 se non specificato
       
       // Ottieni tutte le ceste per questo FLUPSY
+      // IMPORTANTE: dobbiamo considerare tutte le ceste esistenti nel FLUPSY, indipendentemente dal loro stato
+      // perché occupano fisicamente una posizione anche se non sono attive
       const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
       
       // Se è specificata una fila, filtra solo per quella fila
