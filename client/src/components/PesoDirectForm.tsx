@@ -192,6 +192,7 @@ export default function PesoDirectForm({
       
       // Mostra notifica
       toast({
+        variant: "success",
         title: "Operazione registrata",
         description: `Operazione di peso registrata per la cesta #${basketNumber}`,
       });
