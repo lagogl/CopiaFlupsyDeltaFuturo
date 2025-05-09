@@ -590,6 +590,84 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Errore nel calcolo del prossimo numero di cesta" });
     }
   });
+  
+  // Endpoint per ottenere la prima posizione libera in un FLUPSY
+  app.get("/api/baskets/next-position/:flupsyId", async (req, res) => {
+    try {
+      const flupsyId = parseInt(req.params.flupsyId);
+      const row = req.query.row as string; // Può essere "DX" o "SX"
+      
+      if (isNaN(flupsyId)) {
+        return res.status(400).json({ message: "ID FLUPSY non valido" });
+      }
+      
+      if (row && row !== "DX" && row !== "SX") {
+        return res.status(400).json({ message: "Fila non valida. Utilizzare 'DX' o 'SX'" });
+      }
+      
+      // Verifica se il FLUPSY esiste
+      const flupsy = await storage.getFlupsy(flupsyId);
+      if (!flupsy) {
+        return res.status(404).json({ message: "FLUPSY non trovato" });
+      }
+      
+      // Ottieni il numero massimo di posizioni per questo FLUPSY
+      const maxPositions = flupsy.maxPositions || 10; // Default a 10 se non specificato
+      
+      // Ottieni tutte le ceste per questo FLUPSY
+      const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
+      
+      // Se è specificata una fila, filtra solo per quella fila
+      const filteredBaskets = row 
+        ? flupsyBaskets.filter(basket => basket.row === row)
+        : flupsyBaskets;
+      
+      // Crea un array di posizioni occupate
+      const occupiedPositions = new Map<string, number[]>();
+      
+      // Inizializza le posizioni occupate per entrambe le file o solo quella richiesta
+      if (row) {
+        occupiedPositions.set(row, []);
+      } else {
+        occupiedPositions.set("DX", []);
+        occupiedPositions.set("SX", []);
+      }
+      
+      // Popola le posizioni occupate
+      filteredBaskets.forEach(basket => {
+        if (basket.row && basket.position) {
+          const positions = occupiedPositions.get(basket.row) || [];
+          positions.push(basket.position);
+          occupiedPositions.set(basket.row, positions);
+        }
+      });
+      
+      // Trova la prima posizione disponibile per ogni fila
+      const availablePositions: { [key: string]: number } = {};
+      
+      for (const [currentRow, positions] of occupiedPositions.entries()) {
+        let nextPosition = 1;
+        while (positions.includes(nextPosition) && nextPosition <= maxPositions) {
+          nextPosition++;
+        }
+        
+        // Se abbiamo superato il massimo, non ci sono posizioni disponibili
+        if (nextPosition > maxPositions) {
+          availablePositions[currentRow] = -1; // -1 indica che non ci sono posizioni disponibili
+        } else {
+          availablePositions[currentRow] = nextPosition;
+        }
+      }
+      
+      res.json({ 
+        maxPositions, 
+        availablePositions
+      });
+    } catch (error) {
+      console.error("Error getting next available position:", error);
+      res.status(500).json({ message: "Errore nel calcolo della prossima posizione disponibile" });
+    }
+  });
 
   // Ottieni ceste disponibili per la selezione (IMPORTANTE: questa rotta deve venire prima di /api/baskets/:id)
   app.get("/api/baskets/available", getAvailableBaskets);

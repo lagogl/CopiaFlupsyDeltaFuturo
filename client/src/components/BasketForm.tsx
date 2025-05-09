@@ -22,6 +22,7 @@ import {
   SelectValue,
 } from "@/components/ui/select";
 import { toast } from "@/hooks/use-toast";
+import { Info } from "lucide-react";
 import BasketExistsCheck from "./BasketExistsCheck";
 import BasketPositionCheck from "./BasketPositionCheck";
 
@@ -52,6 +53,13 @@ interface BasketFormProps {
   basketId?: number | null;
 }
 
+interface NextPositionData {
+  maxPositions: number;
+  availablePositions: {
+    [key: string]: number;
+  }
+}
+
 export default function BasketForm({ 
   onSubmit, 
   defaultValues = { },
@@ -66,8 +74,12 @@ export default function BasketForm({
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(
     defaultValues.flupsyId || null
   );
+  const [selectedRow, setSelectedRow] = useState<string | null>(
+    defaultValues.row || null
+  );
   const [isBasketNumberValid, setIsBasketNumberValid] = useState(true);
   const [isPositionValid, setIsPositionValid] = useState(true);
+  const [maxPositions, setMaxPositions] = useState<number>(10); // Default a 10
 
   // Fetch FLUPSY units
   const { data: flupsys = [], isLoading: isFlupsysLoading } = useQuery<any[]>({
@@ -87,6 +99,26 @@ export default function BasketForm({
     },
     enabled: !!selectedFlupsyId && !basketId, // Only run this query if a FLUPSY is selected and we're not editing
   });
+  
+  // Fetch next available positions for selected FLUPSY
+  const { data: nextPositionData, isLoading: isNextPositionLoading } = useQuery<NextPositionData>({
+    queryKey: ['/api/baskets/next-position', selectedFlupsyId, selectedRow],
+    queryFn: async () => {
+      if (!selectedFlupsyId) return { maxPositions: 10, availablePositions: {} };
+      
+      let url = `/api/baskets/next-position/${selectedFlupsyId}`;
+      if (selectedRow) {
+        url += `?row=${selectedRow}`;
+      }
+      
+      const response = await fetch(url);
+      if (!response.ok) {
+        throw new Error('Errore nel recupero delle posizioni disponibili');
+      }
+      return await response.json();
+    },
+    enabled: !!selectedFlupsyId, // Execute when a FLUPSY is selected
+  });
 
   // Set flupsyId default value from the first available FLUPSY
   useEffect(() => {
@@ -103,6 +135,41 @@ export default function BasketForm({
       form.setValue('physicalNumber', nextBasketNumber.nextNumber);
     }
   }, [nextBasketNumber, form, basketId]);
+  
+  // Update maxPositions when next position data is fetched
+  useEffect(() => {
+    if (nextPositionData && nextPositionData.maxPositions) {
+      setMaxPositions(nextPositionData.maxPositions);
+      
+      // Aggiorna lo schema di validazione con il valore massimo di posizione
+      basketFormSchema.shape.position = z.coerce.number()
+        .int()
+        .positive("La posizione deve essere un numero positivo")
+        .min(1, "La posizione deve essere almeno 1")
+        .max(nextPositionData.maxPositions, `La posizione non può superare ${nextPositionData.maxPositions} (limite massimo di questo FLUPSY)`);
+      
+      // Se la posizione corrente è superiore al massimo, azzera il valore
+      const currentPosition = form.getValues('position');
+      if (currentPosition && currentPosition > nextPositionData.maxPositions) {
+        form.setValue('position', undefined);
+      }
+    }
+  }, [nextPositionData, form]);
+  
+  // Suggerisci automaticamente la posizione disponibile quando si seleziona una fila
+  useEffect(() => {
+    // Skip if we're editing an existing basket
+    if (basketId) return;
+    
+    if (selectedRow && nextPositionData && nextPositionData.availablePositions) {
+      const nextPos = nextPositionData.availablePositions[selectedRow];
+      
+      // Se c'è una posizione disponibile (non -1), impostala automaticamente
+      if (nextPos !== undefined && nextPos !== -1) {
+        form.setValue('position', nextPos);
+      }
+    }
+  }, [selectedRow, nextPositionData, form, basketId]);
 
   // Define custom submit handler to prevent submission if there are validation errors
   const handleSubmit = (e: React.FormEvent) => {
@@ -115,15 +182,43 @@ export default function BasketForm({
       });
       return;
     }
+    
+    // Verifica che la posizione non superi il limite massimo
+    const position = form.getValues('position');
+    if (position > maxPositions) {
+      e.preventDefault();
+      toast({
+        title: "Posizione non valida",
+        description: `La posizione non può superare ${maxPositions} (limite massimo di questo FLUPSY)`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
     form.handleSubmit(onSubmit)(e);
   };
 
   // Check if form is valid to enable/disable submit button
   const isFormValid = isBasketNumberValid && isPositionValid;
+  
+  // Ottieni il valore FLUPSY selezionato come oggetto completo
+  const selectedFlupsy = selectedFlupsyId ? flupsys.find((f: any) => f.id === selectedFlupsyId) : null;
 
   return (
     <Form {...form}>
       <form onSubmit={handleSubmit} className="space-y-6">
+      
+        {/* Informazioni sul limite massimo di posizioni */}
+        {selectedFlupsy && (
+          <div className="bg-blue-50 p-3 rounded-md flex items-start gap-3">
+            <Info className="h-5 w-5 text-blue-500 mt-0.5" />
+            <div className="text-sm text-blue-700">
+              <p className="font-medium">Informazioni sul FLUPSY selezionato</p>
+              <p>Nome: <span className="font-medium">{selectedFlupsy.name}</span></p>
+              <p>Posizioni massime per fila: <span className="font-medium">{selectedFlupsy.maxPositions || 10}</span></p>
+            </div>
+          </div>
+        )}
       
         <BasketExistsCheck 
           flupsyId={form.watch('flupsyId')} 
@@ -131,7 +226,7 @@ export default function BasketForm({
           onValidationChange={setIsBasketNumberValid}
         />
         
-        {/* Aggiungiamo la validazione della posizione se sono compilati tutti i campi necessari */}
+        {/* Validazione della posizione se sono compilati tutti i campi necessari */}
         <BasketPositionCheck
           flupsyId={form.watch('flupsyId')}
           row={form.watch('row')}
@@ -155,6 +250,11 @@ export default function BasketForm({
                 />
               </FormControl>
               <FormMessage />
+              {isNextNumberLoading && (
+                <FormDescription>
+                  Ricerca numero disponibile...
+                </FormDescription>
+              )}
             </FormItem>
           )}
         />
@@ -171,6 +271,13 @@ export default function BasketForm({
                   const numValue = Number(value);
                   field.onChange(numValue);
                   setSelectedFlupsyId(numValue);
+                  
+                  // Reset position and row when changing FLUPSY
+                  if (!basketId) {
+                    form.setValue('position', undefined);
+                    form.setValue('row', '');
+                    setSelectedRow(null);
+                  }
                 }}
                 defaultValue={field.value?.toString() || ""}
               >
@@ -183,7 +290,7 @@ export default function BasketForm({
                   {flupsys && flupsys.length > 0 ? (
                     flupsys.map((flupsy: any) => (
                       <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
-                        {flupsy.name}
+                        {flupsy.name} {flupsy.maxPositions ? `(max ${flupsy.maxPositions} pos.)` : ''}
                       </SelectItem>
                     ))
                   ) : (
@@ -209,7 +316,10 @@ export default function BasketForm({
               <FormItem>
                 <FormLabel>Fila</FormLabel>
                 <Select 
-                  onValueChange={field.onChange}
+                  onValueChange={(value) => {
+                    field.onChange(value);
+                    setSelectedRow(value);
+                  }}
                   defaultValue={field.value || ""}
                 >
                   <FormControl>
@@ -226,6 +336,15 @@ export default function BasketForm({
                   La destra è riferita alla vista verso l'elica
                 </FormDescription>
                 <FormMessage />
+                {selectedRow && nextPositionData && !basketId && (
+                  <div className="mt-1 text-xs text-muted-foreground">
+                    {nextPositionData.availablePositions[selectedRow] === -1 ? (
+                      <span className="text-amber-600">Nessuna posizione disponibile nella fila {selectedRow}</span>
+                    ) : (
+                      <span>Prima posizione disponibile: {nextPositionData.availablePositions[selectedRow]}</span>
+                    )}
+                  </div>
+                )}
               </FormItem>
             )}
           />
@@ -246,7 +365,11 @@ export default function BasketForm({
                   />
                 </FormControl>
                 <FormDescription>
-                  Numero progressivo della posizione nella fila
+                  {isNextPositionLoading ? (
+                    "Ricerca posizione disponibile..."
+                  ) : (
+                    `Numero progressivo della posizione (max ${maxPositions})`
+                  )}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
