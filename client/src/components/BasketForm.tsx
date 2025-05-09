@@ -128,12 +128,17 @@ export default function BasketForm({
       const available = { DX: 0, SX: 0 };
       const posPerRow = Math.floor((nextPositionData.maxPositions || 20) / 2);
       
-      // Conta quante posizioni sono disponibili per ogni fila
+      // Calcola il numero di posizioni libere per ogni fila
       if (nextPositionData.availablePositions['DX'] !== undefined) {
         // Se -1, la fila è completamente piena
-        available.DX = nextPositionData.availablePositions['DX'] === -1 
-          ? 0  // Nessuna posizione disponibile
-          : posPerRow - nextPositionData.availablePositions['DX'] + 1;
+        if (nextPositionData.availablePositions['DX'] === -1) {
+          available.DX = 0;  // Nessuna posizione disponibile
+        } else {
+          // Il valore restituito dall'API è la PRIMA posizione disponibile
+          // Quindi le posizioni libere sono il totale (posPerRow) meno quelle già occupate (availablePositions['DX'] - 1)
+          const occupiedPositions = nextPositionData.availablePositions['DX'] - 1;
+          available.DX = posPerRow - occupiedPositions;
+        }
       } else {
         // Se non ci sono informazioni, assumiamo che tutte le posizioni siano disponibili
         available.DX = posPerRow;
@@ -141,9 +146,14 @@ export default function BasketForm({
       
       if (nextPositionData.availablePositions['SX'] !== undefined) {
         // Se -1, la fila è completamente piena
-        available.SX = nextPositionData.availablePositions['SX'] === -1 
-          ? 0  // Nessuna posizione disponibile
-          : posPerRow - nextPositionData.availablePositions['SX'] + 1;
+        if (nextPositionData.availablePositions['SX'] === -1) {
+          available.SX = 0;  // Nessuna posizione disponibile
+        } else {
+          // Il valore restituito dall'API è la PRIMA posizione disponibile
+          // Quindi le posizioni libere sono il totale (posPerRow) meno quelle già occupate (availablePositions['SX'] - 1)
+          const occupiedPositions = nextPositionData.availablePositions['SX'] - 1;
+          available.SX = posPerRow - occupiedPositions;
+        }
       } else {
         // Se non ci sono informazioni, assumiamo che tutte le posizioni siano disponibili
         available.SX = posPerRow;
