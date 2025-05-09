@@ -383,6 +383,72 @@ export default function Operations() {
     };
   };
   
+  // Funzione per gestire il click sull'intestazione di una colonna
+  const handleSortClick = (key: string) => {
+    setSortConfig({
+      key,
+      direction: sortConfig.key === key && sortConfig.direction === 'ascending' 
+        ? 'descending' 
+        : 'ascending'
+    });
+  };
+  
+  // Funzione di ordinamento generica in base alla configurazione di ordinamento
+  const sortData = (data: any[]) => {
+    if (!sortConfig) return data;
+    
+    return [...data].sort((a, b) => {
+      // Gestione speciale per il campo "data" che richiede conversione in oggetto Date
+      if (sortConfig.key === 'date') {
+        const aTime = new Date(a.date).getTime();
+        const bTime = new Date(b.date).getTime();
+        return sortConfig.direction === 'ascending' ? aTime - bTime : bTime - aTime;
+      }
+      
+      // Gestione per i campi numerici
+      if (sortConfig.key === 'animalCount' || sortConfig.key === 'totalWeight' || sortConfig.key === 'averageWeight') {
+        const aValue = parseFloat(a[sortConfig.key]) || 0;
+        const bValue = parseFloat(b[sortConfig.key]) || 0;
+        return sortConfig.direction === 'ascending' ? aValue - bValue : bValue - aValue;
+      }
+      
+      // Gestione per il ciclo
+      if (sortConfig.key === 'cycleId') {
+        const aId = a.cycleId || 0;
+        const bId = b.cycleId || 0;
+        return sortConfig.direction === 'ascending' ? aId - bId : bId - aId;
+      }
+      
+      // Gestione per i campi di testo
+      if (sortConfig.key === 'type') {
+        const aType = a.type || '';
+        const bType = b.type || '';
+        return sortConfig.direction === 'ascending' 
+          ? aType.localeCompare(bType) 
+          : bType.localeCompare(aType);
+      }
+      
+      // Gestione per i campi complessi (cestello)
+      if (sortConfig.key === 'basket') {
+        const aBasketNumber = a.basket?.physicalNumber || 0;
+        const bBasketNumber = b.basket?.physicalNumber || 0;
+        return sortConfig.direction === 'ascending' ? aBasketNumber - bBasketNumber : bBasketNumber - aBasketNumber;
+      }
+      
+      // Gestione per i campi complessi (lotto)
+      if (sortConfig.key === 'lot') {
+        const aLotName = a.lot?.name || '';
+        const bLotName = b.lot?.name || '';
+        return sortConfig.direction === 'ascending' 
+          ? aLotName.localeCompare(bLotName)
+          : bLotName.localeCompare(aLotName);
+      }
+      
+      // Fallback per altri campi
+      return 0;
+    });
+  };
+  
   // Filter operations
   const filteredOperations = useMemo(() => {
     if (!operations || !cycles || !lots) return [];
@@ -419,16 +485,8 @@ export default function Operations() {
       return matchesSearch && matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesCycleState;
     });
     
-    // Ora ordiniamo le operazioni per ciclo e all'interno di ciascun ciclo per data in ordine ascendente
-    const sorted = [...filtered].sort((a, b) => {
-      // Prima ordina per ciclo
-      if (a.cycleId !== b.cycleId) {
-        return a.cycleId - b.cycleId;
-      }
-      
-      // Se sono dello stesso ciclo, ordina per data (ascendente)
-      return new Date(a.date).getTime() - new Date(b.date).getTime();
-    });
+    // Ordinamento in base alla configurazione di sorting
+    const sorted = sortData([...filtered]);
     
     // Ora che le operazioni sono ordinate, arricchisciamo le operazioni che non hanno un lotto
     // usando le stesse logiche di operationsByCycle per propagare i lotti all'interno dello stesso ciclo
@@ -476,7 +534,7 @@ export default function Operations() {
     // Appiattisci di nuovo l'array delle operazioni
     return Object.values(opsByCycle).flat();
     
-  }, [operations, cycles, lots, searchTerm, typeFilter, dateFilter, flupsyFilter, cycleFilter, cycleStateFilter]);
+  }, [operations, cycles, lots, searchTerm, typeFilter, dateFilter, flupsyFilter, cycleFilter, cycleStateFilter, sortConfig]);
   
   // Get filtered cycles based on selected filters
   const filteredCycleIds = useMemo(() => {
@@ -789,32 +847,120 @@ export default function Operations() {
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Data
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSortClick('date')}
+                    >
+                      <div className="flex items-center">
+                        Data
+                        {sortConfig.key === 'date' && (
+                          <span className="ml-2">
+                            {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                          </span>
+                        )}
+                      </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Tipologia
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSortClick('type')}
+                    >
+                      <div className="flex items-center">
+                        Tipologia
+                        {sortConfig.key === 'type' && (
+                          <span className="ml-2">
+                            {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                          </span>
+                        )}
+                      </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Cesta
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSortClick('basket')}
+                    >
+                      <div className="flex items-center">
+                        Cesta
+                        {sortConfig.key === 'basket' && (
+                          <span className="ml-2">
+                            {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                          </span>
+                        )}
+                      </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Ciclo
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSortClick('cycleId')}
+                    >
+                      <div className="flex items-center">
+                        Ciclo
+                        {sortConfig.key === 'cycleId' && (
+                          <span className="ml-2">
+                            {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                          </span>
+                        )}
+                      </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Lotto
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSortClick('lot')}
+                    >
+                      <div className="flex items-center">
+                        Lotto
+                        {sortConfig.key === 'lot' && (
+                          <span className="ml-2">
+                            {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                          </span>
+                        )}
+                      </div>
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Taglia
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      # Animali
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSortClick('animalCount')}
+                    >
+                      <div className="flex items-center">
+                        # Animali
+                        {sortConfig.key === 'animalCount' && (
+                          <span className="ml-2">
+                            {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                          </span>
+                        )}
+                      </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Peso (g)
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSortClick('totalWeight')}
+                    >
+                      <div className="flex items-center">
+                        Peso (g)
+                        {sortConfig.key === 'totalWeight' && (
+                          <span className="ml-2">
+                            {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                          </span>
+                        )}
+                      </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                      Peso Medio (mg)
+                    <th 
+                      scope="col" 
+                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSortClick('averageWeight')}
+                    >
+                      <div className="flex items-center">
+                        Peso Medio (mg)
+                        {sortConfig.key === 'averageWeight' && (
+                          <span className="ml-2">
+                            {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                          </span>
+                        )}
+                      </div>
                     </th>
                     <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Azioni
