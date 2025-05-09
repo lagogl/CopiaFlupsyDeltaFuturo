@@ -67,6 +67,7 @@ type FormValues = z.infer<typeof formSchema>;
 
 interface OperationFormProps {
   onSubmit: (values: FormValues) => void;
+  onCancel?: () => void; // Callback per chiudere il dialogo quando si preme "Annulla"
   defaultValues?: Partial<FormValues>;
   isLoading?: boolean;
   editMode?: boolean;
@@ -74,6 +75,7 @@ interface OperationFormProps {
 
 export default function OperationForm({ 
   onSubmit, 
+  onCancel,
   defaultValues = {
     date: new Date(),
     type: 'misura',
@@ -1198,8 +1200,10 @@ export default function OperationForm({
               const confirmReset = window.confirm("Sei sicuro di voler annullare? Tutte le modifiche andranno perse.");
               if (confirmReset) {
                 form.reset();
-                // È possibile anche aggiungere una funzione di callback qui per chiudere il dialogo
-                // se passata come prop
+                // Chiudi il dialogo se è stata fornita la callback onCancel
+                if (onCancel) {
+                  onCancel();
+                }
               }
             }}
           >
