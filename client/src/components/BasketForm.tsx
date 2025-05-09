@@ -126,20 +126,27 @@ export default function BasketForm({
   useEffect(() => {
     if (nextPositionData && nextPositionData.availablePositions) {
       const available = { DX: 0, SX: 0 };
+      const posPerRow = Math.floor((nextPositionData.maxPositions || 20) / 2);
       
       // Conta quante posizioni sono disponibili per ogni fila
       if (nextPositionData.availablePositions['DX'] !== undefined) {
-        // Se -1, non ci sono posizioni disponibili
+        // Se -1, la fila è completamente piena
         available.DX = nextPositionData.availablePositions['DX'] === -1 
-          ? 0 
-          : nextPositionData.maxPositions - (nextPositionData.availablePositions['DX'] - 1);
+          ? 0  // Nessuna posizione disponibile
+          : posPerRow - (nextPositionData.availablePositions['DX'] - 1);
+      } else {
+        // Se non ci sono informazioni, assumiamo che tutte le posizioni siano disponibili
+        available.DX = posPerRow;
       }
       
       if (nextPositionData.availablePositions['SX'] !== undefined) {
-        // Se -1, non ci sono posizioni disponibili
+        // Se -1, la fila è completamente piena
         available.SX = nextPositionData.availablePositions['SX'] === -1 
-          ? 0 
-          : nextPositionData.maxPositions - (nextPositionData.availablePositions['SX'] - 1);
+          ? 0  // Nessuna posizione disponibile
+          : posPerRow - (nextPositionData.availablePositions['SX'] - 1);
+      } else {
+        // Se non ci sono informazioni, assumiamo che tutte le posizioni siano disponibili
+        available.SX = posPerRow;
       }
       
       setAvailablePositionsCount(available);
