@@ -814,43 +814,68 @@ export default function DraggableFlupsyVisualizer() {
   const renderFlupsyMenu = () => {
     if (!flupsys || !Array.isArray(flupsys)) return null;
     
+    // Controlla se tutti i FLUPSY sono selezionati
+    const allSelected = flupsys.length > 0 && selectedFlupsyIds.length === flupsys.length;
+    // Controlla se nessun FLUPSY è selezionato
+    const noneSelected = selectedFlupsyIds.length === 0;
+    
+    // Funzione per selezionare tutti i FLUPSY
+    const selectAll = () => {
+      if (flupsys && flupsys.length > 0) {
+        setSelectedFlupsyIds(flupsys.map(f => f.id));
+      }
+    };
+    
+    // Funzione per deselezionare tutti i FLUPSY
+    const deselectAll = () => {
+      setSelectedFlupsyIds([]);
+    };
+    
     return (
       <Card className="mb-4">
-        <CardContent className="p-3">
-          <div className="flex flex-wrap gap-2">
-            <Badge variant="outline" className="cursor-pointer" onClick={() => setShowFlupsySelector(!showFlupsySelector)}>
-              <Filter className="h-3 w-3 mr-1" />
-              {showFlupsySelector ? "Nascondi filtri" : "Visualizza filtri"}
-            </Badge>
-            
-            {showFlupsySelector && (
-              <>
-                <Separator orientation="vertical" className="h-6" />
-                
+        <CardContent className="py-3 px-4">
+          <div className="flex items-center mb-2">
+            <Filter className="h-4 w-4 mr-2 text-primary" />
+            <h3 className="text-sm font-medium">Filtro FLUPSY</h3>
+            <Button 
+              size="sm" 
+              variant="link" 
+              className="ml-auto text-xs px-2 py-0 h-6"
+              onClick={() => setShowFlupsySelector(!showFlupsySelector)}
+            >
+              {showFlupsySelector ? "Nascondi" : "Mostra"}
+            </Button>
+          </div>
+          
+          {showFlupsySelector && (
+            <>
+              <div className="flex space-x-2 mb-3">
                 <Button 
                   size="sm" 
-                  variant="ghost" 
-                  className={`text-xs px-2 py-0 h-6 ${selectedFlupsyIds.length === flupsys.length ? 'bg-primary/10' : ''}`}
-                  onClick={() => setSelectedFlupsyIds(flupsys.map(f => f.id))}
+                  variant={allSelected ? "default" : "outline"}
+                  className="text-xs h-7 flex-1"
+                  onClick={selectAll}
                 >
                   Seleziona tutti
                 </Button>
                 
                 <Button 
                   size="sm" 
-                  variant="ghost" 
-                  className={`text-xs px-2 py-0 h-6 ${selectedFlupsyIds.length === 0 ? 'bg-primary/10' : ''}`}
-                  onClick={() => setSelectedFlupsyIds([])}
+                  variant={noneSelected ? "default" : "outline"}
+                  className="text-xs h-7 flex-1"
+                  onClick={deselectAll}
                 >
                   Deseleziona tutti
                 </Button>
-                
+              </div>
+              
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-2">
                 {flupsys.map(flupsy => (
                   <Button
                     key={flupsy.id}
                     size="sm"
-                    variant="ghost"
-                    className={`text-xs px-2 py-0 h-6 ${selectedFlupsyIds.includes(flupsy.id) ? 'bg-primary/10' : ''}`}
+                    variant={selectedFlupsyIds.includes(flupsy.id) ? "default" : "outline"}
+                    className="text-xs h-7 justify-start overflow-hidden"
                     onClick={() => {
                       if (selectedFlupsyIds.includes(flupsy.id)) {
                         setSelectedFlupsyIds(selectedFlupsyIds.filter(id => id !== flupsy.id));
@@ -862,9 +887,9 @@ export default function DraggableFlupsyVisualizer() {
                     {flupsy.name}
                   </Button>
                 ))}
-              </>
-            )}
-          </div>
+              </div>
+            </>
+          )}
         </CardContent>
       </Card>
     );

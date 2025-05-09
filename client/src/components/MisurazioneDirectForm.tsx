@@ -272,6 +272,7 @@ export default function MisurazioneDirectForm({
       
       if (response.ok) {
         toast({
+          variant: "success",
           title: "Operazione salvata",
           description: "La misurazione è stata registrata con successo"
         });
