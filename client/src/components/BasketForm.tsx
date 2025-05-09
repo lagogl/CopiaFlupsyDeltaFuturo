@@ -208,8 +208,8 @@ export default function BasketForm({
     <Form {...form}>
       <form onSubmit={handleSubmit} className="space-y-6">
       
-        {/* Informazioni sul limite massimo di posizioni */}
-        {selectedFlupsy && (
+        {/* Informazioni sul limite massimo di posizioni - Mostra solo quando c'è un FLUPSY selezionato */}
+        {selectedFlupsyId && selectedFlupsy && (
           <div className="bg-blue-50 p-3 rounded-md flex items-start gap-3">
             <Info className="h-5 w-5 text-blue-500 mt-0.5" />
             <div className="text-sm text-blue-700">
