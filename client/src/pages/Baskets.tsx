@@ -439,16 +439,37 @@ export default function Baskets() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {basket.lotId ? (
+                          {basket.currentCycle?.lotId ? (
                             <div className="flex flex-col">
-                              <span>Lotto #{basket.lotId}</span>
-                              {basket.lotSupplier && (
+                              <span className="font-medium text-indigo-600">Lotto #{basket.currentCycle.lotId}</span>
+                              {basket.currentCycle.lotName && (
                                 <span className="text-xs text-muted-foreground">
-                                  {basket.lotSupplier}
+                                  {basket.currentCycle.lotName}
+                                </span>
+                              )}
+                              {basket.currentCycle.lotSupplier && (
+                                <span className="text-xs text-muted-foreground">
+                                  {basket.currentCycle.lotSupplier}
                                 </span>
                               )}
                             </div>
-                          ) : '-'}
+                          ) : (
+                            basket.lotId ? (
+                              <div className="flex flex-col">
+                                <span className="font-medium text-indigo-600">Lotto #{basket.lotId}</span>
+                                {basket.lotName && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {basket.lotName}
+                                  </span>
+                                )}
+                                {basket.lotSupplier && (
+                                  <span className="text-xs text-muted-foreground">
+                                    {basket.lotSupplier}
+                                  </span>
+                                )}
+                              </div>
+                            ) : '-'
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
                           {basket.cycleCode ? basket.cycleCode : '-'}
@@ -690,6 +711,25 @@ export default function Baskets() {
                       </div>
                     )}
                     
+                    {(selectedBasket.currentCycle?.lotId || selectedBasket.lotId) && (
+                      <div className="col-span-2">
+                        <p className="text-sm font-medium text-muted-foreground">Lotto</p>
+                        <p className="font-medium text-primary">
+                          #{selectedBasket.currentCycle?.lotId || selectedBasket.lotId}
+                          {(selectedBasket.currentCycle?.lotName || selectedBasket.lotName) && (
+                            <span className="ml-2 text-sm text-muted-foreground">
+                              {selectedBasket.currentCycle?.lotName || selectedBasket.lotName}
+                            </span>
+                          )}
+                        </p>
+                        {(selectedBasket.currentCycle?.lotSupplier || selectedBasket.lotSupplier) && (
+                          <p className="text-sm text-muted-foreground">
+                            Fornitore: {selectedBasket.currentCycle?.lotSupplier || selectedBasket.lotSupplier}
+                          </p>
+                        )}
+                      </div>
+                    )}
+                    
                     {selectedBasket.nfcData && (
                       <div className="col-span-2 border-t pt-3 mt-2">
                         <p className="text-sm font-medium text-muted-foreground">Dati NFC</p>
@@ -761,6 +801,20 @@ export default function Baskets() {
                     <div className="col-span-2">
                       <p className="text-sm font-medium text-muted-foreground">Codice Ciclo</p>
                       <p className="font-medium">{selectedBasket.cycleCode}</p>
+                    </div>
+                  )}
+                  
+                  {(selectedBasket.currentCycle?.lotId || selectedBasket.lotId) && (
+                    <div className="col-span-2">
+                      <p className="text-sm font-medium text-muted-foreground">Lotto</p>
+                      <p className="font-medium">
+                        #{selectedBasket.currentCycle?.lotId || selectedBasket.lotId}
+                        {(selectedBasket.currentCycle?.lotSupplier || selectedBasket.lotSupplier) && (
+                          <span className="ml-2 text-sm text-gray-500">
+                            {selectedBasket.currentCycle?.lotSupplier || selectedBasket.lotSupplier}
+                          </span>
+                        )}
+                      </p>
                     </div>
                   )}
                   
