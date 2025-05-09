@@ -691,11 +691,24 @@ export default function CycleDetail() {
               <ChevronRight className="h-3 w-3 mx-1" />
               <span>{cycle.cycleCode || `ID ${cycle.id}`}</span>
             </div>
-            <div className="text-sm text-muted-foreground mt-1">
-              <span>Lotto: #22</span>
-              <span className="ml-1">1</span>
-              <span className="ml-2">(Fornitore: Zeeland)</span>
-            </div>
+            {(() => {
+              // Trova l'operazione di prima attivazione che contiene i dati del lotto
+              const firstActivation = operations?.find(op => op.type === 'prima-attivazione');
+              if (firstActivation?.lot) {
+                return (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    <span>Lotto: #{firstActivation.lotId}</span>
+                    {firstActivation.lot.supplierLotNumber && (
+                      <span className="ml-1">{firstActivation.lot.supplierLotNumber}</span>
+                    )}
+                    {firstActivation.lot.supplier && (
+                      <span className="ml-2">(Fornitore: {firstActivation.lot.supplier})</span>
+                    )}
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
         
@@ -786,26 +799,48 @@ export default function CycleDetail() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Lotto</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="space-y-1">
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-muted-foreground">ID:</span>
-                <span className="font-medium">#22</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Numero:</span>
-                <span className="font-medium">1</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Fornitore:</span>
-                <span className="font-medium">Zeeland</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm font-medium text-muted-foreground">Arrivo:</span>
-                <span className="font-medium">
-                  12/03/2025
-                </span>
-              </div>
-            </div>
+            {(() => {
+              // Trova l'operazione di prima attivazione che contiene i dati del lotto
+              const firstActivation = operations?.find(op => op.type === 'prima-attivazione');
+              
+              if (firstActivation?.lot) {
+                const lotData = firstActivation.lot;
+                return (
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">ID:</span>
+                      <span className="font-medium">#{lotData.id}</span>
+                    </div>
+                    {lotData.supplierLotNumber && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">Numero:</span>
+                        <span className="font-medium">{lotData.supplierLotNumber}</span>
+                      </div>
+                    )}
+                    {lotData.supplier && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">Fornitore:</span>
+                        <span className="font-medium">{lotData.supplier}</span>
+                      </div>
+                    )}
+                    {lotData.arrivalDate && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">Arrivo:</span>
+                        <span className="font-medium">
+                          {new Date(lotData.arrivalDate).toLocaleDateString('it-IT')}
+                        </span>
+                      </div>
+                    )}
+                  </div>
+                );
+              }
+              
+              return (
+                <div className="text-center text-muted-foreground">
+                  Informazioni lotto non disponibili
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
         
