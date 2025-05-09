@@ -71,15 +71,17 @@ export default function BasketForm({
     defaultValues,
   });
   
+  // Inizializza senza valori preselezionati a meno che non sia in modalità modifica (basketId presente)
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(
-    defaultValues.flupsyId || null
+    basketId ? defaultValues.flupsyId || null : null
   );
   const [selectedRow, setSelectedRow] = useState<string | null>(
-    defaultValues.row || null
+    basketId ? defaultValues.row || null : null
   );
   const [isBasketNumberValid, setIsBasketNumberValid] = useState(true);
   const [isPositionValid, setIsPositionValid] = useState(true);
   const [maxPositions, setMaxPositions] = useState<number>(10); // Default a 10
+  const [availablePositionsCount, setAvailablePositionsCount] = useState<{DX: number, SX: number}>({ DX: 0, SX: 0 });
 
   // Fetch FLUPSY units
   const { data: flupsys = [], isLoading: isFlupsysLoading } = useQuery<any[]>({
@@ -120,14 +122,38 @@ export default function BasketForm({
     enabled: !!selectedFlupsyId, // Execute when a FLUPSY is selected
   });
 
-  // Set flupsyId default value from the first available FLUPSY
+  // Calcola il numero di posizioni disponibili quando i dati di posizione sono disponibili
   useEffect(() => {
-    if (flupsys && flupsys.length > 0 && !form.getValues('flupsyId')) {
-      const firstFlupsyId = flupsys[0].id;
-      form.setValue('flupsyId', firstFlupsyId);
-      setSelectedFlupsyId(firstFlupsyId);
+    if (nextPositionData && nextPositionData.availablePositions) {
+      const available = { DX: 0, SX: 0 };
+      
+      // Conta quante posizioni sono disponibili per ogni fila
+      if (nextPositionData.availablePositions['DX'] !== undefined) {
+        // Se -1, non ci sono posizioni disponibili
+        available.DX = nextPositionData.availablePositions['DX'] === -1 
+          ? 0 
+          : nextPositionData.maxPositions - (nextPositionData.availablePositions['DX'] - 1);
+      }
+      
+      if (nextPositionData.availablePositions['SX'] !== undefined) {
+        // Se -1, non ci sono posizioni disponibili
+        available.SX = nextPositionData.availablePositions['SX'] === -1 
+          ? 0 
+          : nextPositionData.maxPositions - (nextPositionData.availablePositions['SX'] - 1);
+      }
+      
+      setAvailablePositionsCount(available);
     }
-  }, [flupsys, form]);
+  }, [nextPositionData]);
+
+  // NON impostiamo più un valore FLUPSY predefinito, l'utente deve selezionarlo
+  // Manteniamo il caso particolare di modifica di un cestello esistente (basketId presente)
+  useEffect(() => {
+    if (basketId && defaultValues.flupsyId && flupsys && flupsys.length > 0) {
+      form.setValue('flupsyId', defaultValues.flupsyId);
+      setSelectedFlupsyId(defaultValues.flupsyId);
+    }
+  }, [flupsys, form, basketId, defaultValues.flupsyId]);
   
   // Set the next available basket number when it's fetched
   useEffect(() => {
@@ -216,6 +242,7 @@ export default function BasketForm({
               <p className="font-medium">Informazioni sul FLUPSY selezionato</p>
               <p>Nome: <span className="font-medium">{selectedFlupsy.name}</span></p>
               <p>Posizioni massime per fila: <span className="font-medium">{selectedFlupsy.maxPositions || 10}</span></p>
+              <p>Posizioni disponibili: <span className="font-medium">Destra {availablePositionsCount.DX}, Sinistra {availablePositionsCount.SX}</span></p>
             </div>
           </div>
         )}
