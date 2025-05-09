@@ -2000,7 +2000,8 @@ export default function Operations() {
               
               console.log('Formatted operation data:', formattedData);
               createOperationMutation.mutate(formattedData);
-            }} 
+            }}
+            onCancel={() => setIsCreateDialogOpen(false)}
             isLoading={createOperationMutation.isPending}
             defaultValues={selectedOperation ? {
               type: selectedOperation.type,
@@ -2044,6 +2045,7 @@ export default function Operations() {
                 console.log('Formatted operation data:', formattedData);
                 updateOperationMutation.mutate({ id: selectedOperation.id, operation: formattedData });
               }}
+              onCancel={() => setIsEditDialogOpen(false)}
               isLoading={updateOperationMutation.isPending}
               defaultValues={{
                 type: selectedOperation.type,
