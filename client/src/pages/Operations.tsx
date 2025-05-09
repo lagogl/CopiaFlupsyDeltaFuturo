@@ -395,7 +395,10 @@ export default function Operations() {
   
   // Funzione di ordinamento generica in base alla configurazione di ordinamento
   const sortData = (data: any[]) => {
-    if (!sortConfig) return data;
+    if (!sortConfig || !data || data.length === 0) return data;
+    
+    // Debug - mostra i campi delle operazioni
+    console.log('Operazione di esempio:', data[0]);
     
     return [...data].sort((a, b) => {
       // Gestione speciale per il campo "data" che richiede conversione in oggetto Date
@@ -406,9 +409,22 @@ export default function Operations() {
       }
       
       // Gestione per i campi numerici
-      if (sortConfig.key === 'animalCount' || sortConfig.key === 'totalWeight' || sortConfig.key === 'averageWeight') {
-        const aValue = parseFloat(a[sortConfig.key]) || 0;
-        const bValue = parseFloat(b[sortConfig.key]) || 0;
+      if (sortConfig.key === 'animalCount') {
+        const aValue = parseInt(a.animalCount) || 0;
+        const bValue = parseInt(b.animalCount) || 0;
+        return sortConfig.direction === 'ascending' ? aValue - bValue : bValue - aValue;
+      }
+      
+      if (sortConfig.key === 'totalWeight') {
+        const aValue = parseFloat(a.totalWeight) || 0;
+        const bValue = parseFloat(b.totalWeight) || 0;
+        return sortConfig.direction === 'ascending' ? aValue - bValue : bValue - aValue;
+      }
+      
+      if (sortConfig.key === 'averageWeight') {
+        // Alcuni campi potrebbero usare 'average_weight' anziché 'averageWeight'
+        const aValue = parseFloat(a.averageWeight || a.average_weight) || 0;
+        const bValue = parseFloat(b.averageWeight || b.average_weight) || 0;
         return sortConfig.direction === 'ascending' ? aValue - bValue : bValue - aValue;
       }
       
@@ -430,8 +446,9 @@ export default function Operations() {
       
       // Gestione per i campi complessi (cestello)
       if (sortConfig.key === 'basket') {
-        const aBasketNumber = a.basket?.physicalNumber || 0;
-        const bBasketNumber = b.basket?.physicalNumber || 0;
+        // Potrebbe essere a.basket.physicalNumber o a.basketNumber a seconda dei dati
+        const aBasketNumber = a.basket?.physicalNumber || a.basketNumber || 0;
+        const bBasketNumber = b.basket?.physicalNumber || b.basketNumber || 0;
         return sortConfig.direction === 'ascending' ? aBasketNumber - bBasketNumber : bBasketNumber - aBasketNumber;
       }
       
@@ -485,16 +502,11 @@ export default function Operations() {
       return matchesSearch && matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesCycleState;
     });
     
-    // Ordinamento in base alla configurazione di sorting
-    const sorted = sortData([...filtered]);
-    
-    // Ora che le operazioni sono ordinate, arricchisciamo le operazioni che non hanno un lotto
-    // usando le stesse logiche di operationsByCycle per propagare i lotti all'interno dello stesso ciclo
-    
-    // Raggruppiamo le operazioni per ciclo
+    // Prima arricchisciamo le operazioni con le informazioni di lotto necessarie
+    // Raggruppiamo le operazioni per ciclo per propagare le informazioni dei lotti
     const opsByCycle: { [key: string]: any[] } = {};
     
-    sorted.forEach((op: any) => {
+    filtered.forEach((op: any) => {
       const cycleId = op.cycleId.toString();
       if (!opsByCycle[cycleId]) {
         opsByCycle[cycleId] = [];
@@ -531,8 +543,11 @@ export default function Operations() {
       }
     });
     
-    // Appiattisci di nuovo l'array delle operazioni
-    return Object.values(opsByCycle).flat();
+    // Appiattisci di nuovo l'array delle operazioni con tutti i lotti propagati
+    const enrichedOperations = Object.values(opsByCycle).flat();
+    
+    // Ora applichiamo l'ordinamento alle operazioni già arricchite
+    return sortData(enrichedOperations);
     
   }, [operations, cycles, lots, searchTerm, typeFilter, dateFilter, flupsyFilter, cycleFilter, cycleStateFilter, sortConfig]);
   
