@@ -247,10 +247,6 @@ export default function Baskets() {
         <h2 className="text-2xl font-condensed font-bold text-gray-800">Gestione Ceste</h2>
         <div className="flex space-x-3">
           <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-1" />
-            Filtra
-          </Button>
-          <Button variant="outline" size="sm">
             <Download className="h-4 w-4 mr-1" />
             Esporta
           </Button>
