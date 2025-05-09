@@ -172,18 +172,20 @@ export default function BasketForm({
   // Update maxPositions when next position data is fetched
   useEffect(() => {
     if (nextPositionData && nextPositionData.maxPositions) {
-      setMaxPositions(nextPositionData.maxPositions);
+      // Calcola il numero massimo di posizioni per fila (metà del totale)
+      const maxPositionsPerRow = Math.floor(nextPositionData.maxPositions / 2);
+      setMaxPositions(maxPositionsPerRow);
       
-      // Aggiorna lo schema di validazione con il valore massimo di posizione
+      // Aggiorna lo schema di validazione con il valore massimo di posizione PER FILA
       basketFormSchema.shape.position = z.coerce.number()
         .int()
         .positive("La posizione deve essere un numero positivo")
         .min(1, "La posizione deve essere almeno 1")
-        .max(nextPositionData.maxPositions, `La posizione non può superare ${nextPositionData.maxPositions} (limite massimo di questo FLUPSY)`);
+        .max(maxPositionsPerRow, `La posizione non può superare ${maxPositionsPerRow} (limite massimo per fila di questo FLUPSY)`);
       
       // Se la posizione corrente è superiore al massimo, azzera il valore
       const currentPosition = form.getValues('position');
-      if (currentPosition && currentPosition > nextPositionData.maxPositions) {
+      if (currentPosition && currentPosition > maxPositionsPerRow) {
         form.setValue('position', undefined);
       }
     }
@@ -222,7 +224,7 @@ export default function BasketForm({
       e.preventDefault();
       toast({
         title: "Posizione non valida",
-        description: `La posizione non può superare ${maxPositions} (limite massimo di questo FLUPSY)`,
+        description: `La posizione non può superare ${maxPositions} (limite massimo per fila di questo FLUPSY)`,
         variant: "destructive"
       });
       return;
@@ -402,7 +404,7 @@ export default function BasketForm({
                   {isNextPositionLoading ? (
                     "Ricerca posizione disponibile..."
                   ) : (
-                    `Numero progressivo della posizione (max ${maxPositions})`
+                    `Numero progressivo della posizione (max ${maxPositions} per fila)`
                   )}
                 </FormDescription>
                 <FormMessage />
