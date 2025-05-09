@@ -1103,10 +1103,8 @@ export default function OperationForm({
                     {lots
                       ?.slice() // Creiamo una copia per non modificare l'originale
                       .sort((a, b) => {
-                        // Ordina per data di arrivo (dal più recente al più vecchio)
-                        const dateA = new Date(a.arrivalDate).getTime();
-                        const dateB = new Date(b.arrivalDate).getTime();
-                        return dateB - dateA; // Ordine decrescente (più recente prima)
+                        // Ordina per ID (dal più grande al più piccolo)
+                        return b.id - a.id; // Ordine decrescente per ID
                       })
                       .map((lot) => {
                         // Formatta la data di arrivo in formato italiano
