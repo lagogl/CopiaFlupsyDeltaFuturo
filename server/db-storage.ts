@@ -145,7 +145,51 @@ export class DbStorage implements IStorage {
   }
   
   async deleteBasket(id: number): Promise<boolean> {
+    // Verifica se il cestello ha un ciclo attivo
+    const basket = await this.getBasket(id);
+    if (!basket) {
+      console.error(`deleteBasket - Cestello con ID ${id} non trovato`);
+      return false;
+    }
+    
+    // Controlla se il cestello ha un ciclo attivo
+    if (basket.currentCycleId !== null || basket.state === 'active') {
+      console.error(`deleteBasket - Impossibile eliminare cestello con ID ${id}. Il cestello ha un ciclo attivo o è in stato 'active'`);
+      throw new Error("Non è possibile eliminare un cestello con un ciclo attivo. Terminare prima il ciclo corrente.");
+    }
+    
+    // Chiudi la posizione nella tabella di cronologia posizioni
+    try {
+      // Verifica se il cestello ha una posizione attiva
+      const currentPosition = await this.getCurrentBasketPosition(id);
+      if (currentPosition) {
+        console.log(`deleteBasket - Chiusura posizione attiva per cestello ${id} prima dell'eliminazione`);
+        // Usa la data corrente come data di fine
+        const currentDate = new Date().toISOString().split('T')[0];
+        await this.closeBasketPositionHistory(id, currentDate);
+      }
+      
+      // Elimina tutte le posizioni nella cronologia per questo cestello
+      await db.delete(basketPositionHistory).where(eq(basketPositionHistory.basketId, id));
+      console.log(`deleteBasket - Posizioni eliminate dalla cronologia per cestello ${id}`);
+    } catch (error) {
+      console.error(`deleteBasket - Errore durante la chiusura/eliminazione delle posizioni:`, error);
+      // Non blocchiamo l'eliminazione per questo errore
+    }
+    
+    // Elimina il cestello
+    console.log(`deleteBasket - Eliminazione cestello ${id}`);
     const results = await db.delete(baskets).where(eq(baskets.id, id)).returning();
+    
+    // Notifica WebSocket se il cestello è stato eliminato con successo
+    if (results.length > 0 && typeof (global as any).broadcastUpdate === 'function') {
+      console.log(`deleteBasket - Invio notifica WebSocket per eliminazione cestello ${id}`);
+      (global as any).broadcastUpdate('basket_deleted', {
+        basketId: id,
+        message: `Cestello ${basket.physicalNumber} eliminato`
+      });
+    }
+    
     return results.length > 0;
   }
 
