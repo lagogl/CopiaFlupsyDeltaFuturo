@@ -241,7 +241,7 @@ export default function BasketForm({
             <div className="text-sm text-blue-700">
               <p className="font-medium">Informazioni sul FLUPSY selezionato</p>
               <p>Nome: <span className="font-medium">{selectedFlupsy.name}</span></p>
-              <p>Posizioni massime per fila: <span className="font-medium">{selectedFlupsy.maxPositions || 10}</span></p>
+              <p>Posizioni massime per fila: <span className="font-medium">{Math.floor((selectedFlupsy.maxPositions || 10) / 2)}</span></p>
               <p>Posizioni disponibili: <span className="font-medium">Destra {availablePositionsCount.DX}, Sinistra {availablePositionsCount.SX}</span></p>
             </div>
           </div>
