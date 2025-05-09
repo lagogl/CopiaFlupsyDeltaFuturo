@@ -16,6 +16,126 @@ import { getOperationTypeLabel, getOperationTypeColor, getSizeColor, formatNumbe
 import GrowthPredictionChart from '@/components/GrowthPredictionChart';
 import SizeGrowthTimeline from '@/components/SizeGrowthTimeline';
 
+// Componente per mostrare le informazioni del lotto in formato header
+interface LotInfoHeaderProps {
+  operations: any[];
+}
+
+function LotInfoHeader({ operations }: LotInfoHeaderProps) {
+  // Trova l'operazione di prima attivazione con lotto
+  const firstActivation = operations?.find((op: any) => op.type === 'prima-attivazione');
+  
+  // Se non abbiamo un'operazione di prima attivazione o un lotId, non mostriamo nulla
+  if (!firstActivation?.lotId) {
+    return null;
+  }
+  
+  const lotId = firstActivation.lotId;
+  
+  // Usa l'hook useQuery per caricare i dati del lotto
+  const { data: lotDetails, isLoading } = useQuery({
+    queryKey: ['/api/lots', lotId],
+    queryFn: () => fetch(`/api/lots/${lotId}`).then(res => res.json()),
+    enabled: !!lotId
+  });
+  
+  if (isLoading || !lotDetails) {
+    return (
+      <div className="text-sm text-muted-foreground mt-1">
+        <span>Lotto: #{lotId}</span>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="text-sm text-muted-foreground mt-1">
+      <span>Lotto: #{lotId}</span>
+      {lotDetails.supplierLotNumber && (
+        <span className="ml-1">{lotDetails.supplierLotNumber}</span>
+      )}
+      {lotDetails.supplier && (
+        <span className="ml-2">(Fornitore: {lotDetails.supplier})</span>
+      )}
+    </div>
+  );
+}
+
+// Componente per mostrare le informazioni dettagliate del lotto nella card
+interface LotInfoProps {
+  operations: any[];
+}
+
+function LotInfo({ operations }: LotInfoProps) {
+  // Trova l'operazione di prima attivazione con lotto
+  const firstActivation = operations?.find((op: any) => op.type === 'prima-attivazione');
+  
+  // Se non abbiamo un'operazione di prima attivazione o un lotId, mostriamo un messaggio
+  if (!firstActivation?.lotId) {
+    return (
+      <div className="text-center text-muted-foreground">
+        Informazioni lotto non disponibili
+      </div>
+    );
+  }
+  
+  const lotId = firstActivation.lotId;
+  
+  // Usa l'hook useQuery per caricare i dati del lotto
+  const { data: lotDetails, isLoading } = useQuery({
+    queryKey: ['/api/lots', lotId],
+    queryFn: () => fetch(`/api/lots/${lotId}`).then(res => res.json()),
+    enabled: !!lotId
+  });
+  
+  // Se i dati stanno caricando, mostra un indicatore di caricamento
+  if (isLoading) {
+    return (
+      <div className="flex justify-center py-2">
+        <div className="animate-spin h-5 w-5 border-2 border-primary rounded-full border-t-transparent"></div>
+      </div>
+    );
+  }
+  
+  // Se abbiamo i dati del lotto, mostrali in formato dettagliato
+  if (lotDetails) {
+    return (
+      <div className="space-y-1">
+        <div className="flex justify-between">
+          <span className="text-sm font-medium text-muted-foreground">ID:</span>
+          <span className="font-medium">#{lotDetails.id}</span>
+        </div>
+        {lotDetails.supplierLotNumber && (
+          <div className="flex justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Numero:</span>
+            <span className="font-medium">{lotDetails.supplierLotNumber}</span>
+          </div>
+        )}
+        {lotDetails.supplier && (
+          <div className="flex justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Fornitore:</span>
+            <span className="font-medium">{lotDetails.supplier}</span>
+          </div>
+        )}
+        {lotDetails.arrivalDate && (
+          <div className="flex justify-between">
+            <span className="text-sm font-medium text-muted-foreground">Arrivo:</span>
+            <span className="font-medium">
+              {new Date(lotDetails.arrivalDate).toLocaleDateString('it-IT')}
+            </span>
+          </div>
+        )}
+      </div>
+    );
+  }
+  
+  // Fallback se non ci sono dati
+  return (
+    <div className="text-center text-muted-foreground">
+      Informazioni lotto non disponibili
+    </div>
+  );
+}
+
 // Tipi per i parametri
 interface StatisticsTabProps {
   cycle: any;
@@ -571,24 +691,7 @@ export default function CycleDetail() {
               <ChevronRight className="h-3 w-3 mx-1" />
               <span>{cycle.cycleCode || `ID ${cycle.id}`}</span>
             </div>
-            {(() => {
-              // Trova l'operazione di prima attivazione che contiene i dati del lotto
-              const firstActivation = operations?.find(op => op.type === 'prima-attivazione');
-              if (firstActivation?.lotId) {
-                return (
-                  <div className="text-sm text-muted-foreground mt-1">
-                    <span>Lotto: #{firstActivation.lotId}</span>
-                    {firstActivation.lot && firstActivation.lot.supplierLotNumber && (
-                      <span className="ml-1">{firstActivation.lot.supplierLotNumber}</span>
-                    )}
-                    {firstActivation.lot && firstActivation.lot.supplier && (
-                      <span className="ml-2">(Fornitore: {firstActivation.lot.supplier})</span>
-                    )}
-                  </div>
-                );
-              }
-              return null;
-            })()}
+            <LotInfoHeader operations={operations} />
           </div>
         </div>
         
@@ -679,47 +782,7 @@ export default function CycleDetail() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Lotto</CardTitle>
           </CardHeader>
           <CardContent>
-            {(() => {
-              // Trova l'operazione di prima attivazione con lotto
-              const firstActivation = operations?.find(op => op.type === 'prima-attivazione');
-              
-              // Debug: logga i dati per capire la struttura
-              console.log("Operation data:", firstActivation);
-              
-              if (firstActivation?.lotId) {
-                return (
-                  <div className="space-y-1">
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">ID:</span>
-                      <span className="font-medium">#{firstActivation.lotId}</span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">Arrivo:</span>
-                      <span className="font-medium">
-                        {firstActivation.lot?.arrivalDate ? 
-                          new Date(firstActivation.lot.arrivalDate).toLocaleDateString('it-IT') 
-                          : 'N/A'}
-                      </span>
-                    </div>
-                    <div className="flex justify-between">
-                      <span className="text-sm font-medium text-muted-foreground">Fornitore:</span>
-                      <span className="font-medium">{firstActivation.lot?.supplier || 'N/A'}</span>
-                    </div>
-                    {firstActivation.lot?.supplierLotNumber && (
-                      <div className="flex justify-between">
-                        <span className="text-sm font-medium text-muted-foreground">Numero:</span>
-                        <span className="font-medium">{firstActivation.lot.supplierLotNumber}</span>
-                      </div>
-                    )}
-                  </div>
-                );
-              }
-              return (
-                <div className="text-center text-muted-foreground">
-                  Informazioni lotto non disponibili
-                </div>
-              );
-            })()}
+            <LotInfo operations={operations} />
           </CardContent>
         </Card>
         
