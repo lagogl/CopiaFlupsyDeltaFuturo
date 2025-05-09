@@ -237,30 +237,6 @@ export default function BasketForm({
       
         <FormField
           control={form.control}
-          name="physicalNumber"
-          render={({ field }) => (
-            <FormItem>
-              <FormLabel>Numero Cesta</FormLabel>
-              <FormControl>
-                <Input
-                  type="number"
-                  placeholder="Inserisci il numero della cesta..."
-                  {...field}
-                  className={!isBasketNumberValid ? "border-destructive focus-visible:ring-destructive" : ""}
-                />
-              </FormControl>
-              <FormMessage />
-              {isNextNumberLoading && (
-                <FormDescription>
-                  Ricerca numero disponibile...
-                </FormDescription>
-              )}
-            </FormItem>
-          )}
-        />
-        
-        <FormField
-          control={form.control}
           name="flupsyId"
           render={({ field }) => (
             <FormItem>
@@ -304,6 +280,30 @@ export default function BasketForm({
                 Seleziona l'unità FLUPSY a cui appartiene questa cesta
               </FormDescription>
               <FormMessage />
+            </FormItem>
+          )}
+        />
+        
+        <FormField
+          control={form.control}
+          name="physicalNumber"
+          render={({ field }) => (
+            <FormItem>
+              <FormLabel>Numero Cesta</FormLabel>
+              <FormControl>
+                <Input
+                  type="number"
+                  placeholder="Inserisci il numero della cesta..."
+                  {...field}
+                  className={!isBasketNumberValid ? "border-destructive focus-visible:ring-destructive" : ""}
+                />
+              </FormControl>
+              <FormMessage />
+              {isNextNumberLoading && (
+                <FormDescription>
+                  Ricerca numero disponibile...
+                </FormDescription>
+              )}
             </FormItem>
           )}
         />
