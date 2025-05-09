@@ -538,11 +538,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (existingBasket) {
         const flupsyName = flupsy.name;
+        const basketState = existingBasket.state === 'active' ? 'attiva' : 'disponibile';
         
         return res.json({
           positionTaken: true,
           basket: existingBasket,
-          message: `La posizione ${row}-${position} in ${flupsyName} è già occupata dalla cesta #${existingBasket.physicalNumber}`
+          message: `La posizione ${row}-${position} in ${flupsyName} è già occupata dalla cesta #${existingBasket.physicalNumber} (${basketState})`
         });
       }
       
@@ -729,8 +730,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
         );
         
         if (existingBasket) {
+          const basketState = existingBasket.state === 'active' ? 'attiva' : 'disponibile';
+          
           return res.status(400).json({
-            message: `La posizione ${row}-${position} è già occupata dalla cesta #${existingBasket.physicalNumber}`,
+            message: `La posizione ${row}-${position} è già occupata dalla cesta #${existingBasket.physicalNumber} (${basketState})`,
             positionTaken: true,
             basket: existingBasket
           });

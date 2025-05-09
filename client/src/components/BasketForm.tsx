@@ -133,7 +133,7 @@ export default function BasketForm({
         // Se -1, la fila è completamente piena
         available.DX = nextPositionData.availablePositions['DX'] === -1 
           ? 0  // Nessuna posizione disponibile
-          : posPerRow - (nextPositionData.availablePositions['DX'] - 1);
+          : posPerRow - nextPositionData.availablePositions['DX'] + 1;
       } else {
         // Se non ci sono informazioni, assumiamo che tutte le posizioni siano disponibili
         available.DX = posPerRow;
@@ -143,7 +143,7 @@ export default function BasketForm({
         // Se -1, la fila è completamente piena
         available.SX = nextPositionData.availablePositions['SX'] === -1 
           ? 0  // Nessuna posizione disponibile
-          : posPerRow - (nextPositionData.availablePositions['SX'] - 1);
+          : posPerRow - nextPositionData.availablePositions['SX'] + 1;
       } else {
         // Se non ci sono informazioni, assumiamo che tutte le posizioni siano disponibili
         available.SX = posPerRow;
