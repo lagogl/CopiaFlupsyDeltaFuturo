@@ -1163,28 +1163,89 @@ export default function Operations() {
                                       // Cerca prima un'operazione di tipo prima-attivazione che abbia un lotto
                                       const firstActivation = cycleOps.find(op => op.type === 'prima-attivazione' && op.lot);
                                       if (firstActivation && firstActivation.lot) {
-                                        return firstActivation.lot.name;
+                                        // Mostra il nome del lotto e informazioni aggiuntive
+                                        return (
+                                          <div>
+                                            <div className="font-medium">{firstActivation.lot.name}</div>
+                                            {firstActivation.lot.arrivalDate && (
+                                              <div className="text-xs text-gray-500">
+                                                Arrivo: {format(new Date(firstActivation.lot.arrivalDate), 'dd/MM/yyyy')}
+                                              </div>
+                                            )}
+                                            {firstActivation.lot.supplier && (
+                                              <div className="text-xs text-gray-500">
+                                                Fornitore: {firstActivation.lot.supplier}
+                                              </div>
+                                            )}
+                                          </div>
+                                        );
                                       }
 
                                       // Se non c'è, cerca un'operazione di tipo prima-attivazione che abbia un lotId
                                       const firstActivationWithLotId = cycleOps.find(op => op.type === 'prima-attivazione' && op.lotId);
                                       if (firstActivationWithLotId && firstActivationWithLotId.lotId) {
                                         const lot = lots?.find(l => l.id === firstActivationWithLotId.lotId);
-                                        if (lot) return lot.name || `Lotto #${lot.id}`;
+                                        if (lot) {
+                                          return (
+                                            <div>
+                                              <div className="font-medium">{lot.name || `Lotto #${lot.id}`}</div>
+                                              {lot.arrivalDate && (
+                                                <div className="text-xs text-gray-500">
+                                                  Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')}
+                                                </div>
+                                              )}
+                                              {lot.supplier && (
+                                                <div className="text-xs text-gray-500">
+                                                  Fornitore: {lot.supplier}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
+                                        }
                                       }
 
                                       // Se ancora non c'è, prendi il primo elemento del ciclo che ha un lotto
                                       if (cycleOps.length > 0) {
                                         const opWithLot = cycleOps.find(op => op.lot);
                                         if (opWithLot && opWithLot.lot) {
-                                          return opWithLot.lot.name;
+                                          return (
+                                            <div>
+                                              <div className="font-medium">{opWithLot.lot.name}</div>
+                                              {opWithLot.lot.arrivalDate && (
+                                                <div className="text-xs text-gray-500">
+                                                  Arrivo: {format(new Date(opWithLot.lot.arrivalDate), 'dd/MM/yyyy')}
+                                                </div>
+                                              )}
+                                              {opWithLot.lot.supplier && (
+                                                <div className="text-xs text-gray-500">
+                                                  Fornitore: {opWithLot.lot.supplier}
+                                                </div>
+                                              )}
+                                            </div>
+                                          );
                                         }
 
                                         // O il primo che ha un lotId
                                         const opWithLotId = cycleOps.find(op => op.lotId);
                                         if (opWithLotId && opWithLotId.lotId) {
                                           const lot = lots?.find(l => l.id === opWithLotId.lotId);
-                                          if (lot) return lot.name || `Lotto #${lot.id}`;
+                                          if (lot) {
+                                            return (
+                                              <div>
+                                                <div className="font-medium">{lot.name || `Lotto #${lot.id}`}</div>
+                                                {lot.arrivalDate && (
+                                                  <div className="text-xs text-gray-500">
+                                                    Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')}
+                                                  </div>
+                                                )}
+                                                {lot.supplier && (
+                                                  <div className="text-xs text-gray-500">
+                                                    Fornitore: {lot.supplier}
+                                                  </div>
+                                                )}
+                                              </div>
+                                            );
+                                          }
                                         }
                                       }
 
