@@ -345,6 +345,9 @@ export default function Baskets() {
                   FLUPSY
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                  Lotto
+                </th>
+                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Codice Ciclo
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
@@ -398,13 +401,13 @@ export default function Baskets() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                  <td colSpan={11} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                     Caricamento ceste...
                   </td>
                 </tr>
               ) : filteredBaskets.length === 0 ? (
                 <tr>
-                  <td colSpan={10} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                  <td colSpan={11} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                     Nessuna cesta trovata
                   </td>
                 </tr>
@@ -434,6 +437,18 @@ export default function Baskets() {
                               </span>
                             )}
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                          {basket.lotId ? (
+                            <div className="flex flex-col">
+                              <span>Lotto #{basket.lotId}</span>
+                              {basket.lotSupplier && (
+                                <span className="text-xs text-muted-foreground">
+                                  {basket.lotSupplier}
+                                </span>
+                              )}
+                            </div>
+                          ) : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
                           {basket.cycleCode ? basket.cycleCode : '-'}
@@ -537,7 +552,7 @@ export default function Baskets() {
                   {/* Riga totale */}
                   {filteredBaskets.length > 0 && (
                     <tr className="bg-muted/30 font-medium border-t-2 border-gray-300">
-                      <td colSpan={6} className="px-6 py-4 text-right whitespace-nowrap text-sm font-bold text-gray-900">
+                      <td colSpan={7} className="px-6 py-4 text-right whitespace-nowrap text-sm font-bold text-gray-900">
                         Totale:
                       </td>
                       <td colSpan={1} className="px-6 py-4 whitespace-nowrap text-sm">
