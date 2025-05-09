@@ -571,13 +571,24 @@ export default function CycleDetail() {
               <ChevronRight className="h-3 w-3 mx-1" />
               <span>{cycle.cycleCode || `ID ${cycle.id}`}</span>
             </div>
-            {cycle.lotId && (
-              <div className="text-sm text-muted-foreground mt-1">
-                <span>Lotto: #{cycle.lotId}</span>
-                {cycle.lotName && <span className="ml-1">{cycle.lotName}</span>}
-                {cycle.lotSupplier && <span className="ml-2">(Fornitore: {cycle.lotSupplier})</span>}
-              </div>
-            )}
+            {(() => {
+              // Trova l'operazione di prima attivazione che contiene i dati del lotto
+              const firstActivation = operations?.find(op => op.type === 'prima-attivazione');
+              if (firstActivation?.lotId) {
+                return (
+                  <div className="text-sm text-muted-foreground mt-1">
+                    <span>Lotto: #{firstActivation.lotId}</span>
+                    {firstActivation.lot && firstActivation.lot.supplierLotNumber && (
+                      <span className="ml-1">{firstActivation.lot.supplierLotNumber}</span>
+                    )}
+                    {firstActivation.lot && firstActivation.lot.supplier && (
+                      <span className="ml-2">(Fornitore: {firstActivation.lot.supplier})</span>
+                    )}
+                  </div>
+                );
+              }
+              return null;
+            })()}
           </div>
         </div>
         
