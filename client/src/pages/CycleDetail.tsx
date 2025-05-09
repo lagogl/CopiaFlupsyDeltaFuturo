@@ -673,29 +673,47 @@ export default function CycleDetail() {
           </CardContent>
         </Card>
         
+        {/* Carta per il lotto */}
         <Card>
           <CardHeader className="pb-2">
-            <CardTitle className="text-sm font-medium text-muted-foreground">Taglia Attuale</CardTitle>
+            <CardTitle className="text-sm font-medium text-muted-foreground">Lotto</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="flex justify-between items-center">
-              <span className="text-2xl font-bold">
-                {typeof latestOperation?.size === 'object' 
-                  ? latestOperation.size.code 
-                  : (latestOperation?.size || "N/A")}
-              </span>
-              <span className={`px-2 py-1 rounded-full text-xs ${
-                latestOperation?.size 
-                  ? getSizeColor(typeof latestOperation.size === 'object' 
-                    ? latestOperation.size.code 
-                    : latestOperation.size) 
-                  : 'bg-gray-100 text-gray-800'
-              }`}>
-                {typeof latestOperation?.size === 'object' 
-                  ? latestOperation.size.name 
-                  : "Non disponibile"}
-              </span>
-            </div>
+            {(() => {
+              // Trova l'operazione di prima attivazione con lotto
+              const firstActivation = operations?.find(op => op.type === 'prima-attivazione');
+              if (firstActivation?.lotId) {
+                return (
+                  <div className="space-y-1">
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">ID:</span>
+                      <span className="font-medium">#{firstActivation.lotId}</span>
+                    </div>
+                    {firstActivation.lot && (
+                      <>
+                        {firstActivation.lot.supplierLotNumber && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-muted-foreground">Numero:</span>
+                            <span className="font-medium">{firstActivation.lot.supplierLotNumber}</span>
+                          </div>
+                        )}
+                        {firstActivation.lot.supplier && (
+                          <div className="flex justify-between">
+                            <span className="text-sm font-medium text-muted-foreground">Fornitore:</span>
+                            <span className="font-medium">{firstActivation.lot.supplier}</span>
+                          </div>
+                        )}
+                      </>
+                    )}
+                  </div>
+                );
+              }
+              return (
+                <div className="text-center text-muted-foreground">
+                  Informazioni lotto non disponibili
+                </div>
+              );
+            })()}
           </CardContent>
         </Card>
         
