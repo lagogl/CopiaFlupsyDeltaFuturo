@@ -831,7 +831,16 @@ export default function DraggableFlupsyVisualizer() {
                   className={`text-xs px-2 py-0 h-6 ${selectedFlupsyIds.length === flupsys.length ? 'bg-primary/10' : ''}`}
                   onClick={() => setSelectedFlupsyIds(flupsys.map(f => f.id))}
                 >
-                  Tutti
+                  Seleziona tutti
+                </Button>
+                
+                <Button 
+                  size="sm" 
+                  variant="ghost" 
+                  className={`text-xs px-2 py-0 h-6 ${selectedFlupsyIds.length === 0 ? 'bg-primary/10' : ''}`}
+                  onClick={() => setSelectedFlupsyIds([])}
+                >
+                  Deseleziona tutti
                 </Button>
                 
                 {flupsys.map(flupsy => (
