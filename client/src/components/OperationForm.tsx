@@ -1100,11 +1100,57 @@ export default function OperationForm({
                     {watchType !== 'prima-attivazione' && (
                       <SelectItem value="none">Nessun lotto</SelectItem>
                     )}
-                    {lots?.map((lot) => (
-                      <SelectItem key={lot.id} value={lot.id.toString()}>
-                        Lotto #{lot.id} - {lot.supplier}
-                      </SelectItem>
-                    ))}
+                    {lots
+                      ?.slice() // Creiamo una copia per non modificare l'originale
+                      .sort((a, b) => {
+                        // Ordina per data di arrivo (dal più recente al più vecchio)
+                        const dateA = new Date(a.arrivalDate).getTime();
+                        const dateB = new Date(b.arrivalDate).getTime();
+                        return dateB - dateA; // Ordine decrescente (più recente prima)
+                      })
+                      .map((lot) => {
+                        // Formatta la data di arrivo in formato italiano
+                        const arrivalDate = new Date(lot.arrivalDate);
+                        const formattedDate = `${arrivalDate.getDate().toString().padStart(2, '0')}/${(arrivalDate.getMonth() + 1).toString().padStart(2, '0')}/${arrivalDate.getFullYear()}`;
+                        
+                        // Informazioni aggiuntive da mostrare
+                        const additionalInfo = [
+                          formattedDate,
+                          lot.quality,
+                          lot.supplierLotNumber ? `Lotto fornitore: ${lot.supplierLotNumber}` : null,
+                        ].filter(Boolean).join(" • ");
+                        
+                        // Informazioni su peso e numero animali
+                        const quantityInfo = [];
+                        if (lot.animalCount) {
+                          quantityInfo.push(`${lot.animalCount.toLocaleString('it-IT')} animali`);
+                        }
+                        if (lot.weight) {
+                          quantityInfo.push(`${lot.weight.toLocaleString('it-IT')} g`);
+                        }
+                        
+                        return (
+                          <SelectItem 
+                            key={lot.id} 
+                            value={lot.id.toString()}
+                            className="py-3 px-2"
+                          >
+                            <div className="flex flex-col">
+                              <span className="font-medium">
+                                Lotto #{lot.id} - {lot.supplier}
+                              </span>
+                              <span className="text-xs text-muted-foreground">
+                                {additionalInfo}
+                              </span>
+                              {quantityInfo.length > 0 && (
+                                <span className="text-xs text-blue-600 font-semibold mt-1">
+                                  {quantityInfo.join(" • ")}
+                                </span>
+                              )}
+                            </div>
+                          </SelectItem>
+                        );
+                      })}
                   </SelectContent>
                 </Select>
                 {watchType === 'prima-attivazione' && (
