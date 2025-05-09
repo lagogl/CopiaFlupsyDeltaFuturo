@@ -682,6 +682,10 @@ export default function CycleDetail() {
             {(() => {
               // Trova l'operazione di prima attivazione con lotto
               const firstActivation = operations?.find(op => op.type === 'prima-attivazione');
+              
+              // Debug: logga i dati per capire la struttura
+              console.log("Operation data:", firstActivation);
+              
               if (firstActivation?.lotId) {
                 return (
                   <div className="space-y-1">
@@ -689,21 +693,23 @@ export default function CycleDetail() {
                       <span className="text-sm font-medium text-muted-foreground">ID:</span>
                       <span className="font-medium">#{firstActivation.lotId}</span>
                     </div>
-                    {firstActivation.lot && (
-                      <>
-                        {firstActivation.lot.supplierLotNumber && (
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-muted-foreground">Numero:</span>
-                            <span className="font-medium">{firstActivation.lot.supplierLotNumber}</span>
-                          </div>
-                        )}
-                        {firstActivation.lot.supplier && (
-                          <div className="flex justify-between">
-                            <span className="text-sm font-medium text-muted-foreground">Fornitore:</span>
-                            <span className="font-medium">{firstActivation.lot.supplier}</span>
-                          </div>
-                        )}
-                      </>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">Arrivo:</span>
+                      <span className="font-medium">
+                        {firstActivation.lot?.arrivalDate ? 
+                          new Date(firstActivation.lot.arrivalDate).toLocaleDateString('it-IT') 
+                          : 'N/A'}
+                      </span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-sm font-medium text-muted-foreground">Fornitore:</span>
+                      <span className="font-medium">{firstActivation.lot?.supplier || 'N/A'}</span>
+                    </div>
+                    {firstActivation.lot?.supplierLotNumber && (
+                      <div className="flex justify-between">
+                        <span className="text-sm font-medium text-muted-foreground">Numero:</span>
+                        <span className="font-medium">{firstActivation.lot.supplierLotNumber}</span>
+                      </div>
                     )}
                   </div>
                 );
