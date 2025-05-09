@@ -1196,14 +1196,11 @@ export default function OperationForm({
               e.stopPropagation();
               console.log("Reset form button clicked");
               
-              // Notifica all'utente che il form verrà resettato
-              const confirmReset = window.confirm("Sei sicuro di voler annullare? Tutte le modifiche andranno perse.");
-              if (confirmReset) {
-                form.reset();
-                // Chiudi il dialogo se è stata fornita la callback onCancel
-                if (onCancel) {
-                  onCancel();
-                }
+              // Chiudiamo direttamente il dialogo senza chiedere conferma
+              // poiché è più coerente con il comportamento standard dell'applicazione
+              form.reset();
+              if (onCancel) {
+                onCancel();
               }
             }}
           >
