@@ -29,6 +29,13 @@ export default function Operations() {
   const [cycleFilter, setCycleFilter] = useState('all');
   const [cycleStateFilter, setCycleStateFilter] = useState('active'); // Nuovo filtro: 'active', 'closed', 'all'
   const [viewMode, setViewMode] = useState<'table' | 'cycles'>('cycles');
+  
+  // Sorting state
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'ascending' | 'descending';
+  }>({ key: 'date', direction: 'descending' });
+  
   const [expandedCycles, setExpandedCycles] = useState<number[]>([]);
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
