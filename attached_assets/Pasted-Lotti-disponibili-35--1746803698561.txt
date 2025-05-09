@@ -1,0 +1,114 @@
+Lotti disponibili: 
+(35) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+0: Object
+id: 31
+name: undefined
+[[Prototype]]: Object
+1: Object
+id: 32
+name: undefined
+[[Prototype]]: Object
+2: Object
+id: 34
+name: undefined
+[[Prototype]]: Object
+3: Object
+id: 33
+name: undefined
+[[Prototype]]: Object
+4: Object
+5: Object
+6: Object
+7: Object
+8: Object
+9: Object
+10: Object
+11: Object
+12: Object
+13: Object
+id: 8
+name: undefined
+[[Prototype]]: Object
+14: Object
+15: Object
+id: 10
+name: undefined
+[[Prototype]]: Object
+16: Object
+id: 3
+name: undefined
+[[Prototype]]: Object
+17: Object
+id: 13
+name: undefined
+[[Prototype]]: Object
+18: Object
+id: 14
+name: undefined
+[[Prototype]]: Object
+19: Object
+id: 16
+name: undefined
+[[Prototype]]: Object
+20: Object
+21: Object
+22: Object
+id: 19
+name: undefined
+[[Prototype]]: Object
+23: Object
+id: 20
+name: undefined
+[[Prototype]]: Object
+24: Object
+id: 21
+name: undefined
+[[Prototype]]: Object
+25: Object
+id: 22
+name: undefined
+[[Prototype]]: Object
+26: Object
+27: Object
+id: 24
+name: undefined
+[[Prototype]]: Object
+28: Object
+id: 25
+name: undefined
+[[Prototype]]: Object
+29: Object
+30: Object
+id: 27
+name: undefined
+[[Prototype]]: Object
+31: Object
+32: Object
+id: 29
+name: undefined
+[[Prototype]]: Object
+33: Object
+id: 30
+name: undefined
+[[Prototype]]: Object
+34: Object
+id: 36
+name: undefined
+[[Prototype]]: Object
+length: 35
+[[Prototype]]: Array(0)
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[]}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[]}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[]}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[]}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[]}

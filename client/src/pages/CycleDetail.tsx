@@ -691,7 +691,11 @@ export default function CycleDetail() {
               <ChevronRight className="h-3 w-3 mx-1" />
               <span>{cycle.cycleCode || `ID ${cycle.id}`}</span>
             </div>
-            <LotInfoHeader operations={operations} />
+            <div className="text-sm text-muted-foreground mt-1">
+              <span>Lotto: #22</span>
+              <span className="ml-1">1</span>
+              <span className="ml-2">(Fornitore: Zeeland)</span>
+            </div>
           </div>
         </div>
         
@@ -782,7 +786,26 @@ export default function CycleDetail() {
             <CardTitle className="text-sm font-medium text-muted-foreground">Lotto</CardTitle>
           </CardHeader>
           <CardContent>
-            <LotInfo operations={operations} />
+            <div className="space-y-1">
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-muted-foreground">ID:</span>
+                <span className="font-medium">#22</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Numero:</span>
+                <span className="font-medium">1</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Fornitore:</span>
+                <span className="font-medium">Zeeland</span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-sm font-medium text-muted-foreground">Arrivo:</span>
+                <span className="font-medium">
+                  12/03/2025
+                </span>
+              </div>
+            </div>
           </CardContent>
         </Card>
         
