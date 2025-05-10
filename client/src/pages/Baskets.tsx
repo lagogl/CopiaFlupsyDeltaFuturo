@@ -455,8 +455,7 @@ export default function Baskets() {
                 ) : null}
               </SelectContent>
             </Select>
-            <div className="relative">
-              <Select value={preferredSize} onValueChange={(size) => {
+            <Select value={preferredSize} onValueChange={(size) => {
                 setPreferredSize(size);
                 // Imposta sempre l'ordinamento per taglia quando cambia la taglia preferita
                 setSortConfig({
@@ -568,10 +567,6 @@ export default function Baskets() {
                   </SelectItem>
                 </SelectContent>
               </Select>
-              <div className="absolute -top-6 left-0 text-xs font-medium text-blue-600">
-                Taglia Preferita (ordina automaticamente)
-              </div>
-            </div>
           </div>
         </div>
       </div>
