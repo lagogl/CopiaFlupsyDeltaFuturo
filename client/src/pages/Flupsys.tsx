@@ -31,9 +31,13 @@ export default function Flupsys() {
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isPopulateDialogOpen, setIsPopulateDialogOpen] = useState(false);
   const [editingFlupsy, setEditingFlupsy] = useState<Flupsy | null>(null);
   const [deletingFlupsy, setDeletingFlupsy] = useState<Flupsy | null>(null);
+  const [populatingFlupsy, setPopulatingFlupsy] = useState<Flupsy | null>(null);
   const [deleteError, setDeleteError] = useState<string | null>(null);
+  const [populateError, setPopulateError] = useState<string | null>(null);
+  const [populateResult, setPopulateResult] = useState<string | null>(null);
   const [newFlupsy, setNewFlupsy] = useState({
     name: "",
     location: "",
@@ -157,6 +161,37 @@ export default function Flupsys() {
     }
   });
   
+  // Populate FLUPSY mutation
+  const populateMutation = useMutation({
+    mutationFn: (id: number) => apiRequest({
+      url: `/api/flupsys/${id}/populate`,
+      method: 'POST'
+    }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      
+      setPopulateResult(data.message || "FLUPSY popolato con successo");
+      setPopulateError(null);
+      
+      toast({
+        title: "Operazione completata",
+        description: data.message || "FLUPSY popolato con successo",
+        variant: "success",
+      });
+    },
+    onError: (error: any) => {
+      const errorMessage = error.data?.message || error.message || "Errore durante il popolamento del FLUPSY";
+      setPopulateError(errorMessage);
+      setPopulateResult(null);
+      toast({
+        title: "Errore",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  });
+  
   // Handling delete button click
   const handleDelete = (flupsy: Flupsy) => {
     setDeletingFlupsy(flupsy);
@@ -168,6 +203,21 @@ export default function Flupsys() {
   const handleConfirmDelete = () => {
     if (deletingFlupsy) {
       deleteMutation.mutate(deletingFlupsy.id);
+    }
+  };
+  
+  // Handling populate button click
+  const handlePopulateFlupsy = (flupsy: Flupsy) => {
+    setPopulatingFlupsy(flupsy);
+    setPopulateError(null);
+    setPopulateResult(null);
+    setIsPopulateDialogOpen(true);
+  };
+  
+  // Handle confirm populate
+  const handleConfirmPopulate = () => {
+    if (populatingFlupsy) {
+      populateMutation.mutate(populatingFlupsy.id);
     }
   };
 
@@ -476,7 +526,7 @@ export default function Flupsys() {
                 <div className="text-xs text-muted-foreground">
                   ID: {flupsy.id}
                 </div>
-                <div className="flex space-x-2">
+                <div className="flex flex-wrap gap-2 justify-end">
                   <Button 
                     variant="outline" 
                     size="sm" 
@@ -485,15 +535,27 @@ export default function Flupsys() {
                   >
                     <Edit className="h-3 w-3" /> Modifica
                   </Button>
+                  
                   {(user?.role === 'admin' || user?.role === 'user') && (
-                    <Button 
-                      variant="destructive" 
-                      size="sm" 
-                      className="h-8 px-2 flex items-center gap-1"
-                      onClick={() => handleDelete(flupsy)}
-                    >
-                      <Trash2 className="h-3 w-3" /> Elimina
-                    </Button>
+                    <>
+                      <Button 
+                        variant="outline" 
+                        size="sm"
+                        className="h-8 px-2 flex items-center gap-1 bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                        onClick={() => handlePopulateFlupsy(flupsy)}
+                      >
+                        <Plus className="h-3 w-3" /> Popola FLUPSY
+                      </Button>
+                      
+                      <Button 
+                        variant="destructive" 
+                        size="sm" 
+                        className="h-8 px-2 flex items-center gap-1"
+                        onClick={() => handleDelete(flupsy)}
+                      >
+                        <Trash2 className="h-3 w-3" /> Elimina
+                      </Button>
+                    </>
                   )}
                 </div>
               </CardFooter>
@@ -566,6 +628,74 @@ export default function Flupsys() {
             >
               {deleteMutation.isPending ? "Eliminazione in corso..." : "Elimina FLUPSY"}
             </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
+      {/* Populate FLUPSY Dialog */}
+      <Dialog open={isPopulateDialogOpen} onOpenChange={setIsPopulateDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-green-600">
+              <Plus className="h-5 w-5 mr-2" />
+              Popola FLUPSY
+            </DialogTitle>
+            <DialogDescription>
+              {populatingFlupsy && (
+                <span>
+                  Stai per popolare automaticamente l'unità FLUPSY <strong>{populatingFlupsy.name}</strong> (ID: {populatingFlupsy.id}) creando ceste in tutte le posizioni libere.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-md mb-4">
+              <p className="text-sm font-medium">Informazioni</p>
+              <p className="text-sm mt-1">Questa operazione:</p>
+              <ul className="list-disc list-inside text-sm mt-1 space-y-1">
+                <li>Creerà nuove ceste in tutte le posizioni libere del FLUPSY</li>
+                <li>Assegnerà automaticamente numeri fisici univoci alle nuove ceste</li>
+                <li>Non modificherà le ceste già esistenti nel FLUPSY</li>
+              </ul>
+              <p className="text-sm mt-2">Le nuove ceste saranno pronte per l'uso in operazioni successive.</p>
+            </div>
+            
+            {populateResult && (
+              <div className="bg-green-50 border border-green-200 text-green-800 p-4 rounded-md mb-4">
+                <p className="text-sm font-medium">Risultato:</p>
+                <p className="text-sm mt-1">{populateResult}</p>
+              </div>
+            )}
+            
+            {populateError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-md mb-4">
+                <p className="text-sm font-medium">Errore:</p>
+                <p className="text-sm mt-1">{populateError}</p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsPopulateDialogOpen(false)}
+              disabled={populateMutation.isPending}
+            >
+              {populateResult ? "Chiudi" : "Annulla"}
+            </Button>
+            {!populateResult && (
+              <Button
+                type="button"
+                variant="default"
+                className="bg-green-600 hover:bg-green-700"
+                onClick={handleConfirmPopulate}
+                disabled={populateMutation.isPending}
+              >
+                {populateMutation.isPending ? "Creazione in corso..." : "Crea Ceste"}
+              </Button>
+            )}
           </DialogFooter>
         </DialogContent>
       </Dialog>
