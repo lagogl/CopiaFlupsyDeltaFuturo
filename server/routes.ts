@@ -3280,8 +3280,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Per ogni cestello attivo, ottieni l'ultima operazione e raccogli statistiche
       for (const basket of basketsInFlupsy.filter(b => b.currentCycleId !== null)) {
         if (basket.currentCycleId) {
-          // Ottieni le operazioni per questo cestello nel ciclo corrente
-          const operations = await storage.getOperationsByCycleIdAndBasketId(basket.currentCycleId, basket.id);
+          // Ottieni tutte le operazioni per questo ciclo
+          const cycleOperations = await storage.getOperationsByCycle(basket.currentCycleId);
+          
+          // Filtra per ottenere solo le operazioni di questo cestello
+          const operations = cycleOperations.filter(op => op.basketId === basket.id);
           
           // Ordina per data discendente per ottenere l'operazione più recente per prima
           const operationsWithCount = operations
@@ -3364,7 +3367,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           position: basket.position,
           occupied: true,
           basketId: basket.id,
-          basketNumber: basket.number,
+          basketNumber: basket.physicalNumber,
           active: basket.currentCycleId !== null
         });
       });
