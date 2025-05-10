@@ -27,6 +27,8 @@ interface Operation {
   date: string;
   lotId?: number;
   animalCount?: number;
+  totalWeight?: number;
+  averageWeight?: number;
   size?: {
     id: number;
     code: string;
@@ -793,7 +795,36 @@ export default function Cycles() {
                   const cycleSgr = cycle.currentSgr;
                   
                   // Combiniamo le due fonti dando priorità all'operazione
-                  const currentSgr = operationSgr || cycleSgr;
+                  let currentSgr = operationSgr || cycleSgr;
+                  
+                  // Fallback con SGR simulato se non è disponibile un valore reale
+                  // Questo è solo per visualizzazione e non viene salvato nel database
+                  if (!currentSgr && primaAttivazione && latestMeasurement && 
+                      primaAttivazione.date !== latestMeasurement.date) {
+                    
+                    // Calcola giorni trascorsi tra prima attivazione e ultima misurazione
+                    const startDate = new Date(primaAttivazione.date);
+                    const endDate = new Date(latestMeasurement.date);
+                    const daysDiff = Math.round((endDate.getTime() - startDate.getTime()) / (1000 * 60 * 60 * 24));
+                    
+                    if (daysDiff > 0 && 
+                        primaAttivazione.averageWeight && 
+                        latestMeasurement.averageWeight) {
+                      
+                      // Calcola il tasso di crescita specifico (SGR)
+                      const w1 = primaAttivazione.averageWeight;
+                      const w2 = latestMeasurement.averageWeight;
+                      
+                      // Formula SGR = ((ln(w2) - ln(w1)) / giorni) * 100
+                      const sgrValue = ((Math.log(w2) - Math.log(w1)) / daysDiff) * 100;
+                      
+                      // Crea un oggetto SGR con il valore calcolato
+                      currentSgr = {
+                        id: 0, // ID fittizio
+                        percentage: sgrValue
+                      };
+                    }
+                  }
                   
                   return (
                     <tr key={cycle.id} className={isSoldCycle ? 'relative bg-red-50/20 hover:bg-gray-50' : 'hover:bg-gray-50'}>
