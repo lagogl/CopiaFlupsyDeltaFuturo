@@ -3149,12 +3149,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Ottieni tutti i cestelli associati a questo FLUPSY
           const baskets = await storage.getBasketsByFlupsy(flupsy.id);
           
+          // Array per memorizzare gli ID dei cestelli
+          const basketIds = baskets.map(b => b.id);
+          
           // Ottieni tutti i cicli attivi (senza endDate) di questo FLUPSY
           const activeCyclesCount = await db.select({ count: count() })
             .from(cycles)
             .where(
               and(
-                inArray(cycles.basketId, baskets.map(b => b.id)),
+                inArray(cycles.basketId, basketIds),
                 isNull(cycles.endDate)
               )
             );
@@ -3169,13 +3172,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const occupiedPositions = totalBaskets;
           const freePositions = Math.max(0, maxPositions - occupiedPositions);
           
+          // Ottieni le operazioni per i cestelli attivi per contare il numero di animali totale
+          let totalAnimals = 0;
+          let sizeDistribution = {};
+          
+          // Ottieni i cicli attivi per questo FLUPSY
+          const activeCycles = await db.select()
+            .from(cycles)
+            .where(
+              and(
+                inArray(cycles.basketId, basketIds),
+                isNull(cycles.endDate)
+              )
+            );
+          
+          // Per ogni ciclo attivo, ottieni l'ultima operazione con il conteggio animali
+          for (const cycle of activeCycles) {
+            const operations = await storage.getOperationsByCycle(cycle.id);
+            
+            // Ordina le operazioni per data (la più recente prima)
+            operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            
+            // Prendi solo le operazioni con conteggio animali
+            const operationsWithCount = operations.filter(op => op.animalCount !== null);
+            
+            if (operationsWithCount.length > 0) {
+              const lastOperation = operationsWithCount[0];
+              totalAnimals += lastOperation.animalCount;
+              
+              // Aggiungi i dati di distribuzione per taglia
+              if (lastOperation.sizeId) {
+                const size = await storage.getSize(lastOperation.sizeId);
+                if (size) {
+                  sizeDistribution[size.code] = (sizeDistribution[size.code] || 0) + lastOperation.animalCount;
+                }
+              }
+            }
+          }
+          
           // Aggiungi le statistiche al FLUPSY
           return {
             ...flupsy,
             totalBaskets,
             activeBaskets,
             availableBaskets,
-            freePositions
+            freePositions,
+            totalAnimals,
+            sizeDistribution
           };
         }));
         
