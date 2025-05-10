@@ -785,8 +785,8 @@ export default function DiarioDiBordo() {
                                       {taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia}:
                                     </span>
                                     <span>
-                                      {taglia.entrate ? (<><span className="text-green-600">+{taglia.entrate.toLocaleString('it-IT')}</span>{' '}</>) : null}
-                                      {taglia.uscite ? (<><span className="text-red-600">-{taglia.uscite.toLocaleString('it-IT')}</span>{' '}</>) : null}
+                                      {taglia.entrate ? (<><span className="text-green-600">+{Number(taglia.entrate).toLocaleString('it-IT')}</span>{' '}</>) : null}
+                                      {taglia.uscite ? (<><span className="text-red-600">-{Number(taglia.uscite).toLocaleString('it-IT')}</span>{' '}</>) : null}
                                     </span>
                                   </div>
                                 ))}
