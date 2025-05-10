@@ -71,8 +71,8 @@ const createFormattedText = (data: any, date: Date) => {
     const opTime = op.created_at ? format(new Date(op.created_at), 'HH:mm') : 'N/D';
     const flupsyName = op.flupsy_name || 'N/D';
     const basketNumber = op.basket_number || 'N/D';
-    const animalCount = op.animal_count ? op.animal_count.toLocaleString('it-IT') : 'N/D';
-    const animalsPerKg = op.animals_per_kg ? op.animals_per_kg.toLocaleString('it-IT') : 'N/D';
+    const animalCount = op.animal_count ? formatNumberWithCommas(op.animal_count) : 'N/D';
+    const animalsPerKg = op.animals_per_kg ? formatNumberWithCommas(op.animals_per_kg) : 'N/D';
     let sizeCode = op.size_code || 'N/D';
     if (sizeCode === 'Non specificata') {
       sizeCode = 'In attesa di misurazione';
@@ -93,21 +93,21 @@ const createFormattedText = (data: any, date: Date) => {
   text += `📊 *RIEPILOGO PER TAGLIA*\n`;
   data.sizeStats.forEach((stat: any) => {
     const tagliaMostrata = stat.taglia === 'Non specificata' ? 'In attesa di misurazione' : stat.taglia;
-    text += `${tagliaMostrata}: ${stat.entrate ? stat.entrate.toLocaleString('it-IT') : '0'} entrate, ${stat.uscite ? stat.uscite.toLocaleString('it-IT') : '0'} uscite\n`;
+    text += `${tagliaMostrata}: ${stat.entrate ? formatNumberWithCommas(stat.entrate) : '0'} entrate, ${stat.uscite ? formatNumberWithCommas(stat.uscite) : '0'} uscite\n`;
   });
   text += '\n';
   
   // Giacenza alla data corrente
   if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
     text += `📈 *GIACENZA AL ${dateFormatted.toUpperCase()}*\n`;
-    text += `Totale: ${data.giacenza.totale_giacenza.toLocaleString('it-IT')} animali\n`;
+    text += `Totale: ${formatNumberWithCommas(data.giacenza.totale_giacenza)} animali\n`;
     
     // Dettaglio giacenza per taglia
     if (data.giacenza.dettaglio_taglie && data.giacenza.dettaglio_taglie.length > 0) {
       text += `Dettaglio:\n`;
       data.giacenza.dettaglio_taglie.forEach((taglia: any) => {
         const tagliaMostrata = taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia;
-        text += `- ${tagliaMostrata}: ${taglia.quantita.toLocaleString('it-IT')} animali\n`;
+        text += `- ${tagliaMostrata}: ${formatNumberWithCommas(taglia.quantita)} animali\n`;
       });
     }
     text += '\n';
@@ -947,7 +947,7 @@ export default function DiarioDiBordo() {
                         </div>
                         <div className="bg-red-50 p-4 rounded-lg text-center">
                           <div className="text-red-800 text-sm font-medium mb-1">Uscite</div>
-                          <div className="text-2xl font-bold">{totals?.totale_uscite?.toLocaleString('it-IT') || '0'}</div>
+                          <div className="text-2xl font-bold">{totals?.totale_uscite ? formatNumberWithCommas(totals.totale_uscite) : '0'}</div>
                         </div>
                       </div>
                       
@@ -955,7 +955,7 @@ export default function DiarioDiBordo() {
                         <div className="flex justify-between items-center mb-2">
                           <span className="text-sm font-medium">Bilancio netto:</span>
                           <span className={`text-xl font-bold ${parseInt(totals?.bilancio_netto || '0') >= 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {parseInt(totals?.bilancio_netto || '0') >= 0 ? '+' : ''}{totals?.bilancio_netto?.toLocaleString('it-IT') || '0'}
+                            {parseInt(totals?.bilancio_netto || '0') >= 0 ? '+' : ''}{totals?.bilancio_netto ? formatNumberWithCommas(totals.bilancio_netto) : '0'}
                           </span>
                         </div>
                         <div className="flex justify-between items-center text-sm">
@@ -978,7 +978,7 @@ export default function DiarioDiBordo() {
                     <div className="space-y-4">
                       <div className="bg-blue-50 p-4 rounded-lg text-center">
                         <div className="text-blue-800 text-sm font-medium mb-1">Totale animali</div>
-                        <div className="text-3xl font-bold">{giacenza?.totale_giacenza?.toLocaleString('it-IT') || '0'}</div>
+                        <div className="text-3xl font-bold">{giacenza?.totale_giacenza ? formatNumberWithCommas(giacenza.totale_giacenza) : '0'}</div>
                       </div>
                       
                       {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.length > 0 && (
@@ -988,7 +988,7 @@ export default function DiarioDiBordo() {
                             {giacenza.dettaglio_taglie.map((taglia: any, idx: number) => (
                               <div key={idx} className="flex justify-between items-center">
                                 <span className="text-sm">{taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia}:</span>
-                                <span className="font-medium">{taglia.quantita.toLocaleString('it-IT')}</span>
+                                <span className="font-medium">{formatNumberWithCommas(taglia.quantita)}</span>
                               </div>
                             ))}
                           </div>
@@ -1045,10 +1045,10 @@ export default function DiarioDiBordo() {
                             <td className="py-2 px-3 text-sm">{op.basket_number || '-'}</td>
                             <td className="py-2 px-3 text-sm">{op.flupsy_name || '-'}</td>
                             <td className="py-2 px-3 text-right font-medium">
-                              {op.animal_count?.toLocaleString('it-IT') || '-'}
+                              {op.animal_count ? formatNumberWithCommas(op.animal_count) : '-'}
                             </td>
                             <td className="py-2 px-3 text-right">
-                              {op.animals_per_kg?.toLocaleString('it-IT') || '-'}
+                              {op.animals_per_kg ? formatNumberWithCommas(op.animals_per_kg) : '-'}
                             </td>
                             <td className="py-2 px-3 text-sm">
                               {op.size_code === 'Non specificata' ? 'In attesa' : op.size_code || '-'}
