@@ -2,7 +2,7 @@ import { useQuery } from '@tanstack/react-query';
 import { Link } from 'wouter';
 import { formatDistanceToNow, format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useMemo } from 'react';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { getSizeNumberFromCode, getSizeDistance, getSizeColor, getSizeBadgeClass } from '@/lib/sizeUtils';
 import { Check } from 'lucide-react';
@@ -52,43 +52,51 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
     localStorage.setItem('preferredSizeCode', preferredSize);
   }, [preferredSize]);
 
-  // Ordina i cicli per taglia (prima quelli che corrispondono esattamente alla taglia preferita,
-  // poi quelli con taglie più vicine)
-  const sortedCycles = detailedCycles ? [...detailedCycles].sort((a, b) => {
-    const aCode = a.currentSize?.code;
-    const bCode = b.currentSize?.code;
-    
-    // Se entrambi hanno taglie
-    if (aCode && bCode) {
-      // Prima priorità: la taglia esatta richiesta
-      const aHasTargetSize = aCode === preferredSize;
-      const bHasTargetSize = bCode === preferredSize;
+  // Definisci la funzione di ordinamento
+  const sortCyclesBySize = useCallback((cycles: Cycle[]) => {
+    return [...cycles].sort((a, b) => {
+      const aCode = a.currentSize?.code;
+      const bCode = b.currentSize?.code;
       
-      if (aHasTargetSize && !bHasTargetSize) return -1;
-      if (!aHasTargetSize && bHasTargetSize) return 1;
-      
-      // Seconda priorità: somiglianza alla taglia target
-      const aDistance = getSizeDistance(aCode, preferredSize);
-      const bDistance = getSizeDistance(bCode, preferredSize);
-      
-      if (aDistance !== bDistance) {
-        // Ordina per distanza dalla taglia richiesta (più vicina prima)
-        return aDistance - bDistance;
+      // Se entrambi hanno taglie
+      if (aCode && bCode) {
+        // Prima priorità: la taglia esatta richiesta
+        const aHasExactMatch = aCode === preferredSize;
+        const bHasExactMatch = bCode === preferredSize;
+        
+        if (aHasExactMatch && !bHasExactMatch) return -1;
+        if (!aHasExactMatch && bHasExactMatch) return 1;
+        
+        // Seconda priorità: somiglianza alla taglia target
+        const aDistance = getSizeDistance(aCode, preferredSize);
+        const bDistance = getSizeDistance(bCode, preferredSize);
+        
+        if (aDistance !== bDistance) {
+          // Ordina per distanza dalla taglia richiesta (più vicina prima)
+          return aDistance - bDistance;
+        }
+        
+        // Se le distanze sono uguali, ordina numericamente per valore assoluto della taglia
+        const aValue = getSizeNumberFromCode(aCode);
+        const bValue = getSizeNumberFromCode(bCode);
+        return aValue - bValue;
       }
       
-      // Se le distanze sono uguali, ordina numericamente per valore assoluto della taglia
-      const aValue = getSizeNumberFromCode(aCode);
-      const bValue = getSizeNumberFromCode(bCode);
-      return aValue - bValue;
-    }
-    
-    // Gestione di casi in cui un elemento non ha taglia
-    if (aCode && !bCode) return -1; // Elementi con taglia prima di quelli senza
-    if (!aCode && bCode) return 1;
-    
-    // Se nessuno ha una taglia, mantieni l'ordine originale
-    return 0;
-  }) : [];
+      // Gestione di casi in cui un elemento non ha taglia
+      if (aCode && !bCode) return -1; // Elementi con taglia prima di quelli senza
+      if (!aCode && bCode) return 1;
+      
+      // Se nessuno ha una taglia, mantieni l'ordine originale
+      return 0;
+    });
+  }, [preferredSize]);
+
+  // Memorizza l'array ordinato
+  const sortedCycles = useMemo(() => {
+    if (!detailedCycles) return [];
+    console.log('Sorting cycles by size preference:', preferredSize);
+    return sortCyclesBySize(detailedCycles);
+  }, [detailedCycles, sortCyclesBySize, preferredSize]);
 
   if (isLoading) {
     return (
@@ -172,6 +180,21 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
+            {/* Debug: Mostra tutte le taglie disponibili */}
+            <tr>
+              <td colSpan={8} className="px-6 py-2 text-xs bg-blue-50">
+                Ordinamento per taglia: {preferredSize}
+                {sortedCycles && sortedCycles.map(cycle => 
+                  <span key={cycle.id} className="ml-2 inline-block">
+                    <span className={`px-1 text-xs rounded ${
+                      cycle.currentSize?.code === preferredSize ? 'bg-blue-200 font-bold' : 'bg-gray-100'
+                    }`}>
+                      #{cycle.id}: {cycle.currentSize?.code || 'N/A'}
+                    </span>
+                  </span>
+                )}
+              </td>
+            </tr>
             {sortedCycles && sortedCycles.length > 0 ? (
               sortedCycles.map((cycle) => {
                 // Format dates and calculate status
