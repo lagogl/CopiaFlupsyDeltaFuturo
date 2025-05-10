@@ -151,7 +151,24 @@ export default function Flupsys() {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.data?.message || error.message || "Errore durante l'eliminazione";
+      let errorMessage = "Errore durante l'eliminazione";
+      
+      // Estrai il messaggio di errore dal payload JSON se presente
+      try {
+        // Pattern tipico di errore: "409: {"success":false,"message":"Impossibile eliminare..."}"
+        const match = error.message?.match(/\d+: ({.*})/);
+        if (match && match[1]) {
+          const jsonData = JSON.parse(match[1]);
+          if (jsonData.message) {
+            errorMessage = jsonData.message;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+      } catch (e) {
+        console.error("Errore nel parsing del messaggio di errore:", e);
+      }
+      
       setDeleteError(errorMessage);
       toast({
         title: "Errore",
@@ -181,7 +198,24 @@ export default function Flupsys() {
       });
     },
     onError: (error: any) => {
-      const errorMessage = error.data?.message || error.message || "Errore durante il popolamento del FLUPSY";
+      let errorMessage = "Errore durante il popolamento del FLUPSY";
+      
+      // Estrai il messaggio di errore dal payload JSON se presente
+      try {
+        // Pattern tipico di errore: "409: {"success":false,"message":"..."}"
+        const match = error.message?.match(/\d+: ({.*})/);
+        if (match && match[1]) {
+          const jsonData = JSON.parse(match[1]);
+          if (jsonData.message) {
+            errorMessage = jsonData.message;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+      } catch (e) {
+        console.error("Errore nel parsing del messaggio di errore:", e);
+      }
+      
       setPopulateError(errorMessage);
       setPopulateResult(null);
       toast({
