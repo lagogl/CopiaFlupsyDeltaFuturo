@@ -113,11 +113,11 @@ export default function FlupsyTableView({
                 <TableCell>
                   {flupsy.sizeDistribution && Object.keys(flupsy.sizeDistribution).length > 0 ? (
                     <div className="flex flex-wrap gap-1">
-                      {Object.entries(flupsy.sizeDistribution)
+                      {Object.entries(flupsy.sizeDistribution || {})
                         .sort(([, countA], [, countB]) => Number(countB) - Number(countA))
                         .slice(0, 3)
                         .map(([size, count]) => {
-                          const totalCount = Object.values(flupsy.sizeDistribution).reduce((sum, c) => Number(sum) + Number(c), 0);
+                          const totalCount = Object.values(flupsy.sizeDistribution || {}).reduce((sum, c) => Number(sum) + Number(c), 0);
                           const percentage = totalCount > 0 ? (Number(count) / totalCount) * 100 : 0;
                           
                           return (
@@ -127,7 +127,7 @@ export default function FlupsyTableView({
                           );
                         })
                       }
-                      {Object.keys(flupsy.sizeDistribution).length > 3 && (
+                      {flupsy.sizeDistribution && Object.keys(flupsy.sizeDistribution).length > 3 && (
                         <span className="text-xs text-muted-foreground">+{Object.keys(flupsy.sizeDistribution).length - 3}</span>
                       )}
                     </div>
