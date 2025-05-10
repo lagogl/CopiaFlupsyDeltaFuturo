@@ -45,9 +45,24 @@ export async function apiRequest<T = any>(
     
     // Gestione migliore delle risposte
     if (!res.ok) {
-      // Se la risposta non è OK, lancia un errore
+      // Se la risposta non è OK, lancia un errore con i dati JSON se possibile
       const text = await res.text();
-      throw new Error(`${res.status}: ${text || res.statusText}`);
+      const error = new Error(`${res.status}: ${text || res.statusText}`);
+      
+      // Aggiungi proprietà personalizzate all'errore per un migliore handling
+      try {
+        if (text && text.trim().startsWith('{')) {
+          const jsonData = JSON.parse(text);
+          // @ts-ignore - Aggiungiamo proprietà personalizzate all'oggetto Error
+          error.data = jsonData;
+          // @ts-ignore - Aggiungiamo il messaggio come proprietà autonoma
+          error.responseMessage = jsonData.message || '';
+        }
+      } catch (e) {
+        console.warn('Failed to parse error response as JSON:', e);
+      }
+      
+      throw error;
     }
     
     // Clona la risposta per poterla ispezionare e poi restituirla

@@ -151,23 +151,19 @@ export default function Flupsys() {
       });
     },
     onError: (error: any) => {
-      let errorMessage = "Errore durante l'eliminazione";
+      // Utilizza direttamente la proprietà responseMessage che abbiamo aggiunto in queryClient
+      // o ricorre al fallback sulle proprietà standard
+      const errorMessage = 
+        // @ts-ignore - Usiamo la proprietà personalizzata che abbiamo aggiunto
+        error.responseMessage || 
+        // @ts-ignore - Controlliamo anche la proprietà data.message
+        (error.data && error.data.message) || 
+        // Fallback al messaggio standard
+        error.message || 
+        "Errore durante l'eliminazione";
       
-      // Estrai il messaggio di errore dal payload JSON se presente
-      try {
-        // Pattern tipico di errore: "409: {"success":false,"message":"Impossibile eliminare..."}"
-        const match = error.message?.match(/\d+: ({.*})/);
-        if (match && match[1]) {
-          const jsonData = JSON.parse(match[1]);
-          if (jsonData.message) {
-            errorMessage = jsonData.message;
-          }
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-      } catch (e) {
-        console.error("Errore nel parsing del messaggio di errore:", e);
-      }
+      console.log("Errore completo:", error);
+      console.log("Messaggio di errore estratto:", errorMessage);
       
       setDeleteError(errorMessage);
       toast({
@@ -198,23 +194,19 @@ export default function Flupsys() {
       });
     },
     onError: (error: any) => {
-      let errorMessage = "Errore durante il popolamento del FLUPSY";
+      // Utilizza direttamente la proprietà responseMessage che abbiamo aggiunto in queryClient
+      // o ricorre al fallback sulle proprietà standard
+      const errorMessage = 
+        // @ts-ignore - Usiamo la proprietà personalizzata che abbiamo aggiunto
+        error.responseMessage || 
+        // @ts-ignore - Controlliamo anche la proprietà data.message
+        (error.data && error.data.message) || 
+        // Fallback al messaggio standard
+        error.message || 
+        "Errore durante il popolamento del FLUPSY";
       
-      // Estrai il messaggio di errore dal payload JSON se presente
-      try {
-        // Pattern tipico di errore: "409: {"success":false,"message":"..."}"
-        const match = error.message?.match(/\d+: ({.*})/);
-        if (match && match[1]) {
-          const jsonData = JSON.parse(match[1]);
-          if (jsonData.message) {
-            errorMessage = jsonData.message;
-          }
-        } else if (error.message) {
-          errorMessage = error.message;
-        }
-      } catch (e) {
-        console.error("Errore nel parsing del messaggio di errore:", e);
-      }
+      console.log("Errore completo:", error);
+      console.log("Messaggio di errore estratto:", errorMessage);
       
       setPopulateError(errorMessage);
       setPopulateResult(null);
