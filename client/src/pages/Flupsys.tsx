@@ -12,9 +12,17 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Check, Plus, X, Edit, Trash2, AlertTriangle, Fish } from "lucide-react";
+import { Check, Plus, X, Edit, Trash2, AlertTriangle, Fish, LayoutGrid, Table2 } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Sparklines, SparklinesLine, SparklinesSpots } from 'react-sparklines';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 // Definizione del tipo per un'unità Flupsy
 interface Flupsy {
@@ -46,6 +54,7 @@ export default function Flupsys() {
   const [deleteError, setDeleteError] = useState<string | null>(null);
   const [populateError, setPopulateError] = useState<string | null>(null);
   const [populateResult, setPopulateResult] = useState<string | null>(null);
+  const [viewMode, setViewMode] = useState<'cards' | 'table'>('cards');
   const [newFlupsy, setNewFlupsy] = useState({
     name: "",
     location: "",
@@ -308,12 +317,33 @@ export default function Flupsys() {
     <div className="container mx-auto py-8">
       <div className="flex items-center justify-between mb-6">
         <h1 className="text-3xl font-bold">Unità FLUPSY</h1>
-        <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
-          <DialogTrigger asChild>
-            <Button className="flex items-center">
-              <Plus className="mr-2 h-4 w-4" /> Aggiungi Unità FLUPSY
+        <div className="flex items-center gap-2">
+          <div className="flex items-center bg-muted rounded-md p-1 mr-2">
+            <Button
+              variant={viewMode === 'cards' ? "secondary" : "ghost"} 
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => setViewMode('cards')}
+            >
+              <LayoutGrid className="h-4 w-4 mr-1" />
+              Card
             </Button>
-          </DialogTrigger>
+            <Button
+              variant={viewMode === 'table' ? "secondary" : "ghost"}
+              size="sm"
+              className="h-8 px-2"
+              onClick={() => setViewMode('table')}
+            >
+              <Table2 className="h-4 w-4 mr-1" />
+              Tabella
+            </Button>
+          </div>
+          <Dialog open={isDialogOpen} onOpenChange={setIsDialogOpen}>
+            <DialogTrigger asChild>
+              <Button className="flex items-center">
+                <Plus className="mr-2 h-4 w-4" /> Aggiungi Unità FLUPSY
+              </Button>
+            </DialogTrigger>
           <DialogContent className="sm:max-w-[550px]">
             <form onSubmit={handleSubmit}>
               <DialogHeader>
