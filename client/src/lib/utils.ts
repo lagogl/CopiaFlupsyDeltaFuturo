@@ -29,19 +29,22 @@ export function monthlyToDaily(monthlyPercentage: number): number {
   return monthlyPercentage;
 }
 
-export function formatNumberWithCommas(value: number, decimals: number = 0): string {
-  // Gestisci i casi in cui value è undefined o null
-  if (value === undefined || value === null) {
+export function formatNumberWithCommas(value: number | string, decimals: number = 0): string {
+  // Converti la stringa in numero se necessario
+  const numValue = typeof value === 'string' ? parseFloat(value) : value;
+  
+  // Gestisci i casi in cui value è undefined, null o NaN
+  if (numValue === undefined || numValue === null || isNaN(numValue)) {
     return "0";
   }
   
   // Gestiamo i numeri molto piccoli - se il valore è minore di 1 e maggiore di zero, usiamo decimali adattabili
-  if (value > 0 && value < 1 && decimals === 0) {
+  if (numValue > 0 && numValue < 1 && decimals === 0) {
     decimals = 3; // Default a 3 decimali per i numeri molto piccoli
   }
   
   // Arrotonda il valore al numero di decimali specificato
-  const roundedValue = decimals > 0 ? value.toFixed(decimals) : Math.round(value).toString();
+  const roundedValue = decimals > 0 ? numValue.toFixed(decimals) : Math.round(numValue).toString();
   
   // Formato europeo: 1.000,00 (punto come separatore delle migliaia, virgola per i decimali)
   const [integerPart, decimalPart] = roundedValue.split(".");
