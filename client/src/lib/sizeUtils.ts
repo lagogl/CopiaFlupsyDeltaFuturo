@@ -3,6 +3,28 @@
  */
 
 /**
+ * Estrae il valore numerico da un codice taglia (es. 'TP-500' → 500)
+ * @param sizeCode - Codice della taglia (es. 'TP-500')
+ * @returns Valore numerico della taglia
+ */
+export function getSizeNumberFromCode(sizeCode: string): number {
+  if (!sizeCode || !sizeCode.startsWith('TP-')) return 0;
+  return parseInt(sizeCode.replace('TP-', '')) || 0;
+}
+
+/**
+ * Calcola la distanza tra due taglie per l'ordinamento
+ * @param sizeCode1 - Codice della prima taglia (es. 'TP-500')
+ * @param sizeCode2 - Codice della seconda taglia (es. 'TP-800')
+ * @returns Distanza numerica tra le due taglie
+ */
+export function getSizeDistance(sizeCode1: string, sizeCode2: string): number {
+  const size1 = getSizeNumberFromCode(sizeCode1);
+  const size2 = getSizeNumberFromCode(sizeCode2);
+  return Math.abs(size1 - size2);
+}
+
+/**
  * Restituisce il colore appropriato per una taglia specifica in formato esadecimale
  * @param sizeCode - Codice della taglia (es. 'TP-500')
  * @returns Codice colore esadecimale
