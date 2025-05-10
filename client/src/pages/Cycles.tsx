@@ -755,11 +755,6 @@ export default function Cycles() {
                     ? lots.find(l => l.id === primaAttivazione.lotId) 
                     : null;
                     
-                  // Info taglia dal ciclo
-                  const currentSize = cycle.currentSize 
-                    ? sizes.find(s => s.id === cycle.currentSize?.id)?.code 
-                    : 'N/A';
-                    
                   // Altri dati dalle operazioni più recenti
                   // Prima cerchiamo l'operazione più recente di tipo misura o peso
                   const cycleOperations = operations.filter(op => op.cycleId === cycle.id);
@@ -783,7 +778,12 @@ export default function Cycles() {
                   const animalCount = latestMeasurement?.animalCount || firstOperation?.animalCount || 0;
                   
                   // Otteniamo la taglia dall'operazione più recente
-                  const currentSize = latestMeasurement?.size || firstOperation?.size;
+                  const operationSize = latestMeasurement?.size || firstOperation?.size;
+                  
+                  // Fallback alla taglia dalle API di ciclo se disponibile
+                  const currentSizeCode = cycle.currentSize 
+                    ? sizes.find(s => s.id === cycle.currentSize?.id)?.code 
+                    : null;
                   
                   // SGR dall'operazione più recente
                   const currentSgr = latestMeasurement?.sgr;
@@ -836,15 +836,19 @@ export default function Cycles() {
                         {duration}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap text-xs">
-                        {currentSize ? (
+                        {operationSize ? (
                           <span 
                             className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full" 
                             style={{
-                              backgroundColor: currentSize.color ? `${currentSize.color}26` : '#e5e7eb',
-                              color: currentSize.color || '#4b5563'
+                              backgroundColor: operationSize.color ? `${operationSize.color}26` : '#e5e7eb',
+                              color: operationSize.color || '#4b5563'
                             }}
                           >
-                            {currentSize.code}
+                            {operationSize.code}
+                          </span>
+                        ) : currentSizeCode ? (
+                          <span className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {currentSizeCode}
                           </span>
                         ) : (
                           <span className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-500">
@@ -875,21 +879,21 @@ export default function Cycles() {
                         {animalCount.toLocaleString()}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {cycle.currentSgr && (
+                        {currentSgr ? (
                           <TooltipProvider>
                             <Tooltip>
                               <TooltipTrigger asChild>
-                                <span className="cursor-help">{cycle.currentSgr.percentage.toFixed(1)}%</span>
+                                <span className="cursor-help">{currentSgr.percentage.toFixed(1)}%</span>
                               </TooltipTrigger>
                               <TooltipContent side="top">
                                 <div className="text-xs">
                                   <p><strong>SGR:</strong> Tasso di crescita specifico</p>
-                                  <p><strong>Valore:</strong> {cycle.currentSgr.percentage.toFixed(2)}%</p>
+                                  <p><strong>Valore:</strong> {currentSgr.percentage.toFixed(2)}%</p>
                                 </div>
                               </TooltipContent>
                             </Tooltip>
                           </TooltipProvider>
-                        ) || '-'}
+                        ) : '-'}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap">
                         <Badge variant="outline" className={`px-1.5 py-0 text-xs ${
