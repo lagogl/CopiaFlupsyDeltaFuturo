@@ -3255,8 +3255,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         basket.currentCycleId !== null
       );
       
+      console.log("Ceste con cicli attivi:", JSON.stringify(basketsWithActiveCycles, null, 2));
+      
       if (basketsWithActiveCycles.length > 0) {
-        const activeBasketNumbers = basketsWithActiveCycles.map(b => b.physicalNumber).join(', ');
+        // Formatta il messaggio per mostrare chiaramente i numeri dei cestelli
+        const activeBasketNumbers = basketsWithActiveCycles
+          .map(b => `Cestello #${b.physicalNumber}`)
+          .join(', ');
+        
         return res.status(409).json({ 
           success: false, 
           message: `Impossibile eliminare il FLUPSY. Le seguenti ceste hanno cicli attivi: ${activeBasketNumbers}. Terminare prima i cicli attivi.` 
