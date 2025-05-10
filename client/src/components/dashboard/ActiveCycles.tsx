@@ -44,7 +44,7 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
 
   // Query for active cycles with more details
   const { data: detailedCycles, isLoading } = useQuery<Cycle[]>({
-    queryKey: ['/api/cycles/active'],
+    queryKey: ['/api/cycles/active-with-details'],
   });
 
   // Salva la taglia preferita in localStorage
@@ -54,7 +54,10 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
 
   // Definisci la funzione di ordinamento
   const sortCyclesBySize = useCallback((cycles: Cycle[]) => {
-    return [...cycles].sort((a, b) => {
+    console.log("Sorting cycles by size preference:", preferredSize);
+    console.log("Cycles before sorting:", cycles.map(c => ({id: c.id, size: c.currentSize?.code || 'N/A'})));
+    
+    const sorted = [...cycles].sort((a, b) => {
       const aCode = a.currentSize?.code;
       const bCode = b.currentSize?.code;
       
@@ -64,8 +67,14 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
         const aHasExactMatch = aCode === preferredSize;
         const bHasExactMatch = bCode === preferredSize;
         
-        if (aHasExactMatch && !bHasExactMatch) return -1;
-        if (!aHasExactMatch && bHasExactMatch) return 1;
+        if (aHasExactMatch && !bHasExactMatch) {
+          console.log(`Cycle ${a.id} (${aCode}) matches preferred size ${preferredSize} exactly, moving before ${b.id} (${bCode})`);
+          return -1;
+        }
+        if (!aHasExactMatch && bHasExactMatch) {
+          console.log(`Cycle ${b.id} (${bCode}) matches preferred size ${preferredSize} exactly, moving before ${a.id} (${aCode})`);
+          return 1;
+        }
         
         // Seconda priorità: somiglianza alla taglia target
         const aDistance = getSizeDistance(aCode, preferredSize);
@@ -73,22 +82,34 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
         
         if (aDistance !== bDistance) {
           // Ordina per distanza dalla taglia richiesta (più vicina prima)
+          console.log(`Comparing distances: ${a.id} (${aCode}) distance=${aDistance} vs ${b.id} (${bCode}) distance=${bDistance}`);
           return aDistance - bDistance;
         }
         
         // Se le distanze sono uguali, ordina numericamente per valore assoluto della taglia
         const aValue = getSizeNumberFromCode(aCode);
         const bValue = getSizeNumberFromCode(bCode);
+        console.log(`Equal distances, comparing size values: ${a.id} (${aCode}) value=${aValue} vs ${b.id} (${bCode}) value=${bValue}`);
         return aValue - bValue;
       }
       
       // Gestione di casi in cui un elemento non ha taglia
-      if (aCode && !bCode) return -1; // Elementi con taglia prima di quelli senza
-      if (!aCode && bCode) return 1;
+      if (aCode && !bCode) {
+        console.log(`Cycle ${a.id} has size (${aCode}), moving before ${b.id} (no size)`);
+        return -1; // Elementi con taglia prima di quelli senza
+      }
+      if (!aCode && bCode) {
+        console.log(`Cycle ${b.id} has size (${bCode}), moving before ${a.id} (no size)`);
+        return 1;
+      }
       
       // Se nessuno ha una taglia, mantieni l'ordine originale
+      console.log(`Both cycles ${a.id} and ${b.id} have no size, keeping original order`);
       return 0;
     });
+    
+    console.log("Cycles after sorting:", sorted.map(c => ({id: c.id, size: c.currentSize?.code || 'N/A'})));
+    return sorted;
   }, [preferredSize]);
 
   // Memorizza l'array ordinato
@@ -236,18 +257,24 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
                     <td className="px-6 py-4 whitespace-nowrap">
                       {cycle.currentSize ? (
                         <div className="flex items-center gap-1">
-                          <span className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full ${
-                            cycle.currentSize.code === preferredSize
-                              ? 'bg-blue-100 text-blue-800 border border-blue-400'
-                              : getSizeBadgeClass(cycle.currentSize.code)
-                          }`}>
+                          <span 
+                            className={`px-2 py-1 inline-flex text-xs leading-5 font-semibold rounded-full relative ${
+                              cycle.currentSize.code === preferredSize
+                                ? 'bg-blue-100 text-blue-800 border-2 border-blue-500 shadow-md' 
+                                : getSizeBadgeClass(cycle.currentSize.code)
+                            }`}
+                            style={{
+                              transition: 'all 0.2s ease-in-out',
+                              transform: cycle.currentSize.code === preferredSize ? 'scale(1.1)' : 'scale(1)'
+                            }}
+                          >
                             {cycle.currentSize.code}
+                            {cycle.currentSize.code === preferredSize && (
+                              <span className="absolute -top-1 -right-1 bg-blue-500 rounded-full p-0.5">
+                                <Check className="h-3 w-3 text-white" />
+                              </span>
+                            )}
                           </span>
-                          {cycle.currentSize.code === preferredSize && (
-                            <span className="text-blue-600" title="Taglia preferita">
-                              <Check className="h-4 w-4" />
-                            </span>
-                          )}
                         </div>
                       ) : (
                         <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">
