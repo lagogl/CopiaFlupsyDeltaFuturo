@@ -732,12 +732,12 @@ export default function DiarioDiBordo() {
                               
                               <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
                                 <div>
-                                  <span className="font-semibold">N. Animali:</span> {op.animal_count ? Number(op.animal_count).toLocaleString('it-IT') : 'N/D'}
+                                  <span className="font-semibold">N. Animali:</span> {op.animal_count ? formatNumberWithCommas(op.animal_count) : 'N/D'}
                                 </div>
                                 
                                 {op.animals_per_kg && (
                                   <div>
-                                    <span className="font-semibold">Animali/Kg:</span> {Number(op.animals_per_kg).toLocaleString('it-IT')}
+                                    <span className="font-semibold">Animali/Kg:</span> {formatNumberWithCommas(op.animals_per_kg)}
                                   </div>
                                 )}
                                 
@@ -865,7 +865,7 @@ export default function DiarioDiBordo() {
                                   <div className="flex justify-between items-center text-sm font-semibold">
                                     <span>Bilancio finale (giacenza + bilancio netto):</span>
                                     <span className="text-primary">
-                                      {(Number(giacenza.totale_giacenza) + Number(totals.bilancio_netto)).toLocaleString('it-IT')}
+                                      {formatNumberWithCommas(Number(giacenza.totale_giacenza) + Number(totals.bilancio_netto))}
                                     </span>
                                   </div>
                                 </div>
