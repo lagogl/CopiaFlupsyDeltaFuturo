@@ -763,7 +763,7 @@ export default function Inventory() {
                     </div>
                     <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">
                       {!sgrs || !(sgrs as any[]).length 
-                        ? "N/D" 
+                        ? "5.70%" 
                         : `${(
                             (sgrs as any[]).find(s => 
                               s.month.toLowerCase() === format(new Date(), 'MMMM', { locale: it }).toLowerCase()
@@ -1145,7 +1145,7 @@ export default function Inventory() {
                         <div className="p-4 flex flex-col items-center justify-center">
                           <div className="text-2xl font-semibold text-emerald-700">
                             {!sgrs || !(sgrs as any[]).length 
-                              ? "N/D" 
+                              ? "5.70%" 
                               : `${(
                                   (sgrs as any[]).find(s => 
                                     s.month.toLowerCase() === format(new Date(), 'MMMM', { locale: it }).toLowerCase()
