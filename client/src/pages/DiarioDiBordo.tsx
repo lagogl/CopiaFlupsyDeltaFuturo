@@ -731,12 +731,12 @@ export default function DiarioDiBordo() {
                               
                               <div className="flex flex-wrap gap-x-4 gap-y-2 text-sm">
                                 <div>
-                                  <span className="font-semibold">N. Animali:</span> {op.animal_count?.toLocaleString('it-IT') || 'N/D'}
+                                  <span className="font-semibold">N. Animali:</span> {op.animal_count ? Number(op.animal_count).toLocaleString('it-IT') : 'N/D'}
                                 </div>
                                 
                                 {op.animals_per_kg && (
                                   <div>
-                                    <span className="font-semibold">Animali/Kg:</span> {op.animals_per_kg.toLocaleString('it-IT')}
+                                    <span className="font-semibold">Animali/Kg:</span> {Number(op.animals_per_kg).toLocaleString('it-IT')}
                                   </div>
                                 )}
                                 
@@ -809,20 +809,20 @@ export default function DiarioDiBordo() {
                               <div className="flex justify-between items-center text-sm">
                                 <span>Entrate:</span>
                                 <span className="text-green-600 font-medium">
-                                  +{totals?.totale_entrate?.toLocaleString('it-IT') || '0'}
+                                  +{totals?.totale_entrate ? Number(totals.totale_entrate).toLocaleString('it-IT') : '0'}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Uscite:</span>
                                 <span className="text-red-600 font-medium">
-                                  -{totals?.totale_uscite?.toLocaleString('it-IT') || '0'}
+                                  -{totals?.totale_uscite ? Number(totals.totale_uscite).toLocaleString('it-IT') : '0'}
                                 </span>
                               </div>
                               <Separator className="my-1" />
                               <div className="flex justify-between items-center text-sm font-medium">
                                 <span>Bilancio netto:</span>
                                 <span className={parseInt(totals?.bilancio_netto || '0') >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                  {parseInt(totals?.bilancio_netto || '0') >= 0 ? '+' : ''}{totals?.bilancio_netto?.toLocaleString('it-IT') || '0'}
+                                  {parseInt(totals?.bilancio_netto || '0') >= 0 ? '+' : ''}{totals?.bilancio_netto ? Number(totals.bilancio_netto).toLocaleString('it-IT') : '0'}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center text-sm mt-4">
@@ -842,7 +842,7 @@ export default function DiarioDiBordo() {
                             <div className="space-y-4">
                               <div className="flex justify-between items-center">
                                 <span className="font-medium">Totale animali:</span>
-                                <span className="text-lg font-bold">{giacenza?.totale_giacenza?.toLocaleString('it-IT') || '0'}</span>
+                                <span className="text-lg font-bold">{giacenza?.totale_giacenza ? Number(giacenza.totale_giacenza).toLocaleString('it-IT') : '0'}</span>
                               </div>
                               
                               {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.length > 0 && (
@@ -852,7 +852,7 @@ export default function DiarioDiBordo() {
                                     {giacenza.dettaglio_taglie.map((taglia: any, idx: number) => (
                                       <div key={idx} className="flex justify-between items-center text-sm border-b pb-1">
                                         <span>{taglia.taglia === 'Non specificata' ? 'In attesa' : taglia.taglia}:</span>
-                                        <span className="font-medium">{taglia.quantita.toLocaleString('it-IT')}</span>
+                                        <span className="font-medium">{Number(taglia.quantita).toLocaleString('it-IT')}</span>
                                       </div>
                                     ))}
                                   </div>
@@ -864,7 +864,7 @@ export default function DiarioDiBordo() {
                                   <div className="flex justify-between items-center text-sm font-semibold">
                                     <span>Bilancio finale (giacenza + bilancio netto):</span>
                                     <span className="text-primary">
-                                      {(giacenza.totale_giacenza + parseInt(totals.bilancio_netto)).toLocaleString('it-IT')}
+                                      {(Number(giacenza.totale_giacenza) + Number(totals.bilancio_netto)).toLocaleString('it-IT')}
                                     </span>
                                   </div>
                                 </div>
