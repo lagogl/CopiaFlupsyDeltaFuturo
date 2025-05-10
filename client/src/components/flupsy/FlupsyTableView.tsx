@@ -12,12 +12,30 @@ import {
 } from "@/components/ui/table";
 import { Edit, RefreshCw, Trash2 } from "lucide-react";
 
+interface Flupsy {
+  id: number;
+  name: string;
+  location?: string;
+  description?: string;
+  active: boolean;
+  maxPositions: number;
+  productionCenter?: string;
+  totalBaskets?: number;
+  activeBaskets?: number;
+  availableBaskets?: number;
+  freePositions?: number;
+  totalAnimals?: number;
+  sizeDistribution?: Record<string, number>;
+  avgAnimalDensity?: number;
+  activeBasketPercentage?: number;
+}
+
 interface FlupsyTableViewProps {
-  flupsys: any[];
+  flupsys: Flupsy[];
   userRole?: string;
-  onEdit: (flupsy: any) => void;
-  onDelete: (flupsy: any) => void;
-  onPopulate: (flupsy: any) => void;
+  onEdit: (flupsy: Flupsy) => void;
+  onDelete: (flupsy: Flupsy) => void;
+  onPopulate: (flupsy: Flupsy) => void;
 }
 
 export default function FlupsyTableView({
@@ -69,12 +87,18 @@ export default function FlupsyTableView({
                   {flupsy.activeBaskets || 0}
                 </TableCell>
                 <TableCell className="text-center font-medium">
-                  <div className="flex items-center justify-center">
-                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800">
-                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
-                        {flupsy.activeBasketPercentage || 0}%
-                      </span>
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="h-2 w-16 bg-muted rounded-full overflow-hidden mb-1">
+                      <div 
+                        className="h-full bg-blue-500 rounded-full" 
+                        style={{ 
+                          width: `${flupsy.activeBasketPercentage || 0}%` 
+                        }}
+                      ></div>
                     </div>
+                    <span className="text-sm font-bold">
+                      {flupsy.activeBasketPercentage || 0}%
+                    </span>
                   </div>
                 </TableCell>
                 <TableCell className="text-center font-medium text-amber-600 dark:text-amber-400">

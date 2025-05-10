@@ -61,6 +61,8 @@ export default function Flupsys() {
     activeBaskets?: number;
     availableBaskets?: number;
     freePositions?: number;
+    avgAnimalDensity?: number;
+    activeBasketPercentage?: number;
   }
   
   // Fetching FLUPSY units with additional statistics
@@ -713,30 +715,53 @@ export default function Flupsys() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-3 gap-3">
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-muted-foreground">Cestelli</p>
-                        <p className="text-2xl font-bold">{flupsy.totalBaskets || 0}/{flupsy.maxPositions}</p>
+                        <p className="text-xl font-bold">{flupsy.totalBaskets || 0}/{flupsy.maxPositions}</p>
                       </div>
                       <div className="space-y-1">
                         <p className="text-sm font-medium text-muted-foreground">Cestelli Attivi</p>
-                        <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">{flupsy.activeBaskets || 0}</p>
+                        <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{flupsy.activeBaskets || 0}</p>
+                      </div>
+                      <div className="space-y-1">
+                        <p className="text-sm font-medium text-muted-foreground">Animali/Cesto</p>
+                        <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
+                          {flupsy.avgAnimalDensity?.toLocaleString() || 0}
+                        </p>
                       </div>
                     </div>
                     
-                    <div className="pt-2">
-                      <p className="text-sm font-medium text-muted-foreground mb-1">Posizioni Libere</p>
-                      <div className="h-2 bg-muted rounded-full overflow-hidden">
-                        <div 
-                          className="h-full bg-green-500 rounded-full" 
-                          style={{ 
-                            width: `${((flupsy.maxPositions - (flupsy.totalBaskets || 0)) / flupsy.maxPositions) * 100}%` 
-                          }}
-                        ></div>
+                    <div className="grid grid-cols-2 gap-3 pt-1">
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Posizioni Libere</p>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-green-500 rounded-full" 
+                            style={{ 
+                              width: `${((flupsy.maxPositions - (flupsy.totalBaskets || 0)) / flupsy.maxPositions) * 100}%` 
+                            }}
+                          ></div>
+                        </div>
+                        <p className="text-xs mt-1 text-green-600 dark:text-green-400 font-medium">
+                          {flupsy.maxPositions - (flupsy.totalBaskets || 0)} disponibili
+                        </p>
                       </div>
-                      <p className="text-sm mt-1 text-green-600 dark:text-green-400 font-medium">
-                        {flupsy.maxPositions - (flupsy.totalBaskets || 0)} posizioni disponibili
-                      </p>
+                      
+                      <div>
+                        <p className="text-sm font-medium text-muted-foreground mb-1">Occupazione Attivi</p>
+                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                          <div 
+                            className="h-full bg-blue-500 rounded-full" 
+                            style={{ 
+                              width: `${flupsy.activeBasketPercentage || 0}%` 
+                            }}
+                          ></div>
+                        </div>
+                        <p className="text-xs mt-1 text-blue-600 dark:text-blue-400 font-medium">
+                          {flupsy.activeBasketPercentage || 0}% occupazione
+                        </p>
+                      </div>
                     </div>
                     
                     {flupsy.sizeDistribution && Object.keys(flupsy.sizeDistribution).length > 0 && (
