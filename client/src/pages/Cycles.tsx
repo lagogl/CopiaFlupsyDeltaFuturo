@@ -27,6 +27,15 @@ interface Operation {
   date: string;
   lotId?: number;
   animalCount?: number;
+  size?: {
+    id: number;
+    code: string;
+    color?: string;
+  };
+  sgr?: {
+    id: number;
+    percentage: number;
+  };
 }
 
 // Definizione dell'interfaccia Size per tipizzare i dati della taglia
@@ -752,12 +761,32 @@ export default function Cycles() {
                     : 'N/A';
                     
                   // Altri dati dalle operazioni più recenti
-                  const latestMeasurement = operations.find(
-                    op => op.cycleId === cycle.id && (op.type === 'misura' || op.type === 'peso')
+                  // Prima cerchiamo l'operazione più recente di tipo misura o peso
+                  const cycleOperations = operations.filter(op => op.cycleId === cycle.id);
+                  
+                  // Ordinamento per data decrescente per ottenere l'operazione più recente
+                  const sortedOperations = cycleOperations.sort((a, b) => 
+                    new Date(b.date).getTime() - new Date(a.date).getTime()
                   );
                   
-                  const animalCount = latestMeasurement?.animalCount || 0;
-                  const sgrValue = cycle.currentSgr ? `${cycle.currentSgr.percentage.toFixed(1)}%` : '-';
+                  // Otteniamo prima l'operazione più recente di misura o peso
+                  const latestMeasurement = sortedOperations.find(
+                    op => op.type === 'misura' || op.type === 'peso'
+                  );
+                  
+                  // In alternativa, usiamo l'operazione di prima attivazione se disponibile
+                  const firstOperation = sortedOperations.find(
+                    op => op.type === 'prima-attivazione'
+                  );
+                  
+                  // Conteggio animali
+                  const animalCount = latestMeasurement?.animalCount || firstOperation?.animalCount || 0;
+                  
+                  // Otteniamo la taglia dall'operazione più recente
+                  const currentSize = latestMeasurement?.size || firstOperation?.size;
+                  
+                  // SGR dall'operazione più recente
+                  const currentSgr = latestMeasurement?.sgr;
                   
                   return (
                     <tr key={cycle.id} className={isSoldCycle ? 'relative bg-red-50/20 hover:bg-gray-50' : 'hover:bg-gray-50'}>
@@ -807,9 +836,15 @@ export default function Cycles() {
                         {duration}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap text-xs">
-                        {currentSize !== 'N/A' ? (
-                          <span className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            {currentSize}
+                        {currentSize ? (
+                          <span 
+                            className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full" 
+                            style={{
+                              backgroundColor: currentSize.color ? `${currentSize.color}26` : '#e5e7eb',
+                              color: currentSize.color || '#4b5563'
+                            }}
+                          >
+                            {currentSize.code}
                           </span>
                         ) : (
                           <span className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-500">
