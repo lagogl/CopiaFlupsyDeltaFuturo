@@ -162,6 +162,7 @@ export default function DraggableFlupsyVisualizer() {
   const [showFlupsySelector, setShowFlupsySelector] = useState(false);
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingBasketMove, setPendingBasketMove] = useState<PendingBasketMove | null>(null);
+  const [userDeselectedAll, setUserDeselectedAll] = useState(false);
 
   // Data queries
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
@@ -170,12 +171,13 @@ export default function DraggableFlupsyVisualizer() {
   });
   
   // Quando i dati dei FLUPSY sono caricati, seleziona automaticamente tutti i FLUPSY
+  // solo se l'utente non ha esplicitamente deselezionato tutto
   useEffect(() => {
-    if (flupsys && Array.isArray(flupsys) && flupsys.length > 0 && selectedFlupsyIds.length === 0) {
+    if (flupsys && Array.isArray(flupsys) && flupsys.length > 0 && selectedFlupsyIds.length === 0 && !userDeselectedAll) {
       // Solo se non ci sono già FLUPSY selezionati (per evitare loop)
       setSelectedFlupsyIds(flupsys.map(f => f.id));
     }
-  }, [flupsys, selectedFlupsyIds.length]);
+  }, [flupsys, selectedFlupsyIds.length, userDeselectedAll]);
 
   const { data: baskets, isLoading: isLoadingBaskets, refetch: refetchBaskets } = useQuery({
     queryKey: ['/api/baskets'],
@@ -823,12 +825,14 @@ export default function DraggableFlupsyVisualizer() {
     const selectAll = () => {
       if (flupsys && flupsys.length > 0) {
         setSelectedFlupsyIds(flupsys.map(f => f.id));
+        setUserDeselectedAll(false);
       }
     };
     
     // Funzione per deselezionare tutti i FLUPSY
     const deselectAll = () => {
       setSelectedFlupsyIds([]);
+      setUserDeselectedAll(true);
     };
     
     return (
@@ -878,9 +882,22 @@ export default function DraggableFlupsyVisualizer() {
                     className="text-xs h-7 justify-start overflow-hidden"
                     onClick={() => {
                       if (selectedFlupsyIds.includes(flupsy.id)) {
-                        setSelectedFlupsyIds(selectedFlupsyIds.filter(id => id !== flupsy.id));
+                        // Deseleziona un singolo FLUPSY
+                        const newSelection = selectedFlupsyIds.filter(id => id !== flupsy.id);
+                        setSelectedFlupsyIds(newSelection);
+                        
+                        // Se abbiamo deselezionato tutto, imposta il flag
+                        if (newSelection.length === 0) {
+                          setUserDeselectedAll(true);
+                        }
                       } else {
+                        // Seleziona un singolo FLUPSY
                         setSelectedFlupsyIds([...selectedFlupsyIds, flupsy.id]);
+                        
+                        // Se tutti i FLUPSY sono selezionati, reset del flag
+                        if (selectedFlupsyIds.length + 1 === flupsys.length) {
+                          setUserDeselectedAll(false);
+                        }
                       }
                     }}
                   >
