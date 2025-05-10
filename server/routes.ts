@@ -4,12 +4,13 @@ import { storage } from "./storage";
 import path from 'path';
 import fs from 'fs';
 import { db } from "./db";
-import { eq, and, isNull, sql } from "drizzle-orm";
+import { eq, and, isNull, sql, count, inArray } from "drizzle-orm";
 import { 
   selections, 
   selectionSourceBaskets,
   selectionDestinationBaskets,
-  insertUserSchema
+  insertUserSchema,
+  cycles
 } from "../shared/schema";
 import { 
   getNotificationSettings, 
@@ -3148,20 +3149,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Ottieni tutti i cestelli associati a questo FLUPSY
           const baskets = await storage.getBasketsByFlupsy(flupsy.id);
           
-          // Ottieni i cicli attivi per questo FLUPSY
-          const activeCycles = await db.select()
+          // Ottieni tutti i cicli attivi (senza endDate) di questo FLUPSY
+          const activeCyclesCount = await db.select({ count: count() })
             .from(cycles)
-            .innerJoin(baskets, eq(cycles.basketId, baskets.id))
             .where(
               and(
-                eq(baskets.flupsyId, flupsy.id),
+                inArray(cycles.basketId, baskets.map(b => b.id)),
                 isNull(cycles.endDate)
               )
             );
           
           // Calcola il numero di cestelli disponibili e con cicli attivi
           const totalBaskets = baskets.length;
-          const activeBaskets = activeCycles.length;
+          const activeBaskets = activeCyclesCount[0]?.count || 0;
           const availableBaskets = totalBaskets - activeBaskets;
           
           // Calcola le posizioni occupate e posizioni libere

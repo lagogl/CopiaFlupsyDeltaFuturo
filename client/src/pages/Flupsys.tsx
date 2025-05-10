@@ -47,10 +47,18 @@ export default function Flupsys() {
     productionCenter: ""
   });
 
-  // Fetching FLUPSY units
-  const { data: flupsys = [], isLoading } = useQuery<Flupsy[]>({
-    queryKey: ['/api/flupsys'],
-    select: (data: Flupsy[]) => data || []
+  // Aggiornamento dell'interfaccia per includere le statistiche aggiuntive
+  interface EnhancedFlupsy extends Flupsy {
+    totalBaskets?: number;
+    activeBaskets?: number;
+    availableBaskets?: number;
+    freePositions?: number;
+  }
+  
+  // Fetching FLUPSY units with additional statistics
+  const { data: flupsys = [], isLoading } = useQuery<EnhancedFlupsy[]>({
+    queryKey: ['/api/flupsys?includeStats=true'],
+    select: (data: EnhancedFlupsy[]) => data || []
   });
 
   // Create FLUPSY mutation
@@ -531,6 +539,35 @@ export default function Flupsys() {
                   </div>
                 )}
                 <Separator className="my-4" />
+                
+                {/* Statistiche FLUPSY */}
+                <div className="grid grid-cols-2 gap-4 mb-4">
+                  <div className="bg-blue-50 dark:bg-blue-950 rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Cestelli Attivi</p>
+                    <p className="text-lg font-semibold text-blue-600 dark:text-blue-400">
+                      {flupsy.activeBaskets || 0}
+                    </p>
+                  </div>
+                  <div className="bg-green-50 dark:bg-green-950 rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Cestelli Disponibili</p>
+                    <p className="text-lg font-semibold text-green-600 dark:text-green-400">
+                      {flupsy.availableBaskets || 0}
+                    </p>
+                  </div>
+                  <div className="bg-amber-50 dark:bg-amber-950 rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Totale Cestelli</p>
+                    <p className="text-lg font-semibold text-amber-600 dark:text-amber-400">
+                      {flupsy.totalBaskets || 0}
+                    </p>
+                  </div>
+                  <div className="bg-purple-50 dark:bg-purple-950 rounded-lg p-2 text-center">
+                    <p className="text-xs text-muted-foreground">Posizioni Libere</p>
+                    <p className="text-lg font-semibold text-purple-600 dark:text-purple-400">
+                      {flupsy.freePositions || 0}/{flupsy.maxPositions || 0}
+                    </p>
+                  </div>
+                </div>
+                
                 <div className="grid grid-cols-2 gap-2 text-sm">
                   <Link 
                     href="/baskets" 
