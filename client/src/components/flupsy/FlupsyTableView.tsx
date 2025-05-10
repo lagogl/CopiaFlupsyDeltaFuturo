@@ -59,7 +59,7 @@ export default function FlupsyTableView({
             <TableHead className="text-center">Stato</TableHead>
             <TableHead className="text-center">Cestelli<br/>Attivi</TableHead>
             <TableHead className="text-center">% Ocupaz.<br/>Attivi</TableHead>
-            <TableHead className="text-center">Animali<br/>per Cesto</TableHead>
+            <TableHead className="text-center">Media Animali<br/>Cesta</TableHead>
             <TableHead className="text-center">Totale<br/>Animali</TableHead>
             <TableHead className="text-center">Posizioni<br/>Usate/Totali</TableHead>
             <TableHead className="text-center">Taglie Principali</TableHead>

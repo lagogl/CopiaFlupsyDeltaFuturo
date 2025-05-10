@@ -89,7 +89,7 @@ export default function FlupsyDetails() {
                   </p>
                 </div>
                 <div className="border rounded p-3">
-                  <p className="text-sm text-muted-foreground">Animali/Cestello</p>
+                  <p className="text-sm text-muted-foreground">Media Animali Cesta</p>
                   <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
                     {flupsy.avgAnimalDensity?.toLocaleString() || 0}
                   </p>

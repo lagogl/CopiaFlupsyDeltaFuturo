@@ -725,7 +725,7 @@ export default function Flupsys() {
                         <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{flupsy.activeBaskets || 0}</p>
                       </div>
                       <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Animali/Cesto</p>
+                        <p className="text-sm font-medium text-muted-foreground">Media Animali Cesta</p>
                         <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
                           {flupsy.avgAnimalDensity?.toLocaleString() || 0}
                         </p>
