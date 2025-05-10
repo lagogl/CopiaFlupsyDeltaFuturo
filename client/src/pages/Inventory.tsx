@@ -430,7 +430,7 @@ export default function Inventory() {
   // Ottiene l'SGR giornaliero dal database SGR in base al mese corrente
   const getSgrDailyRateFromDatabase = (date: Date = new Date()): number => {
     if (!sgrs || !(sgrs as any[]).length) {
-      return 0.02; // Valore predefinito se non ci sono dati SGR (2% mensile = circa 0.067% al giorno)
+      return 0.057; // Valore predefinito per Maggio (5.7% giornaliero) se non ci sono dati SGR
     }
     
     // Ottieni il nome del mese in italiano
@@ -759,7 +759,7 @@ export default function Inventory() {
                       <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center">
                         <TrendingUp className="h-3 w-3 text-blue-600" />
                       </div>
-                      <span>SGR mensile</span>
+                      <span>SGR giornaliero</span>
                     </div>
                     <span className="font-bold text-blue-900 bg-blue-50 px-2 py-0.5 rounded-md">
                       {!sgrs || !(sgrs as any[]).length 
@@ -1141,7 +1141,7 @@ export default function Inventory() {
                       </div>
                       
                       <div className="border border-emerald-100 rounded-lg p-4 bg-emerald-50/40 w-full md:w-auto">
-                        <h4 className="text-sm font-medium text-emerald-700 mb-2">SGR mensile dal database</h4>
+                        <h4 className="text-sm font-medium text-emerald-700 mb-2">SGR giornaliero dal database</h4>
                         <div className="p-4 flex flex-col items-center justify-center">
                           <div className="text-2xl font-semibold text-emerald-700">
                             {!sgrs || !(sgrs as any[]).length 
