@@ -3136,7 +3136,53 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === FLUPSY routes ===
   app.get("/api/flupsys", async (req, res) => {
     try {
+      // Ottenere i FLUPSY base
       const flupsys = await storage.getFlupsys();
+      
+      // Aggiungere statistiche per ciascun FLUPSY se richiesto
+      const includeStats = req.query.includeStats === 'true';
+      
+      if (includeStats) {
+        // Per ogni FLUPSY, aggiungi informazioni sui cestelli e cicli attivi
+        const enhancedFlupsys = await Promise.all(flupsys.map(async (flupsy) => {
+          // Ottieni tutti i cestelli associati a questo FLUPSY
+          const baskets = await storage.getBasketsByFlupsy(flupsy.id);
+          
+          // Ottieni i cicli attivi per questo FLUPSY
+          const activeCycles = await db.select()
+            .from(cycles)
+            .innerJoin(baskets, eq(cycles.basketId, baskets.id))
+            .where(
+              and(
+                eq(baskets.flupsyId, flupsy.id),
+                isNull(cycles.endDate)
+              )
+            );
+          
+          // Calcola il numero di cestelli disponibili e con cicli attivi
+          const totalBaskets = baskets.length;
+          const activeBaskets = activeCycles.length;
+          const availableBaskets = totalBaskets - activeBaskets;
+          
+          // Calcola le posizioni occupate e posizioni libere
+          const maxPositions = flupsy.maxPositions;
+          const occupiedPositions = totalBaskets;
+          const freePositions = Math.max(0, maxPositions - occupiedPositions);
+          
+          // Aggiungi le statistiche al FLUPSY
+          return {
+            ...flupsy,
+            totalBaskets,
+            activeBaskets,
+            availableBaskets,
+            freePositions
+          };
+        }));
+        
+        return res.json(enhancedFlupsys);
+      }
+      
+      // Altrimenti, restituisci i FLUPSY senza statistiche aggiuntive
       res.json(flupsys);
     } catch (error) {
       console.error("Error fetching FLUPSY units:", error);
