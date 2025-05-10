@@ -3175,6 +3175,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Ottieni le operazioni per i cestelli attivi per contare il numero di animali totale
           let totalAnimals = 0;
           let sizeDistribution: Record<string, number> = {};
+          let basketsWithAnimals = 0; // Conta i cestelli che hanno effettivamente animali
           
           // Ottieni i cicli attivi per questo FLUPSY
           const activeCycles = await db.select()
@@ -3200,6 +3201,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
               const lastOperation = operationsWithCount[0];
               if (lastOperation.animalCount) {
                 totalAnimals += lastOperation.animalCount;
+                basketsWithAnimals++; // Incrementa il contatore di cestelli con animali
                 
                 // Aggiungi i dati di distribuzione per taglia
                 if (lastOperation.sizeId) {
@@ -3216,6 +3218,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
             }
           }
           
+          // Calcola la densità media degli animali (numero di animali / cestelli con animali)
+          const avgAnimalDensity = basketsWithAnimals > 0 ? Math.round(totalAnimals / basketsWithAnimals) : 0;
+          
+          // Calcola la percentuale di occupazione con cestelli attivi
+          const activeBasketPercentage = flupsy.maxPositions > 0 
+            ? Math.round((activeBaskets / flupsy.maxPositions) * 100) 
+            : 0;
+          
           // Aggiungi le statistiche al FLUPSY
           return {
             ...flupsy,
@@ -3224,7 +3234,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             availableBaskets,
             freePositions,
             totalAnimals,
-            sizeDistribution
+            sizeDistribution,
+            avgAnimalDensity,
+            activeBasketPercentage
           };
         }));
         

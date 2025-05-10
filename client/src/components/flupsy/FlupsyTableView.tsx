@@ -39,9 +39,10 @@ export default function FlupsyTableView({
             <TableHead>Nome</TableHead>
             <TableHead>Posizione</TableHead>
             <TableHead className="text-center">Stato</TableHead>
-            <TableHead className="text-center">Cestelli Attivi</TableHead>
-            <TableHead className="text-center">Cestelli Disponibili</TableHead>
-            <TableHead className="text-center">Totale Animali</TableHead>
+            <TableHead className="text-center">Cestelli<br/>Attivi</TableHead>
+            <TableHead className="text-center">% Ocupaz.<br/>Attivi</TableHead>
+            <TableHead className="text-center">Animali<br/>per Cesto</TableHead>
+            <TableHead className="text-center">Totale<br/>Animali</TableHead>
             <TableHead className="text-center">Posizioni<br/>Usate/Totali</TableHead>
             <TableHead className="text-center">Taglie Principali</TableHead>
             <TableHead className="text-right">Azioni</TableHead>
@@ -67,8 +68,17 @@ export default function FlupsyTableView({
                 <TableCell className="text-center font-medium text-blue-600 dark:text-blue-400">
                   {flupsy.activeBaskets || 0}
                 </TableCell>
-                <TableCell className="text-center font-medium text-green-600 dark:text-green-400">
-                  {flupsy.availableBaskets || 0}
+                <TableCell className="text-center font-medium">
+                  <div className="flex items-center justify-center">
+                    <div className="w-10 h-10 rounded-full flex items-center justify-center bg-slate-100 dark:bg-slate-800">
+                      <span className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                        {flupsy.activeBasketPercentage || 0}%
+                      </span>
+                    </div>
+                  </div>
+                </TableCell>
+                <TableCell className="text-center font-medium text-amber-600 dark:text-amber-400">
+                  {flupsy.avgAnimalDensity?.toLocaleString() || 0}
                 </TableCell>
                 <TableCell className="text-center font-medium text-cyan-600 dark:text-cyan-400">
                   {flupsy.totalAnimals?.toLocaleString() || 0}
