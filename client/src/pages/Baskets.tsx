@@ -31,7 +31,7 @@ export default function Baskets() {
   const [location] = useLocation();
   const [urlParamsLoaded, setUrlParamsLoaded] = useState(false);
   const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'}>({
-    key: 'physicalNumber',
+    key: 'size.code',  // Ordina per default per la colonna taglia
     direction: 'asc'
   });
   
@@ -177,6 +177,25 @@ export default function Baskets() {
   const basketsArray = Array.isArray(baskets) ? baskets : [];
   const flupsysArray = Array.isArray(flupsys) ? flupsys : [];
   
+  // Debug - controlla quanti cestelli hanno la taglia impostata
+  useEffect(() => {
+    if (basketsArray.length > 0) {
+      const basketsWithSize = basketsArray.filter(basket => basket.size && basket.size.code);
+      const basketsWithoutSize = basketsArray.filter(basket => !basket.size || !basket.size.code);
+      
+      console.log(`Cestelli con taglia: ${basketsWithSize.length}/${basketsArray.length}`);
+      console.log(`Cestelli senza taglia: ${basketsWithoutSize.length}/${basketsArray.length}`);
+      
+      if (basketsWithoutSize.length > 0) {
+        console.log('Esempio cestello senza taglia:', basketsWithoutSize[0]);
+      }
+      
+      if (basketsWithSize.length > 0) {
+        console.log('Esempio cestello con taglia:', basketsWithSize[0]);
+      }
+    }
+  }, [basketsArray]);
+  
   // Funzione che calcola la differenza numerica tra due taglie (per ordinamento per somiglianza)
   const getSizeNumberFromCode = (sizeCode: string | undefined): number => {
     if (!sizeCode || !sizeCode.startsWith('TP-')) return 0;
@@ -228,14 +247,28 @@ export default function Baskets() {
         const aCode = a.size?.code;
         const bCode = b.size?.code;
         
-        // Se entrambi hanno taglie
+        // Priorità 1: Le ceste con stato "active" vengono prima di quelle disponibili
+        if (a.state !== b.state) {
+          if (a.state === 'active' && b.state === 'available') {
+            return -1;
+          }
+          if (a.state === 'available' && b.state === 'active') {
+            return 1;
+          }
+        }
+        
+        // Priorità 2: Se entrambe hanno una taglia
         if (aCode && bCode) {
           // Prima priorità: la taglia esatta richiesta
           const aHasTargetSize = aCode === targetSizeCode;
           const bHasTargetSize = bCode === targetSizeCode;
           
-          if (aHasTargetSize && !bHasTargetSize) return -1;
-          if (!aHasTargetSize && bHasTargetSize) return 1;
+          if (aHasTargetSize && !bHasTargetSize) {
+            return -1;
+          }
+          if (!aHasTargetSize && bHasTargetSize) {
+            return 1;
+          }
           
           // Seconda priorità: somiglianza alla taglia target
           const aDistance = getSizeDistance(aCode, targetSizeCode);
@@ -252,10 +285,16 @@ export default function Baskets() {
           return config.direction === 'asc' ? aValue - bValue : bValue - aValue;
         }
         
-        // Gestione di casi in cui un elemento non ha taglia
-        if (aCode && !bCode) return -1; // Elementi con taglia prima di quelli senza
-        if (!aCode && bCode) return 1;
-        return 0;
+        // Priorità 3: Ceste con taglia vengono prima di quelle senza taglia
+        if (aCode && !bCode) {
+          return -1; 
+        }
+        if (!aCode && bCode) {
+          return 1;
+        }
+        
+        // Priorità 4: Se entrambe non hanno taglia, ordina per numero cesta (per mantenere un ordine coerente)
+        return a.physicalNumber - b.physicalNumber;
       }
       
       // Per campi stringa
@@ -309,6 +348,16 @@ export default function Baskets() {
     // Calcoliamo il numero di animali dall'ultima operazione
     if (basket.lastOperation && basket.lastOperation.animalCount) {
       basket.animalCount = basket.lastOperation.animalCount;
+    }
+    
+    // Assicuriamoci che basket.size sia definito per l'ordinamento
+    if (!basket.size) {
+      // Per le ceste senza taglia, creiamo un oggetto size vuoto
+      basket.size = {
+        code: null,
+        name: 'Non disponibile',
+        color: '#e2e8f0'  // colore grigio chiaro per le ceste senza taglia
+      };
     }
     
     // Filter by search term
@@ -394,40 +443,123 @@ export default function Baskets() {
                 ) : null}
               </SelectContent>
             </Select>
-            <Select value={preferredSize} onValueChange={(size) => {
-              setPreferredSize(size);
-              if (sortConfig.key === 'size.code') {
-                // Se stiamo già ordinando per taglia, riapplica l'ordinamento con la nuova taglia target
-                requestSort('size.code');
-              }
-            }}>
-              <SelectTrigger className="w-[180px]">
-                <div className="flex items-center">
-                  <div 
-                    className="h-4 w-4 mr-2 rounded-full" 
-                    style={{backgroundColor: getSizeColor(preferredSize)}}
-                  ></div>
-                  <SelectValue placeholder="Taglia preferita" />
-                </div>
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="TP-180">Taglia TP-180</SelectItem>
-                <SelectItem value="TP-200">Taglia TP-200</SelectItem>
-                <SelectItem value="TP-315">Taglia TP-315</SelectItem>
-                <SelectItem value="TP-450">Taglia TP-450</SelectItem>
-                <SelectItem value="TP-500">Taglia TP-500</SelectItem>
-                <SelectItem value="TP-600">Taglia TP-600</SelectItem>
-                <SelectItem value="TP-700">Taglia TP-700</SelectItem>
-                <SelectItem value="TP-800">Taglia TP-800</SelectItem>
-                <SelectItem value="TP-1000">Taglia TP-1000</SelectItem>
-                <SelectItem value="TP-1500">Taglia TP-1500</SelectItem>
-                <SelectItem value="TP-2000">Taglia TP-2000</SelectItem>
-                <SelectItem value="TP-3000">Taglia TP-3000</SelectItem>
-                <SelectItem value="TP-5000">Taglia TP-5000</SelectItem>
-                <SelectItem value="TP-8000">Taglia TP-8000</SelectItem>
-                <SelectItem value="TP-10000">Taglia TP-10000</SelectItem>
-              </SelectContent>
-            </Select>
+            <div className="relative">
+              <Select value={preferredSize} onValueChange={(size) => {
+                setPreferredSize(size);
+                // Imposta sempre l'ordinamento per taglia quando cambia la taglia preferita
+                setSortConfig({
+                  key: 'size.code',
+                  direction: 'asc'
+                });
+              }}>
+                <SelectTrigger className="w-[210px] border-blue-200 shadow-sm relative pl-9">
+                  <div className="absolute left-2 top-1/2 transform -translate-y-1/2">
+                    <div 
+                      className="h-5 w-5 rounded-full ring-2 ring-white shadow-sm" 
+                      style={{backgroundColor: getSizeColor(preferredSize)}}
+                    ></div>
+                  </div>
+                  <div className="flex items-center">
+                    <SelectValue placeholder="Taglia preferita" />
+                  </div>
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="TP-180">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-180')}}></div>
+                      <span>Taglia TP-180</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-200">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-200')}}></div>
+                      <span>Taglia TP-200</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-315">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-315')}}></div>
+                      <span>Taglia TP-315</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-450">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-450')}}></div>
+                      <span>Taglia TP-450</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-500">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-500')}}></div>
+                      <span>Taglia TP-500</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-600">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-600')}}></div>
+                      <span>Taglia TP-600</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-700">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-700')}}></div>
+                      <span>Taglia TP-700</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-800">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-800')}}></div>
+                      <span>Taglia TP-800</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-1000">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-1000')}}></div>
+                      <span>Taglia TP-1000</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-1500">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-1500')}}></div>
+                      <span>Taglia TP-1500</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-2000">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-2000')}}></div>
+                      <span>Taglia TP-2000</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-3000">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-3000')}}></div>
+                      <span>Taglia TP-3000</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-5000">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-5000')}}></div>
+                      <span>Taglia TP-5000</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-8000">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-8000')}}></div>
+                      <span>Taglia TP-8000</span>
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="TP-10000">
+                    <div className="flex items-center">
+                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-10000')}}></div>
+                      <span>Taglia TP-10000</span>
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
+              <div className="absolute -top-6 left-0 text-xs font-medium text-blue-600">
+                Taglia Preferita (ordina automaticamente)
+              </div>
+            </div>
           </div>
         </div>
       </div>
@@ -641,8 +773,8 @@ export default function Baskets() {
                           ) : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
-                          {basket.size ? (
-                            <div className="flex flex-col">
+                          <div className="flex flex-col">
+                            {(basket.size && basket.size.code) ? (
                               <Badge 
                                 className={`size-badge ${basket.size.code === preferredSize ? 'ring-2 ring-blue-500 shadow-md' : ''}`}
                                 style={{
@@ -660,10 +792,15 @@ export default function Baskets() {
                                   </span>
                                 )}
                               </Badge>
-                            </div>
-                          ) : (
-                            <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">-</Badge>
-                          )}
+                            ) : (
+                              <Badge 
+                                className="bg-gray-100 text-gray-500 hover:bg-gray-200 opacity-70"
+                                title={basket.state === 'active' ? 'Cesta attiva senza taglia rilevata' : 'Cesta disponibile'}
+                              >
+                                {basket.state === 'active' ? 'Non rilevata' : 'Non disponibile'}
+                              </Badge>
+                            )}
+                          </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
                           {basket.animalCount ? (
