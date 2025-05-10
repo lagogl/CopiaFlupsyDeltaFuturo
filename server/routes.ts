@@ -3262,11 +3262,154 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (!flupsy) {
         return res.status(404).json({ message: "FLUPSY not found" });
       }
-
-      res.json(flupsy);
+      
+      // Arricchisci il FLUPSY con statistiche aggiuntive
+      const basketsInFlupsy = await storage.getBasketsByFlupsy(id);
+      
+      // Calcola statistiche
+      const totalBaskets = basketsInFlupsy.length;
+      const activeBaskets = basketsInFlupsy.filter(basket => basket.currentCycleId !== null).length;
+      const availableBaskets = basketsInFlupsy.filter(basket => basket.currentCycleId === null).length;
+      const freePositions = flupsy.maxPositions - totalBaskets;
+      
+      // Calcola statistiche sugli animali
+      let totalAnimals = 0;
+      let basketsWithAnimals = 0;
+      const sizeDistribution: Record<string, number> = {};
+      
+      // Per ogni cestello attivo, ottieni l'ultima operazione e raccogli statistiche
+      for (const basket of basketsInFlupsy.filter(b => b.currentCycleId !== null)) {
+        if (basket.currentCycleId) {
+          // Ottieni le operazioni per questo cestello nel ciclo corrente
+          const operations = await storage.getOperationsByCycleIdAndBasketId(basket.currentCycleId, basket.id);
+          
+          // Ordina per data discendente per ottenere l'operazione più recente per prima
+          const operationsWithCount = operations
+            .filter(op => op.animalCount !== null) // Considera solo operazioni con conteggio degli animali
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          if (operationsWithCount.length > 0) {
+            const lastOperation = operationsWithCount[0];
+            if (lastOperation.animalCount) {
+              totalAnimals += lastOperation.animalCount;
+              basketsWithAnimals++; 
+              
+              // Aggiungi i dati di distribuzione per taglia
+              if (lastOperation.sizeId) {
+                const size = await storage.getSize(lastOperation.sizeId);
+                if (size) {
+                  const sizeCode = size.code;
+                  if (!sizeDistribution[sizeCode]) {
+                    sizeDistribution[sizeCode] = 0;
+                  }
+                  sizeDistribution[sizeCode] += lastOperation.animalCount;
+                }
+              }
+            }
+          }
+        }
+      }
+      
+      // Calcola la densità media degli animali
+      const avgAnimalDensity = basketsWithAnimals > 0 ? Math.round(totalAnimals / basketsWithAnimals) : 0;
+      
+      // Calcola la percentuale di occupazione con cestelli attivi
+      const activeBasketPercentage = flupsy.maxPositions > 0 
+        ? Math.round((activeBaskets / flupsy.maxPositions) * 100) 
+        : 0;
+      
+      // Aggiungi le statistiche al FLUPSY
+      const enhancedFlupsy = {
+        ...flupsy,
+        totalBaskets,
+        activeBaskets,
+        availableBaskets,
+        freePositions,
+        totalAnimals,
+        sizeDistribution,
+        avgAnimalDensity,
+        activeBasketPercentage
+      };
+      
+      res.json(enhancedFlupsy);
     } catch (error) {
       console.error("Error fetching FLUPSY:", error);
       res.status(500).json({ message: "Failed to fetch FLUPSY" });
+    }
+  });
+  
+  // Endpoint per le posizioni di un FLUPSY specifico
+  app.get("/api/flupsys/:id/positions", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid FLUPSY ID" });
+      }
+      
+      const flupsy = await storage.getFlupsy(id);
+      if (!flupsy) {
+        return res.status(404).json({ message: "FLUPSY not found" });
+      }
+      
+      // Ottieni tutti i cestelli nel FLUPSY
+      const basketsInFlupsy = await storage.getBasketsByFlupsy(id);
+      
+      // Crea una mappa delle posizioni occupate
+      const positions: any[] = [];
+      
+      // Per ogni cestello, crea un oggetto posizione
+      basketsInFlupsy.forEach(basket => {
+        positions.push({
+          row: basket.row,
+          position: basket.position,
+          occupied: true,
+          basketId: basket.id,
+          basketNumber: basket.number,
+          active: basket.currentCycleId !== null
+        });
+      });
+      
+      // Aggiungi posizioni libere se non raggiungiamo il maxPositions
+      if (positions.length < flupsy.maxPositions) {
+        // Calcola quante posizioni per riga
+        const positionsPerRow = Math.ceil(flupsy.maxPositions / 2);
+        
+        // Trova quali posizioni sono già occupate
+        const occupiedPositions: Record<string, number[]> = { 
+          DX: [], 
+          SX: [] 
+        };
+        
+        positions.forEach(pos => {
+          occupiedPositions[pos.row].push(pos.position);
+        });
+        
+        // Aggiungi posizioni libere
+        ['DX', 'SX'].forEach(row => {
+          for (let i = 1; i <= positionsPerRow; i++) {
+            if ((row === 'DX' ? i : i + positionsPerRow) <= flupsy.maxPositions) {
+              // Se la posizione non è occupata, aggiungila come libera
+              if (!occupiedPositions[row].includes(i)) {
+                positions.push({
+                  row,
+                  position: i,
+                  occupied: false
+                });
+              }
+            }
+          }
+        });
+      }
+      
+      return res.json({
+        id: flupsy.id,
+        name: flupsy.name,
+        maxPositions: flupsy.maxPositions,
+        positions
+      });
+    } catch (error) {
+      console.error("Error fetching FLUPSY positions:", error);
+      res.status(500).json({ message: "Failed to fetch FLUPSY positions" });
     }
   });
 
