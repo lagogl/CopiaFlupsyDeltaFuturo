@@ -1,14 +1,22 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Eye, Search, Filter, InfoIcon } from 'lucide-react';
+import { Eye, Search, Filter, InfoIcon, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { Link } from 'wouter';
+import { 
+  Popover, 
+  PopoverContent, 
+  PopoverTrigger 
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { Checkbox } from '@/components/ui/checkbox';
+import { Label } from '@/components/ui/label';
 
 // Definizione dell'interfaccia Operation per tipizzare i dati delle operazioni
 interface Operation {
@@ -68,8 +76,27 @@ interface Cycle {
 }
 
 export default function Cycles() {
+  // Filtri
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
+  const [flupsyFilter, setFlupsyFilter] = useState<number | null>(null);
+  const [tagFilter, setTagFilter] = useState<string | null>(null);
+  const [lotFilter, setLotFilter] = useState<number | null>(null);
+  const [dateRangeFilter, setDateRangeFilter] = useState<{ start: Date | null; end: Date | null }>({
+    start: null,
+    end: null
+  });
+  
+  // Ordinamento
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'ascending' | 'descending';
+    multiSort: { key: string; direction: 'ascending' | 'descending' }[];
+  }>({
+    key: 'id',
+    direction: 'descending',
+    multiSort: []
+  });
   
   // Query cycles with details
   const { data: cycles = [], isLoading } = useQuery<Cycle[]>({
@@ -101,6 +128,172 @@ export default function Cycles() {
     queryKey: ['/api/sizes'],
   });
 
+  // Funzione per ordinare i cicli
+  const sortCycles = (cycleList: Cycle[], sortConf: typeof sortConfig) => {
+    let sortedCycles = [...cycleList];
+    
+    // Funzione per confrontare i valori in base al tipo di campo
+    const compareValues = (a: any, b: any, key: string, direction: 'ascending' | 'descending') => {
+      // Gestisci valori nulli o undefined
+      if (a === undefined || a === null) return direction === 'ascending' ? -1 : 1;
+      if (b === undefined || b === null) return direction === 'ascending' ? 1 : -1;
+      
+      // Per le date, converti in oggetti Date
+      if (key === 'startDate' || key === 'endDate') {
+        const dateA = new Date(a);
+        const dateB = new Date(b);
+        return direction === 'ascending' 
+          ? dateA.getTime() - dateB.getTime() 
+          : dateB.getTime() - dateA.getTime();
+      }
+      
+      // Per i numeri
+      if (typeof a === 'number' && typeof b === 'number') {
+        return direction === 'ascending' ? a - b : b - a;
+      }
+      
+      // Per le stringhe
+      if (typeof a === 'string' && typeof b === 'string') {
+        return direction === 'ascending' 
+          ? a.localeCompare(b)
+          : b.localeCompare(a);
+      }
+      
+      // Default
+      return direction === 'ascending' ? (a > b ? 1 : -1) : (a < b ? 1 : -1);
+    };
+    
+    // Ordinamento primario
+    if (sortConf.key) {
+      sortedCycles.sort((a, b) => {
+        let aValue, bValue;
+        
+        // Estrai i valori in base alla chiave di ordinamento
+        switch (sortConf.key) {
+          case 'id':
+            aValue = a.id;
+            bValue = b.id;
+            break;
+          case 'basket':
+            aValue = a.basket?.physicalNumber || a.basketId;
+            bValue = b.basket?.physicalNumber || b.basketId;
+            break;
+          case 'flupsy':
+            // Cerca il FLUPSY per il cestello a
+            const basketA = baskets.find(bsk => bsk.id === a.basketId);
+            const flupsyA = basketA ? flupsys.find(f => f.id === basketA.flupsyId) : null;
+            aValue = flupsyA?.name || '';
+            
+            // Cerca il FLUPSY per il cestello b
+            const basketB = baskets.find(bsk => bsk.id === b.basketId);
+            const flupsyB = basketB ? flupsys.find(f => f.id === basketB.flupsyId) : null;
+            bValue = flupsyB?.name || '';
+            break;
+          case 'startDate':
+            aValue = a.startDate;
+            bValue = b.startDate;
+            break;
+          case 'endDate':
+            aValue = a.endDate;
+            bValue = b.endDate;
+            break;
+          case 'size':
+            aValue = a.currentSize?.code || '';
+            bValue = b.currentSize?.code || '';
+            break;
+          case 'lot':
+            // Cerca l'operazione di prima attivazione per a
+            const opA = operations.find(op => op.cycleId === a.id && op.type === 'prima-attivazione');
+            const lotA = opA?.lotId ? lots.find(l => l.id === opA.lotId) : null;
+            aValue = lotA?.supplier || '';
+            
+            // Cerca l'operazione di prima attivazione per b
+            const opB = operations.find(op => op.cycleId === b.id && op.type === 'prima-attivazione');
+            const lotB = opB?.lotId ? lots.find(l => l.id === opB.lotId) : null;
+            bValue = lotB?.supplier || '';
+            break;
+          case 'sgr':
+            aValue = a.currentSgr?.percentage || 0;
+            bValue = b.currentSgr?.percentage || 0;
+            break;
+          default:
+            aValue = (a as any)[sortConf.key];
+            bValue = (b as any)[sortConf.key];
+        }
+        
+        return compareValues(aValue, bValue, sortConf.key, sortConf.direction);
+      });
+    }
+    
+    // Ordinamento secondario (multi-sort)
+    if (sortConf.multiSort && sortConf.multiSort.length > 0) {
+      // Ordina per ogni criterio secondario
+      sortConf.multiSort.forEach(secondaryCriterion => {
+        if (secondaryCriterion.key !== sortConf.key) {
+          sortedCycles = stableSort(sortedCycles, (a, b) => {
+            let aValue, bValue;
+            
+            // Estrai i valori in base alla chiave di ordinamento secondario
+            switch (secondaryCriterion.key) {
+              case 'id':
+                aValue = a.id;
+                bValue = b.id;
+                break;
+              // Ripeti gli stessi casi dell'ordinamento primario
+              // ...altri casi come sopra
+              
+              default:
+                aValue = (a as any)[secondaryCriterion.key];
+                bValue = (b as any)[secondaryCriterion.key];
+            }
+            
+            return compareValues(aValue, bValue, secondaryCriterion.key, secondaryCriterion.direction);
+          });
+        }
+      });
+    }
+    
+    return sortedCycles;
+  };
+  
+  // Funzione per ordinamento stabile
+  const stableSort = <T,>(array: T[], compare: (a: T, b: T) => number): T[] => {
+    return array
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => {
+        const order = compare(a.item, b.item);
+        return order !== 0 ? order : a.index - b.index;
+      })
+      .map(({ item }) => item);
+  };
+
+  // Gestore per il click sulle intestazioni delle colonne per l'ordinamento
+  const handleSort = (key: string) => {
+    setSortConfig(prevSortConfig => {
+      // Se si clicca sulla stessa colonna, cambia direzione
+      if (prevSortConfig.key === key) {
+        const newDirection = prevSortConfig.direction === 'ascending' ? 'descending' : 'ascending';
+        return {
+          ...prevSortConfig,
+          direction: newDirection,
+        };
+      }
+      
+      // Se si clicca su una nuova colonna, imposta come ordinamento primario
+      // e aggiungi il precedente ordinamento primario al multiSort
+      const newMultiSort = prevSortConfig.key 
+        ? [{ key: prevSortConfig.key, direction: prevSortConfig.direction }, 
+           ...prevSortConfig.multiSort.filter(item => item.key !== key).slice(0, 2)]
+        : [];
+      
+      return {
+        key,
+        direction: 'ascending',
+        multiSort: newMultiSort
+      };
+    });
+  };
+  
   // Filter cycles
   const filteredCycles = cycles.filter((cycle: Cycle) => {
     // Filter by search term
@@ -113,8 +306,48 @@ export default function Cycles() {
       (statusFilter === 'active' && cycle.state === 'active') ||
       (statusFilter === 'closed' && cycle.state === 'closed');
     
-    return matchesSearch && matchesStatus;
+    // Filter by flupsy
+    const matchesFlupsy = flupsyFilter === null || (() => {
+      const basket = baskets.find(b => b.id === cycle.basketId);
+      return basket && basket.flupsyId === flupsyFilter;
+    })();
+    
+    // Filter by tag
+    const matchesTag = tagFilter === null || 
+      (cycle.currentSize && cycle.currentSize.code === tagFilter);
+    
+    // Filter by lot
+    const matchesLot = lotFilter === null || (() => {
+      const primaAttivazione = operations.find(
+        op => op.cycleId === cycle.id && op.type === 'prima-attivazione'
+      );
+      return primaAttivazione && primaAttivazione.lotId === lotFilter;
+    })();
+    
+    // Filter by date range
+    const matchesDateRange = (() => {
+      if (!dateRangeFilter.start && !dateRangeFilter.end) return true;
+      
+      const cycleStartDate = new Date(cycle.startDate);
+      
+      if (dateRangeFilter.start && dateRangeFilter.end) {
+        return cycleStartDate >= dateRangeFilter.start && cycleStartDate <= dateRangeFilter.end;
+      } else if (dateRangeFilter.start) {
+        return cycleStartDate >= dateRangeFilter.start;
+      } else if (dateRangeFilter.end) {
+        return cycleStartDate <= dateRangeFilter.end;
+      }
+      
+      return true;
+    })();
+    
+    return matchesSearch && matchesStatus && matchesFlupsy && matchesTag && matchesLot && matchesDateRange;
   });
+  
+  // Apply sorting
+  const sortedFilteredCycles = useMemo(() => 
+    sortCycles(filteredCycles, sortConfig), 
+    [filteredCycles, sortConfig]);
 
   return (
     <div>
@@ -179,35 +412,123 @@ export default function Cycles() {
           <table className="min-w-full divide-y divide-gray-200 table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
-                  ID
+                <th 
+                  scope="col" 
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('id')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>ID</span>
+                    {sortConfig.key === 'id' ? (
+                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3" />
+                    )}
+                  </div>
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                  Cesta
+                <th 
+                  scope="col" 
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('basket')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Cesta</span>
+                    {sortConfig.key === 'basket' ? (
+                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3" />
+                    )}
+                  </div>
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                  Flupsy
+                <th 
+                  scope="col" 
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('flupsy')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Flupsy</span>
+                    {sortConfig.key === 'flupsy' ? (
+                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3" />
+                    )}
+                  </div>
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                  Inizio
+                <th 
+                  scope="col" 
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('startDate')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Inizio</span>
+                    {sortConfig.key === 'startDate' ? (
+                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3" />
+                    )}
+                  </div>
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                  Fine
+                <th 
+                  scope="col" 
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('endDate')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Fine</span>
+                    {sortConfig.key === 'endDate' ? (
+                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3" />
+                    )}
+                  </div>
                 </th>
                 <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                   Giorni
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                  Taglia
+                <th 
+                  scope="col" 
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('size')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Taglia</span>
+                    {sortConfig.key === 'size' ? (
+                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3" />
+                    )}
+                  </div>
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                  Lotto
+                <th 
+                  scope="col" 
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('lot')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>Lotto</span>
+                    {sortConfig.key === 'lot' ? (
+                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3" />
+                    )}
+                  </div>
                 </th>
                 <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                   N° Animali
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                  SGR
+                <th 
+                  scope="col" 
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16 cursor-pointer hover:bg-gray-100"
+                  onClick={() => handleSort('sgr')}
+                >
+                  <div className="flex items-center space-x-1">
+                    <span>SGR</span>
+                    {sortConfig.key === 'sgr' ? (
+                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
+                    ) : (
+                      <ArrowUpDown className="h-3 w-3" />
+                    )}
+                  </div>
                 </th>
                 <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                   Stato
@@ -224,7 +545,7 @@ export default function Cycles() {
                     Caricamento cicli...
                   </td>
                 </tr>
-              ) : filteredCycles.length === 0 ? (
+              ) : sortedFilteredCycles.length === 0 ? (
                 <tr>
                   <td colSpan={12} className="px-2 py-2 whitespace-nowrap text-center text-gray-500">
                     Nessun ciclo trovato
@@ -326,7 +647,23 @@ export default function Cycles() {
                         )}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        #{lotNumber}
+                        {lot ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="cursor-help">
+                                  #{lot.id} {lot.supplier ? `(${lot.supplier})` : ''}
+                                </span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top" className="max-w-sm">
+                                <div className="text-xs">
+                                  <p><strong>Fornitore:</strong> {lot.supplier || 'N/A'}</p>
+                                  <p><strong>Data arrivo:</strong> {lot.arrivalDate ? format(new Date(lot.arrivalDate), 'dd/MM/yy') : 'N/A'}</p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : '-'}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
                         {animalCount.toLocaleString()}
