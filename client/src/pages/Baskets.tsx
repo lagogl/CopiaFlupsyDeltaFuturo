@@ -22,6 +22,7 @@ export default function Baskets() {
   const [searchTerm, setSearchTerm] = useState('');
   const [stateFilter, setStateFilter] = useState('all');
   const [flupsyFilter, setFlupsyFilter] = useState('all');
+  const [preferredSize, setPreferredSize] = useState(localStorage.getItem('preferredSizeCode') || 'TP-500');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -176,9 +177,36 @@ export default function Baskets() {
   const basketsArray = Array.isArray(baskets) ? baskets : [];
   const flupsysArray = Array.isArray(flupsys) ? flupsys : [];
   
+  // Funzione che calcola la differenza numerica tra due taglie (per ordinamento per somiglianza)
+  const getSizeNumberFromCode = (sizeCode: string | undefined): number => {
+    if (!sizeCode || !sizeCode.startsWith('TP-')) return 0;
+    return parseInt(sizeCode.replace('TP-', ''));
+  };
+  
+  // Funzione per determinare la priorità di una taglia rispetto a una taglia desiderata
+  const getSizeDistance = (sizeCode: string | undefined, targetSizeCode?: string): number => {
+    if (!sizeCode) return Number.MAX_SAFE_INTEGER; // Le voci senza taglia vanno in fondo
+    if (!targetSizeCode) return 0; // Se non c'è taglia target, non c'è distanza
+    
+    const sizeNum = getSizeNumberFromCode(sizeCode);
+    const targetNum = getSizeNumberFromCode(targetSizeCode);
+    
+    if (sizeNum === 0 || targetNum === 0) return Number.MAX_SAFE_INTEGER;
+    
+    return Math.abs(sizeNum - targetNum);
+  };
+  
+  // Funzione per aggiornare la taglia preferita
+  useEffect(() => {
+    localStorage.setItem('preferredSizeCode', preferredSize);
+  }, [preferredSize]);
+  
   // Funzione di ordinamento dei dati
   const sortData = (data: any[], config = sortConfig) => {
     if (!config.key) return data;
+    
+    // Usa la taglia target dal nostro stato
+    const targetSizeCode = preferredSize;
     
     return [...data].sort((a, b) => {
       // Per campi numerici
@@ -189,12 +217,66 @@ export default function Baskets() {
         return b.physicalNumber - a.physicalNumber;
       }
       
+      // Ordinamento speciale per taglia
+      if (config.key === 'size.code') {
+        const aCode = a.size?.code;
+        const bCode = b.size?.code;
+        
+        // Se entrambi hanno taglie
+        if (aCode && bCode) {
+          // Prima priorità: la taglia esatta richiesta
+          const aHasTargetSize = aCode === targetSizeCode;
+          const bHasTargetSize = bCode === targetSizeCode;
+          
+          if (aHasTargetSize && !bHasTargetSize) return -1;
+          if (!aHasTargetSize && bHasTargetSize) return 1;
+          
+          // Seconda priorità: somiglianza alla taglia target
+          const aDistance = getSizeDistance(aCode, targetSizeCode);
+          const bDistance = getSizeDistance(bCode, targetSizeCode);
+          
+          if (aDistance !== bDistance) {
+            // Ordina per distanza dalla taglia richiesta (più vicina prima)
+            return config.direction === 'asc' ? aDistance - bDistance : bDistance - aDistance;
+          }
+          
+          // Se le distanze sono uguali, ordina numericamente per valore assoluto della taglia
+          const aValue = getSizeNumberFromCode(aCode);
+          const bValue = getSizeNumberFromCode(bCode);
+          return config.direction === 'asc' ? aValue - bValue : bValue - aValue;
+        }
+        
+        // Gestione di casi in cui un elemento non ha taglia
+        if (aCode && !bCode) return -1; // Elementi con taglia prima di quelli senza
+        if (!aCode && bCode) return 1;
+        return 0;
+      }
+      
       // Per campi stringa
       if (typeof a[config.key] === 'string' && typeof b[config.key] === 'string') {
         if (config.direction === 'asc') {
           return a[config.key].localeCompare(b[config.key]);
         }
         return b[config.key].localeCompare(a[config.key]);
+      }
+      
+      // Per campi annidati come 'size.code'
+      if (config.key.includes('.')) {
+        const keys = config.key.split('.');
+        let aValue = a;
+        let bValue = b;
+        
+        for (const key of keys) {
+          aValue = aValue?.[key];
+          bValue = bValue?.[key];
+        }
+        
+        if (typeof aValue === 'string' && typeof bValue === 'string') {
+          if (config.direction === 'asc') {
+            return aValue.localeCompare(bValue);
+          }
+          return bValue.localeCompare(aValue);
+        }
       }
       
       return 0;
@@ -362,8 +444,33 @@ export default function Baskets() {
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Ultima Operazione
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Taglia Attuale
+                <th 
+                  scope="col" 
+                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => requestSort('size.code')}
+                >
+                  <div className="flex items-center">
+                    Taglia Attuale
+                    {sortConfig.key === 'size.code' ? (
+                      <svg 
+                        xmlns="http://www.w3.org/2000/svg" 
+                        className="h-4 w-4 ml-1" 
+                        fill="none" 
+                        viewBox="0 0 24 24" 
+                        stroke="currentColor"
+                      >
+                        {sortConfig.direction === 'asc' ? (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7" />
+                        ) : (
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
+                        )}
+                      </svg>
+                    ) : (
+                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
+                      </svg>
+                    )}
+                  </div>
                 </th>
                 <th 
                   scope="col" 
