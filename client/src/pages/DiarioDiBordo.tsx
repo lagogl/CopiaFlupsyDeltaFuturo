@@ -911,11 +911,11 @@ export default function DiarioDiBordo() {
                           <div className="grid grid-cols-2 gap-2 text-sm">
                             <div className="flex items-center">
                               <span className="bg-green-100 text-green-800 px-2 py-1 rounded-md mr-2">Entrate</span>
-                              <span className="font-medium">{taglia.entrate?.toLocaleString('it-IT') || '0'}</span>
+                              <span className="font-medium">{taglia.entrate ? formatNumberWithCommas(taglia.entrate) : '0'}</span>
                             </div>
                             <div className="flex items-center">
                               <span className="bg-red-100 text-red-800 px-2 py-1 rounded-md mr-2">Uscite</span>
-                              <span className="font-medium">{taglia.uscite?.toLocaleString('it-IT') || '0'}</span>
+                              <span className="font-medium">{taglia.uscite ? formatNumberWithCommas(taglia.uscite) : '0'}</span>
                             </div>
                           </div>
                         </div>
@@ -943,7 +943,7 @@ export default function DiarioDiBordo() {
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-green-50 p-4 rounded-lg text-center">
                           <div className="text-green-800 text-sm font-medium mb-1">Entrate</div>
-                          <div className="text-2xl font-bold">{totals?.totale_entrate?.toLocaleString('it-IT') || '0'}</div>
+                          <div className="text-2xl font-bold">{totals?.totale_entrate ? formatNumberWithCommas(totals.totale_entrate) : '0'}</div>
                         </div>
                         <div className="bg-red-50 p-4 rounded-lg text-center">
                           <div className="text-red-800 text-sm font-medium mb-1">Uscite</div>
