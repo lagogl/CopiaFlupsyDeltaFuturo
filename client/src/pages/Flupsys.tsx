@@ -12,7 +12,8 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Check, Plus, X, Edit } from "lucide-react";
+import { Check, Plus, X, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { useAuth } from "@/hooks/use-auth";
 
 // Definizione del tipo per un'unità Flupsy
 interface Flupsy {
@@ -26,9 +27,13 @@ interface Flupsy {
 }
 
 export default function Flupsys() {
+  const { user } = useAuth();
   const [isDialogOpen, setIsDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [editingFlupsy, setEditingFlupsy] = useState<Flupsy | null>(null);
+  const [deletingFlupsy, setDeletingFlupsy] = useState<Flupsy | null>(null);
+  const [deleteError, setDeleteError] = useState<string | null>(null);
   const [newFlupsy, setNewFlupsy] = useState({
     name: "",
     location: "",
@@ -123,6 +128,48 @@ export default function Flupsys() {
       });
     }
   });
+  
+  // Delete FLUPSY mutation
+  const deleteMutation = useMutation({
+    mutationFn: (id: number) => apiRequest({
+      url: `/api/flupsys/${id}`,
+      method: 'DELETE'
+    }),
+    onSuccess: (data: any) => {
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+      setIsDeleteDialogOpen(false);
+      setDeletingFlupsy(null);
+      setDeleteError(null);
+      toast({
+        title: "Eliminazione completata",
+        description: data.message || "Unità FLUPSY eliminata con successo",
+        variant: "success",
+      });
+    },
+    onError: (error: any) => {
+      const errorMessage = error.data?.message || error.message || "Errore durante l'eliminazione";
+      setDeleteError(errorMessage);
+      toast({
+        title: "Errore",
+        description: errorMessage,
+        variant: "destructive",
+      });
+    }
+  });
+  
+  // Handling delete button click
+  const handleDelete = (flupsy: Flupsy) => {
+    setDeletingFlupsy(flupsy);
+    setDeleteError(null);
+    setIsDeleteDialogOpen(true);
+  };
+  
+  // Handle confirm delete
+  const handleConfirmDelete = () => {
+    if (deletingFlupsy) {
+      deleteMutation.mutate(deletingFlupsy.id);
+    }
+  };
 
   if (isLoading) {
     return (
@@ -438,6 +485,16 @@ export default function Flupsys() {
                   >
                     <Edit className="h-3 w-3" /> Modifica
                   </Button>
+                  {user?.role === 'admin' && (
+                    <Button 
+                      variant="destructive" 
+                      size="sm" 
+                      className="h-8 px-2 flex items-center gap-1"
+                      onClick={() => handleDelete(flupsy)}
+                    >
+                      <Trash2 className="h-3 w-3" /> Elimina
+                    </Button>
+                  )}
                 </div>
               </CardFooter>
             </Card>
@@ -455,6 +512,63 @@ export default function Flupsys() {
           </div>
         )}
       </div>
+      
+      {/* Delete Confirmation Dialog */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+        <DialogContent className="sm:max-w-[500px]">
+          <DialogHeader>
+            <DialogTitle className="flex items-center text-destructive">
+              <AlertTriangle className="h-5 w-5 mr-2" />
+              Conferma eliminazione
+            </DialogTitle>
+            <DialogDescription>
+              {deletingFlupsy && (
+                <span>
+                  Stai per eliminare l'unità FLUPSY <strong>{deletingFlupsy.name}</strong> (ID: {deletingFlupsy.id}) e tutte le ceste associate.
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="py-4">
+            <div className="bg-amber-50 border border-amber-200 text-amber-800 p-4 rounded-md mb-4">
+              <p className="text-sm font-medium">Attenzione!</p>
+              <p className="text-sm mt-1">Questa operazione eliminerà:</p>
+              <ul className="list-disc list-inside text-sm mt-1 space-y-1">
+                <li>L'unità FLUPSY selezionata</li>
+                <li>Tutte le ceste associate a questa unità</li>
+              </ul>
+              <p className="text-sm mt-2">L'operazione non può essere completata se ci sono cicli attivi nelle ceste associate.</p>
+            </div>
+            
+            {deleteError && (
+              <div className="bg-red-50 border border-red-200 text-red-800 p-4 rounded-md mb-4">
+                <p className="text-sm font-medium">Errore:</p>
+                <p className="text-sm mt-1">{deleteError}</p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => setIsDeleteDialogOpen(false)}
+              disabled={deleteMutation.isPending}
+            >
+              Annulla
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              disabled={deleteMutation.isPending}
+            >
+              {deleteMutation.isPending ? "Eliminazione in corso..." : "Elimina FLUPSY"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

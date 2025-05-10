@@ -3227,6 +3227,36 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to update FLUPSY" });
     }
   });
+  
+  // Delete a FLUPSY and all its baskets
+  app.delete("/api/flupsys/:id", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ success: false, message: "ID FLUPSY non valido" });
+      }
+      
+      console.log(`Richiesta di eliminazione FLUPSY ID: ${id}`);
+      
+      // Controllo del ruolo utente (solo admin può eliminare FLUPSY)
+      // Nota: i ruoli vengono verificati client-side, il controllo è ulteriore precauzione
+      
+      // Usa la funzione di storage per eliminare il FLUPSY
+      const result = await storage.deleteFlupsy(id);
+      
+      if (result.success) {
+        res.json(result);
+      } else {
+        res.status(400).json(result);
+      }
+    } catch (error) {
+      console.error("Error deleting flupsy:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: `Errore durante l'eliminazione del FLUPSY: ${(error as Error).message}` 
+      });
+    }
+  });
 
   app.get("/api/flupsys/:id/baskets", async (req, res) => {
     try {

@@ -83,6 +83,78 @@ export class DbStorage implements IStorage {
     return results[0];
   }
   
+  async deleteFlupsy(id: number): Promise<{ success: boolean; message: string }> {
+    console.log(`deleteFlupsy - Tentativo di eliminazione FLUPSY ID: ${id}`);
+    
+    // 1. Verifica se il FLUPSY esiste
+    const flupsy = await this.getFlupsy(id);
+    if (!flupsy) {
+      return { success: false, message: "FLUPSY non trovato" };
+    }
+    
+    // 2. Recupera tutte le ceste associate a questo FLUPSY
+    const flupsyBaskets = await this.getBasketsByFlupsy(id);
+    console.log(`deleteFlupsy - Trovate ${flupsyBaskets.length} ceste associate al FLUPSY ID: ${id}`);
+    
+    // 3. Verifica se qualche cesta ha un ciclo attivo
+    const basketsWithActiveCycles = flupsyBaskets.filter(basket => 
+      basket.currentCycleId !== null || basket.state === 'active'
+    );
+    
+    if (basketsWithActiveCycles.length > 0) {
+      const basketNumbers = basketsWithActiveCycles.map(b => b.physicalNumber).join(', ');
+      return { 
+        success: false, 
+        message: `Impossibile eliminare il FLUPSY. Le seguenti ceste hanno cicli attivi: ${basketNumbers}. Terminare prima i cicli attivi.` 
+      };
+    }
+    
+    // 4. Elimina tutte le ceste associate al FLUPSY
+    let deletedBasketsCount = 0;
+    for (const basket of flupsyBaskets) {
+      try {
+        // Utilizziamo il metodo esistente deleteBasket che si occupa anche di chiudere le posizioni
+        const deleted = await this.deleteBasket(basket.id);
+        if (deleted) {
+          deletedBasketsCount++;
+        }
+      } catch (error) {
+        console.error(`deleteFlupsy - Errore durante l'eliminazione della cesta ID: ${basket.id}:`, error);
+      }
+    }
+    
+    console.log(`deleteFlupsy - Eliminate ${deletedBasketsCount} ceste su ${flupsyBaskets.length} totali`);
+    
+    // 5. Elimina il FLUPSY
+    try {
+      const results = await db.delete(flupsys).where(eq(flupsys.id, id)).returning();
+      
+      if (results.length > 0) {
+        // Notifica WebSocket se il FLUPSY è stato eliminato con successo
+        if (typeof (global as any).broadcastUpdate === 'function') {
+          console.log(`deleteFlupsy - Invio notifica WebSocket per eliminazione FLUPSY ${id}`);
+          (global as any).broadcastUpdate('flupsy_deleted', {
+            flupsyId: id,
+            message: `FLUPSY ${flupsy.name} eliminato con ${deletedBasketsCount} ceste associate`
+          });
+        }
+        
+        return { 
+          success: true, 
+          message: `FLUPSY ${flupsy.name} eliminato con successo insieme a ${deletedBasketsCount} ceste associate` 
+        };
+      } else {
+        return { success: false, message: "Errore durante l'eliminazione del FLUPSY" };
+      }
+    } catch (error) {
+      console.error(`deleteFlupsy - Errore durante l'eliminazione del FLUPSY ID: ${id}:`, error);
+      return { 
+        success: false, 
+        message: `Errore durante l'eliminazione: ${(error as Error).message}` 
+      };
+    }
+  }
+  
   // BASKETS
   async getBaskets(): Promise<Basket[]> {
     return await db.select().from(baskets);
