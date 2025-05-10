@@ -193,7 +193,13 @@ export default function Baskets() {
     
     if (sizeNum === 0 || targetNum === 0) return Number.MAX_SAFE_INTEGER;
     
-    return Math.abs(sizeNum - targetNum);
+    // Distanza numerica tra le taglie
+    const distance = Math.abs(sizeNum - targetNum);
+    
+    // Log per debug
+    console.log(`Calcolo distanza taglia: ${sizeCode} -> ${targetSizeCode}, distanza: ${distance}`);
+    
+    return distance;
   };
   
   // Funzione per aggiornare la taglia preferita
@@ -638,10 +644,21 @@ export default function Baskets() {
                           {basket.size ? (
                             <div className="flex flex-col">
                               <Badge 
-                                className="size-badge"
-                                style={getSizeBadgeStyle(basket.size.code)}
+                                className={`size-badge ${basket.size.code === preferredSize ? 'ring-2 ring-blue-500 shadow-md' : ''}`}
+                                style={{
+                                  ...getSizeBadgeStyle(basket.size.code),
+                                  transition: 'all 0.2s ease-in-out',
+                                  transform: basket.size.code === preferredSize ? 'scale(1.1)' : 'scale(1)'
+                                }}
                               >
                                 {basket.size.code}
+                                {basket.size.code === preferredSize && (
+                                  <span className="ml-1 bg-blue-500 rounded-full p-0.5 inline-flex items-center justify-center">
+                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2 text-white" viewBox="0 0 20 20" fill="currentColor">
+                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                                    </svg>
+                                  </span>
+                                )}
                               </Badge>
                             </div>
                           ) : (
