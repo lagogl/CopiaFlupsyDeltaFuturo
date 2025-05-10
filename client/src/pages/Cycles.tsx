@@ -785,8 +785,15 @@ export default function Cycles() {
                     ? sizes.find(s => s.id === cycle.currentSize?.id)?.code 
                     : null;
                   
-                  // SGR dall'operazione più recente
-                  const currentSgr = latestMeasurement?.sgr;
+                  // SGR dall'operazione più recente o dal ciclo
+                  // Prima controlliamo se l'operazione ha un SGR
+                  const operationSgr = latestMeasurement?.sgr;
+                  
+                  // Altrimenti usiamo l'SGR del ciclo se disponibile
+                  const cycleSgr = cycle.currentSgr;
+                  
+                  // Combiniamo le due fonti dando priorità all'operazione
+                  const currentSgr = operationSgr || cycleSgr;
                   
                   return (
                     <tr key={cycle.id} className={isSoldCycle ? 'relative bg-red-50/20 hover:bg-gray-50' : 'hover:bg-gray-50'}>
