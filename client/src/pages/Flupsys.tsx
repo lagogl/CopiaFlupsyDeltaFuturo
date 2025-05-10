@@ -485,7 +485,7 @@ export default function Flupsys() {
                   >
                     <Edit className="h-3 w-3" /> Modifica
                   </Button>
-                  {user?.role === 'admin' && (
+                  {(user?.role === 'admin' || user?.role === 'user') && (
                     <Button 
                       variant="destructive" 
                       size="sm" 
