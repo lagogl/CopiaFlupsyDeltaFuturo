@@ -12,8 +12,9 @@ import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
-import { Check, Plus, X, Edit, Trash2, AlertTriangle } from "lucide-react";
+import { Check, Plus, X, Edit, Trash2, AlertTriangle, Fish } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
+import { Sparklines, SparklinesLine, SparklinesSpots } from 'react-sparklines';
 
 // Definizione del tipo per un'unità Flupsy
 interface Flupsy {
@@ -24,6 +25,13 @@ interface Flupsy {
   active: boolean;
   maxPositions: number;
   productionCenter?: string;
+  // Statistiche
+  totalBaskets?: number;
+  activeBaskets?: number;
+  availableBaskets?: number;
+  freePositions?: number;
+  totalAnimals?: number;
+  sizeDistribution?: Record<string, number>;
 }
 
 export default function Flupsys() {
@@ -573,6 +581,39 @@ export default function Flupsys() {
                       {flupsy.freePositions || 0}/{flupsy.maxPositions || 0}
                     </p>
                   </div>
+                </div>
+                
+                {/* Statistiche Animali */}
+                <div className="bg-cyan-50 dark:bg-cyan-950 rounded-lg p-3 mb-4 flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Fish className="text-cyan-600 dark:text-cyan-400" size={20} />
+                    <div>
+                      <p className="text-xs text-muted-foreground">Totale Animali</p>
+                      <p className="text-lg font-semibold text-cyan-600 dark:text-cyan-400">
+                        {flupsy.totalAnimals?.toLocaleString() || 0}
+                      </p>
+                    </div>
+                  </div>
+                  {flupsy.sizeDistribution && Object.keys(flupsy.sizeDistribution).length > 0 && (
+                    <div className="w-1/2">
+                      <p className="text-xs text-muted-foreground mb-1">Distribuzione Taglie</p>
+                      <Sparklines 
+                        data={Object.values(flupsy.sizeDistribution)} 
+                        height={30} 
+                        width={100}
+                        margin={5}
+                      >
+                        <SparklinesLine style={{ stroke: "#22d3ee", fill: "#99f6e4", fillOpacity: "0.2" }} />
+                        <SparklinesSpots size={2} style={{ stroke: "#0891b2", strokeWidth: 2, fill: "white" }} />
+                      </Sparklines>
+                      <div className="text-xs mt-1 text-muted-foreground">
+                        {Object.keys(flupsy.sizeDistribution)
+                          .slice(0, 3)
+                          .map(size => `${size}`).join(', ')}
+                        {Object.keys(flupsy.sizeDistribution).length > 3 ? ' ...' : ''}
+                      </div>
+                    </div>
+                  )}
                 </div>
                 
                 <div className="grid grid-cols-2 gap-2 text-sm">

@@ -3174,7 +3174,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Ottieni le operazioni per i cestelli attivi per contare il numero di animali totale
           let totalAnimals = 0;
-          let sizeDistribution = {};
+          let sizeDistribution: Record<string, number> = {};
           
           // Ottieni i cicli attivi per questo FLUPSY
           const activeCycles = await db.select()
@@ -3198,13 +3198,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
             
             if (operationsWithCount.length > 0) {
               const lastOperation = operationsWithCount[0];
-              totalAnimals += lastOperation.animalCount;
-              
-              // Aggiungi i dati di distribuzione per taglia
-              if (lastOperation.sizeId) {
-                const size = await storage.getSize(lastOperation.sizeId);
-                if (size) {
-                  sizeDistribution[size.code] = (sizeDistribution[size.code] || 0) + lastOperation.animalCount;
+              if (lastOperation.animalCount) {
+                totalAnimals += lastOperation.animalCount;
+                
+                // Aggiungi i dati di distribuzione per taglia
+                if (lastOperation.sizeId) {
+                  const size = await storage.getSize(lastOperation.sizeId);
+                  if (size) {
+                    const sizeCode = size.code;
+                    if (!sizeDistribution[sizeCode]) {
+                      sizeDistribution[sizeCode] = 0;
+                    }
+                    sizeDistribution[sizeCode] += lastOperation.animalCount;
+                  }
                 }
               }
             }
