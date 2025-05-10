@@ -35,6 +35,18 @@ export default function Baskets() {
     direction: 'asc'
   });
   
+  // Salva la taglia preferita nel localStorage ogni volta che cambia
+  useEffect(() => {
+    localStorage.setItem('preferredSizeCode', preferredSize);
+    // Quando cambia la taglia preferita, aggiorna automaticamente l'ordinamento
+    if (preferredSize) {
+      setSortConfig({
+        key: 'size.code',
+        direction: 'asc'
+      });
+    }
+  }, [preferredSize]);
+  
   // Carica il flupsyId dal localStorage (impostato dalla pagina Flupsys)
   useEffect(() => {
     const savedFlupsyId = localStorage.getItem('selectedFlupsyId');
@@ -618,11 +630,18 @@ export default function Baskets() {
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer relative ${sortConfig.key === 'size.code' ? 'text-blue-600' : 'text-gray-500'}`}
                   onClick={() => requestSort('size.code')}
                 >
                   <div className="flex items-center">
-                    Taglia Attuale
+                    <span>Taglia Attuale</span>
+                    {preferredSize && (
+                      <div 
+                        className="ml-2 h-3 w-3 rounded-full" 
+                        style={{backgroundColor: getSizeColor(preferredSize)}}
+                        title={`Ordinata in base alla taglia preferita: ${preferredSize}`}
+                      ></div>
+                    )}
                     {sortConfig.key === 'size.code' ? (
                       <svg 
                         xmlns="http://www.w3.org/2000/svg" 
@@ -779,8 +798,9 @@ export default function Baskets() {
                                 className={`size-badge ${basket.size.code === preferredSize ? 'ring-2 ring-blue-500 shadow-md' : ''}`}
                                 style={{
                                   ...getSizeBadgeStyle(basket.size.code),
-                                  transition: 'all 0.2s ease-in-out',
-                                  transform: basket.size.code === preferredSize ? 'scale(1.1)' : 'scale(1)'
+                                  transition: 'all 0.3s ease-in-out',
+                                  transform: basket.size.code === preferredSize ? 'scale(1.1)' : 'scale(1)',
+                                  fontWeight: basket.size.code === preferredSize ? 'bold' : 'normal'
                                 }}
                               >
                                 {basket.size.code}
