@@ -584,8 +584,8 @@ export default function Flupsys() {
                 </div>
                 
                 {/* Statistiche Animali */}
-                <div className="bg-cyan-50 dark:bg-cyan-950 rounded-lg p-3 mb-4 flex items-center justify-between">
-                  <div className="flex items-center gap-2">
+                <div className="bg-cyan-50 dark:bg-cyan-950 rounded-lg p-3 mb-4">
+                  <div className="flex items-center gap-2 mb-2">
                     <Fish className="text-cyan-600 dark:text-cyan-400" size={20} />
                     <div>
                       <p className="text-xs text-muted-foreground">Totale Animali</p>
@@ -594,25 +594,50 @@ export default function Flupsys() {
                       </p>
                     </div>
                   </div>
+                  
                   {flupsy.sizeDistribution && Object.keys(flupsy.sizeDistribution).length > 0 && (
-                    <div className="w-1/2">
-                      <p className="text-xs text-muted-foreground mb-1">Distribuzione Taglie</p>
-                      <Sparklines 
-                        data={Object.values(flupsy.sizeDistribution)} 
-                        height={30} 
-                        width={100}
-                        margin={5}
-                      >
-                        <SparklinesLine style={{ stroke: "#22d3ee", fill: "#99f6e4", fillOpacity: "0.2" }} />
-                        <SparklinesSpots size={2} style={{ stroke: "#0891b2", strokeWidth: 2, fill: "white" }} />
-                      </Sparklines>
-                      <div className="text-xs mt-1 text-muted-foreground">
-                        {Object.keys(flupsy.sizeDistribution)
-                          .slice(0, 3)
-                          .map(size => `${size}`).join(', ')}
-                        {Object.keys(flupsy.sizeDistribution).length > 3 ? ' ...' : ''}
+                    <>
+                      <p className="text-xs text-muted-foreground mt-3 mb-1 font-medium">Distribuzione Taglie</p>
+                      
+                      {/* Grafico a barre con distribuzioni */}
+                      <div className="w-full">
+                        {Object.entries(flupsy.sizeDistribution)
+                          .sort(([, countA], [, countB]) => countB - countA)
+                          .map(([size, count], index) => {
+                            // Calcolo la percentuale per questa taglia
+                            const totalCount = Object.values(flupsy.sizeDistribution || {}).reduce((sum, c) => sum + c, 0);
+                            const percentage = totalCount > 0 ? (count / totalCount) * 100 : 0;
+                            
+                            // Assegno colori diversi alle prime 5 taglie, poi riutilizzo i colori
+                            const colorIndex = index % 5;
+                            const colors = [
+                              "bg-cyan-400 dark:bg-cyan-600", 
+                              "bg-blue-400 dark:bg-blue-600",
+                              "bg-green-400 dark:bg-green-600", 
+                              "bg-emerald-400 dark:bg-emerald-600",
+                              "bg-teal-400 dark:bg-teal-600"
+                            ];
+                            
+                            return (
+                              <div key={size} className="mb-1.5 last:mb-1">
+                                <div className="flex items-center justify-between mb-0.5">
+                                  <span className="text-xs font-medium">{size}</span>
+                                  <span className="text-xs text-muted-foreground">
+                                    {count.toLocaleString()} ({percentage.toFixed(1)}%)
+                                  </span>
+                                </div>
+                                <div className="w-full h-2 bg-gray-200 dark:bg-gray-700 rounded-full overflow-hidden">
+                                  <div 
+                                    className={`h-full rounded-full ${colors[colorIndex]}`} 
+                                    style={{ width: `${Math.max(percentage, 3)}%` }} 
+                                  />
+                                </div>
+                              </div>
+                            );
+                          })
+                        }
                       </div>
-                    </div>
+                    </>
                   )}
                 </div>
                 
