@@ -115,16 +115,16 @@ const createFormattedText = (data: any, date: Date) => {
   
   // Bilancio giornata
   text += `🧮 *BILANCIO GIORNALIERO*\n`;
-  text += `Entrate: ${data.totals.totale_entrate ? data.totals.totale_entrate.toLocaleString('it-IT') : '0'} animali\n`;
-  text += `Uscite: ${data.totals.totale_uscite ? data.totals.totale_uscite.toLocaleString('it-IT') : '0'} animali\n`;
-  text += `Bilancio netto: ${data.totals.bilancio_netto ? data.totals.bilancio_netto.toLocaleString('it-IT') : '0'} animali\n`;
+  text += `Entrate: ${data.totals.totale_entrate ? formatNumberWithCommas(data.totals.totale_entrate) : '0'} animali\n`;
+  text += `Uscite: ${data.totals.totale_uscite ? formatNumberWithCommas(data.totals.totale_uscite) : '0'} animali\n`;
+  text += `Bilancio netto: ${data.totals.bilancio_netto ? formatNumberWithCommas(data.totals.bilancio_netto) : '0'} animali\n`;
   text += `Totale operazioni: ${data.totals.numero_operazioni}\n\n`;
   
   // Bilancio finale
   if (data.giacenza && data.giacenza.totale_giacenza !== undefined) {
     const bilancioFinale = data.giacenza.totale_giacenza + (parseInt(data.totals.bilancio_netto) || 0);
     text += `🏁 *BILANCIO FINALE*\n`;
-    text += `Giacenza + Bilancio netto: ${bilancioFinale.toLocaleString('it-IT')} animali\n`;
+    text += `Giacenza + Bilancio netto: ${formatNumberWithCommas(bilancioFinale)} animali\n`;
   }
   
   return text;
