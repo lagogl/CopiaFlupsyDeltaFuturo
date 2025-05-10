@@ -840,7 +840,21 @@ export default function Cycles() {
                         {animalCount.toLocaleString()}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {sgrValue}
+                        {cycle.currentSgr && (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="cursor-help">{cycle.currentSgr.percentage.toFixed(1)}%</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <div className="text-xs">
+                                  <p><strong>SGR:</strong> Tasso di crescita specifico</p>
+                                  <p><strong>Valore:</strong> {cycle.currentSgr.percentage.toFixed(2)}%</p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) || '-'}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap">
                         <Badge variant="outline" className={`px-1.5 py-0 text-xs ${
