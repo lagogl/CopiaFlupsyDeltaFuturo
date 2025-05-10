@@ -19,6 +19,7 @@ import Sizes from "@/pages/Sizes";
 import Sgr from "@/pages/Sgr";
 import Settings from "@/pages/Settings";
 import Flupsys from "@/pages/Flupsys";
+import FlupsyDetails from "@/pages/FlupsyDetails";
 import FlupsyFullView from "@/pages/FlupsyFullView";
 import FlupsyPositions from "@/pages/FlupsyPositions";
 import FlupsyComparison from "@/pages/FlupsyComparison";
@@ -64,8 +65,9 @@ function Router() {
       {/* Pagine protette */}
       <ProtectedRoute path="/" component={Dashboard} />
       <ProtectedRoute path="/flupsys" component={Flupsys}/>
+      <ProtectedRoute path="/flupsys/:id" component={FlupsyDetails}/>
+      <ProtectedRoute path="/flupsys/:id/positions" component={FlupsyPositions}/>
       <ProtectedRoute path="/flupsy-view" component={FlupsyFullView}/>
-      <ProtectedRoute path="/flupsy-positions" component={FlupsyPositions}/>
       <ProtectedRoute path="/flupsy-comparison" component={FlupsyComparison}/>
       <ProtectedRoute path="/flupsy-comparison-enhanced" component={FlupsyComparisonEnhanced}/>
       <ProtectedRoute path="/baskets" component={Baskets}/>
