@@ -2,6 +2,7 @@ import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { getSizeColor } from '@/lib/sizeUtils';
 import { Eye, Search, Filter, InfoIcon, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -52,6 +53,8 @@ interface Lot {
 interface Flupsy {
   id: number;
   name: string;
+  location?: string;
+  maxPositions?: number;
 }
 
 // Definizione dell'interfaccia Basket per tipizzare i dati del cestello
@@ -450,7 +453,7 @@ export default function Cycles() {
                         <Calendar
                           mode="single"
                           selected={dateRangeFilter.start || undefined}
-                          onSelect={(date) => setDateRangeFilter(prev => ({ ...prev, start: date }))}
+                          onSelect={(date) => setDateRangeFilter(prev => ({ ...prev, start: date || null }))}
                           initialFocus
                         />
                         {dateRangeFilter.start && (
@@ -476,7 +479,7 @@ export default function Cycles() {
                         <Calendar
                           mode="single"
                           selected={dateRangeFilter.end || undefined}
-                          onSelect={(date) => setDateRangeFilter(prev => ({ ...prev, end: date }))}
+                          onSelect={(date) => setDateRangeFilter(prev => ({ ...prev, end: date || null }))}
                           initialFocus
                         />
                         {dateRangeFilter.end && (
@@ -778,7 +781,21 @@ export default function Cycles() {
                         #{cycle.basket?.physicalNumber || cycle.basketId}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {flupsy ? flupsy.name : '-'}
+                        {flupsy ? (
+                          <TooltipProvider>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <span className="cursor-help">{flupsy.name}</span>
+                              </TooltipTrigger>
+                              <TooltipContent side="top">
+                                <div className="text-xs">
+                                  <p><strong>Posizione:</strong> {flupsy.location || 'N/A'}</p>
+                                  <p><strong>Posizioni max:</strong> {flupsy.maxPositions || 'N/A'}</p>
+                                </div>
+                              </TooltipContent>
+                            </Tooltip>
+                          </TooltipProvider>
+                        ) : '-'}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
                         {startDate}
