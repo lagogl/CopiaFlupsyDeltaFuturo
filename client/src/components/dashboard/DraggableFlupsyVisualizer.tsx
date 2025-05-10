@@ -778,9 +778,9 @@ export default function DraggableFlupsyVisualizer() {
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'DX' && b.position === position);
                   return (
-                    <React.Fragment key={`DX-${position}-${flupsyId}`}>
+                    <div key={`DX-${position}-${flupsyId}`} className="contents">
                       {renderBasketBox(basket, position, 'DX', flupsyId)}
-                    </React.Fragment>
+                    </div>
                   );
                 })}
               </div>
@@ -797,9 +797,9 @@ export default function DraggableFlupsyVisualizer() {
                 {positions.map(position => {
                   const basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
                   return (
-                    <React.Fragment key={`SX-${position}-${flupsyId}`}>
+                    <div key={`SX-${position}-${flupsyId}`} className="contents">
                       {renderBasketBox(basket, position, 'SX', flupsyId)}
-                    </React.Fragment>
+                    </div>
                   );
                 })}
               </div>
@@ -911,9 +911,9 @@ export default function DraggableFlupsyVisualizer() {
       
       {/* Render selected FLUPSY layouts */}
       {selectedFlupsyIds.map(flupsyId => (
-        <React.Fragment key={`flupsy-layout-${flupsyId}`}>
+        <div key={`flupsy-layout-${flupsyId}`} className="contents">
           {renderFlupsyLayout(flupsyId)}
-        </React.Fragment>
+        </div>
       ))}
       
       {/* Confirmation dialog */}
