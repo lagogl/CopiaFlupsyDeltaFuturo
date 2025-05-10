@@ -57,7 +57,14 @@ export default function Flupsys() {
   
   // Fetching FLUPSY units with additional statistics
   const { data: flupsys = [], isLoading } = useQuery<EnhancedFlupsy[]>({
-    queryKey: ['/api/flupsys?includeStats=true'],
+    queryKey: ['/api/flupsys'],
+    queryFn: async () => {
+      const response = await fetch('/api/flupsys?includeStats=true');
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei FLUPSY');
+      }
+      return response.json();
+    },
     select: (data: EnhancedFlupsy[]) => data || []
   });
 
