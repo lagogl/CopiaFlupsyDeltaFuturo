@@ -10,6 +10,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Badge } from "@/components/ui/badge";
 import { Switch } from "@/components/ui/switch";
 import { toast } from "@/hooks/use-toast";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Check, Plus, X, Edit, Trash2, AlertTriangle, Fish, LayoutGrid, Table2, RefreshCw } from "lucide-react";
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
@@ -774,44 +775,91 @@ export default function Flupsys() {
                 </CardContent>
                 <CardFooter className="flex justify-between pt-0">
                   <div className="flex gap-2">
-                    <Button asChild variant="outline" size="sm" className="w-24">
-                      <Link to={`/flupsys/${flupsy.id}`}>
-                        Dettagli
-                      </Link>
-                    </Button>
-                    <Button asChild variant="outline" size="sm" className="w-28">
-                      <Link to={`/flupsys/${flupsy.id}/positions`}>
-                        Posizioni
-                      </Link>
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button asChild variant="outline" size="sm" className="w-24">
+                            <Link to={`/flupsys/${flupsy.id}`}>
+                              Dettagli
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Visualizza informazioni dettagliate del FLUPSY</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
+                    
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button asChild variant="outline" size="sm" className="w-28">
+                            <Link to={`/flupsys/${flupsy.id}/positions`}>
+                              Posizioni
+                            </Link>
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Visualizza la mappa delle posizioni del FLUPSY</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                   </div>
                   <div className="flex gap-2">
-                    <Button
-                      variant="ghost"
-                      size="icon"
-                      onClick={() => handleEdit(flupsy)}
-                    >
-                      <Edit className="h-4 w-4" />
-                    </Button>
+                    <TooltipProvider>
+                      <Tooltip>
+                        <TooltipTrigger asChild>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleEdit(flupsy)}
+                          >
+                            <Edit className="h-4 w-4" />
+                          </Button>
+                        </TooltipTrigger>
+                        <TooltipContent>
+                          <p>Modifica configurazione FLUPSY</p>
+                        </TooltipContent>
+                      </Tooltip>
+                    </TooltipProvider>
                     
                     {(user?.role === 'admin' || user?.role === 'user') && (
                       <>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-500 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20"
-                          onClick={() => handlePopulateFlupsy(flupsy)}
-                        >
-                          <RefreshCw className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="text-red-600 hover:text-red-700 hover:bg-red-100/50 dark:text-red-500 dark:hover:text-red-400 dark:hover:bg-red-900/20"
-                          onClick={() => handleDelete(flupsy)}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-500 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20"
+                                onClick={() => handlePopulateFlupsy(flupsy)}
+                              >
+                                <RefreshCw className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Popola automaticamente il FLUPSY con nuovi cestelli</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <Button
+                                variant="ghost"
+                                size="icon"
+                                className="text-red-600 hover:text-red-700 hover:bg-red-100/50 dark:text-red-500 dark:hover:text-red-400 dark:hover:bg-red-900/20"
+                                onClick={() => handleDelete(flupsy)}
+                              >
+                                <Trash2 className="h-4 w-4" />
+                              </Button>
+                            </TooltipTrigger>
+                            <TooltipContent>
+                              <p>Elimina FLUPSY e tutti i dati correlati</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
                       </>
                     )}
                   </div>
