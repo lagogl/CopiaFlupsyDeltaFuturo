@@ -3238,10 +3238,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log(`Richiesta di eliminazione FLUPSY ID: ${id}`);
       
-      // Controllo del ruolo utente (solo admin può eliminare FLUPSY)
+      // Controllo del ruolo utente (solo admin e user possono eliminare FLUPSY)
       // Nota: i ruoli vengono verificati client-side, il controllo è ulteriore precauzione
       
-      // Usa la funzione di storage per eliminare il FLUPSY
+      // Verifica se il FLUPSY esiste
+      const flupsy = await storage.getFlupsy(id);
+      if (!flupsy) {
+        return res.status(404).json({ success: false, message: "FLUPSY non trovato" });
+      }
+      
+      // Ottieni tutte le ceste associate a questo FLUPSY
+      const basketsInFlupsy = await storage.getBasketsByFlupsy(id);
+      
+      // Verifica se qualche cesta ha un ciclo attivo
+      const basketsWithActiveCycles = basketsInFlupsy.filter(basket => 
+        basket.currentCycleId !== null
+      );
+      
+      if (basketsWithActiveCycles.length > 0) {
+        const activeBasketNumbers = basketsWithActiveCycles.map(b => b.physicalNumber).join(', ');
+        return res.status(409).json({ 
+          success: false, 
+          message: `Impossibile eliminare il FLUPSY. Le seguenti ceste hanno cicli attivi: ${activeBasketNumbers}. Terminare prima i cicli attivi.` 
+        });
+      }
+      
+      // Se non ci sono cicli attivi, procedi con l'eliminazione
       const result = await storage.deleteFlupsy(id);
       
       if (result.success) {
