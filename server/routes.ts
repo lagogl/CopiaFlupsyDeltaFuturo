@@ -3257,6 +3257,132 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+  
+  // Endpoint per popolare automaticamente un FLUPSY con ceste in tutte le posizioni libere
+  app.post("/api/flupsys/:id/populate", async (req, res) => {
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ success: false, message: "ID FLUPSY non valido" });
+      }
+
+      // Verifica che il FLUPSY esista
+      const flupsy = await storage.getFlupsy(id);
+      if (!flupsy) {
+        return res.status(404).json({ success: false, message: "FLUPSY non trovato" });
+      }
+
+      // Ottieni le ceste esistenti per questo FLUPSY
+      const existingBaskets = await storage.getBasketsByFlupsy(id);
+      
+      // Calcola quante posizioni sono già occupate
+      // Assumiamo che ogni cestello abbia una posizione univoca nel FLUPSY, definita da riga (DX/SX) e posizione
+      const occupiedPositions = new Set();
+      existingBaskets.forEach(basket => {
+        if (basket.row && basket.position) {
+          occupiedPositions.add(`${basket.row}_${basket.position}`);
+        }
+      });
+      
+      // Calcola quante posizioni sono disponibili in totale
+      const maxPositions = flupsy.maxPositions || 20; // Default a 20 se non specificato
+      
+      // Calcola quante posizioni ci sono per ogni lato (DX/SX)
+      const positionsPerSide = Math.ceil(maxPositions / 2);
+      
+      // Posizioni libere da riempire, organizzate per riga
+      const freePositions = {
+        'DX': [] as number[],
+        'SX': [] as number[]
+      };
+      
+      // Determina quali posizioni sono libere per ogni riga
+      for (let row of ['DX', 'SX']) {
+        for (let pos = 1; pos <= positionsPerSide; pos++) {
+          if (!occupiedPositions.has(`${row}_${pos}`)) {
+            freePositions[row].push(pos);
+          }
+        }
+      }
+      
+      // Calcola il numero totale di posizioni libere
+      const totalFreePositions = freePositions['DX'].length + freePositions['SX'].length;
+      
+      if (totalFreePositions === 0) {
+        return res.json({ 
+          success: true,
+          message: "Il FLUPSY è già completamente popolato, nessuna nuova cesta creata." 
+        });
+      }
+      
+      // Ottieni il numero fisico più alto esistente per generare nuovi numeri progressivi
+      let highestPhysicalNumber = 0;
+      if (existingBaskets.length > 0) {
+        const maxPhysicalNumber = Math.max(...existingBaskets.map(b => b.physicalNumber || 0));
+        highestPhysicalNumber = maxPhysicalNumber;
+      }
+      
+      // Crea nuove ceste per ogni posizione libera
+      const newBaskets = [];
+      const basketsToCreate = [];
+      
+      // Crea ceste per le posizioni libere lato DX
+      for (const position of freePositions['DX']) {
+        highestPhysicalNumber++;
+        
+        basketsToCreate.push({
+          physicalNumber: highestPhysicalNumber,
+          flupsyId: id,
+          row: 'DX',
+          position: position,
+          currentCycleId: null,
+          notes: null,
+          nfcId: null,
+          nfcData: null
+        });
+      }
+      
+      // Crea ceste per le posizioni libere lato SX
+      for (const position of freePositions['SX']) {
+        highestPhysicalNumber++;
+        
+        basketsToCreate.push({
+          physicalNumber: highestPhysicalNumber,
+          flupsyId: id,
+          row: 'SX',
+          position: position,
+          currentCycleId: null,
+          notes: null,
+          nfcId: null,
+          nfcData: null
+        });
+      }
+      
+      // Crea tutte le nuove ceste nel database
+      for (const basketData of basketsToCreate) {
+        const newBasket = await storage.createBasket(basketData);
+        newBaskets.push(newBasket);
+      }
+      
+      // Restituisci il risultato
+      return res.json({ 
+        success: true,
+        message: `Creazione completata: ${newBaskets.length} nuove ceste aggiunte al FLUPSY.`,
+        newBaskets,
+        totalCreated: newBaskets.length,
+        freePositionsBefore: totalFreePositions,
+        freePositionsAfter: 0
+      });
+      
+    } catch (error) {
+      console.error("Errore durante il popolamento del FLUPSY:", error);
+      return res.status(500).json({ 
+        success: false,
+        message: "Errore durante il popolamento del FLUPSY",
+        error: error.message 
+      });
+    }
+  });
 
   app.get("/api/flupsys/:id/baskets", async (req, res) => {
     try {
