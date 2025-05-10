@@ -16,6 +16,41 @@ interface Operation {
   cycleId: number;
   type: string;
   date: string;
+  lotId?: number;
+  animalCount?: number;
+}
+
+// Definizione dell'interfaccia Size per tipizzare i dati della taglia
+interface Size {
+  id: number;
+  code: string;
+  name: string;
+}
+
+// Definizione dell'interfaccia SGR per tipizzare i dati del tasso di crescita
+interface SGR {
+  id: number;
+  percentage: number;
+}
+
+// Definizione dell'interfaccia Lot per tipizzare i dati del lotto
+interface Lot {
+  id: number;
+  supplier: string;
+  arrivalDate: string;
+}
+
+// Definizione dell'interfaccia Flupsy per tipizzare i dati del FLUPSY
+interface Flupsy {
+  id: number;
+  name: string;
+}
+
+// Definizione dell'interfaccia Basket per tipizzare i dati del cestello
+interface Basket {
+  id: number;
+  physicalNumber: number;
+  flupsyId: number;
 }
 
 // Definizione dell'interfaccia Cycle per tipizzare i dati
@@ -28,6 +63,8 @@ interface Cycle {
   basket?: {
     physicalNumber: number;
   };
+  currentSize?: Size;
+  currentSgr?: SGR;
 }
 
 export default function Cycles() {
@@ -42,6 +79,26 @@ export default function Cycles() {
   // Query operations to check if any cycles were sold
   const { data: operations = [] } = useQuery<Operation[]>({
     queryKey: ['/api/operations'],
+  });
+  
+  // Query FLUPSY data
+  const { data: flupsys = [] } = useQuery<Flupsy[]>({
+    queryKey: ['/api/flupsys'],
+  });
+  
+  // Query baskets data
+  const { data: baskets = [] } = useQuery<Basket[]>({
+    queryKey: ['/api/baskets'],
+  });
+  
+  // Query lots data
+  const { data: lots = [] } = useQuery<Lot[]>({
+    queryKey: ['/api/lots'],
+  });
+  
+  // Query sizes data
+  const { data: sizes = [] } = useQuery<Size[]>({
+    queryKey: ['/api/sizes'],
   });
 
   // Filter cycles
@@ -122,19 +179,19 @@ export default function Cycles() {
           <table className="min-w-full divide-y divide-gray-200 table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
                   ID
                 </th>
                 <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                   Cesta
                 </th>
                 <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
-                  FLUPSY
+                  Flupsy
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   Inizio
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   Fine
                 </th>
                 <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
@@ -149,13 +206,13 @@ export default function Cycles() {
                 <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
                   N° Animali
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                   SGR
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                   Stato
                 </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                   Azioni
                 </th>
               </tr>
@@ -194,12 +251,35 @@ export default function Cycles() {
                   // Check if this cycle has a vendita operation
                   const isSoldCycle = operations.some(op => op.type === 'vendita' && op.cycleId === cycle.id);
                   
-                  // I dati aggiuntivi simulati (nella versione reale verrebbero recuperati dalle API)
-                  const flupsyName = `F-${Math.floor(Math.random() * 10) + 1}`;
-                  const currentSize = ['TP-180', 'TP-200', 'TP-315', 'TP-450', 'TP-500', 'N/A'][Math.floor(Math.random() * 6)];
-                  const lotNumber = Math.floor(Math.random() * 20) + 10;
-                  const animalCount = Math.floor(Math.random() * 5000) + 1000;
-                  const sgrValue = (Math.random() * 5).toFixed(1) + '%';
+                  // Recupero dei dati dalle API esistenti (non più simulati)
+                  // TODO: Nelle API reali, questi dati dovrebbero essere inclusi direttamente nella risposta del ciclo
+                  const flupsy = flupsys.find(f => {
+                    // Cerca il FLUPSY basato sul ciclo/cestello
+                    const basket = baskets.find(b => b.id === cycle.basketId);
+                    return basket && basket.flupsyId === f.id;
+                  });
+                  
+                  // Ricerca dell'operazione di prima attivazione per ottenere il lotto
+                  const primaAttivazione = operations.find(
+                    op => op.cycleId === cycle.id && op.type === 'prima-attivazione'
+                  );
+                  
+                  const lot = primaAttivazione && primaAttivazione.lotId 
+                    ? lots.find(l => l.id === primaAttivazione.lotId) 
+                    : null;
+                    
+                  // Info taglia dal ciclo
+                  const currentSize = cycle.currentSize 
+                    ? sizes.find(s => s.id === cycle.currentSize?.id)?.code 
+                    : 'N/A';
+                    
+                  // Altri dati dalle operazioni più recenti
+                  const latestMeasurement = operations.find(
+                    op => op.cycleId === cycle.id && (op.type === 'misura' || op.type === 'peso')
+                  );
+                  
+                  const animalCount = latestMeasurement?.animalCount || 0;
+                  const sgrValue = cycle.currentSgr ? `${cycle.currentSgr.percentage.toFixed(1)}%` : '-';
                   
                   return (
                     <tr key={cycle.id} className={isSoldCycle ? 'relative bg-red-50/20 hover:bg-gray-50' : 'hover:bg-gray-50'}>
@@ -223,7 +303,7 @@ export default function Cycles() {
                         #{cycle.basket?.physicalNumber || cycle.basketId}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {flupsyName}
+                        {flupsy ? flupsy.name : '-'}
                       </td>
                       <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
                         {startDate}
