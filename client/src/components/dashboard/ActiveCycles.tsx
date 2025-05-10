@@ -54,27 +54,24 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
 
   // Definisci la funzione di ordinamento
   const sortCyclesBySize = useCallback((cycles: Cycle[]) => {
-    console.log("Sorting cycles by size preference:", preferredSize);
-    console.log("Cycles before sorting:", cycles.map(c => ({id: c.id, size: c.currentSize?.code || 'N/A'})));
-    
     const sorted = [...cycles].sort((a, b) => {
       const aCode = a.currentSize?.code;
       const bCode = b.currentSize?.code;
       
-      // Se entrambi hanno taglie
+      // Priorità 1: Lo stato attivo
+      if (a.state !== b.state) {
+        if (a.state === 'active' && b.state !== 'active') return -1;
+        if (a.state !== 'active' && b.state === 'active') return 1;
+      }
+
+      // Priorità 2: Se entrambi hanno taglie
       if (aCode && bCode) {
         // Prima priorità: la taglia esatta richiesta
         const aHasExactMatch = aCode === preferredSize;
         const bHasExactMatch = bCode === preferredSize;
         
-        if (aHasExactMatch && !bHasExactMatch) {
-          console.log(`Cycle ${a.id} (${aCode}) matches preferred size ${preferredSize} exactly, moving before ${b.id} (${bCode})`);
-          return -1;
-        }
-        if (!aHasExactMatch && bHasExactMatch) {
-          console.log(`Cycle ${b.id} (${bCode}) matches preferred size ${preferredSize} exactly, moving before ${a.id} (${aCode})`);
-          return 1;
-        }
+        if (aHasExactMatch && !bHasExactMatch) return -1;
+        if (!aHasExactMatch && bHasExactMatch) return 1;
         
         // Seconda priorità: somiglianza alla taglia target
         const aDistance = getSizeDistance(aCode, preferredSize);
@@ -82,40 +79,29 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
         
         if (aDistance !== bDistance) {
           // Ordina per distanza dalla taglia richiesta (più vicina prima)
-          console.log(`Comparing distances: ${a.id} (${aCode}) distance=${aDistance} vs ${b.id} (${bCode}) distance=${bDistance}`);
           return aDistance - bDistance;
         }
         
         // Se le distanze sono uguali, ordina numericamente per valore assoluto della taglia
         const aValue = getSizeNumberFromCode(aCode);
         const bValue = getSizeNumberFromCode(bCode);
-        console.log(`Equal distances, comparing size values: ${a.id} (${aCode}) value=${aValue} vs ${b.id} (${bCode}) value=${bValue}`);
         return aValue - bValue;
       }
       
-      // Gestione di casi in cui un elemento non ha taglia
-      if (aCode && !bCode) {
-        console.log(`Cycle ${a.id} has size (${aCode}), moving before ${b.id} (no size)`);
-        return -1; // Elementi con taglia prima di quelli senza
-      }
-      if (!aCode && bCode) {
-        console.log(`Cycle ${b.id} has size (${bCode}), moving before ${a.id} (no size)`);
-        return 1;
-      }
+      // Priorità 3: Cicli con taglia vengono prima di quelli senza taglia
+      if (aCode && !bCode) return -1;
+      if (!aCode && bCode) return 1;
       
-      // Se nessuno ha una taglia, mantieni l'ordine originale
-      console.log(`Both cycles ${a.id} and ${b.id} have no size, keeping original order`);
-      return 0;
+      // Priorità 4: Se entrambi non hanno taglia, ordina per ID (più recente prima)
+      return b.id - a.id;
     });
     
-    console.log("Cycles after sorting:", sorted.map(c => ({id: c.id, size: c.currentSize?.code || 'N/A'})));
     return sorted;
   }, [preferredSize]);
 
   // Memorizza l'array ordinato
   const sortedCycles = useMemo(() => {
     if (!detailedCycles) return [];
-    console.log('Sorting cycles by size preference:', preferredSize);
     return sortCyclesBySize(detailedCycles);
   }, [detailedCycles, sortCyclesBySize, preferredSize]);
 
@@ -151,21 +137,96 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
               </div>
             </SelectTrigger>
             <SelectContent>
-              <SelectItem value="TP-180">Taglia TP-180</SelectItem>
-              <SelectItem value="TP-200">Taglia TP-200</SelectItem>
-              <SelectItem value="TP-315">Taglia TP-315</SelectItem>
-              <SelectItem value="TP-450">Taglia TP-450</SelectItem>
-              <SelectItem value="TP-500">Taglia TP-500</SelectItem>
-              <SelectItem value="TP-600">Taglia TP-600</SelectItem>
-              <SelectItem value="TP-700">Taglia TP-700</SelectItem>
-              <SelectItem value="TP-800">Taglia TP-800</SelectItem>
-              <SelectItem value="TP-1000">Taglia TP-1000</SelectItem>
-              <SelectItem value="TP-1500">Taglia TP-1500</SelectItem>
-              <SelectItem value="TP-2000">Taglia TP-2000</SelectItem>
-              <SelectItem value="TP-3000">Taglia TP-3000</SelectItem>
-              <SelectItem value="TP-5000">Taglia TP-5000</SelectItem>
-              <SelectItem value="TP-8000">Taglia TP-8000</SelectItem>
-              <SelectItem value="TP-10000">Taglia TP-10000</SelectItem>
+              <SelectItem value="TP-180">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-180')}}></div>
+                  <span>Taglia TP-180</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-200">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-200')}}></div>
+                  <span>Taglia TP-200</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-315">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-315')}}></div>
+                  <span>Taglia TP-315</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-450">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-450')}}></div>
+                  <span>Taglia TP-450</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-500">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-500')}}></div>
+                  <span>Taglia TP-500</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-600">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-600')}}></div>
+                  <span>Taglia TP-600</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-700">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-700')}}></div>
+                  <span>Taglia TP-700</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-800">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-800')}}></div>
+                  <span>Taglia TP-800</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-1000">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-1000')}}></div>
+                  <span>Taglia TP-1000</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-1500">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-1500')}}></div>
+                  <span>Taglia TP-1500</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-2000">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-2000')}}></div>
+                  <span>Taglia TP-2000</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-3000">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-3000')}}></div>
+                  <span>Taglia TP-3000</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-5000">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-5000')}}></div>
+                  <span>Taglia TP-5000</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-8000">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-8000')}}></div>
+                  <span>Taglia TP-8000</span>
+                </div>
+              </SelectItem>
+              <SelectItem value="TP-10000">
+                <div className="flex items-center">
+                  <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-10000')}}></div>
+                  <span>Taglia TP-10000</span>
+                </div>
+              </SelectItem>
             </SelectContent>
           </Select>
         </div>
@@ -201,21 +262,6 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
             </tr>
           </thead>
           <tbody className="bg-white divide-y divide-gray-200">
-            {/* Debug: Mostra tutte le taglie disponibili */}
-            <tr>
-              <td colSpan={8} className="px-6 py-2 text-xs bg-blue-50">
-                Ordinamento per taglia: {preferredSize}
-                {sortedCycles && sortedCycles.map(cycle => 
-                  <span key={cycle.id} className="ml-2 inline-block">
-                    <span className={`px-1 text-xs rounded ${
-                      cycle.currentSize?.code === preferredSize ? 'bg-blue-200 font-bold' : 'bg-gray-100'
-                    }`}>
-                      #{cycle.id}: {cycle.currentSize?.code || 'N/A'}
-                    </span>
-                  </span>
-                )}
-              </td>
-            </tr>
             {sortedCycles && sortedCycles.length > 0 ? (
               sortedCycles.map((cycle) => {
                 // Format dates and calculate status
