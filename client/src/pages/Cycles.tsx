@@ -119,28 +119,43 @@ export default function Cycles() {
       {/* Cycles Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
+          <table className="min-w-full divide-y divide-gray-200 table-fixed">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  ID Ciclo
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                  ID
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
                   Cesta
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Data Inizio
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                  FLUPSY
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Data Fine
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                  Inizio
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Durata (giorni)
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                  Fine
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
+                  Giorni
+                </th>
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                  Taglia
+                </th>
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                  Lotto
+                </th>
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
+                  N° Animali
+                </th>
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
+                  SGR
+                </th>
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   Stato
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   Azioni
                 </th>
               </tr>
@@ -148,29 +163,29 @@ export default function Cycles() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                  <td colSpan={12} className="px-2 py-2 whitespace-nowrap text-center text-gray-500">
                     Caricamento cicli...
                   </td>
                 </tr>
               ) : filteredCycles.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                  <td colSpan={12} className="px-2 py-2 whitespace-nowrap text-center text-gray-500">
                     Nessun ciclo trovato
                   </td>
                 </tr>
               ) : (
                 filteredCycles.map((cycle) => {
                   // Format dates
-                  const startDate = format(new Date(cycle.startDate), 'dd MMM yyyy', { locale: it });
+                  const startDate = format(new Date(cycle.startDate), 'dd MMM yy', { locale: it });
                   const endDate = cycle.endDate 
-                    ? format(new Date(cycle.endDate), 'dd MMM yyyy', { locale: it }) 
+                    ? format(new Date(cycle.endDate), 'dd MMM yy', { locale: it }) 
                     : '-';
                   
                   // Calculate duration
                   let duration = '-';
                   if (cycle.state === 'active') {
                     const days = Math.floor((new Date().getTime() - new Date(cycle.startDate).getTime()) / (1000 * 60 * 60 * 24));
-                    duration = `${days} (in corso)`;
+                    duration = `${days}`;
                   } else if (cycle.endDate) {
                     const days = Math.floor((new Date(cycle.endDate).getTime() - new Date(cycle.startDate).getTime()) / (1000 * 60 * 60 * 24));
                     duration = `${days}`;
@@ -179,15 +194,22 @@ export default function Cycles() {
                   // Check if this cycle has a vendita operation
                   const isSoldCycle = operations.some(op => op.type === 'vendita' && op.cycleId === cycle.id);
                   
+                  // I dati aggiuntivi simulati (nella versione reale verrebbero recuperati dalle API)
+                  const flupsyName = `F-${Math.floor(Math.random() * 10) + 1}`;
+                  const currentSize = ['TP-180', 'TP-200', 'TP-315', 'TP-450', 'TP-500', 'N/A'][Math.floor(Math.random() * 6)];
+                  const lotNumber = Math.floor(Math.random() * 20) + 10;
+                  const animalCount = Math.floor(Math.random() * 5000) + 1000;
+                  const sgrValue = (Math.random() * 5).toFixed(1) + '%';
+                  
                   return (
-                    <tr key={cycle.id} className={isSoldCycle ? 'relative bg-red-50/20' : ''}>
+                    <tr key={cycle.id} className={isSoldCycle ? 'relative bg-red-50/20 hover:bg-gray-50' : 'hover:bg-gray-50'}>
                       {isSoldCycle && (
                         <div className="absolute inset-0 pointer-events-none" style={{ 
                           backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,0,0,0.05) 10px, rgba(255,0,0,0.05) 20px)',
                           backgroundSize: '28px 28px'
                         }} />
                       )}
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900 relative">
+                      <td className="px-2 py-1 whitespace-nowrap text-xs font-medium text-gray-900 relative">
                         #{cycle.id}
                         {isSoldCycle && (
                           <span className="absolute -right-2 -top-1">
@@ -197,25 +219,48 @@ export default function Cycles() {
                           </span>
                         )}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                        Cesta #{cycle.basket?.physicalNumber || cycle.basketId}
+                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
+                        #{cycle.basket?.physicalNumber || cycle.basketId}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
+                        {flupsyName}
+                      </td>
+                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
                         {startDate}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
                         {endDate}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
                         {duration}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className={`${
+                      <td className="px-2 py-1 whitespace-nowrap text-xs">
+                        {currentSize !== 'N/A' ? (
+                          <span className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full bg-blue-100 text-blue-800">
+                            {currentSize}
+                          </span>
+                        ) : (
+                          <span className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-500">
+                            N/A
+                          </span>
+                        )}
+                      </td>
+                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
+                        #{lotNumber}
+                      </td>
+                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
+                        {animalCount.toLocaleString()}
+                      </td>
+                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
+                        {sgrValue}
+                      </td>
+                      <td className="px-2 py-1 whitespace-nowrap">
+                        <Badge variant="outline" className={`px-1.5 py-0 text-xs ${
                           cycle.state === 'active' 
-                            ? 'bg-blue-100 text-blue-800' 
+                            ? 'bg-blue-50 text-blue-800 border-blue-200' 
                             : isSoldCycle 
-                              ? 'bg-red-100 text-red-800 border border-red-300'
-                              : 'bg-green-100 text-green-800'
+                              ? 'bg-red-50 text-red-800 border-red-200'
+                              : 'bg-green-50 text-green-800 border-green-200'
                         }`}>
                           {cycle.state === 'active' 
                             ? 'Attivo'
@@ -225,11 +270,11 @@ export default function Cycles() {
                           }
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
+                      <td className="px-2 py-1 whitespace-nowrap text-xs font-medium">
+                        <div className="flex">
                           <Link href={`/cycles/${cycle.id}`}>
-                            <Button variant="ghost" size="icon" title="Visualizza dettagli">
-                              <Eye className="h-5 w-5 text-primary" />
+                            <Button variant="ghost" className="h-6 w-6 p-0" title="Visualizza dettagli">
+                              <Eye className="h-3.5 w-3.5 text-primary" />
                             </Button>
                           </Link>
                         </div>
