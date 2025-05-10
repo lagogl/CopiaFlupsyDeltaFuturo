@@ -5,7 +5,7 @@ import {
   Eye, Copy, Download, Plus, Filter, Upload, Pencil, Search, Waves,
   Trash2, AlertTriangle, History, MapPin, Info
 } from 'lucide-react';
-import { getSizeBadgeStyle } from '@/lib/sizeUtils';
+import { getSizeBadgeStyle, getSizeColor } from '@/lib/sizeUtils';
 import { Button } from '@/components/ui/button';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from '@/components/ui/dialog';
 import { Badge } from '@/components/ui/badge';
@@ -386,6 +386,40 @@ export default function Baskets() {
                     </SelectItem>
                   ))
                 ) : null}
+              </SelectContent>
+            </Select>
+            <Select value={preferredSize} onValueChange={(size) => {
+              setPreferredSize(size);
+              if (sortConfig.key === 'size.code') {
+                // Se stiamo già ordinando per taglia, riapplica l'ordinamento con la nuova taglia target
+                requestSort('size.code');
+              }
+            }}>
+              <SelectTrigger className="w-[180px]">
+                <div className="flex items-center">
+                  <div 
+                    className="h-4 w-4 mr-2 rounded-full" 
+                    style={{backgroundColor: getSizeColor(preferredSize)}}
+                  ></div>
+                  <SelectValue placeholder="Taglia preferita" />
+                </div>
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="TP-180">Taglia TP-180</SelectItem>
+                <SelectItem value="TP-200">Taglia TP-200</SelectItem>
+                <SelectItem value="TP-315">Taglia TP-315</SelectItem>
+                <SelectItem value="TP-450">Taglia TP-450</SelectItem>
+                <SelectItem value="TP-500">Taglia TP-500</SelectItem>
+                <SelectItem value="TP-600">Taglia TP-600</SelectItem>
+                <SelectItem value="TP-700">Taglia TP-700</SelectItem>
+                <SelectItem value="TP-800">Taglia TP-800</SelectItem>
+                <SelectItem value="TP-1000">Taglia TP-1000</SelectItem>
+                <SelectItem value="TP-1500">Taglia TP-1500</SelectItem>
+                <SelectItem value="TP-2000">Taglia TP-2000</SelectItem>
+                <SelectItem value="TP-3000">Taglia TP-3000</SelectItem>
+                <SelectItem value="TP-5000">Taglia TP-5000</SelectItem>
+                <SelectItem value="TP-8000">Taglia TP-8000</SelectItem>
+                <SelectItem value="TP-10000">Taglia TP-10000</SelectItem>
               </SelectContent>
             </Select>
           </div>
