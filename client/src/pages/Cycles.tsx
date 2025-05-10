@@ -354,10 +354,164 @@ export default function Cycles() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-condensed font-bold text-gray-800">Cicli Produttivi</h2>
         <div className="flex space-x-3">
-          <Button variant="outline" size="sm">
-            <Filter className="h-4 w-4 mr-1" />
-            Filtra
-          </Button>
+          <Popover>
+            <PopoverTrigger asChild>
+              <Button variant="outline" size="sm">
+                <Filter className="h-4 w-4 mr-1" />
+                Filtra
+              </Button>
+            </PopoverTrigger>
+            <PopoverContent className="w-96">
+              <div className="space-y-4">
+                <h4 className="font-medium">Filtri Avanzati</h4>
+                
+                {/* Filtro per FLUPSY */}
+                <div className="space-y-2">
+                  <Label>FLUPSY</Label>
+                  <Select 
+                    value={flupsyFilter !== null ? String(flupsyFilter) : ''} 
+                    onValueChange={(value) => setFlupsyFilter(value ? Number(value) : null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tutti i FLUPSY" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tutti i FLUPSY</SelectItem>
+                      {flupsys.map((flupsy) => (
+                        <SelectItem key={flupsy.id} value={String(flupsy.id)}>
+                          {flupsy.name}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Filtro per Taglia */}
+                <div className="space-y-2">
+                  <Label>Taglia</Label>
+                  <Select 
+                    value={tagFilter || ''} 
+                    onValueChange={(value) => setTagFilter(value || null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tutte le taglie" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tutte le taglie</SelectItem>
+                      {sizes.map((size) => (
+                        <SelectItem key={size.id} value={size.code}>
+                          <div className="flex items-center">
+                            <span 
+                              className="w-3 h-3 rounded-full mr-2" 
+                              style={{ 
+                                backgroundColor: getSizeColor(size.code) 
+                              }}
+                            />
+                            {size.code}
+                          </div>
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Filtro per Lotto */}
+                <div className="space-y-2">
+                  <Label>Lotto</Label>
+                  <Select 
+                    value={lotFilter !== null ? String(lotFilter) : ''} 
+                    onValueChange={(value) => setLotFilter(value ? Number(value) : null)}
+                  >
+                    <SelectTrigger>
+                      <SelectValue placeholder="Tutti i lotti" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="">Tutti i lotti</SelectItem>
+                      {lots.map((lot) => (
+                        <SelectItem key={lot.id} value={String(lot.id)}>
+                          #{lot.id} - {lot.supplier} ({format(new Date(lot.arrivalDate), 'dd/MM/yy')})
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+                
+                {/* Filtro per Intervallo di Date */}
+                <div className="space-y-2">
+                  <Label>Periodo</Label>
+                  <div className="flex space-x-2">
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal">
+                          {dateRangeFilter.start ? format(dateRangeFilter.start, 'dd/MM/yyyy') : "Data inizio"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dateRangeFilter.start || undefined}
+                          onSelect={(date) => setDateRangeFilter(prev => ({ ...prev, start: date }))}
+                          initialFocus
+                        />
+                        {dateRangeFilter.start && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-full" 
+                            onClick={() => setDateRangeFilter(prev => ({ ...prev, start: null }))}
+                          >
+                            Cancella
+                          </Button>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+                    
+                    <Popover>
+                      <PopoverTrigger asChild>
+                        <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal">
+                          {dateRangeFilter.end ? format(dateRangeFilter.end, 'dd/MM/yyyy') : "Data fine"}
+                        </Button>
+                      </PopoverTrigger>
+                      <PopoverContent className="w-auto p-0" align="start">
+                        <Calendar
+                          mode="single"
+                          selected={dateRangeFilter.end || undefined}
+                          onSelect={(date) => setDateRangeFilter(prev => ({ ...prev, end: date }))}
+                          initialFocus
+                        />
+                        {dateRangeFilter.end && (
+                          <Button 
+                            variant="ghost" 
+                            size="sm" 
+                            className="w-full" 
+                            onClick={() => setDateRangeFilter(prev => ({ ...prev, end: null }))}
+                          >
+                            Cancella
+                          </Button>
+                        )}
+                      </PopoverContent>
+                    </Popover>
+                  </div>
+                </div>
+                
+                {/* Pulsanti azione */}
+                <div className="flex justify-end space-x-2 pt-2">
+                  <Button 
+                    variant="secondary" 
+                    size="sm"
+                    onClick={() => {
+                      setFlupsyFilter(null);
+                      setTagFilter(null);
+                      setLotFilter(null);
+                      setDateRangeFilter({ start: null, end: null });
+                    }}
+                  >
+                    Reset
+                  </Button>
+                </div>
+              </div>
+            </PopoverContent>
+          </Popover>
           <TooltipProvider>
             <Tooltip>
               <TooltipTrigger asChild>
@@ -552,7 +706,7 @@ export default function Cycles() {
                   </td>
                 </tr>
               ) : (
-                filteredCycles.map((cycle) => {
+                sortedFilteredCycles.map((cycle) => {
                   // Format dates
                   const startDate = format(new Date(cycle.startDate), 'dd MMM yy', { locale: it });
                   const endDate = cycle.endDate 
