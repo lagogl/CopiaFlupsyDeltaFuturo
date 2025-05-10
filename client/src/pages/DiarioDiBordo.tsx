@@ -785,8 +785,8 @@ export default function DiarioDiBordo() {
                                       {taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia}:
                                     </span>
                                     <span>
-                                      {taglia.entrate ? (<><span className="text-green-600">+{Number(taglia.entrate).toLocaleString('it-IT')}</span>{' '}</>) : null}
-                                      {taglia.uscite ? (<><span className="text-red-600">-{Number(taglia.uscite).toLocaleString('it-IT')}</span>{' '}</>) : null}
+                                      {taglia.entrate ? (<><span className="text-green-600">+{parseInt(taglia.entrate).toLocaleString('it-IT')}</span>{' '}</>) : null}
+                                      {taglia.uscite ? (<><span className="text-red-600">-{parseInt(taglia.uscite).toLocaleString('it-IT')}</span>{' '}</>) : null}
                                     </span>
                                   </div>
                                 ))}
@@ -809,20 +809,20 @@ export default function DiarioDiBordo() {
                               <div className="flex justify-between items-center text-sm">
                                 <span>Entrate:</span>
                                 <span className="text-green-600 font-medium">
-                                  +{totals?.totale_entrate ? Number(totals.totale_entrate).toLocaleString('it-IT') : '0'}
+                                  +{totals?.totale_entrate ? parseInt(totals.totale_entrate).toLocaleString('it-IT') : '0'}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center text-sm">
                                 <span>Uscite:</span>
                                 <span className="text-red-600 font-medium">
-                                  -{totals?.totale_uscite ? Number(totals.totale_uscite).toLocaleString('it-IT') : '0'}
+                                  -{totals?.totale_uscite ? parseInt(totals.totale_uscite).toLocaleString('it-IT') : '0'}
                                 </span>
                               </div>
                               <Separator className="my-1" />
                               <div className="flex justify-between items-center text-sm font-medium">
                                 <span>Bilancio netto:</span>
                                 <span className={parseInt(totals?.bilancio_netto || '0') >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                  {parseInt(totals?.bilancio_netto || '0') >= 0 ? '+' : ''}{totals?.bilancio_netto ? Number(totals.bilancio_netto).toLocaleString('it-IT') : '0'}
+                                  {parseInt(totals?.bilancio_netto || '0') >= 0 ? '+' : ''}{totals?.bilancio_netto ? parseInt(totals.bilancio_netto).toLocaleString('it-IT') : '0'}
                                 </span>
                               </div>
                               <div className="flex justify-between items-center text-sm mt-4">
