@@ -109,43 +109,75 @@ export class DbStorage implements IStorage {
       };
     }
     
-    // 4. Elimina tutte le ceste associate al FLUPSY
-    let deletedBasketsCount = 0;
-    for (const basket of flupsyBaskets) {
-      try {
-        // Utilizziamo il metodo esistente deleteBasket che si occupa anche di chiudere le posizioni
-        const deleted = await this.deleteBasket(basket.id);
-        if (deleted) {
-          deletedBasketsCount++;
-        }
-      } catch (error) {
-        console.error(`deleteFlupsy - Errore durante l'eliminazione della cesta ID: ${basket.id}:`, error);
-      }
-    }
-    
-    console.log(`deleteFlupsy - Eliminate ${deletedBasketsCount} ceste su ${flupsyBaskets.length} totali`);
-    
-    // 5. Elimina il FLUPSY
     try {
-      const results = await db.delete(flupsys).where(eq(flupsys.id, id)).returning();
-      
-      if (results.length > 0) {
-        // Notifica WebSocket se il FLUPSY è stato eliminato con successo
-        if (typeof (global as any).broadcastUpdate === 'function') {
-          console.log(`deleteFlupsy - Invio notifica WebSocket per eliminazione FLUPSY ${id}`);
-          (global as any).broadcastUpdate('flupsy_deleted', {
-            flupsyId: id,
-            message: `FLUPSY ${flupsy.name} eliminato con ${deletedBasketsCount} ceste associate`
-          });
+      // 4. Utilizziamo una transazione per eseguire l'eliminazione in modo consistente
+      await db.transaction(async (tx) => {
+        // Estrai tutti gli ID delle ceste
+        const basketIds = flupsyBaskets.map(basket => basket.id);
+        
+        if (basketIds.length > 0) {
+          // 4.1 Eliminazione di tutte le operazioni associate alle ceste
+          console.log(`deleteFlupsy - Eliminazione operazioni per ${basketIds.length} ceste`);
+          await tx
+            .delete(operations)
+            .where(sql`basket_id IN (${basketIds.join(',')})`)
+          
+          // 4.2 Eliminazione della cronologia delle posizioni
+          console.log(`deleteFlupsy - Eliminazione cronologia posizioni per ${basketIds.length} ceste`);
+          await tx
+            .delete(basketPositionHistory)
+            .where(sql`basket_id IN (${basketIds.join(',')})`)
+          
+          // 4.3 Controlla e pulisci eventuali riferimenti nelle tabelle di screening
+          try {
+            // Per la tabella screeningSourceBaskets
+            await tx
+              .delete(screeningSourceBaskets)
+              .where(sql`basket_id IN (${basketIds.join(',')})`)
+            
+            // Per la tabella screeningDestinationBaskets
+            await tx
+              .delete(screeningDestinationBaskets)
+              .where(sql`basket_id IN (${basketIds.join(',')})`)
+              
+            // Per la tabella screeningBasketHistory
+            await tx
+              .delete(screeningBasketHistory)
+              .where(sql`source_basket_id IN (${basketIds.join(',')}) OR destination_basket_id IN (${basketIds.join(',')})`)
+          } catch (error) {
+            console.error("Errore durante pulizia tabelle di screening:", error);
+            // Continuiamo con la cancellazione anche se questa parte fallisce
+          }
         }
         
-        return { 
-          success: true, 
-          message: `FLUPSY ${flupsy.name} eliminato con successo insieme a ${deletedBasketsCount} ceste associate` 
-        };
-      } else {
-        return { success: false, message: "Errore durante l'eliminazione del FLUPSY" };
+        // 4.4 Eliminazione di tutte le ceste
+        console.log(`deleteFlupsy - Eliminazione ${basketIds.length} ceste del FLUPSY ${id}`);
+        await tx
+          .delete(baskets)
+          .where(eq(baskets.flupsyId, id))
+        
+        // 4.5 Infine, elimina il FLUPSY stesso
+        console.log(`deleteFlupsy - Eliminazione FLUPSY ${id}`);
+        await tx
+          .delete(flupsys)
+          .where(eq(flupsys.id, id))
+      });
+      
+      // Se arriviamo qui, la transazione è stata completata con successo
+      // Notifica WebSocket per l'eliminazione riuscita
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        console.log(`deleteFlupsy - Invio notifica WebSocket per eliminazione FLUPSY ${id}`);
+        (global as any).broadcastUpdate('flupsy_deleted', {
+          flupsyId: id,
+          message: `FLUPSY ${flupsy.name} eliminato con ${flupsyBaskets.length} ceste associate`
+        });
       }
+      
+      return { 
+        success: true, 
+        message: `FLUPSY ${flupsy.name} eliminato con successo insieme a ${flupsyBaskets.length} ceste associate e tutti i relativi dati` 
+      };
+      
     } catch (error) {
       console.error(`deleteFlupsy - Errore durante l'eliminazione del FLUPSY ID: ${id}:`, error);
       return { 
