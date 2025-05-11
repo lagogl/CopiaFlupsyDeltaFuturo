@@ -616,10 +616,21 @@ export default function Cycles() {
         </div>
       </div>
 
-      {/* Cycles Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
-        <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200 table-fixed">
+      {/* Tabs */}
+      <Tabs defaultValue="cicli" value={activeTab} onValueChange={setActiveTab} className="mb-4">
+        <TabsList>
+          <TabsTrigger value="cicli">Cicli Produttivi</TabsTrigger>
+          <TabsTrigger value="performance">
+            <BarChart className="h-4 w-4 mr-1" /> 
+            Analisi Performance
+          </TabsTrigger>
+        </TabsList>
+        
+        <TabsContent value="cicli">
+          {/* Cycles Table */}
+          <div className="bg-white rounded-lg shadow overflow-hidden">
+            <div className="overflow-x-auto">
+              <table className="min-w-full divide-y divide-gray-200 table-fixed">
             <thead className="bg-gray-50">
               <tr>
                 <th 
@@ -747,7 +758,7 @@ export default function Cycles() {
                   Azioni
                 </th>
               </tr>
-            </thead>
+          </thead>
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
@@ -976,9 +987,165 @@ export default function Cycles() {
                 })
               )}
             </tbody>
-          </table>
-        </div>
-      </div>
+              </table>
+            </div>
+          </div>
+        </TabsContent>
+        
+        <TabsContent value="performance">
+          {/* Performance Analysis */}
+          <div className="space-y-4">
+            <div className="flex justify-between items-center">
+              <h3 className="text-lg font-medium text-gray-900">Analisi delle Performance dei Cicli</h3>
+              
+              {/* Target Size Selector */}
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="target-size" className="text-sm font-medium">Taglia Target:</Label>
+                <Select 
+                  value={targetSize || ''} 
+                  onValueChange={(value) => setTargetSize(value || null)}
+                >
+                  <SelectTrigger id="target-size" className="w-36">
+                    <SelectValue placeholder="Seleziona taglia" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {sizes
+                      .filter(size => parseTagliaCode(size.code) && parseTagliaCode(size.code)! >= 500)
+                      .sort((a, b) => {
+                        const aValue = parseTagliaCode(a.code) || 0;
+                        const bValue = parseTagliaCode(b.code) || 0;
+                        return aValue - bValue;
+                      })
+                      .map((size) => (
+                        <SelectItem key={size.id} value={size.code}>
+                          <div className="flex items-center">
+                            <span 
+                              className="w-3 h-3 rounded-full mr-2" 
+                              style={{ backgroundColor: getSizeColor(size.code) }}
+                            />
+                            {size.code}
+                          </div>
+                        </SelectItem>
+                      ))
+                    }
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Performance Table */}
+            <div className="bg-white rounded-lg shadow overflow-hidden">
+              <div className="overflow-x-auto">
+                <table className="min-w-full divide-y divide-gray-200 table-fixed">
+                  <thead className="bg-gray-50">
+                    <tr>
+                      <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12">
+                        ID
+                      </th>
+                      <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Cestello
+                      </th>
+                      <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        FLUPSY
+                      </th>
+                      <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Taglia Attuale
+                      </th>
+                      <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        SGR (giornaliero)
+                      </th>
+                      <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                        Peso Medio Attuale
+                      </th>
+                      {targetSize && (
+                        <>
+                          <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Tempo per {targetSize}
+                          </th>
+                          <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                            Data Stimata
+                          </th>
+                        </>
+                      )}
+                    </tr>
+                </thead>
+                  <tbody className="bg-white divide-y divide-gray-200">
+                    {sortedFilteredCycles.length === 0 ? (
+                      <tr>
+                        <td colSpan={targetSize ? 8 : 6} className="px-2 py-4 text-center text-sm text-gray-500">
+                          Nessun ciclo trovato
+                        </td>
+                      </tr>
+                    ) : (
+                      sortedFilteredCycles
+                        .filter(cycle => cycle.state === 'active' && cycle.currentSize && cycle.currentSgr)
+                        .map(cycle => {
+                          // Dati per il ciclo corrente
+                          const basket = baskets.find(b => b.id === cycle.basketId);
+                          const flupsy = basket ? flupsys.find(f => f.id === basket.flupsyId) : null;
+                          const currentWeight = cycle.currentSize ? estimateAverageWeightFromSize(cycle.currentSize.code) : null;
+                          
+                          // Calcolo del tempo necessario per raggiungere la taglia target
+                          const daysToTarget = targetSize ? calculateDaysToReachTarget(cycle, targetSize) : 0;
+                          const targetDateString = calculateTargetDate(cycle, daysToTarget);
+                          
+                          return (
+                            <tr key={`perf-${cycle.id}`} className="hover:bg-gray-50">
+                              <td className="px-2 py-2 whitespace-nowrap text-xs font-medium text-gray-900">
+                                #{cycle.id}
+                              </td>
+                              <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-900">
+                                {basket?.physicalNumber || cycle.basketId}
+                              </td>
+                              <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-900">
+                                {flupsy?.name || 'N/D'}
+                              </td>
+                              <td className="px-2 py-2 whitespace-nowrap text-xs">
+                                {cycle.currentSize && (
+                                  <Badge 
+                                    variant="outline"
+                                    style={{ 
+                                      backgroundColor: `${getSizeColor(cycle.currentSize.code)}20`,
+                                      borderColor: getSizeColor(cycle.currentSize.code),
+                                      color: getSizeColor(cycle.currentSize.code) 
+                                    }}
+                                  >
+                                    {cycle.currentSize.code}
+                                  </Badge>
+                                )}
+                              </td>
+                              <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-900">
+                                {cycle.currentSgr ? `${cycle.currentSgr.percentage.toFixed(2)}%` : 'N/D'}
+                              </td>
+                              <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-900">
+                                {currentWeight ? `${currentWeight.toFixed(3)} g` : 'N/D'}
+                              </td>
+                              {targetSize && (
+                                <>
+                                  <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-900">
+                                    {daysToTarget > 0 
+                                      ? `${daysToTarget} giorni` 
+                                      : daysToTarget === 0 
+                                        ? 'Già raggiunta'
+                                        : 'N/D'
+                                    }
+                                  </td>
+                                  <td className="px-2 py-2 whitespace-nowrap text-xs text-gray-900">
+                                    {targetDateString}
+                                  </td>
+                                </>
+                              )}
+                            </tr>
+                          );
+                        })
+                    )}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </div>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
