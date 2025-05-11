@@ -1483,25 +1483,26 @@ export default function DiarioDiBordo() {
                               <div className="font-medium">{format(date, 'EEE dd', { locale: it })}</div>
                             </td>
                             <td className="py-1 px-2 text-right">
-                              {dayStats.operations.length > 0 ? dayStats.operations.length : '-'}
+                              {dayStats.operations && dayStats.operations.length > 0 ? dayStats.operations.length : 
+                                dayStats.totals && dayStats.totals.numero_operazioni > 0 ? dayStats.totals.numero_operazioni : '-'}
                             </td>
                             <td className="py-1 px-2 text-right font-medium text-green-600">
-                              {dayStats.totals?.totale_entrate > 0 ? 
+                              {dayStats.totals && Number(dayStats.totals.totale_entrate) > 0 ? 
                                 formatNumberWithCommas(dayStats.totals.totale_entrate) : '-'}
                             </td>
                             <td className="py-1 px-2 text-right font-medium text-red-600">
-                              {dayStats.totals?.totale_uscite > 0 ? 
+                              {dayStats.totals && Number(dayStats.totals.totale_uscite) > 0 ? 
                                 formatNumberWithCommas(dayStats.totals.totale_uscite) : '-'}
                             </td>
                             <td className="py-1 px-2 text-right font-medium">
-                              {dayStats.totals?.bilancio_netto !== 0 ? (
+                              {dayStats.totals && dayStats.totals.bilancio_netto && Number(dayStats.totals.bilancio_netto) !== 0 ? (
                                 <span className={Number(dayStats.totals.bilancio_netto) >= 0 ? 'text-green-600' : 'text-red-600'}>
                                   {formatNumberWithCommas(dayStats.totals.bilancio_netto)}
                                 </span>
                               ) : '-'}
                             </td>
                             <td className="py-1 px-2 text-right font-medium">
-                              {dayStats.giacenza ? formatNumberWithCommas(dayStats.giacenza) : '-'}
+                              {dayStats && dayStats.giacenza > 0 ? formatNumberWithCommas(dayStats.giacenza) : '-'}
                             </td>
                             
                             {/* Celle per le taglie specifiche */}
