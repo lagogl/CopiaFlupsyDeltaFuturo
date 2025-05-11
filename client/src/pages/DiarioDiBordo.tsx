@@ -1,6 +1,6 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format, isSameDay, getDaysInMonth } from 'date-fns';
+import { format, isSameDay, getDaysInMonth, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Download, Share, Filter, Clock, Mail, Loader2 } from 'lucide-react';
 import { CalendarIcon } from 'lucide-react';
@@ -250,6 +250,62 @@ export default function DiarioDiBordo() {
     },
     enabled: !!formattedDate
   });
+  
+  // State per i dati del calendario mensile
+  const [monthlyData, setMonthlyData] = useState<Record<string, any>>({});
+  
+  // Funzione per caricare i dati del mese corrente
+  const loadMonthlyData = useCallback(async () => {
+    if (!selectedDate) return;
+    
+    const monthStart = startOfMonth(selectedDate);
+    const monthEnd = endOfMonth(selectedDate);
+    const startDateFormatted = format(monthStart, 'yyyy-MM-dd');
+    const endDateFormatted = format(monthEnd, 'yyyy-MM-dd');
+    
+    try {
+      const response = await fetch(`/api/operations/summary?startDate=${startDateFormatted}&endDate=${endDateFormatted}`);
+      
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei dati mensili');
+      }
+      
+      const data = await response.json();
+      
+      // Organizza i dati per data
+      const dataByDate: Record<string, any> = {};
+      
+      // Inizializza tutti i giorni del mese con dati vuoti
+      eachDayOfInterval({
+        start: monthStart,
+        end: monthEnd
+      }).forEach(day => {
+        const dateKey = format(day, 'yyyy-MM-dd');
+        dataByDate[dateKey] = {
+          operations: [],
+          totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 }
+        };
+      });
+      
+      // Popola i dati per i giorni che hanno operazioni
+      if (data && data.dailySummaries) {
+        Object.entries(data.dailySummaries).forEach(([date, summary]: [string, any]) => {
+          dataByDate[date] = summary;
+        });
+      }
+      
+      setMonthlyData(dataByDate);
+    } catch (error) {
+      console.error('Errore nel caricamento dei dati mensili:', error);
+      // Utilizziamo lo stato di errore generale
+    }
+  }, [selectedDate]);
+  
+  // Carica i dati mensili quando cambia il mese selezionato
+  useEffect(() => {
+    const currentMonth = format(selectedDate, 'yyyy-MM');
+    loadMonthlyData();
+  }, [loadMonthlyData, selectedDate]);
   
   // Combina tutti i dati per la visualizzazione
   const diaryData = {
@@ -1097,17 +1153,22 @@ export default function DiarioDiBordo() {
                     </thead>
                     <tbody className="divide-y">
                       {/* Genera le righe per ogni giorno del mese */}
-                      {Array.from({ length: getDaysInMonth(selectedDate) }).map((_, i) => {
-                        const day = i + 1;
-                        const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day);
+                      {eachDayOfInterval({
+                        start: startOfMonth(selectedDate),
+                        end: endOfMonth(selectedDate)
+                      }).map((date) => {
                         const dateKey = format(date, 'yyyy-MM-dd');
                         const isCurrentDay = isSameDay(date, selectedDate);
                         
-                        // Qui dovremmo fare una chiamata API per ottenere i dati del giorno
-                        // Per ora mostreremo solo dati di esempio o segnaposti
+                        // Recupera i dati del giorno dal dataset mensile
+                        const dayData = monthlyData[dateKey] || {
+                          operations: [],
+                          totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 }
+                        };
+                        
                         return (
                           <tr 
-                            key={day} 
+                            key={dateKey} 
                             className={`hover:bg-muted/50 ${isCurrentDay ? 'bg-primary/5' : ''}`}
                             onClick={() => setSelectedDate(date)}
                             style={{ cursor: 'pointer' }}
@@ -1117,31 +1178,30 @@ export default function DiarioDiBordo() {
                               <div className="text-sm text-muted-foreground">{format(date, 'MMM yyyy', { locale: it })}</div>
                             </td>
                             <td className="py-2 px-3 text-sm">
-                              {/* Segnaposto per il numero di operazioni */}
-                              {isCurrentDay && operations.length > 0 ? (
-                                <Badge variant="outline">{operations.length} operazioni</Badge>
+                              {dayData.operations.length > 0 ? (
+                                <Badge variant="outline">{dayData.operations.length} operazioni</Badge>
                               ) : (
                                 <span className="text-muted-foreground">-</span>
                               )}
                             </td>
                             <td className="py-2 px-3 text-right font-medium text-green-600">
-                              {isCurrentDay && totals?.totale_entrate ? (
-                                `+${formatNumberWithCommas(totals.totale_entrate)}`
+                              {dayData.totals?.totale_entrate > 0 ? (
+                                `+${formatNumberWithCommas(dayData.totals.totale_entrate)}`
                               ) : (
                                 <span className="text-muted-foreground">-</span>
                               )}
                             </td>
                             <td className="py-2 px-3 text-right font-medium text-red-600">
-                              {isCurrentDay && totals?.totale_uscite ? (
-                                `-${formatNumberWithCommas(totals.totale_uscite)}`
+                              {dayData.totals?.totale_uscite > 0 ? (
+                                `-${formatNumberWithCommas(dayData.totals.totale_uscite)}`
                               ) : (
                                 <span className="text-muted-foreground">-</span>
                               )}
                             </td>
                             <td className="py-2 px-3 text-right font-medium">
-                              {isCurrentDay && totals?.bilancio_netto ? (
-                                <span className={parseInt(totals.bilancio_netto) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                  {parseInt(totals.bilancio_netto) >= 0 ? '+' : ''}{formatNumberWithCommas(totals.bilancio_netto)}
+                              {dayData.totals?.bilancio_netto !== 0 ? (
+                                <span className={Number(dayData.totals.bilancio_netto) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {Number(dayData.totals.bilancio_netto) >= 0 ? '+' : ''}{formatNumberWithCommas(dayData.totals.bilancio_netto)}
                                 </span>
                               ) : (
                                 <span className="text-muted-foreground">-</span>
