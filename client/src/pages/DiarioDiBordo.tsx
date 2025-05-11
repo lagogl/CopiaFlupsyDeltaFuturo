@@ -498,7 +498,7 @@ export default function DiarioDiBordo() {
     });
     
     // Aggiungiamo le colonne per ciascuna taglia
-    const uniqueSizesArray = [...uniqueSizes].sort();
+    const uniqueSizesArray = Array.from(uniqueSizes).sort();
     uniqueSizesArray.forEach(taglia => {
       csvContent += `,${taglia}`;
     });
@@ -556,7 +556,7 @@ export default function DiarioDiBordo() {
       uniqueSizesArray.forEach(taglia => {
         // Cerchiamo la taglia nei dati
         const tagliaQuantity = dayStats.dettaglio_taglie.find((item: any) => item.taglia === taglia);
-        row.push(tagliaQuantity ? tagliaQuantity.quantita.toString() : '0');
+        row.push(tagliaQuantity && tagliaQuantity.quantita !== undefined ? tagliaQuantity.quantita.toString() : '0');
       });
       
       // Aggiungiamo la riga al CSV
@@ -1367,19 +1367,23 @@ export default function DiarioDiBordo() {
                           operations: [],
                           totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
                           giacenza: 0,
-                          taglie: []
+                          taglie: [],
+                          dettaglio_taglie: []
                         };
                         
                         if (isCurrentDay) {
+                          // Per il giorno corrente, usa i dati dalle query
                           dayStats.operations = operations || [];
                           dayStats.totals = totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 };
                           dayStats.giacenza = giacenza?.totale_giacenza || 0;
                           dayStats.taglie = sizeStats || [];
+                          dayStats.dettaglio_taglie = giacenza?.dettaglio_taglie || [];
                         } else if (monthlyData[dateKey]) {
-                          // Usiamo i dati precaricati per le altre date
+                          // Per gli altri giorni, usa i dati precalcolati
                           dayStats.operations = monthlyData[dateKey].operations || [];
                           dayStats.totals = monthlyData[dateKey].totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 };
                           dayStats.giacenza = monthlyData[dateKey].giacenza || 0;
+                          dayStats.dettaglio_taglie = monthlyData[dateKey].dettaglio_taglie || [];
                         }
                         
                         return (
@@ -1411,29 +1415,15 @@ export default function DiarioDiBordo() {
                               ) : '-'}
                             </td>
                             <td className="py-1 px-2 text-right font-medium">
-                              {isCurrentDay && giacenza ? 
-                                formatNumberWithCommas(giacenza.totale_giacenza) : 
-                                (monthlyData[dateKey]?.giacenza ? formatNumberWithCommas(monthlyData[dateKey].giacenza) : '-')}
+                              {dayStats.giacenza ? formatNumberWithCommas(dayStats.giacenza) : '-'}
                             </td>
                             
                             {/* Celle per le taglie specifiche */}
                             {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.map((tagliaItem: any) => {
-                              // Ottengo le informazioni per questa taglia specifica dal giorno corrente
-                              let quantitaTaglia = '-';
-                              
-                              if (isCurrentDay && giacenza.dettaglio_taglie) {
-                                // Per il giorno corrente, usa i dati di giacenza diretti
-                                const tagliaInfo = giacenza.dettaglio_taglie.find((t: any) => t.taglia === tagliaItem.taglia);
-                                if (tagliaInfo) {
-                                  quantitaTaglia = formatNumberWithCommas(tagliaInfo.quantita);
-                                }
-                              } else if (monthlyData[dateKey]?.dettaglio_taglie) {
-                                // Per gli altri giorni, usa i dati precaricati
-                                const tagliaInfo = monthlyData[dateKey].dettaglio_taglie.find((t: any) => t.taglia === tagliaItem.taglia);
-                                if (tagliaInfo) {
-                                  quantitaTaglia = formatNumberWithCommas(tagliaInfo.quantita);
-                                }
-                              }
+                              // Troviamo questa taglia nei dati del giorno
+                              const tagliaInfo = dayStats.dettaglio_taglie.find((t: any) => t.taglia === tagliaItem.taglia);
+                              const quantitaTaglia = tagliaInfo && tagliaInfo.quantita !== undefined ? 
+                                formatNumberWithCommas(tagliaInfo.quantita) : '-';
                               
                               return (
                                 <td key={`${dateKey}-${tagliaItem.taglia}`} className="py-1 px-2 text-right font-medium">
@@ -1477,7 +1467,15 @@ export default function DiarioDiBordo() {
                         <td className="py-1 px-2 text-right">
                           {giacenza ? formatNumberWithCommas(giacenza.totale_giacenza) : '-'}
                         </td>
-                        <td className="py-1 px-2 text-right">-</td>
+                        
+                        {/* Celle totali per le taglie specifiche */}
+                        {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.map((tagliaItem: any) => {
+                          return (
+                            <td key={`totale-${tagliaItem.taglia}`} className="py-1 px-2 text-right font-medium">
+                              {formatNumberWithCommas(tagliaItem.quantita)}
+                            </td>
+                          );
+                        })}
                       </tr>
                     </tfoot>
                   </table>
