@@ -1548,11 +1548,18 @@ export default function DiarioDiBordo() {
                                   );
                                   
                                   if (operazioniPerTaglia.length > 0) {
+                                    // Mostro almeno il conteggio delle operazioni se non ci sono quantità
+                                    if (dateKey === '2025-05-04') {
+                                      console.log(`Operazioni per taglia ${tagliaCode} del 4 maggio:`, operazioniPerTaglia);
+                                    }
+                                    
                                     // Calcola il totale per questa taglia dalle operazioni
                                     let totaleEntrate = 0;
                                     let totaleUscite = 0;
+                                    let conteggio = 0;
                                     
                                     for (const op of operazioniPerTaglia) {
+                                      conteggio++;
                                       const animalCount = parseInt(op.animal_count || '0', 10);
                                       if (op.type === 'prima-attivazione' || op.type === 'prima-attivazione-da-vagliatura') {
                                         totaleEntrate += animalCount;
@@ -1561,9 +1568,14 @@ export default function DiarioDiBordo() {
                                       }
                                     }
                                     
+                                    // Se c'è un bilancio positivo, lo mostriamo
                                     const bilancioTaglia = totaleEntrate - totaleUscite;
                                     if (bilancioTaglia > 0) {
                                       quantitaTaglia = formatNumberWithCommas(bilancioTaglia);
+                                    } 
+                                    // Altrimenti, se ci sono operazioni ma senza quantità, mostriamo il simbolo "✓"
+                                    else if (conteggio > 0) {
+                                      quantitaTaglia = "✓";
                                     }
                                   }
                                 }
