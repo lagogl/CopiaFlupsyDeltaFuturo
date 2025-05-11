@@ -420,7 +420,8 @@ export default function DiarioDiBordo() {
           operations: [],
           totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
           giacenza: 0,
-          taglie: []
+          taglie: [],
+          dettaglio_taglie: []
         };
         
         // Se è il giorno corrente, i dati vengono già caricati dalla query principale
