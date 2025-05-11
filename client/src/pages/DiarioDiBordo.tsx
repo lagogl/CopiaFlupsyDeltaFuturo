@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, isSameDay, getDaysInMonth, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Download, Share, Filter, Clock, Mail, Loader2 } from 'lucide-react';
+import { Download, Share, Filter, Clock, Mail, Loader2, FileSpreadsheet } from 'lucide-react';
 import { CalendarIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -153,6 +153,101 @@ const downloadCSV = (data: any, date: Date) => {
   // Righe dati
   data.operations.forEach((op: any) => {
     const opTime = op.created_at ? format(new Date(op.created_at), 'HH:mm') : '';
+  
+// Funzione per scaricare i dati mensili del calendario in formato CSV
+const downloadDetailedCalendarCSV = () => {
+  if (!selectedDate || Object.keys(monthlyData).length === 0) {
+    toast({
+      title: "Dati non disponibili",
+      description: "Non ci sono dati mensili disponibili da esportare.",
+      variant: "destructive"
+    });
+    return;
+  }
+  
+  const monthName = format(selectedDate, 'MMMM_yyyy', { locale: it });
+  let csvContent = "data:text/csv;charset=utf-8,";
+  
+  // Intestazione principale con date e colonne standard
+  let headerRow = "Data,Operazioni,Entrate,Uscite,Bilancio,Giacenza";
+  
+  // Trova tutte le taglie uniche nel mese per creare colonne dinamiche
+  const allSizes = new Set<string>();
+  Object.values(monthlyData).forEach((dayData: any) => {
+    if (dayData.taglie && dayData.taglie.length > 0) {
+      dayData.taglie.forEach((taglia: any) => {
+        allSizes.add(taglia.taglia);
+      });
+    }
+  });
+  
+  // Aggiungi colonne per ogni taglia
+  [...allSizes].sort().forEach(size => {
+    headerRow += `,${size} (Quantità)`;
+  });
+  
+  csvContent += headerRow + "\n";
+  
+  // Dati per ogni giorno
+  const daysInMonth = Object.keys(monthlyData).sort();
+  daysInMonth.forEach(dateKey => {
+    const dayData = monthlyData[dateKey];
+    
+    // Formatta la data per visualizzazione
+    const displayDate = format(new Date(dateKey), 'dd/MM/yyyy');
+    
+    // Prepara la riga base con i dati standard
+    let row = `${displayDate},${dayData.totals.numero_operazioni || 0},${dayData.totals.totale_entrate || 0},${dayData.totals.totale_uscite || 0},${dayData.totals.bilancio_netto || 0},${dayData.giacenza || 0}`;
+    
+    // Aggiungi dati per ogni taglia
+    [...allSizes].sort().forEach(size => {
+      const tagliaData = dayData.taglie.find((t: any) => t.taglia === size);
+      row += `,${tagliaData ? tagliaData.quantita : 0}`;
+    });
+    
+    csvContent += row + "\n";
+  });
+  
+  // Aggiungi una riga di totali mensili
+  let totalsRow = "TOTALI MENSILI,";
+  
+  // Calcola i totali
+  const totaleOperazioni = daysInMonth.reduce((acc, dateKey) => acc + (monthlyData[dateKey].totals.numero_operazioni || 0), 0);
+  const totaleEntrate = daysInMonth.reduce((acc, dateKey) => acc + (monthlyData[dateKey].totals.totale_entrate || 0), 0);
+  const totaleUscite = daysInMonth.reduce((acc, dateKey) => acc + (monthlyData[dateKey].totals.totale_uscite || 0), 0);
+  const totaleBilancio = daysInMonth.reduce((acc, dateKey) => acc + (monthlyData[dateKey].totals.bilancio_netto || 0), 0);
+  
+  // Giacenza finale è l'ultimo giorno del mese
+  const ultimoGiorno = daysInMonth[daysInMonth.length - 1];
+  const giacenzaFinale = monthlyData[ultimoGiorno].giacenza || 0;
+  
+  totalsRow += `${totaleOperazioni},${totaleEntrate},${totaleUscite},${totaleBilancio},${giacenzaFinale}`;
+  
+  // Aggiungi totali per taglia
+  [...allSizes].sort().forEach(size => {
+    // Per ogni taglia, prendiamo il valore dall'ultimo giorno disponibile
+    const tagliaData = monthlyData[ultimoGiorno].taglie.find((t: any) => t.taglia === size);
+    totalsRow += `,${tagliaData ? tagliaData.quantita : 0}`;
+  });
+  
+  csvContent += totalsRow + "\n";
+  
+  // Crea un link per il download e simula il click
+  const encodedUri = encodeURI(csvContent);
+  const link = document.createElement("a");
+  link.setAttribute("href", encodedUri);
+  link.setAttribute("download", `Calendario_Flupsy_${monthName}.csv`);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  
+  // Mostra notifica di successo
+  toast({
+    title: "Esportazione completata",
+    description: `Il calendario di ${format(selectedDate, 'MMMM yyyy', { locale: it })} è stato esportato con successo.`,
+    variant: "default"
+  });
+};
     const row = [
       op.date,
       opTime,
@@ -885,6 +980,19 @@ export default function DiarioDiBordo() {
             <Download className="h-4 w-4 mr-2" />
             Esporta CSV
           </Button>
+          
+          {activeTab === 'calendario' && (
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={downloadDetailedCalendarCSV}
+              disabled={isLoading}
+              className="bg-primary/10"
+            >
+              <FileSpreadsheet className="h-4 w-4 mr-2" />
+              Esporta Calendario
+            </Button>
+          )}
           
           <Button
             variant="outline"
