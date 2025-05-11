@@ -1893,7 +1893,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Diario di Bordo API routes ===
   
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
-  app.get("/api/diario/month-data", async (req, res) => {
+  app.get("/api/diario/month-data", diarioController.getMonthData);
+  
+  // API - Esporta il calendario in formato CSV
+  app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
+  
+  // API - [VECCHIO ENDPOINT - DA RIMUOVERE QUANDO IL NUOVO SARÀ TESTATO]
+  app.get("/api/diario/month-data-old", async (req, res) => {
     const { month } = req.query;
 
     if (!month || typeof month !== 'string' || !/^\d{4}-\d{2}$/.test(month)) {
