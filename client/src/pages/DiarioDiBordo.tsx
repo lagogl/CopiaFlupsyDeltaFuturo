@@ -1419,14 +1419,14 @@ export default function DiarioDiBordo() {
                             </td>
                             
                             {/* Celle per le taglie specifiche */}
-                            {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.map((tagliaItem: any) => {
+                            {getAllTaglie().map((tagliaCode) => {
                               // Troviamo questa taglia nei dati del giorno
-                              const tagliaInfo = dayStats.dettaglio_taglie.find((t: any) => t.taglia === tagliaItem.taglia);
+                              const tagliaInfo = dayStats.dettaglio_taglie.find((t: any) => t.taglia === tagliaCode);
                               const quantitaTaglia = tagliaInfo && tagliaInfo.quantita !== undefined ? 
                                 formatNumberWithCommas(tagliaInfo.quantita) : '-';
                               
                               return (
-                                <td key={`${dateKey}-${tagliaItem.taglia}`} className="py-1 px-2 text-right font-medium">
+                                <td key={`${dateKey}-${tagliaCode}`} className="py-1 px-2 text-right font-medium">
                                   {quantitaTaglia}
                                 </td>
                               );
