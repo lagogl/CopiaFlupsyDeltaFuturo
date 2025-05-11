@@ -196,6 +196,9 @@ export default function DiarioDiBordo() {
   const [isSendingEmail, setIsSendingEmail] = useState<boolean>(false);
   const [emailDialogTab, setEmailDialogTab] = useState<string>('config');
   
+  // Stati per il dialogo di esportazione calendario
+  // Nota: Questi stati sono già definiti più sotto nel componente
+  
   // Stati per la configurazione automatica email
   const [autoSendEnabled, setAutoSendEnabled] = useState<boolean>(false);
   const [scheduledTime, setScheduledTime] = useState<string>('18:00');
@@ -298,11 +301,13 @@ export default function DiarioDiBordo() {
         completed: false
       });
       
-      console.log(`Caricamento dati per il mese: ${formattedMonth}`);
+      console.log(`Caricamento dati per il mese: ${format(currentMonth, 'yyyy-MM')}`);
       setAnalysisCounter(current => ({ ...current, current: 10 }));
       
       // Utilizza il nuovo endpoint ottimizzato che carica tutti i dati del mese in una singola chiamata
-      const response = await fetch(`/api/diario/month-data?month=${formattedMonth}`);
+      const apiFormattedMonth = format(currentMonth, 'yyyy-MM');
+      console.log(`Richiesta API con month=${apiFormattedMonth}`);
+      const response = await fetch(`/api/diario/month-data?month=${apiFormattedMonth}`);
       
       if (!response.ok) {
         throw new Error(`Errore nel caricamento dei dati del mese: ${response.statusText}`);
@@ -526,12 +531,53 @@ export default function DiarioDiBordo() {
     // Chiudi il dialog
     setIsExportDialogOpen(false);
     
-    // Prepariamo le intestazioni
-    let csvContent = "data:text/csv;charset=utf-8,";
-    csvContent += "Data,Operazioni,Entrate,Uscite,Bilancio Netto,Giacenza Totale";
-    
-    // Otteniamo tutte le taglie uniche presenti nei dati mensili
-    const uniqueSizes = new Set<string>();
+    try {
+      // Ottieni il mese corrente in formato yyyy-MM
+      const apiFormattedMonth = format(currentMonth, 'yyyy-MM');
+      
+      // Effettua la richiesta API per ottenere i dati del mese
+      const response = await fetch(`/api/diario/calendar-csv?month=${apiFormattedMonth}`);
+      
+      if (!response.ok) {
+        throw new Error(`Errore nel download del calendario: ${response.statusText}`);
+      }
+      
+      // Ottieni i dati come text
+      const csvContent = await response.text();
+      
+      // Crea un Blob con il contenuto CSV
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      
+      // Crea un URL per il download
+      const url = window.URL.createObjectURL(blob);
+      
+      // Crea un elemento <a> per il download
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', `calendario_${apiFormattedMonth}.csv`);
+      
+      // Aggiungi l'elemento al DOM, clicca e rimuovi
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Mostra una notifica di successo
+      toast({
+        title: "Download completato",
+        description: `Il report per ${format(currentMonth, 'MMMM yyyy', { locale: it })} è stato scaricato con successo.`,
+        variant: "default"
+      });
+    } catch (error) {
+      console.error('Errore durante l\'esportazione del calendario:', error);
+      
+      // Mostra una notifica di errore
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il download del calendario.",
+        variant: "destructive"
+      });
+    }
+    // Rimosso il vecchio codice di esportazione CSV che è stato sostituito dal nuovo sistema
     
     // Aggiungiamo le taglie presenti nella giacenza corrente
     if (giacenza && giacenza.dettaglio_taglie) {
