@@ -261,6 +261,8 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       });
     }
     
+    console.log("Intestazioni CSV:", headers.join(','));
+    
     // Inizia a costruire il contenuto CSV
     let csvContent = headers.join(',') + '\n';
     
@@ -289,10 +291,14 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       // Aggiungi i dati per ogni taglia
       if (taglieAttiveList.length > 0) {
         taglieAttiveList.forEach(taglia => {
+          // Cerca la taglia nei dati del giorno, altrimenti usa '0'
           const tagliaData = (dayData.dettaglio_taglie || []).find((t: any) => t.taglia === taglia);
           row.push(tagliaData ? String(tagliaData.quantita) : '0');
         });
       }
+      
+      // Log di debug per vedere cosa viene esportato in ciascuna riga
+      console.log(`Riga CSV per ${italianDate}:`, row.join(','));
       
       // Aggiungi la riga al CSV
       csvContent += row.join(',') + '\n';
