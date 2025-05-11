@@ -367,6 +367,29 @@ export default function DiarioDiBordo() {
     giacenza: giacenza || { totale_giacenza: 0, dettaglio_taglie: [] }
   };
   
+  // Calcola lo stato di caricamento complessivo
+  const isLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza || isLoadingSizes;
+  
+  // Estrai i codici delle taglie dai dati disponibili e ordinali
+  const sizeCodes = availableSizes ? 
+    availableSizes.map((size: {id: number, code: string, name: string}) => size.code).sort() : 
+    ['TP-315', 'TP-500', 'TP-450', 'TP-200', 'TP-800']; // Fallback in caso di errore
+  
+  // Inizializza un set per tenere traccia di tutte le taglie presenti nei dati
+  const uniqueSizes = new Set<string>();
+  
+  // Aggiungi le taglie dai dati di giacenza
+  if (giacenza?.dettaglio_taglie) {
+    giacenza.dettaglio_taglie.forEach((item: {taglia: string, quantita: number}) => {
+      if (item.taglia !== 'Non specificata') {
+        uniqueSizes.add(item.taglia);
+      }
+    });
+  }
+  
+  // Aggiungi anche tutte le taglie recuperate dall'API
+  sizeCodes.forEach((code: string) => uniqueSizes.add(code));
+  
   // Carica la configurazione email all'apertura del dialogo
   const loadEmailConfig = async () => {
     setIsLoadingConfig(true);
@@ -1360,7 +1383,7 @@ export default function DiarioDiBordo() {
                         <th className="py-1 px-2 text-right font-medium">Bilancio</th>
                         <th className="py-1 px-2 text-right font-medium">Totale</th>
                         {/* Colonne per le taglie specifiche */}
-                        {['TP-315', 'TP-500', 'TP-450', 'TP-200', 'TP-800'].map((tagliaCode) => (
+                        {Array.from(uniqueSizes).sort().map((tagliaCode) => (
                           <th key={tagliaCode} className="py-1 px-2 text-right font-medium">{tagliaCode}</th>
                         ))}
                       </tr>
@@ -1431,9 +1454,9 @@ export default function DiarioDiBordo() {
                             </td>
                             
                             {/* Celle per le taglie specifiche */}
-                            {['TP-315', 'TP-500', 'TP-450', 'TP-200', 'TP-800'].map((tagliaCode) => {
+                            {Array.from(uniqueSizes).sort().map((tagliaCode) => {
                               // Troviamo questa taglia nei dati del giorno
-                              const tagliaInfo = dayStats.dettaglio_taglie.find((t: any) => t.taglia === tagliaCode);
+                              const tagliaInfo = dayStats.dettaglio_taglie.find((t: {taglia: string, quantita: number}) => t.taglia === tagliaCode);
                               const quantitaTaglia = tagliaInfo && tagliaInfo.quantita !== undefined ? 
                                 formatNumberWithCommas(tagliaInfo.quantita) : '-';
                               
@@ -1481,9 +1504,9 @@ export default function DiarioDiBordo() {
                         </td>
                         
                         {/* Celle totali per le taglie specifiche */}
-                        {['TP-315', 'TP-500', 'TP-450', 'TP-200', 'TP-800'].map((tagliaCode) => {
+                        {Array.from(uniqueSizes).sort().map((tagliaCode) => {
                           const tagliaItem = giacenza?.dettaglio_taglie ? 
-                            giacenza.dettaglio_taglie.find(t => t.taglia === tagliaCode) : null;
+                            giacenza.dettaglio_taglie.find((t: {taglia: string, quantita: number}) => t.taglia === tagliaCode) : null;
                           
                           return (
                             <td key={`totale-${tagliaCode}`} className="py-1 px-2 text-right font-medium">
