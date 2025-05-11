@@ -972,7 +972,11 @@ export default function Cycles() {
                       </tr>
                     ) : (
                       sortedFilteredCycles
-                        .filter(cycle => cycle.state === 'active' && cycle.currentSize && cycle.currentSgr)
+                        .filter(cycle => {
+                          console.log(`Ciclo ID ${cycle.id}: stato=${cycle.state}, taglia=${cycle.currentSize?.code}, SGR=${cycle.currentSgr?.percentage}`);
+                          // Controlla se il ciclo è attivo, ha una taglia corrente e ha un SGR corrente
+                          return cycle.state === 'active' && cycle.currentSize && cycle.currentSgr;
+                        })
                         .map(cycle => {
                           // Dati per il ciclo corrente
                           const basket = baskets.find(b => b.id === cycle.basketId);
