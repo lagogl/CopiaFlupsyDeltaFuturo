@@ -184,6 +184,11 @@ const downloadCSV = (data: any, date: Date) => {
 const downloadDetailedCalendarCSV = async () => {
   if (!selectedDate) return;
   
+  // Mostra un alert di conferma
+  if (!confirm('Vuoi scaricare il report dettagliato del calendario?')) {
+    return;
+  }
+  
   // Prepariamo le intestazioni
   let csvContent = "data:text/csv;charset=utf-8,";
   csvContent += "Data,Operazioni,Entrate,Uscite,Bilancio Netto,Giacenza Totale";
@@ -287,6 +292,15 @@ const downloadDetailedCalendarCSV = async () => {
     Object.values(monthlyData).reduce((total: number, day: any) => total + (Number(day.totals?.bilancio_netto) || 0), 0).toString(),
     giacenza ? giacenza.totale_giacenza.toString() : '0'
   ];
+  
+  // Aggiungiamo i totali per ogni taglia
+  uniqueSizesArray.forEach(taglia => {
+    const totalForSize = Object.values(monthlyData).reduce((total: number, day: any) => {
+      const tagliaItem = day.dettaglio_taglie?.find((item: any) => item.taglia === taglia);
+      return total + (Number(tagliaItem?.quantita) || 0);
+    }, 0);
+    totalsRow.push(totalForSize.toString());
+  });
   
   // Aggiungiamo i totali per taglia
   uniqueSizesArray.forEach(taglia => {
