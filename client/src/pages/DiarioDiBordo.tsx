@@ -930,7 +930,7 @@ export default function DiarioDiBordo() {
             variant="outline"
             size="sm"
             onClick={() => downloadCSV(diaryData, selectedDate)}
-            disabled={isLoading}
+            disabled={isDataLoading}
           >
             <Download className="h-4 w-4 mr-2" />
             Esporta CSV
@@ -941,7 +941,7 @@ export default function DiarioDiBordo() {
               variant="outline"
               size="sm"
               onClick={downloadDetailedCalendarCSV}
-              disabled={isLoading}
+              disabled={isDataLoading}
               className="bg-primary/10"
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" />
@@ -953,7 +953,7 @@ export default function DiarioDiBordo() {
             variant="outline"
             size="sm"
             onClick={() => setIsEmailDialogOpen(true)}
-            disabled={isLoading}
+            disabled={isDataLoading}
           >
             <Mail className="h-4 w-4 mr-2" />
             Invia via Email
@@ -963,7 +963,7 @@ export default function DiarioDiBordo() {
             variant="outline"
             size="sm"
             onClick={() => copyToClipboard(formattedText)}
-            disabled={isLoading}
+            disabled={isDataLoading}
           >
             <Share className="h-4 w-4 mr-2" />
             Copia Testo
@@ -1356,7 +1356,7 @@ export default function DiarioDiBordo() {
 
         {/* Tab Calendario - Vista mensile delle attività */}
         <TabsContent value="calendario" className="space-y-4">
-          {isLoading ? (
+          {isDataLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
             </div>
