@@ -184,6 +184,7 @@ const downloadCSV = (data: any, date: Date) => {
 
 export default function DiarioDiBordo() {
   const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(new Date()));
   const [formattedText, setFormattedText] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('diario');
   
@@ -285,7 +286,9 @@ export default function DiarioDiBordo() {
     setIsCalendarLoading(true);
     console.time('loadMonthlyData');
     
-    const currentMonth = format(selectedDate, 'yyyy-MM');
+    const formattedMonth = format(selectedDate, 'yyyy-MM');
+    // Aggiorna lo stato del mese corrente
+    setCurrentMonth(startOfMonth(selectedDate));
     
     try {
       // Imposta il contatore di analisi per mostrare la progressione
@@ -295,11 +298,11 @@ export default function DiarioDiBordo() {
         completed: false
       });
       
-      console.log(`Caricamento dati per il mese: ${currentMonth}`);
+      console.log(`Caricamento dati per il mese: ${formattedMonth}`);
       setAnalysisCounter(current => ({ ...current, current: 10 }));
       
       // Utilizza il nuovo endpoint ottimizzato che carica tutti i dati del mese in una singola chiamata
-      const response = await fetch(`/api/diario/month-data?month=${currentMonth}`);
+      const response = await fetch(`/api/diario/month-data?month=${formattedMonth}`);
       
       if (!response.ok) {
         throw new Error(`Errore nel caricamento dei dati del mese: ${response.statusText}`);
