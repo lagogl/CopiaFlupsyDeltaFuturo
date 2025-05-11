@@ -275,6 +275,8 @@ export default function DiarioDiBordo() {
   const loadMonthlyData = useCallback(async () => {
     if (!selectedDate) return;
     
+    setIsCalendarLoading(true);
+    
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
     
@@ -299,12 +301,8 @@ export default function DiarioDiBordo() {
           dettaglio_taglie: []
         };
         
-        // Se è il giorno corrente, i dati vengono già caricati dalla query principale
-        if (isSameDay(day, selectedDate)) {
-          continue;
-        }
-        
-        // Per gli altri giorni, carica i dati dal server
+        // Per tutti i giorni, carica sempre i dati dal server
+        // Rimuoviamo la condizione che saltava il giorno corrente
         try {
           // Richiede i dati delle operazioni per la data specifica
           const opResponse = await fetch(`/api/diario/operations-by-date?date=${dateKey}`);
@@ -350,8 +348,19 @@ export default function DiarioDiBordo() {
       setMonthlyData(dataByDate);
     } catch (error) {
       console.error('Errore nel caricamento dei dati mensili:', error);
+    } finally {
+      setIsCalendarLoading(false);
     }
   }, [selectedDate]);
+  
+  // Funzione per aggiornare manualmente i dati del calendario
+  const refreshCalendarData = () => {
+    toast({
+      title: "Aggiornamento in corso",
+      description: "Caricamento dati del calendario...",
+    });
+    loadMonthlyData();
+  };
   
   // Carica i dati mensili quando cambia il mese selezionato
   useEffect(() => {
@@ -367,8 +376,11 @@ export default function DiarioDiBordo() {
     giacenza: giacenza || { totale_giacenza: 0, dettaglio_taglie: [] }
   };
   
+  // State per il caricamento specifico del calendario
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+  
   // Calcola lo stato di caricamento complessivo
-  const isDataLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza || isLoadingSizes;
+  const isDataLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza || isLoadingSizes || isCalendarLoading;
   
   // Estrai i codici delle taglie dai dati disponibili e ordinali
   const sizeCodes = availableSizes ? 
