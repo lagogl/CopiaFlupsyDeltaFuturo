@@ -143,7 +143,21 @@ const copyToClipboard = (text: string) => {
 };
 
 // Funzione per convertire in CSV
-const downloadCSV = (data: any, date: Date) => {
+// Stato per il dialog di conferma esportazione CSV
+const [isCsvExportDialogOpen, setIsCsvExportDialogOpen] = useState(false);
+const [csvExportData, setCsvExportData] = useState<{data: any, date: Date} | null>(null);
+
+// Funzione per preparare l'esportazione CSV
+const prepareCSVExport = (data: any, date: Date) => {
+  setCsvExportData({ data, date });
+  setIsCsvExportDialogOpen(true);
+};
+
+// Funzione effettiva per eseguire il download CSV
+const downloadCSV = () => {
+  if (!csvExportData) return;
+  
+  const { data, date } = csvExportData;
   const dateFormatted = format(date, 'yyyy-MM-dd');
   let csvContent = "data:text/csv;charset=utf-8,";
   
@@ -176,8 +190,15 @@ const downloadCSV = (data: any, date: Date) => {
   link.click();
   document.body.removeChild(link);
   
-  // Alert di conferma
-  alert('Il file CSV è stato scaricato');
+  // Chiudi il dialog
+  setIsCsvExportDialogOpen(false);
+  
+  // Mostra una notifica di successo con toast invece di alert
+  toast({
+    title: "Download completato",
+    description: `Il report per ${format(date, 'dd MMMM yyyy', { locale: it })} è stato scaricato con successo.`,
+    variant: "default"
+  });
 };
 
 
