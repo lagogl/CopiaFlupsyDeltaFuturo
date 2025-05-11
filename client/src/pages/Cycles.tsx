@@ -1,9 +1,14 @@
 import { useState, useMemo } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { format, differenceInDays, parseISO, addDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { getSizeColor } from '@/lib/sizeUtils';
-import { Eye, Search, Filter, InfoIcon, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { 
+  estimateDaysToReachSize, 
+  estimateAverageWeightFromSize, 
+  parseTagliaCode
+} from '@/lib/sgrCalculations';
+import { Eye, Search, Filter, InfoIcon, ArrowUp, ArrowDown, ArrowUpDown, Target, BarChart } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -18,6 +23,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 
 // Definizione dell'interfaccia Operation per tipizzare i dati delle operazioni
 interface Operation {
@@ -100,6 +106,12 @@ export default function Cycles() {
     start: null,
     end: null
   });
+  
+  // Tab attiva
+  const [activeTab, setActiveTab] = useState("cicli");
+  
+  // Taglia target per l'analisi delle performance
+  const [targetSize, setTargetSize] = useState<string | null>(null);
   
   // Ordinamento
   const [sortConfig, setSortConfig] = useState<{
@@ -362,6 +374,36 @@ export default function Cycles() {
   const sortedFilteredCycles = useMemo(() => 
     sortCycles(filteredCycles, sortConfig), 
     [filteredCycles, sortConfig]);
+
+  // Calcola il tempo necessario per raggiungere una taglia target
+  const calculateDaysToReachTarget = (cycle: Cycle, targetSizeCode: string | null): number => {
+    if (!cycle.currentSize || !cycle.currentSgr || !targetSizeCode) return 0;
+    
+    const currentSizeCode = cycle.currentSize.code;
+    const sgrPercentage = cycle.currentSgr.percentage;
+    
+    // Calcola peso corrente e peso target
+    const currentWeight = estimateAverageWeightFromSize(currentSizeCode);
+    const targetWeight = estimateAverageWeightFromSize(targetSizeCode);
+    
+    if (!currentWeight || !targetWeight) return 0;
+    
+    // Se il peso target è inferiore o uguale al peso corrente, non serve calcolare
+    if (targetWeight <= currentWeight) return 0;
+    
+    // Calcola giorni necessari
+    return estimateDaysToReachSize(currentWeight, targetWeight, sgrPercentage);
+  };
+  
+  // Calcola la data stimata di raggiungimento della taglia target
+  const calculateTargetDate = (cycle: Cycle, daysNeeded: number): string => {
+    if (!daysNeeded || daysNeeded <= 0) return '-';
+    
+    const today = new Date();
+    const targetDate = addDays(today, daysNeeded);
+    
+    return format(targetDate, 'dd/MM/yyyy');
+  };
 
   return (
     <div>
