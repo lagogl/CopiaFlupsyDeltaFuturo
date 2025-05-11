@@ -590,7 +590,10 @@ export default function DiarioDiBordo() {
       // Aggiungiamo i dati per ogni taglia
       uniqueSizesArray.forEach(taglia => {
         // Cerchiamo la taglia nei dati
-        const tagliaQuantity = dayStats.dettaglio_taglie.find((item: any) => item.taglia === taglia);
+        const tagliaQuantity = dayStats.dettaglio_taglie && 
+          Array.isArray(dayStats.dettaglio_taglie) ? 
+          dayStats.dettaglio_taglie.find((item: {taglia: string, quantita: number}) => item.taglia === taglia) : 
+          null;
         row.push(tagliaQuantity && tagliaQuantity.quantita !== undefined ? tagliaQuantity.quantita.toString() : '0');
       });
       
@@ -1453,7 +1456,10 @@ export default function DiarioDiBordo() {
                             {/* Celle per le taglie specifiche */}
                             {Array.from(uniqueSizes).sort().map((tagliaCode) => {
                               // Troviamo questa taglia nei dati del giorno
-                              const tagliaInfo = dayStats.dettaglio_taglie.find((t: {taglia: string, quantita: number}) => t.taglia === tagliaCode);
+                              const tagliaInfo = dayStats.dettaglio_taglie && 
+                                Array.isArray(dayStats.dettaglio_taglie) ? 
+                                dayStats.dettaglio_taglie.find((t: {taglia: string, quantita: number}) => t.taglia === tagliaCode) : 
+                                null;
                               const quantitaTaglia = tagliaInfo && tagliaInfo.quantita !== undefined ? 
                                 formatNumberWithCommas(tagliaInfo.quantita) : '-';
                               
