@@ -231,18 +231,16 @@ export async function exportCalendarCsv(req: Request, res: Response) {
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const endDateStr = format(endDate, 'yyyy-MM-dd');
     
-    // Determina le taglie attive nel mese
-    console.log('Determinazione delle taglie attive per il calendario...');
+    // Determina tutte le taglie disponibili nel sistema
+    console.log('Determinazione delle taglie per il calendario CSV...');
     const taglieResult = await db.execute(sql`
-      SELECT DISTINCT s.code 
-      FROM operations o
-      JOIN sizes s ON o.size_id = s.id
-      WHERE o.date BETWEEN ${startDateStr} AND ${endDateStr}
-      ORDER BY s.code
+      SELECT DISTINCT code 
+      FROM sizes
+      ORDER BY code
     `);
     
     const taglieAttiveList = taglieResult.map((row: any) => row.code);
-    console.log(`Taglie attive per il calendario CSV: ${taglieAttiveList.join(', ')}`);
+    console.log(`Taglie per il calendario CSV: ${taglieAttiveList.join(', ')}`);
     
     // Crea un array con tutti i giorni del mese
     const daysInMonth = eachDayOfInterval({
