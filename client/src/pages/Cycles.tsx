@@ -973,9 +973,10 @@ export default function Cycles() {
                     ) : (
                       sortedFilteredCycles
                         .filter(cycle => {
-                          console.log(`Ciclo ID ${cycle.id}: stato=${cycle.state}, taglia=${cycle.currentSize?.code}, SGR=${cycle.currentSgr?.percentage}`);
-                          // Controlla se il ciclo è attivo, ha una taglia corrente e ha un SGR corrente
-                          return cycle.state === 'active' && cycle.currentSize && cycle.currentSgr;
+                          // Controlla se il ciclo è attivo e ha una taglia corrente
+                          // L'SGR corrente ora dovrebbe sempre essere presente grazie alla 
+                          // modifica all'endpoint API che usa un SGR predefinito se mancante
+                          return cycle.state === 'active' && cycle.currentSize;
                         })
                         .map(cycle => {
                           // Dati per il ciclo corrente
