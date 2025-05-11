@@ -268,16 +268,6 @@ export default function DiarioDiBordo() {
     enabled: !!formattedDate
   });
   
-  // Effetto per aggiornare le giacenze per giorno quando cambia la giacenza selezionata
-  useEffect(() => {
-    if (giacenza && formattedDate) {
-      setGiacenzePerGiorno(prev => ({
-        ...prev,
-        [formattedDate]: giacenza
-      }));
-    }
-  }, [giacenza, formattedDate]);
-  
   // State per i dati del calendario mensile
   const [monthlyData, setMonthlyData] = useState<Record<string, any>>({});
   
@@ -287,22 +277,6 @@ export default function DiarioDiBordo() {
     total: 0,
     completed: true
   });
-  
-  // Funzione per caricare la giacenza per una data specifica
-  const loadGiacenzaForDate = async (date: string) => {
-    try {
-      const response = await fetch(`/api/diario/giacenza?date=${date}`);
-      if (!response.ok) {
-        throw new Error(`Errore nel caricamento della giacenza per ${date}`);
-      }
-      
-      const data = await response.json();
-      return data;
-    } catch (error) {
-      console.error(`Errore nel caricamento della giacenza per ${date}:`, error);
-      return { totale_giacenza: 0, dettaglio_taglie: [] };
-    }
-  };
   
   // Funzione per caricare i dati del mese corrente (versione super ottimizzata)
   const loadMonthlyData = useCallback(async () => {
@@ -331,66 +305,18 @@ export default function DiarioDiBordo() {
         throw new Error(`Errore nel caricamento dei dati del mese: ${response.statusText}`);
       }
       
-      setAnalysisCounter(current => ({ ...current, current: 30 }));
+      setAnalysisCounter(current => ({ ...current, current: 50 }));
       
       // Ora abbiamo tutti i dati del mese in un'unica risposta
       const monthData = await response.json();
       console.log('Dati del mese caricati con successo', Object.keys(monthData).length, 'giorni');
       
-      // Ottieni il primo giorno del mese
-      const startDate = startOfMonth(selectedDate);
-      // Ottieni l'ultimo giorno del mese
-      const endDate = endOfMonth(selectedDate);
-      // Ottieni tutti i giorni del mese
-      const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
-      
-      setAnalysisCounter(current => ({ ...current, current: 40 }));
-      
-      // Seleziona alcune date importanti da caricare immediatamente
-      const selectedDay = format(selectedDate, 'yyyy-MM-dd');
-      const firstDayOfMonth = format(startDate, 'yyyy-MM-dd');
-      const lastDayOfMonth = format(endDate, 'yyyy-MM-dd');
-      
-      // Trova i giorni con operazioni da calendario
-      const daysWithOperations = daysInMonth
-        .map(day => format(day, 'yyyy-MM-dd'))
-        .filter(dateKey => monthData[dateKey]?.operations?.length > 0);
-      
-      // Limita il numero di giorni da caricare per evitare troppe richieste
-      // Ordinare per importanza: 1. giorno selezionato, 2. date con operazioni, 3. primo e ultimo giorno
-      const daysToLoad = [
-        selectedDay,
-        ...daysWithOperations.filter(d => d !== selectedDay).slice(0, 5), // max 5 giorni con operazioni
-        firstDayOfMonth,
-        lastDayOfMonth
-      ].filter((value, index, self) => self.indexOf(value) === index); // rimuovi duplicati
-      
-      setAnalysisCounter(current => ({ ...current, current: 50 }));
-      
-      // Carica le giacenze per i giorni selezionati
-      const giacenze: Record<string, any> = {};
-      let loadedCount = 0;
-      
-      for (const dateKey of daysToLoad) {
-        try {
-          giacenze[dateKey] = await loadGiacenzaForDate(dateKey);
-          loadedCount++;
-          // Aggiorna la percentuale in base al numero di giorni caricati
-          const percentage = 50 + Math.floor((loadedCount / daysToLoad.length) * 40);
-          setAnalysisCounter(current => ({ ...current, current: percentage }));
-        } catch (error) {
-          console.error(`Errore nel caricamento dei dati per ${dateKey}:`, error);
-        }
-      }
-      
       setAnalysisCounter(current => ({ ...current, current: 90 }));
       
       // Imposta i dati nel componente
       setMonthlyData(monthData);
-      setGiacenzePerGiorno(giacenze);
       
       console.log('Dati del mese elaborati e impostati con successo');
-      console.log('Giacenze caricate per', Object.keys(giacenze).length, 'giorni');
       setAnalysisCounter(current => ({ ...current, current: 100 }));
       
     } catch (error) {
@@ -441,9 +367,6 @@ export default function DiarioDiBordo() {
     
     loadMonthlyData();
   }, [loadMonthlyData, selectedDate]);
-  
-  // Stato per memorizzare i dati di giacenza per tutti i giorni
-  const [giacenzePerGiorno, setGiacenzePerGiorno] = useState<Record<string, any>>({});
   
   // State per il caricamento specifico del calendario
   const [isCalendarLoading, setIsCalendarLoading] = useState(false);
@@ -1589,21 +1512,11 @@ export default function DiarioDiBordo() {
                             
                             {/* Celle per le taglie specifiche */}
                             {Array.from(uniqueSizes).sort().map((tagliaCode) => {
-                              // Priorità 1: Usa i dati di giacenza se disponibili per questa data
-                              const giacenzaGiorno = giacenzePerGiorno[dateKey];
-                              let tagliaInfo = null;
-                              
-                              if (giacenzaGiorno && giacenzaGiorno.dettaglio_taglie && Array.isArray(giacenzaGiorno.dettaglio_taglie)) {
-                                tagliaInfo = giacenzaGiorno.dettaglio_taglie.find(
-                                  (t: {taglia: string, quantita: number}) => t.taglia === tagliaCode
-                                );
-                              } 
-                              // Priorità 2: Fallback ai dati del giorno se la giacenza non è disponibile
-                              else if (dayStats.dettaglio_taglie && Array.isArray(dayStats.dettaglio_taglie)) {
-                                tagliaInfo = dayStats.dettaglio_taglie.find(
-                                  (t: {taglia: string, quantita: number}) => t.taglia === tagliaCode
-                                );
-                              }
+                              // Troviamo questa taglia nei dati del giorno
+                              const tagliaInfo = dayStats.dettaglio_taglie && 
+                                Array.isArray(dayStats.dettaglio_taglie) ? 
+                                dayStats.dettaglio_taglie.find((t: {taglia: string, quantita: number}) => t.taglia === tagliaCode) : 
+                                null;
 
                               // Otteniamo il valore di quantità o 0 se non esiste
                               const quantita = tagliaInfo && typeof tagliaInfo.quantita === 'number' ? tagliaInfo.quantita : 0;
