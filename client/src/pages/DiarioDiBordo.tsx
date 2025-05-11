@@ -1454,7 +1454,7 @@ export default function DiarioDiBordo() {
                         const dateKey = format(date, 'yyyy-MM-dd');
                         const isCurrentDay = isSameDay(date, selectedDate);
                         
-                        // Per la data corrente, recuperiamo i dati completi dalla query
+                        // Utilizziamo sempre i dati dal monthlyData per tutti i giorni
                         let dayStats = {
                           operations: [],
                           totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
@@ -1463,15 +1463,9 @@ export default function DiarioDiBordo() {
                           dettaglio_taglie: []
                         };
                         
-                        if (isCurrentDay) {
-                          // Per il giorno corrente, usa i dati dalle query
-                          dayStats.operations = operations || [];
-                          dayStats.totals = totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 };
-                          dayStats.giacenza = giacenza?.totale_giacenza || 0;
-                          dayStats.taglie = sizeStats || [];
-                          dayStats.dettaglio_taglie = giacenza?.dettaglio_taglie || [];
-                        } else if (monthlyData[dateKey]) {
-                          // Per gli altri giorni, usa i dati precalcolati
+                        // Verifichiamo se abbiamo dati per questo giorno in monthlyData
+                        if (monthlyData[dateKey]) {
+                          // Usiamo i dati precalcolati dal monthlyData
                           dayStats.operations = monthlyData[dateKey].operations || [];
                           dayStats.totals = monthlyData[dateKey].totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 };
                           dayStats.giacenza = monthlyData[dateKey].giacenza || 0;
