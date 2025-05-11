@@ -278,118 +278,47 @@ export default function DiarioDiBordo() {
     completed: true
   });
   
-  // Funzione per caricare i dati del mese corrente (versione ottimizzata)
+  // Funzione per caricare i dati del mese corrente (versione super ottimizzata)
   const loadMonthlyData = useCallback(async () => {
     if (!selectedDate) return;
     
     setIsCalendarLoading(true);
+    console.time('loadMonthlyData');
     
-    const monthStart = startOfMonth(selectedDate);
-    const monthEnd = endOfMonth(selectedDate);
     const currentMonth = format(selectedDate, 'yyyy-MM');
     
     try {
-      // Inizializza tutti i giorni del mese con dati vuoti
-      const dataByDate: Record<string, any> = {};
-      
-      // Crea un array di date da processare
-      const daysInMonth = eachDayOfInterval({
-        start: monthStart,
-        end: endOfMonth(selectedDate)
-      });
-      
-      // Imposta il contatore di analisi
-      const totalDays = daysInMonth.length;
+      // Imposta il contatore di analisi per mostrare la progressione
       setAnalysisCounter({
         current: 0,
-        total: totalDays,
+        total: 100, // Utilizziamo una percentuale per l'indicatore di avanzamento
         completed: false
       });
       
-      // Inizializza i dati per ogni giorno
-      for (const day of daysInMonth) {
-        const dateKey = format(day, 'yyyy-MM-dd');
-        dataByDate[dateKey] = {
-          operations: [],
-          totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
-          giacenza: 0,
-          taglie: [],
-          dettaglio_taglie: []
-        };
+      console.log(`Caricamento dati per il mese: ${currentMonth}`);
+      setAnalysisCounter(current => ({ ...current, current: 10 }));
+      
+      // Utilizza il nuovo endpoint ottimizzato che carica tutti i dati del mese in una singola chiamata
+      const response = await fetch(`/api/diario/month-data?month=${currentMonth}`);
+      
+      if (!response.ok) {
+        throw new Error(`Errore nel caricamento dei dati del mese: ${response.statusText}`);
       }
       
-      // Prova prima a caricare i dati in batch, se possibile
-      // Utilizziamo Promise.all per eseguire le richieste in parallelo
-      const batchSize = 3; // Numero di giorni da elaborare in parallelo
-      const batches = [];
+      setAnalysisCounter(current => ({ ...current, current: 50 }));
       
-      for (let i = 0; i < daysInMonth.length; i += batchSize) {
-        const batch = daysInMonth.slice(i, i + batchSize);
-        batches.push(batch);
-      }
+      // Ora abbiamo tutti i dati del mese in un'unica risposta
+      const monthData = await response.json();
+      console.log('Dati del mese caricati con successo', Object.keys(monthData).length, 'giorni');
       
-      let currentDay = 0;
-      
-      for (const batch of batches) {
-        // Esegui le richieste per questo batch in parallelo
-        await Promise.all(batch.map(async (day) => {
-          const dateKey = format(day, 'yyyy-MM-dd');
-          
-          try {
-            // Esegui le 4 chiamate API in parallelo
-            const [opResponse, totalsResponse, statsResponse, giacenzaResponse] = await Promise.all([
-              fetch(`/api/diario/operations-by-date?date=${dateKey}`),
-              fetch(`/api/diario/daily-totals?date=${dateKey}`),
-              fetch(`/api/diario/size-stats?date=${dateKey}`),
-              fetch(`/api/diario/giacenza?date=${dateKey}`)
-            ]);
-            
-            // Processa i risultati delle operazioni
-            if (opResponse.ok) {
-              const opData = await opResponse.json();
-              dataByDate[dateKey].operations = opData;
-              dataByDate[dateKey].totals.numero_operazioni = opData.length;
-            }
-            
-            // Processa i risultati dei totali
-            if (totalsResponse.ok) {
-              const totalsData = await totalsResponse.json();
-              dataByDate[dateKey].totals = {
-                totale_entrate: totalsData.totale_entrate || 0,
-                totale_uscite: totalsData.totale_uscite || 0,
-                bilancio_netto: totalsData.bilancio_netto || 0,
-                numero_operazioni: totalsData.numero_operazioni || 0
-              };
-            }
-            
-            // Processa i risultati delle statistiche per taglia
-            if (statsResponse.ok) {
-              const statsData = await statsResponse.json();
-              dataByDate[dateKey].taglie = statsData;
-            }
-            
-            // Processa i risultati della giacenza
-            if (giacenzaResponse.ok) {
-              const giacenzaData = await giacenzaResponse.json();
-              dataByDate[dateKey].giacenza = giacenzaData.totale_giacenza || 0;
-              dataByDate[dateKey].dettaglio_taglie = giacenzaData.dettaglio_taglie || [];
-            }
-            
-          } catch (dayError) {
-            console.error(`Errore nel caricamento dei dati per ${dateKey}:`, dayError);
-          } finally {
-            // Incrementa il contatore dell'analisi
-            currentDay++;
-            setAnalysisCounter(current => ({
-              ...current,
-              current: currentDay
-            }));
-          }
-        }));
-      }
+      setAnalysisCounter(current => ({ ...current, current: 90 }));
       
       // Imposta i dati nel componente
-      setMonthlyData(dataByDate);
+      setMonthlyData(monthData);
+      
+      console.log('Dati del mese elaborati e impostati con successo');
+      setAnalysisCounter(current => ({ ...current, current: 100 }));
+      
     } catch (error) {
       console.error('Errore nel caricamento dei dati mensili:', error);
       toast({
@@ -398,12 +327,13 @@ export default function DiarioDiBordo() {
         variant: "destructive"
       });
     } finally {
-      // Aggiorna lo stato per segnalare che l'analisi è completata
+      // Completa l'analisi
       setAnalysisCounter(current => ({
         ...current,
         completed: true
       }));
       setIsCalendarLoading(false);
+      console.timeEnd('loadMonthlyData');
     }
   }, [selectedDate, toast]);
   

@@ -2011,10 +2011,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
         sizeFilterCondition = `AND s.code IN (${sizeList})`;
       }
       
-      // Calcola le giacenze per ogni giorno e ogni taglia attiva
-      const giacenzeQuery = `
+      // Calcola le giacenze per ogni giorno e ogni taglia attiva usando sql tag template
+      // Creiamo una condizione dinamica per filtrare per taglie attive
+      let taglieCondition = '';
+      if (taglieAttiveList.length > 0) {
+        taglieCondition = `AND s.code IN (${taglieAttiveList.map(t => `'${t}'`).join(',')})`;
+      }
+      
+      // Esegui la query per le giacenze usando il normale sql template
+      const giacenzeResult = await db.execute(sql`
         WITH date_range AS (
-          SELECT generate_series($1::date, $2::date, '1 day'::interval) AS day
+          SELECT generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) AS day
         )
         SELECT 
           dr.day::text as date,
@@ -2023,12 +2030,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         FROM date_range dr
         CROSS JOIN sizes s
         LEFT JOIN operations o ON o.size_id = s.id AND o.date <= dr.day
-        WHERE s.code IN (${taglieAttiveList.map(t => `'${t}'`).join(',')})
+        WHERE s.code IS NOT NULL
+        ${taglieAttiveList.length > 0 ? sql`AND s.code IN ${taglieAttiveList}` : sql``}
         GROUP BY dr.day, s.code
         ORDER BY dr.day, s.code
-      `;
-      
-      const giacenzeResult = await db.$queryRaw`${sql([giacenzeQuery, startDateStr, endDateStr])}`;
+      `);
       
       console.log(`Dati giacenze recuperati: ${(giacenzeResult as any[]).length} righe`);
       
