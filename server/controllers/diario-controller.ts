@@ -195,11 +195,38 @@ export async function getMonthData(req: Request, res: Response) {
   }
 
   try {
-    console.log(`API Diario Month Data - Mese richiesto: ${month}`);
+    // Utilizziamo la funzione di supporto per ottenere i dati del mese
+    const monthData = await getMonthDataForExport(db, month);
     
-    // Ottieni il range di date per il mese specificato
-    const startDate = startOfMonth(new Date(`${month}-01`));
-    const endDate = endOfMonth(new Date(`${month}-01`));
+    // Invia i dati come risposta
+    res.json(monthData);
+  } catch (error) {
+    console.error("Errore nel recupero dei dati mensili:", error);
+    res.status(500).json({ error: "Errore nel recupero dei dati mensili" });
+  }
+}
+
+/**
+ * Genera un file CSV con i dati del calendario mensile
+ * @param {Request} req - La richiesta HTTP
+ * @param {Response} res - La risposta HTTP
+ */
+export async function exportCalendarCsv(req: Request, res: Response) {
+  try {
+    // Ottieni il mese dall'URL
+    const month = req.query.month as string || format(new Date(), 'yyyy-MM');
+    
+    // Valida il formato del mese
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ error: 'Formato mese non valido. Utilizzare YYYY-MM' });
+    }
+    
+    // Estrai l'anno e il mese dal formato yyyy-MM
+    const [year, monthNum] = month.split('-').map(n => parseInt(n));
+    
+    // Prepara le date di inizio e fine mese
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 0);
     
     // Crea un array con tutti i giorni del mese
     const daysInMonth = eachDayOfInterval({

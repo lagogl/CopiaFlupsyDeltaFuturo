@@ -1,7 +1,9 @@
 // Esporta tutti i controller per facilitare l'importazione
 
-import { getMonthData } from './diario-controller.ts';
+import { getMonthData, exportCalendarCsv, getMonthDataForExport } from './diario-controller.ts';
 
 export const diarioController = {
-  getMonthData
+  getMonthData,
+  exportCalendarCsv,
+  getMonthDataForExport
 };
