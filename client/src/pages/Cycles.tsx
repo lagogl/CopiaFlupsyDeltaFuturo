@@ -453,13 +453,19 @@ export default function Cycles() {
                   <Label>FLUPSY</Label>
                   <Select 
                     value={flupsyFilter !== null ? String(flupsyFilter) : ''} 
-                    onValueChange={(value) => setFlupsyFilter(value ? Number(value) : null)}
+                    onValueChange={(value) => {
+                      if (value === 'all' || value === '') {
+                        setFlupsyFilter(null);
+                      } else {
+                        setFlupsyFilter(Number(value));
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Tutti i FLUPSY" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tutti i FLUPSY</SelectItem>
+                      <SelectItem value="all">Tutti i FLUPSY</SelectItem>
                       {flupsys.map((flupsy) => (
                         <SelectItem key={flupsy.id} value={String(flupsy.id)}>
                           {flupsy.name}
@@ -474,13 +480,19 @@ export default function Cycles() {
                   <Label>Taglia</Label>
                   <Select 
                     value={tagFilter || ''} 
-                    onValueChange={(value) => setTagFilter(value || null)}
+                    onValueChange={(value) => {
+                      if (value === 'all' || value === '') {
+                        setTagFilter(null);
+                      } else {
+                        setTagFilter(value);
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Tutte le taglie" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tutte le taglie</SelectItem>
+                      <SelectItem value="all">Tutte le taglie</SelectItem>
                       {sizes.map((size) => (
                         <SelectItem key={size.id} value={size.code}>
                           <div className="flex items-center">
@@ -503,13 +515,19 @@ export default function Cycles() {
                   <Label>Lotto</Label>
                   <Select 
                     value={lotFilter !== null ? String(lotFilter) : ''} 
-                    onValueChange={(value) => setLotFilter(value ? Number(value) : null)}
+                    onValueChange={(value) => {
+                      if (value === 'all' || value === '') {
+                        setLotFilter(null);
+                      } else {
+                        setLotFilter(Number(value));
+                      }
+                    }}
                   >
                     <SelectTrigger>
                       <SelectValue placeholder="Tutti i lotti" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tutti i lotti</SelectItem>
+                      <SelectItem value="all">Tutti i lotti</SelectItem>
                       {lots.map((lot) => (
                         <SelectItem key={lot.id} value={String(lot.id)}>
                           #{lot.id} - {lot.supplier} ({format(new Date(lot.arrivalDate), 'dd/MM/yy')})
