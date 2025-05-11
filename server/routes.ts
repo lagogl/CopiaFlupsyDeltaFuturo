@@ -2399,10 +2399,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
             currentSize = await storage.getSize(latestOperation.sizeId);
           }
           
-          // Get the SGR from the latest operation
+          // Get the SGR from the latest operation or use current month default
           let currentSgr = null;
           if (latestOperation && latestOperation.sgrId) {
             currentSgr = await storage.getSgr(latestOperation.sgrId);
+          } else if (cycle.state === 'active') {
+            // Se il ciclo è attivo ma non ha SGR associato, usa l'SGR predefinito per il mese corrente
+            const today = new Date();
+            const currentMonth = today.getMonth(); // 0-based (0 = Gennaio, 11 = Dicembre)
+            
+            // Converti l'indice del mese in nome italiano
+            const monthNames = [
+              'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+              'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
+            ];
+            
+            const currentMonthName = monthNames[currentMonth];
+            
+            // Prendi l'SGR per il mese corrente
+            const sgrs = await storage.getSgrs();
+            currentSgr = sgrs.find(s => s.month.toLowerCase() === currentMonthName.toLowerCase());
+            
+            console.log(`Ciclo ${cycle.id} senza SGR associato. Usato SGR predefinito per ${currentMonthName}: ${currentSgr?.percentage || 'non trovato'}`);
           }
           
           return { 
