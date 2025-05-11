@@ -142,64 +142,7 @@ const copyToClipboard = (text: string) => {
     });
 };
 
-// Funzione per convertire in CSV
-// Stato per il dialog di conferma esportazione CSV
-const [isCsvExportDialogOpen, setIsCsvExportDialogOpen] = useState(false);
-const [csvExportData, setCsvExportData] = useState<{data: any, date: Date} | null>(null);
-
-// Funzione per preparare l'esportazione CSV
-const prepareCSVExport = (data: any, date: Date) => {
-  setCsvExportData({ data, date });
-  setIsCsvExportDialogOpen(true);
-};
-
-// Funzione effettiva per eseguire il download CSV
-const downloadCSV = () => {
-  if (!csvExportData) return;
-  
-  const { data, date } = csvExportData;
-  const dateFormatted = format(date, 'yyyy-MM-dd');
-  let csvContent = "data:text/csv;charset=utf-8,";
-  
-  // Intestazione
-  csvContent += "Data,Ora,Tipo,Cestello,Flupsy,NumeroAnimali,AnimaliPerKg,Taglia,Note\n";
-  
-  // Righe dati
-  data.operations.forEach((op: any) => {
-    const opTime = op.created_at ? format(new Date(op.created_at), 'HH:mm') : '';
-    const row = [
-      op.date,
-      opTime,
-      getOperationTypeLabel(op.type),
-      op.basket_number || '',
-      op.flupsy_name || '',
-      op.animal_count || '',
-      op.animals_per_kg || '',
-      (op.size_code === 'Non specificata' ? 'In attesa di misurazione' : op.size_code) || '',
-      (op.notes || '').replace(/,/g, ';') // Sostituisce le virgole nelle note per evitare problemi CSV
-    ];
-    csvContent += row.join(',') + '\n';
-  });
-  
-  // Download del file
-  const encodedUri = encodeURI(csvContent);
-  const link = document.createElement("a");
-  link.setAttribute("href", encodedUri);
-  link.setAttribute("download", `diario-bordo-${dateFormatted}.csv`);
-  document.body.appendChild(link);
-  link.click();
-  document.body.removeChild(link);
-  
-  // Chiudi il dialog
-  setIsCsvExportDialogOpen(false);
-  
-  // Mostra una notifica di successo con toast invece di alert
-  toast({
-    title: "Download completato",
-    description: `Il report per ${format(date, 'dd MMMM yyyy', { locale: it })} è stato scaricato con successo.`,
-    variant: "default"
-  });
-};
+// Funzione di utility per convertire in CSV - spostata all'interno del componente
 
 
 
@@ -208,6 +151,64 @@ export default function DiarioDiBordo() {
   const [currentMonth, setCurrentMonth] = useState<Date>(startOfMonth(new Date()));
   const [formattedText, setFormattedText] = useState<string>('');
   const [activeTab, setActiveTab] = useState<string>('diario');
+  
+  // Stato per il dialog di conferma esportazione CSV
+  const [isCsvExportDialogOpen, setIsCsvExportDialogOpen] = useState(false);
+  const [csvExportData, setCsvExportData] = useState<{data: any, date: Date} | null>(null);
+  
+  // Funzione per preparare l'esportazione CSV
+  const prepareCSVExport = (data: any, date: Date) => {
+    setCsvExportData({ data, date });
+    setIsCsvExportDialogOpen(true);
+  };
+  
+  // Funzione effettiva per eseguire il download CSV
+  const downloadCSV = () => {
+    if (!csvExportData) return;
+    
+    const { data, date } = csvExportData;
+    const dateFormatted = format(date, 'yyyy-MM-dd');
+    let csvContent = "data:text/csv;charset=utf-8,";
+    
+    // Intestazione
+    csvContent += "Data,Ora,Tipo,Cestello,Flupsy,NumeroAnimali,AnimaliPerKg,Taglia,Note\n";
+    
+    // Righe dati
+    data.operations.forEach((op: any) => {
+      const opTime = op.created_at ? format(new Date(op.created_at), 'HH:mm') : '';
+      const row = [
+        op.date,
+        opTime,
+        getOperationTypeLabel(op.type),
+        op.basket_number || '',
+        op.flupsy_name || '',
+        op.animal_count || '',
+        op.animals_per_kg || '',
+        (op.size_code === 'Non specificata' ? 'In attesa di misurazione' : op.size_code) || '',
+        (op.notes || '').replace(/,/g, ';') // Sostituisce le virgole nelle note per evitare problemi CSV
+      ];
+      csvContent += row.join(',') + '\n';
+    });
+    
+    // Download del file
+    const encodedUri = encodeURI(csvContent);
+    const link = document.createElement("a");
+    link.setAttribute("href", encodedUri);
+    link.setAttribute("download", `diario-bordo-${dateFormatted}.csv`);
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
+    
+    // Chiudi il dialog
+    setIsCsvExportDialogOpen(false);
+    
+    // Mostra una notifica di successo con toast invece di alert
+    toast({
+      title: "Download completato",
+      description: `Il report per ${format(date, 'dd MMMM yyyy', { locale: it })} è stato scaricato con successo.`,
+      variant: "default"
+    });
+  };
   
   // Stati per il dialogo di invio email
   const [isEmailDialogOpen, setIsEmailDialogOpen] = useState<boolean>(false);
@@ -909,13 +910,18 @@ export default function DiarioDiBordo() {
       {/* Dialog di conferma per esportazione CSV */}
       <Dialog
         open={isCsvExportDialogOpen}
-        onOpenChange={(open) => !open && setIsCsvExportDialogOpen(false)}
+        onOpenChange={(open) => {
+          if (!open) setIsCsvExportDialogOpen(false);
+        }}
       >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Conferma esportazione CSV</DialogTitle>
             <DialogDescription>
-              Sei sicuro di voler esportare i dati del diario per {csvExportData?.date ? format(csvExportData.date, 'dd MMMM yyyy', { locale: it }) : 'questa data'}?
+              {csvExportData?.date ? 
+                `Sei sicuro di voler esportare i dati del diario per ${format(csvExportData.date, 'dd MMMM yyyy', { locale: it })}?` :
+                'Sei sicuro di voler esportare i dati del diario per questa data?'
+              }
             </DialogDescription>
           </DialogHeader>
           
