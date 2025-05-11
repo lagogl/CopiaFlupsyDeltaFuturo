@@ -982,7 +982,7 @@ export default function DiarioDiBordo() {
         
         {/* Tab Diario - Mostra il diario completo */}
         <TabsContent value="diario" className="space-y-4">
-          {isLoading ? (
+          {isDataLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
             </div>
@@ -1170,7 +1170,7 @@ export default function DiarioDiBordo() {
         
         {/* Tab Statistiche - Mostra solo le statistiche */}
         <TabsContent value="statistiche" className="space-y-4">
-          {isLoading ? (
+          {isDataLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
             </div>
@@ -1290,7 +1290,7 @@ export default function DiarioDiBordo() {
         
         {/* Tab Operazioni - Mostra solo le operazioni */}
         <TabsContent value="operazioni" className="space-y-4">
-          {isLoading ? (
+          {isDataLoading ? (
             <div className="flex justify-center items-center h-64">
               <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
             </div>
