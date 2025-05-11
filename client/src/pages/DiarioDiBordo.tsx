@@ -329,7 +329,7 @@ const downloadDetailedCalendarCSV = async () => {
   toast({
     title: "Esportazione completata",
     description: `Il calendario di ${format(selectedDate, 'MMMM yyyy', { locale: it })} è stato esportato con successo.`,
-    variant: "default"
+    variant: "success"
   });
 };
 
