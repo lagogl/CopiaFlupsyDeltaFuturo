@@ -10,6 +10,179 @@ import { and, eq, gte, lte, sql } from "drizzle-orm";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 
 /**
+ * Versione riutilizzabile della funzione getMonthData che può essere chiamata 
+ * internamente da altri metodi (come generazione CSV)
+ * @param {any} db - Connessione al database
+ * @param {string} month - Mese in formato YYYY-MM
+ * @returns {Promise<Record<string, any>>} - Dati mensili
+ */
+export async function getMonthDataForExport(db: any, month: string): Promise<Record<string, any>> {
+  try {
+    // Ottieni il range di date per il mese specificato
+    const startDate = startOfMonth(new Date(`${month}-01`));
+    const endDate = endOfMonth(new Date(`${month}-01`));
+    
+    const startDateStr = format(startDate, 'yyyy-MM-dd');
+    const endDateStr = format(endDate, 'yyyy-MM-dd');
+    
+    console.log(`Range di date: ${startDateStr} - ${endDateStr}`);
+    
+    // Determina le taglie attive nel mese
+    console.log("Determinazione delle taglie attive nel mese...");
+    const taglieResult = await db.execute(sql`
+      SELECT DISTINCT s.code 
+      FROM operations o
+      JOIN sizes s ON o.size_id = s.id
+      WHERE o.date BETWEEN ${startDateStr} AND ${endDateStr}
+      ORDER BY s.code
+    `);
+    
+    const taglieAttiveList = taglieResult.map((row: any) => row.code);
+    console.log(`Taglie attive trovate: ${taglieAttiveList.length}`);
+    console.log(`Taglie attive: ${taglieAttiveList.join(', ')}`);
+    
+    // Crea un array con tutti i giorni del mese
+    const daysInMonth = eachDayOfInterval({
+      start: startDate,
+      end: endDate
+    });
+    
+    // Inizializza l'oggetto di risposta con tutti i giorni del mese
+    const monthData: Record<string, any> = {};
+    
+    // Prepariamo un array di oggetti con le taglie attive e quantità 0 per inizializzare i giorni
+    const taglieVuote = taglieAttiveList.map(code => ({
+      taglia: code,
+      quantita: 0
+    }));
+    
+    // Inizializza ogni giorno con dati vuoti, ma con le taglie attive pre-popolate
+    daysInMonth.forEach(day => {
+      const dateKey = format(day, "yyyy-MM-dd");
+      monthData[dateKey] = {
+        operations: [],
+        totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
+        giacenza: 0,
+        taglie: [],
+        // Inizializziamo con tutte le taglie attive e valore 0
+        dettaglio_taglie: [...taglieVuote]
+      };
+    });
+    
+    // Step 2: Recupera tutte le operazioni del mese in una sola query
+    console.log(`Recupero operazioni per il mese ${month}...`);
+    const allOperationsResult = await db.execute(sql`
+      SELECT 
+        o.id, o.date, o.type, o.basket_id, o.animal_count,
+        b.physical_number as basket_physical_number,
+        f.name as flupsy_name,
+        s.code as size_code
+      FROM operations o
+      LEFT JOIN baskets b ON o.basket_id = b.id
+      LEFT JOIN flupsys f ON b.flupsy_id = f.id
+      LEFT JOIN sizes s ON o.size_id = s.id
+      WHERE o.date BETWEEN ${startDateStr} AND ${endDateStr}
+    `);
+    
+    console.log(`Operazioni recuperate: ${allOperationsResult.length}`);
+    
+    // Organizza le operazioni per data
+    const operationsByDate: Record<string, any[]> = {};
+    allOperationsResult.forEach((op: any) => {
+      if (!op.date) return;
+      
+      const dateStr = typeof op.date === 'string' 
+        ? op.date 
+        : format(new Date(op.date), "yyyy-MM-dd");
+        
+      if (!operationsByDate[dateStr]) {
+        operationsByDate[dateStr] = [];
+      }
+      operationsByDate[dateStr].push(op);
+    });
+    
+    // Step 3: Recupera le giacenze per ogni taglia attiva e per ogni giorno
+    console.log("Recupero giacenze giornaliere per le taglie attive...");
+    
+    // Esegui la query per le giacenze usando il normale sql template
+    const giacenzeResult = await db.execute(sql`
+      WITH date_range AS (
+        SELECT generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) AS day
+      )
+      SELECT 
+        dr.day::text as date,
+        s.code as taglia,
+        COALESCE(SUM(CASE WHEN o.date <= dr.day AND o.type NOT IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END), 0) as quantita
+      FROM date_range dr
+      CROSS JOIN sizes s
+      LEFT JOIN operations o ON o.size_id = s.id AND o.date <= dr.day
+      WHERE s.code IS NOT NULL
+      ${taglieAttiveList.length > 0 ? sql`AND s.code IN ${taglieAttiveList}` : sql``}
+      GROUP BY dr.day, s.code
+      ORDER BY dr.day, s.code
+    `);
+    
+    console.log(`Dati giacenze recuperati: ${(giacenzeResult as any[]).length} righe`);
+    
+    // Organizza le giacenze per data
+    const giacenzeByDate: Record<string, any[]> = {};
+    for (const row of giacenzeResult as any[]) {
+      if (!giacenzeByDate[row.date]) {
+        giacenzeByDate[row.date] = [];
+      }
+      giacenzeByDate[row.date].push({
+        taglia: row.taglia,
+        quantita: parseInt(row.quantita)
+      });
+    }
+    
+    // Step 4: Calcola i totali per ogni giorno
+    for (const day of daysInMonth) {
+      const dateStr = format(day, "yyyy-MM-dd");
+      
+      // Aggiungi le operazioni del giorno, se presenti
+      if (operationsByDate[dateStr]) {
+        monthData[dateStr].operations = operationsByDate[dateStr];
+        
+        // Conta le operazioni
+        const numOperazioni = operationsByDate[dateStr].length;
+        monthData[dateStr].totals.numero_operazioni = numOperazioni;
+        
+        // Calcola entrate e uscite
+        let totaleEntrate = 0;
+        let totaleUscite = 0;
+        
+        operationsByDate[dateStr].forEach((op: any) => {
+          if (['prima-attivazione', 'prima-attivazione-da-vagliatura'].includes(op.type) && op.animal_count) {
+            totaleEntrate += parseInt(op.animal_count);
+          } else if (['cessazione', 'vendita'].includes(op.type) && op.animal_count) {
+            totaleUscite += parseInt(op.animal_count);
+          }
+        });
+        
+        monthData[dateStr].totals.totale_entrate = totaleEntrate;
+        monthData[dateStr].totals.totale_uscite = totaleUscite;
+        monthData[dateStr].totals.bilancio_netto = totaleEntrate - totaleUscite;
+      }
+      
+      // Aggiungi i dati di giacenza del giorno
+      if (giacenzeByDate[dateStr]) {
+        monthData[dateStr].dettaglio_taglie = giacenzeByDate[dateStr];
+        
+        // Calcola la giacenza totale sommando tutte le taglie
+        const totaleGiacenza = giacenzeByDate[dateStr].reduce((tot: number, g: any) => tot + g.quantita, 0);
+        monthData[dateStr].giacenza = totaleGiacenza;
+      }
+    }
+    
+    return monthData;
+  } catch (error) {
+    console.error("Errore nel recupero dei dati mensili:", error);
+    throw error;
+  }
+}
+
+/**
  * Recupera tutti i dati per un intero mese in una singola chiamata
  * @param {Request} req - La richiesta HTTP
  * @param {Response} res - La risposta HTTP
