@@ -261,10 +261,10 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       });
     }
     
-    console.log("Intestazioni CSV:", headers.join(','));
+    console.log("Intestazioni CSV:", headers.join(';'));
     
-    // Inizia a costruire il contenuto CSV
-    let csvContent = headers.join(',') + '\n';
+    // Inizia a costruire il contenuto CSV con punto e virgola come separatore (formato europeo)
+    let csvContent = headers.join(';') + '\n';
     
     // Aggiungi i dati per ogni giorno
     daysInMonth.forEach(day => {
@@ -298,15 +298,19 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       }
       
       // Log di debug per vedere cosa viene esportato in ciascuna riga
-      console.log(`Riga CSV per ${italianDate}:`, row.join(','));
+      console.log(`Riga CSV per ${italianDate}:`, row.join(';'));
       
       // Aggiungi la riga al CSV
-      csvContent += row.join(',') + '\n';
+      csvContent += row.join(';') + '\n';
     });
     
     // Imposta l'header per il download
-    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Type', 'text/csv;charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="calendario_${month}.csv"`);
+    
+    // Aggiungi il BOM (Byte Order Mark) per Excel
+    const BOM = '\ufeff';
+    csvContent = BOM + csvContent;
     
     // Invia il contenuto CSV
     res.send(csvContent);
