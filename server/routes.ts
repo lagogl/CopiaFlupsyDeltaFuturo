@@ -5,6 +5,7 @@ import path from 'path';
 import fs from 'fs';
 import { db } from "./db";
 import { eq, and, isNull, sql, count, inArray } from "drizzle-orm";
+import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, subDays } from "date-fns";
 import { 
   selections, 
   selectionSourceBaskets,
@@ -37,7 +38,6 @@ import * as SequenceController from "./controllers/sequence-controller";
 // API esterne disabilitate
 // import { registerExternalApiRoutes } from "./external-api-routes";
 import { execFile } from 'child_process';
-import { format, subDays } from 'date-fns';
 import { 
   createDatabaseBackup, 
   restoreDatabaseFromBackup, 
@@ -1893,7 +1893,137 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Diario di Bordo API routes ===
   
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
-  app.get("/api/diario/month-data", diarioController.getMonthData);
+  app.get("/api/diario/month-data", async (req, res) => {
+    const { month } = req.query;
+
+    if (!month || typeof month !== 'string' || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ error: "Formato mese non valido. Utilizzare il formato YYYY-MM" });
+    }
+
+    try {
+      console.log(`API Diario Month Data - Mese richiesto: ${month}`);
+      
+      // Ottieni il range di date per il mese specificato
+      const startDate = startOfMonth(new Date(`${month}-01`));
+      const endDate = endOfMonth(new Date(`${month}-01`));
+      
+      // Ottieni le date come stringhe
+      const startDateStr = format(startDate, "yyyy-MM-dd");
+      const endDateStr = format(endDate, "yyyy-MM-dd");
+      
+      // Crea un array con tutti i giorni del mese
+      const daysInMonth = eachDayOfInterval({
+        start: startDate,
+        end: endDate
+      });
+
+      // Inizializza l'oggetto di risposta con tutti i giorni del mese
+      const monthData: Record<string, any> = {};
+      
+      // Inizializza ogni giorno con dati vuoti
+      daysInMonth.forEach(day => {
+        const dateKey = format(day, "yyyy-MM-dd");
+        monthData[dateKey] = {
+          operations: [],
+          totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
+          giacenza: 0,
+          taglie: [],
+          dettaglio_taglie: []
+        };
+      });
+
+      console.log(`Recupero operazioni per il mese ${month}...`);
+      
+      // Carica le operazioni per ogni giorno del mese
+      for (const day of daysInMonth) {
+        const dateKey = format(day, "yyyy-MM-dd");
+        
+        try {
+          // Ottieni le operazioni per questo giorno
+          const operationsForDay = await db.execute(sql`
+            SELECT o.id, o.date, o.type, o.basket_id, o.animal_count,
+                   b.physical_number as basket_physical_number,
+                   f.name as flupsy_name,
+                   s.code as size_code
+            FROM operations o
+            LEFT JOIN baskets b ON o.basket_id = b.id
+            LEFT JOIN flupsys f ON b.flupsy_id = f.id
+            LEFT JOIN sizes s ON o.size_id = s.id
+            WHERE o.date = ${dateKey}
+          `);
+          
+          // Aggiorna i dati per questo giorno
+          monthData[dateKey].operations = operationsForDay;
+          monthData[dateKey].totals.numero_operazioni = operationsForDay.length;
+          
+          // Calcola i totali giornalieri
+          let totale_entrate = 0;
+          let totale_uscite = 0;
+          
+          for (const op of operationsForDay) {
+            const animalCount = parseInt(op.animal_count || '0', 10);
+            
+            if (op.type === 'prima-attivazione' || op.type === 'prima-attivazione-da-vagliatura') {
+              totale_entrate += animalCount;
+            } else if (op.type === 'vendita' || op.type === 'cessazione') {
+              totale_uscite += animalCount;
+            }
+          }
+          
+          monthData[dateKey].totals.totale_entrate = totale_entrate;
+          monthData[dateKey].totals.totale_uscite = totale_uscite;
+          monthData[dateKey].totals.bilancio_netto = totale_entrate - totale_uscite;
+          
+          // Ottieni la giacenza per questo giorno
+          const [giacenze] = await db.execute(sql`
+            SELECT SUM(animal_count) as totale_giacenza
+            FROM operations o
+            WHERE o.date <= ${dateKey}
+            AND o.type NOT IN ('cessazione', 'vendita')
+          `);
+          
+          monthData[dateKey].giacenza = parseInt(giacenze?.totale_giacenza || '0', 10);
+          
+          // Dettaglio taglie per la giacenza
+          const taglieResult = await db.execute(sql`
+            SELECT s.code as taglia, SUM(o.animal_count) as quantita
+            FROM operations o
+            JOIN sizes s ON o.size_id = s.id
+            WHERE o.date <= ${dateKey}
+            AND o.type NOT IN ('cessazione', 'vendita')
+            GROUP BY s.code
+            ORDER BY s.code
+          `);
+          
+          const dettaglioTaglie = [];
+          
+          for (const row of taglieResult) {
+            if (row.taglia) {
+              const quantita = parseInt(row.quantita || '0', 10);
+              if (quantita > 0) {
+                dettaglioTaglie.push({
+                  taglia: row.taglia,
+                  quantita: quantita
+                });
+              }
+            }
+          }
+          
+          monthData[dateKey].dettaglio_taglie = dettaglioTaglie;
+          
+          console.log(`Completata elaborazione per ${dateKey}`);
+        } catch (err) {
+          console.error(`Errore nel recupero dati per la data ${dateKey}:`, err);
+        }
+      }
+      
+      console.log("Elaborazione completata, invio risposta");
+      res.json(monthData);
+    } catch (error) {
+      console.error("Errore nel recupero dei dati mensili:", error);
+      res.status(500).json({ error: "Errore nel recupero dei dati mensili" });
+    }
+  });
   
   // API - Ottieni tutte le taglie disponibili
   app.get("/api/sizes", async (req, res) => {
