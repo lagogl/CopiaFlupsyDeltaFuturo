@@ -1347,7 +1347,10 @@ export default function DiarioDiBordo() {
                         <th className="py-1 px-2 text-right font-medium">Uscite</th>
                         <th className="py-1 px-2 text-right font-medium">Bilancio</th>
                         <th className="py-1 px-2 text-right font-medium">Totale</th>
-                        <th className="py-1 px-2 text-right font-medium">Taglie</th>
+                        {/* Colonne per le taglie individuate dai dati di giacenza */}
+                        {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.map((item: any) => (
+                          <th key={item.taglia} className="py-1 px-2 text-right font-medium">{item.taglia}</th>
+                        ))}
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -1376,6 +1379,7 @@ export default function DiarioDiBordo() {
                           // Usiamo i dati precaricati per le altre date
                           dayStats.operations = monthlyData[dateKey].operations || [];
                           dayStats.totals = monthlyData[dateKey].totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 };
+                          dayStats.giacenza = monthlyData[dateKey].giacenza || 0;
                         }
                         
                         return (
@@ -1411,11 +1415,32 @@ export default function DiarioDiBordo() {
                                 formatNumberWithCommas(giacenza.totale_giacenza) : 
                                 (monthlyData[dateKey]?.giacenza ? formatNumberWithCommas(monthlyData[dateKey].giacenza) : '-')}
                             </td>
-                            <td className="py-1 px-2 text-right">
-                              {isCurrentDay && sizeStats && sizeStats.length > 0 ? 
-                                sizeStats.length : 
-                                (monthlyData[dateKey]?.taglie && monthlyData[dateKey].taglie.length > 0 ? monthlyData[dateKey].taglie.length : '-')}
-                            </td>
+                            
+                            {/* Celle per le taglie specifiche */}
+                            {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.map((tagliaItem: any) => {
+                              // Ottengo le informazioni per questa taglia specifica dal giorno corrente
+                              let quantitaTaglia = '-';
+                              
+                              if (isCurrentDay && giacenza.dettaglio_taglie) {
+                                // Per il giorno corrente, usa i dati di giacenza diretti
+                                const tagliaInfo = giacenza.dettaglio_taglie.find((t: any) => t.taglia === tagliaItem.taglia);
+                                if (tagliaInfo) {
+                                  quantitaTaglia = formatNumberWithCommas(tagliaInfo.quantita);
+                                }
+                              } else if (monthlyData[dateKey]?.dettaglio_taglie) {
+                                // Per gli altri giorni, usa i dati precaricati
+                                const tagliaInfo = monthlyData[dateKey].dettaglio_taglie.find((t: any) => t.taglia === tagliaItem.taglia);
+                                if (tagliaInfo) {
+                                  quantitaTaglia = formatNumberWithCommas(tagliaInfo.quantita);
+                                }
+                              }
+                              
+                              return (
+                                <td key={`${dateKey}-${tagliaItem.taglia}`} className="py-1 px-2 text-right font-medium">
+                                  {quantitaTaglia}
+                                </td>
+                              );
+                            })}
                           </tr>
                         );
                       })}
