@@ -1911,6 +1911,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startDateStr = format(startDate, "yyyy-MM-dd");
       const endDateStr = format(endDate, "yyyy-MM-dd");
       
+      console.log(`Range di date: ${startDateStr} - ${endDateStr}`);
+
+      // Step 1: Pre-filtraggio delle taglie attive nel mese
+      // Questa query trova solo le taglie che hanno quantità > 0 durante il mese
+      console.log("Determinazione delle taglie attive nel mese...");
+      const taglieAttiveResult = await db.execute(sql`
+        SELECT DISTINCT s.code
+        FROM operations o
+        JOIN sizes s ON o.size_id = s.id
+        WHERE 
+          -- Trova taglie con quantità > 0 all'inizio del mese
+          EXISTS (
+            SELECT 1 
+            FROM operations o2 
+            WHERE o2.size_id = s.id 
+            AND o2.date < ${startDateStr}
+            AND o2.type NOT IN ('cessazione', 'vendita')
+            GROUP BY o2.size_id
+            HAVING SUM(o2.animal_count) > 0
+          )
+          OR
+          -- Oppure trova taglie con operazioni durante il mese
+          EXISTS (
+            SELECT 1 
+            FROM operations o3 
+            WHERE o3.size_id = s.id 
+            AND o3.date BETWEEN ${startDateStr} AND ${endDateStr}
+          )
+        ORDER BY s.code
+      `);
+      
+      // Estrazione dei codici delle taglie attive
+      const taglieAttiveList = taglieAttiveResult.map(row => row.code).filter(Boolean);
+      console.log(`Taglie attive trovate: ${taglieAttiveList.length}`);
+      console.log(`Taglie attive: ${taglieAttiveList.join(", ")}`);
+      
       // Crea un array con tutti i giorni del mese
       const daysInMonth = eachDayOfInterval({
         start: startDate,
@@ -1932,35 +1968,106 @@ export async function registerRoutes(app: Express): Promise<Server> {
         };
       });
 
+      // Step 2: Recupera tutte le operazioni del mese in una sola query
       console.log(`Recupero operazioni per il mese ${month}...`);
+      const allOperationsResult = await db.execute(sql`
+        SELECT 
+          o.id, o.date, o.type, o.basket_id, o.animal_count,
+          b.physical_number as basket_physical_number,
+          f.name as flupsy_name,
+          s.code as size_code
+        FROM operations o
+        LEFT JOIN baskets b ON o.basket_id = b.id
+        LEFT JOIN flupsys f ON b.flupsy_id = f.id
+        LEFT JOIN sizes s ON o.size_id = s.id
+        WHERE o.date BETWEEN ${startDateStr} AND ${endDateStr}
+      `);
       
-      // Carica le operazioni per ogni giorno del mese
+      console.log(`Operazioni recuperate: ${allOperationsResult.length}`);
+      
+      // Organizza le operazioni per data
+      const operationsByDate = {};
+      allOperationsResult.forEach(op => {
+        if (!op.date) return;
+        
+        const dateStr = typeof op.date === 'string' 
+          ? op.date 
+          : format(new Date(op.date), "yyyy-MM-dd");
+          
+        if (!operationsByDate[dateStr]) {
+          operationsByDate[dateStr] = [];
+        }
+        operationsByDate[dateStr].push(op);
+      });
+      
+      // Step 3: Recupera le giacenze per ogni taglia attiva e per ogni giorno in un'unica query ottimizzata
+      console.log("Recupero giacenze giornaliere per le taglie attive...");
+      
+      // Prepara la query per recuperare le giacenze
+      let sizeFilterCondition = "";
+      if (taglieAttiveList.length > 0) {
+        // Converti l'array in formato adatto per una clausola IN di SQL
+        const sizeList = taglieAttiveList.map(taglia => `'${taglia}'`).join(',');
+        sizeFilterCondition = `AND s.code IN (${sizeList})`;
+      }
+      
+      // Calcola le giacenze per ogni giorno e ogni taglia attiva
+      const giacenzeQuery = `
+        WITH date_range AS (
+          SELECT generate_series($1::date, $2::date, '1 day'::interval) AS day
+        )
+        SELECT 
+          dr.day::text as date,
+          s.code as taglia,
+          COALESCE(SUM(CASE WHEN o.date <= dr.day AND o.type NOT IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END), 0) as quantita
+        FROM date_range dr
+        CROSS JOIN sizes s
+        LEFT JOIN operations o ON o.size_id = s.id AND o.date <= dr.day
+        WHERE s.code IN (${taglieAttiveList.map(t => `'${t}'`).join(',')})
+        GROUP BY dr.day, s.code
+        ORDER BY dr.day, s.code
+      `;
+      
+      const giacenzeResult = await db.$queryRaw`${sql([giacenzeQuery, startDateStr, endDateStr])}`;
+      
+      console.log(`Dati giacenze recuperati: ${(giacenzeResult as any[]).length} righe`);
+      
+      // Organizza le giacenze per data
+      const giacenzeByDate = {};
+      for (const row of giacenzeResult as any[]) {
+        if (!row.date) continue;
+        
+        if (!giacenzeByDate[row.date]) {
+          giacenzeByDate[row.date] = {
+            totale: 0,
+            dettaglio: []
+          };
+        }
+        
+        const quantita = parseInt(row.quantita || '0', 10);
+        if (quantita > 0) {
+          giacenzeByDate[row.date].totale += quantita;
+          giacenzeByDate[row.date].dettaglio.push({
+            taglia: row.taglia,
+            quantita: quantita
+          });
+        }
+      }
+      
+      // Popola i dati per ciascun giorno
       for (const day of daysInMonth) {
         const dateKey = format(day, "yyyy-MM-dd");
         
-        try {
-          // Ottieni le operazioni per questo giorno
-          const operationsForDay = await db.execute(sql`
-            SELECT o.id, o.date, o.type, o.basket_id, o.animal_count,
-                   b.physical_number as basket_physical_number,
-                   f.name as flupsy_name,
-                   s.code as size_code
-            FROM operations o
-            LEFT JOIN baskets b ON o.basket_id = b.id
-            LEFT JOIN flupsys f ON b.flupsy_id = f.id
-            LEFT JOIN sizes s ON o.size_id = s.id
-            WHERE o.date = ${dateKey}
-          `);
-          
-          // Aggiorna i dati per questo giorno
-          monthData[dateKey].operations = operationsForDay;
-          monthData[dateKey].totals.numero_operazioni = operationsForDay.length;
+        // Operazioni
+        if (operationsByDate[dateKey]) {
+          monthData[dateKey].operations = operationsByDate[dateKey];
+          monthData[dateKey].totals.numero_operazioni = operationsByDate[dateKey].length;
           
           // Calcola i totali giornalieri
           let totale_entrate = 0;
           let totale_uscite = 0;
           
-          for (const op of operationsForDay) {
+          for (const op of operationsByDate[dateKey]) {
             const animalCount = parseInt(op.animal_count || '0', 10);
             
             if (op.type === 'prima-attivazione' || op.type === 'prima-attivazione-da-vagliatura') {
@@ -1973,47 +2080,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           monthData[dateKey].totals.totale_entrate = totale_entrate;
           monthData[dateKey].totals.totale_uscite = totale_uscite;
           monthData[dateKey].totals.bilancio_netto = totale_entrate - totale_uscite;
-          
-          // Ottieni la giacenza per questo giorno
-          const [giacenze] = await db.execute(sql`
-            SELECT SUM(animal_count) as totale_giacenza
-            FROM operations o
-            WHERE o.date <= ${dateKey}
-            AND o.type NOT IN ('cessazione', 'vendita')
-          `);
-          
-          monthData[dateKey].giacenza = parseInt(giacenze?.totale_giacenza || '0', 10);
-          
-          // Dettaglio taglie per la giacenza
-          const taglieResult = await db.execute(sql`
-            SELECT s.code as taglia, SUM(o.animal_count) as quantita
-            FROM operations o
-            JOIN sizes s ON o.size_id = s.id
-            WHERE o.date <= ${dateKey}
-            AND o.type NOT IN ('cessazione', 'vendita')
-            GROUP BY s.code
-            ORDER BY s.code
-          `);
-          
-          const dettaglioTaglie = [];
-          
-          for (const row of taglieResult) {
-            if (row.taglia) {
-              const quantita = parseInt(row.quantita || '0', 10);
-              if (quantita > 0) {
-                dettaglioTaglie.push({
-                  taglia: row.taglia,
-                  quantita: quantita
-                });
-              }
-            }
-          }
-          
-          monthData[dateKey].dettaglio_taglie = dettaglioTaglie;
-          
-          console.log(`Completata elaborazione per ${dateKey}`);
-        } catch (err) {
-          console.error(`Errore nel recupero dati per la data ${dateKey}:`, err);
+        }
+        
+        // Giacenze
+        if (giacenzeByDate[dateKey]) {
+          monthData[dateKey].giacenza = giacenzeByDate[dateKey].totale;
+          monthData[dateKey].dettaglio_taglie = giacenzeByDate[dateKey].dettaglio;
         }
       }
       
