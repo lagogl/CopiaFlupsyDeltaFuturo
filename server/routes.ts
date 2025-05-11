@@ -2383,15 +2383,39 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const cycles = await storage.getCycles();
       
-      // Fetch baskets for each cycle
-      const cyclesWithBaskets = await Promise.all(
+      // Fetch baskets and latest operation for each cycle
+      const cyclesWithDetails = await Promise.all(
         cycles.map(async (cycle) => {
           const basket = await storage.getBasket(cycle.basketId);
-          return { ...cycle, basket };
+          const operations = await storage.getOperationsByCycle(cycle.id);
+          
+          // Sort operations by date (newest first) and get the latest one
+          operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          const latestOperation = operations.length > 0 ? operations[0] : null;
+          
+          // Get the size from the latest operation
+          let currentSize = null;
+          if (latestOperation && latestOperation.sizeId) {
+            currentSize = await storage.getSize(latestOperation.sizeId);
+          }
+          
+          // Get the SGR from the latest operation
+          let currentSgr = null;
+          if (latestOperation && latestOperation.sgrId) {
+            currentSgr = await storage.getSgr(latestOperation.sgrId);
+          }
+          
+          return { 
+            ...cycle, 
+            basket, 
+            latestOperation, 
+            currentSize,
+            currentSgr
+          };
         })
       );
       
-      res.json(cyclesWithBaskets);
+      res.json(cyclesWithDetails);
     } catch (error) {
       console.error("Error fetching cycles:", error);
       res.status(500).json({ message: "Failed to fetch cycles" });

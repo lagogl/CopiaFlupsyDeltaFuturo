@@ -541,7 +541,7 @@ export default function Cycles() {
                           mode="single"
                           selected={dateRangeFilter.start || undefined}
                           onSelect={(date) => 
-                            setDateRangeFilter(prev => ({ ...prev, start: date }))
+                            setDateRangeFilter(prev => ({ ...prev, start: date || null }))
                           }
                           locale={it}
                         />
@@ -565,7 +565,7 @@ export default function Cycles() {
                           mode="single"
                           selected={dateRangeFilter.end || undefined}
                           onSelect={(date) => 
-                            setDateRangeFilter(prev => ({ ...prev, end: date }))
+                            setDateRangeFilter(prev => ({ ...prev, end: date || null }))
                           }
                           locale={it}
                         />
