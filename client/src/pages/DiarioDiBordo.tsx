@@ -616,71 +616,9 @@ export default function DiarioDiBordo() {
         dayStats.dettaglio_taglie = monthlyData[dateKey].dettaglio_taglie || [];
       }
       
-      // Creiamo la riga per il giorno
-      let row = [
-        formattedDate,
-        dayStats.operations.length.toString(),
-        dayStats.totals.totale_entrate?.toString() || '0',
-        dayStats.totals.totale_uscite?.toString() || '0',
-        dayStats.totals.bilancio_netto?.toString() || '0',
-        dayStats.giacenza?.toString() || '0'
-      ];
-      
-      // Aggiungiamo i dati per ogni taglia
-      uniqueSizesArray.forEach(taglia => {
-        // Cerchiamo la taglia nei dati
-        const tagliaQuantity = dayStats.dettaglio_taglie && 
-          Array.isArray(dayStats.dettaglio_taglie) ? 
-          dayStats.dettaglio_taglie.find((item: {taglia: string, quantita: number}) => item.taglia === taglia) : 
-          null;
-        row.push(tagliaQuantity && tagliaQuantity.quantita !== undefined ? tagliaQuantity.quantita.toString() : '0');
-      });
-      
-      // Aggiungiamo la riga al CSV
-      csvContent += row.join(',') + "\n";
+      // Queste righe sono state sostituite dalla nuova implementazione in executeCalendarExport
+      // Il vecchio codice è stato rimosso per evitare duplicazioni e potenziali errori
     }
-    
-    // Aggiungiamo la riga di totali
-    let totalsRow = [
-      "TOTALE MESE",
-      Object.values(monthlyData).reduce((total: number, day: any) => total + (day.operations?.length || 0), 0).toString(),
-      Object.values(monthlyData).reduce((total: number, day: any) => total + (Number(day.totals?.totale_entrate) || 0), 0).toString(),
-      Object.values(monthlyData).reduce((total: number, day: any) => total + (Number(day.totals?.totale_uscite) || 0), 0).toString(),
-      Object.values(monthlyData).reduce((total: number, day: any) => total + (Number(day.totals?.bilancio_netto) || 0), 0).toString(),
-      giacenza ? giacenza.totale_giacenza.toString() : '0'
-    ];
-    
-    // Aggiungiamo i totali per ogni taglia
-    uniqueSizesArray.forEach(taglia => {
-      const totalForSize = Object.values(monthlyData).reduce((total: number, day: any) => {
-        const tagliaItem = day.dettaglio_taglie?.find((item: any) => item.taglia === taglia);
-        return total + (Number(tagliaItem?.quantita) || 0);
-      }, 0);
-      totalsRow.push(totalForSize.toString());
-    });
-    
-    // Aggiungiamo la riga di totali al CSV
-    csvContent += totalsRow.join(',') + "\n";
-    
-    // Preparazione per il download
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    link.setAttribute('download', `calendario-mensile_${format(selectedDate, 'yyyy-MM')}.csv`);
-    document.body.appendChild(link);
-    
-    // Scarica il file
-    link.click();
-    
-    // Pulisci
-    document.body.removeChild(link);
-    
-    // Mostra conferma di successo
-    toast({
-      title: "Esportazione completata",
-      description: `Il calendario di ${format(selectedDate, 'MMMM yyyy', { locale: it })} è stato esportato con successo.`,
-      variant: "success"
-    });
   };
   
   // Funzione per inviare l'email
