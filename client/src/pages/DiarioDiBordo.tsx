@@ -319,6 +319,11 @@ export default function DiarioDiBordo() {
         // Per tutti i giorni, carica sempre i dati dal server
         // Rimuoviamo la condizione che saltava il giorno corrente
         try {
+          // Aggiorniamo il contatore dell'analisi
+          setAnalysisCounter(current => ({
+            ...current,
+            current: current.current + 1
+          }));
           // Richiede i dati delle operazioni per la data specifica
           const opResponse = await fetch(`/api/diario/operations-by-date?date=${dateKey}`);
           if (opResponse.ok) {
@@ -364,22 +369,43 @@ export default function DiarioDiBordo() {
     } catch (error) {
       console.error('Errore nel caricamento dei dati mensili:', error);
     } finally {
+      // Aggiorna lo stato per segnalare che l'analisi è completata
+      setAnalysisCounter(current => ({
+        ...current,
+        completed: true
+      }));
       setIsCalendarLoading(false);
     }
   }, [selectedDate]);
   
   // Funzione per aggiornare manualmente i dati del calendario
   const refreshCalendarData = () => {
+    // Resetta lo stato del contatore per una nuova analisi
+    setAnalysisCounter({
+      current: 0,
+      total: 0,
+      completed: false
+    });
+    
     toast({
       title: "Aggiornamento in corso",
       description: "Caricamento dati del calendario...",
     });
+    
     loadMonthlyData();
   };
   
   // Carica i dati mensili quando cambia il mese selezionato
   useEffect(() => {
     const currentMonth = format(selectedDate, 'yyyy-MM');
+    
+    // Resetta lo stato del contatore quando cambia il mese
+    setAnalysisCounter({
+      current: 0,
+      total: 0,
+      completed: false
+    });
+    
     loadMonthlyData();
   }, [loadMonthlyData, selectedDate]);
   
@@ -1399,6 +1425,23 @@ export default function DiarioDiBordo() {
                     <CardDescription>
                       Riepilogo delle attività per il mese di {format(selectedDate, 'MMMM yyyy', { locale: it })}
                     </CardDescription>
+                    {!analysisCounter.completed && analysisCounter.total > 0 && (
+                      <div className="mt-2">
+                        <div className="flex justify-between text-xs text-muted-foreground mb-1">
+                          <span>Analisi dati in corso...</span>
+                          <span>{analysisCounter.current} di {analysisCounter.total} giorni</span>
+                        </div>
+                        <div className="w-full bg-gray-200 rounded-full h-2 dark:bg-gray-700">
+                          <div 
+                            className="bg-primary h-2 rounded-full" 
+                            style={{ width: `${Math.round((analysisCounter.current / analysisCounter.total) * 100)}%` }}
+                          />
+                        </div>
+                        <div className="text-xs text-muted-foreground mt-1 text-right">
+                          {Math.round((analysisCounter.current / analysisCounter.total) * 100)}%
+                        </div>
+                      </div>
+                    )}
                   </div>
                   <Button 
                     variant="outline" 
