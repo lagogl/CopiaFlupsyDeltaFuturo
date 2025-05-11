@@ -22,6 +22,7 @@ import Flupsys from "@/pages/Flupsys";
 import FlupsyDetails from "@/pages/FlupsyDetails";
 import FlupsyFullView from "@/pages/FlupsyFullView";
 import FlupsyPositions from "@/pages/FlupsyPositions";
+import FlupsyPositionsSelector from "@/pages/FlupsyPositionsSelector";
 import FlupsyBaskets from "@/pages/FlupsyBaskets";
 import FlupsyComparison from "@/pages/FlupsyComparison";
 import FlupsyComparisonEnhanced from "@/pages/FlupsyComparisonEnhanced";
@@ -69,6 +70,8 @@ function Router() {
       <ProtectedRoute path="/flupsys/:id" component={FlupsyDetails}/>
       <ProtectedRoute path="/flupsys/:id/positions" component={FlupsyPositions}/>
       <ProtectedRoute path="/flupsys/:id/baskets" component={FlupsyBaskets}/>
+      <ProtectedRoute path="/flupsy-positions" component={FlupsyPositionsSelector}/>
+      <ProtectedRoute path="/flupsy-positions/:id" component={FlupsyPositions}/>
       <ProtectedRoute path="/flupsy-view" component={FlupsyFullView}/>
       <ProtectedRoute path="/flupsy-comparison" component={FlupsyComparison}/>
       <ProtectedRoute path="/flupsy-comparison-enhanced" component={FlupsyComparisonEnhanced}/>
