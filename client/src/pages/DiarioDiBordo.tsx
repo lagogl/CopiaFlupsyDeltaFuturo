@@ -1506,13 +1506,17 @@ export default function DiarioDiBordo() {
                             
                             {/* Celle per le taglie specifiche */}
                             {Array.from(uniqueSizes).sort().map((tagliaCode) => {
-                              // Troviamo questa taglia nei dati del giorno
-                              const tagliaInfo = dayStats.dettaglio_taglie && 
-                                Array.isArray(dayStats.dettaglio_taglie) ? 
-                                dayStats.dettaglio_taglie.find((t: {taglia: string, quantita: number}) => t.taglia === tagliaCode) : 
-                                null;
-                              const quantitaTaglia = tagliaInfo && tagliaInfo.quantita !== undefined ? 
-                                formatNumberWithCommas(tagliaInfo.quantita) : '-';
+                              // Mostriamo le giacenze per ogni taglia, anche se non ci sono dati
+                              let quantitaTaglia = '-';
+                              // Se abbiamo dettaglio_taglie, cerchiamo la quantità per questa taglia specifica
+                              if (dayStats.dettaglio_taglie && Array.isArray(dayStats.dettaglio_taglie)) {
+                                const tagliaInfo = dayStats.dettaglio_taglie.find(
+                                  (t: {taglia: string, quantita: number}) => t.taglia === tagliaCode
+                                );
+                                if (tagliaInfo && tagliaInfo.quantita !== undefined && tagliaInfo.quantita > 0) {
+                                  quantitaTaglia = formatNumberWithCommas(tagliaInfo.quantita);
+                                }
+                              }
                               
                               return (
                                 <td key={`${dateKey}-${tagliaCode}`} className="py-1 px-2 text-right font-medium">
@@ -1559,12 +1563,22 @@ export default function DiarioDiBordo() {
                         
                         {/* Celle totali per le taglie specifiche */}
                         {Array.from(uniqueSizes).sort().map((tagliaCode) => {
-                          const tagliaItem = giacenza?.dettaglio_taglie ? 
-                            giacenza.dettaglio_taglie.find((t: {taglia: string, quantita: number}) => t.taglia === tagliaCode) : null;
+                          // Totale per taglia specifica
+                          let quantitaTotale = '-';
+                          
+                          if (giacenza?.dettaglio_taglie && Array.isArray(giacenza.dettaglio_taglie)) {
+                            const tagliaItem = giacenza.dettaglio_taglie.find(
+                              (t: {taglia: string, quantita: number}) => t.taglia === tagliaCode
+                            );
+                            
+                            if (tagliaItem && tagliaItem.quantita !== undefined && tagliaItem.quantita > 0) {
+                              quantitaTotale = formatNumberWithCommas(tagliaItem.quantita);
+                            }
+                          }
                           
                           return (
                             <td key={`totale-${tagliaCode}`} className="py-1 px-2 text-right font-medium">
-                              {tagliaItem ? formatNumberWithCommas(tagliaItem.quantita) : '-'}
+                              {quantitaTotale}
                             </td>
                           );
                         })}
