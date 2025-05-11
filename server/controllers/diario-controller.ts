@@ -228,106 +228,84 @@ export async function exportCalendarCsv(req: Request, res: Response) {
     const startDate = new Date(year, monthNum - 1, 1);
     const endDate = new Date(year, monthNum, 0);
     
+    const startDateStr = format(startDate, 'yyyy-MM-dd');
+    const endDateStr = format(endDate, 'yyyy-MM-dd');
+    
+    // Determina le taglie attive nel mese
+    console.log('Determinazione delle taglie attive per il calendario...');
+    const taglieResult = await db.execute(sql`
+      SELECT DISTINCT s.code 
+      FROM operations o
+      JOIN sizes s ON o.size_id = s.id
+      WHERE o.date BETWEEN ${startDateStr} AND ${endDateStr}
+      ORDER BY s.code
+    `);
+    
+    const taglieAttiveList = taglieResult.map((row: any) => row.code);
+    console.log(`Taglie attive per il calendario CSV: ${taglieAttiveList.join(', ')}`);
+    
     // Crea un array con tutti i giorni del mese
     const daysInMonth = eachDayOfInterval({
       start: startDate,
       end: endDate
     });
-
-    // Inizializza l'oggetto di risposta con tutti i giorni del mese
-    const monthData: Record<string, any> = {};
     
-    // Inizializza ogni giorno con dati vuoti
+    // Recupera i dati mensili utilizzando la funzione di supporto
+    const monthData = await getMonthDataForExport(db, month);
+    
+    // Costruisci le intestazioni del CSV
+    const headers = ['Data', 'Operazioni', 'Entrate', 'Uscite', 'Bilancio', 'Totale'];
+    
+    // Aggiungi le taglie come intestazioni
+    if (taglieAttiveList.length > 0) {
+      taglieAttiveList.forEach(taglia => {
+        headers.push(taglia);
+      });
+    }
+    
+    // Inizia a costruire il contenuto CSV
+    let csvContent = headers.join(',') + '\n';
+    
+    // Aggiungi i dati per ogni giorno
     daysInMonth.forEach(day => {
-      const dateKey = format(day, "yyyy-MM-dd");
-      monthData[dateKey] = {
-        operations: [],
+      const dateKey = format(day, 'yyyy-MM-dd');
+      const dayData = monthData[dateKey] || { 
+        operations: [], 
         totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
-        giacenza: 0,
-        taglie: [],
         dettaglio_taglie: []
       };
-    });
-
-    console.log(`Recupero operazioni per il mese ${month}...`);
-    
-    // Ottieni tutte le operazioni del mese in un'unica query
-    const monthOperations = await db.select({
-      id: operations.id,
-      date: operations.date,
-      type: operations.type,
-      basket_id: operations.basketId,
-      animal_count: operations.animalCount,
-      basket_number: baskets.number,
-      flupsy_name: flupsys.name,
-      size_code: sizes.code,
-      animals_per_kg: operations.animalsPerKg
-    })
-    .from(operations)
-    .leftJoin(baskets, eq(operations.basketId, baskets.id))
-    .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
-    .leftJoin(sizes, eq(operations.sizeId, sizes.id))
-    .where(
-      and(
-        gte(operations.date, format(startDate, "yyyy-MM-dd")),
-        lte(operations.date, format(endDate, "yyyy-MM-dd"))
-      )
-    );
-
-    console.log(`Trovate ${monthOperations.length} operazioni per il mese ${month}`);
-    
-    // Organizza le operazioni per data
-    monthOperations.forEach(op => {
-      if (op.date) {
-        const dateKey = format(new Date(op.date), "yyyy-MM-dd");
-        if (monthData[dateKey]) {
-          monthData[dateKey].operations.push(op);
-          // Aggiorniamo il conteggio delle operazioni
-          monthData[dateKey].totals.numero_operazioni = monthData[dateKey].operations.length;
-        }
-      }
-    });
-
-    // Recupera i dati di giacenza e totali per ogni giorno in un unico passaggio
-    console.log("Recupero giacenze e totali giornalieri...");
-    
-    // Array di tutte le date da elaborare
-    const dates = Object.keys(monthData).sort();
-    
-    // Funzione per eseguire calcoli batch per 3 giorni alla volta
-    // per ridurre il carico e migliorare le prestazioni
-    const batchSize = 3;
-    for (let i = 0; i < dates.length; i += batchSize) {
-      const batchDates = dates.slice(i, i + batchSize);
-      console.log(`Elaborazione batch di date: ${batchDates.join(', ')}`);
       
-      // Elabora le date in parallelo all'interno di ogni batch
-      await Promise.all(batchDates.map(async (dateKey) => {
-        try {
-          // Giacenza
-          const cyclesForDate = await getCyclesActiveAtDate(dateKey);
-          const giacenzaData = await calculateGiacenzaForDate(dateKey, cyclesForDate);
-          
-          monthData[dateKey].giacenza = giacenzaData.totale_giacenza || 0;
-          monthData[dateKey].dettaglio_taglie = giacenzaData.dettaglio_taglie || [];
-          
-          // Totali giornalieri
-          const dayTotals = await calculateDailyTotals(dateKey);
-          monthData[dateKey].totals = dayTotals;
-          
-          // Statistiche per taglia
-          const sizeStats = await calculateSizeStats(dateKey);
-          monthData[dateKey].taglie = sizeStats;
-          
-          console.log(`Completata elaborazione per ${dateKey}`);
-        } catch (error) {
-          console.error(`Errore nell'elaborazione dei dati per ${dateKey}:`, error);
-        }
-      }));
-    }
-
-    console.log("Elaborazione completata, invio risposta");
-    res.json(monthData);
+      // Formatta la data in formato italiano (gg/mm/yyyy)
+      const italianDate = format(day, 'dd/MM/yyyy');
+      
+      // Prepara la riga base
+      const row = [
+        italianDate,
+        dayData.operations?.length || '0',
+        dayData.totals?.totale_entrate || '0',
+        dayData.totals?.totale_uscite || '0',
+        dayData.totals?.bilancio_netto || '0',
+        dayData.giacenza || '0'
+      ];
+      
+      // Aggiungi i dati per ogni taglia
+      if (taglieAttiveList.length > 0) {
+        taglieAttiveList.forEach(taglia => {
+          const tagliaData = (dayData.dettaglio_taglie || []).find((t: any) => t.taglia === taglia);
+          row.push(tagliaData ? String(tagliaData.quantita) : '0');
+        });
+      }
+      
+      // Aggiungi la riga al CSV
+      csvContent += row.join(',') + '\n';
+    });
+    
+    // Imposta l'header per il download
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="calendario_${month}.csv"`);
+    
+    // Invia il contenuto CSV
+    res.send(csvContent);
   } catch (error) {
     console.error("Errore nel recupero dei dati mensili:", error);
     res.status(500).json({ error: "Errore nel recupero dei dati mensili" });
