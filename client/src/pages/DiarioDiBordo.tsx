@@ -271,6 +271,13 @@ export default function DiarioDiBordo() {
   // State per i dati del calendario mensile
   const [monthlyData, setMonthlyData] = useState<Record<string, any>>({});
   
+  // State per il contatore dell'analisi
+  const [analysisCounter, setAnalysisCounter] = useState<{current: number, total: number, completed: boolean}>({
+    current: 0,
+    total: 0,
+    completed: true
+  });
+  
   // Funzione per caricare i dati del mese corrente
   const loadMonthlyData = useCallback(async () => {
     if (!selectedDate) return;
@@ -288,6 +295,14 @@ export default function DiarioDiBordo() {
       const daysInMonth = eachDayOfInterval({
         start: monthStart,
         end: endOfMonth(selectedDate)
+      });
+      
+      // Imposta il contatore di analisi
+      const totalDays = daysInMonth.length;
+      setAnalysisCounter({
+        current: 0,
+        total: totalDays,
+        completed: false
       });
       
       // Inizializza i dati per ogni giorno
