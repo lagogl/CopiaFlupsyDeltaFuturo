@@ -735,6 +735,26 @@ export default function DiarioDiBordo() {
     <div className="container mx-auto py-6">
       <h1 className="text-3xl font-bold tracking-tight mb-4">Diario di Bordo</h1>
       
+      {/* Dialog per conferma esportazione calendario */}
+      <Dialog open={isExportDialogOpen} onOpenChange={setIsExportDialogOpen}>
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Conferma Esportazione</DialogTitle>
+            <DialogDescription>
+              Vuoi scaricare il report dettagliato del mese di {format(currentMonth, 'MMMM yyyy', { locale: it })}?
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsExportDialogOpen(false)}>
+              Annulla
+            </Button>
+            <Button onClick={executeCalendarExport}>
+              Scarica Report
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Dialog per configurazione e invio Email */}
       <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
