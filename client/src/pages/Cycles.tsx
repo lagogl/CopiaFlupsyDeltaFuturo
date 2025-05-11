@@ -57,6 +57,7 @@ interface Size {
 interface SGR {
   id: number;
   percentage: number;
+  month?: string;
 }
 
 // Definizione dell'interfaccia Lot per tipizzare i dati del lotto
@@ -153,7 +154,31 @@ export default function Cycles() {
   const { data: sizes = [] } = useQuery<Size[]>({
     queryKey: ['/api/sizes'],
   });
+  
+  // Query SGR data
+  const { data: sgrData = [] } = useQuery<SGR[]>({
+    queryKey: ['/api/sgr'],
+  });
 
+  // Funzione per ottenere il valore SGR corretto per il mese corrente
+  const getCurrentMonthSgr = () => {
+    const today = new Date();
+    const currentMonth = today.getMonth(); // 0-based index (0 = gennaio, 11 = dicembre)
+    
+    // Converte l'indice del mese in nome italiano
+    const monthNames = [
+      'gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno',
+      'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'
+    ];
+    
+    const currentMonthName = monthNames[currentMonth];
+    
+    // Trova il valore SGR per il mese corrente
+    const sgrForCurrentMonth = sgrData.find(s => s.month?.toLowerCase() === currentMonthName);
+    
+    return sgrForCurrentMonth?.percentage || 0;
+  };
+  
   // Funzione per ordinare i cicli
   const sortCycles = (cycleList: Cycle[], sortConf: typeof sortConfig) => {
     let sortedCycles = [...cycleList];
@@ -373,13 +398,15 @@ export default function Cycles() {
   // Apply sorting
   const sortedFilteredCycles = useMemo(() => 
     sortCycles(filteredCycles, sortConfig), 
-    [filteredCycles, sortConfig]);
+    [filteredCycles, sortConfig, baskets, flupsys, lots, operations]);
 
   // Calcola il tempo necessario per raggiungere una taglia target
   const calculateDaysToReachTarget = (cycle: Cycle, targetSizeCode: string | null): number => {
     if (!cycle.currentSize || !cycle.currentSgr || !targetSizeCode) return 0;
     
     const currentSizeCode = cycle.currentSize.code;
+    
+    // Utilizziamo il valore SGR del ciclo (che è giornaliero)
     const sgrPercentage = cycle.currentSgr.percentage;
     
     // Calcola peso corrente e peso target
@@ -391,7 +418,7 @@ export default function Cycles() {
     // Se il peso target è inferiore o uguale al peso corrente, non serve calcolare
     if (targetWeight <= currentWeight) return 0;
     
-    // Calcola giorni necessari
+    // Calcola giorni necessari usando l'SGR giornaliero
     return estimateDaysToReachSize(currentWeight, targetWeight, sgrPercentage);
   };
   
@@ -498,124 +525,100 @@ export default function Cycles() {
                   <div className="flex space-x-2">
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal">
-                          {dateRangeFilter.start ? format(dateRangeFilter.start, 'dd/MM/yyyy') : "Data inizio"}
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          {dateRangeFilter.start ? (
+                            format(dateRangeFilter.start, 'dd/MM/yyyy')
+                          ) : (
+                            <span className="text-muted-foreground">Data inizio</span>
+                          )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
                           selected={dateRangeFilter.start || undefined}
-                          onSelect={(date) => setDateRangeFilter(prev => ({ ...prev, start: date || null }))}
-                          initialFocus
+                          onSelect={(date) => 
+                            setDateRangeFilter(prev => ({ ...prev, start: date }))
+                          }
+                          locale={it}
                         />
-                        {dateRangeFilter.start && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="w-full" 
-                            onClick={() => setDateRangeFilter(prev => ({ ...prev, start: null }))}
-                          >
-                            Cancella
-                          </Button>
-                        )}
                       </PopoverContent>
                     </Popover>
-                    
                     <Popover>
                       <PopoverTrigger asChild>
-                        <Button variant="outline" size="sm" className="w-full justify-start text-left font-normal">
-                          {dateRangeFilter.end ? format(dateRangeFilter.end, 'dd/MM/yyyy') : "Data fine"}
+                        <Button
+                          variant="outline"
+                          className="w-full justify-start text-left font-normal"
+                        >
+                          {dateRangeFilter.end ? (
+                            format(dateRangeFilter.end, 'dd/MM/yyyy')
+                          ) : (
+                            <span className="text-muted-foreground">Data fine</span>
+                          )}
                         </Button>
                       </PopoverTrigger>
-                      <PopoverContent className="w-auto p-0" align="start">
+                      <PopoverContent className="w-auto p-0">
                         <Calendar
                           mode="single"
                           selected={dateRangeFilter.end || undefined}
-                          onSelect={(date) => setDateRangeFilter(prev => ({ ...prev, end: date || null }))}
-                          initialFocus
+                          onSelect={(date) => 
+                            setDateRangeFilter(prev => ({ ...prev, end: date }))
+                          }
+                          locale={it}
                         />
-                        {dateRangeFilter.end && (
-                          <Button 
-                            variant="ghost" 
-                            size="sm" 
-                            className="w-full" 
-                            onClick={() => setDateRangeFilter(prev => ({ ...prev, end: null }))}
-                          >
-                            Cancella
-                          </Button>
-                        )}
                       </PopoverContent>
                     </Popover>
                   </div>
                 </div>
                 
-                {/* Pulsanti azione */}
-                <div className="flex justify-end space-x-2 pt-2">
-                  <Button 
-                    variant="secondary" 
-                    size="sm"
-                    onClick={() => {
-                      setFlupsyFilter(null);
-                      setTagFilter(null);
-                      setLotFilter(null);
-                      setDateRangeFilter({ start: null, end: null });
-                    }}
-                  >
-                    Reset
-                  </Button>
-                </div>
+                {/* Pulsante per resettare i filtri */}
+                <Button 
+                  variant="outline" 
+                  size="sm"
+                  onClick={() => {
+                    setFlupsyFilter(null);
+                    setTagFilter(null);
+                    setLotFilter(null);
+                    setDateRangeFilter({ start: null, end: null });
+                  }}
+                >
+                  Resetta filtri
+                </Button>
               </div>
             </PopoverContent>
           </Popover>
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button variant="outline" size="sm">
-                  <InfoIcon className="h-4 w-4 mr-1" />
-                  Info
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent className="max-w-sm">
-                <p>I cicli vengono creati e chiusi automaticamente tramite le operazioni di "prima-attivazione" e "vendita".</p>
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
         </div>
       </div>
 
-      {/* Search and Filter */}
-      <div className="bg-white p-4 rounded-lg shadow mb-6">
-        <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
-          <div className="flex-1">
-            <div className="relative">
-              <Input
-                type="text"
-                placeholder="Cerca per ID ciclo, cesta..."
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-                className="pl-10"
-              />
-              <div className="absolute left-3 top-2.5 text-gray-400">
-                <Search className="h-5 w-5" />
-              </div>
-            </div>
-          </div>
-          <div className="flex space-x-4">
-            <Select value={statusFilter} onValueChange={setStatusFilter}>
-              <SelectTrigger className="w-[180px]">
-                <SelectValue placeholder="Stato ciclo" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti gli stati</SelectItem>
-                <SelectItem value="active">Attivi</SelectItem>
-                <SelectItem value="closed">Chiusi</SelectItem>
-              </SelectContent>
-            </Select>
-          </div>
+      {/* Filtri superiori */}
+      <div className="flex flex-wrap gap-3 mb-4">
+        {/* Ricerca */}
+        <div className="relative w-full xs:w-auto flex-1 xs:flex-none">
+          <Search className="absolute left-2 top-2.5 h-4 w-4 text-muted-foreground" />
+          <Input
+            placeholder="Cerca ID ciclo o cestello..."
+            className="pl-8"
+            value={searchTerm}
+            onChange={e => setSearchTerm(e.target.value)}
+          />
         </div>
+        
+        {/* Filtro per stato */}
+        <Select value={statusFilter} onValueChange={setStatusFilter}>
+          <SelectTrigger className="min-w-[140px]">
+            <SelectValue placeholder="Stato" />
+          </SelectTrigger>
+          <SelectContent>
+            <SelectItem value="all">Tutti gli stati</SelectItem>
+            <SelectItem value="active">Attivi</SelectItem>
+            <SelectItem value="closed">Chiusi</SelectItem>
+          </SelectContent>
+        </Select>
       </div>
-
+      
       {/* Tabs */}
       <Tabs defaultValue="cicli" value={activeTab} onValueChange={setActiveTab} className="mb-4">
         <TabsList>
@@ -631,362 +634,253 @@ export default function Cycles() {
           <div className="bg-white rounded-lg shadow overflow-hidden">
             <div className="overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200 table-fixed">
-            <thead className="bg-gray-50">
-              <tr>
-                <th 
-                  scope="col" 
-                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('id')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>ID</span>
-                    {sortConfig.key === 'id' ? (
-                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('basket')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Cesta</span>
-                    {sortConfig.key === 'basket' ? (
-                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('flupsy')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Flupsy</span>
-                    {sortConfig.key === 'flupsy' ? (
-                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('startDate')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Inizio</span>
-                    {sortConfig.key === 'startDate' ? (
-                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('endDate')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Fine</span>
-                    {sortConfig.key === 'endDate' ? (
-                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3" />
-                    )}
-                  </div>
-                </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                  Giorni
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('size')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Taglia</span>
-                    {sortConfig.key === 'size' ? (
-                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3" />
-                    )}
-                  </div>
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('lot')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>Lotto</span>
-                    {sortConfig.key === 'lot' ? (
-                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3" />
-                    )}
-                  </div>
-                </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-24">
-                  N° Animali
-                </th>
-                <th 
-                  scope="col" 
-                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16 cursor-pointer hover:bg-gray-100"
-                  onClick={() => handleSort('sgr')}
-                >
-                  <div className="flex items-center space-x-1">
-                    <span>SGR</span>
-                    {sortConfig.key === 'sgr' ? (
-                      sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />
-                    ) : (
-                      <ArrowUpDown className="h-3 w-3" />
-                    )}
-                  </div>
-                </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                  Stato
-                </th>
-                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-16">
-                  Azioni
-                </th>
-              </tr>
-          </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
-              {isLoading ? (
-                <tr>
-                  <td colSpan={12} className="px-2 py-2 whitespace-nowrap text-center text-gray-500">
-                    Caricamento cicli...
-                  </td>
-                </tr>
-              ) : sortedFilteredCycles.length === 0 ? (
-                <tr>
-                  <td colSpan={12} className="px-2 py-2 whitespace-nowrap text-center text-gray-500">
-                    Nessun ciclo trovato
-                  </td>
-                </tr>
-              ) : (
-                sortedFilteredCycles.map((cycle) => {
-                  // Format dates
-                  const startDate = format(new Date(cycle.startDate), 'dd MMM yy', { locale: it });
-                  const endDate = cycle.endDate 
-                    ? format(new Date(cycle.endDate), 'dd MMM yy', { locale: it }) 
-                    : '-';
-                  
-                  // Calculate duration
-                  let duration = '-';
-                  if (cycle.state === 'active') {
-                    const days = Math.floor((new Date().getTime() - new Date(cycle.startDate).getTime()) / (1000 * 60 * 60 * 24));
-                    duration = `${days}`;
-                  } else if (cycle.endDate) {
-                    const days = Math.floor((new Date(cycle.endDate).getTime() - new Date(cycle.startDate).getTime()) / (1000 * 60 * 60 * 24));
-                    duration = `${days}`;
-                  }
-                  
-                  // Check if this cycle has a vendita operation
-                  const isSoldCycle = operations.some(op => op.type === 'vendita' && op.cycleId === cycle.id);
-                  
-                  // Recupero dei dati dalle API esistenti (non più simulati)
-                  // TODO: Nelle API reali, questi dati dovrebbero essere inclusi direttamente nella risposta del ciclo
-                  const flupsy = flupsys.find(f => {
-                    // Cerca il FLUPSY basato sul ciclo/cestello
-                    const basket = baskets.find(b => b.id === cycle.basketId);
-                    return basket && basket.flupsyId === f.id;
-                  });
-                  
-                  // Ricerca dell'operazione di prima attivazione per ottenere il lotto
-                  const primaAttivazione = operations.find(
-                    op => op.cycleId === cycle.id && op.type === 'prima-attivazione'
-                  );
-                  
-                  const lot = primaAttivazione && primaAttivazione.lotId 
-                    ? lots.find(l => l.id === primaAttivazione.lotId) 
-                    : null;
-                    
-                  // Altri dati dalle operazioni più recenti
-                  // Prima cerchiamo l'operazione più recente di tipo misura o peso
-                  const cycleOperations = operations.filter(op => op.cycleId === cycle.id);
-                  
-                  // Ordinamento per data decrescente per ottenere l'operazione più recente
-                  const sortedOperations = cycleOperations.sort((a, b) => 
-                    new Date(b.date).getTime() - new Date(a.date).getTime()
-                  );
-                  
-                  // Otteniamo prima l'operazione più recente di misura o peso
-                  const latestMeasurement = sortedOperations.find(
-                    op => op.type === 'misura' || op.type === 'peso'
-                  );
-                  
-                  // In alternativa, usiamo l'operazione di prima attivazione se disponibile
-                  const firstOperation = sortedOperations.find(
-                    op => op.type === 'prima-attivazione'
-                  );
-                  
-                  // Conteggio animali
-                  const animalCount = latestMeasurement?.animalCount || firstOperation?.animalCount || 0;
-                  
-                  // Otteniamo la taglia dall'operazione più recente
-                  const operationSize = latestMeasurement?.size || firstOperation?.size;
-                  
-                  // Fallback alla taglia dalle API di ciclo se disponibile
-                  const currentSizeCode = cycle.currentSize 
-                    ? sizes.find(s => s.id === cycle.currentSize?.id)?.code 
-                    : null;
-                  
-                  // SGR dall'operazione più recente o dal ciclo
-                  // Prima controlliamo se l'operazione ha un SGR
-                  const operationSgr = latestMeasurement?.sgr;
-                  
-                  // Altrimenti usiamo l'SGR del ciclo se disponibile
-                  const cycleSgr = cycle.currentSgr;
-                  
-                  // Combiniamo le due fonti dando priorità all'operazione
-                  const currentSgr = operationSgr || cycleSgr;
-                  
-                  return (
-                    <tr key={cycle.id} className={isSoldCycle ? 'relative bg-red-50/20 hover:bg-gray-50' : 'hover:bg-gray-50'}>
-                      {isSoldCycle && (
-                        <div className="absolute inset-0 pointer-events-none" style={{ 
-                          backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,0,0,0.05) 10px, rgba(255,0,0,0.05) 20px)',
-                          backgroundSize: '28px 28px'
-                        }} />
-                      )}
-                      <td className="px-2 py-1 whitespace-nowrap text-xs font-medium text-gray-900 relative">
-                        #{cycle.id}
-                        {isSoldCycle && (
-                          <span className="absolute -right-2 -top-1">
-                            <span className="relative inline-flex rounded-full h-2 w-2 bg-red-500">
-                              <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-red-400 opacity-75"></span>
-                            </span>
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        #{cycle.basket?.physicalNumber || cycle.basketId}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {flupsy ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="cursor-help">{flupsy.name}</span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                <div className="text-xs">
-                                  <p><strong>Posizione:</strong> {flupsy.location || 'N/A'}</p>
-                                  <p><strong>Posizioni max:</strong> {flupsy.maxPositions || 'N/A'}</p>
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : '-'}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {startDate}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {endDate}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {duration}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-xs">
-                        {operationSize ? (
-                          <span 
-                            className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full" 
-                            style={{
-                              backgroundColor: operationSize.color ? `${operationSize.color}26` : '#e5e7eb',
-                              color: operationSize.color || '#4b5563'
-                            }}
-                          >
-                            {operationSize.code}
-                          </span>
-                        ) : currentSizeCode ? (
-                          <span className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full bg-blue-100 text-blue-800">
-                            {currentSizeCode}
-                          </span>
-                        ) : (
-                          <span className="px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full bg-gray-100 text-gray-500">
-                            N/A
-                          </span>
-                        )}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {lot ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="cursor-help">
-                                  #{lot.id} {lot.supplier ? `(${lot.supplier})` : ''}
-                                </span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top" className="max-w-sm">
-                                <div className="text-xs">
-                                  <p><strong>Fornitore:</strong> {lot.supplier || 'N/A'}</p>
-                                  <p><strong>Data arrivo:</strong> {lot.arrivalDate ? format(new Date(lot.arrivalDate), 'dd/MM/yy') : 'N/A'}</p>
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : '-'}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {animalCount.toLocaleString()}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-500">
-                        {currentSgr ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <span className="cursor-help">{currentSgr.percentage.toFixed(1)}%</span>
-                              </TooltipTrigger>
-                              <TooltipContent side="top">
-                                <div className="text-xs">
-                                  <p><strong>SGR:</strong> Tasso di crescita specifico</p>
-                                  <p><strong>Valore:</strong> {currentSgr.percentage.toFixed(2)}%</p>
-                                </div>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : '-'}
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap">
-                        <Badge variant="outline" className={`px-1.5 py-0 text-xs ${
-                          cycle.state === 'active' 
-                            ? 'bg-blue-50 text-blue-800 border-blue-200' 
-                            : isSoldCycle 
-                              ? 'bg-red-50 text-red-800 border-red-200'
-                              : 'bg-green-50 text-green-800 border-green-200'
-                        }`}>
-                          {cycle.state === 'active' 
-                            ? 'Attivo'
-                            : isSoldCycle 
-                              ? 'Venduto' 
-                              : 'Chiuso'
-                          }
-                        </Badge>
-                      </td>
-                      <td className="px-2 py-1 whitespace-nowrap text-xs font-medium">
-                        <div className="flex">
-                          <Link href={`/cycles/${cycle.id}`}>
-                            <Button variant="ghost" className="h-6 w-6 p-0" title="Visualizza dettagli">
-                              <Eye className="h-3.5 w-3.5 text-primary" />
-                            </Button>
-                          </Link>
+                <thead className="bg-gray-50">
+                  <tr>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-12 cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('id')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>ID</span>
+                        <div className="flex flex-col">
+                          {sortConfig.key === 'id' ? (
+                            sortConfig.direction === 'ascending' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
+                          ) : <ArrowUpDown className="h-2.5 w-2.5" />}
                         </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('basket')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Cestello</span>
+                        <div className="flex flex-col">
+                          {sortConfig.key === 'basket' ? (
+                            sortConfig.direction === 'ascending' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
+                          ) : <ArrowUpDown className="h-2.5 w-2.5" />}
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('flupsy')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>FLUPSY</span>
+                        <div className="flex flex-col">
+                          {sortConfig.key === 'flupsy' ? (
+                            sortConfig.direction === 'ascending' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
+                          ) : <ArrowUpDown className="h-2.5 w-2.5" />}
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('lot')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Lotto</span>
+                        <div className="flex flex-col">
+                          {sortConfig.key === 'lot' ? (
+                            sortConfig.direction === 'ascending' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
+                          ) : <ArrowUpDown className="h-2.5 w-2.5" />}
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('startDate')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Inizio</span>
+                        <div className="flex flex-col">
+                          {sortConfig.key === 'startDate' ? (
+                            sortConfig.direction === 'ascending' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
+                          ) : <ArrowUpDown className="h-2.5 w-2.5" />}
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('size')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>Taglia</span>
+                        <div className="flex flex-col">
+                          {sortConfig.key === 'size' ? (
+                            sortConfig.direction === 'ascending' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
+                          ) : <ArrowUpDown className="h-2.5 w-2.5" />}
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      onClick={() => handleSort('sgr')}
+                    >
+                      <div className="flex items-center space-x-1">
+                        <span>SGR</span>
+                        <TooltipProvider>
+                          <Tooltip>
+                            <TooltipTrigger asChild>
+                              <InfoIcon className="h-3 w-3 text-gray-400" />
+                            </TooltipTrigger>
+                            <TooltipContent side="right">
+                              <p className="text-xs">SGR (giornaliero): Specific Growth Rate</p>
+                              <p className="text-xs">Tasso di crescita specifico giornaliero</p>
+                            </TooltipContent>
+                          </Tooltip>
+                        </TooltipProvider>
+                        <div className="flex flex-col">
+                          {sortConfig.key === 'sgr' ? (
+                            sortConfig.direction === 'ascending' ? <ArrowUp className="h-2.5 w-2.5" /> : <ArrowDown className="h-2.5 w-2.5" />
+                          ) : <ArrowUpDown className="h-2.5 w-2.5" />}
+                        </div>
+                      </div>
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider"
+                    >
+                      Stato
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-center text-xs font-medium text-gray-500 uppercase tracking-wider w-12"
+                    >
+                      Azioni
+                    </th>
+                  </tr>
+                </thead>
+                <tbody className="bg-white divide-y divide-gray-200">
+                  {sortedFilteredCycles.length === 0 ? (
+                    <tr>
+                      <td colSpan={9} className="px-6 py-4 text-center text-sm text-gray-500">
+                        {isLoading ? 'Caricamento in corso...' : 'Nessun ciclo trovato'}
                       </td>
                     </tr>
-                  );
-                })
-              )}
-            </tbody>
+                  ) : (
+                    sortedFilteredCycles.map(cycle => {
+                      // Cerca il cestello associato
+                      const basket = baskets.find(b => b.id === cycle.basketId);
+                      
+                      // Cerca il FLUPSY associato
+                      const flupsy = basket 
+                        ? flupsys.find(f => f.id === basket.flupsyId) 
+                        : null;
+                      
+                      // Cerca se il ciclo è stato venduto
+                      const hasVenditaOp = operations.some(
+                        op => op.cycleId === cycle.id && op.type === 'vendita'
+                      );
+                      
+                      // Cerca operazione di prima attivazione per trovare il lotto
+                      const primaAttivazione = operations.find(
+                        op => op.cycleId === cycle.id && op.type === 'prima-attivazione'
+                      );
+                      
+                      const lot = primaAttivazione && primaAttivazione.lotId 
+                        ? lots.find(l => l.id === primaAttivazione.lotId) 
+                        : null;
+                      
+                      // Flag per cicli venduti
+                      const isSoldCycle = hasVenditaOp || operations.some(
+                        op => op.cycleId === cycle.id && op.type === 'selezione-vendita'
+                      );
+                      
+                      return (
+                        <tr key={cycle.id} className={isSoldCycle ? 'relative bg-red-50/20 hover:bg-gray-50' : 'hover:bg-gray-50'}>
+                          {isSoldCycle && (
+                            <div className="absolute inset-0 pointer-events-none" style={{ 
+                              backgroundImage: 'repeating-linear-gradient(45deg, transparent, transparent 10px, rgba(255,0,0,0.05) 10px, rgba(255,0,0,0.05) 20px)',
+                              backgroundSize: '28px 28px'
+                            }} />
+                          )}
+                          <td className="px-2 py-1 whitespace-nowrap text-xs font-medium text-gray-900 relative">
+                            #{cycle.id}
+                            {isSoldCycle && (
+                              <TooltipProvider>
+                                <Tooltip>
+                                  <TooltipTrigger asChild>
+                                    <span className="ml-1 inline-block">
+                                      <Badge variant="destructive" className="h-3 rounded-full px-1">
+                                        <span className="text-[8px]">V</span>
+                                      </Badge>
+                                    </span>
+                                  </TooltipTrigger>
+                                  <TooltipContent side="bottom">
+                                    <p className="text-xs">Ciclo venduto</p>
+                                  </TooltipContent>
+                                </Tooltip>
+                              </TooltipProvider>
+                            )}
+                          </td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                            {basket?.physicalNumber || cycle.basketId}
+                          </td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                            {flupsy?.name || 'N/D'}
+                          </td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                            {lot ? `${lot.supplier} (#${lot.id})` : 'N/D'}
+                          </td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                            {format(new Date(cycle.startDate), 'dd/MM/yyyy')}
+                          </td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">
+                            {cycle.currentSize && (
+                              <Badge 
+                                variant="outline"
+                                style={{ 
+                                  backgroundColor: `${getSizeColor(cycle.currentSize.code)}20`,
+                                  borderColor: getSizeColor(cycle.currentSize.code),
+                                  color: getSizeColor(cycle.currentSize.code) 
+                                }}
+                              >
+                                {cycle.currentSize.code}
+                              </Badge>
+                            )}
+                          </td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs text-gray-900">
+                            {cycle.currentSgr ? `${cycle.currentSgr.percentage.toFixed(2)}%` : 'N/D'}
+                          </td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs">
+                            <Badge 
+                              variant={
+                                cycle.state === 'active' 
+                                  ? 'default' 
+                                  : 'secondary'
+                              }
+                            >
+                              {cycle.state === 'active' 
+                                ? 'Attivo' 
+                                : isSoldCycle 
+                                  ? 'Venduto' 
+                                  : 'Chiuso'
+                              }
+                            </Badge>
+                          </td>
+                          <td className="px-2 py-1 whitespace-nowrap text-xs font-medium">
+                            <div className="flex">
+                              <Link href={`/cycles/${cycle.id}`}>
+                                <Button variant="ghost" className="h-6 w-6 p-0" title="Visualizza dettagli">
+                                  <Eye className="h-3.5 w-3.5 text-primary" />
+                                </Button>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })
+                  )}
+                </tbody>
               </table>
             </div>
           </div>
@@ -1068,7 +962,7 @@ export default function Cycles() {
                         </>
                       )}
                     </tr>
-                </thead>
+                  </thead>
                   <tbody className="bg-white divide-y divide-gray-200">
                     {sortedFilteredCycles.length === 0 ? (
                       <tr>
