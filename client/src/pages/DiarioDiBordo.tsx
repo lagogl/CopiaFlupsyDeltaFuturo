@@ -1246,12 +1246,12 @@ export default function DiarioDiBordo() {
                             <td className="py-1 px-2 text-right font-medium">
                               {isCurrentDay && giacenza ? 
                                 formatNumberWithCommas(giacenza.totale_giacenza) : 
-                                (dayData.giacenza ? formatNumberWithCommas(dayData.giacenza) : '-')}
+                                (monthlyData[dateKey]?.giacenza ? formatNumberWithCommas(monthlyData[dateKey].giacenza) : '-')}
                             </td>
                             <td className="py-1 px-2 text-right">
                               {isCurrentDay && sizeStats && sizeStats.length > 0 ? 
                                 sizeStats.length : 
-                                (dayData.taglie && dayData.taglie.length > 0 ? dayData.taglie.length : '-')}
+                                (monthlyData[dateKey]?.taglie && monthlyData[dateKey].taglie.length > 0 ? monthlyData[dateKey].taglie.length : '-')}
                             </td>
                           </tr>
                         );
