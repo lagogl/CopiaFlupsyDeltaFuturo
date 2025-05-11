@@ -1956,7 +1956,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Inizializza l'oggetto di risposta con tutti i giorni del mese
       const monthData: Record<string, any> = {};
       
-      // Inizializza ogni giorno con dati vuoti
+      // Prepariamo un array di oggetti con le taglie attive e quantità 0 per inizializzare i giorni
+      const taglieVuote = taglieAttiveList.map(code => ({
+        taglia: code,
+        quantita: 0
+      }));
+      
+      // Inizializza ogni giorno con dati vuoti, ma con le taglie attive pre-popolate
       daysInMonth.forEach(day => {
         const dateKey = format(day, "yyyy-MM-dd");
         monthData[dateKey] = {
@@ -1964,7 +1970,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
           giacenza: 0,
           taglie: [],
-          dettaglio_taglie: []
+          // Inizializziamo con tutte le taglie attive e valore 0
+          dettaglio_taglie: [...taglieVuote]
         };
       });
 
