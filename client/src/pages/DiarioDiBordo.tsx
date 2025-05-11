@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { format, isSameDay, getDaysInMonth } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Download, Share, Filter, Clock, Mail, Loader2 } from 'lucide-react';
 import { CalendarIcon } from 'lucide-react';
@@ -688,10 +688,11 @@ export default function DiarioDiBordo() {
 
       {/* Tabs per i diversi tipi di vista */}
       <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
-        <TabsList className="grid grid-cols-3 md:grid-cols-3 lg:w-[400px]">
+        <TabsList className="grid grid-cols-4 md:grid-cols-4 lg:w-[500px]">
           <TabsTrigger value="diario">Diario</TabsTrigger>
           <TabsTrigger value="statistiche">Statistiche</TabsTrigger>
           <TabsTrigger value="operazioni">Operazioni</TabsTrigger>
+          <TabsTrigger value="calendario">Calendario</TabsTrigger>
         </TabsList>
         
         {/* Tab Diario - Mostra il diario completo */}
@@ -1063,6 +1064,95 @@ export default function DiarioDiBordo() {
                     Nessuna operazione registrata per questa data.
                   </div>
                 )}
+              </CardContent>
+            </Card>
+          )}
+        </TabsContent>
+
+        {/* Tab Calendario - Vista mensile delle attività */}
+        <TabsContent value="calendario" className="space-y-4">
+          {isLoading ? (
+            <div className="flex justify-center items-center h-64">
+              <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-primary"></div>
+            </div>
+          ) : (
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle>Calendario Mensile</CardTitle>
+                <CardDescription>
+                  Riepilogo delle attività per il mese di {format(selectedDate, 'MMMM yyyy', { locale: it })}
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="overflow-x-auto">
+                  <table className="w-full border-collapse">
+                    <thead>
+                      <tr className="bg-muted">
+                        <th className="py-2 px-3 text-left font-medium">Data</th>
+                        <th className="py-2 px-3 text-left font-medium">Operazioni</th>
+                        <th className="py-2 px-3 text-right font-medium">Entrate</th>
+                        <th className="py-2 px-3 text-right font-medium">Uscite</th>
+                        <th className="py-2 px-3 text-right font-medium">Bilancio</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y">
+                      {/* Genera le righe per ogni giorno del mese */}
+                      {Array.from({ length: getDaysInMonth(selectedDate) }).map((_, i) => {
+                        const day = i + 1;
+                        const date = new Date(selectedDate.getFullYear(), selectedDate.getMonth(), day);
+                        const dateKey = format(date, 'yyyy-MM-dd');
+                        const isCurrentDay = isSameDay(date, selectedDate);
+                        
+                        // Qui dovremmo fare una chiamata API per ottenere i dati del giorno
+                        // Per ora mostreremo solo dati di esempio o segnaposti
+                        return (
+                          <tr 
+                            key={day} 
+                            className={`hover:bg-muted/50 ${isCurrentDay ? 'bg-primary/5' : ''}`}
+                            onClick={() => setSelectedDate(date)}
+                            style={{ cursor: 'pointer' }}
+                          >
+                            <td className="py-2 px-3">
+                              <div className="font-medium">{format(date, 'EEEE dd', { locale: it })}</div>
+                              <div className="text-sm text-muted-foreground">{format(date, 'MMM yyyy', { locale: it })}</div>
+                            </td>
+                            <td className="py-2 px-3 text-sm">
+                              {/* Segnaposto per il numero di operazioni */}
+                              {isCurrentDay && operations.length > 0 ? (
+                                <Badge variant="outline">{operations.length} operazioni</Badge>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </td>
+                            <td className="py-2 px-3 text-right font-medium text-green-600">
+                              {isCurrentDay && totals?.totale_entrate ? (
+                                `+${formatNumberWithCommas(totals.totale_entrate)}`
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </td>
+                            <td className="py-2 px-3 text-right font-medium text-red-600">
+                              {isCurrentDay && totals?.totale_uscite ? (
+                                `-${formatNumberWithCommas(totals.totale_uscite)}`
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </td>
+                            <td className="py-2 px-3 text-right font-medium">
+                              {isCurrentDay && totals?.bilancio_netto ? (
+                                <span className={parseInt(totals.bilancio_netto) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {parseInt(totals.bilancio_netto) >= 0 ? '+' : ''}{formatNumberWithCommas(totals.bilancio_netto)}
+                                </span>
+                              ) : (
+                                <span className="text-muted-foreground">-</span>
+                              )}
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               </CardContent>
             </Card>
           )}
