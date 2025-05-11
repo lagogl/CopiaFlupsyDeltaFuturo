@@ -264,15 +264,16 @@ export default function DiarioDiBordo() {
     const endDateFormatted = format(monthEnd, 'yyyy-MM-dd');
     
     try {
-      const response = await fetch(`/api/operations/summary?startDate=${startDateFormatted}&endDate=${endDateFormatted}`);
+      // Otteniamo le operazioni nell'intervallo di date
+      const response = await fetch(`/api/operations/date-range?startDate=${startDateFormatted}&endDate=${endDateFormatted}`);
       
       if (!response.ok) {
-        throw new Error('Errore nel caricamento dei dati mensili');
+        throw new Error('Errore nel caricamento delle operazioni mensili');
       }
       
-      const data = await response.json();
+      const operations = await response.json();
       
-      // Organizza i dati per data
+      // Organizziamo i dati per data
       const dataByDate: Record<string, any> = {};
       
       // Inizializza tutti i giorni del mese con dati vuoti
@@ -287,17 +288,35 @@ export default function DiarioDiBordo() {
         };
       });
       
-      // Popola i dati per i giorni che hanno operazioni
-      if (data && data.dailySummaries) {
-        Object.entries(data.dailySummaries).forEach(([date, summary]: [string, any]) => {
-          dataByDate[date] = summary;
-        });
-      }
+      // Raggruppa le operazioni per data
+      operations.forEach((op: any) => {
+        const dateKey = op.date;
+        
+        if (!dataByDate[dateKey]) {
+          dataByDate[dateKey] = {
+            operations: [],
+            totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 }
+          };
+        }
+        
+        dataByDate[dateKey].operations.push(op);
+        dataByDate[dateKey].totals.numero_operazioni++;
+        
+        // Calcola entrate e uscite per il giorno
+        if (op.type === 'prima-attivazione' || op.type === 'trasferimento-entrata') {
+          dataByDate[dateKey].totals.totale_entrate += op.animal_count || 0;
+        } else if (op.type === 'trasferimento-uscita' || op.type === 'vendita' || op.type === 'mortalita') {
+          dataByDate[dateKey].totals.totale_uscite += op.animal_count || 0;
+        }
+        
+        // Calcola il bilancio netto
+        dataByDate[dateKey].totals.bilancio_netto = 
+          dataByDate[dateKey].totals.totale_entrate - dataByDate[dateKey].totals.totale_uscite;
+      });
       
       setMonthlyData(dataByDate);
     } catch (error) {
       console.error('Errore nel caricamento dei dati mensili:', error);
-      // Utilizziamo lo stato di errore generale
     }
   }, [selectedDate]);
   

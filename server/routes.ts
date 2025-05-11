@@ -1451,6 +1451,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch operations by cycle" });
     }
   });
+  
+  // Endpoint per ottenere le operazioni in un intervallo di date (per vista calendario)
+  app.get("/api/operations/date-range", async (req, res) => {
+    try {
+      const startDate = req.query.startDate as string;
+      const endDate = req.query.endDate as string;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ message: "startDate e endDate sono obbligatori" });
+      }
+      
+      // Otteniamo tutte le operazioni
+      const allOperations = await storage.getOperations();
+      
+      // Filtriamo per l'intervallo di date richiesto
+      const operationsInRange = allOperations.filter(op => {
+        const opDate = op.date;
+        return opDate >= startDate && opDate <= endDate;
+      });
+      
+      res.json(operationsInRange);
+    } catch (error) {
+      console.error("Error fetching operations by date range:", error);
+      res.status(500).json({ message: "Failed to fetch operations by date range" });
+    }
+  });
 
   app.post("/api/operations", async (req, res) => {
     try {
