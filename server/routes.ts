@@ -10,7 +10,8 @@ import {
   selectionSourceBaskets,
   selectionDestinationBaskets,
   insertUserSchema,
-  cycles
+  cycles,
+  sizes
 } from "../shared/schema";
 import { 
   getNotificationSettings, 
@@ -1889,6 +1890,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Diario di Bordo API routes ===
+  
+  // API - Ottieni tutte le taglie disponibili
+  app.get("/api/sizes", async (req, res) => {
+    try {
+      const allSizes = await db.select().from(sizes).orderBy(sizes.code);
+      
+      // Formatta i risultati per l'uso nel frontend
+      const formattedSizes = allSizes.map(size => ({
+        id: size.id,
+        code: size.code,
+        name: size.name
+      }));
+      
+      return res.status(200).json(formattedSizes);
+    } catch (error) {
+      console.error('Errore nel recupero delle taglie:', error);
+      return res.status(500).json({ 
+        error: 'Errore nel recupero delle taglie',
+        message: error instanceof Error ? error.message : 'Errore sconosciuto'
+      });
+    }
+  });
   
   // API - Ottieni giacenza alla data (totale fino al giorno precedente alla data richiesta)
   app.get("/api/diario/giacenza", async (req, res) => {
