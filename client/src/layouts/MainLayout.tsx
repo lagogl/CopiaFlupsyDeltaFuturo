@@ -94,7 +94,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <Package className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Ceste", path: "/baskets" },
         { icon: <FileText className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni", path: "/operations" },
         { icon: <Zap className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Rapide", path: "/quick-operations" },
-        { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Posizioni", path: "/operations-drag-drop" },
+        { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Posizioni", path: "/flupsys" },
         { icon: <Filter className="h-5 w-5 mr-2 text-blue-600" />, label: "Vagliatura", path: "/selection" },
         { icon: <Scan className="h-5 w-5 mr-2 text-blue-600" />, label: "FlupsyScan Mobile", path: "/nfc-scan" }
       ]
