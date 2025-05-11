@@ -2,7 +2,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format, isSameDay, getDaysInMonth, startOfMonth, endOfMonth, eachDayOfInterval } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Download, Share, Filter, Clock, Mail, Loader2, FileSpreadsheet } from 'lucide-react';
+import { Download, Share, Filter, Clock, Mail, Loader2, FileSpreadsheet, RefreshCw } from 'lucide-react';
 import { CalendarIcon } from 'lucide-react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
@@ -1378,10 +1378,33 @@ export default function DiarioDiBordo() {
           ) : (
             <Card>
               <CardHeader className="pb-2">
-                <CardTitle>Calendario Mensile</CardTitle>
-                <CardDescription>
-                  Riepilogo delle attività per il mese di {format(selectedDate, 'MMMM yyyy', { locale: it })}
-                </CardDescription>
+                <div className="flex justify-between items-center">
+                  <div>
+                    <CardTitle>Calendario Mensile</CardTitle>
+                    <CardDescription>
+                      Riepilogo delle attività per il mese di {format(selectedDate, 'MMMM yyyy', { locale: it })}
+                    </CardDescription>
+                  </div>
+                  <Button 
+                    variant="outline" 
+                    size="sm" 
+                    onClick={refreshCalendarData}
+                    disabled={isCalendarLoading}
+                    className="flex items-center gap-2"
+                  >
+                    {isCalendarLoading ? (
+                      <>
+                        <Loader2 className="h-4 w-4 animate-spin" />
+                        Aggiornamento...
+                      </>
+                    ) : (
+                      <>
+                        <RefreshCw className="h-4 w-4" />
+                        Aggiorna
+                      </>
+                    )}
+                  </Button>
+                </div>
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
