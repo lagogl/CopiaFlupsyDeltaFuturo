@@ -577,37 +577,8 @@ export default function DiarioDiBordo() {
         variant: "destructive"
       });
     }
-    // Rimosso il vecchio codice di esportazione CSV che è stato sostituito dal nuovo sistema
-    
-    // Aggiungiamo le taglie presenti nella giacenza corrente
-    if (giacenza && giacenza.dettaglio_taglie) {
-      giacenza.dettaglio_taglie.forEach((item: any) => {
-        uniqueSizes.add(item.taglia);
-      });
-    }
-    
-    // Controlla i dati mensili per aggiungere altre taglie
-    Object.entries(monthlyData).forEach(([dateKey, dayData]: [string, any]) => {
-      if (dayData.dettaglio_taglie && Array.isArray(dayData.dettaglio_taglie)) {
-        dayData.dettaglio_taglie.forEach((item: any) => {
-          uniqueSizes.add(item.taglia);
-        });
-      }
-      if (dayData.taglie && Array.isArray(dayData.taglie)) {
-        dayData.taglie.forEach((item: any) => {
-          uniqueSizes.add(item.taglia);
-        });
-      }
-    });
-    
-    // Aggiungiamo le colonne per ciascuna taglia
-    const uniqueSizesArray = Array.from(uniqueSizes).sort();
-    uniqueSizesArray.forEach(taglia => {
-      csvContent += `,${taglia}`;
-    });
-    
-    // Terminiamo la riga di intestazione
-    csvContent += "\n";
+    // Il vecchio codice di esportazione CSV è stato rimosso
+    // È stato sostituito dalla nuova implementazione in executeCalendarExport
     
     // Genera una riga per ogni giorno del mese
     const daysInMonth = eachDayOfInterval({
