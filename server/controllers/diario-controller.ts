@@ -105,22 +105,43 @@ export async function getMonthDataForExport(db: any, month: string): Promise<Rec
     console.log("Recupero giacenze giornaliere per le taglie attive...");
     
     // Esegui la query per le giacenze usando il normale sql template
+    // Questa query calcola, per ogni giorno e per ogni taglia:
+    // 1. La quantità totale di animali inseriti (prima-attivazione) fino a quella data
+    // 2. La quantità totale di animali rimossi (cessazione, vendita) fino a quella data
+    // 3. Il saldo risultante (entrate - uscite)
     const giacenzeResult = await db.execute(sql`
       WITH date_range AS (
         SELECT generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) AS day
+      ),
+      entrate_cumulative AS (
+        SELECT 
+          s.code as taglia,
+          d::date as giorno,
+          SUM(CASE WHEN o.date <= d AND o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count ELSE 0 END) as entrate
+        FROM generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) d
+        CROSS JOIN sizes s
+        LEFT JOIN operations o ON o.size_id = s.id AND o.date <= d
+        GROUP BY s.code, d
+      ),
+      uscite_cumulative AS (
+        SELECT 
+          s.code as taglia,
+          d::date as giorno,
+          SUM(CASE WHEN o.date <= d AND o.type IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END) as uscite
+        FROM generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) d
+        CROSS JOIN sizes s
+        LEFT JOIN operations o ON o.size_id = s.id AND o.date <= d
+        GROUP BY s.code, d
       )
       SELECT 
-        dr.day::text as date,
-        s.code as taglia,
-        COALESCE(SUM(CASE WHEN o.date <= dr.day AND o.type NOT IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END) -
-                 SUM(CASE WHEN o.date <= dr.day AND o.type IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END), 0) as quantita
-      FROM date_range dr
-      CROSS JOIN sizes s
-      LEFT JOIN operations o ON o.size_id = s.id AND o.date <= dr.day
-      WHERE s.code IS NOT NULL
-      ${taglieAttiveList.length > 0 ? sql`AND s.code IN ${taglieAttiveList}` : sql``}
-      GROUP BY dr.day, s.code
-      ORDER BY dr.day, s.code
+        ec.giorno::text as date,
+        ec.taglia,
+        GREATEST(0, (COALESCE(ec.entrate, 0) - COALESCE(uc.uscite, 0))) as quantita
+      FROM entrate_cumulative ec
+      JOIN uscite_cumulative uc ON ec.taglia = uc.taglia AND ec.giorno = uc.giorno
+      WHERE ec.taglia IS NOT NULL
+      ${taglieAttiveList.length > 0 ? sql`AND ec.taglia IN ${taglieAttiveList}` : sql``}
+      ORDER BY ec.giorno, ec.taglia
     `);
     
     console.log(`Dati giacenze recuperati: ${(giacenzeResult as any[]).length} righe`);
