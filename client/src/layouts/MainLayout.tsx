@@ -92,7 +92,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <Home className="h-6 w-6 mr-2 text-black font-bold" />, label: "Dashboard", path: "/" },
         { icon: <Package2 className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Lotti", path: "/lots" },
         { icon: <Package className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Ceste", path: "/baskets" },
-        { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Posizioni", path: "/flupsy-positions" },
+        { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Posizioni", path: "/flupsys" },
         { icon: <FileText className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni", path: "/operations" },
         { icon: <Zap className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Rapide", path: "/quick-operations" },
         { icon: <GripHorizontal className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Drag&Drop", path: "/operations-drag-drop" },
