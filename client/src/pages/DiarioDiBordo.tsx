@@ -204,6 +204,18 @@ export default function DiarioDiBordo() {
   // Formatta la data per la query dell'API
   const formattedDate = format(selectedDate, 'yyyy-MM-dd');
   
+  // Carica le taglie disponibili
+  const { data: availableSizes, isLoading: isLoadingSizes } = useQuery({
+    queryKey: ['/api/sizes'],
+    queryFn: async () => {
+      const response = await fetch('/api/sizes');
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento delle taglie');
+      }
+      return response.json();
+    }
+  });
+  
   // Carica le operazioni per la data selezionata
   const { data: operations, isLoading: isLoadingOperations } = useQuery({
     queryKey: ['/api/diario/operations-by-date', formattedDate],
