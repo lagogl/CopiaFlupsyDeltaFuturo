@@ -510,11 +510,18 @@ export default function DiarioDiBordo() {
   }, [isEmailDialogOpen]);
   
   // Funzione per scaricare i dati del calendario con dettaglio per taglia
+  // Stato per il dialog di conferma esportazione
+  const [isExportDialogOpen, setIsExportDialogOpen] = useState(false);
+  
   const downloadDetailedCalendarCSV = async () => {
-    // Mostra un alert di conferma con un messaggio più professionale
-    if (!confirm('Confermare l\'esportazione del report mensile dettagliato?')) {
-      return;
-    }
+    // Apri il dialog di conferma invece di usare confirm()
+    setIsExportDialogOpen(true);
+  }
+  
+  // Funzione che esegue effettivamente l'esportazione
+  const executeCalendarExport = async () => {
+    // Chiudi il dialog
+    setIsExportDialogOpen(false);
     
     // Prepariamo le intestazioni
     let csvContent = "data:text/csv;charset=utf-8,";
