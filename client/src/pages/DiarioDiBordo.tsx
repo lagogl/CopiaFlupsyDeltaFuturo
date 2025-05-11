@@ -368,7 +368,7 @@ export default function DiarioDiBordo() {
   };
   
   // Calcola lo stato di caricamento complessivo
-  const isLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza || isLoadingSizes;
+  const isDataLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza || isLoadingSizes;
   
   // Estrai i codici delle taglie dai dati disponibili e ordinali
   const sizeCodes = availableSizes ? 
@@ -641,9 +641,6 @@ export default function DiarioDiBordo() {
     });
   };
   
-  // Determina lo stato di caricamento generale
-  const isLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza;
-  
   // Funzione per inviare l'email
   const sendEmail = async () => {
     if (!emailRecipients.trim()) {
@@ -833,7 +830,7 @@ export default function DiarioDiBordo() {
             </TabsContent>
             
             <TabsContent value="preview" className="space-y-4 py-4">
-              {isLoading ? (
+              {isDataLoading ? (
                 <div className="flex justify-center items-center h-40">
                   <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary"></div>
                 </div>
