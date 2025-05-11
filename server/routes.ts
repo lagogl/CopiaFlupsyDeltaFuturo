@@ -2058,13 +2058,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         const quantita = parseInt(row.quantita || '0', 10);
+        // Sempre aggiungere la taglia, anche se la quantità è zero
         if (quantita > 0) {
           giacenzeByDate[row.date].totale += quantita;
-          giacenzeByDate[row.date].dettaglio_taglie.push({
-            taglia: row.taglia,
-            quantita: quantita
-          });
         }
+        
+        giacenzeByDate[row.date].dettaglio_taglie.push({
+          taglia: row.taglia,
+          quantita: quantita
+        });
       }
       
       // Popola i dati per ciascun giorno
