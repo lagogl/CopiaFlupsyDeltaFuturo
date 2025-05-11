@@ -2046,14 +2046,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         if (!giacenzeByDate[row.date]) {
           giacenzeByDate[row.date] = {
             totale: 0,
-            dettaglio: []
+            dettaglio_taglie: [] // Rinominato da 'dettaglio' a 'dettaglio_taglie' per allinearsi con il client
           };
         }
         
         const quantita = parseInt(row.quantita || '0', 10);
         if (quantita > 0) {
           giacenzeByDate[row.date].totale += quantita;
-          giacenzeByDate[row.date].dettaglio.push({
+          giacenzeByDate[row.date].dettaglio_taglie.push({
             taglia: row.taglia,
             quantita: quantita
           });
@@ -2091,7 +2091,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Giacenze
         if (giacenzeByDate[dateKey]) {
           monthData[dateKey].giacenza = giacenzeByDate[dateKey].totale;
-          monthData[dateKey].dettaglio_taglie = giacenzeByDate[dateKey].dettaglio;
+          monthData[dateKey].dettaglio_taglie = giacenzeByDate[dateKey].dettaglio_taglie;
         }
       }
       
