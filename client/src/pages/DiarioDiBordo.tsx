@@ -1470,6 +1470,16 @@ export default function DiarioDiBordo() {
                           dayStats.totals = monthlyData[dateKey].totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 };
                           dayStats.giacenza = monthlyData[dateKey].giacenza || 0;
                           dayStats.dettaglio_taglie = monthlyData[dateKey].dettaglio_taglie || [];
+                          
+                          // Debug: stampa i dati per il 9 maggio
+                          if (dateKey === '2025-05-09') {
+                            console.log('Dati per 9 maggio:', {
+                              operations: dayStats.operations.length,
+                              totals: dayStats.totals,
+                              giacenza: dayStats.giacenza,
+                              dettaglio_taglie: dayStats.dettaglio_taglie
+                            });
+                          }
                         }
                         
                         return (
@@ -1509,13 +1519,53 @@ export default function DiarioDiBordo() {
                             {Array.from(uniqueSizes).sort().map((tagliaCode) => {
                               // Mostriamo le giacenze per ogni taglia, anche se non ci sono dati
                               let quantitaTaglia = '-';
+                              
+                              // Debug operation for each date x size
+                              if (dateKey === '2025-05-09') {
+                                console.log(`Verificando taglia ${tagliaCode} per il 9 maggio`);
+                              }
+                              
                               // Se abbiamo dettaglio_taglie, cerchiamo la quantità per questa taglia specifica
                               if (dayStats.dettaglio_taglie && Array.isArray(dayStats.dettaglio_taglie)) {
+                                // Cerca nel dettaglio taglie
                                 const tagliaInfo = dayStats.dettaglio_taglie.find(
-                                  (t: {taglia: string, quantita: number}) => t.taglia === tagliaCode
+                                  (t: any) => t.taglia === tagliaCode
                                 );
-                                if (tagliaInfo && tagliaInfo.quantita !== undefined && tagliaInfo.quantita > 0) {
+                                
+                                if (dateKey === '2025-05-09') {
+                                  console.log(`Risultato per taglia ${tagliaCode}:`, tagliaInfo);
+                                }
+                                
+                                if (tagliaInfo && tagliaInfo.quantita !== undefined && Number(tagliaInfo.quantita) > 0) {
                                   quantitaTaglia = formatNumberWithCommas(tagliaInfo.quantita);
+                                }
+                                
+                                // Se non c'è quantità nel dettaglio taglie ma ci sono operazioni,
+                                // cerca tra le operazioni per questa taglia
+                                if (quantitaTaglia === '-' && dayStats.operations && dayStats.operations.length > 0) {
+                                  const operazioniPerTaglia = dayStats.operations.filter(
+                                    (op: any) => op.size_code === tagliaCode
+                                  );
+                                  
+                                  if (operazioniPerTaglia.length > 0) {
+                                    // Calcola il totale per questa taglia dalle operazioni
+                                    let totaleEntrate = 0;
+                                    let totaleUscite = 0;
+                                    
+                                    for (const op of operazioniPerTaglia) {
+                                      const animalCount = parseInt(op.animal_count || '0', 10);
+                                      if (op.type === 'prima-attivazione' || op.type === 'prima-attivazione-da-vagliatura') {
+                                        totaleEntrate += animalCount;
+                                      } else if (op.type === 'vendita' || op.type === 'cessazione') {
+                                        totaleUscite += animalCount;
+                                      }
+                                    }
+                                    
+                                    const bilancioTaglia = totaleEntrate - totaleUscite;
+                                    if (bilancioTaglia > 0) {
+                                      quantitaTaglia = formatNumberWithCommas(bilancioTaglia);
+                                    }
+                                  }
                                 }
                               }
                               
