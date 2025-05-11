@@ -352,18 +352,18 @@ export default function Flupsys() {
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-muted rounded-md p-1 mr-2">
             <Button
-              variant={viewMode === 'cards' ? "secondary" : "ghost"} 
+              variant={viewMode === 'cards' ? "default" : "ghost"} 
               size="sm"
-              className="h-8 px-2"
+              className={`h-8 px-2 ${viewMode === 'cards' ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
               onClick={() => setViewMode('cards')}
             >
               <LayoutGrid className="h-4 w-4 mr-1" />
               Card
             </Button>
             <Button
-              variant={viewMode === 'table' ? "secondary" : "ghost"}
+              variant={viewMode === 'table' ? "default" : "ghost"}
               size="sm"
-              className="h-8 px-2"
+              className={`h-8 px-2 ${viewMode === 'table' ? "bg-primary text-primary-foreground hover:bg-primary/90" : ""}`}
               onClick={() => setViewMode('table')}
             >
               <Table2 className="h-4 w-4 mr-1" />
