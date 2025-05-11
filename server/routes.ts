@@ -28,6 +28,7 @@ import * as ScreeningController from "./controllers/screening-controller";
 import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
+import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
@@ -1890,6 +1891,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Diario di Bordo API routes ===
+  
+  // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
+  app.get("/api/diario/month-data", diarioController.getMonthData);
   
   // API - Ottieni tutte le taglie disponibili
   app.get("/api/sizes", async (req, res) => {
