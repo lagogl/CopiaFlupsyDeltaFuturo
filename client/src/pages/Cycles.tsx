@@ -364,7 +364,7 @@ export default function Cycles() {
     })();
     
     // Filter by tag
-    const matchesTag = tagFilter === null || 
+    const matchesTag = tagFilter === null || tagFilter === 'all' || 
       (cycle.currentSize && cycle.currentSize.code === tagFilter);
     
     // Filter by lot
