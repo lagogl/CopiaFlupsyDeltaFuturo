@@ -1517,8 +1517,15 @@ export default function DiarioDiBordo() {
                                 Array.isArray(dayStats.dettaglio_taglie) ? 
                                 dayStats.dettaglio_taglie.find((t: {taglia: string, quantita: number}) => t.taglia === tagliaCode) : 
                                 null;
-                              const quantitaTaglia = tagliaInfo && tagliaInfo.quantita !== undefined ? 
-                                formatNumberWithCommas(tagliaInfo.quantita) : '-';
+
+                              // Otteniamo il valore di quantità o 0 se non esiste
+                              const quantita = tagliaInfo && typeof tagliaInfo.quantita === 'number' ? tagliaInfo.quantita : 0;
+                              
+                              // Se il giorno è attualmente selezionato o la quantità non è zero, mostra il valore
+                              // Altrimenti mostra un trattino
+                              const quantitaTaglia = 
+                                (isSameDay(new Date(dateKey), selectedDate) || quantita > 0) ?
+                                formatNumberWithCommas(quantita) : '-';
                               
                               return (
                                 <td key={`${dateKey}-${tagliaCode}`} className="py-1 px-2 text-right font-medium">
