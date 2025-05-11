@@ -906,6 +906,30 @@ export default function DiarioDiBordo() {
         </DialogContent>
       </Dialog>
       
+      {/* Dialog di conferma per esportazione CSV */}
+      <Dialog
+        open={isCsvExportDialogOpen}
+        onOpenChange={(open) => !open && setIsCsvExportDialogOpen(false)}
+      >
+        <DialogContent className="sm:max-w-[425px]">
+          <DialogHeader>
+            <DialogTitle>Conferma esportazione CSV</DialogTitle>
+            <DialogDescription>
+              Sei sicuro di voler esportare i dati del diario per {csvExportData?.date ? format(csvExportData.date, 'dd MMMM yyyy', { locale: it }) : 'questa data'}?
+            </DialogDescription>
+          </DialogHeader>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsCsvExportDialogOpen(false)}>
+              Annulla
+            </Button>
+            <Button onClick={downloadCSV}>
+              Scarica
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Intestazione pagina con data e controlli */}
       <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
         <div className="flex items-center space-x-4">
@@ -950,7 +974,7 @@ export default function DiarioDiBordo() {
           <Button
             variant="outline"
             size="sm"
-            onClick={() => downloadCSV(diaryData, selectedDate)}
+            onClick={() => prepareCSVExport(diaryData, selectedDate)}
             disabled={isDataLoading}
           >
             <Download className="h-4 w-4 mr-2" />
