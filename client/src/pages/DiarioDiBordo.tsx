@@ -978,10 +978,11 @@ export default function DiarioDiBordo() {
           </div>
           
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => prepareCSVExport(diaryData, selectedDate)}
             disabled={isDataLoading}
+            className="bg-blue-600 hover:bg-blue-700 text-white"
           >
             <Download className="h-4 w-4 mr-2" />
             Esporta CSV
@@ -989,11 +990,11 @@ export default function DiarioDiBordo() {
           
           {activeTab === 'calendario' && (
             <Button
-              variant="outline"
+              variant="default"
               size="sm"
               onClick={downloadDetailedCalendarCSV}
               disabled={isDataLoading}
-              className="bg-primary/10"
+              className="bg-green-600 hover:bg-green-700 text-white"
             >
               <FileSpreadsheet className="h-4 w-4 mr-2" />
               Esporta Calendario
@@ -1001,20 +1002,22 @@ export default function DiarioDiBordo() {
           )}
           
           <Button
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => setIsEmailDialogOpen(true)}
             disabled={isDataLoading}
+            className="bg-orange-600 hover:bg-orange-700 text-white"
           >
             <Mail className="h-4 w-4 mr-2" />
             Invia via Email
           </Button>
 
           <Button 
-            variant="outline"
+            variant="default"
             size="sm"
             onClick={() => copyToClipboard(formattedText)}
             disabled={isDataLoading}
+            className="bg-purple-600 hover:bg-purple-700 text-white"
           >
             <Share className="h-4 w-4 mr-2" />
             Copia Testo
