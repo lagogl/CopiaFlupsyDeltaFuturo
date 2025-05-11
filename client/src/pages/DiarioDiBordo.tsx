@@ -199,7 +199,7 @@ const downloadDetailedCalendarCSV = async () => {
   }
   
   // Controlla i dati mensili per aggiungere altre taglie
-  Object.values(monthlyData).forEach((dayData: any) => {
+  Object.entries(monthlyData).forEach(([dateKey, dayData]: [string, any]) => {
     if (dayData.dettaglio_taglie && Array.isArray(dayData.dettaglio_taglie)) {
       dayData.dettaglio_taglie.forEach((item: any) => {
         uniqueSizes.add(item.taglia);
@@ -213,7 +213,7 @@ const downloadDetailedCalendarCSV = async () => {
   });
   
   // Aggiungiamo le colonne per ciascuna taglia
-  const uniqueSizesArray = Array.from(uniqueSizes);
+  const uniqueSizesArray = [...uniqueSizes].sort();
   uniqueSizesArray.forEach(taglia => {
     csvContent += `,${taglia}`;
   });
@@ -310,6 +310,13 @@ const downloadDetailedCalendarCSV = async () => {
   
   // Pulisci
   document.body.removeChild(link);
+  
+  // Mostra conferma di successo
+  toast({
+    title: "Esportazione completata",
+    description: `Il calendario di ${format(selectedDate, 'MMMM yyyy', { locale: it })} è stato esportato con successo.`,
+    variant: "default"
+  });
 };
 
 export default function DiarioDiBordo() {
