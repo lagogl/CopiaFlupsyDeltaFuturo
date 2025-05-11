@@ -278,7 +278,7 @@ export default function DiarioDiBordo() {
     completed: true
   });
   
-  // Funzione per caricare i dati del mese corrente
+  // Funzione per caricare i dati del mese corrente (versione ottimizzata)
   const loadMonthlyData = useCallback(async () => {
     if (!selectedDate) return;
     
@@ -286,6 +286,7 @@ export default function DiarioDiBordo() {
     
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
+    const currentMonth = format(selectedDate, 'yyyy-MM');
     
     try {
       // Inizializza tutti i giorni del mese con dati vuoti
@@ -315,59 +316,87 @@ export default function DiarioDiBordo() {
           taglie: [],
           dettaglio_taglie: []
         };
-        
-        // Per tutti i giorni, carica sempre i dati dal server
-        // Rimuoviamo la condizione che saltava il giorno corrente
-        try {
-          // Aggiorniamo il contatore dell'analisi
-          setAnalysisCounter(current => ({
-            ...current,
-            current: current.current + 1
-          }));
-          // Richiede i dati delle operazioni per la data specifica
-          const opResponse = await fetch(`/api/diario/operations-by-date?date=${dateKey}`);
-          if (opResponse.ok) {
-            const opData = await opResponse.json();
-            dataByDate[dateKey].operations = opData;
-            dataByDate[dateKey].totals.numero_operazioni = opData.length;
-          }
+      }
+      
+      // Prova prima a caricare i dati in batch, se possibile
+      // Utilizziamo Promise.all per eseguire le richieste in parallelo
+      const batchSize = 3; // Numero di giorni da elaborare in parallelo
+      const batches = [];
+      
+      for (let i = 0; i < daysInMonth.length; i += batchSize) {
+        const batch = daysInMonth.slice(i, i + batchSize);
+        batches.push(batch);
+      }
+      
+      let currentDay = 0;
+      
+      for (const batch of batches) {
+        // Esegui le richieste per questo batch in parallelo
+        await Promise.all(batch.map(async (day) => {
+          const dateKey = format(day, 'yyyy-MM-dd');
           
-          // Richiede i dati dei totali per la data specifica
-          const totalsResponse = await fetch(`/api/diario/daily-totals?date=${dateKey}`);
-          if (totalsResponse.ok) {
-            const totalsData = await totalsResponse.json();
-            dataByDate[dateKey].totals = {
-              totale_entrate: totalsData.totale_entrate || 0,
-              totale_uscite: totalsData.totale_uscite || 0,
-              bilancio_netto: totalsData.bilancio_netto || 0,
-              numero_operazioni: totalsData.numero_operazioni || 0
-            };
+          try {
+            // Esegui le 4 chiamate API in parallelo
+            const [opResponse, totalsResponse, statsResponse, giacenzaResponse] = await Promise.all([
+              fetch(`/api/diario/operations-by-date?date=${dateKey}`),
+              fetch(`/api/diario/daily-totals?date=${dateKey}`),
+              fetch(`/api/diario/size-stats?date=${dateKey}`),
+              fetch(`/api/diario/giacenza?date=${dateKey}`)
+            ]);
+            
+            // Processa i risultati delle operazioni
+            if (opResponse.ok) {
+              const opData = await opResponse.json();
+              dataByDate[dateKey].operations = opData;
+              dataByDate[dateKey].totals.numero_operazioni = opData.length;
+            }
+            
+            // Processa i risultati dei totali
+            if (totalsResponse.ok) {
+              const totalsData = await totalsResponse.json();
+              dataByDate[dateKey].totals = {
+                totale_entrate: totalsData.totale_entrate || 0,
+                totale_uscite: totalsData.totale_uscite || 0,
+                bilancio_netto: totalsData.bilancio_netto || 0,
+                numero_operazioni: totalsData.numero_operazioni || 0
+              };
+            }
+            
+            // Processa i risultati delle statistiche per taglia
+            if (statsResponse.ok) {
+              const statsData = await statsResponse.json();
+              dataByDate[dateKey].taglie = statsData;
+            }
+            
+            // Processa i risultati della giacenza
+            if (giacenzaResponse.ok) {
+              const giacenzaData = await giacenzaResponse.json();
+              dataByDate[dateKey].giacenza = giacenzaData.totale_giacenza || 0;
+              dataByDate[dateKey].dettaglio_taglie = giacenzaData.dettaglio_taglie || [];
+            }
+            
+          } catch (dayError) {
+            console.error(`Errore nel caricamento dei dati per ${dateKey}:`, dayError);
+          } finally {
+            // Incrementa il contatore dell'analisi
+            currentDay++;
+            setAnalysisCounter(current => ({
+              ...current,
+              current: currentDay
+            }));
           }
-          
-          // Richiede le statistiche per taglia per la data specifica (opzionale)
-          const statsResponse = await fetch(`/api/diario/size-stats?date=${dateKey}`);
-          if (statsResponse.ok) {
-            const statsData = await statsResponse.json();
-            dataByDate[dateKey].taglie = statsData;
-          }
-          
-          // Richiede i dati di giacenza per la data specifica
-          const giacenzaResponse = await fetch(`/api/diario/giacenza?date=${dateKey}`);
-          if (giacenzaResponse.ok) {
-            const giacenzaData = await giacenzaResponse.json();
-            dataByDate[dateKey].giacenza = giacenzaData.totale_giacenza || 0;
-            dataByDate[dateKey].dettaglio_taglie = giacenzaData.dettaglio_taglie || [];
-          }
-          
-        } catch (dayError) {
-          console.error(`Errore nel caricamento dei dati per ${dateKey}:`, dayError);
-        }
+        }));
       }
       
       // Imposta i dati nel componente
       setMonthlyData(dataByDate);
     } catch (error) {
       console.error('Errore nel caricamento dei dati mensili:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante il caricamento dei dati del mese.",
+        variant: "destructive"
+      });
     } finally {
       // Aggiorna lo stato per segnalare che l'analisi è completata
       setAnalysisCounter(current => ({
@@ -376,7 +405,7 @@ export default function DiarioDiBordo() {
       }));
       setIsCalendarLoading(false);
     }
-  }, [selectedDate]);
+  }, [selectedDate, toast]);
   
   // Funzione per aggiornare manualmente i dati del calendario
   const refreshCalendarData = () => {
