@@ -368,6 +368,9 @@ export default function DiarioDiBordo() {
     loadMonthlyData();
   }, [loadMonthlyData, selectedDate]);
   
+  // State per il caricamento specifico del calendario
+  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
+  
   // Combina tutti i dati per la visualizzazione
   const diaryData = {
     operations: operations || [],
@@ -375,9 +378,6 @@ export default function DiarioDiBordo() {
     totals: totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
     giacenza: giacenza || { totale_giacenza: 0, dettaglio_taglie: [] }
   };
-  
-  // State per il caricamento specifico del calendario
-  const [isCalendarLoading, setIsCalendarLoading] = useState(false);
   
   // Calcola lo stato di caricamento complessivo
   const isDataLoading = isLoadingOperations || isLoadingSizeStats || isLoadingTotals || isLoadingGiacenza || isLoadingSizes || isCalendarLoading;
@@ -1399,7 +1399,12 @@ export default function DiarioDiBordo() {
                       </>
                     ) : (
                       <>
-                        <RefreshCw className="h-4 w-4" />
+                        <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="h-4 w-4">
+                          <path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"></path>
+                          <path d="M21 3v5h-5"></path>
+                          <path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"></path>
+                          <path d="M8 16H3v5"></path>
+                        </svg>
                         Aggiorna
                       </>
                     )}
