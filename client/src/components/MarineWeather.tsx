@@ -93,11 +93,11 @@ export function MarineWeather() {
         
         // Estrae il livello attuale e l'orario
         // Il formato è "0.47 m", quindi rimuoviamo " m" e convertiamo in numero
-        const valoreTxt = stationData.valore as string;
+        const valoreTxt = (stationData.valore || '0 m') as string;
         const valoreNumerico = parseFloat(valoreTxt.replace(' m', ''));
         
         const chioggiaLevel = valoreNumerico;
-        const chioggiaTime = stationData.data; // Prende direttamente la data dalla risposta
+        const chioggiaTime = stationData.data || new Date().toLocaleString(); // Prende la data dalla risposta o usa l'ora corrente
         
         // Recupera le previsioni di marea e gli eventi estremi futuri (massimi e minimi)
         try {

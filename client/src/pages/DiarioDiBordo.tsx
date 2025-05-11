@@ -511,8 +511,8 @@ export default function DiarioDiBordo() {
   
   // Funzione per scaricare i dati del calendario con dettaglio per taglia
   const downloadDetailedCalendarCSV = async () => {
-    // Mostra un alert di conferma
-    if (!confirm('Vuoi scaricare il report dettagliato del calendario?')) {
+    // Mostra un alert di conferma con un messaggio più professionale
+    if (!confirm('Confermare l\'esportazione del report mensile dettagliato?')) {
       return;
     }
     
