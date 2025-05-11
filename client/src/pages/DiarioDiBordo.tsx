@@ -260,60 +260,75 @@ export default function DiarioDiBordo() {
     
     const monthStart = startOfMonth(selectedDate);
     const monthEnd = endOfMonth(selectedDate);
-    const startDateFormatted = format(monthStart, 'yyyy-MM-dd');
-    const endDateFormatted = format(monthEnd, 'yyyy-MM-dd');
     
     try {
-      // Otteniamo le operazioni nell'intervallo di date
-      const response = await fetch(`/api/operations/date-range?startDate=${startDateFormatted}&endDate=${endDateFormatted}`);
-      
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento delle operazioni mensili');
-      }
-      
-      const operations = await response.json();
-      
-      // Organizziamo i dati per data
+      // Inizializza tutti i giorni del mese con dati vuoti
       const dataByDate: Record<string, any> = {};
       
-      // Inizializza tutti i giorni del mese con dati vuoti
-      eachDayOfInterval({
+      // Crea un array di date da processare
+      const daysInMonth = eachDayOfInterval({
         start: monthStart,
-        end: monthEnd
-      }).forEach(day => {
+        end: endOfMonth(selectedDate)
+      });
+      
+      // Inizializza i dati per ogni giorno
+      for (const day of daysInMonth) {
         const dateKey = format(day, 'yyyy-MM-dd');
         dataByDate[dateKey] = {
           operations: [],
-          totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 }
+          totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
+          giacenza: 0,
+          taglie: []
         };
-      });
-      
-      // Raggruppa le operazioni per data
-      operations.forEach((op: any) => {
-        const dateKey = op.date;
         
-        if (!dataByDate[dateKey]) {
-          dataByDate[dateKey] = {
-            operations: [],
-            totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 }
-          };
+        // Se è il giorno corrente, i dati vengono già caricati dalla query principale
+        if (isSameDay(day, selectedDate)) {
+          continue;
         }
         
-        dataByDate[dateKey].operations.push(op);
-        dataByDate[dateKey].totals.numero_operazioni++;
-        
-        // Calcola entrate e uscite per il giorno
-        if (op.type === 'prima-attivazione' || op.type === 'trasferimento-entrata') {
-          dataByDate[dateKey].totals.totale_entrate += op.animal_count || 0;
-        } else if (op.type === 'trasferimento-uscita' || op.type === 'vendita' || op.type === 'mortalita') {
-          dataByDate[dateKey].totals.totale_uscite += op.animal_count || 0;
+        // Per gli altri giorni, carica i dati dal server
+        try {
+          // Richiede i dati delle operazioni per la data specifica
+          const opResponse = await fetch(`/api/diario/operations-by-date?date=${dateKey}`);
+          if (opResponse.ok) {
+            const opData = await opResponse.json();
+            dataByDate[dateKey].operations = opData;
+            dataByDate[dateKey].totals.numero_operazioni = opData.length;
+          }
+          
+          // Richiede i dati dei totali per la data specifica
+          const totalsResponse = await fetch(`/api/diario/daily-totals?date=${dateKey}`);
+          if (totalsResponse.ok) {
+            const totalsData = await totalsResponse.json();
+            dataByDate[dateKey].totals = {
+              totale_entrate: totalsData.totale_entrate || 0,
+              totale_uscite: totalsData.totale_uscite || 0,
+              bilancio_netto: totalsData.bilancio_netto || 0,
+              numero_operazioni: totalsData.numero_operazioni || 0
+            };
+          }
+          
+          // Richiede le statistiche per taglia per la data specifica (opzionale)
+          const statsResponse = await fetch(`/api/diario/size-stats?date=${dateKey}`);
+          if (statsResponse.ok) {
+            const statsData = await statsResponse.json();
+            dataByDate[dateKey].taglie = statsData;
+          }
+          
+          // Richiede i dati di giacenza per la data specifica
+          const giacenzaResponse = await fetch(`/api/diario/giacenza?date=${dateKey}`);
+          if (giacenzaResponse.ok) {
+            const giacenzaData = await giacenzaResponse.json();
+            dataByDate[dateKey].giacenza = giacenzaData.totale_giacenza || 0;
+            dataByDate[dateKey].dettaglio_taglie = giacenzaData.dettaglio_taglie || [];
+          }
+          
+        } catch (dayError) {
+          console.error(`Errore nel caricamento dei dati per ${dateKey}:`, dayError);
         }
-        
-        // Calcola il bilancio netto
-        dataByDate[dateKey].totals.bilancio_netto = 
-          dataByDate[dateKey].totals.totale_entrate - dataByDate[dateKey].totals.totale_uscite;
-      });
+      }
       
+      // Imposta i dati nel componente
       setMonthlyData(dataByDate);
     } catch (error) {
       console.error('Errore nel caricamento dei dati mensili:', error);
@@ -1230,11 +1245,13 @@ export default function DiarioDiBordo() {
                             </td>
                             <td className="py-1 px-2 text-right font-medium">
                               {isCurrentDay && giacenza ? 
-                                formatNumberWithCommas(giacenza.totale_giacenza) : '-'}
+                                formatNumberWithCommas(giacenza.totale_giacenza) : 
+                                (dayData.giacenza ? formatNumberWithCommas(dayData.giacenza) : '-')}
                             </td>
                             <td className="py-1 px-2 text-right">
                               {isCurrentDay && sizeStats && sizeStats.length > 0 ? 
-                                sizeStats.length : '-'}
+                                sizeStats.length : 
+                                (dayData.taglie && dayData.taglie.length > 0 ? dayData.taglie.length : '-')}
                             </td>
                           </tr>
                         );
