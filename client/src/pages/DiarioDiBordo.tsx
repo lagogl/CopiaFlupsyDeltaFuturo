@@ -1347,9 +1347,9 @@ export default function DiarioDiBordo() {
                         <th className="py-1 px-2 text-right font-medium">Uscite</th>
                         <th className="py-1 px-2 text-right font-medium">Bilancio</th>
                         <th className="py-1 px-2 text-right font-medium">Totale</th>
-                        {/* Colonne per le taglie individuate dai dati di giacenza */}
-                        {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.map((item: any) => (
-                          <th key={item.taglia} className="py-1 px-2 text-right font-medium">{item.taglia}</th>
+                        {/* Colonne per le taglie specifiche */}
+                        {['TP-315', 'TP-500', 'TP-450', 'TP-200', 'TP-800'].map((tagliaCode) => (
+                          <th key={tagliaCode} className="py-1 px-2 text-right font-medium">{tagliaCode}</th>
                         ))}
                       </tr>
                     </thead>
@@ -1419,7 +1419,7 @@ export default function DiarioDiBordo() {
                             </td>
                             
                             {/* Celle per le taglie specifiche */}
-                            {getAllTaglie().map((tagliaCode) => {
+                            {['TP-315', 'TP-500', 'TP-450', 'TP-200', 'TP-800'].map((tagliaCode) => {
                               // Troviamo questa taglia nei dati del giorno
                               const tagliaInfo = dayStats.dettaglio_taglie.find((t: any) => t.taglia === tagliaCode);
                               const quantitaTaglia = tagliaInfo && tagliaInfo.quantita !== undefined ? 
@@ -1469,10 +1469,13 @@ export default function DiarioDiBordo() {
                         </td>
                         
                         {/* Celle totali per le taglie specifiche */}
-                        {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.map((tagliaItem: any) => {
+                        {['TP-315', 'TP-500', 'TP-450', 'TP-200', 'TP-800'].map((tagliaCode) => {
+                          const tagliaItem = giacenza?.dettaglio_taglie ? 
+                            giacenza.dettaglio_taglie.find(t => t.taglia === tagliaCode) : null;
+                          
                           return (
-                            <td key={`totale-${tagliaItem.taglia}`} className="py-1 px-2 text-right font-medium">
-                              {formatNumberWithCommas(tagliaItem.quantita)}
+                            <td key={`totale-${tagliaCode}`} className="py-1 px-2 text-right font-medium">
+                              {tagliaItem ? formatNumberWithCommas(tagliaItem.quantita) : '-'}
                             </td>
                           );
                         })}
