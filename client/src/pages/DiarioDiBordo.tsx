@@ -1160,14 +1160,16 @@ export default function DiarioDiBordo() {
               </CardHeader>
               <CardContent>
                 <div className="overflow-x-auto">
-                  <table className="w-full border-collapse">
+                  <table className="w-full border-collapse text-sm">
                     <thead>
-                      <tr className="bg-muted">
-                        <th className="py-2 px-3 text-left font-medium">Data</th>
-                        <th className="py-2 px-3 text-left font-medium">Operazioni</th>
-                        <th className="py-2 px-3 text-right font-medium">Entrate</th>
-                        <th className="py-2 px-3 text-right font-medium">Uscite</th>
-                        <th className="py-2 px-3 text-right font-medium">Bilancio</th>
+                      <tr className="bg-muted text-xs">
+                        <th className="py-1 px-2 text-left font-medium">Data</th>
+                        <th className="py-1 px-2 text-right font-medium">Operazioni</th>
+                        <th className="py-1 px-2 text-right font-medium">Entrate</th>
+                        <th className="py-1 px-2 text-right font-medium">Uscite</th>
+                        <th className="py-1 px-2 text-right font-medium">Bilancio</th>
+                        <th className="py-1 px-2 text-right font-medium">Totale</th>
+                        <th className="py-1 px-2 text-right font-medium">Taglie</th>
                       </tr>
                     </thead>
                     <tbody className="divide-y">
@@ -1179,11 +1181,24 @@ export default function DiarioDiBordo() {
                         const dateKey = format(date, 'yyyy-MM-dd');
                         const isCurrentDay = isSameDay(date, selectedDate);
                         
-                        // Recupera i dati del giorno dal dataset mensile
-                        const dayData = monthlyData[dateKey] || {
+                        // Per la data corrente, recuperiamo i dati completi dalla query
+                        let dayStats = {
                           operations: [],
-                          totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 }
+                          totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
+                          giacenza: 0,
+                          taglie: []
                         };
+                        
+                        if (isCurrentDay) {
+                          dayStats.operations = operations || [];
+                          dayStats.totals = totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 };
+                          dayStats.giacenza = giacenza?.totale_giacenza || 0;
+                          dayStats.taglie = sizeStats || [];
+                        } else if (monthlyData[dateKey]) {
+                          // Usiamo i dati precaricati per le altre date
+                          dayStats.operations = monthlyData[dateKey].operations || [];
+                          dayStats.totals = monthlyData[dateKey].totals || { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 };
+                        }
                         
                         return (
                           <tr 
@@ -1192,44 +1207,74 @@ export default function DiarioDiBordo() {
                             onClick={() => setSelectedDate(date)}
                             style={{ cursor: 'pointer' }}
                           >
-                            <td className="py-2 px-3">
-                              <div className="font-medium">{format(date, 'EEEE dd', { locale: it })}</div>
-                              <div className="text-sm text-muted-foreground">{format(date, 'MMM yyyy', { locale: it })}</div>
+                            <td className="py-1 px-2 whitespace-nowrap">
+                              <div className="font-medium">{format(date, 'EEE dd', { locale: it })}</div>
                             </td>
-                            <td className="py-2 px-3 text-sm">
-                              {dayData.operations.length > 0 ? (
-                                <Badge variant="outline">{dayData.operations.length} operazioni</Badge>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
+                            <td className="py-1 px-2 text-right">
+                              {dayStats.operations.length > 0 ? dayStats.operations.length : '-'}
                             </td>
-                            <td className="py-2 px-3 text-right font-medium text-green-600">
-                              {dayData.totals?.totale_entrate > 0 ? (
-                                `+${formatNumberWithCommas(dayData.totals.totale_entrate)}`
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
+                            <td className="py-1 px-2 text-right font-medium text-green-600">
+                              {dayStats.totals?.totale_entrate > 0 ? 
+                                formatNumberWithCommas(dayStats.totals.totale_entrate) : '-'}
                             </td>
-                            <td className="py-2 px-3 text-right font-medium text-red-600">
-                              {dayData.totals?.totale_uscite > 0 ? (
-                                `-${formatNumberWithCommas(dayData.totals.totale_uscite)}`
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
+                            <td className="py-1 px-2 text-right font-medium text-red-600">
+                              {dayStats.totals?.totale_uscite > 0 ? 
+                                formatNumberWithCommas(dayStats.totals.totale_uscite) : '-'}
                             </td>
-                            <td className="py-2 px-3 text-right font-medium">
-                              {dayData.totals?.bilancio_netto !== 0 ? (
-                                <span className={Number(dayData.totals.bilancio_netto) >= 0 ? 'text-green-600' : 'text-red-600'}>
-                                  {Number(dayData.totals.bilancio_netto) >= 0 ? '+' : ''}{formatNumberWithCommas(dayData.totals.bilancio_netto)}
+                            <td className="py-1 px-2 text-right font-medium">
+                              {dayStats.totals?.bilancio_netto !== 0 ? (
+                                <span className={Number(dayStats.totals.bilancio_netto) >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                  {formatNumberWithCommas(dayStats.totals.bilancio_netto)}
                                 </span>
-                              ) : (
-                                <span className="text-muted-foreground">-</span>
-                              )}
+                              ) : '-'}
+                            </td>
+                            <td className="py-1 px-2 text-right font-medium">
+                              {isCurrentDay && giacenza ? 
+                                formatNumberWithCommas(giacenza.totale_giacenza) : '-'}
+                            </td>
+                            <td className="py-1 px-2 text-right">
+                              {isCurrentDay && sizeStats && sizeStats.length > 0 ? 
+                                sizeStats.length : '-'}
                             </td>
                           </tr>
                         );
                       })}
                     </tbody>
+                    <tfoot>
+                      <tr className="bg-muted/70 font-medium">
+                        <td className="py-1 px-2 text-left">Totale Mese</td>
+                        <td className="py-1 px-2 text-right">
+                          {Object.values(monthlyData).reduce((total, day: any) => total + (day.operations?.length || 0), 0)}
+                        </td>
+                        <td className="py-1 px-2 text-right text-green-600">
+                          {formatNumberWithCommas(
+                            Object.values(monthlyData).reduce((total, day: any) => 
+                              total + (day.totals?.totale_entrate || 0), 0)
+                          )}
+                        </td>
+                        <td className="py-1 px-2 text-right text-red-600">
+                          {formatNumberWithCommas(
+                            Object.values(monthlyData).reduce((total, day: any) => 
+                              total + (day.totals?.totale_uscite || 0), 0)
+                          )}
+                        </td>
+                        <td className="py-1 px-2 text-right">
+                          {(() => {
+                            const bilancio = Object.values(monthlyData).reduce((total, day: any) => 
+                              total + (Number(day.totals?.bilancio_netto) || 0), 0);
+                            return (
+                              <span className={bilancio >= 0 ? 'text-green-600' : 'text-red-600'}>
+                                {formatNumberWithCommas(bilancio)}
+                              </span>
+                            );
+                          })()}
+                        </td>
+                        <td className="py-1 px-2 text-right">
+                          {giacenza ? formatNumberWithCommas(giacenza.totale_giacenza) : '-'}
+                        </td>
+                        <td className="py-1 px-2 text-right">-</td>
+                      </tr>
+                    </tfoot>
                   </table>
                 </div>
               </CardContent>
