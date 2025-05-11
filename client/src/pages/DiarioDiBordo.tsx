@@ -268,6 +268,16 @@ export default function DiarioDiBordo() {
     enabled: !!formattedDate
   });
   
+  // Effetto per aggiornare le giacenze per giorno quando cambia la giacenza selezionata
+  useEffect(() => {
+    if (giacenza && formattedDate) {
+      setGiacenzePerGiorno(prev => ({
+        ...prev,
+        [formattedDate]: giacenza
+      }));
+    }
+  }, [giacenza, formattedDate]);
+  
   // State per i dati del calendario mensile
   const [monthlyData, setMonthlyData] = useState<Record<string, any>>({});
   
@@ -321,7 +331,7 @@ export default function DiarioDiBordo() {
         throw new Error(`Errore nel caricamento dei dati del mese: ${response.statusText}`);
       }
       
-      setAnalysisCounter(current => ({ ...current, current: 50 }));
+      setAnalysisCounter(current => ({ ...current, current: 30 }));
       
       // Ora abbiamo tutti i dati del mese in un'unica risposta
       const monthData = await response.json();
@@ -334,28 +344,42 @@ export default function DiarioDiBordo() {
       // Ottieni tutti i giorni del mese
       const daysInMonth = eachDayOfInterval({ start: startDate, end: endDate });
       
-      setAnalysisCounter(current => ({ ...current, current: 60 }));
+      setAnalysisCounter(current => ({ ...current, current: 40 }));
       
-      // Carica le giacenze per tutti i giorni del mese
-      const giacenze: Record<string, any> = {};
-      
+      // Seleziona alcune date importanti da caricare immediatamente
       const selectedDay = format(selectedDate, 'yyyy-MM-dd');
+      const firstDayOfMonth = format(startDate, 'yyyy-MM-dd');
+      const lastDayOfMonth = format(endDate, 'yyyy-MM-dd');
       
-      // Carichiamo subito il giorno selezionato
-      const selectedDayGiacenza = await loadGiacenzaForDate(selectedDay);
-      giacenze[selectedDay] = selectedDayGiacenza;
-      
-      setAnalysisCounter(current => ({ ...current, current: 70 }));
-      
-      // Carichiamo anche le giacenze per i giorni che hanno operazioni
+      // Trova i giorni con operazioni da calendario
       const daysWithOperations = daysInMonth
         .map(day => format(day, 'yyyy-MM-dd'))
         .filter(dateKey => monthData[dateKey]?.operations?.length > 0);
       
-      // Carichiamo le giacenze per i giorni con operazioni
-      for (const dateKey of daysWithOperations) {
-        if (dateKey !== selectedDay) { // Non ricaricare il giorno selezionato
+      // Limita il numero di giorni da caricare per evitare troppe richieste
+      // Ordinare per importanza: 1. giorno selezionato, 2. date con operazioni, 3. primo e ultimo giorno
+      const daysToLoad = [
+        selectedDay,
+        ...daysWithOperations.filter(d => d !== selectedDay).slice(0, 5), // max 5 giorni con operazioni
+        firstDayOfMonth,
+        lastDayOfMonth
+      ].filter((value, index, self) => self.indexOf(value) === index); // rimuovi duplicati
+      
+      setAnalysisCounter(current => ({ ...current, current: 50 }));
+      
+      // Carica le giacenze per i giorni selezionati
+      const giacenze: Record<string, any> = {};
+      let loadedCount = 0;
+      
+      for (const dateKey of daysToLoad) {
+        try {
           giacenze[dateKey] = await loadGiacenzaForDate(dateKey);
+          loadedCount++;
+          // Aggiorna la percentuale in base al numero di giorni caricati
+          const percentage = 50 + Math.floor((loadedCount / daysToLoad.length) * 40);
+          setAnalysisCounter(current => ({ ...current, current: percentage }));
+        } catch (error) {
+          console.error(`Errore nel caricamento dei dati per ${dateKey}:`, error);
         }
       }
       
@@ -366,6 +390,7 @@ export default function DiarioDiBordo() {
       setGiacenzePerGiorno(giacenze);
       
       console.log('Dati del mese elaborati e impostati con successo');
+      console.log('Giacenze caricate per', Object.keys(giacenze).length, 'giorni');
       setAnalysisCounter(current => ({ ...current, current: 100 }));
       
     } catch (error) {
