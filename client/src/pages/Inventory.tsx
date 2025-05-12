@@ -297,6 +297,7 @@ export default function Inventory() {
       
       // Calcola il numero totale di animali nella cesta
       const animalCount = lastOperation.animalCount || calculateAnimalCount(lastOperation);
+      console.log("Basket", basket.id, "Animali:", animalCount, "da op ID:", lastOperation.id, "tipo:", lastOperation.type);
       
       // Aggiorna la distribuzione delle taglie
       if (sizeDistribution[matchingSize.code]) {
@@ -329,12 +330,17 @@ export default function Inventory() {
         return bValue - aValue; 
       });
 
-    setInventoryStats({
+    const newStats = {
       totalBaskets: validBasketCount,
       totalAnimals,
       averageWeight: validBasketCount > 0 ? totalWeight / validBasketCount : 0,
       sizeDistribution: filteredSizeDistribution,
-    });
+    };
+    
+    console.log("Aggiornamento statistiche inventario:", newStats);
+    console.log("Dettaglio distribuzione taglie:", filteredSizeDistribution);
+    
+    setInventoryStats(newStats);
   };
   
   // Funzione per preparare i dati dettagliati delle ceste
