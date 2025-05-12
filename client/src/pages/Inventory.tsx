@@ -133,6 +133,9 @@ export default function Inventory() {
   const [sizeFilter, setSizeFilter] = useState<string>("");
   const [flupsyFilter, setFlupsyFilter] = useState<string>("");
   
+  // Data di riferimento per i calcoli dell'inventario
+  const [referenceDate, setReferenceDate] = useState<Date>(new Date());
+  
   // Filtri per la tabella di dettaglio
   const [detailSizeFilter, setDetailSizeFilter] = useState<string>("");
   const [detailFlupsyFilter, setDetailFlupsyFilter] = useState<string>("");
@@ -218,6 +221,11 @@ export default function Inventory() {
     // Filtra solo le ceste attive con un ciclo
     const activeBaskets = (baskets as any[]).filter((basket: any) => 
       basket.state === 'active' && basket.currentCycleId !== null
+    );
+    
+    // Filtra le operazioni fino alla data di riferimento selezionata
+    const filteredOperations = (operations as any[]).filter((op: any) => 
+      new Date(op.date) <= referenceDate
     );
 
     // Prepara un map per le dimensioni
