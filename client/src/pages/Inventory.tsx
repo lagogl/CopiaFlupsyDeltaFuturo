@@ -812,17 +812,18 @@ export default function Inventory() {
                 <div className="h-2 w-2 rounded-full bg-blue-500 animate-pulse"></div>
                 Dashboard inventario
               </div>
-              <h2 className="text-3xl font-bold tracking-tight text-blue-900">Inventario e Previsioni</h2>
-              <p className="text-blue-700 text-sm mt-1 max-w-lg">Gestione completa delle ceste e delle proiezioni di crescita, con analisi dettagliate e monitoraggio delle taglie</p>
+              <h2 className="text-2xl md:text-3xl font-bold tracking-tight text-blue-900">Inventario e Previsioni</h2>
+              <p className="text-blue-700 text-sm mt-1 max-w-lg hidden md:block">Gestione completa delle ceste e delle proiezioni di crescita, con analisi dettagliate e monitoraggio delle taglie</p>
+              <p className="text-blue-700 text-sm mt-1 md:hidden">Gestione ceste e previsioni crescita</p>
             </div>
-            <div className="flex flex-wrap items-center gap-3">
-              <div className="flex flex-wrap gap-3">
+            <div className="flex flex-wrap items-center gap-2 md:gap-3 mt-2 md:mt-0">
+              <div className="flex flex-wrap gap-2 md:gap-3 w-full md:w-auto">
                 {/* Data di riferimento per i calcoli dell'inventario */}
                 <Popover>
                   <PopoverTrigger asChild>
-                    <Button variant="outline" className="flex items-center gap-2 bg-white shadow-sm hover:bg-blue-50 border-blue-200 transition-all">
-                      <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center">
-                        <CalendarIcon className="h-3 w-3 text-blue-600" />
+                    <Button variant="outline" className="flex items-center gap-1 md:gap-2 bg-white shadow-sm hover:bg-blue-50 border-blue-200 transition-all text-xs md:text-sm">
+                      <div className="h-4 md:h-5 w-4 md:w-5 rounded-full bg-blue-100 flex items-center justify-center">
+                        <CalendarIcon className="h-2 md:h-3 w-2 md:w-3 text-blue-600" />
                       </div>
                       <span className="font-medium">{formatDateIT(referenceDate)}</span>
                     </Button>
@@ -967,43 +968,43 @@ export default function Inventory() {
                 </CardDescription>
               </CardHeader>
               <CardContent className="p-6">
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-4 md:gap-6 mb-6 md:mb-8">
                   <Card className="border border-blue-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                    <div className="bg-blue-50 border-b border-blue-100 flex justify-between items-center px-4 py-3">
-                      <CardTitle className="text-lg text-blue-700">Ceste Attive</CardTitle>
-                      <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center">
-                        <LineChart className="h-5 w-5 text-blue-500" />
+                    <div className="bg-blue-50 border-b border-blue-100 flex justify-between items-center px-3 md:px-4 py-2 md:py-3">
+                      <CardTitle className="text-base md:text-lg text-blue-700">Ceste Attive</CardTitle>
+                      <div className="h-6 md:h-8 w-6 md:w-8 rounded-full bg-blue-100 flex items-center justify-center">
+                        <LineChart className="h-4 md:h-5 w-4 md:w-5 text-blue-500" />
                       </div>
                     </div>
-                    <CardContent className="p-4 text-center">
-                      <div className="text-4xl font-bold text-blue-900">{formatNumberEU(inventoryStats.totalBaskets)}</div>
-                      <div className="text-xs mt-2 text-blue-500">unità in produzione</div>
+                    <CardContent className="p-3 md:p-4 text-center">
+                      <div className="text-3xl md:text-4xl font-bold text-blue-900">{formatNumberEU(inventoryStats.totalBaskets)}</div>
+                      <div className="text-xs mt-1 md:mt-2 text-blue-500">unità in produzione</div>
                     </CardContent>
                   </Card>
                   
                   <Card className="border border-green-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                    <div className="bg-green-50 border-b border-green-100 flex justify-between items-center px-4 py-3">
-                      <CardTitle className="text-lg text-green-700">Animali Totali</CardTitle>
-                      <div className="h-8 w-8 rounded-full bg-green-100 flex items-center justify-center">
-                        <BarChart3 className="h-5 w-5 text-green-500" />
+                    <div className="bg-green-50 border-b border-green-100 flex justify-between items-center px-3 md:px-4 py-2 md:py-3">
+                      <CardTitle className="text-base md:text-lg text-green-700">Animali Totali</CardTitle>
+                      <div className="h-6 md:h-8 w-6 md:w-8 rounded-full bg-green-100 flex items-center justify-center">
+                        <BarChart3 className="h-4 md:h-5 w-4 md:w-5 text-green-500" />
                       </div>
                     </div>
-                    <CardContent className="p-4 text-center">
-                      <div className="text-4xl font-bold text-green-900">{formatNumberEU(inventoryStats.totalAnimals)}</div>
-                      <div className="text-xs mt-2 text-green-500">esemplari in allevamento</div>
+                    <CardContent className="p-3 md:p-4 text-center">
+                      <div className="text-3xl md:text-4xl font-bold text-green-900">{formatNumberEU(inventoryStats.totalAnimals)}</div>
+                      <div className="text-xs mt-1 md:mt-2 text-green-500">esemplari in allevamento</div>
                     </CardContent>
                   </Card>
                   
-                  <Card className="border border-amber-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden">
-                    <div className="bg-amber-50 border-b border-amber-100 flex justify-between items-center px-4 py-3">
-                      <CardTitle className="text-lg text-amber-700">Peso Medio</CardTitle>
-                      <div className="h-8 w-8 rounded-full bg-amber-100 flex items-center justify-center">
-                        <TrendingUp className="h-5 w-5 text-amber-500" />
+                  <Card className="border border-amber-100 shadow-sm hover:shadow-md transition-shadow overflow-hidden sm:col-span-2 md:col-span-1">
+                    <div className="bg-amber-50 border-b border-amber-100 flex justify-between items-center px-3 md:px-4 py-2 md:py-3">
+                      <CardTitle className="text-base md:text-lg text-amber-700">Peso Medio</CardTitle>
+                      <div className="h-6 md:h-8 w-6 md:w-8 rounded-full bg-amber-100 flex items-center justify-center">
+                        <TrendingUp className="h-4 md:h-5 w-4 md:w-5 text-amber-500" />
                       </div>
                     </div>
-                    <CardContent className="p-4 text-center">
-                      <div className="text-4xl font-bold text-amber-900">{formatDecimalEU(inventoryStats.averageWeight)} <span className="text-sm">mg</span></div>
-                      <div className="text-xs mt-2 text-amber-500">per esemplare</div>
+                    <CardContent className="p-3 md:p-4 text-center">
+                      <div className="text-3xl md:text-4xl font-bold text-amber-900">{formatDecimalEU(inventoryStats.averageWeight)} <span className="text-xs md:text-sm">mg</span></div>
+                      <div className="text-xs mt-1 md:mt-2 text-amber-500">per esemplare</div>
                     </CardContent>
                   </Card>
                 </div>
