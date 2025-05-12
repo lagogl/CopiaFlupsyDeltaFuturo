@@ -937,31 +937,31 @@ export default function DiarioDiBordo() {
       </Dialog>
       
       {/* Intestazione pagina con data e controlli */}
-      <div className="flex flex-col lg:flex-row justify-between items-start lg:items-center gap-4 mb-6">
-        <div className="flex items-center space-x-4">
-          <div className="bg-primary/10 p-2 rounded-lg">
-            <CalendarIcon className="h-6 w-6 text-primary" />
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
+        <div className="flex items-center space-x-2 sm:space-x-4">
+          <div className="bg-primary/10 p-1.5 sm:p-2 rounded-lg">
+            <CalendarIcon className="h-5 w-5 sm:h-6 sm:w-6 text-primary" />
           </div>
           <div>
-            <h2 className="text-xl font-semibold tracking-tight">
+            <h2 className="text-lg sm:text-xl font-semibold tracking-tight">
               Diario del {format(selectedDate, 'dd MMMM yyyy', { locale: it })}
             </h2>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-xs sm:text-sm text-muted-foreground">
               Riepilogo delle operazioni e statistiche giornaliere
             </p>
           </div>
         </div>
         
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 w-full sm:w-auto mt-3 sm:mt-0">
           {/* Wrapper del DatePicker per evitare errori di tipo */}
-          <div className="min-w-[280px]">
+          <div className="min-w-0 w-full sm:min-w-[240px] lg:min-w-[280px]">
             <Popover>
               <PopoverTrigger asChild>
                 <Button
                   variant={"outline"}
-                  className="w-full justify-start text-left font-normal"
+                  className="w-full justify-start text-left font-normal text-xs sm:text-sm h-8 sm:h-10"
                 >
-                  <CalendarIcon className="mr-2 h-4 w-4" />
+                  <CalendarIcon className="mr-1.5 sm:mr-2 h-3.5 w-3.5 sm:h-4 sm:w-4" />
                   {selectedDate ? format(selectedDate, "PPP", { locale: it }) : <span>Seleziona una data</span>}
                 </Button>
               </PopoverTrigger>
