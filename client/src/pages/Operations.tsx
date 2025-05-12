@@ -17,6 +17,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { monthlyToDaily } from '@/lib/utils';
 import OperationForm from '@/components/OperationForm';
@@ -41,6 +42,7 @@ export default function Operations() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [selectedOperation, setSelectedOperation] = useState<any>(null);
   
   // Query operations
@@ -1235,7 +1237,7 @@ export default function Operations() {
                       size="sm" 
                       className="text-xs font-medium flex items-center"
                       onClick={() => {
-                        setFilterDialogOpen(true);
+                        setIsFilterDialogOpen(true);
                       }}
                     >
                       <Filter className="h-3 w-3 mr-1" />
@@ -1289,7 +1291,38 @@ export default function Operations() {
               
               {/* Elenco operazioni (stile simile ai cicli) */}
               <div className="divide-y divide-gray-200">
-                {operations.slice().sort(getSortedOperations()).map((op: any) => {
+                {operations ? operations.slice().sort((a: any, b: any) => {
+                  // Funzione di ordinamento in-place
+                  if (sortConfig.key === 'date') {
+                    const dateA = new Date(a.date).getTime();
+                    const dateB = new Date(b.date).getTime();
+                    return sortConfig.direction === 'ascending' ? dateA - dateB : dateB - dateA;
+                  }
+                  
+                  if (sortConfig.key === 'type') {
+                    const typeA = String(a.type).toLowerCase();
+                    const typeB = String(b.type).toLowerCase();
+                    return sortConfig.direction === 'ascending' 
+                      ? typeA.localeCompare(typeB)
+                      : typeB.localeCompare(typeA);
+                  }
+                  
+                  if (sortConfig.key === 'animalCount') {
+                    const countA = a.animalCount || (a.weight && a.animalsPerKg ? a.weight * a.animalsPerKg : 0);
+                    const countB = b.animalCount || (b.weight && b.animalsPerKg ? b.weight * b.animalsPerKg : 0);
+                    return sortConfig.direction === 'ascending' ? countA - countB : countB - countA;
+                  }
+                  
+                  if (sortConfig.key === 'lot') {
+                    const lotA = a.lot?.name || '';
+                    const lotB = b.lot?.name || '';
+                    return sortConfig.direction === 'ascending' 
+                      ? lotA.localeCompare(lotB)
+                      : lotB.localeCompare(lotA);
+                  }
+                  
+                  return 0;
+                }).map((op: any) => {
                   // Ottieni informazioni correlate
                   const basket = op.basket || (op.basketId ? baskets?.find((b: any) => b.id === op.basketId) : null);
                   const cycle = op.cycle || (op.cycleId ? cycles?.find((c: any) => c.id === op.cycleId) : null);
@@ -1317,7 +1350,7 @@ export default function Operations() {
                           <div>
                             <div className="text-sm font-medium text-gray-900">{format(new Date(op.date), 'dd/MM/yyyy')}</div>
                             <Badge variant="outline" className={`mt-1 ${badgeClass}`}>
-                              {getOperationTypeLabel(op.type)}
+                              {getOperationTypeBadge(op.type)}
                             </Badge>
                           </div>
                           
