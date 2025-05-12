@@ -297,16 +297,48 @@ export async function exportCalendarCsv(req: Request, res: Response) {
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const endDateStr = format(endDate, 'yyyy-MM-dd');
     
-    // Determina tutte le taglie disponibili nel sistema
-    console.log('Determinazione delle taglie per il calendario CSV...');
-    const taglieResult = await db.execute(sql`
-      SELECT DISTINCT code 
-      FROM sizes
-      ORDER BY code
+    // Determina le taglie che hanno operazioni o hanno giacenze attive nel mese
+    console.log('Determinazione delle taglie attive o con giacenze per il calendario CSV...');
+    
+    // Query per trovare le taglie con operazioni nel mese
+    const taglieOperazioniResult = await db.execute(sql`
+      SELECT DISTINCT s.code 
+      FROM operations o
+      JOIN sizes s ON o.size_id = s.id
+      WHERE o.date BETWEEN ${startDateStr}::date AND ${endDateStr}::date
+      AND o.animal_count > 0
+      ORDER BY s.code
     `);
     
-    const taglieAttiveList = taglieResult.map((row: any) => row.code);
-    console.log(`Taglie per il calendario CSV: ${taglieAttiveList.join(', ')}`);
+    // Query per trovare le taglie con giacenze attive
+    const taglieGiacenzeResult = await db.execute(sql`
+      SELECT DISTINCT s.code
+      FROM cycles c
+      JOIN baskets b ON c.basket_id = b.id
+      JOIN lots l ON b.lot_id = l.id
+      JOIN sizes s ON l.size_id = s.id
+      WHERE (c.end_date IS NULL OR c.end_date > ${startDateStr}::date)
+      AND c.startDate <= ${endDateStr}::date
+      ORDER BY s.code
+    `);
+    
+    // Combina i risultati delle due query
+    const taglieAttiveSet = new Set<string>();
+    
+    // Aggiungi le taglie con operazioni
+    taglieOperazioniResult.forEach((row: any) => {
+      taglieAttiveSet.add(row.code);
+    });
+    
+    // Aggiungi le taglie con giacenze
+    taglieGiacenzeResult.forEach((row: any) => {
+      taglieAttiveSet.add(row.code);
+    });
+    
+    // Converti il Set in un array
+    const taglieAttiveList = Array.from(taglieAttiveSet);
+    
+    console.log(`Taglie attive per il calendario CSV: ${taglieAttiveList.join(', ')}`);
     
     // Crea un array con tutti i giorni del mese
     const daysInMonth = eachDayOfInterval({
@@ -318,7 +350,7 @@ export async function exportCalendarCsv(req: Request, res: Response) {
     const monthData = await getMonthDataForExport(db, month);
     
     // Esegui la query per ottenere le operazioni giornaliere (non cumulative)
-    // per poter mostrare i movimenti giornalieri nel CSV
+    // Verifica anche quali taglie hanno avuto operazioni con valore diverso da zero
     const operazioniGiornaliereResult = await db.execute(sql`
       WITH date_range AS (
         SELECT generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) AS day
@@ -340,12 +372,35 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       ORDER BY d.day, s.code
     `);
     
+    // Verifica quali taglie hanno effettivamente operazioni con valori diversi da zero
+    // e usa solo quelle per il CSV
+    const taglieConOperazioni = new Set<string>();
+    
+    // Cast a any[] per lavorare più facilmente con i risultati
+    const operazioniArray = operazioniGiornaliereResult as any[];
+    
+    // Analizza i risultati per trovare tutte le taglie che hanno almeno un'operazione con valore non zero
+    operazioniArray.forEach(op => {
+      // Converti il bilancio in numero
+      const bilancio = parseInt(op.bilancio || '0', 10);
+      if (bilancio !== 0) {
+        taglieConOperazioni.add(op.taglia);
+      }
+    });
+    
+    // Se abbiamo trovato taglie con operazioni, usa solo quelle
+    const taglieFinali = taglieConOperazioni.size > 0 
+      ? Array.from(taglieConOperazioni) 
+      : taglieAttiveList;
+    
+    console.log(`Taglie con operazioni effettive nel CSV: ${taglieFinali.join(', ')}`);
+    
     // Costruisci le intestazioni del CSV
     const headers = ['Data', 'Operazioni', 'Entrate', 'Uscite', 'Bilancio', 'Totale'];
     
-    // Aggiungi le taglie come intestazioni
-    if (taglieAttiveList.length > 0) {
-      taglieAttiveList.forEach(taglia => {
+    // Aggiungi solo le taglie che hanno operazioni con valori non zero
+    if (taglieFinali.length > 0) {
+      taglieFinali.forEach(taglia => {
         headers.push(taglia);
       });
     }
@@ -378,7 +433,7 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       ];
       
       // Recupera le operazioni giornaliere per ogni taglia (non i valori cumulativi)
-      if (taglieAttiveList.length > 0) {
+      if (taglieFinali.length > 0) {
         // Ottieni la data in formato ISO
         const dateKey = format(day, 'yyyy-MM-dd');
         
@@ -389,8 +444,8 @@ export async function exportCalendarCsv(req: Request, res: Response) {
           op.date === dateKey
         );
         
-        // Per ogni taglia nella lista taglie attive
-        taglieAttiveList.forEach(taglia => {
+        // Per ogni taglia nella lista di taglie finali (quelle con operazioni)
+        taglieFinali.forEach(taglia => {
           // Cerca le operazioni per questa taglia in questo giorno
           const operazioniTaglia = operazioniDelGiorno.find(op => op.taglia === taglia);
           
