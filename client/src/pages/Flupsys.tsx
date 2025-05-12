@@ -387,9 +387,9 @@ export default function Flupsys() {
                     Aggiungi una nuova unità FLUPSY al sistema.
                   </DialogDescription>
                 </DialogHeader>
-                <div className="grid gap-4 py-4">
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="name" className="text-right">
+                <div className="grid gap-3 sm:gap-4 py-3 sm:py-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                    <Label htmlFor="name" className="sm:text-right">
                       Nome*
                     </Label>
                     <Input
@@ -397,12 +397,12 @@ export default function Flupsys() {
                       name="name"
                       value={newFlupsy.name}
                       onChange={handleChange}
-                      className="col-span-3"
+                      className="sm:col-span-3"
                       required
                     />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="location" className="text-right">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                    <Label htmlFor="location" className="sm:text-right">
                       Posizione
                     </Label>
                     <Input
@@ -410,11 +410,11 @@ export default function Flupsys() {
                       name="location"
                       value={newFlupsy.location}
                       onChange={handleChange}
-                      className="col-span-3"
+                      className="sm:col-span-3"
                     />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="description" className="text-right">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-start gap-2 sm:gap-4">
+                    <Label htmlFor="description" className="sm:text-right pt-2">
                       Descrizione
                     </Label>
                     <Textarea
@@ -422,7 +422,7 @@ export default function Flupsys() {
                       name="description"
                       value={newFlupsy.description}
                       onChange={handleChange}
-                      className="col-span-3"
+                      className="sm:col-span-3"
                       rows={3}
                     />
                   </div>
@@ -719,27 +719,27 @@ export default function Flupsys() {
                 </CardHeader>
                 <CardContent>
                   <div className="space-y-2">
-                    <div className="grid grid-cols-3 gap-3">
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Cestelli</p>
-                        <p className="text-xl font-bold">{flupsy.totalBaskets || 0}/{flupsy.maxPositions}</p>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2 md:gap-3">
+                      <div className="space-y-0.5 md:space-y-1">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground">Cestelli</p>
+                        <p className="text-base sm:text-lg md:text-xl font-bold">{flupsy.totalBaskets || 0}/{flupsy.maxPositions}</p>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Cestelli Attivi</p>
-                        <p className="text-xl font-bold text-blue-600 dark:text-blue-400">{flupsy.activeBaskets || 0}</p>
+                      <div className="space-y-0.5 md:space-y-1">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground">Cestelli Attivi</p>
+                        <p className="text-base sm:text-lg md:text-xl font-bold text-blue-600 dark:text-blue-400">{flupsy.activeBaskets || 0}</p>
                       </div>
-                      <div className="space-y-1">
-                        <p className="text-sm font-medium text-muted-foreground">Media Animali Cesta</p>
-                        <p className="text-xl font-bold text-amber-600 dark:text-amber-400">
+                      <div className="space-y-0.5 md:space-y-1 sm:col-span-2 md:col-span-1">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground">Media Animali Cesta</p>
+                        <p className="text-base sm:text-lg md:text-xl font-bold text-amber-600 dark:text-amber-400">
                           {flupsy.avgAnimalDensity?.toLocaleString() || 0}
                         </p>
                       </div>
                     </div>
                     
-                    <div className="grid grid-cols-2 gap-3 pt-1">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 sm:gap-3 pt-1">
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Posizioni Libere</p>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-0.5 sm:mb-1">Posizioni Libere</p>
+                        <div className="h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-green-500 rounded-full" 
                             style={{ 
@@ -747,14 +747,14 @@ export default function Flupsys() {
                             }}
                           ></div>
                         </div>
-                        <p className="text-xs mt-1 text-green-600 dark:text-green-400 font-medium">
+                        <p className="text-xs mt-0.5 sm:mt-1 text-green-600 dark:text-green-400 font-medium">
                           {flupsy.maxPositions - (flupsy.totalBaskets || 0)} disponibili
                         </p>
                       </div>
                       
                       <div>
-                        <p className="text-sm font-medium text-muted-foreground mb-1">Occupazione Attivi</p>
-                        <div className="h-2 bg-muted rounded-full overflow-hidden">
+                        <p className="text-xs sm:text-sm font-medium text-muted-foreground mb-0.5 sm:mb-1">Occupazione Attivi</p>
+                        <div className="h-1.5 sm:h-2 bg-muted rounded-full overflow-hidden">
                           <div 
                             className="h-full bg-blue-500 rounded-full" 
                             style={{ 
@@ -762,7 +762,7 @@ export default function Flupsys() {
                             }}
                           ></div>
                         </div>
-                        <p className="text-xs mt-1 text-blue-600 dark:text-blue-400 font-medium">
+                        <p className="text-xs mt-0.5 sm:mt-1 text-blue-600 dark:text-blue-400 font-medium">
                           {flupsy.activeBasketPercentage || 0}% occupazione
                         </p>
                       </div>
