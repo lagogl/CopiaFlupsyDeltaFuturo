@@ -1111,21 +1111,21 @@ export default function DiarioDiBordo() {
                         Riepilogo Giornaliero
                       </h3>
                       
-                      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                         {/* Statistiche per Taglia */}
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-base">Statistiche per Taglia</CardTitle>
+                        <Card className="border shadow-sm">
+                          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4">
+                            <CardTitle className="text-sm sm:text-base">Statistiche per Taglia</CardTitle>
                           </CardHeader>
-                          <CardContent>
+                          <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
                             {sizeStats && sizeStats.length > 0 ? (
-                              <div className="space-y-2">
+                              <div className="space-y-1.5 sm:space-y-2">
                                 {sizeStats.map((taglia: any, idx: number) => (
-                                  <div key={idx} className="flex justify-between items-center text-sm">
-                                    <span className="font-medium">
-                                      {taglia.taglia === 'Non specificata' ? 'In attesa di misurazione' : taglia.taglia}:
+                                  <div key={idx} className="flex justify-between items-center text-xs sm:text-sm">
+                                    <span className="font-medium truncate mr-2">
+                                      {taglia.taglia === 'Non specificata' ? 'In attesa' : taglia.taglia}:
                                     </span>
-                                    <span>
+                                    <span className="flex flex-nowrap whitespace-nowrap">
                                       {taglia.entrate ? (<><span className="text-green-600">+{formatNumberWithCommas(taglia.entrate)}</span>{' '}</>) : null}
                                       {taglia.uscite ? (<><span className="text-red-600">-{formatNumberWithCommas(taglia.uscite)}</span>{' '}</>) : null}
                                     </span>
@@ -1133,7 +1133,7 @@ export default function DiarioDiBordo() {
                                 ))}
                               </div>
                             ) : (
-                              <div className="text-center py-4 text-muted-foreground text-sm">
+                              <div className="text-center py-3 sm:py-4 text-muted-foreground text-xs sm:text-sm">
                                 Nessuna statistica disponibile.
                               </div>
                             )}
@@ -1141,32 +1141,32 @@ export default function DiarioDiBordo() {
                         </Card>
                         
                         {/* Bilancio Giornata */}
-                        <Card>
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-base">Bilancio Giornaliero</CardTitle>
+                        <Card className="border shadow-sm">
+                          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4">
+                            <CardTitle className="text-sm sm:text-base">Bilancio Giornaliero</CardTitle>
                           </CardHeader>
-                          <CardContent>
-                            <div className="space-y-2">
-                              <div className="flex justify-between items-center text-sm">
+                          <CardContent className="p-3 sm:p-4 pt-0 sm:pt-0">
+                            <div className="space-y-1.5 sm:space-y-2">
+                              <div className="flex justify-between items-center text-xs sm:text-sm">
                                 <span>Entrate:</span>
                                 <span className="text-green-600 font-medium">
                                   +{totals?.totale_entrate ? formatNumberWithCommas(totals.totale_entrate) : '0'}
                                 </span>
                               </div>
-                              <div className="flex justify-between items-center text-sm">
+                              <div className="flex justify-between items-center text-xs sm:text-sm">
                                 <span>Uscite:</span>
                                 <span className="text-red-600 font-medium">
                                   -{totals?.totale_uscite ? formatNumberWithCommas(totals.totale_uscite) : '0'}
                                 </span>
                               </div>
                               <Separator className="my-1" />
-                              <div className="flex justify-between items-center text-sm font-medium">
+                              <div className="flex justify-between items-center text-xs sm:text-sm font-medium">
                                 <span>Bilancio netto:</span>
                                 <span className={parseInt(totals?.bilancio_netto || '0') >= 0 ? 'text-green-600' : 'text-red-600'}>
                                   {parseInt(totals?.bilancio_netto || '0') >= 0 ? '+' : ''}{totals?.bilancio_netto ? formatNumberWithCommas(totals.bilancio_netto) : '0'}
                                 </span>
                               </div>
-                              <div className="flex justify-between items-center text-sm mt-4">
+                              <div className="flex justify-between items-center text-xs sm:text-sm mt-3 sm:mt-4">
                                 <span>Operazioni totali:</span>
                                 <span className="font-medium">{totals?.numero_operazioni || '0'}</span>
                               </div>
@@ -1175,24 +1175,24 @@ export default function DiarioDiBordo() {
                         </Card>
                         
                         {/* Giacenza alla data */}
-                        <Card className="md:col-span-2">
-                          <CardHeader className="pb-2">
-                            <CardTitle className="text-base">Giacenza al {format(selectedDate, 'dd/MM/yyyy', { locale: it })}</CardTitle>
+                        <Card className="sm:col-span-2 border shadow-sm">
+                          <CardHeader className="pb-1 sm:pb-2 p-3 sm:p-4">
+                            <CardTitle className="text-sm sm:text-base">Giacenza al {format(selectedDate, 'dd/MM/yyyy', { locale: it })}</CardTitle>
                           </CardHeader>
-                          <CardContent>
-                            <div className="space-y-4">
+                          <CardContent className="p-3 sm:p-4 pt-1 sm:pt-2">
+                            <div className="space-y-3 sm:space-y-4">
                               <div className="flex justify-between items-center">
-                                <span className="font-medium">Totale animali:</span>
-                                <span className="text-lg font-bold">{giacenza?.totale_giacenza ? formatNumberWithCommas(giacenza.totale_giacenza) : '0'}</span>
+                                <span className="text-xs sm:text-sm font-medium">Totale animali:</span>
+                                <span className="text-base sm:text-lg font-bold">{giacenza?.totale_giacenza ? formatNumberWithCommas(giacenza.totale_giacenza) : '0'}</span>
                               </div>
                               
                               {giacenza?.dettaglio_taglie && giacenza.dettaglio_taglie.length > 0 && (
                                 <div>
-                                  <h4 className="text-sm font-semibold mb-2">Dettaglio per taglia:</h4>
-                                  <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+                                  <h4 className="text-xs sm:text-sm font-semibold mb-1 sm:mb-2">Dettaglio per taglia:</h4>
+                                  <div className="grid grid-cols-1 xs:grid-cols-2 md:grid-cols-3 gap-1 sm:gap-2">
                                     {giacenza.dettaglio_taglie.map((taglia: any, idx: number) => (
-                                      <div key={idx} className="flex justify-between items-center text-sm border-b pb-1">
-                                        <span>{taglia.taglia === 'Non specificata' ? 'In attesa' : taglia.taglia}:</span>
+                                      <div key={idx} className="flex justify-between items-center text-xs sm:text-sm border-b pb-0.5 sm:pb-1">
+                                        <span className="truncate mr-1">{taglia.taglia === 'Non specificata' ? 'In attesa' : taglia.taglia}:</span>
                                         <span className="font-medium">{formatNumberWithCommas(taglia.quantita)}</span>
                                       </div>
                                     ))}
@@ -1201,13 +1201,14 @@ export default function DiarioDiBordo() {
                               )}
                               
                               {giacenza?.totale_giacenza !== undefined && totals?.bilancio_netto !== undefined && (
-                                <div className="pt-2 border-t">
-                                  <div className="flex justify-between items-center text-sm font-semibold">
-                                    <span>Bilancio finale (giacenza + bilancio netto):</span>
+                                <div className="pt-1 sm:pt-2 border-t">
+                                  <div className="flex justify-between items-center text-xs sm:text-sm font-semibold">
+                                    <span>Bilancio finale:</span>
                                     <span className="text-primary">
                                       {formatNumberWithCommas(Number(giacenza.totale_giacenza) + Number(totals.bilancio_netto))}
                                     </span>
                                   </div>
+                                  <div className="text-xs text-muted-foreground mt-0.5">(giacenza + bilancio netto)</div>
                                 </div>
                               )}
                             </div>
