@@ -426,24 +426,24 @@ export async function exportCalendarCsv(req: Request, res: Response) {
         dayData.giacenza || '0'
       ];
       
-      // Recupera le operazioni giornaliere per ogni taglia (non i valori cumulativi)
+      // Recupera i dati per taglia direttamente dai dettagli del giorno nel monthData
       if (taglieFinali.length > 0) {
-        // Ottieni la data in formato ISO
-        const dateKey = format(day, 'yyyy-MM-dd');
-        
-        // Per ogni taglia nella lista di taglie finali (quelle con operazioni o giacenze)
+        // Per ogni taglia nella lista di taglie finali
         taglieFinali.forEach(taglia => {
-          // Usa la mappa per trovare le operazioni di questa taglia in questo giorno
-          const mapKey = `${dateKey}-${taglia}`;
-          const operazioniTaglia = operazioniMap.get(mapKey);
+          // Trova i dettagli della taglia nei dati del giorno
+          let valoreTaglia = '0';
           
-          // Se ci sono operazioni e il bilancio è diverso da zero, mostra il bilancio
-          // altrimenti mostra 0
-          const bilancio = operazioniTaglia && parseInt(operazioniTaglia.bilancio || '0', 10) !== 0 
-            ? operazioniTaglia.bilancio 
-            : '0';
-            
-          row.push(String(bilancio));
+          // Verifica se ci sono dettagli per taglie in questo giorno
+          if (dayData.dettaglio_taglie && Array.isArray(dayData.dettaglio_taglie)) {
+            // Cerca il dettaglio per questa taglia specifica
+            const dettaglioTaglia = dayData.dettaglio_taglie.find((dt: any) => dt.taglia === taglia);
+            if (dettaglioTaglia && dettaglioTaglia.quantita) {
+              valoreTaglia = String(dettaglioTaglia.quantita);
+            }
+          }
+          
+          // Aggiungi alla riga
+          row.push(valoreTaglia);
         });
       }
       
