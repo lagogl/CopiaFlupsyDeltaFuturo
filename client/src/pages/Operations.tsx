@@ -4,7 +4,8 @@ import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { 
   Eye, Search, Filter, Pencil, Plus, Trash2, AlertTriangle, Copy, 
-  ArrowDown, ArrowUp, RotateCw, Calendar, Box, Target, Check
+  ArrowDown, ArrowUp, RotateCw, Calendar, Box, Target, Check,
+  ArrowUpDown, ArrowDownUp, MoreVertical, MapPin, ArrowRightCircle
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -856,9 +857,9 @@ export default function Operations() {
         </div>
       ) : (
         viewMode === 'table' ? (
-          // Table View
+          // Table/Card View (responsive)
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            {/* Desktop View (tabella) */}
+            {/* Desktop View (tabella) - visibile solo su desktop */}
             <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
@@ -1223,280 +1224,236 @@ export default function Operations() {
               </table>
             </div>
             
-            {/* Mobile View (cards) */}
+            {/* Mobile View (cards) - stile compatto simile ai cicli */}
             <div className="md:hidden">
-              {/* Header delle colonne mobili per ordinamento */}
-              <div className="bg-gray-50 p-3 flex gap-2 flex-wrap">
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`text-xs h-7 rounded-full ${sortConfig.key === 'date' ? 'bg-primary text-white hover:text-white' : 'text-gray-600'}`}
-                  onClick={() => handleSortClick('date')}
-                >
-                  <div className="flex items-center">
-                    Data
-                    {sortConfig.key === 'date' && (
-                      <span className="ml-1">
-                        {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                      </span>
-                    )}
+              {/* Filtri e ordinamento mobile */}
+              <div className="p-3 border-b border-gray-200">
+                <div className="flex flex-wrap gap-2 mb-2 justify-between">
+                  <div className="flex gap-2">
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      className="text-xs font-medium flex items-center"
+                      onClick={() => {
+                        setFilterDialogOpen(true);
+                      }}
+                    >
+                      <Filter className="h-3 w-3 mr-1" />
+                      Filtri
+                    </Button>
+                    
+                    <Select
+                      value={sortConfig.key}
+                      onValueChange={(value) => {
+                        setSortConfig({
+                          key: value,
+                          direction: sortConfig.key === value && sortConfig.direction === 'ascending' ? 'descending' : 'ascending'
+                        });
+                      }}
+                    >
+                      <SelectTrigger className="h-7 text-xs border-dashed">
+                        <SelectValue placeholder="Ordina per..." />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="date">Data</SelectItem>
+                        <SelectItem value="type">Tipo operazione</SelectItem>
+                        <SelectItem value="animalCount">Conteggio</SelectItem>
+                        <SelectItem value="lot">Lotto</SelectItem>
+                      </SelectContent>
+                    </Select>
                   </div>
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`text-xs h-7 rounded-full ${sortConfig.key === 'type' ? 'bg-primary text-white hover:text-white' : 'text-gray-600'}`}
-                  onClick={() => handleSortClick('type')}
-                >
-                  <div className="flex items-center">
-                    Tipologia
-                    {sortConfig.key === 'type' && (
-                      <span className="ml-1">
-                        {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                      </span>
+                  
+                  <Button 
+                    size="sm"
+                    variant="outline"
+                    className="text-xs flex items-center"
+                    onClick={() => setSortConfig({
+                      ...sortConfig,
+                      direction: sortConfig.direction === 'ascending' ? 'descending' : 'ascending'
+                    })}
+                  >
+                    {sortConfig.direction === 'ascending' ? (
+                      <>
+                        <ArrowUpDown className="h-3 w-3 mr-1" />
+                        Crescente
+                      </>
+                    ) : (
+                      <>
+                        <ArrowDownUp className="h-3 w-3 mr-1" />
+                        Decrescente
+                      </>
                     )}
-                  </div>
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`text-xs h-7 rounded-full ${sortConfig.key === 'animalCount' ? 'bg-primary text-white hover:text-white' : 'text-gray-600'}`}
-                  onClick={() => handleSortClick('animalCount')}
-                >
-                  <div className="flex items-center">
-                    Conteggio
-                    {sortConfig.key === 'animalCount' && (
-                      <span className="ml-1">
-                        {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                      </span>
-                    )}
-                  </div>
-                </Button>
-                
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className={`text-xs h-7 rounded-full ${sortConfig.key === 'lot' ? 'bg-primary text-white hover:text-white' : 'text-gray-600'}`}
-                  onClick={() => handleSortClick('lot')}
-                >
-                  <div className="flex items-center">
-                    Lotto
-                    {sortConfig.key === 'lot' && (
-                      <span className="ml-1">
-                        {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
-                      </span>
-                    )}
-                  </div>
-                </Button>
+                  </Button>
+                </div>
               </div>
               
-              {/* Cards delle operazioni */}
+              {/* Elenco operazioni (stile simile ai cicli) */}
               <div className="divide-y divide-gray-200">
-                {sortedOperations.map((op: any) => (
-                  <div key={op.id} className="p-4 hover:bg-gray-50">
-                    {/* Header della card */}
-                    <div className="flex justify-between items-start mb-2">
-                      <div>
-                        <div className="text-sm font-medium text-gray-900">{format(new Date(op.date), 'dd/MM/yyyy')}</div>
-                        <div className="mt-1">
-                          <Badge variant="outline" className={`${getOperationBadgeClass(op.type)} text-xs font-medium`}>
-                            {getOperationTypeLabel(op.type)}
-                          </Badge>
+                {operations.slice().sort(getSortedOperations()).map((op: any) => {
+                  // Ottieni informazioni correlate
+                  const basket = op.basket || (op.basketId ? baskets?.find((b: any) => b.id === op.basketId) : null);
+                  const cycle = op.cycle || (op.cycleId ? cycles?.find((c: any) => c.id === op.cycleId) : null);
+                  const lot = op.lot || (op.lotId ? lots?.find((l: any) => l.id === op.lotId) : null);
+                  const size = op.size || (op.sizeId ? sizes?.find((s: any) => s.id === op.sizeId) : null);
+                  const flupsy = basket?.flupsyId ? flupsys?.find((f: any) => f.id === basket.flupsyId) : null;
+                  
+                  // Calcola il conteggio degli animali
+                  let animalCount = op.animalCount;
+                  let animalCountDetails = null;
+                  
+                  if (!animalCount && op.weight && op.animalsPerKg) {
+                    animalCount = Math.round(op.weight * op.animalsPerKg);
+                    animalCountDetails = `${op.animalsPerKg.toLocaleString()} per kg × ${op.weight.toLocaleString()} kg`;
+                  }
+                  
+                  // Ottieni classe appropriata per il badge dell'operazione
+                  const badgeClass = getOperationTypeBadge(op.type);
+                  
+                  return (
+                    <div key={op.id} className="p-4">
+                      <div className="mb-2">
+                        <div className="flex justify-between items-start">
+                          {/* Data e tipo */}
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">{format(new Date(op.date), 'dd/MM/yyyy')}</div>
+                            <Badge variant="outline" className={`mt-1 ${badgeClass}`}>
+                              {getOperationTypeLabel(op.type)}
+                            </Badge>
+                          </div>
+                          
+                          {/* Azioni */}
+                          <div>
+                            <DropdownMenu>
+                              <DropdownMenuTrigger asChild>
+                                <Button variant="ghost" size="icon" className="h-8 w-8">
+                                  <MoreVertical className="h-4 w-4" />
+                                </Button>
+                              </DropdownMenuTrigger>
+                              <DropdownMenuContent align="end">
+                                <DropdownMenuItem onClick={() => {
+                                  setSelectedOperation(op);
+                                  setIsEditDialogOpen(true);
+                                }}>
+                                  <Pencil className="h-4 w-4 mr-2" />
+                                  Modifica
+                                </DropdownMenuItem>
+                                <DropdownMenuItem onClick={() => {
+                                  const nextDay = addDays(new Date(op.date), 1);
+                                  const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
+                                  const duplicatedOp = {
+                                    ...op,
+                                    type: operationType,
+                                    date: format(nextDay, 'yyyy-MM-dd'),
+                                    id: undefined
+                                  };
+                                  setSelectedOperation(duplicatedOp);
+                                  setIsCreateDialogOpen(true);
+                                }}>
+                                  <Copy className="h-4 w-4 mr-2" />
+                                  Duplica
+                                </DropdownMenuItem>
+                                <DropdownMenuSeparator />
+                                <DropdownMenuItem
+                                  className="text-red-600"
+                                  onClick={() => {
+                                    setSelectedOperation(op);
+                                    setIsDeleteDialogOpen(true);
+                                  }}
+                                >
+                                  <Trash2 className="h-4 w-4 mr-2" />
+                                  Elimina
+                                </DropdownMenuItem>
+                              </DropdownMenuContent>
+                            </DropdownMenu>
+                          </div>
                         </div>
                       </div>
-                      <div className="flex gap-1">
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => {
-                            setSelectedOperation(op);
-                            setIsEditDialogOpen(true);
-                          }}
-                        >
-                          <Pencil className="h-4 w-4 text-gray-600" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8 text-red-600"
-                          onClick={() => {
-                            setSelectedOperation(op);
-                            setIsDeleteDialogOpen(true);
-                          }}
-                        >
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="icon"
-                          className="h-8 w-8"
-                          onClick={() => {
-                            // Duplica l'operazione
-                            const nextDay = addDays(new Date(op.date), 1);
-                            const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
-                            const duplicatedOp = {
-                              ...op,
-                              type: operationType,
-                              date: format(nextDay, 'yyyy-MM-dd'),
-                              id: undefined
-                            };
-                            setSelectedOperation(duplicatedOp);
-                            setIsCreateDialogOpen(true);
-                          }}
-                        >
-                          <Copy className="h-4 w-4 text-gray-600" />
-                        </Button>
-                      </div>
-                    </div>
-                    
-                    {/* Dettagli cesta */}
-                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2 mt-3 border-t pt-2 text-sm">
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 mb-0.5">Cesta</div>
-                        <div className="font-medium">#{op.basket?.physicalNumber || op.basketId}</div>
-                        {op.basket?.flupsyId && flupsys?.find((f: any) => f.id === op.basket?.flupsyId) && (
-                          <div className="text-xs text-blue-600 mt-0.5">
-                            FLUPSY: {flupsys.find((f: any) => f.id === op.basket?.flupsyId)?.name || `#${op.basket.flupsyId}`}
-                          </div>
-                        )}
-                        {op.basket?.row && op.basket?.position && (
-                          <div className="text-xs text-indigo-600 mt-0.5">
-                            Posizione: {op.basket.row} - {op.basket.position}
-                          </div>
-                        )}
-                      </div>
                       
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 mb-0.5">Ciclo</div>
-                        <div className="font-medium">{op.cycleId ? `#${op.cycleId}` : '-'}</div>
-                      </div>
-                      
-                      {/* Lotto */}
-                      <div className="sm:col-span-2">
-                        <div className="text-xs font-medium text-gray-500 mb-0.5">Lotto</div>
-                        {(() => {
-                          // Caso speciale: l'operazione ha lotti multipli
-                          if (op.hasMultipleLots && op.additionalLots && Array.isArray(op.additionalLots) && op.additionalLots.length > 0) {
-                            const mainLot = op.lot || (op.lotId ? lots?.find((l: any) => l.id === op.lotId) : null);
-                            return (
-                              <div>
-                                <div className="flex items-center gap-2">
-                                  <span className="font-medium text-indigo-600">
-                                    {mainLot ? mainLot.name : 'Lotto principale'}
-                                  </span>
-                                  <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
-                                    Lotto misto
-                                  </span>
-                                </div>
-                                {mainLot && (
-                                  <div className="text-xs mt-0.5 text-gray-500">
-                                    Arrivo: {format(new Date(mainLot.arrivalDate), 'dd/MM/yyyy')} | 
-                                    Fornitore: {mainLot.supplier || 'N/D'}
-                                  </div>
-                                )}
-                                <details className="text-xs mt-1">
-                                  <summary className="cursor-pointer text-indigo-600 hover:text-indigo-800">
-                                    Altri lotti ({op.additionalLots.length})
-                                  </summary>
-                                  <div className="pl-2 mt-1 border-l-2 border-indigo-200">
-                                    {op.additionalLots.map((lot: any, idx: number) => (
-                                      <div key={idx} className="mb-1.5">
-                                        <div className="font-medium">{lot.name || `#${lot.id}`}</div>
-                                        <div className="text-gray-500">
-                                          {lot.supplier || 'N/D'} | {lot.arrivalDate ? format(new Date(lot.arrivalDate), 'dd/MM/yyyy') : 'N/D'}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </details>
-                              </div>
-                            );
-                          }
+                      {/* Informazioni principali */}
+                      <div className="bg-gray-50 rounded-md p-3">
+                        <div className="grid grid-cols-2 gap-y-2 gap-x-4 text-sm">
+                          {/* Cestello */}
+                          <div>
+                            <div className="text-xs font-medium text-gray-500">Cesta</div>
+                            <div className="font-medium">#{basket?.physicalNumber || op.basketId}</div>
+                          </div>
                           
-                          // Caso normale: l'operazione ha un solo lotto
-                          const lot = op.lot || (op.lotId ? lots?.find((l: any) => l.id === op.lotId) : null);
-                          return lot ? (
-                            <div>
+                          {/* Ciclo */}
+                          <div>
+                            <div className="text-xs font-medium text-gray-500">Ciclo</div>
+                            <div className="font-medium">{cycle ? `#${cycle.id}` : '-'}</div>
+                          </div>
+                          
+                          {/* FLUPSY e posizione */}
+                          {(flupsy || (basket?.row && basket?.position)) && (
+                            <div className="col-span-2 mt-1">
+                              {flupsy && (
+                                <div className="text-xs text-blue-600">
+                                  <MapPin className="h-3 w-3 inline-block mr-1" />
+                                  {flupsy.name}
+                                </div>
+                              )}
+                              {basket?.row && basket?.position && (
+                                <div className="text-xs text-indigo-600 mt-0.5">
+                                  <ArrowRightCircle className="h-3 w-3 inline-block mr-1" />
+                                  Posizione: {basket.row} - {basket.position}
+                                </div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Conteggio */}
+                          {(animalCount || op.weight || op.animalsPerKg) && (
+                            <div className="col-span-2 mt-1 py-1 border-t border-b border-gray-200">
+                              <div className="flex items-baseline justify-between">
+                                <div className="text-xs font-medium text-gray-500">Conteggio</div>
+                                <div className="font-medium text-right">
+                                  {animalCount ? (
+                                    <span className="text-base text-primary">{parseInt(String(animalCount)).toLocaleString()}</span>
+                                  ) : op.weight ? (
+                                    <span>{op.weight.toLocaleString()} kg</span>
+                                  ) : op.animalsPerKg ? (
+                                    <span>{op.animalsPerKg.toLocaleString()} per kg</span>
+                                  ) : null}
+                                </div>
+                              </div>
+                              {animalCountDetails && (
+                                <div className="text-xs text-gray-500 mt-0.5 text-right">{animalCountDetails}</div>
+                              )}
+                            </div>
+                          )}
+                          
+                          {/* Lotto */}
+                          {lot && (
+                            <div className="col-span-2 mt-1">
+                              <div className="text-xs font-medium text-gray-500">Lotto</div>
                               <div className="font-medium text-indigo-600">{lot.name}</div>
-                              <div className="text-xs mt-0.5 text-gray-500">
-                                Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')} | 
-                                Fornitore: {lot.supplier || 'N/D'}
+                              <div className="text-xs text-gray-500 mt-0.5">
+                                {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')} • {lot.supplier || 'N/D'}
                               </div>
                             </div>
-                          ) : (
-                            <span className="text-gray-400">-</span>
-                          );
-                        })()}
-                      </div>
-                      
-                      {/* Conteggio */}
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 mb-0.5">Conteggio</div>
-                        {(() => {
-                          // Se ha un conteggio animali, mostralo
-                          if (op.animalCount) {
-                            return (
-                              <div className="font-medium">{parseInt(op.animalCount).toLocaleString()}</div>
-                            );
-                          }
+                          )}
                           
-                          // Se ha un peso e animali per kg, calcola e mostra il conteggio stimato
-                          if (op.weight && op.animalsPerKg) {
-                            const estimatedCount = Math.round(op.weight * op.animalsPerKg);
-                            return (
-                              <div>
-                                <div className="font-medium">{estimatedCount.toLocaleString()}</div>
-                                <div className="text-xs text-gray-500">
-                                  {op.animalsPerKg.toLocaleString()} per kg | {op.weight.toLocaleString()} kg
-                                </div>
-                              </div>
-                            );
-                          }
+                          {/* Taglia */}
+                          {size && (
+                            <div className="col-span-2">
+                              <div className="text-xs font-medium text-gray-500">Taglia</div>
+                              <div className="font-medium">{size.name}</div>
+                            </div>
+                          )}
                           
-                          // Se ha solo animali per kg, mostralo
-                          if (op.animalsPerKg) {
-                            return (
-                              <div>
-                                <div className="font-medium">{op.animalsPerKg.toLocaleString()}</div>
-                                <div className="text-xs text-gray-500">per kg</div>
-                              </div>
-                            );
-                          }
-                          
-                          // Se ha solo peso, mostralo
-                          if (op.weight) {
-                            return (
-                              <div>
-                                <div className="font-medium">{op.weight.toLocaleString()} kg</div>
-                              </div>
-                            );
-                          }
-                          
-                          return <span>-</span>;
-                        })()}
-                      </div>
-                      
-                      {/* Taglia */}
-                      <div>
-                        <div className="text-xs font-medium text-gray-500 mb-0.5">Taglia</div>
-                        <div className="font-medium">
-                          {op.size ? op.size.name : (op.sizeId ? `#${op.sizeId}` : '-')}
+                          {/* Note */}
+                          {op.notes && (
+                            <div className="col-span-2 mt-1 pt-1 border-t border-gray-200">
+                              <div className="text-xs font-medium text-gray-500">Note</div>
+                              <div className="text-sm text-gray-700 italic">{op.notes}</div>
+                            </div>
+                          )}
                         </div>
                       </div>
-                      
-                      {/* Note */}
-                      {op.notes && (
-                        <div className="sm:col-span-2 mt-1">
-                          <div className="text-xs font-medium text-gray-500 mb-0.5">Note</div>
-                          <div className="text-sm text-gray-700">{op.notes}</div>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             </div>
           </div>
