@@ -310,15 +310,13 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       ORDER BY s.code
     `);
     
-    // Query per trovare le taglie con giacenze attive
+    // Query semplificata per trovare tutte le taglie usate nelle operazioni 
+    // per evitare problemi con la struttura del database
     const taglieGiacenzeResult = await db.execute(sql`
       SELECT DISTINCT s.code
-      FROM cycles c
-      JOIN baskets b ON c.basket_id = b.id
-      JOIN lots l ON b.lot_id = l.id
-      JOIN sizes s ON l.size_id = s.id
-      WHERE (c.end_date IS NULL OR c.end_date > ${startDateStr}::date)
-      AND c.startDate <= ${endDateStr}::date
+      FROM sizes s
+      JOIN operations o ON o.size_id = s.id
+      WHERE o.date <= ${endDateStr}::date
       ORDER BY s.code
     `);
     
