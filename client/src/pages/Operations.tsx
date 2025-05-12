@@ -858,7 +858,8 @@ export default function Operations() {
         viewMode === 'table' ? (
           // Table View
           <div className="bg-white rounded-lg shadow overflow-hidden">
-            <div className="overflow-x-auto">
+            {/* Desktop View (tabella) */}
+            <div className="hidden md:block overflow-x-auto">
               <table className="min-w-full divide-y divide-gray-200">
                 <thead className="bg-gray-50">
                   <tr>
@@ -1220,6 +1221,283 @@ export default function Operations() {
                   )}
                 </tbody>
               </table>
+            </div>
+            
+            {/* Mobile View (cards) */}
+            <div className="md:hidden">
+              {/* Header delle colonne mobili per ordinamento */}
+              <div className="bg-gray-50 p-3 flex gap-2 flex-wrap">
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`text-xs h-7 rounded-full ${sortConfig.key === 'date' ? 'bg-primary text-white hover:text-white' : 'text-gray-600'}`}
+                  onClick={() => handleSortClick('date')}
+                >
+                  <div className="flex items-center">
+                    Data
+                    {sortConfig.key === 'date' && (
+                      <span className="ml-1">
+                        {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                      </span>
+                    )}
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`text-xs h-7 rounded-full ${sortConfig.key === 'type' ? 'bg-primary text-white hover:text-white' : 'text-gray-600'}`}
+                  onClick={() => handleSortClick('type')}
+                >
+                  <div className="flex items-center">
+                    Tipologia
+                    {sortConfig.key === 'type' && (
+                      <span className="ml-1">
+                        {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                      </span>
+                    )}
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`text-xs h-7 rounded-full ${sortConfig.key === 'animalCount' ? 'bg-primary text-white hover:text-white' : 'text-gray-600'}`}
+                  onClick={() => handleSortClick('animalCount')}
+                >
+                  <div className="flex items-center">
+                    Conteggio
+                    {sortConfig.key === 'animalCount' && (
+                      <span className="ml-1">
+                        {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                      </span>
+                    )}
+                  </div>
+                </Button>
+                
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className={`text-xs h-7 rounded-full ${sortConfig.key === 'lot' ? 'bg-primary text-white hover:text-white' : 'text-gray-600'}`}
+                  onClick={() => handleSortClick('lot')}
+                >
+                  <div className="flex items-center">
+                    Lotto
+                    {sortConfig.key === 'lot' && (
+                      <span className="ml-1">
+                        {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
+                      </span>
+                    )}
+                  </div>
+                </Button>
+              </div>
+              
+              {/* Cards delle operazioni */}
+              <div className="divide-y divide-gray-200">
+                {sortedOperations.map((op: any) => (
+                  <div key={op.id} className="p-4 hover:bg-gray-50">
+                    {/* Header della card */}
+                    <div className="flex justify-between items-start mb-2">
+                      <div>
+                        <div className="text-sm font-medium text-gray-900">{format(new Date(op.date), 'dd/MM/yyyy')}</div>
+                        <div className="mt-1">
+                          <Badge variant="outline" className={`${getOperationBadgeClass(op.type)} text-xs font-medium`}>
+                            {getOperationTypeLabel(op.type)}
+                          </Badge>
+                        </div>
+                      </div>
+                      <div className="flex gap-1">
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            setSelectedOperation(op);
+                            setIsEditDialogOpen(true);
+                          }}
+                        >
+                          <Pencil className="h-4 w-4 text-gray-600" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8 text-red-600"
+                          onClick={() => {
+                            setSelectedOperation(op);
+                            setIsDeleteDialogOpen(true);
+                          }}
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          className="h-8 w-8"
+                          onClick={() => {
+                            // Duplica l'operazione
+                            const nextDay = addDays(new Date(op.date), 1);
+                            const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
+                            const duplicatedOp = {
+                              ...op,
+                              type: operationType,
+                              date: format(nextDay, 'yyyy-MM-dd'),
+                              id: undefined
+                            };
+                            setSelectedOperation(duplicatedOp);
+                            setIsCreateDialogOpen(true);
+                          }}
+                        >
+                          <Copy className="h-4 w-4 text-gray-600" />
+                        </Button>
+                      </div>
+                    </div>
+                    
+                    {/* Dettagli cesta */}
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 mb-2 mt-3 border-t pt-2 text-sm">
+                      <div>
+                        <div className="text-xs font-medium text-gray-500 mb-0.5">Cesta</div>
+                        <div className="font-medium">#{op.basket?.physicalNumber || op.basketId}</div>
+                        {op.basket?.flupsyId && flupsys?.find((f: any) => f.id === op.basket?.flupsyId) && (
+                          <div className="text-xs text-blue-600 mt-0.5">
+                            FLUPSY: {flupsys.find((f: any) => f.id === op.basket?.flupsyId)?.name || `#${op.basket.flupsyId}`}
+                          </div>
+                        )}
+                        {op.basket?.row && op.basket?.position && (
+                          <div className="text-xs text-indigo-600 mt-0.5">
+                            Posizione: {op.basket.row} - {op.basket.position}
+                          </div>
+                        )}
+                      </div>
+                      
+                      <div>
+                        <div className="text-xs font-medium text-gray-500 mb-0.5">Ciclo</div>
+                        <div className="font-medium">{op.cycleId ? `#${op.cycleId}` : '-'}</div>
+                      </div>
+                      
+                      {/* Lotto */}
+                      <div className="sm:col-span-2">
+                        <div className="text-xs font-medium text-gray-500 mb-0.5">Lotto</div>
+                        {(() => {
+                          // Caso speciale: l'operazione ha lotti multipli
+                          if (op.hasMultipleLots && op.additionalLots && Array.isArray(op.additionalLots) && op.additionalLots.length > 0) {
+                            const mainLot = op.lot || (op.lotId ? lots?.find((l: any) => l.id === op.lotId) : null);
+                            return (
+                              <div>
+                                <div className="flex items-center gap-2">
+                                  <span className="font-medium text-indigo-600">
+                                    {mainLot ? mainLot.name : 'Lotto principale'}
+                                  </span>
+                                  <span className="px-1.5 py-0.5 rounded text-xs font-medium bg-amber-100 text-amber-800 border border-amber-300">
+                                    Lotto misto
+                                  </span>
+                                </div>
+                                {mainLot && (
+                                  <div className="text-xs mt-0.5 text-gray-500">
+                                    Arrivo: {format(new Date(mainLot.arrivalDate), 'dd/MM/yyyy')} | 
+                                    Fornitore: {mainLot.supplier || 'N/D'}
+                                  </div>
+                                )}
+                                <details className="text-xs mt-1">
+                                  <summary className="cursor-pointer text-indigo-600 hover:text-indigo-800">
+                                    Altri lotti ({op.additionalLots.length})
+                                  </summary>
+                                  <div className="pl-2 mt-1 border-l-2 border-indigo-200">
+                                    {op.additionalLots.map((lot: any, idx: number) => (
+                                      <div key={idx} className="mb-1.5">
+                                        <div className="font-medium">{lot.name || `#${lot.id}`}</div>
+                                        <div className="text-gray-500">
+                                          {lot.supplier || 'N/D'} | {lot.arrivalDate ? format(new Date(lot.arrivalDate), 'dd/MM/yyyy') : 'N/D'}
+                                        </div>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </details>
+                              </div>
+                            );
+                          }
+                          
+                          // Caso normale: l'operazione ha un solo lotto
+                          const lot = op.lot || (op.lotId ? lots?.find((l: any) => l.id === op.lotId) : null);
+                          return lot ? (
+                            <div>
+                              <div className="font-medium text-indigo-600">{lot.name}</div>
+                              <div className="text-xs mt-0.5 text-gray-500">
+                                Arrivo: {format(new Date(lot.arrivalDate), 'dd/MM/yyyy')} | 
+                                Fornitore: {lot.supplier || 'N/D'}
+                              </div>
+                            </div>
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          );
+                        })()}
+                      </div>
+                      
+                      {/* Conteggio */}
+                      <div>
+                        <div className="text-xs font-medium text-gray-500 mb-0.5">Conteggio</div>
+                        {(() => {
+                          // Se ha un conteggio animali, mostralo
+                          if (op.animalCount) {
+                            return (
+                              <div className="font-medium">{parseInt(op.animalCount).toLocaleString()}</div>
+                            );
+                          }
+                          
+                          // Se ha un peso e animali per kg, calcola e mostra il conteggio stimato
+                          if (op.weight && op.animalsPerKg) {
+                            const estimatedCount = Math.round(op.weight * op.animalsPerKg);
+                            return (
+                              <div>
+                                <div className="font-medium">{estimatedCount.toLocaleString()}</div>
+                                <div className="text-xs text-gray-500">
+                                  {op.animalsPerKg.toLocaleString()} per kg | {op.weight.toLocaleString()} kg
+                                </div>
+                              </div>
+                            );
+                          }
+                          
+                          // Se ha solo animali per kg, mostralo
+                          if (op.animalsPerKg) {
+                            return (
+                              <div>
+                                <div className="font-medium">{op.animalsPerKg.toLocaleString()}</div>
+                                <div className="text-xs text-gray-500">per kg</div>
+                              </div>
+                            );
+                          }
+                          
+                          // Se ha solo peso, mostralo
+                          if (op.weight) {
+                            return (
+                              <div>
+                                <div className="font-medium">{op.weight.toLocaleString()} kg</div>
+                              </div>
+                            );
+                          }
+                          
+                          return <span>-</span>;
+                        })()}
+                      </div>
+                      
+                      {/* Taglia */}
+                      <div>
+                        <div className="text-xs font-medium text-gray-500 mb-0.5">Taglia</div>
+                        <div className="font-medium">
+                          {op.size ? op.size.name : (op.sizeId ? `#${op.sizeId}` : '-')}
+                        </div>
+                      </div>
+                      
+                      {/* Note */}
+                      {op.notes && (
+                        <div className="sm:col-span-2 mt-1">
+                          <div className="text-xs font-medium text-gray-500 mb-0.5">Note</div>
+                          <div className="text-sm text-gray-700">{op.notes}</div>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
             </div>
           </div>
         ) : (
