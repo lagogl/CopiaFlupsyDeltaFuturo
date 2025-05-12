@@ -51,7 +51,7 @@ export async function getMonthDataForExport(db: any, month: string): Promise<Rec
     const monthData: Record<string, any> = {};
     
     // Prepariamo un array di oggetti con le taglie attive e quantità 0 per inizializzare i giorni
-    const taglieVuote = taglieAttiveList.map(code => ({
+    const taglieVuote = taglieAttiveList.map((code: string) => ({
       taglia: code,
       quantita: 0
     }));
@@ -317,6 +317,29 @@ export async function exportCalendarCsv(req: Request, res: Response) {
     // Recupera i dati mensili utilizzando la funzione di supporto
     const monthData = await getMonthDataForExport(db, month);
     
+    // Esegui la query per ottenere le operazioni giornaliere (non cumulative)
+    // per poter mostrare i movimenti giornalieri nel CSV
+    const operazioniGiornaliereResult = await db.execute(sql`
+      WITH date_range AS (
+        SELECT generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) AS day
+      )
+      SELECT 
+        d.day::text as date,
+        s.code as taglia,
+        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count ELSE 0 END) as entrate,
+        SUM(CASE WHEN o.type IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END) as uscite,
+        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count 
+            WHEN o.type IN ('cessazione', 'vendita') THEN -o.animal_count
+            ELSE 0 END) as bilancio
+      FROM date_range d
+      CROSS JOIN sizes s
+      LEFT JOIN operations o ON o.date = d.day AND o.size_id = s.id
+      WHERE s.code IS NOT NULL
+      ${taglieAttiveList.length > 0 ? sql`AND s.code IN ${taglieAttiveList}` : sql``}
+      GROUP BY d.day, s.code
+      ORDER BY d.day, s.code
+    `);
+    
     // Costruisci le intestazioni del CSV
     const headers = ['Data', 'Operazioni', 'Entrate', 'Uscite', 'Bilancio', 'Totale'];
     
@@ -354,12 +377,30 @@ export async function exportCalendarCsv(req: Request, res: Response) {
         dayData.giacenza || '0'
       ];
       
-      // Aggiungi i dati per ogni taglia
+      // Recupera le operazioni giornaliere per ogni taglia (non i valori cumulativi)
       if (taglieAttiveList.length > 0) {
+        // Ottieni la data in formato ISO
+        const dateKey = format(day, 'yyyy-MM-dd');
+        
+        // Recupera i dati delle operazioni per questo giorno dalla query operazioniGiornaliere
+        // Cast a any[] per evitare errori TypeScript
+        const operazioniArray = operazioniGiornaliereResult as any[];
+        const operazioniDelGiorno = operazioniArray.filter(op => 
+          op.date === dateKey
+        );
+        
+        // Per ogni taglia nella lista taglie attive
         taglieAttiveList.forEach(taglia => {
-          // Cerca la taglia nei dati del giorno, altrimenti usa '0'
-          const tagliaData = (dayData.dettaglio_taglie || []).find((t: any) => t.taglia === taglia);
-          row.push(tagliaData ? String(tagliaData.quantita) : '0');
+          // Cerca le operazioni per questa taglia in questo giorno
+          const operazioniTaglia = operazioniDelGiorno.find(op => op.taglia === taglia);
+          
+          // Se ci sono operazioni e il bilancio è diverso da zero, mostra il bilancio
+          // altrimenti mostra 0
+          const bilancio = operazioniTaglia && parseInt(operazioniTaglia.bilancio || '0', 10) !== 0 
+            ? operazioniTaglia.bilancio 
+            : '0';
+            
+          row.push(String(bilancio));
         });
       }
       
