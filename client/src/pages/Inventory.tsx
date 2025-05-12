@@ -143,6 +143,9 @@ export default function Inventory() {
   
   // Numero di mesi per le proiezioni
   const [projectionMonths, setProjectionMonths] = useState<number>(6);
+  
+  // Operazioni filtrate per data di riferimento
+  const [filteredOperations, setFilteredOperations] = useState<any[]>([]);
 
   // Carica dati necessari
   const { data: baskets, isLoading: loadingBaskets } = useQuery({
@@ -226,11 +229,11 @@ export default function Inventory() {
     );
     
     // Filtra le operazioni fino alla data di riferimento selezionata
-    const filteredOperations = (operations as any[]).filter((op: any) => 
+    const filteredOperations = operations ? (operations as any[]).filter((op: any) => 
       new Date(op.date) <= referenceDate
-    );
+    ) : [];
     
-    console.log("Operazioni filtrate per data:", filteredOperations.length, "su", operations.length);
+    console.log("Operazioni filtrate per data:", filteredOperations.length, "su", operations ? operations.length : 0);
 
     // Prepara un map per le dimensioni
     const sizeMap = new Map();
@@ -262,8 +265,8 @@ export default function Inventory() {
 
     // Calcola statistiche per ogni cesta
     activeBaskets.forEach((basket: any) => {
-      // Trova l'ultima operazione di questa cesta
-      const basketOperations = (operations as any[])
+      // Trova l'ultima operazione di questa cesta (usando operazioni filtrate per data)
+      const basketOperations = filteredOperations
         .filter((op: any) => op.basketId === basket.id)
         .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
@@ -360,8 +363,8 @@ export default function Inventory() {
     const basketsDataArray: BasketData[] = [];
     
     activeBaskets.forEach((basket: any) => {
-      // Trova l'ultima operazione di questa cesta
-      const basketOperations = (operations as any[])
+      // Trova l'ultima operazione di questa cesta (usando operazioni filtrate per data)
+      const basketOperations = filteredOperations
         .filter((op: any) => op.basketId === basket.id)
         .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
