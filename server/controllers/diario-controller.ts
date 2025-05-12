@@ -227,11 +227,15 @@ export async function getMonthDataForExport(db: any, month: string): Promise<Rec
       
       // Aggiungi le operazioni giornaliere per taglia (non cumulative)
       if (operazioniByDate[dateStr]) {
-        // Imposta solo il bilancio giornaliero per ogni taglia
-        monthData[dateStr].dettaglio_taglie = operazioniByDate[dateStr].map((op: any) => ({
-          taglia: op.taglia,
-          quantita: op.bilancio // Mostra solo le operazioni del singolo giorno
-        }));
+        // Crea un array delle operazioni giornaliere - mostra solo il bilancio del giorno
+        const operazioniDiQuestoGiorno = operazioniByDate[dateStr]
+          .filter((op: any) => op.bilancio !== 0) // Mostra solo le taglie con operazioni
+          .map((op: any) => ({
+            taglia: op.taglia,
+            quantita: op.bilancio // Bilancio giornaliero (entrate-uscite del giorno)
+          }));
+        
+        monthData[dateStr].dettaglio_taglie = operazioniDiQuestoGiorno;
       } else {
         monthData[dateStr].dettaglio_taglie = [];
       }
