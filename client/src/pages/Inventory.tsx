@@ -560,10 +560,39 @@ export default function Inventory() {
   
   // Funzione per calcolare il numero di animali da animalsPerKg e totalWeight
   const calculateAnimalCount = (operation: any): number => {
+    // Caso 1: Se il conteggio degli animali è direttamente disponibile
     if (operation.animalCount) return operation.animalCount;
+    
+    // Caso 2: Se abbiamo sia animalsPerKg che totalWeight
     if (operation.animalsPerKg && operation.totalWeight) {
       return Math.round(operation.animalsPerKg * operation.totalWeight / 1000);
     }
+    
+    // Caso 3: Se abbiamo animalsPerKg e basketWeight
+    if (operation.animalsPerKg && operation.basketWeight) {
+      // basketWeight è il peso totale della cesta, quindi dobbiamo sottrarre il peso della cesta vuota
+      const netWeight = operation.basketWeight - (operation.emptyBasketWeight || 0);
+      if (netWeight > 0) {
+        return Math.round(operation.animalsPerKg * netWeight / 1000);
+      }
+    }
+    
+    // Caso 4: Se abbiamo solo animalsPerKg, possiamo stimare usando il peso medio
+    if (operation.animalsPerKg && operation.averageWeight) {
+      // Se abbiamo il peso medio per animale, possiamo calcolare un valore approssimativo
+      // Supponiamo che una cesta contenga almeno 1000 animali come stima di default
+      const estimatedCount = 1000;
+      return estimatedCount;
+    }
+    
+    // Se abbiamo solo animalsPerKg, usiamo un valore di default basato sulla taglia tipica
+    if (operation.animalsPerKg) {
+      // Usa il valore animalsPerKg per stimare il numero di animali in una cesta standard
+      // Assumiamo un peso medio della cesta di 2 kg come default
+      const defaultBasketNetWeight = 2000; // grammi
+      return Math.round(operation.animalsPerKg * defaultBasketNetWeight / 1000);
+    }
+    
     return 0;
   };
   
