@@ -330,7 +330,10 @@ export default function Flupsys() {
             <div key={size} className="flex flex-col">
               <div className="flex justify-between text-xs mb-1">
                 <span>{size}</span>
-                <span className="font-medium">{percentage.toFixed(1)}%</span>
+                <div className="flex items-center gap-1">
+                  <span className="text-muted-foreground">{Number(count).toLocaleString()}</span>
+                  <span className="font-medium">{percentage.toFixed(1)}%</span>
+                </div>
               </div>
               <div className="w-full bg-muted rounded-full h-2">
                 <div 
