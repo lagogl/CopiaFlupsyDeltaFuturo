@@ -407,11 +407,13 @@ export async function exportCalendarCsv(req: Request, res: Response) {
     let totale_uscite = 0;
     let totale_bilancio = 0;
     let giacenza_finale = 0;
-    const totali_taglie = new Map<string, number>();
     
-    // Per ogni taglia attiva, inizializza il totale a 0
+    // Crea un oggetto per i totali delle taglie (invece di una Map)
+    const totaliTaglie: Record<string, number> = {};
+    
+    // Inizializza tutti i totali a 0
     taglieAttive.forEach(taglia => {
-      totali_taglie.set(taglia, 0);
+      totaliTaglie[taglia] = 0;
     });
     
     // Per ogni giorno, aggiungi una riga al CSV e aggiorna i totali
@@ -443,11 +445,11 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       
       // Aggiorna i totali per ogni taglia
       taglieAttive.forEach(taglia => {
-        const valore = operazioniGiorno.has(taglia) ? operazioniGiorno.get(taglia) || 0 : 0;
-        // Somma solo i valori diversi da zero
-        if (valore !== 0) {
-          const totaleCorrente = totali_taglie.get(taglia) || 0;
-          totali_taglie.set(taglia, totaleCorrente + valore);
+        if (operazioniGiorno.has(taglia)) {
+          const valore = operazioniGiorno.get(taglia) || 0;
+          if (valore !== 0) {
+            totaliTaglie[taglia] += valore;
+          }
         }
       });
       
@@ -477,23 +479,23 @@ export async function exportCalendarCsv(req: Request, res: Response) {
     // Aggiungi una riga vuota come separatore
     csvContent += Array(headers.length + 1).join(';') + '\n';
     
-    // Aggiungi la riga con i totali del mese
+    // Crea la riga dei totali
     const totaliRow = [
       'TOTALI MESE',
       String(totale_operazioni),
       String(totale_entrate),
       String(totale_uscite),
       String(totale_bilancio),
-      String(giacenza_finale) // La giacenza finale è quella dell'ultimo giorno
+      String(giacenza_finale)
     ];
     
-    // Aggiungi i totali per ogni taglia
+    // Aggiungi i totali per le taglie
     taglieAttive.forEach(taglia => {
-      const totaleTaglia = totali_taglie.get(taglia) || 0;
-      totaliRow.push(String(totaleTaglia));
+      totaliRow.push(String(totaliTaglie[taglia]));
     });
     
     // Log di debug per i totali
+    console.log("Totali per taglie:", totaliTaglie);
     console.log(`Riga CSV per i totali del mese: ${totaliRow.join(';')}`);
     
     // Aggiungi la riga dei totali al CSV
