@@ -228,12 +228,15 @@ export default function Inventory() {
       basket.state === 'active' && basket.currentCycleId !== null
     );
     
-    // Filtra le operazioni fino alla data di riferimento selezionata
-    const filteredOperations = operations ? (operations as any[]).filter((op: any) => 
+    // Filtra le operazioni fino alla data di riferimento selezionata e aggiorna lo stato
+    const filtered = operations ? (operations as any[]).filter((op: any) => 
       new Date(op.date) <= referenceDate
     ) : [];
     
-    console.log("Operazioni filtrate per data:", filteredOperations.length, "su", operations ? operations.length : 0);
+    // Aggiorna lo stato delle operazioni filtrate
+    setFilteredOperations(filtered);
+    
+    console.log("Operazioni filtrate per data:", Array.isArray(filtered) ? filtered.length : 0, "su", Array.isArray(operations) ? operations.length : 0);
 
     // Prepara un map per le dimensioni
     const sizeMap = new Map();
@@ -363,7 +366,7 @@ export default function Inventory() {
     const basketsDataArray: BasketData[] = [];
     
     activeBaskets.forEach((basket: any) => {
-      // Trova l'ultima operazione di questa cesta (usando operazioni filtrate per data)
+      // Utilizzare filteredOperations, già filtrato per data di riferimento
       const basketOperations = filteredOperations
         .filter((op: any) => op.basketId === basket.id)
         .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
