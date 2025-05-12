@@ -1,8 +1,3 @@
-/**
- * Controller per le funzionalità del Diario di Bordo
- * Fornisce API ottimizzate per il caricamento dei dati mensili
- */
-
 import { Request, Response } from "express";
 import { db } from "../db";
 import { operations, baskets, flupsys, lots, sizes, cycles } from "../../shared/schema";
@@ -11,14 +6,15 @@ import { format, startOfMonth, endOfMonth, eachDayOfInterval } from "date-fns";
 
 /**
  * Versione riutilizzabile della funzione getMonthData che può essere chiamata 
- * internamente da altri metodi (come generazione CSV)
+ * direttamente da altre funzioni
+ * 
  * @param {any} db - Connessione al database
  * @param {string} month - Mese in formato YYYY-MM
  * @returns {Promise<Record<string, any>>} - Dati mensili
  */
 export async function getMonthDataForExport(db: any, month: string): Promise<Record<string, any>> {
   try {
-    // Ottieni il range di date per il mese specificato
+    // Step 1: Prepara le date di inizio e fine mese
     const startDate = startOfMonth(new Date(`${month}-01`));
     const endDate = endOfMonth(new Date(`${month}-01`));
     
@@ -27,17 +23,17 @@ export async function getMonthDataForExport(db: any, month: string): Promise<Rec
     
     console.log(`Range di date: ${startDateStr} - ${endDateStr}`);
     
-    // Determina le taglie attive nel mese
+    // Step 2: Determina le taglie attive nel mese
     console.log("Determinazione delle taglie attive nel mese...");
-    const taglieResult = await db.execute(sql`
-      SELECT DISTINCT s.code 
-      FROM operations o
-      JOIN sizes s ON o.size_id = s.id
+    const taglieAttiveResult = await db.execute(sql`
+      SELECT DISTINCT s.code
+      FROM sizes s
+      JOIN operations o ON o.size_id = s.id
       WHERE o.date BETWEEN ${startDateStr} AND ${endDateStr}
       ORDER BY s.code
     `);
     
-    const taglieAttiveList = taglieResult.map((row: any) => row.code);
+    const taglieAttiveList = taglieAttiveResult.map((row: any) => row.code);
     console.log(`Taglie attive trovate: ${taglieAttiveList.length}`);
     console.log(`Taglie attive: ${taglieAttiveList.join(', ')}`);
     
@@ -47,54 +43,48 @@ export async function getMonthDataForExport(db: any, month: string): Promise<Rec
       end: endDate
     });
     
-    // Inizializza l'oggetto di risposta con tutti i giorni del mese
+    // Crea un oggetto vuoto per i dati del mese, con un'entry per ogni giorno
     const monthData: Record<string, any> = {};
     
-    // Prepariamo un array di oggetti con le taglie attive e quantità 0 per inizializzare i giorni
-    const taglieVuote = taglieAttiveList.map((code: string) => ({
-      taglia: code,
-      quantita: 0
-    }));
-    
-    // Inizializza ogni giorno con dati vuoti, ma con le taglie attive pre-popolate
+    // Inizializza i dati base per ogni giorno
     daysInMonth.forEach(day => {
-      const dateKey = format(day, "yyyy-MM-dd");
-      monthData[dateKey] = {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      monthData[dateStr] = {
         operations: [],
         totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
-        giacenza: 0,
-        taglie: [],
-        // Inizializziamo con tutte le taglie attive e valore 0
-        dettaglio_taglie: [...taglieVuote]
+        dettaglio_taglie: [],
+        giacenza: 0
       };
     });
     
-    // Step 2: Recupera tutte le operazioni del mese in una sola query
+    // Step 3: Recupera tutte le operazioni per il mese
     console.log(`Recupero operazioni per il mese ${month}...`);
     const allOperationsResult = await db.execute(sql`
       SELECT 
-        o.id, o.date, o.type, o.basket_id, o.animal_count,
-        b.physical_number as basket_physical_number,
-        f.name as flupsy_name,
+        o.id,
+        o.date::text,
+        o.type,
+        o.animal_count,
+        o.notes,
         s.code as size_code
       FROM operations o
-      LEFT JOIN baskets b ON o.basket_id = b.id
-      LEFT JOIN flupsys f ON b.flupsy_id = f.id
-      LEFT JOIN sizes s ON o.size_id = s.id
+      JOIN sizes s ON o.size_id = s.id
       WHERE o.date BETWEEN ${startDateStr} AND ${endDateStr}
+      ORDER BY o.date, o.id
     `);
     
     console.log(`Operazioni recuperate: ${allOperationsResult.length}`);
     
     // Organizza le operazioni per data
     const operationsByDate: Record<string, any[]> = {};
+    
     allOperationsResult.forEach((op: any) => {
-      if (!op.date) return;
+      const dateStr = op.date;
+      // Converti i valori numerici in interi
+      if (op.animal_count) {
+        op.animal_count = parseInt(op.animal_count, 10);
+      }
       
-      const dateStr = typeof op.date === 'string' 
-        ? op.date 
-        : format(new Date(op.date), "yyyy-MM-dd");
-        
       if (!operationsByDate[dateStr]) {
         operationsByDate[dateStr] = [];
       }
@@ -168,10 +158,9 @@ export async function getMonthDataForExport(db: any, month: string): Promise<Rec
     // Organizza le giacenze totali per data
     const giacenzeTotaliByDate: Record<string, number> = {};
     for (const row of giacenzeTotaliResult as any[]) {
-      giacenzeTotaliByDate[row.date] = parseInt(row.totale_giacenza || '0', 10);
+      giacenzeTotaliByDate[row.date] = parseInt(row.totale_giacenza, 10);
     }
     
-    // Organizza le operazioni giornaliere per data e taglia
     const operazioniByDate: Record<string, any[]> = {};
     for (const row of operazioniGiornaliereResult as any[]) {
       if (!operazioniByDate[row.date]) {
@@ -249,22 +238,20 @@ export async function getMonthDataForExport(db: any, month: string): Promise<Rec
 }
 
 /**
- * Recupera tutti i dati per un intero mese in una singola chiamata
- * @param {Request} req - La richiesta HTTP
- * @param {Response} res - La risposta HTTP
+ * Restituisce tutti i dati del mese per il diario
  */
 export async function getMonthData(req: Request, res: Response) {
-  const { month } = req.query;
-
-  if (!month || typeof month !== 'string' || !/^\d{4}-\d{2}$/.test(month)) {
-    return res.status(400).json({ error: "Formato mese non valido. Utilizzare il formato YYYY-MM" });
-  }
-
   try {
-    // Utilizziamo la funzione di supporto per ottenere i dati del mese
+    // Ottieni il mese dall'URL
+    const month = req.query.month as string || format(new Date(), 'yyyy-MM');
+    
+    // Verifica il formato del mese
+    if (!month || !/^\d{4}-\d{2}$/.test(month)) {
+      return res.status(400).json({ error: 'Formato mese non valido. Utilizzare YYYY-MM' });
+    }
+    
     const monthData = await getMonthDataForExport(db, month);
     
-    // Invia i dati come risposta
     res.json(monthData);
   } catch (error) {
     console.error("Errore nel recupero dei dati mensili:", error);
@@ -297,164 +284,163 @@ export async function exportCalendarCsv(req: Request, res: Response) {
     const startDateStr = format(startDate, 'yyyy-MM-dd');
     const endDateStr = format(endDate, 'yyyy-MM-dd');
     
-    // Determina le taglie che hanno operazioni o hanno giacenze attive nel mese
-    console.log('Determinazione delle taglie attive o con giacenze per il calendario CSV...');
+    console.log('Preparazione dati per esportazione calendario in CSV...');
     
-    // Query per trovare le taglie con operazioni nel mese
+    // FASE 1: Ottieni le taglie che sono attive a fine mese
+    // Questa query è identica a quella usata per la giacenza dell'interfaccia web
+    const giacenzaResponse = await db.execute(sql`
+      WITH giacenze_cumulative AS (
+        -- Calcola tutte le entrate cumulative fino alla data specificata
+        SELECT
+          s.id as size_id,
+          s.code as taglia,
+          COALESCE(SUM(CASE 
+            WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count
+            WHEN o.type IN ('cessazione', 'vendita') THEN -o.animal_count
+            ELSE 0
+          END), 0) as quantita
+        FROM sizes s
+        LEFT JOIN operations o ON o.size_id = s.id AND o.date <= ${endDateStr}::date
+        GROUP BY s.id, s.code
+      )
+      -- Seleziona solo le taglie con quantità positiva
+      SELECT taglia, quantita
+      FROM giacenze_cumulative
+      WHERE quantita > 0
+      ORDER BY taglia
+    `);
+    
+    // Converti il risultato in un array di taglie attive
+    const taglieAttiveSet = new Set<string>();
+    (giacenzaResponse as any[]).forEach(row => {
+      taglieAttiveSet.add(row.taglia);
+    });
+    
+    // FASE 2: Aggiungi le taglie dalle operazioni di questo mese (anche se non hanno giacenza)
     const taglieOperazioniResult = await db.execute(sql`
       SELECT DISTINCT s.code 
       FROM operations o
       JOIN sizes s ON o.size_id = s.id
       WHERE o.date BETWEEN ${startDateStr}::date AND ${endDateStr}::date
-      AND o.animal_count > 0
       ORDER BY s.code
     `);
-    
-    // Query semplificata per trovare tutte le taglie usate nelle operazioni 
-    // per evitare problemi con la struttura del database
-    const taglieGiacenzeResult = await db.execute(sql`
-      SELECT DISTINCT s.code
-      FROM sizes s
-      JOIN operations o ON o.size_id = s.id
-      WHERE o.date <= ${endDateStr}::date
-      ORDER BY s.code
-    `);
-    
-    // Combina i risultati delle due query
-    const taglieAttiveSet = new Set<string>();
     
     // Aggiungi le taglie con operazioni
     taglieOperazioniResult.forEach((row: any) => {
       taglieAttiveSet.add(row.code);
     });
     
-    // Aggiungi le taglie con giacenze
-    taglieGiacenzeResult.forEach((row: any) => {
-      taglieAttiveSet.add(row.code);
-    });
+    // Converti il Set in un array ordinato
+    const taglieAttive = Array.from(taglieAttiveSet).sort();
     
-    // Converti il Set in un array
-    const taglieAttiveList = Array.from(taglieAttiveSet);
+    console.log(`Taglie per esportazione CSV: ${taglieAttive.join(', ')}`);
     
-    console.log(`Taglie attive per il calendario CSV: ${taglieAttiveList.join(', ')}`);
-    
-    // Crea un array con tutti i giorni del mese
+    // FASE 3: Crea un array con tutti i giorni del mese
     const daysInMonth = eachDayOfInterval({
       start: startDate,
       end: endDate
     });
     
-    // Recupera i dati mensili utilizzando la funzione di supporto
+    // FASE 4: Recupera tutti i dati mensili di base
+    console.log('Recupero dati mensili di base...');
     const monthData = await getMonthDataForExport(db, month);
     
-    // Esegui la query per ottenere le operazioni giornaliere (non cumulative)
-    // Verifica anche quali taglie hanno avuto operazioni con valore diverso da zero
-    const operazioniGiornaliereResult = await db.execute(sql`
-      WITH date_range AS (
-        SELECT generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) AS day
-      )
-      SELECT 
-        d.day::text as date,
-        s.code as taglia,
-        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count ELSE 0 END) as entrate,
-        SUM(CASE WHEN o.type IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END) as uscite,
-        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count 
+    // FASE 5: Per ogni giorno, recupera i dati delle operazioni per taglia
+    console.log('Recupero operazioni giornaliere per ogni taglia...');
+    
+    // Questa mappa conterrà le operazioni giornaliere per taglia per ogni giorno
+    const operazioniGiornaliereMappa = new Map<string, Map<string, number>>();
+    
+    // Per ogni giorno del mese, recupera le operazioni per taglia
+    for (const day of daysInMonth) {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      
+      // Recupera le operazioni per taglia per questo giorno
+      const operazioniGiorno = await db.execute(sql`
+        SELECT
+          s.code as taglia,
+          SUM(CASE 
+            WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count
             WHEN o.type IN ('cessazione', 'vendita') THEN -o.animal_count
-            ELSE 0 END) as bilancio
-      FROM date_range d
-      CROSS JOIN sizes s
-      LEFT JOIN operations o ON o.date = d.day AND o.size_id = s.id
-      WHERE s.code IS NOT NULL
-      ${taglieAttiveList.length > 0 ? sql`AND s.code IN ${taglieAttiveList}` : sql``}
-      GROUP BY d.day, s.code
-      ORDER BY d.day, s.code
-    `);
-    
-    // Otteniamo le operazioni giornaliere effettive con valore diverso da zero
-    // Cast a any[] per lavorare più facilmente con i risultati
-    const operazioniArray = operazioniGiornaliereResult as any[];
-    
-    // Utilizziamo direttamente le taglie attive che abbiamo già determinato
-    // (quelle con operazioni o giacenze)
-    const taglieFinali = taglieAttiveList.sort();
-    
-    // Prepariamo una mappa delle operazioni per ottimizzare le ricerche
-    const operazioniMap = new Map();
-    
-    // Popoliamo la mappa con i dati delle operazioni
-    operazioniArray.forEach(op => {
-      const key = `${op.date}-${op.taglia}`;
-      operazioniMap.set(key, op);
-    });
-    
-    console.log(`Taglie con operazioni effettive nel CSV: ${taglieFinali.join(', ')}`);
-    
-    // Costruisci le intestazioni del CSV
-    const headers = ['Data', 'Operazioni', 'Entrate', 'Uscite', 'Bilancio', 'Totale'];
-    
-    // Aggiungi solo le taglie che hanno operazioni con valori non zero
-    if (taglieFinali.length > 0) {
-      taglieFinali.forEach(taglia => {
-        headers.push(taglia);
+            ELSE 0
+          END) as bilancio
+        FROM operations o
+        JOIN sizes s ON o.size_id = s.id
+        WHERE o.date = ${dateStr}::date
+        GROUP BY s.code
+        HAVING SUM(CASE 
+                WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count
+                WHEN o.type IN ('cessazione', 'vendita') THEN -o.animal_count
+                ELSE 0
+              END) != 0
+        ORDER BY s.code
+      `);
+      
+      // Crea una mappa per le operazioni di questo giorno
+      const operazioniGiornoMappa = new Map<string, number>();
+      
+      // Popola la mappa con i risultati della query
+      (operazioniGiorno as any[]).forEach(op => {
+        operazioniGiornoMappa.set(op.taglia, op.bilancio);
       });
+      
+      // Aggiungi questa mappa alla mappa principale
+      operazioniGiornaliereMappa.set(dateStr, operazioniGiornoMappa);
     }
     
-    console.log("Intestazioni CSV:", headers.join(';'));
+    // FASE 6: Costruisci le intestazioni del CSV
+    const headers = ['Data', 'Operazioni', 'Entrate', 'Uscite', 'Bilancio', 'Totale'];
     
-    // Inizia a costruire il contenuto CSV con punto e virgola come separatore (formato europeo)
+    // Aggiungi le taglie alle intestazioni
+    taglieAttive.forEach(taglia => {
+      headers.push(taglia);
+    });
+    
+    console.log(`Intestazioni CSV: ${headers.join(';')}`);
+    
+    // FASE 7: Costruisci il contenuto del CSV
     let csvContent = headers.join(';') + '\n';
     
-    // Aggiungi i dati per ogni giorno
-    daysInMonth.forEach(day => {
-      const dateKey = format(day, 'yyyy-MM-dd');
-      const dayData = monthData[dateKey] || { 
+    // Per ogni giorno, aggiungi una riga al CSV
+    for (const day of daysInMonth) {
+      const dateStr = format(day, 'yyyy-MM-dd');
+      const italianDate = format(day, 'dd/MM/yyyy');
+      
+      // Recupera i dati di base per questo giorno
+      const dayData = monthData[dateStr] || { 
         operations: [], 
         totals: { totale_entrate: 0, totale_uscite: 0, bilancio_netto: 0, numero_operazioni: 0 },
+        giacenza: 0,
         dettaglio_taglie: []
       };
       
-      // Formatta la data in formato italiano (gg/mm/yyyy)
-      const italianDate = format(day, 'dd/MM/yyyy');
+      // Recupera le operazioni per taglia per questo giorno
+      const operazioniGiorno = operazioniGiornaliereMappa.get(dateStr) || new Map<string, number>();
       
-      // Prepara la riga base
+      // Costruisci la riga base
       const row = [
         italianDate,
-        dayData.operations?.length || '0',
-        dayData.totals?.totale_entrate || '0',
-        dayData.totals?.totale_uscite || '0',
-        dayData.totals?.bilancio_netto || '0',
-        dayData.giacenza || '0'
+        String(dayData.operations?.length || '0'),
+        String(dayData.totals?.totale_entrate || '0'),
+        String(dayData.totals?.totale_uscite || '0'),
+        String(dayData.totals?.bilancio_netto || '0'),
+        String(dayData.giacenza || '0')
       ];
       
-      // Recupera i dati per taglia direttamente dai dettagli del giorno nel monthData
-      if (taglieFinali.length > 0) {
-        // Per ogni taglia nella lista di taglie finali
-        taglieFinali.forEach(taglia => {
-          // Trova i dettagli della taglia nei dati del giorno
-          let valoreTaglia = '0';
-          
-          // Verifica se ci sono dettagli per taglie in questo giorno
-          if (dayData.dettaglio_taglie && Array.isArray(dayData.dettaglio_taglie)) {
-            // Cerca il dettaglio per questa taglia specifica
-            const dettaglioTaglia = dayData.dettaglio_taglie.find((dt: any) => dt.taglia === taglia);
-            if (dettaglioTaglia && dettaglioTaglia.quantita) {
-              valoreTaglia = String(dettaglioTaglia.quantita);
-            }
-          }
-          
-          // Aggiungi alla riga
-          row.push(valoreTaglia);
-        });
-      }
+      // Aggiungi le operazioni per ogni taglia
+      taglieAttive.forEach(taglia => {
+        const valore = operazioniGiorno.has(taglia) ? String(operazioniGiorno.get(taglia)) : '0';
+        row.push(valore);
+      });
       
-      // Log di debug per vedere cosa viene esportato in ciascuna riga
-      console.log(`Riga CSV per ${italianDate}:`, row.join(';'));
+      // Log di debug
+      console.log(`Riga CSV per ${italianDate}: ${row.join(';')}`);
       
       // Aggiungi la riga al CSV
       csvContent += row.join(';') + '\n';
-    });
+    }
     
-    // Imposta l'header per il download
+    // FASE 8: Imposta gli header per il download
     res.setHeader('Content-Type', 'text/csv;charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="calendario_${month}.csv"`);
     
@@ -462,69 +448,95 @@ export async function exportCalendarCsv(req: Request, res: Response) {
     const BOM = '\ufeff';
     csvContent = BOM + csvContent;
     
-    // Invia il contenuto CSV
+    // Invia il CSV
     res.send(csvContent);
+    
   } catch (error) {
-    console.error("Errore nel recupero dei dati mensili:", error);
-    res.status(500).json({ error: "Errore nel recupero dei dati mensili" });
+    console.error("Errore nell'esportazione del calendario CSV:", error);
+    res.status(500).json({ error: "Errore nell'esportazione del calendario CSV" });
   }
 }
 
 /**
- * Recupera i cicli attivi a una determinata data
+ * Recupera i cicli attivi a una data specifica
  * @param {string} date - La data in formato YYYY-MM-DD
  * @returns {Promise<Array>} - Array dei cicli attivi
  */
-async function getCyclesActiveAtDate(date: string) {
-  return await db.select()
-    .from(cycles)
-    .where(
-      and(
-        lte(cycles.startDate, date),
-        sql`${cycles.endDate} IS NULL OR ${cycles.endDate} >= ${date}`
-      )
-    );
+export async function getActiveCyclesAtDate(date: string) {
+  return await db.execute(sql`
+    SELECT c.id, c.basket_id, c.start_date, c.end_date
+    FROM cycles c
+    WHERE c.start_date <= ${date}
+    AND (
+        ${cycles.endDate} IS NULL OR ${cycles.endDate} >= ${date}
+    )
+  `);
 }
 
 /**
- * Calcola la giacenza per una data specifica
+ * Calcola la giacenza totale ad una data specifica
  * @param {string} date - La data in formato YYYY-MM-DD
  * @param {Array} activeCycles - Array dei cicli attivi alla data specificata
  * @returns {Promise<Object>} - Oggetto con la giacenza totale e il dettaglio per taglia
  */
-async function calculateGiacenzaForDate(date: string, activeCycles: any[]) {
+export async function calculateGiacenzaAtDate(date: string, activeCycles?: any[]) {
   try {
-    // Ottieni tutti i cestelli attivi per i cicli attivi
-    const cyclesToCheck = activeCycles.map(cycle => cycle.id);
-    
-    if (cyclesToCheck.length === 0) {
-      return { totale_giacenza: 0, dettaglio_taglie: [] };
+    // Otteniamo i cicli attivi se non sono stati passati
+    if (!activeCycles) {
+      activeCycles = await getActiveCyclesAtDate(date);
+      if (!activeCycles || activeCycles.length === 0) {
+        return { totale_giacenza: 0, dettaglio_taglie: [] };
+      }
     }
     
-    // Query per ottenere i dettagli della giacenza
-    const taglieResults = await db.execute(
-      sql`SELECT s.code as taglia, SUM(o.animal_count) as quantita
-          FROM operations o
-          JOIN baskets b ON o.basket_id = b.id
-          JOIN sizes s ON o.size_id = s.id
-          WHERE o.date <= ${date}
-          AND o.type NOT IN ('cessazione', 'vendita')
-          GROUP BY s.code`
-    );
+    // Calcola la giacenza totale per la data
+    const result = await db.execute(sql`
+      WITH operazioni_cumulative AS (
+        SELECT o.size_id, s.code as taglia, 
+          SUM(CASE 
+            WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count
+            WHEN o.type IN ('cessazione', 'vendita') THEN -o.animal_count
+            ELSE 0 END) as animal_count
+        FROM operations o
+        JOIN sizes s ON o.size_id = s.id
+        WHERE o.date <= ${date}
+        GROUP BY o.size_id, s.code
+      )
+      SELECT SUM(CASE WHEN animal_count > 0 THEN animal_count ELSE 0 END) as totale_giacenza
+      FROM operazioni_cumulative
+    `);
     
-    // Elabora i risultati
-    let totaleGiacenza = 0;
+    // Estrai la giacenza totale dal risultato
+    const totaleGiacenza = result[0]?.totale_giacenza ? parseInt(result[0].totale_giacenza, 10) : 0;
+    
+    // Prepara l'array per il dettaglio delle taglie
     const dettaglioTaglie: { taglia: string, quantita: number }[] = [];
     
-    for (const row of taglieResults) {
-      if (row.taglia) {
-        const quantita = parseInt(row.quantita, 10) || 0;
-        totaleGiacenza += quantita;
-        
-        if (row.taglia && row.taglia !== 'Non specificata') {
+    // Calcola il dettaglio per taglia
+    const dettaglioResult = await db.execute(sql`
+      WITH operazioni_cumulative AS (
+        SELECT o.size_id, s.code as taglia, 
+          SUM(CASE 
+            WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count
+            WHEN o.type IN ('cessazione', 'vendita') THEN -o.animal_count
+            ELSE 0 END) as animal_count
+        FROM operations o
+        JOIN sizes s ON o.size_id = s.id
+        WHERE o.date <= ${date}
+        GROUP BY o.size_id, s.code
+      )
+      SELECT taglia, animal_count as quantita
+      FROM operazioni_cumulative
+      WHERE animal_count > 0
+      ORDER BY taglia
+    `);
+    
+    if (dettaglioResult && dettaglioResult.length > 0) {
+      for (const row of dettaglioResult as any[]) {
+        if (row && row.taglia) {
           dettaglioTaglie.push({
             taglia: row.taglia,
-            quantita: quantita
+            quantita: parseInt(row.quantita, 10)
           });
         }
       }
@@ -545,35 +557,32 @@ async function calculateGiacenzaForDate(date: string, activeCycles: any[]) {
  * @param {string} date - La data in formato YYYY-MM-DD
  * @returns {Promise<Object>} - Oggetto con i totali giornalieri
  */
-async function calculateDailyTotals(date: string) {
+export async function calculateDailyTotals(date: string) {
   try {
-    // Query ottimizzata direttamente in SQL
-    const [totals] = await db.execute(sql`
-      SELECT
-        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') 
-            THEN o.animal_count ELSE 0 END) AS totale_entrate,
-        SUM(CASE WHEN o.type IN ('vendita', 'cessazione') THEN o.animal_count ELSE 0 END) AS totale_uscite,
-        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') 
-            THEN o.animal_count ELSE 0 END) - 
-        SUM(CASE WHEN o.type IN ('vendita', 'cessazione') THEN o.animal_count ELSE 0 END) AS bilancio_netto,
-        COUNT(DISTINCT o.id) AS numero_operazioni
+    // Calcola i totali giornalieri per la data
+    const result = await db.execute(sql`
+      SELECT 
+        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count ELSE 0 END) as totale_entrate,
+        SUM(CASE WHEN o.type IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END) as totale_uscite,
+        COUNT(*) as numero_operazioni
       FROM operations o
       WHERE o.date::text = ${date}
     `);
     
+    const row = result[0];
     return {
-      totale_entrate: parseInt(totals?.totale_entrate || '0', 10),
-      totale_uscite: parseInt(totals?.totale_uscite || '0', 10),
-      bilancio_netto: parseInt(totals?.bilancio_netto || '0', 10),
-      numero_operazioni: parseInt(totals?.numero_operazioni || '0', 10)
+      totale_entrate: row?.totale_entrate ? parseInt(row.totale_entrate, 10) : 0,
+      totale_uscite: row?.totale_uscite ? parseInt(row.totale_uscite, 10) : 0,
+      numero_operazioni: row?.numero_operazioni ? parseInt(row.numero_operazioni, 10) : 0,
+      bilancio_netto: (row?.totale_entrate ? parseInt(row.totale_entrate, 10) : 0) - (row?.totale_uscite ? parseInt(row.totale_uscite, 10) : 0)
     };
   } catch (error) {
     console.error(`Errore nel calcolo dei totali giornalieri per ${date}:`, error);
     return {
       totale_entrate: 0,
       totale_uscite: 0,
-      bilancio_netto: 0,
-      numero_operazioni: 0
+      numero_operazioni: 0,
+      bilancio_netto: 0
     };
   }
 }
@@ -583,27 +592,100 @@ async function calculateDailyTotals(date: string) {
  * @param {string} date - La data in formato YYYY-MM-DD
  * @returns {Promise<Array>} - Array con le statistiche per taglia
  */
-async function calculateSizeStats(date: string) {
+export async function calculateDailyTaglieStats(date: string) {
   try {
-    // Query ottimizzata per statistiche per taglia
-    const sizeResults = await db.execute(
-      sql`SELECT s.code as taglia, 
-          SUM(CASE WHEN o.type = 'prima-attivazione' THEN o.animal_count ELSE 0 END) as entrate,
-          SUM(CASE WHEN o.type = 'cessazione' THEN o.animal_count ELSE 0 END) as uscite
-          FROM operations o
-          JOIN sizes s ON o.size_id = s.id
-          WHERE o.date = ${date}
-          GROUP BY s.code`
-    );
-    
-    return sizeResults.map(row => ({
-      taglia: row.taglia || '',
-      entrate: parseInt(row.entrate || '0', 10),
-      uscite: parseInt(row.uscite || '0', 10),
-      bilancio: parseInt(row.entrate || '0', 10) - parseInt(row.uscite || '0', 10)
-    }));
+    // Calcola le statistiche per taglia per la data
+    return await db.execute(sql`
+      SELECT 
+        s.code as taglia,
+        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count ELSE 0 END) as entrate,
+        SUM(CASE WHEN o.type IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END) as uscite,
+        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count
+                 WHEN o.type IN ('cessazione', 'vendita') THEN -o.animal_count
+                 ELSE 0 END) as bilancio
+      FROM operations o
+      JOIN sizes s ON o.size_id = s.id
+      WHERE o.date = ${date}
+      GROUP BY s.code
+      HAVING SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count
+                     WHEN o.type IN ('cessazione', 'vendita') THEN -o.animal_count
+                     ELSE 0 END) != 0
+      ORDER BY s.code
+    `);
   } catch (error) {
     console.error(`Errore nel calcolo delle statistiche per taglia per ${date}:`, error);
     return [];
+  }
+}
+
+/**
+ * Restituisce i dati della giacenza corrente
+ */
+export async function getGiacenza(req: Request, res: Response) {
+  try {
+    // Ottieni la data dalla query, se presente, altrimenti usa la data corrente
+    const dateParam = req.query.date as string;
+    const date = dateParam || format(new Date(), 'yyyy-MM-dd');
+    
+    // Ottieni i cicli attivi alla data specificata
+    const activeCycles = await getActiveCyclesAtDate(date);
+    
+    // Calcola la giacenza totale
+    const giacenza = await calculateGiacenzaAtDate(date, activeCycles);
+    
+    console.log("API giacenza - Risultati:", giacenza);
+    
+    // Restituisci il risultato
+    return giacenza;
+    
+  } catch (error) {
+    console.error("Errore nel recupero della giacenza:", error);
+    throw error;
+  }
+}
+
+/**
+ * Restituisce i dati di un giorno specifico per il diario
+ */
+export async function getDailyData(req: Request, res: Response) {
+  try {
+    // Ottieni la data dalla query, se presente, altrimenti usa la data corrente
+    const date = req.query.date as string || format(new Date(), 'yyyy-MM-dd');
+    
+    // Ottieni i cicli attivi alla data specificata
+    const activeCycles = await getActiveCyclesAtDate(date);
+    
+    // Calcola la giacenza totale
+    const giacenza = await calculateGiacenzaAtDate(date, activeCycles);
+    
+    // Calcola i totali giornalieri
+    const totals = await calculateDailyTotals(date);
+    
+    // Ottieni le operazioni per la data specificata
+    const operations = await db.execute(sql`
+      SELECT o.id, o.date, o.type, o.animal_count, o.notes, s.code as size_code, b.id as basket_id, f.id as flupsy_id, l.id as lot_id
+      FROM operations o
+      JOIN sizes s ON o.size_id = s.id
+      LEFT JOIN baskets b ON o.basket_id = b.id
+      LEFT JOIN flupsys f ON b.flupsy_id = f.id
+      LEFT JOIN lots l ON o.lot_id = l.id
+      WHERE o.date::text = ${date}
+      ORDER BY o.id
+    `);
+    
+    // Calcola le statistiche per taglia
+    const taglieStats = await calculateDailyTaglieStats(date);
+    
+    // Restituisci i dati completi
+    res.json({
+      date,
+      giacenza,
+      totals,
+      operations,
+      taglieStats
+    });
+  } catch (error) {
+    console.error("Errore nel recupero dei dati giornalieri:", error);
+    res.status(500).json({ error: "Errore nel recupero dei dati giornalieri" });
   }
 }
