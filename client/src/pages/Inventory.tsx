@@ -205,7 +205,7 @@ export default function Inventory() {
       calculateInventoryStats();
       prepareBasketData();
     }
-  }, [baskets, operations, sizes, flupsys, cycles]);
+  }, [baskets, operations, sizes, flupsys, cycles, referenceDate, targetSize]);
   
   // Calcola le previsioni di crescita quando cambiano i parametri
   useEffect(() => {
