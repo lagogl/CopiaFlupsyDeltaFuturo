@@ -104,59 +104,94 @@ export async function getMonthDataForExport(db: any, month: string): Promise<Rec
     // Step 3: Recupera le giacenze per ogni taglia attiva e per ogni giorno
     console.log("Recupero giacenze giornaliere per le taglie attive...");
     
-    // Esegui la query per le giacenze usando il normale sql template
-    // Questa query calcola, per ogni giorno e per ogni taglia:
-    // 1. La quantità totale di animali inseriti (prima-attivazione) fino a quella data
-    // 2. La quantità totale di animali rimossi (cessazione, vendita) fino a quella data
-    // 3. Il saldo risultante (entrate - uscite)
-    const giacenzeResult = await db.execute(sql`
+    // Esegui due query: 
+    // 1. Una per ottenere le giacenze cumulative giornaliere per il totale
+    // 2. Una per ottenere solo le operazioni giornaliere per taglia
+
+    // Query 1: Giacenze cumulative totali per la colonna "Totale"
+    const giacenzeTotaliResult = await db.execute(sql`
       WITH date_range AS (
         SELECT generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) AS day
       ),
       entrate_cumulative AS (
         SELECT 
-          s.code as taglia,
           d::date as giorno,
           SUM(CASE WHEN o.date <= d AND o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count ELSE 0 END) as entrate
         FROM generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) d
-        CROSS JOIN sizes s
-        LEFT JOIN operations o ON o.size_id = s.id AND o.date <= d
-        GROUP BY s.code, d
+        LEFT JOIN operations o ON o.date <= d
+        GROUP BY d
       ),
       uscite_cumulative AS (
         SELECT 
-          s.code as taglia,
           d::date as giorno,
           SUM(CASE WHEN o.date <= d AND o.type IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END) as uscite
         FROM generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) d
-        CROSS JOIN sizes s
-        LEFT JOIN operations o ON o.size_id = s.id AND o.date <= d
-        GROUP BY s.code, d
+        LEFT JOIN operations o ON o.date <= d
+        GROUP BY d
       )
       SELECT 
         ec.giorno::text as date,
-        ec.taglia,
-        GREATEST(0, (COALESCE(ec.entrate, 0) - COALESCE(uc.uscite, 0))) as quantita
+        GREATEST(0, (COALESCE(ec.entrate, 0) - COALESCE(uc.uscite, 0))) as totale_giacenza
       FROM entrate_cumulative ec
-      JOIN uscite_cumulative uc ON ec.taglia = uc.taglia AND ec.giorno = uc.giorno
-      WHERE ec.taglia IS NOT NULL
-      ${taglieAttiveList.length > 0 ? sql`AND ec.taglia IN ${taglieAttiveList}` : sql``}
-      ORDER BY ec.giorno, ec.taglia
+      JOIN uscite_cumulative uc ON ec.giorno = uc.giorno
+      ORDER BY ec.giorno
+    `);
+
+    // Query 2: Operazioni giornaliere per taglia (non cumulative)
+    const operazioniGiornaliereResult = await db.execute(sql`
+      WITH date_range AS (
+        SELECT generate_series(${startDateStr}::date, ${endDateStr}::date, '1 day'::interval) AS day
+      )
+      SELECT 
+        d.day::text as date,
+        s.code as taglia,
+        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count ELSE 0 END) as entrate,
+        SUM(CASE WHEN o.type IN ('cessazione', 'vendita') THEN o.animal_count ELSE 0 END) as uscite,
+        SUM(CASE WHEN o.type IN ('prima-attivazione', 'prima-attivazione-da-vagliatura') THEN o.animal_count 
+            WHEN o.type IN ('cessazione', 'vendita') THEN -o.animal_count
+            ELSE 0 END) as bilancio
+      FROM date_range d
+      CROSS JOIN sizes s
+      LEFT JOIN operations o ON o.date = d.day AND o.size_id = s.id
+      WHERE s.code IS NOT NULL
+      ${taglieAttiveList.length > 0 ? sql`AND s.code IN ${taglieAttiveList}` : sql``}
+      GROUP BY d.day, s.code
+      ORDER BY d.day, s.code
     `);
     
-    console.log(`Dati giacenze recuperati: ${(giacenzeResult as any[]).length} righe`);
+    console.log(`Dati giacenze totali recuperati: ${(giacenzeTotaliResult as any[]).length} righe`);
+    console.log(`Dati operazioni giornaliere recuperati: ${(operazioniGiornaliereResult as any[]).length} righe`);
     
-    // Organizza le giacenze per data
-    const giacenzeByDate: Record<string, any[]> = {};
-    for (const row of giacenzeResult as any[]) {
-      if (!giacenzeByDate[row.date]) {
-        giacenzeByDate[row.date] = [];
+    // Questo era usato in precedenza, impostiamo un valore per retrocompatibilità
+    const giacenzeResult = operazioniGiornaliereResult;
+    
+    // Organizza le giacenze totali per data
+    const giacenzeTotaliByDate: Record<string, number> = {};
+    for (const row of giacenzeTotaliResult as any[]) {
+      giacenzeTotaliByDate[row.date] = parseInt(row.totale_giacenza || '0', 10);
+    }
+    
+    // Organizza le operazioni giornaliere per data e taglia
+    const operazioniByDate: Record<string, any[]> = {};
+    for (const row of operazioniGiornaliereResult as any[]) {
+      if (!operazioniByDate[row.date]) {
+        operazioniByDate[row.date] = [];
       }
-      giacenzeByDate[row.date].push({
+      // Includiamo solo le righe che hanno entrate o uscite > 0
+      const entrate = parseInt(row.entrate || '0', 10);
+      const uscite = parseInt(row.uscite || '0', 10);
+      const bilancio = parseInt(row.bilancio || '0', 10);
+      
+      operazioniByDate[row.date].push({
         taglia: row.taglia,
-        quantita: parseInt(row.quantita)
+        entrate: entrate,
+        uscite: uscite,
+        bilancio: bilancio
       });
     }
+    
+    // Per retrocompatibilità con il resto del codice, mantenere anche la variabile giacenzeByDate
+    const giacenzeByDate = operazioniByDate;
     
     // Step 4: Calcola i totali per ogni giorno
     for (const day of daysInMonth) {
@@ -187,13 +222,18 @@ export async function getMonthDataForExport(db: any, month: string): Promise<Rec
         monthData[dateStr].totals.bilancio_netto = totaleEntrate - totaleUscite;
       }
       
-      // Aggiungi i dati di giacenza del giorno
-      if (giacenzeByDate[dateStr]) {
-        monthData[dateStr].dettaglio_taglie = giacenzeByDate[dateStr];
-        
-        // Calcola la giacenza totale sommando tutte le taglie
-        const totaleGiacenza = giacenzeByDate[dateStr].reduce((tot: number, g: any) => tot + g.quantita, 0);
-        monthData[dateStr].giacenza = totaleGiacenza;
+      // Aggiungi la giacenza totale dal totale cumulativo
+      monthData[dateStr].giacenza = giacenzeTotaliByDate[dateStr] || 0;
+      
+      // Aggiungi le operazioni giornaliere per taglia (non cumulative)
+      if (operazioniByDate[dateStr]) {
+        // Imposta solo il bilancio giornaliero per ogni taglia
+        monthData[dateStr].dettaglio_taglie = operazioniByDate[dateStr].map((op: any) => ({
+          taglia: op.taglia,
+          quantita: op.bilancio // Mostra solo le operazioni del singolo giorno
+        }));
+      } else {
+        monthData[dateStr].dettaglio_taglie = [];
       }
     }
     
