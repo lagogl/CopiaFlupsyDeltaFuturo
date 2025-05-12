@@ -218,6 +218,8 @@ export default function Inventory() {
   const calculateInventoryStats = () => {
     if (!baskets || !operations || !sizes) return;
     
+    console.log("Calcolo statistiche con data di riferimento:", formatDateIT(referenceDate));
+    
     // Filtra solo le ceste attive con un ciclo
     const activeBaskets = (baskets as any[]).filter((basket: any) => 
       basket.state === 'active' && basket.currentCycleId !== null
@@ -227,6 +229,8 @@ export default function Inventory() {
     const filteredOperations = (operations as any[]).filter((op: any) => 
       new Date(op.date) <= referenceDate
     );
+    
+    console.log("Operazioni filtrate per data:", filteredOperations.length, "su", operations.length);
 
     // Prepara un map per le dimensioni
     const sizeMap = new Map();
@@ -779,6 +783,33 @@ export default function Inventory() {
             </div>
             <div className="flex flex-wrap items-center gap-3">
               <div className="flex flex-wrap gap-3">
+                {/* Data di riferimento per i calcoli dell'inventario */}
+                <Popover>
+                  <PopoverTrigger asChild>
+                    <Button variant="outline" className="flex items-center gap-2 bg-white shadow-sm hover:bg-blue-50 border-blue-200 transition-all">
+                      <div className="h-5 w-5 rounded-full bg-blue-100 flex items-center justify-center">
+                        <CalendarIcon className="h-3 w-3 text-blue-600" />
+                      </div>
+                      <span className="font-medium">{formatDateIT(referenceDate)}</span>
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0 border-blue-200 shadow-md rounded-xl overflow-hidden" align="end">
+                    <div className="bg-blue-50 px-4 py-2 border-b border-blue-100 flex items-center justify-between">
+                      <span className="text-sm font-medium text-blue-700">Data di riferimento</span>
+                      <CalendarIcon className="h-4 w-4 text-blue-400" />
+                    </div>
+                    <Calendar
+                      mode="single"
+                      selected={referenceDate}
+                      onSelect={(date) => date && setReferenceDate(date)}
+                      initialFocus
+                      locale={it}
+                      className="rounded-b-xl"
+                    />
+                  </PopoverContent>
+                </Popover>
+                
+                {/* Data target per previsioni */}
                 <Popover>
                   <PopoverTrigger asChild>
                     <Button variant="outline" className="flex items-center gap-2 bg-white shadow-sm hover:bg-blue-50 border-blue-200 transition-all">
@@ -788,7 +819,7 @@ export default function Inventory() {
                       {targetDate ? (
                         <span className="font-medium">{formatDateIT(targetDate)}</span>
                       ) : (
-                        <span>Scegli data</span>
+                        <span>Scegli data target</span>
                       )}
                     </Button>
                   </PopoverTrigger>
