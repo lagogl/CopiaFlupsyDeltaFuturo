@@ -401,22 +401,7 @@ export async function exportCalendarCsv(req: Request, res: Response) {
     // FASE 7: Costruisci il contenuto del CSV
     let csvContent = headers.join(';') + '\n';
     
-    // Inizializza i totali del mese
-    let totale_operazioni = 0;
-    let totale_entrate = 0;
-    let totale_uscite = 0;
-    let totale_bilancio = 0;
-    let giacenza_finale = 0;
-    
-    // Crea un oggetto per i totali delle taglie (invece di una Map)
-    const totaliTaglie: Record<string, number> = {};
-    
-    // Inizializza tutti i totali a 0
-    taglieAttive.forEach(taglia => {
-      totaliTaglie[taglia] = 0;
-    });
-    
-    // Per ogni giorno, aggiungi una riga al CSV e aggiorna i totali
+    // Per ogni giorno, aggiungi una riga al CSV
     for (const day of daysInMonth) {
       const dateStr = format(day, 'yyyy-MM-dd');
       const italianDate = format(day, 'dd/MM/yyyy');
@@ -431,27 +416,6 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       
       // Recupera le operazioni per taglia per questo giorno
       const operazioniGiorno = operazioniGiornaliereMappa.get(dateStr) || new Map<string, number>();
-      
-      // Aggiorna i totali del mese
-      totale_operazioni += dayData.operations?.length || 0;
-      totale_entrate += dayData.totals?.totale_entrate || 0;
-      totale_uscite += dayData.totals?.totale_uscite || 0;
-      totale_bilancio += dayData.totals?.bilancio_netto || 0;
-      
-      // L'ultimo giorno del mese avrà la giacenza finale
-      if (dateStr === endDateStr) {
-        giacenza_finale = dayData.giacenza || 0;
-      }
-      
-      // Aggiorna i totali per ogni taglia
-      taglieAttive.forEach(taglia => {
-        if (operazioniGiorno.has(taglia)) {
-          const valore = operazioniGiorno.get(taglia) || 0;
-          if (valore !== 0) {
-            totaliTaglie[taglia] += valore;
-          }
-        }
-      });
       
       // Costruisci la riga base
       const row = [
@@ -476,32 +440,7 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       csvContent += row.join(';') + '\n';
     }
     
-    // Aggiungi una riga vuota come separatore
-    csvContent += Array(headers.length + 1).join(';') + '\n';
-    
-    // Crea la riga dei totali
-    const totaliRow = [
-      'TOTALI MESE',
-      String(totale_operazioni),
-      String(totale_entrate),
-      String(totale_uscite),
-      String(totale_bilancio),
-      String(giacenza_finale)
-    ];
-    
-    // Aggiungi i totali per le taglie
-    taglieAttive.forEach(taglia => {
-      totaliRow.push(String(totaliTaglie[taglia]));
-    });
-    
-    // Log di debug per i totali
-    console.log("Totali per taglie:", totaliTaglie);
-    console.log(`Riga CSV per i totali del mese: ${totaliRow.join(';')}`);
-    
-    // Aggiungi la riga dei totali al CSV
-    csvContent += totaliRow.join(';') + '\n';
-    
-    // FASE 8: Imposta gli header per il download
+    // Imposta l'header per il download
     res.setHeader('Content-Type', 'text/csv;charset=utf-8');
     res.setHeader('Content-Disposition', `attachment; filename="calendario_${month}.csv"`);
     
