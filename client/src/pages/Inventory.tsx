@@ -258,13 +258,23 @@ export default function Inventory() {
       if (basketOperations.length === 0) return;
       
       const lastOperation = basketOperations[0];
-      if (!lastOperation.animalsPerKg) return;
-
-      // Calcola il peso medio
-      const averageWeight = lastOperation.averageWeight || (1000000 / lastOperation.animalsPerKg);
+      
+      // Verifica se ci sono abbastanza dati per procedere
+      // Non usciamo subito, tentiamo di calcolare con i dati disponibili
+      
+      // Calcola il peso medio se possibile
+      const averageWeight = lastOperation.averageWeight || 
+                          (lastOperation.animalsPerKg ? 1000000 / lastOperation.animalsPerKg : 0);
       
       // Determina la taglia in base al numero di animali per kg (usando i dati del db)
-      const matchingSize = findSizeFromAnimalsPerKg(lastOperation.animalsPerKg);
+      // Se non abbiamo animalsPerKg, tentiamo di ricavarlo da averageWeight
+      const animalsPerKg = lastOperation.animalsPerKg || 
+                         (lastOperation.averageWeight ? 1000000 / lastOperation.averageWeight : null);
+      
+      // Procediamo solo se possiamo determinare la taglia
+      if (animalsPerKg === null) return;
+      
+      const matchingSize = findSizeFromAnimalsPerKg(animalsPerKg);
       if (!matchingSize) return;
       
       // Calcola il numero totale di animali nella cesta
@@ -346,19 +356,27 @@ export default function Inventory() {
       if (basketOperations.length === 0) return;
       
       const lastOperation = basketOperations[0];
-      if (!lastOperation.animalsPerKg) return;
       
       // Ottieni il ciclo corrente
       const currentCycle = cycleMap.get(basket.currentCycleId);
       if (!currentCycle) return;
       
+      // Continuiamo anche se non abbiamo animalsPerKg, potremmo avere altri dati utili
+      
       // Ottieni il FLUPSY
       const flupsy = flupsyMap.get(basket.flupsyId);
       if (!flupsy) return;
       
-      // Calcola il peso medio e la taglia
-      const averageWeight = lastOperation.averageWeight || (1000000 / lastOperation.animalsPerKg);
-      const matchingSize = findSizeFromAnimalsPerKg(lastOperation.animalsPerKg);
+      // Calcola il peso medio se possibile
+      const averageWeight = lastOperation.averageWeight || 
+                          (lastOperation.animalsPerKg ? 1000000 / lastOperation.animalsPerKg : 0);
+      
+      // Determina la taglia in base al numero di animali per kg
+      // Se non abbiamo animalsPerKg, tentiamo di ricavarlo da averageWeight
+      const animalsPerKg = lastOperation.animalsPerKg || 
+                         (lastOperation.averageWeight ? 1000000 / lastOperation.averageWeight : 0);
+                         
+      const matchingSize = findSizeFromAnimalsPerKg(animalsPerKg);
       
       // Calcola la durata del ciclo in giorni
       const cycleDuration = differenceInDays(
@@ -396,6 +414,7 @@ export default function Inventory() {
       }
       
       // Calcola il numero totale di animali nella cesta
+      // Calcola il numero di animali considerando tutti i metodi possibili
       const totalAnimals = lastOperation.animalCount || calculateAnimalCount(lastOperation);
       
       basketsDataArray.push({
