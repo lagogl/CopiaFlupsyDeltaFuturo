@@ -426,8 +426,8 @@ export default function Flupsys() {
                       rows={3}
                     />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="maxPositions" className="text-right">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                    <Label htmlFor="maxPositions" className="sm:text-right">
                       Posizioni max
                     </Label>
                     <Input
@@ -438,11 +438,11 @@ export default function Flupsys() {
                       max="20"
                       value={newFlupsy.maxPositions}
                       onChange={(e) => setNewFlupsy({...newFlupsy, maxPositions: Number(e.target.value)})}
-                      className="col-span-3"
+                      className="sm:col-span-3"
                     />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="productionCenter" className="text-right">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                    <Label htmlFor="productionCenter" className="sm:text-right">
                       Centro di Produzione
                     </Label>
                     <Input
@@ -450,15 +450,15 @@ export default function Flupsys() {
                       name="productionCenter"
                       value={newFlupsy.productionCenter}
                       onChange={handleChange}
-                      className="col-span-3"
+                      className="sm:col-span-3"
                       placeholder="es. Chioggia, Taranto, ecc."
                     />
                   </div>
-                  <div className="grid grid-cols-4 items-center gap-4">
-                    <Label htmlFor="active" className="text-right">
+                  <div className="grid grid-cols-1 sm:grid-cols-4 items-center gap-2 sm:gap-4">
+                    <Label htmlFor="active" className="sm:text-right">
                       Attivo
                     </Label>
-                    <div className="flex items-center col-span-3">
+                    <div className="flex items-center sm:col-span-3">
                       <Switch
                         id="active"
                         checked={newFlupsy.active}
