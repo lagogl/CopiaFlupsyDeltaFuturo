@@ -372,26 +372,22 @@ export async function exportCalendarCsv(req: Request, res: Response) {
       ORDER BY d.day, s.code
     `);
     
-    // Verifica quali taglie hanno effettivamente operazioni con valori diversi da zero
-    // e usa solo quelle per il CSV
-    const taglieConOperazioni = new Set<string>();
-    
+    // Otteniamo le operazioni giornaliere effettive con valore diverso da zero
     // Cast a any[] per lavorare più facilmente con i risultati
     const operazioniArray = operazioniGiornaliereResult as any[];
     
-    // Analizza i risultati per trovare tutte le taglie che hanno almeno un'operazione con valore non zero
-    operazioniArray.forEach(op => {
-      // Converti il bilancio in numero
-      const bilancio = parseInt(op.bilancio || '0', 10);
-      if (bilancio !== 0) {
-        taglieConOperazioni.add(op.taglia);
-      }
-    });
+    // Utilizziamo direttamente le taglie attive che abbiamo già determinato
+    // (quelle con operazioni o giacenze)
+    const taglieFinali = taglieAttiveList.sort();
     
-    // Se abbiamo trovato taglie con operazioni, usa solo quelle
-    const taglieFinali = taglieConOperazioni.size > 0 
-      ? Array.from(taglieConOperazioni) 
-      : taglieAttiveList;
+    // Prepariamo una mappa delle operazioni per ottimizzare le ricerche
+    const operazioniMap = new Map();
+    
+    // Popoliamo la mappa con i dati delle operazioni
+    operazioniArray.forEach(op => {
+      const key = `${op.date}-${op.taglia}`;
+      operazioniMap.set(key, op);
+    });
     
     console.log(`Taglie con operazioni effettive nel CSV: ${taglieFinali.join(', ')}`);
     
@@ -437,17 +433,11 @@ export async function exportCalendarCsv(req: Request, res: Response) {
         // Ottieni la data in formato ISO
         const dateKey = format(day, 'yyyy-MM-dd');
         
-        // Recupera i dati delle operazioni per questo giorno dalla query operazioniGiornaliere
-        // Cast a any[] per evitare errori TypeScript
-        const operazioniArray = operazioniGiornaliereResult as any[];
-        const operazioniDelGiorno = operazioniArray.filter(op => 
-          op.date === dateKey
-        );
-        
-        // Per ogni taglia nella lista di taglie finali (quelle con operazioni)
+        // Per ogni taglia nella lista di taglie finali (quelle con operazioni o giacenze)
         taglieFinali.forEach(taglia => {
-          // Cerca le operazioni per questa taglia in questo giorno
-          const operazioniTaglia = operazioniDelGiorno.find(op => op.taglia === taglia);
+          // Usa la mappa per trovare le operazioni di questa taglia in questo giorno
+          const mapKey = `${dateKey}-${taglia}`;
+          const operazioniTaglia = operazioniMap.get(mapKey);
           
           // Se ci sono operazioni e il bilancio è diverso da zero, mostra il bilancio
           // altrimenti mostra 0
