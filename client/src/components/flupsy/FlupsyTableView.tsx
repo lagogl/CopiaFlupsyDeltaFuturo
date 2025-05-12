@@ -54,57 +54,62 @@ export default function FlupsyTableView({
       {flupsys && flupsys.length > 0 ? (
         flupsys.map((flupsy) => (
           <div key={flupsy.id} className="bg-white dark:bg-gray-800 rounded-lg border p-4 shadow-sm">
-            <div className="flex justify-between items-start mb-3">
-              <div>
+            <div className="flex justify-between items-start mb-2">
+              <div className="flex-1 mr-2">
                 <div className="font-bold text-base">{flupsy.name}</div>
-                <div className="text-xs text-muted-foreground mt-1">{flupsy.location || '-'}</div>
+                <div className="text-xs text-muted-foreground mt-0.5">{flupsy.location || '-'}</div>
+                {flupsy.description && (
+                  <div className="text-xs text-muted-foreground line-clamp-2 mt-0.5">{flupsy.description}</div>
+                )}
               </div>
-              <Badge variant={flupsy.active ? "default" : "secondary"} className="text-xs">
+              <Badge variant={flupsy.active ? "default" : "secondary"} className="text-xs shrink-0">
                 {flupsy.active ? "Attivo" : "Inattivo"}
               </Badge>
             </div>
             
-            <div className="grid grid-cols-2 gap-3 my-3">
+            {flupsy.totalAnimals && flupsy.totalAnimals > 0 && (
+              <div className="mb-2 flex items-center">
+                <Badge className="bg-cyan-100 text-cyan-900 dark:bg-cyan-900/30 dark:text-cyan-200 border-cyan-200 dark:border-cyan-800 flex items-center gap-1">
+                  <div className="flex items-center gap-1">
+                    <span className="text-xs font-medium">Totale animali:</span> 
+                    <span className="text-xs font-bold">{flupsy.totalAnimals.toLocaleString()}</span>
+                  </div>
+                </Badge>
+              </div>
+            )}
+            
+            <div className="grid grid-cols-2 gap-x-3 gap-y-2 my-2">
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Cestelli Attivi</div>
-                <div className="font-medium text-blue-600 dark:text-blue-400 text-base">{flupsy.activeBaskets || 0}</div>
+                <div className="text-xs text-muted-foreground mb-0.5">Cestelli Attivi</div>
+                <div className="font-medium text-blue-600 dark:text-blue-400 text-sm">{flupsy.activeBaskets || 0}</div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Occupazione</div>
+                <div className="text-xs text-muted-foreground mb-0.5">Occupazione</div>
                 <div className="flex items-center">
-                  <div className="h-2 w-12 bg-muted rounded-full overflow-hidden mr-2">
+                  <div className="h-2 w-12 bg-muted rounded-full overflow-hidden mr-1.5">
                     <div 
                       className="h-full bg-blue-500 rounded-full" 
                       style={{ width: `${flupsy.activeBasketPercentage || 0}%` }}
                     ></div>
                   </div>
-                  <span className="text-sm font-bold">{flupsy.activeBasketPercentage || 0}%</span>
+                  <span className="text-xs font-bold">{flupsy.activeBasketPercentage || 0}%</span>
                 </div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Media Animali/Cesta</div>
-                <div className="font-medium text-amber-600 dark:text-amber-400 text-base">
+                <div className="text-xs text-muted-foreground mb-0.5">Media Animali/Cesta</div>
+                <div className="font-medium text-amber-600 dark:text-amber-400 text-sm">
                   {flupsy.avgAnimalDensity?.toLocaleString() || 0}
                 </div>
               </div>
               <div>
-                <div className="text-xs text-muted-foreground mb-1">Totale Animali</div>
-                <div className="font-medium text-cyan-600 dark:text-cyan-400 text-base">
-                  {flupsy.totalAnimals?.toLocaleString() || 0}
-                </div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-1">Posizioni</div>
-                <div className="text-base">{flupsy.totalBaskets || 0}/{flupsy.maxPositions || 0}</div>
-              </div>
-              <div>
-                <div className="text-xs text-muted-foreground mb-1">ID</div>
-                <div className="text-base">{flupsy.id}</div>
+                <div className="text-xs text-muted-foreground mb-0.5">Posizioni</div>
+                <div className="text-sm">{flupsy.totalBaskets || 0}/{flupsy.maxPositions || 0}</div>
               </div>
             </div>
             
+            {/* Mostra le taglie principali */}
             {flupsy.sizeDistribution && Object.keys(flupsy.sizeDistribution).length > 0 && (
-              <div className="mb-3">
+              <div className="mb-2 border-t pt-2 mt-2">
                 <div className="text-xs text-muted-foreground mb-1">Taglie Principali</div>
                 <div className="flex flex-wrap gap-1">
                   {Object.entries(flupsy.sizeDistribution || {})
@@ -117,24 +122,51 @@ export default function FlupsyTableView({
                       const percentage = totalCount > 0 ? (Number(count) / totalCount) * 100 : 0;
                       
                       return (
-                        <Badge key={size} variant="outline" className="bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800">
+                        <Badge key={size} variant="outline" className="bg-cyan-50 dark:bg-cyan-900/20 text-cyan-700 dark:text-cyan-300 border-cyan-200 dark:border-cyan-800 text-xs">
                           {size}: {percentage.toFixed(1)}%
                         </Badge>
                       );
                     })
                   }
+                  {flupsy.sizeDistribution && Object.keys(flupsy.sizeDistribution).length > 3 && (
+                    <span className="text-xs text-muted-foreground">+{Object.keys(flupsy.sizeDistribution).length - 3}</span>
+                  )}
                 </div>
               </div>
             )}
             
-            <div className="flex justify-end gap-1 mt-2">
+            {/* Barre di progresso per posizioni libere e occupazione attiva */}
+            <div className="grid grid-cols-1 gap-2 mb-3 mt-2">
+              <div>
+                <div className="text-xs text-muted-foreground mb-0.5">Posizioni Libere</div>
+                <div className="h-1.5 bg-muted rounded-full overflow-hidden">
+                  <div 
+                    className="h-full bg-green-500 rounded-full" 
+                    style={{ 
+                      width: `${((flupsy.maxPositions - (flupsy.totalBaskets || 0)) / flupsy.maxPositions) * 100}%` 
+                    }}
+                  ></div>
+                </div>
+                <div className="flex justify-between mt-0.5">
+                  <span className="text-xs text-green-600 dark:text-green-400">
+                    {flupsy.maxPositions - (flupsy.totalBaskets || 0)} disponibili
+                  </span>
+                  <span className="text-xs text-muted-foreground">
+                    ID: {flupsy.id}
+                  </span>
+                </div>
+              </div>
+            </div>
+            
+            {/* Pulsanti di azione */}
+            <div className="flex justify-end gap-1 mt-2 border-t pt-2">
               <Button 
                 variant="outline" 
                 size="sm" 
-                className="h-8"
+                className="h-7 text-xs"
                 onClick={() => onEdit(flupsy)}
               >
-                <Edit className="h-3.5 w-3.5 mr-1" />
+                <Edit className="h-3 w-3 mr-1" />
                 Modifica
               </Button>
               
@@ -143,19 +175,19 @@ export default function FlupsyTableView({
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="h-8 text-emerald-600 border-emerald-200"
+                    className="h-7 text-xs text-emerald-600 border-emerald-200"
                     onClick={() => onPopulate(flupsy)}
                   >
-                    <RefreshCw className="h-3.5 w-3.5 mr-1" />
+                    <RefreshCw className="h-3 w-3 mr-1" />
                     Aggiorna
                   </Button>
                   <Button 
                     variant="outline" 
                     size="sm" 
-                    className="h-8 text-red-600 border-red-200"
+                    className="h-7 text-xs text-red-600 border-red-200"
                     onClick={() => onDelete(flupsy)}
                   >
-                    <Trash2 className="h-3.5 w-3.5 mr-1" />
+                    <Trash2 className="h-3 w-3 mr-1" />
                     Elimina
                   </Button>
                 </>
