@@ -2526,24 +2526,26 @@ export default function Operations() {
               <AlertTriangle className="mr-2 h-5 w-5" />
               Attenzione: operazione distruttiva
             </AlertDialogTitle>
-            <AlertDialogDescription className="space-y-3">
-              <div className="bg-red-50 border border-red-200 rounded-md p-4 mt-2">
-                <p className="font-semibold text-red-700">Questa è un'operazione di Prima Attivazione!</p>
-                <p className="text-red-600 mt-1">
-                  L'eliminazione di questa operazione comporterà:
-                </p>
-                <ul className="list-disc pl-6 mt-2 space-y-1 text-red-700">
-                  <li>La cancellazione del ciclo associato alla cesta</li>
-                  <li>L'eliminazione di tutte le operazioni correlate a questo ciclo</li>
-                  <li>La pulizia degli storici delle posizioni della cesta</li>
-                  <li>Il ripristino della cesta allo stato "disponibile"</li>
-                </ul>
-                <p className="font-medium text-red-600 mt-3">Questa azione è irreversibile!</p>
+            <AlertDialogDescription>
+              <div className="space-y-3">
+                <div className="bg-red-50 border border-red-200 rounded-md p-4 mt-2">
+                  <div className="font-semibold text-red-700">Questa è un'operazione di Prima Attivazione!</div>
+                  <div className="text-red-600 mt-1">
+                    L'eliminazione di questa operazione comporterà:
+                  </div>
+                  <ul className="list-disc pl-6 mt-2 space-y-1 text-red-700">
+                    <li>La cancellazione del ciclo associato alla cesta</li>
+                    <li>L'eliminazione di tutte le operazioni correlate a questo ciclo</li>
+                    <li>La pulizia degli storici delle posizioni della cesta</li>
+                    <li>Il ripristino della cesta allo stato "disponibile"</li>
+                  </ul>
+                  <div className="font-medium text-red-600 mt-3">Questa azione è irreversibile!</div>
+                </div>
+                <div>
+                  Sei sicuro di voler eliminare definitivamente questa operazione di Prima Attivazione
+                  {selectedOperation && selectedOperation.basket ? ` per la cesta #${selectedOperation.basket.physicalNumber}` : ''}?
+                </div>
               </div>
-              <p>
-                Sei sicuro di voler eliminare definitivamente questa operazione di Prima Attivazione
-                {selectedOperation && selectedOperation.basket ? ` per la cesta #${selectedOperation.basket.physicalNumber}` : ''}?
-              </p>
             </AlertDialogDescription>
           </AlertDialogHeader>
           <AlertDialogFooter>
