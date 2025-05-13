@@ -7,6 +7,7 @@ import GrowthChart from '@/components/dashboard/GrowthChart';
 import ActiveCycles from '@/components/dashboard/ActiveCycles';
 import FlupsyVisualizer from '@/components/dashboard/BasicFlupsyVisualizer';
 import FlupsyCenterFilter from '@/components/dashboard/FlupsyCenterFilter';
+import FlupsySelector from '@/components/dashboard/FlupsySelector';
 import { TargetSizePredictions } from '@/components/dashboard/TargetSizePredictions';
 import { Basket, Cycle, Operation, Lot } from '@shared/schema';
 import { TooltipTrigger } from '@/components/ui/tooltip-trigger';
@@ -24,7 +25,7 @@ export default function Dashboard() {
   const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
   
   // Stato per il filtro dei FLUPSY
-  const [selectedCenter, setSelectedCenter] = useState<string>('Tutti');
+  const [selectedCenter, setSelectedCenter] = useState<string>('');
   const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>([]);
   
   // Riferimenti agli elementi che avranno tooltip
@@ -211,13 +212,25 @@ export default function Dashboard() {
         </div>
       </div>
       
-      {/* Filtro per centro di produzione */}
-      <FlupsyCenterFilter 
-        onFilterChange={(center, flupsyIds) => {
-          setSelectedCenter(center);
-          setSelectedFlupsyIds(flupsyIds);
-        }} 
-      />
+      {/* Filtri per la dashboard */}
+      <div className="space-y-4">
+        {/* Filtro per centro di produzione */}
+        <FlupsyCenterFilter 
+          onFilterChange={(center, flupsyIds) => {
+            setSelectedCenter(center);
+            setSelectedFlupsyIds(flupsyIds);
+          }} 
+        />
+        
+        {/* Filtro per FLUPSY specifici */}
+        <FlupsySelector
+          selectedCenter={selectedCenter}
+          selectedFlupsyIds={selectedFlupsyIds}
+          onSelectionChange={(flupsyIds) => {
+            setSelectedFlupsyIds(flupsyIds);
+          }}
+        />
+      </div>
       
       {/* Dashboard Summary */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
