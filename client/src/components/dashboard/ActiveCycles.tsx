@@ -55,7 +55,32 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
 
   // Definisci la funzione di ordinamento
   const sortCyclesBySize = useCallback((cycles: Cycle[]) => {
-    const sorted = [...cycles].sort((a, b) => {
+    // Prima dividiamo i cicli in due gruppi: quelli con la taglia preferita e gli altri
+    const matchingCycles = [];
+    const otherCycles = [];
+    
+    for (const cycle of cycles) {
+      if (cycle.currentSize?.code === preferredSize) {
+        matchingCycles.push(cycle);
+      } else {
+        otherCycles.push(cycle);
+      }
+    }
+    
+    // Ordiniamo gli elementi all'interno di ciascun gruppo
+    
+    // 1. Gli elementi con taglia preferita ordinati per ID (più recente prima)
+    matchingCycles.sort((a, b) => {
+      // Se uno è attivo e l'altro no, priorità a quello attivo
+      if (a.state !== b.state) {
+        if (a.state === 'active' && b.state !== 'active') return -1;
+        if (a.state !== 'active' && b.state === 'active') return 1;
+      }
+      return b.id - a.id;
+    });
+    
+    // 2. Gli altri elementi ordinati per distanza dalla taglia preferita
+    otherCycles.sort((a, b) => {
       const aCode = a.currentSize?.code;
       const bCode = b.currentSize?.code;
       
@@ -67,19 +92,11 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
 
       // Priorità 2: Se entrambi hanno taglie
       if (aCode && bCode) {
-        // Prima priorità: la taglia esatta richiesta
-        const aHasExactMatch = aCode === preferredSize;
-        const bHasExactMatch = bCode === preferredSize;
-        
-        if (aHasExactMatch && !bHasExactMatch) return -1;
-        if (!aHasExactMatch && bHasExactMatch) return 1;
-        
-        // Seconda priorità: somiglianza alla taglia target
+        // Ordina per distanza dalla taglia richiesta (più vicina prima)
         const aDistance = getSizeDistance(aCode, preferredSize);
         const bDistance = getSizeDistance(bCode, preferredSize);
         
         if (aDistance !== bDistance) {
-          // Ordina per distanza dalla taglia richiesta (più vicina prima)
           return aDistance - bDistance;
         }
         
@@ -97,7 +114,8 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
       return b.id - a.id;
     });
     
-    return sorted;
+    // Combiniamo i due gruppi, con i cicli della taglia preferita all'inizio
+    return [...matchingCycles, ...otherCycles];
   }, [preferredSize]);
 
   // Memorizza l'array ordinato
@@ -302,7 +320,14 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
                 const density = Math.floor(Math.random() * 50) + 100;
                 
                 return (
-                  <tr key={cycle.id} className="hover:bg-gray-50">
+                  <tr 
+                    key={cycle.id} 
+                    className={`${
+                      cycle.currentSize?.code === preferredSize 
+                        ? 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-400' 
+                        : 'hover:bg-gray-50'
+                    }`}
+                  >
                     <td className="px-2 py-1 whitespace-nowrap text-xs font-medium text-gray-900">
                       #{cycle.id}
                     </td>
