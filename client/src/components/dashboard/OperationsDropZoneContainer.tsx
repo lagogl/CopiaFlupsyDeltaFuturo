@@ -482,8 +482,8 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
         const animalsPerKg = Math.round((liveSampleCount * 1000) / liveWeight);
         updatedFormData.animalsPerKg = animalsPerKg;
         
-        // Calcola peso medio in mg (basato sugli animali vivi)
-        updatedFormData.averageWeight = Math.round((liveWeight * 1000) / liveSampleCount);
+        // Calcola peso medio in mg (basato sugli animali vivi) con 4 decimali
+        updatedFormData.averageWeight = parseFloat(((liveWeight * 1000) / liveSampleCount).toFixed(4));
         
         // Se c'è anche il peso totale, aggiorna il conteggio stimato
         if (updatedFormData.totalWeight) {
