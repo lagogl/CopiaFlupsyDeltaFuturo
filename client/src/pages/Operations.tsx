@@ -2380,9 +2380,9 @@ export default function Operations() {
             }}
             onCancel={() => setIsCreateDialogOpen(false)}
             isLoading={createOperationMutation.isPending}
-            initialCycleId={initialCycleId}
-            initialFlupsyId={initialFlupsyId}
-            initialBasketId={initialBasketId}
+            initialCycleId={selectedOperation ? null : initialCycleId}
+            initialFlupsyId={selectedOperation ? null : initialFlupsyId}
+            initialBasketId={selectedOperation ? null : initialBasketId}
             defaultValues={selectedOperation ? {
               type: selectedOperation.type,
               date: selectedOperation.date instanceof Date ? selectedOperation.date : new Date(selectedOperation.date),

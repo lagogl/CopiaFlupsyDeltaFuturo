@@ -198,57 +198,11 @@ export default function OperationForm({
   
   // Imposta il ciclo iniziale e precarica FLUPSY e cesta quando il componente viene montato
   useEffect(() => {
-    // Caso 1: Abbiamo un ciclo iniziale da preselezionare (dalla navigazione)
-    if (initialCycleId && cycles && cycles.length > 0 && baskets) {
-      // Verifica che il ciclo esista
-      const selectedCycle = cycles.find(cycle => cycle.id === initialCycleId);
-      
-      if (selectedCycle) {
-        // Imposta il valore del ciclo nel form
-        form.setValue('cycleId', initialCycleId);
-        console.log('Preselezionato ciclo:', initialCycleId);
-        
-        // Trova la cesta associata al ciclo
-        const basketId = selectedCycle.basketId;
-        if (basketId) {
-          // Cerca i dettagli della cesta per ottenere il flupsyId
-          const basket = baskets.find(b => b.id === basketId);
-          if (basket && basket.flupsyId) {
-            // Prima imposta il FLUPSY e poi la cesta
-            form.setValue('flupsyId', basket.flupsyId);
-            form.setValue('basketId', basketId);
-            console.log('Preselezionato FLUPSY e cesta:', basket.flupsyId, basketId);
-          }
-        }
-      }
-    } 
-    // Caso 2: Abbiamo FLUPSY e cesta iniziali da preselezionare (dalla navigazione diretta)
-    else if (initialFlupsyId && initialBasketId && flupsys && baskets) {
-      // Verifica che FLUPSY e cesta esistano
-      const flupsy = flupsys.find((f: any) => f.id === initialFlupsyId);
-      const basket = baskets.find((b: any) => b.id === initialBasketId);
-      
-      if (flupsy && basket) {
-        // Prima imposta il FLUPSY
-        form.setValue('flupsyId', initialFlupsyId);
-        console.log('Preselezionato FLUPSY dalla navigazione:', initialFlupsyId);
-        
-        // Se la cesta appartiene al FLUPSY selezionato
-        if (basket.flupsyId === initialFlupsyId) {
-          form.setValue('basketId', initialBasketId);
-          console.log('Preselezionato cestello dalla navigazione:', initialBasketId);
-          
-          // Se la cesta ha un ciclo attivo, selezionalo automaticamente
-          if (basket.currentCycleId) {
-            form.setValue('cycleId', basket.currentCycleId);
-            console.log('Ciclo impostato automaticamente al ciclo attivo della cesta:', basket.currentCycleId);
-          }
-        }
-      }
-    }
-    // Caso 3: Abbiamo defaultValues preimpostati (es. dalla duplicazione)
-    else if (defaultValues?.flupsyId && defaultValues.basketId) {
-      console.log('Preimpostati valori di default per FLUPSY e cesta:', defaultValues.flupsyId, defaultValues.basketId);
+    // Priorità: defaultValues (duplicazione) > parametri URL (navigazione)
+    
+    // Caso 1: Abbiamo defaultValues preimpostati (es. dalla duplicazione) - MASSIMA PRIORITÀ
+    if (defaultValues?.flupsyId && defaultValues.basketId) {
+      console.log('PRIORITÀ 1 - Duplicazione: Preimpostati valori di default per FLUPSY e cesta:', defaultValues.flupsyId, defaultValues.basketId);
       
       // Assicuriamoci che i valori siano correttamente impostati
       form.setValue('flupsyId', defaultValues.flupsyId);
@@ -262,6 +216,55 @@ export default function OperationForm({
           console.log('Cestello trovato e selezionato:', defaultValues.basketId);
         } else {
           console.log('Cestello non trovato nel FLUPSY selezionato');
+        }
+      }
+    }
+    // Caso 2: Abbiamo un ciclo iniziale da preselezionare (dalla navigazione)
+    else if (initialCycleId && cycles && cycles.length > 0 && baskets) {
+      console.log('PRIORITÀ 2 - Da ciclo: Preseleziono ciclo:', initialCycleId);
+      
+      // Verifica che il ciclo esista
+      const selectedCycle = cycles.find(cycle => cycle.id === initialCycleId);
+      
+      if (selectedCycle) {
+        // Imposta il valore del ciclo nel form
+        form.setValue('cycleId', initialCycleId);
+        
+        // Trova la cesta associata al ciclo
+        const basketId = selectedCycle.basketId;
+        if (basketId) {
+          // Cerca i dettagli della cesta per ottenere il flupsyId
+          const basket = baskets.find(b => b.id === basketId);
+          if (basket && basket.flupsyId) {
+            // Prima imposta il FLUPSY e poi la cesta
+            form.setValue('flupsyId', basket.flupsyId);
+            form.setValue('basketId', basketId);
+            console.log('Preselezionato FLUPSY e cesta da ciclo:', basket.flupsyId, basketId);
+          }
+        }
+      }
+    } 
+    // Caso 3: Abbiamo FLUPSY e cesta iniziali da preselezionare (dalla navigazione diretta)
+    else if (initialFlupsyId && initialBasketId && flupsys && baskets) {
+      console.log('PRIORITÀ 3 - Diretta: Preseleziono FLUPSY e cesta:', initialFlupsyId, initialBasketId);
+      
+      // Verifica che FLUPSY e cesta esistano
+      const flupsy = flupsys.find((f: any) => f.id === initialFlupsyId);
+      const basket = baskets.find((b: any) => b.id === initialBasketId);
+      
+      if (flupsy && basket) {
+        // Prima imposta il FLUPSY
+        form.setValue('flupsyId', initialFlupsyId);
+        
+        // Se la cesta appartiene al FLUPSY selezionato
+        if (basket.flupsyId === initialFlupsyId) {
+          form.setValue('basketId', initialBasketId);
+          
+          // Se la cesta ha un ciclo attivo, selezionalo automaticamente
+          if (basket.currentCycleId) {
+            form.setValue('cycleId', basket.currentCycleId);
+            console.log('Ciclo impostato automaticamente al ciclo attivo della cesta:', basket.currentCycleId);
+          }
         }
       }
     }
