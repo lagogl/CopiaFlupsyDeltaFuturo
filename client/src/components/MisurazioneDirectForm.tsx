@@ -256,23 +256,27 @@ export default function MisurazioneDirectForm({
         }
       }
       
-      // Prepara i dati dell'operazione
+      // IMPORTANTE: Non inviamo esplicitamente il sizeId
+      // Lasciamo che il server calcoli la taglia appropriata in base a animalsPerKg
+      // Questo assicura che la taglia venga sempre aggiornata correttamente
       const operationData = {
         type: 'misura',
         date: new Date(`${operationDate}T10:00:00.000Z`).toISOString(), // Impostiamo un orario fisso (mezzogiorno)
         basketId,
         cycleId,
-        sizeId,
+        // sizeId: omesso intenzionalmente per far calcolare la taglia al server
         lotId,  // Preserviamo il lotto
         sgrId: null,  // Opzionale
         animalsPerKg,
         averageWeight,
-        animalCount, // Popolazione calcolata in base a totalWeight * animalsPerKg
+        animalCount, // Manteniamo il conteggio animali precedente
         totalWeight: totalWeightInGrams, // Salva il peso totale in grammi
         deadCount: totalDeadCount,
         mortalityRate,
         notes
       };
+      
+      console.log("Omesso sizeId per far calcolare la taglia al server in base a animalsPerKg:", animalsPerKg);
       
       console.log("Salvataggio misurazione con dati:", operationData);
       

@@ -178,12 +178,14 @@ export default function PesoDirectForm({
       // Rimuovere la validazione delle date future come richiesto
       
       // Prepara l'oggetto operazione
+      // IMPORTANTE: Non inviamo esplicitamente il sizeId per le operazioni peso
+      // Lasciamo che il server calcoli la taglia appropriata in base a animalsPerKg
       const operationData = {
         type: 'peso',
         date: selectedDate.toISOString(), // Usa la data validata
         basketId,
         cycleId,
-        sizeId,
+        // sizeId: omesso intenzionalmente per far calcolare la taglia al server
         lotId,
         animalsPerKg: formData.animalsPerKg,
         averageWeight: formData.averageWeight,
@@ -191,6 +193,8 @@ export default function PesoDirectForm({
         totalWeight: parseFloat(formData.totalWeight) * 1000, // Converti in grammi per il database
         notes: formData.notes
       };
+      
+      console.log("Omesso sizeId per far calcolare la taglia al server in base a animalsPerKg:", formData.animalsPerKg);
       
       console.log("Operazione di peso: mantenuto conteggio animali precedente:", defaultAnimalCount);
       
