@@ -304,20 +304,20 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
                   latestOpText = `${opType} (${opDate})`;
                 }
                 
-                // Determine inactive status
+                // Determine status from cycle state
                 let statusClass = 'bg-blue-50 text-blue-800 border-blue-200';
                 let statusText = 'Attivo';
                 
-                // For demo, mark some cycles as inactive based on their id
-                if (cycle.id % 4 === 0) {
+                if (cycle.state !== 'active') {
                   statusClass = 'bg-yellow-50 text-yellow-800 border-yellow-200';
                   statusText = 'Inattivo';
                 }
                 
-                // Dati simulati aggiuntivi
-                const flupsyName = `F-${Math.floor(Math.random() * 10) + 1}`;
-                const animalCount = Math.floor(Math.random() * 5000) + 1000;
-                const density = Math.floor(Math.random() * 50) + 100;
+                // Dati reali da flupsy e dalla ultima operazione
+                const flupsyName = cycle.flupsy?.name || '(Nessun FLUPSY)';
+                const animalCount = cycle.lastOperation?.animalCount || 0;
+                // TODO: Calcolare la densità reale dal database se necessario
+                const density = cycle.lastOperation?.animalsPerKg || 0;
                 
                 return (
                   <tr 
