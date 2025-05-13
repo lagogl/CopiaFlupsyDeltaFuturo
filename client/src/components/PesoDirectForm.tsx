@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,8 @@ import { PesoOperationResults } from '@/components/peso/PesoOperationResults';
 import { createDirectOperation } from '@/lib/operations';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { useQuery } from '@tanstack/react-query';
+import { Scale, Weight } from 'lucide-react';
 import {
   Select,
   SelectContent,
@@ -106,6 +108,33 @@ export default function PesoDirectForm({
   // Stato per tenere traccia se il form è valido
   const [isFormValid, setIsFormValid] = useState(false);
   
+  // Stato per tenere traccia della taglia calcolata
+  const [calculatedSize, setCalculatedSize] = useState<{code: string, id: number} | null>(null);
+  
+  // Recupera le taglie per determinare quella corrispondente al peso medio
+  const { data: sizes } = useQuery({
+    queryKey: ['/api/sizes'],
+  });
+  
+  // Effect per calcolare la taglia in base al peso medio
+  useEffect(() => {
+    if (formData.averageWeight && sizes && sizes.length > 0) {
+      // Trova la taglia corrispondente al peso medio
+      const matchingSize = sizes.find(size => 
+        formData.averageWeight! >= (1000000 / size.maxAnimalsPerKg) && 
+        formData.averageWeight! <= (1000000 / size.minAnimalsPerKg)
+      );
+      
+      if (matchingSize) {
+        setCalculatedSize(matchingSize);
+      } else {
+        setCalculatedSize(null);
+      }
+    } else {
+      setCalculatedSize(null);
+    }
+  }, [formData.averageWeight, sizes]);
+
   // Funzione per aggiornare il formData e calcolare i valori
   const handleChange = (field: string, value: string) => {
     // Crea una copia dello stato attuale
