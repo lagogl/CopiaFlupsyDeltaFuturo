@@ -171,5 +171,4 @@ if (process.argv[1].endsWith('fix_null_rows.js')) {
     });
 }
 
-// Esporta la funzione per poterla utilizzare da altre parti dell'applicazione
-export { fixNullRows };
+// La funzione è già esportata con "export async function fixNullRows()" all'inizio
