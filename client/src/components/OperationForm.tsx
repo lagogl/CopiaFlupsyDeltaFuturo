@@ -18,6 +18,53 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Textarea } from "@/components/ui/textarea";
 import { operationSchema } from "@shared/schema";
 
+// Schema esteso per includere il campo FLUPSY
+const formSchemaWithFlupsy = operationSchema.extend({
+  // Override della data per assicurarci che funzioni correttamente con il form
+  date: z.coerce.date(),
+  animalsPerKg: z.coerce.number().optional().nullable(),
+  totalWeight: z.coerce.number().optional().nullable(),
+  animalCount: z.coerce.number().optional().nullable(),
+  notes: z.string().optional(),
+  // Aggiunto campo FLUPSY per la selezione in due fasi
+  flupsyId: z.number().nullable().optional(),
+  // Il campo cycleId è condizionalmente richiesto a seconda del tipo di operazione
+  cycleId: z.number().nullable().optional().superRefine((val, ctx) => {
+    // Otteniamo il tipo di operazione dalle data dell'oggetto ctx
+    // @ts-ignore - Ignoriamo l'errore TS perché sappiamo che data esiste e contiene type
+    const operationType = ctx.data?.type;
+    
+    // Se l'operazione è di tipo 'prima-attivazione', il ciclo non è richiesto
+    if (operationType === 'prima-attivazione') {
+      return; // Nessun errore, il campo può essere nullo o undefined
+    }
+    
+    // Per tutti gli altri tipi di operazione, verifichiamo che ci sia un ciclo selezionato
+    if (val === null || val === undefined) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        message: "Seleziona un ciclo",
+      });
+    }
+  }),
+  // Il campo lotId è condizionalmente richiesto per le operazioni di prima attivazione
+  lotId: z.number().nullable().optional().superRefine((val, ctx) => {
+    // Otteniamo il tipo di operazione dalle data dell'oggetto ctx
+    // @ts-ignore - Ignoriamo l'errore TS perché sappiamo che data esiste e contiene type
+    const operationType = ctx.data?.type;
+    
+    // Se l'operazione è di tipo 'prima-attivazione', il lotto è obbligatorio
+    if (operationType === 'prima-attivazione') {
+      if (val === null || val === undefined) {
+        ctx.addIssue({
+          code: z.ZodIssueCode.custom,
+          message: "Seleziona un lotto",
+        });
+      }
+    }
+  }),
+});
+
 // Extend operation schema to include validation
 const formSchema = operationSchema.extend({
   // Override della data per assicurarci che funzioni correttamente con il form
