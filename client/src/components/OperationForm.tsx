@@ -147,6 +147,12 @@ export default function OperationForm({
   const { data: sizes } = useQuery({
     queryKey: ['/api/sizes'],
   });
+  
+  // Inizializzazione del form
+  const form = useForm<FormValues>({
+    resolver: zodResolver(formSchemaWithFlupsy),
+    defaultValues,
+  });
 
   const { data: sgrs } = useQuery({
     queryKey: ['/api/sgr'],
