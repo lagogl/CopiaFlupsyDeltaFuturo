@@ -245,6 +245,7 @@ export function TargetSizePredictions() {
                           </div>
                         </div>
                       )}
+                    </div>
                   </div>
                 )}
               </div>
