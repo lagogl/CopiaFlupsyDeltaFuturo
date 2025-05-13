@@ -56,11 +56,39 @@ export default function MisurazioneDirectForm({
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   
+  // Stato per la taglia calcolata automaticamente
+  const [calculatedSize, setCalculatedSize] = useState<{ id: number, code: string } | null>(null);
+  
   // Recupera i dati SGR per calcolare la crescita attesa
   const { data: sgrs } = useQuery({
     queryKey: ['/api/sgr'],
     enabled: !!lastOperationDate // Abilita la query solo se abbiamo la data dell'ultima operazione
   });
+  
+  // Recupera le taglie per mostrare quella calcolata automaticamente in base al peso medio
+  const { data: sizes } = useQuery({
+    queryKey: ['/api/sizes'],
+  });
+  
+  // Aggiorna la taglia calcolata quando cambia il peso medio o gli animali per kg
+  useEffect(() => {
+    if (calculatedValues?.averageWeight && calculatedValues?.animalsPerKg && sizes && sizes.length > 0) {
+      // Trova la taglia appropriata in base agli animali per kg
+      const matchingSize = sizes.find((size: any) => {
+        const minAnimalsPerKg = size.minAnimalsPerKg || 0;
+        const maxAnimalsPerKg = size.maxAnimalsPerKg || Infinity;
+        const animalsPerKg = calculatedValues.animalsPerKg || 0;
+        return animalsPerKg >= minAnimalsPerKg && animalsPerKg <= maxAnimalsPerKg;
+      });
+      
+      if (matchingSize) {
+        setCalculatedSize({
+          id: matchingSize.id,
+          code: matchingSize.code
+        });
+      }
+    }
+  }, [calculatedValues?.averageWeight, calculatedValues?.animalsPerKg, sizes]);
   
   // Prepara i dati per l'indicatore di crescita
   const prepareGrowthData = () => {
@@ -582,6 +610,28 @@ export default function MisurazioneDirectForm({
         {/* Risultati del calcolo */}
         <div className="bg-muted/30 p-4 rounded-md space-y-3 border mt-4">
           <h4 className="text-sm font-medium mb-2">Risultati del calcolo:</h4>
+          
+          {/* Box informativo sulla taglia manuale */}
+          <div className="p-3 border border-indigo-100 bg-indigo-50 rounded-md mb-4">
+            <div className="flex items-start">
+              <div className="mr-2 text-indigo-500">
+                <RulerMeasure className="h-5 w-5 mt-1" />
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-indigo-800">Taglia personalizzabile</h4>
+                <p className="text-xs text-indigo-700 mt-1">
+                  Nell'operazione <strong>misura</strong>, puoi scegliere manualmente la taglia più adatta.
+                  {calculatedSize && (
+                    <span className="block mt-1">
+                      In base al peso medio calcolato di <strong>{calculatedValues?.averageWeight?.toFixed(4) || 0} mg</strong>, 
+                      il sistema suggerisce la taglia <strong className="text-indigo-600">{calculatedSize.code}</strong>, 
+                      ma puoi modificarla in base alle tue osservazioni.
+                    </span>
+                  )}
+                </p>
+              </div>
+            </div>
+          </div>
           
           {/* Avviso importante sulla conservazione del conteggio animali */}
           <div className="p-3 border border-amber-200 bg-amber-50 rounded-md mb-4">
