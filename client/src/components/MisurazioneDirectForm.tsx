@@ -5,6 +5,7 @@ import { Textarea } from '@/components/ui/textarea';
 import { formatNumberWithCommas } from '@/lib/utils';
 import { useToast } from '@/hooks/use-toast';
 import { apiRequest } from '@/lib/queryClient';
+import { createDirectOperation } from '@/lib/operations';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
@@ -280,34 +281,50 @@ export default function MisurazioneDirectForm({
       
       console.log("Salvataggio misurazione con dati:", operationData);
       
-      // Chiama l'API per salvare l'operazione
-      const response = await apiRequest({
-        url: '/api/operations',
-        method: 'POST',
-        body: operationData
+      // Invia al server usando la route diretta per bypassare i controlli di una operazione al giorno
+      // Questo garantisce anche che il conteggio animali sia preservato correttamente
+      await createDirectOperation(operationData);
+      
+      // Mostra notifica
+      toast({
+        variant: "success",
+        title: "Operazione registrata",
+        description: `Misurazione registrata per la cesta #${basketNumber}`
       });
       
-      if (response.ok) {
-        toast({
-          variant: "success",
-          title: "Operazione salvata",
-          description: "La misurazione è stata registrata con successo"
-        });
-        
-        onSuccess();
-      } else {
-        const errorData = await response.json();
-        throw new Error(errorData.message || "Errore durante il salvataggio dell'operazione");
-      }
+      // Callback di successo
+      onSuccess();
     } catch (error: any) {
       console.error("Errore durante il salvataggio:", error);
       
+      // Log dettagliato dell'errore per il debug
+      console.log('Dettagli errore:', {
+        error,
+        response: error.response,
+        data: error.response?.data,
+        statusCode: error.response?.status
+      });
+      
       // Controlla se l'errore contiene un messaggio dal server
-      if (error.message && error.message.includes("Non è possibile registrare più di un'operazione al giorno")) {
+      if (error.response?.data?.error || error.response?.data?.message) {
+        const errorMessage = error.response.data.error || error.response.data.message;
+        
+        // Gestisci il caso specifico di operazione doppia nella stessa giornata
+        if (errorMessage.includes("Non è possibile registrare più di un'operazione al giorno") || 
+            errorMessage.includes("Per ogni cesta è consentita una sola operazione al giorno")) {
+          toast({
+            variant: "destructive",
+            title: "Data già utilizzata",
+            description: "Per la data selezionata esiste già un'operazione. Seleziona una data differente.",
+          });
+          return;
+        }
+        
+        // Altri errori dal server
         toast({
-          variant: "destructive",
-          title: "Data già utilizzata",
-          description: "Per ogni cesta è consentita una sola operazione al giorno. Per la data selezionata esiste già un'operazione. Seleziona una data differente.",
+          title: "Errore dal server",
+          description: errorMessage,
+          variant: "destructive"
         });
       } else {
         // Errore generico
