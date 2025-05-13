@@ -691,7 +691,15 @@ export default function OperationForm({
     
     console.log("Valori formattati:", formattedValues);
     
-    // Chiamata diretta alla funzione di submit
+    // Controlla se è un'operazione di tipo "misura" che potrebbe cambiare il numero di animali
+    if (formattedValues.type === 'misura' && formattedValues.deadCount && Number(formattedValues.deadCount) > 0) {
+      // Mostra dialog di conferma
+      setPendingValues(formattedValues);
+      setShowConfirmDialog(true);
+      return;
+    }
+    
+    // Chiamata diretta alla funzione di submit per gli altri casi
     if (onSubmit) {
       console.log("Chiamata onSubmit con:", formattedValues);
       onSubmit(formattedValues);
@@ -1437,6 +1445,44 @@ export default function OperationForm({
           </Button>
         </div>
       </form>
+      
+      {/* Dialog di conferma per le operazioni di misura che cambiano la conta degli animali */}
+      <AlertDialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Attenzione: l'operazione modificherà il conteggio degli animali</AlertDialogTitle>
+            <AlertDialogDescription className="space-y-2">
+              <p>
+                L'operazione di misurazione che stai registrando attraverso il Registro Operazioni cambierà 
+                il conteggio degli animali all'interno della cesta a causa della mortalità specificata.
+              </p>
+              <div className="bg-amber-50 border border-amber-200 p-3 rounded-md my-3">
+                <p className="text-amber-800 font-semibold">Suggerimento</p>
+                <p className="text-amber-700 text-sm">
+                  Per operazioni standard di peso e misurazione, è consigliabile utilizzare i moduli 
+                  "Operazioni Rapide" o "Operazioni Drag&Drop", che offrono un'interfaccia più adatta a 
+                  questo tipo di operazioni frequenti.
+                </p>
+              </div>
+              <p className="font-semibold">Vuoi procedere comunque con questa operazione?</p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => setShowConfirmDialog(false)}>
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction onClick={() => {
+              if (pendingValues && onSubmit) {
+                onSubmit(pendingValues);
+                setPendingValues(null);
+              }
+              setShowConfirmDialog(false);
+            }}>
+              Procedi
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Form>
   );
 }
