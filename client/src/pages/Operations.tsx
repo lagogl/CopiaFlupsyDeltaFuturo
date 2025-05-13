@@ -48,6 +48,8 @@ export default function Operations() {
   const [selectedOperation, setSelectedOperation] = useState<any>(null);
   const [redirectToBasketAfterCreate, setRedirectToBasketAfterCreate] = useState<number | null>(null);
   const [initialCycleId, setInitialCycleId] = useState<number | null>(null);
+  const [initialFlupsyId, setInitialFlupsyId] = useState<number | null>(null);
+  const [initialBasketId, setInitialBasketId] = useState<number | null>(null);
   
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
@@ -102,7 +104,7 @@ export default function Operations() {
       const flupsyId = urlParams.get('flupsyId');
       const basketId = urlParams.get('basketId');
       
-      // Se c'è un ciclo selezionato
+      // Caso 1: Se c'è un ciclo selezionato
       if (selectedCycleId) {
         const cycleIdNumber = parseInt(selectedCycleId, 10);
         
@@ -122,6 +124,11 @@ export default function Operations() {
                 const basketIdNumber = parseInt(basketId, 10);
                 
                 if (!isNaN(flupsyIdNumber) && !isNaN(basketIdNumber)) {
+                  // Imposta anche i valori di FLUPSY e cesta
+                  setInitialFlupsyId(flupsyIdNumber);
+                  setInitialBasketId(basketIdNumber);
+                  console.log("Preselezionato FLUPSY e cesta:", flupsyIdNumber, basketIdNumber);
+                  
                   // Crea un'operazione predefinita con i valori passati nell'URL
                   setSelectedOperation({
                     type: 'misura', // Tipo predefinito
@@ -141,6 +148,32 @@ export default function Operations() {
               navigate('/operations', { replace: true });
             }
           }
+        }
+      }
+      // Caso 2: Se non c'è un ciclo ma ci sono FLUPSY e cesta
+      else if (flupsyId && basketId) {
+        const flupsyIdNumber = parseInt(flupsyId, 10);
+        const basketIdNumber = parseInt(basketId, 10);
+        
+        if (!isNaN(flupsyIdNumber) && !isNaN(basketIdNumber)) {
+          // Imposta i valori di FLUPSY e cesta
+          setInitialFlupsyId(flupsyIdNumber);
+          setInitialBasketId(basketIdNumber);
+          console.log("Preselezionato FLUPSY e cesta senza ciclo:", flupsyIdNumber, basketIdNumber);
+          
+          // Crea un'operazione predefinita con i valori passati nell'URL
+          setSelectedOperation({
+            type: 'misura', // Tipo predefinito
+            date: new Date(),
+            basketId: basketIdNumber,
+            flupsyId: flupsyIdNumber
+          });
+          
+          // Apri automaticamente il dialog di creazione operazione
+          setIsCreateDialogOpen(true);
+          
+          // Puliamo l'URL per evitare di riaprire il dialog se l'utente ricarica la pagina
+          navigate('/operations', { replace: true });
         }
       }
     }
@@ -2348,6 +2381,8 @@ export default function Operations() {
             onCancel={() => setIsCreateDialogOpen(false)}
             isLoading={createOperationMutation.isPending}
             initialCycleId={initialCycleId}
+            initialFlupsyId={initialFlupsyId}
+            initialBasketId={initialBasketId}
             defaultValues={selectedOperation ? {
               type: selectedOperation.type,
               date: selectedOperation.date instanceof Date ? selectedOperation.date : new Date(selectedOperation.date),
