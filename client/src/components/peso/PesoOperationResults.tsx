@@ -175,19 +175,19 @@ export function PesoOperationResults({
             <div className="p-3 bg-white rounded-md shadow-sm border border-blue-100">
               <p className="text-xs text-gray-500 mb-1">Peso totale (kg)</p>
               <p className="font-bold text-lg text-slate-900 truncate">
-                {currentTotalWeightKg?.toLocaleString('it-IT', {maximumFractionDigits: 3}) || '-'}
+                {currentTotalWeightKg?.toLocaleString('it-IT', {minimumFractionDigits: 4, maximumFractionDigits: 4}) || '-'}
               </p>
               {previousTotalWeight && (
                 <div className="text-xs text-green-600 flex items-center mt-1 overflow-hidden">
                   {currentTotalWeightKg && currentTotalWeightKg > previousTotalWeight ? (
                     <>
                       <TrendingUp className="h-3 w-3 mr-1 flex-shrink-0" /> 
-                      <span className="truncate">+{(currentTotalWeightKg - previousTotalWeight).toLocaleString('it-IT', {maximumFractionDigits: 3})}</span>
+                      <span className="truncate">+{(currentTotalWeightKg - previousTotalWeight).toLocaleString('it-IT', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
                     </>
                   ) : (
                     <>
                       <TrendingDown className="h-3 w-3 mr-1 flex-shrink-0" /> 
-                      <span className="truncate">-{(previousTotalWeight - (currentTotalWeightKg || 0)).toLocaleString('it-IT', {maximumFractionDigits: 3})}</span>
+                      <span className="truncate">-{(previousTotalWeight - (currentTotalWeightKg || 0)).toLocaleString('it-IT', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
                     </>
                   )}
                 </div>
