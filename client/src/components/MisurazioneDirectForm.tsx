@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -10,6 +10,7 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
+import { Scale, RulerMeasure } from 'lucide-react';
 
 interface MisurazioneDirectFormProps {
   basketId: number;

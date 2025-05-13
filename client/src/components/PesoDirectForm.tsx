@@ -389,6 +389,27 @@ export default function PesoDirectForm({
           </p>
         </div>
         
+        {/* Box informativo sulla taglia automatica */}
+        <div className="p-3 border border-primary/20 bg-primary/5 rounded-md mb-4">
+          <div className="flex items-start">
+            <div className="mr-2 text-primary">
+              <Scale className="h-5 w-5 mt-1" />
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold">Aggiornamento Automatico Taglia</h4>
+              <p className="text-xs text-muted-foreground mt-1">
+                Nell'operazione <strong>peso</strong>, la taglia viene aggiornata <strong>automaticamente</strong> in base al peso medio calcolato.
+                {formData.averageWeight && calculatedSize && (
+                  <span className="block mt-1">
+                    Con il peso medio attuale di <strong>{formData.averageWeight.toFixed(4)} mg</strong>, 
+                    la taglia sarà impostata a <strong className="text-primary">{calculatedSize.code}</strong>.
+                  </span>
+                )}
+              </p>
+            </div>
+          </div>
+        </div>
+        
         {/* Avviso sul mantenimento del conteggio animali */}
         <div className="p-3 border border-amber-200 bg-amber-50 rounded-md">
           <div className="flex items-start">
