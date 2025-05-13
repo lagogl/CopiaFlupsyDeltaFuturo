@@ -691,12 +691,30 @@ export default function OperationForm({
     
     console.log("Valori formattati:", formattedValues);
     
-    // Controlla se è un'operazione di tipo "misura" che potrebbe cambiare il numero di animali
-    if (formattedValues.type === 'misura' && formattedValues.deadCount && Number(formattedValues.deadCount) > 0) {
-      // Mostra dialog di conferma
-      setPendingValues(formattedValues);
-      setShowConfirmDialog(true);
-      return;
+    // Gestione speciale per operazioni di misura in base alla mortalità
+    if (formattedValues.type === 'misura') {
+      // Ottieni la precedente operazione per recuperare dati (se disponibile)
+      const prevOperationData = basketOperations?.find(op => op.animalCount !== null);
+      
+      if (formattedValues.deadCount && Number(formattedValues.deadCount) > 0) {
+        // Con mortalità > 0: mostra dialog di conferma per avvisare che cambierà il conteggio
+        console.log("Misurazione con mortalità > 0: verrà calcolato un nuovo conteggio animali");
+        setPendingValues(formattedValues);
+        setShowConfirmDialog(true);
+        return;
+      } else {
+        // Senza mortalità: mantiene il conteggio animali precedente (se disponibile)
+        if (prevOperationData?.animalCount && (!formattedValues.animalCount || Number(formattedValues.animalCount) !== prevOperationData.animalCount)) {
+          console.log("Misurazione senza mortalità: mantenuto conteggio animali precedente:", prevOperationData.animalCount);
+          // Aggiorna il conteggio animali con quello precedente
+          formattedValues.animalCount = prevOperationData.animalCount;
+          toast({
+            title: "Conteggio animali mantenuto",
+            description: "Senza mortalità, il numero di animali è stato mantenuto invariato.",
+            duration: 4000
+          });
+        }
+      }
     }
     
     // Chiamata diretta alla funzione di submit per gli altri casi

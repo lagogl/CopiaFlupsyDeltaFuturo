@@ -261,7 +261,7 @@ export default function MisurazioneDirectForm({
       let animalCount;
       let animalCountSource = "";
       
-      // Se c'è mortalità (deadCount > 0), utilizziamo il conteggio calcolato
+      // Se c'è mortalità (deadCount &gt; 0), utilizziamo il conteggio calcolato
       if (deadCount !== null && deadCount > 0) {
         // Con mortalità, dobbiamo usare il conteggio calcolato
         animalCount = totalPopulation;
@@ -772,7 +772,7 @@ export default function MisurazioneDirectForm({
               <strong>Se mortalità = 0:</strong> Il numero di animali rimarrà invariato rispetto all'ultima operazione
             </li>
             <li>
-              <strong>Se mortalità > 0:</strong> Il numero di animali verrà aggiornato con il nuovo valore calcolato
+              <strong>Se mortalità &gt; 0:</strong> Il numero di animali verrà aggiornato con il nuovo valore calcolato
             </li>
           </ul>
           <p className="text-xs text-amber-800 mt-2 italic">
