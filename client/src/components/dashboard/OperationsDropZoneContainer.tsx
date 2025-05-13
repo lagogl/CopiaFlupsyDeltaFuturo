@@ -630,9 +630,18 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       averageWeight: currentOperation.formData.averageWeight,
       animalCount: currentOperation.formData.animalCount,
       lotId: currentOperation.formData.lotId,
-      sizeId: currentOperation.formData.sizeId,
       notes: currentOperation.formData.notes || ""
     };
+    
+    // IMPORTANTE: Per le operazioni di tipo 'misura' e 'peso', NON inviamo il sizeId
+    // per lasciare che il server calcoli la taglia appropriata in base a animalsPerKg
+    if (currentOperation.type !== 'misura' && currentOperation.type !== 'peso') {
+      // Solo per gli altri tipi di operazione includiamo il sizeId
+      operationData.sizeId = currentOperation.formData.sizeId;
+      console.log("Incluso sizeId per operazione", currentOperation.type);
+    } else {
+      console.log("Omesso sizeId per operazione", currentOperation.type, "- verrà calcolato dal server in base ad animalsPerKg:", currentOperation.formData.animalsPerKg);
+    }
     
     createOperationMutation.mutate(operationData);
   };
