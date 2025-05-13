@@ -59,6 +59,9 @@ export default function MisurazioneDirectForm({
   // Stato per la taglia calcolata automaticamente
   const [calculatedSize, setCalculatedSize] = useState<{ id: number, code: string } | null>(null);
   
+  // Stato per la taglia selezionata manualmente dall'utente
+  const [selectedSizeId, setSelectedSizeId] = useState<number | null>(sizeId);
+  
   // Recupera i dati SGR per calcolare la crescita attesa
   const { data: sgrs } = useQuery({
     queryKey: ['/api/sgr'],
@@ -86,9 +89,15 @@ export default function MisurazioneDirectForm({
           id: matchingSize.id,
           code: matchingSize.code
         });
+        
+        // Suggerisci la taglia calcolata come valore selezionato
+        // ma solo se l'utente non ha ancora selezionato manualmente una taglia
+        if (!selectedSizeId) {
+          setSelectedSizeId(matchingSize.id);
+        }
       }
     }
-  }, [calculatedValues?.averageWeight, calculatedValues?.animalsPerKg, sizes]);
+  }, [calculatedValues?.averageWeight, calculatedValues?.animalsPerKg, sizes, selectedSizeId]);
   
   // Prepara i dati per l'indicatore di crescita
   const prepareGrowthData = () => {
@@ -621,9 +630,9 @@ export default function MisurazioneDirectForm({
                 <h4 className="text-sm font-semibold text-indigo-800">Taglia personalizzabile</h4>
                 <p className="text-xs text-indigo-700 mt-1">
                   Nell'operazione <strong>misura</strong>, puoi scegliere manualmente la taglia più adatta.
-                  {calculatedSize && (
+                  {calculatedSize && calculatedValues?.averageWeight && (
                     <span className="block mt-1">
-                      In base al peso medio calcolato di <strong>{calculatedValues?.averageWeight?.toFixed(4) || 0} mg</strong>, 
+                      In base al peso medio calcolato di <strong>{calculatedValues.averageWeight.toFixed(4)} mg</strong>, 
                       il sistema suggerisce la taglia <strong className="text-indigo-600">{calculatedSize.code}</strong>, 
                       ma puoi modificarla in base alle tue osservazioni.
                     </span>
