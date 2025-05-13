@@ -117,33 +117,43 @@ export class DbStorage implements IStorage {
         
         if (basketIds.length > 0) {
           // 4.1 Eliminazione di tutte le operazioni associate alle ceste
+          // FIX: Utilizziamo inArray invece di sql template con join per la clausola IN
           console.log(`deleteFlupsy - Eliminazione operazioni per ${basketIds.length} ceste`);
           await tx
             .delete(operations)
-            .where(sql`basket_id IN (${basketIds.join(',')})`)
+            .where(inArray(operations.basketId, basketIds))
           
           // 4.2 Eliminazione della cronologia delle posizioni
+          // FIX: Utilizziamo inArray invece di sql template con join per la clausola IN
           console.log(`deleteFlupsy - Eliminazione cronologia posizioni per ${basketIds.length} ceste`);
           await tx
             .delete(basketPositionHistory)
-            .where(sql`basket_id IN (${basketIds.join(',')})`)
+            .where(inArray(basketPositionHistory.basketId, basketIds))
           
           // 4.3 Controlla e pulisci eventuali riferimenti nelle tabelle di screening
           try {
             // Per la tabella screeningSourceBaskets
+            // FIX: Utilizziamo inArray invece di sql template con join per la clausola IN
             await tx
               .delete(screeningSourceBaskets)
-              .where(sql`basket_id IN (${basketIds.join(',')})`)
+              .where(inArray(screeningSourceBaskets.basketId, basketIds))
             
             // Per la tabella screeningDestinationBaskets
+            // FIX: Utilizziamo inArray invece di sql template con join per la clausola IN
             await tx
               .delete(screeningDestinationBaskets)
-              .where(sql`basket_id IN (${basketIds.join(',')})`)
+              .where(inArray(screeningDestinationBaskets.basketId, basketIds))
               
             // Per la tabella screeningBasketHistory
+            // FIX: Utilizziamo or e inArray invece di sql template con join per la clausola IN
             await tx
               .delete(screeningBasketHistory)
-              .where(sql`source_basket_id IN (${basketIds.join(',')}) OR destination_basket_id IN (${basketIds.join(',')})`)
+              .where(
+                or(
+                  inArray(screeningBasketHistory.sourceBasketId, basketIds),
+                  inArray(screeningBasketHistory.destinationBasketId, basketIds)
+                )
+              )
           } catch (error) {
             console.error("Errore durante pulizia tabelle di screening:", error);
             // Continuiamo con la cancellazione anche se questa parte fallisce
