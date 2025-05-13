@@ -549,9 +549,14 @@ export default function OperationForm({
     console.log("Valori form:", values);
     
     // Verifica che ci siano almeno i campi obbligatori
-    if (!values.basketId || !values.type || !values.date) {
-      console.error("Mancano campi obbligatori", { basketId: values.basketId, type: values.type, date: values.date });
-      alert("Compila tutti i campi obbligatori: Cesta, Tipo operazione e Data");
+    if (!values.basketId || !values.flupsyId || !values.type || !values.date) {
+      console.error("Mancano campi obbligatori", { 
+        basketId: values.basketId, 
+        flupsyId: values.flupsyId, 
+        type: values.type, 
+        date: values.date 
+      });
+      alert("Compila tutti i campi obbligatori: FLUPSY, Cesta, Tipo operazione e Data");
       return;
     }
     
@@ -572,6 +577,7 @@ export default function OperationForm({
       sgrId: values.sgrId ? Number(values.sgrId) : null,
       sizeId: values.sizeId ? Number(values.sizeId) : null,
       lotId: values.lotId ? Number(values.lotId) : null,
+      flupsyId: values.flupsyId ? Number(values.flupsyId) : null,
       // Per prima-attivazione, controlla se il cestello ha già un ciclo attivo
       cycleId: values.type === 'prima-attivazione' ? 
         (selectedBasket?.currentCycleId || null) : 
@@ -591,12 +597,53 @@ export default function OperationForm({
     <Form {...form}>
       <form onSubmit={onSubmitForm} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-2 gap-2 md:gap-3">
+          {/* Step 1: Select FLUPSY */}
+          <FormField
+            control={form.control}
+            name="flupsyId"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>FLUPSY</FormLabel>
+                <Select 
+                  onValueChange={(value) => {
+                    const flupsyId = Number(value);
+                    field.onChange(flupsyId);
+                    // Reset basket when FLUPSY changes
+                    form.setValue('basketId', undefined);
+                    form.setValue('cycleId', undefined);
+                    
+                    console.log('FLUPSY selezionato:', flupsyId);
+                  }}
+                  value={field.value?.toString()}
+                >
+                  <FormControl>
+                    <SelectTrigger>
+                      <SelectValue placeholder="Seleziona un FLUPSY" />
+                    </SelectTrigger>
+                  </FormControl>
+                  <SelectContent>
+                    {flupsys && flupsys.map(flupsy => (
+                      <SelectItem 
+                        key={flupsy.id} 
+                        value={flupsy.id.toString()}
+                      >
+                        {flupsy.name} - {flupsy.location || 'N/D'}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Step 2: Select Basket from selected FLUPSY */}
           <FormField
             control={form.control}
             name="basketId"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Numero Cesta e FLUPSY</FormLabel>
+                <FormLabel>Cesta</FormLabel>
                 <Select 
                   onValueChange={(value) => {
                     field.onChange(Number(value));
@@ -614,14 +661,15 @@ export default function OperationForm({
                     }
                   }}
                   value={field.value?.toString()}
+                  disabled={!watchFlupsyId}
                 >
                   <FormControl>
                     <SelectTrigger>
-                      <SelectValue placeholder="Seleziona una cesta" />
+                      <SelectValue placeholder={watchFlupsyId ? "Seleziona una cesta" : "Seleziona prima un FLUPSY"} />
                     </SelectTrigger>
                   </FormControl>
                   <SelectContent>
-                    {baskets?.map((basket) => {
+                    {flupsyBaskets?.map((basket) => {
                       // Mostra le informazioni sul ciclo per le ceste attive
                       const cycleInfo = basket.state === 'active' && basket.cycleCode ? 
                         ` (${basket.cycleCode})` : '';
@@ -651,7 +699,7 @@ export default function OperationForm({
                             : (basket.state === 'available' || (basket.state === 'active' && !basket.currentCycleId))
                               ? "🟠 " 
                               : ""}
-                          Cesta #{basket.physicalNumber} - {basket.flupsyName || `FLUPSY #${basket.flupsyId}`}{positionInfo}{cycleInfo}{stateInfo}
+                          Cesta #{basket.physicalNumber}{positionInfo}{cycleInfo}{stateInfo}
                         </SelectItem>
                       );
                     })}
