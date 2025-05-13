@@ -215,16 +215,21 @@ export default function MisurazioneDirectForm({
         mortalityRate = Math.round(mortalityRate * 10) / 10; // Arrotondiamo a una cifra decimale
       }
       
-      setCalculatedValues({
+      // Creiamo un oggetto con i valori calcolati
+      const newValues = {
         animalsPerKg,
         averageWeight,
         totalPopulation: calculatedTotalPopulation || totalPopulation,
         mortalityRate,
         totalDeadCount,
         totalWeight: calculatedTotalWeight
-      });
+      };
       
-      return true;
+      // Aggiorniamo lo stato
+      setCalculatedValues(newValues);
+      
+      // Restituiamo i valori calcolati direttamente
+      return newValues;
     }
     
     toast({
@@ -238,12 +243,16 @@ export default function MisurazioneDirectForm({
   
   // Gestisce il salvataggio dell'operazione
   const handleSave = async () => {
-    // Calcola i valori prima del salvataggio
-    if (!calculateValues()) {
+    // Calcola i valori prima del salvataggio e ottieni il risultato direttamente
+    const result = calculateValues();
+    
+    // Se non ci sono risultati, esci (calculateValues restituisce false o undefined se fallisce)
+    if (!result) {
       return;
     }
     
-    const { animalsPerKg, averageWeight, totalDeadCount, mortalityRate, totalPopulation, totalWeight } = calculatedValues;
+    // Usa i valori direttamente dal risultato della funzione
+    const { animalsPerKg, averageWeight, totalDeadCount, mortalityRate, totalPopulation, totalWeight } = result;
     
     if (!animalsPerKg || !averageWeight) {
       toast({
