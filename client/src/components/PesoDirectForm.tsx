@@ -356,6 +356,26 @@ export default function PesoDirectForm({
           </p>
         </div>
         
+        {/* Avviso sul mantenimento del conteggio animali */}
+        <div className="p-3 border border-amber-200 bg-amber-50 rounded-md">
+          <div className="flex items-start">
+            <div className="mr-2 text-amber-500">
+              <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-1">
+                <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                <line x1="12" y1="9" x2="12" y2="13"></line>
+                <line x1="12" y1="17" x2="12.01" y2="17"></line>
+              </svg>
+            </div>
+            <div>
+              <h4 className="text-sm font-semibold text-amber-800">Nota importante:</h4>
+              <p className="text-xs text-amber-700 mt-1">
+                Per le operazioni di peso, il sistema manterrà il conteggio precedente di <strong>{formatNumberWithCommas(defaultAnimalCount || 0)}</strong> animali. 
+                I calcoli mostrati qui aggiornano solo il peso medio e gli animali per kg, mentre il numero di animali rimarrà invariato.
+              </p>
+            </div>
+          </div>
+        </div>
+        
         {/* Risultati calcolati */}
         {formData.totalWeight && formData.animalsPerKg && (
           <PesoOperationResults
@@ -363,7 +383,7 @@ export default function PesoDirectForm({
               formData: {
                 animalsPerKg: formData.animalsPerKg,
                 averageWeight: formData.averageWeight,
-                animalCount: formData.animalCount,
+                animalCount: defaultAnimalCount || 0, // Qui mettiamo esplicitamente il valore originale
                 totalWeight: parseFloat(formData.totalWeight)
               }
             }}
