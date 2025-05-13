@@ -2307,6 +2307,7 @@ export default function Operations() {
             }}
             onCancel={() => setIsCreateDialogOpen(false)}
             isLoading={createOperationMutation.isPending}
+            initialCycleId={initialCycleId}
             defaultValues={selectedOperation ? {
               type: selectedOperation.type,
               date: selectedOperation.date instanceof Date ? selectedOperation.date : new Date(selectedOperation.date),
