@@ -2116,29 +2116,38 @@ export default function Operations() {
                                     >
                                       <Trash2 className="h-4 w-4" />
                                     </Button>
-                                    <Button
-                                      variant="ghost"
-                                      size="icon"
-                                      onClick={() => {
-                                        // Duplica l'operazione
-                                        const nextDay = addDays(new Date(op.date), 1);
-                                        const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
-                                        
-                                        const duplicatedOp = {
-                                          ...op,
-                                          type: operationType,
-                                          date: nextDay,
-                                          id: undefined
-                                        };
-                                        
-                                        setSelectedOperation(duplicatedOp);
-                                        // Imposta lo stato per il reindirizzamento dopo la creazione
-                                        setRedirectToBasketAfterCreate(op.basketId);
-                                        setIsCreateDialogOpen(true);
-                                      }}
-                                    >
-                                      <Copy className="h-4 w-4 text-indigo-600" />
-                                    </Button>
+                                    <TooltipProvider>
+                                      <Tooltip>
+                                        <TooltipTrigger asChild>
+                                          <Button
+                                            variant="ghost"
+                                            size="icon"
+                                            onClick={() => {
+                                              // Duplica l'operazione
+                                              const nextDay = addDays(new Date(op.date), 1);
+                                              const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
+                                              
+                                              const duplicatedOp = {
+                                                ...op,
+                                                type: operationType,
+                                                date: nextDay,
+                                                id: undefined
+                                              };
+                                              
+                                              setSelectedOperation(duplicatedOp);
+                                              // Imposta lo stato per il reindirizzamento dopo la creazione
+                                              setRedirectToBasketAfterCreate(op.basketId);
+                                              setIsCreateDialogOpen(true);
+                                            }}
+                                          >
+                                            <Copy className="h-4 w-4 text-indigo-600" />
+                                          </Button>
+                                        </TooltipTrigger>
+                                        <TooltipContent>
+                                          <p>Duplica questa operazione e visualizza la cesta</p>
+                                        </TooltipContent>
+                                      </Tooltip>
+                                    </TooltipProvider>
                                   </div>
                                 </div>
                               </CardHeader>
