@@ -90,6 +90,10 @@ export function implementDirectOperationRoute(app: Express) {
         throw new Error("La data è obbligatoria");
       }
       
+      // Preserviamo esplicitamente animalCount quando viene fornito
+      // Questo è particolarmente importante per le operazioni di tipo 'misura' o 'peso'
+      const hasAnimalCount = operationData.animalCount !== undefined;
+      
       // 2. Assicurati che i tipi di dati siano corretti
       console.log("Conversione e validazione dei dati...");
       
@@ -112,6 +116,9 @@ export function implementDirectOperationRoute(app: Express) {
       if (operationData.lotId) {
         operationData.lotId = Number(operationData.lotId);
       }
+      
+      // Ricorda il valore originale di animalCount
+      const originalAnimalCount = operationData.animalCount;
       
       // 3. Calcola averageWeight e sizeId appropriato se viene fornito animalsPerKg
       if (operationData.animalsPerKg && operationData.animalsPerKg > 0) {
@@ -140,6 +147,12 @@ export function implementDirectOperationRoute(app: Express) {
             console.warn("Impossibile calcolare automaticamente la taglia appropriata, viene mantenuta quella specificata dall'utente.");
           }
         }
+      }
+      
+      // Ripristina animalCount originale se presente e tipo operazione è "misura" o "peso"
+      if (hasAnimalCount && (operationData.type === 'misura' || operationData.type === 'peso')) {
+        console.log(`IMPORTANTE: Per operazione ${operationData.type}, preservato conteggio animali originale:`, originalAnimalCount);
+        operationData.animalCount = originalAnimalCount;
       }
       
       console.log("Dati operazione dopo la normalizzazione:");
