@@ -300,7 +300,7 @@ export default function PesoDirectForm({
                     <div className="p-2 bg-white rounded shadow-sm">
                       <p className="text-xs text-gray-500">Peso medio (mg)</p>
                       <p className="font-medium text-slate-900">
-                        {formatNumberWithCommas(defaultAverageWeight)}
+                        {formatNumberWithCommas(defaultAverageWeight, 4)}
                       </p>
                     </div>
                   )}

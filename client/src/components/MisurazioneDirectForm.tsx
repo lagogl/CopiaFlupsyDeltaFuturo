@@ -348,7 +348,7 @@ export default function MisurazioneDirectForm({
                 {defaultAverageWeight && (
                   <div className="flex flex-col">
                     <span className="text-blue-600 font-medium text-xs">Peso medio:</span>
-                    <span className="font-semibold">{formatNumberWithCommas(defaultAverageWeight)} mg</span>
+                    <span className="font-semibold">{formatNumberWithCommas(defaultAverageWeight, 4)} mg</span>
                   </div>
                 )}
                 
@@ -382,7 +382,7 @@ export default function MisurazioneDirectForm({
                   <div className="flex flex-col">
                     <span className="text-blue-600 font-medium text-xs">Peso totale stimato:</span>
                     <span className="font-semibold">
-                      {formatNumberWithCommas(Math.round((defaultAnimalCount / defaultAnimalsPerKg) * 100) / 100)} kg
+                      {formatNumberWithCommas(parseFloat(((defaultAnimalCount / defaultAnimalsPerKg)).toFixed(4)), 4)} kg
                     </span>
                   </div>
                 )}
@@ -392,7 +392,7 @@ export default function MisurazioneDirectForm({
                   <div className="flex flex-col border-t border-blue-100 mt-1 pt-1 col-span-2">
                     <span className="text-blue-600 font-medium text-xs">Target prossima crescita:</span>
                     <span className="font-semibold flex items-center">
-                      <span className="mr-2">{formatNumberWithCommas(Math.round(defaultAverageWeight * 1.1))} mg</span>
+                      <span className="mr-2">{formatNumberWithCommas(parseFloat((defaultAverageWeight * 1.1).toFixed(4)), 4)} mg</span>
                       <span className="text-xs text-emerald-600">(+10%)</span>
                     </span>
                   </div>

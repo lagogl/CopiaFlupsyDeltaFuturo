@@ -38,8 +38,13 @@ export function formatNumberWithCommas(value: number | string, decimals: number 
     return "0";
   }
   
+  // Riconoscimento dei pesi medi (numeri maggiori di 10 di solito sono pesi medi in mg)
+  // Per questi valori, usiamo 4 decimali per maggiore precisione
+  if (numValue > 10 && numValue < 500 && decimals === 0) {
+    decimals = 4; // Default a 4 decimali per i pesi medi in mg
+  }
   // Gestiamo i numeri molto piccoli - se il valore è minore di 1 e maggiore di zero, usiamo decimali adattabili
-  if (numValue > 0 && numValue < 1 && decimals === 0) {
+  else if (numValue > 0 && numValue < 1 && decimals === 0) {
     decimals = 3; // Default a 3 decimali per i numeri molto piccoli
   }
   
@@ -65,7 +70,8 @@ export function calculateAverageWeight(animalsPerKg: number): number | null {
   if (!animalsPerKg || animalsPerKg <= 0) {
     return null;
   }
-  return 1000000 / animalsPerKg;
+  // Manteniamo 4 decimali di precisione per il peso medio
+  return parseFloat((1000000 / animalsPerKg).toFixed(4));
 }
 
 export function getOperationTypeLabel(type: string): string {
