@@ -19,8 +19,10 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
-import { Info, Filter, MapPin, Fan, Wind } from "lucide-react";
+import { Info, Filter, MapPin, Fan, Wind, History } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { format, differenceInDays } from "date-fns";
+import { it } from "date-fns/locale";
 
 // Item types for drag and drop
 const ItemTypes = {

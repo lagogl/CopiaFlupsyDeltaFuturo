@@ -1707,4 +1707,36 @@ export class DbStorage implements IStorage {
       return 1; // In caso di errore, restituisci 1 come valore predefinito
     }
   }
+  
+  async getBasketPositionHistory(basketId: number): Promise<any[]> {
+    if (!basketId || basketId <= 0) {
+      console.error("getBasketPositionHistory - ID cesta non valido:", basketId);
+      throw new Error("ID cesta non valido per il recupero della cronologia delle posizioni");
+    }
+    
+    console.log(`getBasketPositionHistory - Recupero cronologia posizioni per cesta ID: ${basketId}`);
+    
+    try {
+      const results = await db.select()
+        .from(basketPositionHistory)
+        .where(eq(basketPositionHistory.basketId, basketId))
+        .orderBy(desc(basketPositionHistory.startDate)); // Ordina per data di inizio decrescente
+      
+      console.log(`getBasketPositionHistory - Trovati ${results.length} record per la cesta ${basketId}`);
+      
+      // Arricchisci i risultati con informazioni sul flupsy
+      const enrichedResults = await Promise.all(results.map(async (position) => {
+        const flupsy = await this.getFlupsy(position.flupsyId);
+        return {
+          ...position,
+          flupsyName: flupsy ? flupsy.name : 'FLUPSY non trovato'
+        };
+      }));
+      
+      return enrichedResults;
+    } catch (error) {
+      console.error(`getBasketPositionHistory - Errore durante il recupero della cronologia per la cesta ${basketId}:`, error);
+      throw error;
+    }
+  }
 }
