@@ -114,13 +114,19 @@ export default function PesoDirectForm({
     // Se stiamo aggiornando il peso totale, calcola i valori derivati
     if (field === 'totalWeight' && value && !isNaN(parseFloat(value))) {
       const totalWeightKg = parseFloat(value);
-      if (totalWeightKg > 0 && updatedFormData.animalCount) {
+      // Nota: animalCount rimane sempre quello originale, non viene ricalcolato
+      if (totalWeightKg > 0 && defaultAnimalCount) {
         // Calcola animali per kg e peso medio con 4 decimali di precisione
-        const animalsPerKg = Math.round(updatedFormData.animalCount / totalWeightKg);
+        // Utilizziamo il conteggio animali originale (non quello del form)
+        const animalsPerKg = Math.round(defaultAnimalCount / totalWeightKg);
         const averageWeight = parseFloat((1000000 / animalsPerKg).toFixed(4)); // Peso medio in mg con 4 decimali
         
         updatedFormData.animalsPerKg = animalsPerKg;
         updatedFormData.averageWeight = averageWeight;
+        // Nota: non aggiorniamo animalCount, rimane quello originale
+        updatedFormData.animalCount = defaultAnimalCount;
+        
+        console.log("Operazione peso, calcolo valori con conteggio animali originale:", defaultAnimalCount);
       } else {
         updatedFormData.animalsPerKg = null;
         updatedFormData.averageWeight = null;
@@ -181,10 +187,12 @@ export default function PesoDirectForm({
         lotId,
         animalsPerKg: formData.animalsPerKg,
         averageWeight: formData.averageWeight,
-        animalCount: formData.animalCount,
+        animalCount: defaultAnimalCount, // Utilizziamo il conteggio precedente per mantenere la coerenza
         totalWeight: parseFloat(formData.totalWeight) * 1000, // Converti in grammi per il database
         notes: formData.notes
       };
+      
+      console.log("Operazione di peso: mantenuto conteggio animali precedente:", defaultAnimalCount);
       
       // Invia al server usando la route diretta per bypassare i controlli di una operazione al giorno
       // Questo evita l'errore "Per ogni cesta è consentita una sola operazione al giorno"
