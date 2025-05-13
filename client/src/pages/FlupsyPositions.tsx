@@ -3,9 +3,15 @@ import { useParams, Link } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { ArrowLeft, Loader2, CircleX, CheckCircle } from "lucide-react";
+import { ArrowLeft, Loader2, CircleX, CheckCircle, Calendar, Box, Tag, Weight, Scale, Info } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import { 
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
 
 interface Position {
   row: string;
@@ -14,6 +20,74 @@ interface Position {
   basketId?: number;
   basketNumber?: number;
   active?: boolean;
+}
+
+interface BasketDetail {
+  id: number;
+  physicalNumber: number;
+  flupsyId: number;
+  cycleCode: string;
+  state: string;
+  currentCycleId: number;
+  row: string;
+  position: number;
+}
+
+interface Operation {
+  id: number;
+  date: string;
+  type: string;
+  basketId: number;
+  cycleId: number;
+  sizeId: number | null;
+  sgrId: number | null;
+  lotId: number | null;
+  animalCount: number | null;
+  totalWeight: number | null;
+  animalsPerKg: number | null;
+  averageWeight: number | null;
+  deadCount: number | null;
+  mortalityRate: number | null;
+  notes: string | null;
+}
+
+interface Cycle {
+  id: number;
+  basketId: number;
+  startDate: string;
+  endDate: string | null;
+  state: string;
+  basket: BasketDetail;
+  operations: Operation[];
+}
+
+interface Lot {
+  id: number;
+  arrivalDate: string;
+  supplier: string;
+  supplierLotNumber: string;
+  quality: string;
+  animalCount: number;
+  weight: number;
+  sizeId: number;
+  state: string;
+  size: {
+    id: number;
+    code: string;
+    name: string;
+    color: string;
+  };
+}
+
+interface Size {
+  id: number;
+  code: string;
+  name: string;
+  sizeMm: number | null;
+  minAnimalsPerKg: number;
+  maxAnimalsPerKg: number;
+  notes: string;
+  color: string;
 }
 
 export default function FlupsyPositions() {
