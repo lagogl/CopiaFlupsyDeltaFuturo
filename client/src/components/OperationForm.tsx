@@ -192,19 +192,32 @@ export default function OperationForm({
     enabled: !!watchFlupsyId,
   });
   
-  // Imposta il ciclo iniziale quando il componente viene montato
+  // Imposta il ciclo iniziale e precarica FLUPSY e cesta quando il componente viene montato
   useEffect(() => {
-    if (initialCycleId && cycles && cycles.length > 0) {
-      // Verifica che il ciclo esista e sia attivo
+    if (initialCycleId && cycles && cycles.length > 0 && baskets) {
+      // Verifica che il ciclo esista
       const selectedCycle = cycles.find(cycle => cycle.id === initialCycleId);
       
       if (selectedCycle) {
-        // Imposta il valore nel form
+        // Imposta il valore del ciclo nel form
         form.setValue('cycleId', initialCycleId);
         console.log('Preselezionato ciclo:', initialCycleId);
+        
+        // Trova la cesta associata al ciclo
+        const basketId = selectedCycle.basketId;
+        if (basketId) {
+          // Cerca i dettagli della cesta per ottenere il flupsyId
+          const basket = baskets.find(b => b.id === basketId);
+          if (basket && basket.flupsyId) {
+            // Prima imposta il FLUPSY e poi la cesta
+            form.setValue('flupsyId', basket.flupsyId);
+            form.setValue('basketId', basketId);
+            console.log('Preselezionato FLUPSY e cesta:', basket.flupsyId, basketId);
+          }
+        }
       }
     }
-  }, [initialCycleId, cycles]);
+  }, [initialCycleId, cycles, baskets, form]);
 
   // Calculate average weight and set size when animals per kg changes
   useEffect(() => {

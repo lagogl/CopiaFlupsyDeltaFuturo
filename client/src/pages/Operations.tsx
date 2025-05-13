@@ -101,15 +101,25 @@ export default function Operations() {
       if (selectedCycleId) {
         const cycleIdNumber = parseInt(selectedCycleId, 10);
         if (!isNaN(cycleIdNumber)) {
-          // Imposta il ciclo selezionato
-          setInitialCycleId(cycleIdNumber);
-          // Apri automaticamente il dialog di creazione operazione
-          setIsCreateDialogOpen(true);
-          console.log("Apertura automatica del dialog con ciclo:", cycleIdNumber);
+          // Attendi che i cicli siano caricati
+          if (cycles) {
+            // Verifica che il ciclo esista
+            const cycleExists = cycles.find((c: any) => c.id === cycleIdNumber);
+            if (cycleExists) {
+              // Imposta il ciclo selezionato
+              setInitialCycleId(cycleIdNumber);
+              // Apri automaticamente il dialog di creazione operazione
+              setIsCreateDialogOpen(true);
+              console.log("Apertura automatica del dialog con ciclo:", cycleIdNumber);
+              
+              // Puliamo l'URL per evitare di riaprire il dialog se l'utente ricarica la pagina
+              navigate('/operations', { replace: true });
+            }
+          }
         }
       }
     }
-  }, [searchParams]);
+  }, [searchParams, cycles, navigate]);
 
   // Create mutation
   const createOperationMutation = useMutation({
