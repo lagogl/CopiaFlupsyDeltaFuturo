@@ -1291,38 +1291,7 @@ export default function Operations() {
               
               {/* Elenco operazioni (stile simile ai cicli) */}
               <div className="divide-y divide-gray-200">
-                {operations ? operations.slice().sort((a: any, b: any) => {
-                  // Funzione di ordinamento in-place
-                  if (sortConfig.key === 'date') {
-                    const dateA = new Date(a.date).getTime();
-                    const dateB = new Date(b.date).getTime();
-                    return sortConfig.direction === 'ascending' ? dateA - dateB : dateB - dateA;
-                  }
-                  
-                  if (sortConfig.key === 'type') {
-                    const typeA = String(a.type).toLowerCase();
-                    const typeB = String(b.type).toLowerCase();
-                    return sortConfig.direction === 'ascending' 
-                      ? typeA.localeCompare(typeB)
-                      : typeB.localeCompare(typeA);
-                  }
-                  
-                  if (sortConfig.key === 'animalCount') {
-                    const countA = a.animalCount || (a.weight && a.animalsPerKg ? a.weight * a.animalsPerKg : 0);
-                    const countB = b.animalCount || (b.weight && b.animalsPerKg ? b.weight * b.animalsPerKg : 0);
-                    return sortConfig.direction === 'ascending' ? countA - countB : countB - countA;
-                  }
-                  
-                  if (sortConfig.key === 'lot') {
-                    const lotA = a.lot?.name || '';
-                    const lotB = b.lot?.name || '';
-                    return sortConfig.direction === 'ascending' 
-                      ? lotA.localeCompare(lotB)
-                      : lotB.localeCompare(lotA);
-                  }
-                  
-                  return 0;
-                }).map((op: any) => {
+                {operations && operations.map((op: any) => {
                   // Ottieni informazioni correlate
                   const basket = op.basket || (op.basketId ? baskets?.find((b: any) => b.id === op.basketId) : null);
                   const cycle = op.cycle || (op.cycleId ? cycles?.find((c: any) => c.id === op.cycleId) : null);
