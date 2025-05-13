@@ -1486,7 +1486,8 @@ export default function Operations() {
                       </div>
                     </div>
                   );
-                })}
+                })
+              }
               </div>
             </div>
           </div>
