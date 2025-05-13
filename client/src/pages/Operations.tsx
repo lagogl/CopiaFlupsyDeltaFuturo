@@ -23,7 +23,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { monthlyToDaily } from '@/lib/utils';
 import OperationForm from '@/components/OperationForm';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
-import { useLocation, navigate } from 'wouter';
+import { useLocation } from 'wouter';
 
 export default function Operations() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,6 +47,8 @@ export default function Operations() {
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [selectedOperation, setSelectedOperation] = useState<any>(null);
   const [redirectToBasketAfterCreate, setRedirectToBasketAfterCreate] = useState<number | null>(null);
+  
+  const [_, navigate] = useLocation(); // using second parameter as navigate
   
   // Query operations
   const { data: operations, isLoading: isLoadingOperations } = useQuery({
@@ -153,10 +155,29 @@ export default function Operations() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       setIsCreateDialogOpen(false);
-      toast({
-        title: "Operazione completata",
-        description: "L'operazione è stata registrata con successo",
-      });
+      
+      // Se c'è un ID di cesta da reindirizzare, naviga alla filtrazione per quella cesta
+      if (redirectToBasketAfterCreate) {
+        // Navigazione alle operazioni filtrate per la cesta specifica
+        toast({
+          title: "Operazione completata",
+          description: "Reindirizzamento alle operazioni della cesta...",
+        });
+        
+        // Resetta lo stato di reindirizzamento
+        const basketId = redirectToBasketAfterCreate;
+        setRedirectToBasketAfterCreate(null);
+        
+        // Aggiungi un breve delay per dare il tempo all'interfaccia di aggiornare i dati
+        setTimeout(() => {
+          navigate(`/operations?basket=${basketId}`);
+        }, 300);
+      } else {
+        toast({
+          title: "Operazione completata",
+          description: "L'operazione è stata registrata con successo",
+        });
+      }
     },
     onError: (error: any) => {
       toast({
@@ -2111,6 +2132,8 @@ export default function Operations() {
                                         };
                                         
                                         setSelectedOperation(duplicatedOp);
+                                        // Imposta lo stato per il reindirizzamento dopo la creazione
+                                        setRedirectToBasketAfterCreate(op.basketId);
                                         setIsCreateDialogOpen(true);
                                       }}
                                     >
