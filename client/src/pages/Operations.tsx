@@ -90,24 +90,49 @@ export default function Operations() {
   // Alias for SGR data (for consistency in naming)
   const sgrs = sgrData;
   
-  // Estrai il parametro selectedCycleId dall'URL se presente
+  // Estrai i parametri dall'URL se presenti
   useEffect(() => {
     // Controlla se siamo nella route /operations/new
     const isNewOperation = window.location.pathname.endsWith('/operations/new');
     if (isNewOperation && searchParams) {
       const urlParams = new URLSearchParams(searchParams);
-      const selectedCycleId = urlParams.get('selectedCycleId');
       
+      // Parametri da estrarre dall'URL
+      const selectedCycleId = urlParams.get('selectedCycleId');
+      const flupsyId = urlParams.get('flupsyId');
+      const basketId = urlParams.get('basketId');
+      
+      // Se c'è un ciclo selezionato
       if (selectedCycleId) {
         const cycleIdNumber = parseInt(selectedCycleId, 10);
+        
         if (!isNaN(cycleIdNumber)) {
           // Attendi che i cicli siano caricati
           if (cycles) {
             // Verifica che il ciclo esista
             const cycleExists = cycles.find((c: any) => c.id === cycleIdNumber);
+            
             if (cycleExists) {
               // Imposta il ciclo selezionato
               setInitialCycleId(cycleIdNumber);
+              
+              // Prepara un'operazione predefinita se sono presenti i parametri FLUPSY e cesta
+              if (flupsyId && basketId) {
+                const flupsyIdNumber = parseInt(flupsyId, 10);
+                const basketIdNumber = parseInt(basketId, 10);
+                
+                if (!isNaN(flupsyIdNumber) && !isNaN(basketIdNumber)) {
+                  // Crea un'operazione predefinita con i valori passati nell'URL
+                  setSelectedOperation({
+                    type: 'misura', // Tipo predefinito
+                    date: new Date(),
+                    basketId: basketIdNumber,
+                    cycleId: cycleIdNumber,
+                    flupsyId: flupsyIdNumber
+                  });
+                }
+              }
+              
               // Apri automaticamente il dialog di creazione operazione
               setIsCreateDialogOpen(true);
               console.log("Apertura automatica del dialog con ciclo:", cycleIdNumber);

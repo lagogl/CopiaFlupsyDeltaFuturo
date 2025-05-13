@@ -747,7 +747,7 @@ export default function CycleDetail() {
         
         <div className="flex space-x-2">
           <Button asChild variant="outline">
-            <Link href={`/operations/new?selectedCycleId=${cycle.id}`}>
+            <Link href={`/operations/new?selectedCycleId=${cycle.id}&flupsyId=${cycle.basket?.flupsyId || ''}&basketId=${cycle.basketId || ''}`}>
               <List className="mr-2 h-4 w-4" />
               Nuova Operazione
             </Link>

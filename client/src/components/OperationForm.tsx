@@ -183,7 +183,7 @@ export default function OperationForm({
   });
   
   // Fetch baskets for the selected FLUPSY 
-  const { data: flupsyBaskets } = useQuery({
+  const { data: flupsyBaskets, isLoading: isLoadingFlupsyBaskets } = useQuery({
     queryKey: ['/api/flupsys', watchFlupsyId, 'baskets'],
     queryFn: () => {
       if (!watchFlupsyId) return [];
@@ -222,12 +222,22 @@ export default function OperationForm({
     else if (defaultValues?.flupsyId && defaultValues.basketId) {
       console.log('Preimpostati valori di default per FLUPSY e cesta:', defaultValues.flupsyId, defaultValues.basketId);
       
-      // Assicuriamoci che i valori siano correttamente impostati (potrebbero non essere impostati se abbiamo
-      // caricato il form con defaultValues ma poi non funziona l'interfaccia)
+      // Assicuriamoci che i valori siano correttamente impostati
       form.setValue('flupsyId', defaultValues.flupsyId);
-      form.setValue('basketId', defaultValues.basketId);
+      
+      // Attendiamo che i cestelli siano caricati prima di impostare il cestello
+      if (!isLoadingFlupsyBaskets && flupsyBaskets) {
+        // Verifichiamo che il cestello esista nel FLUPSY selezionato
+        const basketExists = flupsyBaskets.some((b: any) => b.id === defaultValues.basketId);
+        if (basketExists) {
+          form.setValue('basketId', defaultValues.basketId);
+          console.log('Cestello trovato e selezionato:', defaultValues.basketId);
+        } else {
+          console.log('Cestello non trovato nel FLUPSY selezionato');
+        }
+      }
     }
-  }, [initialCycleId, cycles, baskets, form, defaultValues]);
+  }, [initialCycleId, cycles, baskets, form, defaultValues, flupsyBaskets, isLoadingFlupsyBaskets]);
 
   // Calculate average weight and set size when animals per kg changes
   useEffect(() => {
