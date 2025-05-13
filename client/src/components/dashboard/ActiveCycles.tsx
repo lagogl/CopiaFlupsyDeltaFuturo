@@ -21,7 +21,7 @@ interface Cycle {
     date: string;
     type: string;
   } | null;
-  currentSize: {
+  size: {
     id: number;
     code: string;
     name: string;
@@ -60,7 +60,7 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
     const otherCycles = [];
     
     for (const cycle of cycles) {
-      if (cycle.currentSize?.code === preferredSize) {
+      if (cycle.size?.code === preferredSize) {
         matchingCycles.push(cycle);
       } else {
         otherCycles.push(cycle);
@@ -81,8 +81,8 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
     
     // 2. Gli altri elementi ordinati per distanza dalla taglia preferita
     otherCycles.sort((a, b) => {
-      const aCode = a.currentSize?.code;
-      const bCode = b.currentSize?.code;
+      const aCode = a.size?.code;
+      const bCode = b.size?.code;
       
       // Priorità 1: Lo stato attivo
       if (a.state !== b.state) {
@@ -323,7 +323,7 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
                   <tr 
                     key={cycle.id} 
                     className={`${
-                      cycle.currentSize?.code === preferredSize 
+                      cycle.size?.code === preferredSize 
                         ? 'bg-blue-50 hover:bg-blue-100 border-l-4 border-blue-400' 
                         : 'hover:bg-gray-50'
                     }`}
@@ -344,21 +344,21 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
                       {latestOpText}
                     </td>
                     <td className="px-2 py-1 whitespace-nowrap">
-                      {cycle.currentSize ? (
+                      {cycle.size ? (
                         <div className="flex items-center">
                           <span 
                             className={`px-1.5 py-0.5 inline-flex text-xs leading-4 font-semibold rounded-full relative ${
-                              cycle.currentSize.code === preferredSize
+                              cycle.size.code === preferredSize
                                 ? 'bg-blue-100 text-blue-800 border border-blue-300 shadow-sm' 
-                                : getSizeBadgeClass(cycle.currentSize.code)
+                                : getSizeBadgeClass(cycle.size.code)
                             }`}
                             style={{
                               transition: 'all 0.2s ease-in-out',
-                              transform: cycle.currentSize.code === preferredSize ? 'scale(1.05)' : 'scale(1)'
+                              transform: cycle.size.code === preferredSize ? 'scale(1.05)' : 'scale(1)'
                             }}
                           >
-                            {cycle.currentSize.code}
-                            {cycle.currentSize.code === preferredSize && (
+                            {cycle.size.code}
+                            {cycle.size.code === preferredSize && (
                               <span className="absolute -top-0.5 -right-0.5 bg-blue-500 rounded-full p-0.5">
                                 <Check className="h-2 w-2 text-white" />
                               </span>
