@@ -561,6 +561,26 @@ export default function MisurazioneDirectForm({
         <div className="bg-muted/30 p-4 rounded-md space-y-3 border mt-4">
           <h4 className="text-sm font-medium mb-2">Risultati del calcolo:</h4>
           
+          {/* Avviso importante sulla conservazione del conteggio animali */}
+          <div className="p-3 border border-amber-200 bg-amber-50 rounded-md mb-4">
+            <div className="flex items-start">
+              <div className="mr-2 text-amber-500">
+                <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className="mt-1">
+                  <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path>
+                  <line x1="12" y1="9" x2="12" y2="13"></line>
+                  <line x1="12" y1="17" x2="12.01" y2="17"></line>
+                </svg>
+              </div>
+              <div>
+                <h4 className="text-sm font-semibold text-amber-800">Nota importante:</h4>
+                <p className="text-xs text-amber-700 mt-1">
+                  Per le operazioni di misurazione, il sistema manterrà il conteggio precedente di <strong>{formatNumberWithCommas(defaultAnimalCount || 0)}</strong> animali. 
+                  I calcoli mostrati qui sono solo indicativi e aiutano a valutare la crescita, ma il numero effettivo degli animali nel database rimarrà invariato.
+                </p>
+              </div>
+            </div>
+          </div>
+          
           {/* Indicatore di crescita */}
           {calculatedValues.averageWeight && defaultAverageWeight && calculatedValues.animalsPerKg && (
             <div className="mb-2">
