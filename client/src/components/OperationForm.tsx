@@ -110,7 +110,7 @@ const formSchema = operationSchema.extend({
   }),
 });
 
-type FormValues = z.infer<typeof formSchema>;
+type FormValues = z.infer<typeof formSchemaWithFlupsy>;
 
 interface OperationFormProps {
   onSubmit: (values: FormValues) => void;
@@ -126,6 +126,7 @@ export default function OperationForm({
   defaultValues = {
     date: new Date(),
     type: 'misura',
+    flupsyId: null,
   },
   isLoading = false,
   editMode = false
@@ -133,6 +134,10 @@ export default function OperationForm({
   // Fetch related data
   const { data: baskets } = useQuery({
     queryKey: ['/api/baskets'],
+  });
+
+  const { data: flupsys } = useQuery({
+    queryKey: ['/api/flupsys'],
   });
 
   const { data: cycles } = useQuery({
@@ -152,7 +157,7 @@ export default function OperationForm({
   });
 
   const form = useForm<FormValues>({
-    resolver: zodResolver(formSchema),
+    resolver: zodResolver(formSchemaWithFlupsy),
     defaultValues,
   });
 
@@ -160,6 +165,7 @@ export default function OperationForm({
   const watchAnimalCount = form.watch('animalCount');
   // Rimuoviamo la watch diretta su averageWeight che causa errori
   const watchBasketId = form.watch('basketId');
+  const watchFlupsyId = form.watch('flupsyId');
   const watchCycleId = form.watch('cycleId');
   const watchType = form.watch('type');
   const watchDate = form.watch('date');
@@ -170,6 +176,16 @@ export default function OperationForm({
   const { data: basketOperations } = useQuery({
     queryKey: ['/api/operations', watchBasketId],
     enabled: !!watchBasketId,
+  });
+  
+  // Fetch baskets for the selected FLUPSY 
+  const { data: flupsyBaskets } = useQuery({
+    queryKey: ['/api/flupsys', watchFlupsyId, 'baskets'],
+    queryFn: () => {
+      if (!watchFlupsyId) return [];
+      return fetch(`/api/flupsys/${watchFlupsyId}/baskets`).then(res => res.json());
+    },
+    enabled: !!watchFlupsyId,
   });
   
   // Calculate average weight and set size when animals per kg changes
