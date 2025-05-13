@@ -707,6 +707,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const { flupsyId, physicalNumber, row, position } = parsedData.data;
+      
+      // Verifica che row e position siano forniti (dovrebbero essere obbligatori nello schema)
+      if (!row || !position) {
+        return res.status(400).json({ 
+          message: "La fila (row) e la posizione (position) sono campi obbligatori" 
+        });
+      }
 
       // Get all baskets for this FLUPSY
       const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
@@ -726,22 +733,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Verifica se esiste già una cesta nella stessa posizione (se fornita)
-      if (row && position) {
-        const existingBasket = flupsyBaskets.find(basket => 
-          basket.row === row && 
-          basket.position === position
-        );
+      // Verifica se esiste già una cesta nella stessa posizione
+      const existingBasket = flupsyBaskets.find(basket => 
+        basket.row === row && 
+        basket.position === position
+      );
+      
+      if (existingBasket) {
+        const basketState = existingBasket.state === 'active' ? 'attiva' : 'disponibile';
         
-        if (existingBasket) {
-          const basketState = existingBasket.state === 'active' ? 'attiva' : 'disponibile';
-          
-          return res.status(400).json({
-            message: `La posizione ${row}-${position} è già occupata dalla cesta #${existingBasket.physicalNumber} (${basketState})`,
-            positionTaken: true,
-            basket: existingBasket
-          });
-        }
+        return res.status(400).json({
+          message: `La posizione ${row}-${position} è già occupata dalla cesta #${existingBasket.physicalNumber} (${basketState})`,
+          positionTaken: true,
+          basket: existingBasket
+        });
       }
 
       // Create the basket
