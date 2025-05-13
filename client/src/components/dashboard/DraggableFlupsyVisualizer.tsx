@@ -836,15 +836,15 @@ export default function DraggableFlupsyVisualizer() {
     };
     
     return (
-      <Card className="mb-4 border-2 border-primary/30 bg-primary/5">
+      <Card className="mb-4 border-2 border-blue-400 bg-blue-50">
         <CardContent className="py-3 px-4">
           <div className="flex items-center mb-2">
-            <Filter className="h-5 w-5 mr-2 text-primary" />
-            <h3 className="text-base font-medium text-primary">Filtro FLUPSY</h3>
+            <Filter className="h-5 w-5 mr-2 text-blue-600" />
+            <h3 className="text-base font-medium text-blue-700">Filtro FLUPSY</h3>
             <Button 
               size="sm" 
               variant="default" 
-              className="ml-auto px-3 py-0 h-7 font-medium"
+              className="ml-auto px-3 py-0 h-7 font-medium bg-blue-600 hover:bg-blue-700"
               onClick={() => setShowFlupsySelector(!showFlupsySelector)}
             >
               {showFlupsySelector ? "Nascondi" : "Mostra"}
