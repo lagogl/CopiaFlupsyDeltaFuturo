@@ -1,4 +1,5 @@
 import { useEffect, useState } from "react";
+import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
@@ -149,6 +150,7 @@ export default function OperationForm({
   initialBasketId = null
 }: OperationFormProps) {
   // Stato per il dialogo di conferma delle operazioni misura che cambiano il numero di animali
+  const { toast } = useToast();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingValues, setPendingValues] = useState<any | null>(null);
   
