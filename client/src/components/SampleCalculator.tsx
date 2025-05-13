@@ -143,7 +143,7 @@ export default function SampleCalculator({
                 <Input 
                   type="number" 
                   placeholder="Peso in grammi"
-                  step="0.1"
+                  step="0.0001"
                   value={sampleWeight?.toString() || ''}
                   onChange={e => setSampleWeight(parseFloat(e.target.value) || null)}
                 />

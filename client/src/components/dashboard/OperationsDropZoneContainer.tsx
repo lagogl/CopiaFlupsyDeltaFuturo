@@ -782,7 +782,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                     <Input
                       id="sampleWeight"
                       type="number"
-                      step="0.01"
+                      step="0.0001"
                       min="0"
                       placeholder="Peso del campione in grammi"
                       value={currentOperation.formData.sampleWeight || ''}
