@@ -194,6 +194,7 @@ export default function OperationForm({
   
   // Imposta il ciclo iniziale e precarica FLUPSY e cesta quando il componente viene montato
   useEffect(() => {
+    // Caso 1: Abbiamo un ciclo iniziale da preselezionare (dalla navigazione)
     if (initialCycleId && cycles && cycles.length > 0 && baskets) {
       // Verifica che il ciclo esista
       const selectedCycle = cycles.find(cycle => cycle.id === initialCycleId);
@@ -216,8 +217,17 @@ export default function OperationForm({
           }
         }
       }
+    } 
+    // Caso 2: Abbiamo defaultValues preimpostati (es. dalla duplicazione)
+    else if (defaultValues?.flupsyId && defaultValues.basketId) {
+      console.log('Preimpostati valori di default per FLUPSY e cesta:', defaultValues.flupsyId, defaultValues.basketId);
+      
+      // Assicuriamoci che i valori siano correttamente impostati (potrebbero non essere impostati se abbiamo
+      // caricato il form con defaultValues ma poi non funziona l'interfaccia)
+      form.setValue('flupsyId', defaultValues.flupsyId);
+      form.setValue('basketId', defaultValues.basketId);
     }
-  }, [initialCycleId, cycles, baskets, form]);
+  }, [initialCycleId, cycles, baskets, form, defaultValues]);
 
   // Calculate average weight and set size when animals per kg changes
   useEffect(() => {
