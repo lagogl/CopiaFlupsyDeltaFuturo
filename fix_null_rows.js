@@ -159,7 +159,7 @@ export async function fixNullRows() {
 }
 
 // Esegui la funzione se lo script viene eseguito direttamente
-if (process.argv[1].endsWith('fix_null_rows.js')) {
+if (process.argv[1].endsWith('fix_null_rows.js.new')) {
   fixNullRows()
     .then(() => {
       console.log("Script completato.");
@@ -170,5 +170,3 @@ if (process.argv[1].endsWith('fix_null_rows.js')) {
       process.exit(1);
     });
 }
-
-// La funzione è già esportata con "export async function fixNullRows()" all'inizio
