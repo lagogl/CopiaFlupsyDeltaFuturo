@@ -149,10 +149,19 @@ export function implementDirectOperationRoute(app: Express) {
         }
       }
       
-      // Ripristina animalCount originale se presente e tipo operazione è "misura" o "peso"
+      // Gestisci la logica di animalCount per operazioni "misura" e "peso"
       if (hasAnimalCount && (operationData.type === 'misura' || operationData.type === 'peso')) {
-        console.log(`IMPORTANTE: Per operazione ${operationData.type}, preservato conteggio animali originale:`, originalAnimalCount);
-        operationData.animalCount = originalAnimalCount;
+        // Controlla se c'è stata una mortalità registrata
+        const hasMortality = operationData.deadCount && operationData.deadCount > 0;
+        
+        if (hasMortality) {
+          // Se c'è mortalità, utilizziamo il nuovo valore calcolato di animalCount (già presente in operationData)
+          console.log(`IMPORTANTE: Per operazione ${operationData.type} CON MORTALITÀ (${operationData.deadCount} animali), utilizziamo il conteggio animali aggiornato:`, operationData.animalCount);
+        } else {
+          // Se non c'è mortalità, preserviamo il conteggio animali originale
+          console.log(`IMPORTANTE: Per operazione ${operationData.type} SENZA MORTALITÀ, preservato conteggio animali originale:`, originalAnimalCount);
+          operationData.animalCount = originalAnimalCount;
+        }
       }
       
       console.log("Dati operazione dopo la normalizzazione:");
