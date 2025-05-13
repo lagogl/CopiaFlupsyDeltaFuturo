@@ -170,84 +170,81 @@ export function TargetSizePredictions() {
         ) : (
           <div className="space-y-3">
             {predictions?.map((prediction) => (
-              <div key={prediction.id} className="p-3 border rounded-lg hover:bg-gray-50">
-                <div className="flex items-center justify-between mb-2">
+              <div key={prediction.id} className="p-2 border rounded-lg hover:bg-gray-50">
+                <div className="flex items-center justify-between">
                   <div className="flex items-center">
                     <Link to={`/operazioni/cestello/${prediction.basketId}`}>
-                      <h3 className="text-lg font-medium hover:underline">
+                      <h3 className="text-base font-medium hover:underline">
                         Cesta #{prediction.basket.physicalNumber}
                       </h3>
                     </Link>
                     {prediction.basket.row && prediction.basket.position && (
-                      <Badge variant="outline" className="ml-2">
+                      <Badge variant="outline" className="ml-2 text-xs">
                         {prediction.basket.row}-{prediction.basket.position}
                       </Badge>
                     )}
+                    
+                    {/* Badge per taglia superiore */}
+                    {prediction.actualSize && prediction.requestedSize && 
+                     prediction.actualSize.id !== prediction.requestedSize.id && (
+                      <Badge variant="secondary" className="ml-2 text-xs bg-blue-100 text-blue-800">
+                        → {prediction.actualSize.code}
+                      </Badge>
+                    )}
                   </div>
-                  <Badge className={getBadgeStyle(prediction.daysRemaining)}>
-                    {getDaysMessage(prediction.daysRemaining)}
-                  </Badge>
-                </div>
-                
-                {/* Se raggiungerà una taglia superiore a quella richiesta, lo evidenziamo */}
-                {prediction.actualSize && prediction.requestedSize && 
-                 prediction.actualSize.id !== prediction.requestedSize.id && (
-                  <div className="mb-2">
-                    <Badge variant="secondary" className="bg-blue-100 text-blue-800 hover:bg-blue-200">
-                      Raggiungerà {prediction.actualSize.code}
+                  <div className="flex items-center space-x-2">
+                    <div className="text-xs text-gray-600 flex items-center">
+                      <CalendarIcon size={12} className="mr-1" />
+                      <span>{formatDateIT(prediction.predictedDate)}</span>
+                    </div>
+                    <Badge className={`text-xs ${getBadgeStyle(prediction.daysRemaining)}`}>
+                      {getDaysMessage(prediction.daysRemaining)}
                     </Badge>
                   </div>
-                )}
-                
-                <div className="flex items-center text-sm text-gray-600">
-                  <CalendarIcon size={16} className="mr-1" />
-                  <span>
-                    Data prevista: <strong>{formatDateIT(prediction.predictedDate)}</strong>
-                  </span>
                 </div>
                 
                 {prediction.lastOperation && (
-                  <div className="mt-2 text-sm">
-                    <Separator className="my-1" />
-                    <div className="grid grid-cols-3 gap-2 mt-1">
-                      <div>
-                        <div className="text-gray-500">Ultima misura</div>
-                        <div>{formatDateIT(prediction.lastOperation.date)}</div>
-                      </div>
-                      {prediction.lastOperation.animalsPerKg && (
+                  <div className="mt-1 text-xs">
+                    <div className="flex flex-wrap gap-x-4 mt-1">
+                      {/* Prima riga di informazioni */}
+                      <div className="flex items-center gap-x-4">
                         <div>
-                          <div className="text-gray-500">Animali/kg</div>
-                          <div>{prediction.lastOperation.animalsPerKg.toLocaleString('it-IT')}</div>
+                          <span className="text-gray-500">Ultima: </span>
+                          <span>{formatDateIT(prediction.lastOperation.date)}</span>
+                        </div>
+                        
+                        {prediction.lastOperation.animalsPerKg && (
+                          <div>
+                            <span className="text-gray-500">Animali/kg: </span>
+                            <span>{prediction.lastOperation.animalsPerKg.toLocaleString('it-IT')}</span>
+                          </div>
+                        )}
+                        
+                        {prediction.lastOperation.averageWeight && (
+                          <div>
+                            <span className="text-gray-500">Peso medio: </span>
+                            <span>{prediction.lastOperation.averageWeight.toLocaleString('it-IT')} mg</span>
+                          </div>
+                        )}
+                      </div>
+                      
+                      {/* Seconda riga con i dati di crescita */}
+                      {prediction.currentWeight && prediction.targetWeight && (
+                        <div className="flex items-center gap-x-4 mt-1">
+                          <div>
+                            <span className="text-gray-500">Attuale: </span>
+                            <span>{Math.round(prediction.currentWeight).toLocaleString('it-IT')} mg</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Target: </span>
+                            <span>{Math.round(prediction.targetWeight).toLocaleString('it-IT')} mg</span>
+                          </div>
+                          <div>
+                            <span className="text-gray-500">Incremento: </span>
+                            <span>{Math.round((prediction.targetWeight / prediction.currentWeight - 1) * 100)}%</span>
+                          </div>
                         </div>
                       )}
-                      {prediction.lastOperation.averageWeight && (
-                        <div>
-                          <div className="text-gray-500">Peso medio</div>
-                          <div>{prediction.lastOperation.averageWeight.toLocaleString('it-IT')} mg</div>
-                        </div>
-                      )}
-                    </div>
-                    
-                    {/* Mostra dettagli di crescita se disponibili */}
-                    {prediction.currentWeight && prediction.targetWeight && (
-                      <div className="mt-2">
-                        <Separator className="my-1" />
-                        <div className="grid grid-cols-3 gap-2 mt-1">
-                          <div>
-                            <div className="text-gray-500">Peso attuale</div>
-                            <div>{Math.round(prediction.currentWeight).toLocaleString('it-IT')} mg</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-500">Peso target</div>
-                            <div>{Math.round(prediction.targetWeight).toLocaleString('it-IT')} mg</div>
-                          </div>
-                          <div>
-                            <div className="text-gray-500">Incremento</div>
-                            <div>{Math.round((prediction.targetWeight / prediction.currentWeight - 1) * 100)}%</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
                   </div>
                 )}
               </div>

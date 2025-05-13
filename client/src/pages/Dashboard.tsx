@@ -288,7 +288,7 @@ export default function Dashboard() {
               changeType={activeBasketsWithoutCycle.length > 0 ? 'warning' : lastMonthBaskets >= 0 ? 'success' : 'error'}
               linkTo="/baskets"
               cardColor="from-blue-50 to-blue-100 border-l-4 border-blue-500"
-              secondaryInfo={`${totalAnimalsInActiveBaskets.toLocaleString('it-IT')} animali totali`}
+              secondaryInfo={`${totalAnimalsInActiveBaskets.toLocaleString('it-IT')} animali`}
             />
           </div>
         </TooltipTrigger>

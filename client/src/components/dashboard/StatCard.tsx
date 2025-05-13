@@ -83,15 +83,18 @@ export default function StatCard({
       <div className="flex items-center justify-between">
         <div>
           <p className="text-gray-700 text-sm font-medium">{title}</p>
-          <h3 className="text-3xl font-bold text-gray-800 mt-1">{value}</h3>
+          {/* Se c'è un'informazione secondaria (come numero di animali), la mostriamo grande */}
+          {secondaryInfo ? (
+            <>
+              <p className="text-lg font-medium text-gray-800 mt-1">{value}</p>
+              <h3 className="text-2xl font-bold text-gray-800">{secondaryInfo}</h3>
+            </>
+          ) : (
+            <h3 className="text-3xl font-bold text-gray-800 mt-1">{value}</h3>
+          )}
         </div>
         {icon}
       </div>
-      {secondaryInfo && (
-        <div className="mt-2">
-          <p className="text-xs text-gray-600 font-medium">{secondaryInfo}</p>
-        </div>
-      )}
       <div className="mt-2">
         <div className={`flex items-center ${getTextColor()}`}>
           {getIcon()}
