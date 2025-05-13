@@ -457,8 +457,10 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       
       // Calcola la percentuale di mortalità nel campione
       if (totalSampleCount > 0) {
+        // Definizione: tasso di mortalità = morti / (morti + vivi)
         const mortalityRate = deadCount / totalSampleCount;
         updatedFormData.mortalityRate = mortalityRate;
+        console.log(`Tasso di mortalità calcolato: ${mortalityRate} (${deadCount} morti su ${totalSampleCount} totali)`);
       }
       
       if (!isNaN(sampleWeight) && !isNaN(liveSampleCount) && sampleWeight > 0 && liveSampleCount > 0) {
@@ -498,11 +500,22 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
               // Calcolo corretto del tasso di mortalità dal campione
               const mortalityRate = updatedFormData.mortalityRate;
               
-              // Il tasso di mortalità rappresenta: morti / (vivi + morti)
-              // Per calcolare correttamente gli animali morti, applichiamo il tasso 
-              // di mortalità al numero totale di animali
+              // Definizione: tasso di mortalità = morti / (vivi + morti)
+              // Quindi il rapporto vivi/totali = (1 - mortalityRate)
+              
+              // Calcoliamo prima il numero totale di animali (vivi + morti) usando il rapporto
+              // estimatedLiveCount / (1 - mortalityRate) = totale
               const estimatedTotalCount = Math.round(estimatedLiveCount / (1 - mortalityRate));
+              
+              // Il numero di animali morti è il totale meno i vivi
               const estimatedDeadCount = estimatedTotalCount - estimatedLiveCount;
+              
+              console.log(`Calcolo animali con mortalità ${mortalityRate}:`, {
+                stimaVivi: estimatedLiveCount,
+                stimaTotali: estimatedTotalCount,
+                stimaMorti: estimatedDeadCount,
+                tassoMortalita: mortalityRate
+              });
               
               // Salviamo solo gli animali vivi nel database, escludendo i morti
               updatedFormData.animalCount = estimatedLiveCount;
@@ -876,13 +889,12 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                             {currentOperation.formData.animalCount?.toLocaleString('it-IT') || '-'}
                           </p>
                           {currentOperation.formData.estimatedTotalCount !== undefined && currentOperation.formData.estimatedDeadCount > 0 && (
-                            <div className="mt-1 text-xs">
+                            <div className="mt-1 text-xs flex flex-col">
+                              <span className="text-red-500 mb-1">
+                                Morti: {Math.round(currentOperation.formData.estimatedDeadCount || 0).toLocaleString('it-IT')}
+                              </span>
                               <span className="text-blue-600">
                                 Totali: {Math.round(currentOperation.formData.estimatedTotalCount || 0).toLocaleString('it-IT')}
-                              </span>
-                              <span className="mx-1">|</span>
-                              <span className="text-red-500">
-                                Morti: {Math.round(currentOperation.formData.estimatedDeadCount || 0).toLocaleString('it-IT')}
                               </span>
                             </div>
                           )}
