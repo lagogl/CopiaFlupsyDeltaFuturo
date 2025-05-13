@@ -33,6 +33,7 @@ import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
+import { validateBasketRow, validateBasketPosition } from "./utils/validation";
 
 // Importazione del router per le API esterne
 // API esterne disabilitate
@@ -818,7 +819,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: errorMessage });
       }
       
-      const { flupsyId, row, position } = parsedData.data;
+      // Estrai i valori validati
+      let { flupsyId, row, position } = parsedData.data;
+      
+      // Validazione e normalizzazione della fila (row) per evitare valori null
+      row = validateBasketRow(row);
+      position = validateBasketPosition(position);
       
       console.log(`API - SPOSTAMENTO CESTELLO ${id} in flupsyId=${flupsyId}, row=${row}, position=${position}`);
       
@@ -980,7 +986,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: errorMessage });
       }
       
-      const { 
+      let { 
         basket1Id, 
         basket2Id, 
         flupsyId1,  // Usa FLUPSY ID separati per ogni cestello
@@ -990,6 +996,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         position2Row, 
         position2Number 
       } = parsedData.data;
+      
+      // Validazione delle file (rows) per prevenire valori null
+      position1Row = validateBasketRow(position1Row);
+      position2Row = validateBasketRow(position2Row);
+      position1Number = validateBasketPosition(position1Number);
+      position2Number = validateBasketPosition(position2Number);
       
       console.log(`API - SWITCH CESTELLI: Cestello ${basket1Id} (FLUPSY ${flupsyId1}) <-> Cestello ${basket2Id} (FLUPSY ${flupsyId2})`);
       
