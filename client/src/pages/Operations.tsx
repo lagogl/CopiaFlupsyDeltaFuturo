@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -18,10 +18,12 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { Separator } from "@/components/ui/separator";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
+import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { monthlyToDaily } from '@/lib/utils';
 import OperationForm from '@/components/OperationForm';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
+import { useLocation, navigate } from 'wouter';
 
 export default function Operations() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -44,6 +46,7 @@ export default function Operations() {
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [selectedOperation, setSelectedOperation] = useState<any>(null);
+  const [redirectToBasketAfterCreate, setRedirectToBasketAfterCreate] = useState<number | null>(null);
   
   // Query operations
   const { data: operations, isLoading: isLoadingOperations } = useQuery({
@@ -1193,29 +1196,38 @@ export default function Operations() {
                             >
                               <Trash2 className="h-5 w-5" />
                             </Button>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                // Duplica l'operazione
-                                const nextDay = addDays(new Date(op.date), 1);
-                                
-                                // Se l'operazione era "prima-attivazione", cambiala in "misura"
-                                const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
-                                
-                                const duplicatedOp = {
-                                  ...op,
-                                  type: operationType,
-                                  date: nextDay,
-                                  id: undefined // Rimuovi l'ID per creare una nuova operazione
-                                };
-                                
-                                setSelectedOperation(duplicatedOp);
-                                setIsCreateDialogOpen(true);
-                              }}
-                            >
-                              <Copy className="h-5 w-5 text-indigo-600" />
-                            </Button>
+                            <Tooltip>
+                              <TooltipTrigger asChild>
+                                <Button
+                                  variant="ghost"
+                                  size="icon"
+                                  onClick={() => {
+                                    // Duplica l'operazione
+                                    const nextDay = addDays(new Date(op.date), 1);
+                                    
+                                    // Se l'operazione era "prima-attivazione", cambiala in "misura"
+                                    const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
+                                    
+                                    const duplicatedOp = {
+                                      ...op,
+                                      type: operationType,
+                                      date: nextDay,
+                                      id: undefined // Rimuovi l'ID per creare una nuova operazione
+                                    };
+                                    
+                                    // Memorizza l'ID della cesta per la navigazione post-creazione
+                                    const basketId = op.basketId || op.basket?.id;
+                                    setRedirectToBasketAfterCreate(basketId);
+                                    
+                                    setSelectedOperation(duplicatedOp);
+                                    setIsCreateDialogOpen(true);
+                                  }}
+                                >
+                                  <Copy className="h-5 w-5 text-indigo-600" />
+                                </Button>
+                              </TooltipTrigger>
+                              <TooltipContent>Duplica operazione (rimani sulla stessa cesta)</TooltipContent>
+                            </Tooltip>
 
                           </div>
                         </td>
