@@ -257,24 +257,54 @@ export default function MisurazioneDirectForm({
     setIsLoading(true);
     
     try {
-      // NUOVA LOGICA: Per le misurazioni, manteniamo il conteggio degli animali precedente
-      // Utilizziamo il valore esistente nel cestello (defaultAnimalCount) e non lo ricalcoliamo
-      let animalCount = defaultAnimalCount;
+      // LOGICA MISURAZIONE: Scegliamo conteggio animali in base alla mortalità
+      let animalCount;
+      let animalCountSource = "";
       
-      if (!animalCount) {
-        // Solo se non abbiamo un conteggio precedente, utilizziamo quello calcolato
-        // come fallback in casi eccezionali
+      // Se c'è mortalità (deadCount > 0), utilizziamo il conteggio calcolato
+      if (deadCount !== null && deadCount > 0) {
+        // Con mortalità, dobbiamo usare il conteggio calcolato
         animalCount = totalPopulation;
         
-        // E in ultima istanza, se abbiamo sia peso totale che animali per kg
+        // Se non disponibile, calcoliamolo dal peso e animali per kg
         if (!animalCount && totalWeight && animalsPerKg) {
           animalCount = Math.round(animalsPerKg * totalWeight);
         }
         
-        console.log("ATTENZIONE: Nessun conteggio animali precedente disponibile, usando calcolo:", animalCount);
+        animalCountSource = "calcolato (presenza mortalità)";
+        
+        // Avvisiamo che il conteggio viene aggiornato
+        toast({
+          title: "Aggiornamento conteggio animali",
+          description: "Poiché è stata registrata mortalità, il numero di animali verrà aggiornato al valore calcolato.",
+          duration: 5000 // Mostra per 5 secondi
+        });
       } else {
-        console.log("Misurazione: mantenuto conteggio animali precedente:", animalCount);
+        // Senza mortalità, manteniamo il conteggio precedente
+        animalCount = defaultAnimalCount;
+        
+        // Se per qualche motivo non è disponibile, usiamo il calcolo
+        if (!animalCount) {
+          animalCount = totalPopulation;
+          
+          if (!animalCount && totalWeight && animalsPerKg) {
+            animalCount = Math.round(animalsPerKg * totalWeight);
+          }
+          
+          animalCountSource = "calcolato (fallback)";
+        } else {
+          animalCountSource = "mantenuto precedente";
+          
+          // Avvisiamo che il conteggio viene mantenuto
+          toast({
+            title: "Conteggio animali mantenuto",
+            description: "Poiché non è stata registrata mortalità, il numero di animali è stato mantenuto invariato.",
+            duration: 5000 // Mostra per 5 secondi
+          });
+        }
       }
+      
+      console.log(`Misurazione: conteggio animali ${animalCountSource}:`, animalCount);
       
       // Converti il peso totale da kg a grammi per il salvataggio nel database
       const totalWeightInGrams = totalWeight ? Math.round(totalWeight * 1000) : null;
@@ -734,6 +764,22 @@ export default function MisurazioneDirectForm({
           </div>
         </div>
         
+        {/* Avviso comportamento conteggio animali */}
+        <div className="mt-4 p-3 rounded-md border bg-amber-50 border-amber-200">
+          <h4 className="text-sm font-semibold text-amber-800 mb-1">Importante: Comportamento conteggio animali</h4>
+          <ul className="text-xs text-amber-700 space-y-1 ml-4 list-disc">
+            <li>
+              <strong>Se mortalità = 0:</strong> Il numero di animali rimarrà invariato rispetto all'ultima operazione
+            </li>
+            <li>
+              <strong>Se mortalità > 0:</strong> Il numero di animali verrà aggiornato con il nuovo valore calcolato
+            </li>
+          </ul>
+          <p className="text-xs text-amber-800 mt-2 italic">
+            Questo comportamento assicura che il conteggio animali venga aggiornato solo quando necessario.
+          </p>
+        </div>
+
         <div className="flex justify-end space-x-2 pt-4">
           <Button 
             variant="outline" 
