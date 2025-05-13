@@ -836,7 +836,7 @@ export default function DraggableFlupsyVisualizer() {
     };
     
     return (
-      <Card className="mb-4 border-2 border-blue-400 bg-blue-50">
+      <Card className="mb-8 border border-blue-300 bg-blue-50 shadow-sm">
         <CardContent className="py-3 px-4">
           <div className="flex items-center mb-2">
             <Filter className="h-5 w-5 mr-2 text-blue-600" />
