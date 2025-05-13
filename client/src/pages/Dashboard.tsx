@@ -408,27 +408,8 @@ export default function Dashboard() {
         <TargetSizePredictions />
       </div>
       
-      {/* FLUPSY Filter and Visualizer */}
+      {/* FLUPSY Visualizer */}
       <div className="mb-8">
-        <TooltipTrigger 
-          tooltip={{
-            id: 'flupsy-center-filter',
-            content: 'Seleziona il centro di produzione per visualizzare solo i FLUPSY di quel centro.',
-            position: 'top'
-          }}
-          showOnMount={isFirstTimeUser}
-          onlyFirstTime={true}
-        >
-          <div>
-            <FlupsyCenterFilter 
-              onFilterChange={(center, flupsyIds) => {
-                setSelectedCenter(center);
-                setSelectedFlupsyIds(flupsyIds);
-              }}
-            />
-          </div>
-        </TooltipTrigger>
-        
         <TooltipTrigger 
           tooltip={{
             id: 'flupsy-visualizer',
