@@ -16,6 +16,16 @@ import {
 import { Input } from "@/components/ui/input";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
+import { 
+  AlertDialog, 
+  AlertDialogAction, 
+  AlertDialogCancel, 
+  AlertDialogContent, 
+  AlertDialogDescription, 
+  AlertDialogFooter, 
+  AlertDialogHeader, 
+  AlertDialogTitle 
+} from "@/components/ui/alert-dialog";
 import { operationSchema } from "@shared/schema";
 
 // Schema esteso per includere il campo FLUPSY
@@ -138,6 +148,10 @@ export default function OperationForm({
   initialFlupsyId = null,
   initialBasketId = null
 }: OperationFormProps) {
+  // Stato per il dialogo di conferma delle operazioni misura che cambiano il numero di animali
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
+  const [pendingValues, setPendingValues] = useState<any | null>(null);
+  
   // Fetch related data
   const { data: baskets } = useQuery({
     queryKey: ['/api/baskets'],
