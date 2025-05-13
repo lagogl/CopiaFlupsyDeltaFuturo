@@ -17,7 +17,7 @@ import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } f
 import { useToast } from '@/hooks/use-toast';
 import { type SampleCalculatorResult } from '@/components/SampleCalculator';
 import IntegratedSampleCalculator from '@/components/IntegratedSampleCalculator';
-import MisurazioneDirectForm from '@/components/MisurazioneDirectForm';
+import MisurazioneDirectFormFixed from '@/components/MisurazioneDirectFormFixed';
 import { PesoOperationResults } from '@/components/peso/PesoOperationResults';
 import PesoDirectForm from '@/components/PesoDirectForm';
 
@@ -755,7 +755,7 @@ export default function QuickOperations() {
               }
               
               return (
-                <MisurazioneDirectForm 
+                <MisurazioneDirectFormFixed 
                   basketId={selectedBasketId}
                   cycleId={cycle.id}
                   sizeId={lastOperation?.sizeId || null}
