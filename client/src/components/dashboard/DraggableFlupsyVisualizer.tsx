@@ -44,6 +44,16 @@ interface DraggableBasketProps {
 }
 
 function DraggableBasket({ basket, isDropDisabled = false, children, onClick }: DraggableBasketProps) {
+  const queryClient = useQueryClient();
+  const [showPositionHistory, setShowPositionHistory] = useState(false);
+  
+  // Richiedi la cronologia delle posizioni solo quando necessario (hover)
+  const { data: positionHistory } = useQuery({
+    queryKey: [`/api/baskets/${basket.id}/positions`],
+    queryFn: getQueryFn({ on401: "throw" }),
+    enabled: !!basket.id && showPositionHistory,
+  });
+  
   // Modifica: permettiamo il trascinamento sia per ceste attive che disponibili
   const isDraggable = basket && (basket.state === 'active' || basket.state === 'available');
   
@@ -56,6 +66,14 @@ function DraggableBasket({ basket, isDropDisabled = false, children, onClick }: 
   
   const handleMouseUp = () => {
     document.body.style.cursor = '';
+  };
+  
+  const handleMouseEnter = () => {
+    setShowPositionHistory(true);
+  };
+  
+  const handleMouseLeave = () => {
+    setShowPositionHistory(false);
   };
   
   const [{ isDragging }, drag] = useDrag(() => ({
@@ -71,17 +89,71 @@ function DraggableBasket({ basket, isDropDisabled = false, children, onClick }: 
     })
   }));
 
+  // Renderizza la cronologia delle posizioni
+  const renderPositionHistory = () => {
+    if (!positionHistory || !Array.isArray(positionHistory) || positionHistory.length === 0) {
+      return <div className="py-2 px-3">Nessuna cronologia posizioni disponibile</div>;
+    }
+    
+    return (
+      <div className="py-2 px-3 max-w-[300px]">
+        <div className="font-semibold mb-2 flex items-center">
+          <History className="w-4 h-4 mr-1" /> 
+          Cronologia Posizioni
+        </div>
+        <div className="space-y-2 max-h-[300px] overflow-y-auto">
+          {positionHistory.map((record: any, index: number) => {
+            const startDate = new Date(record.startDate);
+            const endDate = record.endDate ? new Date(record.endDate) : null;
+            const days = endDate ? differenceInDays(endDate, startDate) : differenceInDays(new Date(), startDate);
+            
+            return (
+              <div 
+                key={index} 
+                className={`text-xs p-2 rounded-md border ${
+                  !record.endDate ? 'bg-green-50 border-green-200' : 'bg-gray-50 border-gray-200'
+                }`}
+              >
+                <div className="font-medium">
+                  {record.flupsyName}, Fila {record.row}, Pos. {record.position}
+                </div>
+                <div className="text-gray-600">
+                  Dal {format(startDate, 'dd/MM/yyyy', { locale: it })}
+                  {endDate ? ` al ${format(endDate, 'dd/MM/yyyy', { locale: it })}` : ' (posizione attuale)'}
+                </div>
+                <div className="text-gray-600">
+                  {days} {days === 1 ? 'giorno' : 'giorni'}
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      </div>
+    );
+  };
+
   return (
-    <div
-      ref={drag}
-      onClick={onClick}
-      style={{ 
-        opacity: isDragging ? 0.5 : 1,
-      }}
-      className={`hover:shadow-md transition-shadow duration-200 ${isDraggable ? 'basket-draggable' : ''}`}
-    >
-      {children}
-    </div>
+    <TooltipProvider>
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <div
+            ref={drag}
+            onClick={onClick}
+            onMouseEnter={handleMouseEnter}
+            onMouseLeave={handleMouseLeave}
+            style={{ 
+              opacity: isDragging ? 0.5 : 1,
+            }}
+            className={`hover:shadow-md transition-shadow duration-200 ${isDraggable ? 'basket-draggable' : ''}`}
+          >
+            {children}
+          </div>
+        </TooltipTrigger>
+        <TooltipContent side="right" className="bg-white border shadow-lg z-50">
+          {renderPositionHistory()}
+        </TooltipContent>
+      </Tooltip>
+    </TooltipProvider>
   );
 }
 
