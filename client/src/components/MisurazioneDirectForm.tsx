@@ -80,7 +80,7 @@ export default function MisurazioneDirectForm({
       const matchingSize = sizes.find((size: any) => {
         const minAnimalsPerKg = size.minAnimalsPerKg || 0;
         const maxAnimalsPerKg = size.maxAnimalsPerKg || Infinity;
-        const animalsPerKg = calculatedValues.animalsPerKg || 0;
+        const animalsPerKg = calculatedValues?.animalsPerKg || 0;
         return animalsPerKg >= minAnimalsPerKg && animalsPerKg <= maxAnimalsPerKg;
       });
       
@@ -102,7 +102,7 @@ export default function MisurazioneDirectForm({
   // Prepara i dati per l'indicatore di crescita
   const prepareGrowthData = () => {
     if (!defaultAverageWeight || 
-        !calculatedValues.averageWeight || 
+        !calculatedValues?.averageWeight || 
         !lastOperationDate || 
         !operationDate || 
         !sgrs) {
@@ -118,7 +118,7 @@ export default function MisurazioneDirectForm({
     
     // Calcolo crescita reale
     const prevAvgWeight = defaultAverageWeight;
-    const currAvgWeight = calculatedValues.averageWeight;
+    const currAvgWeight = calculatedValues?.averageWeight;
     const actualGrowthPercent = ((currAvgWeight - prevAvgWeight) / prevAvgWeight) * 100;
     
     // Ottieni il mese per SGR
@@ -671,7 +671,7 @@ export default function MisurazioneDirectForm({
                   Nell'operazione <strong>misura</strong>, puoi scegliere manualmente la taglia più adatta.
                   {calculatedSize && calculatedValues?.averageWeight && (
                     <span className="block mt-1">
-                      In base al peso medio calcolato di <strong>{calculatedValues.averageWeight.toFixed(4)} mg</strong>, 
+                      In base al peso medio calcolato di <strong>{calculatedValues?.averageWeight?.toFixed(4)} mg</strong>, 
                       il sistema suggerisce la taglia <strong className="text-indigo-600">{calculatedSize.code}</strong>, 
                       ma puoi modificarla in base alle tue osservazioni.
                     </span>
