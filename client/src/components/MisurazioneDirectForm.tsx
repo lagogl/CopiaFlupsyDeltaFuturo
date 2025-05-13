@@ -10,7 +10,7 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
-import { Scale, RulerMeasure } from 'lucide-react';
+import { Scale, Ruler } from 'lucide-react';
 
 interface MisurazioneDirectFormProps {
   basketId: number;
@@ -624,7 +624,7 @@ export default function MisurazioneDirectForm({
           <div className="p-3 border border-indigo-100 bg-indigo-50 rounded-md mb-4">
             <div className="flex items-start">
               <div className="mr-2 text-indigo-500">
-                <RulerMeasure className="h-5 w-5 mt-1" />
+                <Ruler className="h-5 w-5 mt-1" />
               </div>
               <div>
                 <h4 className="text-sm font-semibold text-indigo-800">Taglia personalizzabile</h4>
