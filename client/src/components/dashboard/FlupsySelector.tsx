@@ -165,7 +165,7 @@ export default function FlupsySelector({
                 </div>
               </div>
               
-              <ScrollArea className="max-h-[300px]">
+              <ScrollArea className="max-h-[300px] overflow-y-auto" type="always">
                 <div className="p-2">
                   {filteredFlupsys.length === 0 ? (
                     <p className="text-sm text-center py-3 text-muted-foreground">
@@ -187,12 +187,12 @@ export default function FlupsySelector({
                           className="mr-2"
                           onCheckedChange={() => handleToggleFlupsy(flupsy.id)}
                         />
-                        <div className="flex flex-col">
-                          <span className="font-medium">{flupsy.name}</span>
-                          <span className="text-xs text-muted-foreground">{flupsy.location}</span>
+                        <div className="flex flex-col flex-1 min-w-0">
+                          <span className="font-medium truncate">{flupsy.name}</span>
+                          <span className="text-xs text-muted-foreground truncate">{flupsy.location}</span>
                         </div>
                         {flupsy.maxPositions && (
-                          <Badge variant="outline" className="ml-auto">
+                          <Badge variant="outline" className="ml-auto whitespace-nowrap">
                             {flupsy.maxPositions} pos.
                           </Badge>
                         )}
@@ -205,7 +205,7 @@ export default function FlupsySelector({
           </Popover>
           
           {/* Badges per i FLUPSY selezionati */}
-          <ScrollArea className="w-full max-h-[100px]">
+          <ScrollArea className="w-full max-h-[120px]" type="always">
             <div className="flex flex-wrap gap-1 p-1">
               {selectedFlupsyIds.length > 0 && allFlupsys && (
                 <>
