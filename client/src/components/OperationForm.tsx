@@ -134,7 +134,9 @@ export default function OperationForm({
   },
   isLoading = false,
   editMode = false,
-  initialCycleId = null
+  initialCycleId = null,
+  initialFlupsyId = null,
+  initialBasketId = null
 }: OperationFormProps) {
   // Fetch related data
   const { data: baskets } = useQuery({
@@ -220,7 +222,31 @@ export default function OperationForm({
         }
       }
     } 
-    // Caso 2: Abbiamo defaultValues preimpostati (es. dalla duplicazione)
+    // Caso 2: Abbiamo FLUPSY e cesta iniziali da preselezionare (dalla navigazione diretta)
+    else if (initialFlupsyId && initialBasketId && flupsys && baskets) {
+      // Verifica che FLUPSY e cesta esistano
+      const flupsy = flupsys.find((f: any) => f.id === initialFlupsyId);
+      const basket = baskets.find((b: any) => b.id === initialBasketId);
+      
+      if (flupsy && basket) {
+        // Prima imposta il FLUPSY
+        form.setValue('flupsyId', initialFlupsyId);
+        console.log('Preselezionato FLUPSY dalla navigazione:', initialFlupsyId);
+        
+        // Se la cesta appartiene al FLUPSY selezionato
+        if (basket.flupsyId === initialFlupsyId) {
+          form.setValue('basketId', initialBasketId);
+          console.log('Preselezionato cestello dalla navigazione:', initialBasketId);
+          
+          // Se la cesta ha un ciclo attivo, selezionalo automaticamente
+          if (basket.currentCycleId) {
+            form.setValue('cycleId', basket.currentCycleId);
+            console.log('Ciclo impostato automaticamente al ciclo attivo della cesta:', basket.currentCycleId);
+          }
+        }
+      }
+    }
+    // Caso 3: Abbiamo defaultValues preimpostati (es. dalla duplicazione)
     else if (defaultValues?.flupsyId && defaultValues.basketId) {
       console.log('Preimpostati valori di default per FLUPSY e cesta:', defaultValues.flupsyId, defaultValues.basketId);
       
@@ -239,7 +265,7 @@ export default function OperationForm({
         }
       }
     }
-  }, [initialCycleId, cycles, baskets, form, defaultValues, flupsyBaskets, isLoadingFlupsyBaskets]);
+  }, [initialCycleId, initialFlupsyId, initialBasketId, cycles, baskets, flupsys, form, defaultValues, flupsyBaskets, isLoadingFlupsyBaskets]);
 
   // Calculate average weight and set size when animals per kg changes
   useEffect(() => {
