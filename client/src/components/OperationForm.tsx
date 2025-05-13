@@ -1257,14 +1257,14 @@ export default function OperationForm({
                             className="py-3 px-2"
                           >
                             <div className="flex flex-col">
-                              <span className="font-medium">
+                              <span className="font-medium truncate">
                                 Lotto #{lot.id} - {lot.supplier}
                               </span>
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-muted-foreground truncate max-w-full">
                                 {additionalInfo}
                               </span>
                               {quantityInfo.length > 0 && (
-                                <span className="text-xs text-blue-600 font-semibold mt-1">
+                                <span className="text-xs text-blue-600 font-semibold mt-1 truncate max-w-full">
                                   {quantityInfo.join(" • ")}
                                 </span>
                               )}
