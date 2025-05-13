@@ -52,6 +52,11 @@ export default function MisurazioneDirectFormFixed({
   onSuccess,
   onCancel
 }: MisurazioneDirectFormProps) {
+  // Query per ottenere i dati dell'ultima operazione completa in questo ciclo
+  const { data: cycleOperations } = useQuery({
+    queryKey: ['/api/operations', { cycleId }],
+    enabled: !!cycleId
+  });
   const { toast } = useToast();
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSizeId, setSelectedSizeId] = useState<number | null>(sizeId);
@@ -335,6 +340,23 @@ export default function MisurazioneDirectFormFixed({
   // Ottieni i dati per la visualizzazione dell'indicatore di crescita
   const growthData = prepareGrowthData();
   
+  // Trova l'ultima operazione nel ciclo (escluso prima-attivazione)
+  const lastCycleOperation = Array.isArray(cycleOperations) 
+    ? cycleOperations
+        .filter((op: any) => op.cycleId === cycleId && op.type !== 'prima-attivazione')
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0]
+    : null;
+    
+  // Trova l'operazione di prima attivazione per questo ciclo
+  const firstActivation = Array.isArray(cycleOperations)
+    ? cycleOperations
+        .filter((op: any) => op.cycleId === cycleId && op.type === 'prima-attivazione')
+        .sort((a: any, b: any) => new Date(a.date).getTime() - new Date(b.date).getTime())[0]
+    : null;
+    
+  // Operazione da mostrare come riferimento (l'ultima o la prima attivazione se non ci sono altre)
+  const referenceOperation = lastCycleOperation || firstActivation;
+
   return (
     <div className="p-4 bg-white rounded-lg shadow-md max-w-4xl mx-auto">
       <h2 className="text-xl font-bold flex items-center mb-4">
@@ -345,6 +367,38 @@ export default function MisurazioneDirectFormFixed({
       {lottoInfo && (
         <div className="mb-4 text-sm bg-blue-50 p-2 rounded-lg">
           <span className="font-semibold">Lotto:</span> {lottoInfo}
+        </div>
+      )}
+      
+      {referenceOperation && (
+        <div className="mb-4 text-sm bg-slate-50 p-3 rounded-lg border border-slate-200">
+          <h3 className="font-medium text-slate-700 mb-2">Ultima operazione del ciclo</h3>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+            <div>
+              <span className="text-slate-500 block">Data:</span>
+              <span className="font-medium">{formatDate(referenceOperation.date)}</span>
+            </div>
+            <div>
+              <span className="text-slate-500 block">Tipo:</span>
+              <span className="font-medium capitalize">{referenceOperation.type}</span>
+            </div>
+            <div>
+              <span className="text-slate-500 block">Taglia:</span>
+              <span className="font-medium">{referenceOperation.size?.code || '-'}</span>
+            </div>
+            <div>
+              <span className="text-slate-500 block">Peso medio (mg):</span>
+              <span className="font-medium">{referenceOperation.averageWeight ? formatNumberWithCommas(referenceOperation.averageWeight) : '-'}</span>
+            </div>
+            <div>
+              <span className="text-slate-500 block">Animali/kg:</span>
+              <span className="font-medium">{referenceOperation.animalsPerKg ? formatNumberWithCommas(referenceOperation.animalsPerKg) : '-'}</span>
+            </div>
+            <div>
+              <span className="text-slate-500 block">Popolazione:</span>
+              <span className="font-medium">{referenceOperation.animalCount ? formatNumberWithCommas(referenceOperation.animalCount) : '-'}</span>
+            </div>
+          </div>
         </div>
       )}
       
