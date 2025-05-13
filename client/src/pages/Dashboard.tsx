@@ -1,6 +1,6 @@
 import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { Link } from 'wouter';
-import { useRef, useEffect, useState } from 'react';
+import React, { useRef, useEffect, useState, useMemo } from 'react';
 import StatCard from '@/components/dashboard/StatCard';
 import RecentOperations from '@/components/dashboard/RecentOperations';
 import GrowthChart from '@/components/dashboard/GrowthChart';
@@ -123,25 +123,51 @@ export default function Dashboard() {
     }
   }, [isFirstTimeUser]); // Rimuoviamo registerTooltip e showTooltip dalle dipendenze
 
-  // Calculate dashboard stats
-  const activeBaskets = baskets?.filter(b => b.state === 'active') || [];
+  // Filtra i cestelli in base ai FLUPSY selezionati
+  const filteredBaskets = useMemo(() => {
+    if (!baskets) return [];
+    if (selectedFlupsyIds.length === 0) return baskets;
+    
+    return baskets.filter(basket => 
+      selectedFlupsyIds.includes(basket.flupsyId)
+    );
+  }, [baskets, selectedFlupsyIds]);
+  
+  // Calculate dashboard stats con i cestelli filtrati
+  const activeBaskets = filteredBaskets.filter(b => b.state === 'active');
   // Distinguish between active baskets with cycle and without cycle
   const activeBasketsWithCycle = activeBaskets.filter(b => b.currentCycleId !== null);
   const activeBasketsWithoutCycle = activeBaskets.filter(b => b.currentCycleId === null);
   
-  const activeCycles = cycles?.filter(c => c.state === 'active') || [];
-  const todayOperations = operations?.filter(op => {
+  // Filtra i cicli: mostra solo quelli delle ceste che appartengono ai FLUPSY selezionati
+  const filteredCycles = useMemo(() => {
+    if (!cycles || !filteredBaskets) return [];
+    
+    const basketIds = filteredBaskets.map(b => b.id);
+    return cycles.filter(c => basketIds.includes(c.basketId));
+  }, [cycles, filteredBaskets]);
+  
+  // Filtra le operazioni: mostra solo quelle delle ceste che appartengono ai FLUPSY selezionati
+  const filteredOperations = useMemo(() => {
+    if (!operations || !filteredBaskets) return [];
+    
+    const basketIds = filteredBaskets.map(b => b.id);
+    return operations.filter(op => basketIds.includes(op.basketId));
+  }, [operations, filteredBaskets]);
+  
+  const activeCycles = filteredCycles.filter(c => c.state === 'active');
+  const todayOperations = filteredOperations.filter(op => {
     const today = new Date().toISOString().split('T')[0];
     return new Date(op.date).toISOString().split('T')[0] === today;
-  }) || [];
+  });
   const activeLots = lots?.filter(l => l.state === 'active') || [];
 
   // Calcola il numero totale di animali nelle ceste attive
   const totalAnimalsInActiveBaskets = activeBaskets.reduce((total, basket) => {
-    // Trova le operazioni più recenti per ogni cesta attiva
-    const basketOperations = operations
-      ?.filter(op => op.basketId === basket.id)
-      ?.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime()) || [];
+    // Trova le operazioni più recenti per ogni cesta attiva (usando le operazioni filtrate)
+    const basketOperations = filteredOperations
+      .filter(op => op.basketId === basket.id)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     // Prendi la più recente operazione che ha un conteggio di animali
     const latestOperationWithCount = basketOperations.find(op => op.animalCount !== null && op.animalCount !== undefined);
