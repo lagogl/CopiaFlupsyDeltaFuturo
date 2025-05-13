@@ -576,7 +576,6 @@ export default function OperationForm({
       animalsPerKg: values.animalsPerKg ? Number(values.animalsPerKg) : null,
       totalWeight: values.totalWeight ? Number(values.totalWeight) : null,
       sgrId: values.sgrId ? Number(values.sgrId) : null,
-      sizeId: values.sizeId ? Number(values.sizeId) : null,
       lotId: values.lotId ? Number(values.lotId) : null,
       flupsyId: values.flupsyId ? Number(values.flupsyId) : null,
       // Per prima-attivazione, controlla se il cestello ha già un ciclo attivo
@@ -584,6 +583,16 @@ export default function OperationForm({
         (selectedBasket?.currentCycleId || null) : 
         (values.cycleId ? Number(values.cycleId) : null)
     };
+    
+    // IMPORTANTE: Per le operazioni di tipo 'misura' e 'peso', rimuoviamo il sizeId
+    // per lasciare che il server calcoli la taglia appropriata in base a animalsPerKg
+    if (values.type === 'misura' || values.type === 'peso') {
+      console.log("Omesso sizeId per operazione", values.type, "- verrà calcolato dal server in base ad animalsPerKg:", values.animalsPerKg);
+      delete formattedValues.sizeId;
+    } else {
+      // Per gli altri tipi di operazione manteniamo il sizeId se presente
+      formattedValues.sizeId = values.sizeId ? Number(values.sizeId) : null;
+    }
     
     console.log("Valori formattati:", formattedValues);
     
