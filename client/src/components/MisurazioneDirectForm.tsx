@@ -218,12 +218,23 @@ export default function MisurazioneDirectForm({
     setIsLoading(true);
     
     try {
-      // Calcola animalCount in base ad animalsPerKg e totalWeight
-      let animalCount = totalPopulation || defaultAnimalCount;
+      // NUOVA LOGICA: Per le misurazioni, manteniamo il conteggio degli animali precedente
+      // Utilizziamo il valore esistente nel cestello (defaultAnimalCount) e non lo ricalcoliamo
+      let animalCount = defaultAnimalCount;
       
-      // Se abbiamo sia il peso totale che gli animali per kg, calcoliamo la popolazione totale
-      if (totalWeight && animalsPerKg) {
-        animalCount = Math.round(animalsPerKg * totalWeight);
+      if (!animalCount) {
+        // Solo se non abbiamo un conteggio precedente, utilizziamo quello calcolato
+        // come fallback in casi eccezionali
+        animalCount = totalPopulation;
+        
+        // E in ultima istanza, se abbiamo sia peso totale che animali per kg
+        if (!animalCount && totalWeight && animalsPerKg) {
+          animalCount = Math.round(animalsPerKg * totalWeight);
+        }
+        
+        console.log("ATTENZIONE: Nessun conteggio animali precedente disponibile, usando calcolo:", animalCount);
+      } else {
+        console.log("Misurazione: mantenuto conteggio animali precedente:", animalCount);
       }
       
       // Converti il peso totale da kg a grammi per il salvataggio nel database

@@ -496,29 +496,46 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
             if (updatedFormData.mortalityRate !== undefined && updatedFormData.mortalityRate > 0) {
               const mortalityRate = updatedFormData.mortalityRate;
               
-              // CORREZIONE:
-              // Per il peso totale di 1kg, avremo 1000 * animalsPerKg animali vivi
-              // Esempio con campione 100 animali vivi in 100g (senza morti) -> 1000 animali per kg
-              // Per 1kg di peso totale -> 1000 animali vivi
-              updatedFormData.animalCount = estimatedLiveCount;
+              // NUOVA LOGICA:
+              // Salviamo in memoria i calcoli teorici per mostrarli all'utente
+              // ma non aggiorniamo animalCount per le operazioni di tipo 'misura'
+              // Il contatore degli animali deve rimanere invariato dall'operazione precedente
               
-              // Se il tasso di mortalità è 9.1% significa che:
-              // Per ogni 91 animali vivi ci sono 9 morti, quindi il totale è 100
-              // Quindi: morti = (vivi * mortalityRate) / (1 - mortalityRate)
-              const estimatedDeadCount = Math.round((estimatedLiveCount * mortalityRate) / (1 - mortalityRate));
+              // Calcoliamo il numero teorico di animali vivi (ma non lo salviano in animalCount)
+              const theoreticalLiveCount = estimatedLiveCount;
+              
+              // Calcolo dei morti in base alla mortalità:
+              // morti = (vivi * mortalityRate) / (1 - mortalityRate)
+              const estimatedDeadCount = Math.round((theoreticalLiveCount * mortalityRate) / (1 - mortalityRate));
               
               // Il totale è la somma dei vivi e dei morti
-              const estimatedTotalCount = estimatedLiveCount + estimatedDeadCount;
+              const estimatedTotalCount = theoreticalLiveCount + estimatedDeadCount;
               
-              console.log(`Correzione calcolo animali con mortalità ${mortalityRate}:`, {
-                animaliViviStimati: estimatedLiveCount,
+              console.log(`Calcolo animali con mortalità ${mortalityRate} (SOLO PER VISUALIZZAZIONE):`, {
+                animaliViviTeorici: theoreticalLiveCount,
                 animaliMortiStimati: estimatedDeadCount,
                 animaliTotaliStimati: estimatedTotalCount,
-                tassoMortalita: mortalityRate
+                tassoMortalita: mortalityRate,
+                animaliMantenuti: currentOperation.basket?.animalCount || 'Nessuno disponibile'
               });
               
-              // Aggiorniamo i valori nel form
-              updatedFormData.animalCount = estimatedLiveCount;
+              // Salviamo i valori calcolati come stima, ma manteniamo il conteggio originale
+              // per le operazioni di tipo 'misura'
+              // PER OPERAZIONI DI MISURA: Non aggiorniamo animalCount, lo lasciamo invariato
+              if (currentOperation.type === 'misura') {
+                // Mantieni il conteggio precedente (non lo aggiorniamo)
+                // Se abbiamo già un animalCount nel form lo usiamo, altrimenti prendiamo
+                // quello dal cestello, che è già aggiornato con l'ultimo valore
+                if (!updatedFormData.animalCount && currentOperation.basket?.animalCount) {
+                  updatedFormData.animalCount = currentOperation.basket.animalCount;
+                }
+                console.log("OPERAZIONE MISURA: mantenuto conteggio animali:", updatedFormData.animalCount);
+              } else {
+                // Per tutti gli altri tipi di operazione, aggiorniamo normalmente
+                updatedFormData.animalCount = theoreticalLiveCount;
+              }
+              
+              // Questi valori sono solo per visualizzazione
               updatedFormData.estimatedTotalCount = estimatedTotalCount;
               updatedFormData.estimatedDeadCount = estimatedDeadCount;
             } else {
