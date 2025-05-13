@@ -10,7 +10,17 @@ import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { useQuery } from '@tanstack/react-query';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
-import { Scale, Ruler } from 'lucide-react';
+import { Scale, Ruler, AlertTriangle } from 'lucide-react';
+import { 
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
 
 interface MisurazioneDirectFormProps {
   basketId: number;
@@ -61,6 +71,9 @@ export default function MisurazioneDirectFormFixed({
   const [isLoading, setIsLoading] = useState(false);
   const [selectedSizeId, setSelectedSizeId] = useState<number | null>(sizeId);
   const [calculatedSize, setCalculatedSize] = useState<{id: number; code: string} | null>(null);
+  const [showMortalityDialog, setShowMortalityDialog] = useState(false);
+  const [operationToSubmit, setOperationToSubmit] = useState<any>(null);
+  const [mortalityMessage, setMortalityMessage] = useState<string>('');
   
   // Dati del campione
   const [operationDate, setOperationDate] = useState<string>(format(new Date(), 'yyyy-MM-dd'));
@@ -234,6 +247,36 @@ export default function MisurazioneDirectFormFixed({
     return false;
   };
   
+  // Determina conteggio animali e prepara i messaggi
+  const prepareAnimalCountLogic = (values: any) => {
+    const { totalPopulation, totalDeadCount } = values;
+    
+    // Prepara i dati in base alla mortalità
+    if (deadCount !== null && deadCount > 0 && totalPopulation) {
+      return {
+        animalCount: totalPopulation,
+        message: "Poiché è stata registrata mortalità, il conteggio animali verrà aggiornato con il nuovo valore calcolato.",
+        hasChanges: true
+      };
+    }
+    
+    // Altrimenti, se esiste un conteggio precedente, lo conserviamo
+    if (defaultAnimalCount) {
+      return {
+        animalCount: defaultAnimalCount,
+        message: "Nessuna mortalità rilevata. Il conteggio animali precedente verrà conservato.",
+        hasChanges: false
+      };
+    }
+    
+    // Se non abbiamo né mortalità né conteggio precedente, usiamo quello calcolato
+    return {
+      animalCount: totalPopulation,
+      message: "Primo conteggio per questo ciclo. Verrà utilizzato il valore calcolato.",
+      hasChanges: true
+    };
+  };
+  
   // Gestisce il salvataggio dell'operazione
   const handleSave = async () => {
     // Calcola i valori prima del salvataggio
@@ -256,52 +299,43 @@ export default function MisurazioneDirectFormFixed({
       return;
     }
     
+    // Determina logica conteggio animali e prepara i messaggi
+    const animalCountInfo = prepareAnimalCountLogic(result);
+    
+    // Prepara i dati dell'operazione
+    const operationData = {
+      type: 'misura',
+      date: operationDate,
+      basketId,
+      cycleId,
+      sizeId: selectedSizeId,
+      lotId,
+      animalCount: animalCountInfo.animalCount,
+      totalWeight: calculatedTotalWeight ? calculatedTotalWeight * 1000 : null, // Converte in grammi
+      animalsPerKg,
+      averageWeight, // Valore in mg
+      deadCount: totalDeadCount,
+      mortalityRate,
+      notes
+    };
+    
+    // Se c'è mortalità o altri cambiamenti significativi, mostra il dialog
+    if (deadCount !== null && deadCount > 0) {
+      setOperationToSubmit(operationData);
+      setMortalityMessage(animalCountInfo.message);
+      setShowMortalityDialog(true);
+      return;
+    }
+    
+    // Altrimenti procedi direttamente
+    await submitOperation(operationData);
+  };
+  
+  // Funzione per salvare effettivamente l'operazione
+  const submitOperation = async (operationData: any) => {
     setIsLoading(true);
     
     try {
-      // LOGICA MISURAZIONE: Scegliamo conteggio animali in base alla mortalità
-      const determineAnimalCount = () => {
-        // Se abbiamo registrato mortalità, usiamo il valore calcolato da popolazione - mortalità
-        if (deadCount !== null && deadCount > 0 && totalPopulation) {
-          toast({
-            title: "Mortalità rilevata",
-            description: "Poiché è stata registrata mortalità, il conteggio animali è stato aggiornato.",
-            variant: "default"
-          });
-          return totalPopulation;
-        }
-        
-        // Altrimenti, se esiste un conteggio precedente, lo conserviamo
-        if (defaultAnimalCount) {
-          toast({
-            title: "Conservazione conteggio animali",
-            description: "Nessuna mortalità rilevata, il conteggio animali precedente è stato conservato.",
-            variant: "default"
-          });
-          return defaultAnimalCount;
-        }
-        
-        // Se non abbiamo né mortalità né conteggio precedente, usiamo quello calcolato
-        return totalPopulation;
-      };
-      
-      // Prepara i dati dell'operazione
-      const operationData = {
-        type: 'misura',
-        date: operationDate,
-        basketId,
-        cycleId,
-        sizeId: selectedSizeId,
-        lotId,
-        animalCount: determineAnimalCount(),
-        totalWeight: calculatedTotalWeight ? calculatedTotalWeight * 1000 : null, // Converte in grammi
-        animalsPerKg,
-        averageWeight, // Valore in mg
-        deadCount: totalDeadCount,
-        mortalityRate,
-        notes
-      };
-      
       // Salva l'operazione tramite API diretta
       const response = await createDirectOperation(operationData);
       
@@ -321,6 +355,7 @@ export default function MisurazioneDirectFormFixed({
       });
     } finally {
       setIsLoading(false);
+      setShowMortalityDialog(false);
     }
   };
   
@@ -359,6 +394,39 @@ export default function MisurazioneDirectFormFixed({
 
   return (
     <div className="p-4 bg-white rounded-lg shadow-md max-w-4xl mx-auto">
+      {/* Dialog per la conferma con mortalità */}
+      <AlertDialog open={showMortalityDialog} onOpenChange={setShowMortalityDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mr-2" />
+              Conferma registrazione mortalità
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              <p className="mb-2">{mortalityMessage}</p>
+              
+              <div className="mt-4 bg-amber-50 p-3 rounded-md border border-amber-200 text-sm">
+                <p className="font-medium text-amber-800 mb-1">Dettagli:</p>
+                <ul className="list-disc list-inside text-amber-700 space-y-1">
+                  <li>Numero di morti: {deadCount || 0}</li>
+                  <li>Animali rimanenti: {operationToSubmit?.animalCount ? formatNumberWithCommas(operationToSubmit.animalCount) : '-'}</li>
+                  <li>Percentuale mortalità: {operationToSubmit?.mortalityRate}%</li>
+                </ul>
+              </div>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Annulla</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => submitOperation(operationToSubmit)}
+              className="bg-amber-600 hover:bg-amber-700"
+            >
+              Conferma
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
+
       <h2 className="text-xl font-bold flex items-center mb-4">
         <Ruler className="mr-2" />
         Misurazione Cesta #{basketNumber}
