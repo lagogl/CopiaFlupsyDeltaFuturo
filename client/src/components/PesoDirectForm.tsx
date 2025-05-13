@@ -115,9 +115,9 @@ export default function PesoDirectForm({
     if (field === 'totalWeight' && value && !isNaN(parseFloat(value))) {
       const totalWeightKg = parseFloat(value);
       if (totalWeightKg > 0 && updatedFormData.animalCount) {
-        // Calcola animali per kg e peso medio
+        // Calcola animali per kg e peso medio con 4 decimali di precisione
         const animalsPerKg = Math.round(updatedFormData.animalCount / totalWeightKg);
-        const averageWeight = 1000000 / animalsPerKg; // Peso medio in mg
+        const averageWeight = parseFloat((1000000 / animalsPerKg).toFixed(4)); // Peso medio in mg con 4 decimali
         
         updatedFormData.animalsPerKg = animalsPerKg;
         updatedFormData.averageWeight = averageWeight;

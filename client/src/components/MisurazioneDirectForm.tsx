@@ -135,8 +135,10 @@ export default function MisurazioneDirectForm({
       // Calcolo animali per kg
       const animalsPerKg = Math.round((animalsCount / sampleWeight) * 1000);
       
-      // Calcolo peso medio in mg
-      const averageWeight = animalsPerKg > 0 ? Math.round((1000000 / animalsPerKg) * 100) / 100 : 0;
+      // Calcolo peso medio in mg con 4 decimali di precisione
+      const averageWeight = animalsPerKg > 0 
+        ? parseFloat((1000000 / animalsPerKg).toFixed(4)) 
+        : 0;
       
       // Calcolo popolazione totale
       const totalPopulation = Math.round(animalsCount / (samplePercentage / 100));

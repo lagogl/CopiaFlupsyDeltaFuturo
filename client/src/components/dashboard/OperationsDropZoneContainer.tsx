@@ -527,8 +527,8 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
       if (previousOperationData?.animalCount && !isNaN(totalWeightKg) && totalWeightKg > 0) {
         const animalCount = previousOperationData.animalCount;
         
-        // Calcola nuovo peso medio in mg (moltiplica kg per 1.000.000 per ottenere mg)
-        const newAverageWeight = Math.round((totalWeightKg * 1000000) / animalCount);
+        // Calcola nuovo peso medio in mg (moltiplica kg per 1.000.000 per ottenere mg) con 4 decimali
+        const newAverageWeight = parseFloat(((totalWeightKg * 1000000) / animalCount).toFixed(4));
         updatedFormData.averageWeight = newAverageWeight;
         
         // Calcola nuovo animali per kg (direttamente, dato che il peso è già in kg)
@@ -860,7 +860,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                         <div className="p-3 bg-white rounded-md shadow-sm">
                           <p className="text-xs text-gray-500 mb-1">Peso medio (mg)</p>
                           <p className="font-bold text-lg text-slate-900">
-                            {currentOperation.formData.averageWeight?.toLocaleString('it-IT') || '-'}
+                            {currentOperation.formData.averageWeight?.toLocaleString('it-IT', {minimumFractionDigits: 4, maximumFractionDigits: 4}) || '-'}
                           </p>
                         </div>
                         {currentOperation.formData.mortalityRate !== undefined && (
