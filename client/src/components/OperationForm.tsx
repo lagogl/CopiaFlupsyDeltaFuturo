@@ -118,6 +118,7 @@ interface OperationFormProps {
   defaultValues?: Partial<FormValues>;
   isLoading?: boolean;
   editMode?: boolean;
+  initialCycleId?: number | null; // Parametro aggiuntivo per preselezionare il ciclo
 }
 
 export default function OperationForm({ 
@@ -127,9 +128,11 @@ export default function OperationForm({
     date: new Date(),
     type: 'misura',
     flupsyId: null,
+    cycleId: null,
   },
   isLoading = false,
-  editMode = false
+  editMode = false,
+  initialCycleId = null
 }: OperationFormProps) {
   // Fetch related data
   const { data: baskets } = useQuery({
@@ -189,6 +192,20 @@ export default function OperationForm({
     enabled: !!watchFlupsyId,
   });
   
+  // Imposta il ciclo iniziale quando il componente viene montato
+  useEffect(() => {
+    if (initialCycleId && cycles && cycles.length > 0) {
+      // Verifica che il ciclo esista e sia attivo
+      const selectedCycle = cycles.find(cycle => cycle.id === initialCycleId);
+      
+      if (selectedCycle) {
+        // Imposta il valore nel form
+        form.setValue('cycleId', initialCycleId);
+        console.log('Preselezionato ciclo:', initialCycleId);
+      }
+    }
+  }, [initialCycleId, cycles]);
+
   // Calculate average weight and set size when animals per kg changes
   useEffect(() => {
     if (watchAnimalsPerKg && watchAnimalsPerKg > 0) {
