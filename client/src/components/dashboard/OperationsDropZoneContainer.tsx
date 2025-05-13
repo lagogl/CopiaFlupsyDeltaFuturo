@@ -191,7 +191,7 @@ const DropTargetBasket = ({ basket, operations, onOperationDrop }: any) => {
             {averageWeight && (
               <div className="bg-green-50 px-2 py-1 rounded border border-green-100">
                 <div className="text-xs font-medium text-center">
-                  {averageWeight.toLocaleString('it-IT')} mg
+                  {averageWeight.toLocaleString('it-IT', {minimumFractionDigits: 4, maximumFractionDigits: 4})} mg
                 </div>
               </div>
             )}
@@ -730,7 +730,7 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
                           <div className="p-2 bg-white rounded shadow-sm">
                             <p className="text-xs text-gray-500">Peso medio (mg)</p>
                             <p className="font-medium text-slate-900">
-                              {previousOperationData.averageWeight.toLocaleString('it-IT')}
+                              {previousOperationData.averageWeight.toLocaleString('it-IT', {minimumFractionDigits: 4, maximumFractionDigits: 4})}
                             </p>
                           </div>
                         )}

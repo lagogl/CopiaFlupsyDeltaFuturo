@@ -147,19 +147,19 @@ export function PesoOperationResults({
             <div className="p-3 bg-white rounded-md shadow-sm border border-blue-100">
               <p className="text-xs text-gray-500 mb-1">Peso medio (mg)</p>
               <p className="font-bold text-lg text-slate-900 truncate">
-                {currentOperation.formData.averageWeight?.toLocaleString('it-IT') || '-'}
+                {currentOperation.formData.averageWeight?.toLocaleString('it-IT', {minimumFractionDigits: 4, maximumFractionDigits: 4}) || '-'}
               </p>
               {previousOperationData?.averageWeight && currentOperation.formData.averageWeight && (
                 <div className="text-xs text-green-600 flex items-center mt-1 overflow-hidden">
                   {currentOperation.formData.averageWeight > previousOperationData.averageWeight ? (
                     <>
                       <TrendingUp className="h-3 w-3 mr-1 flex-shrink-0" /> 
-                      <span className="truncate">+{(currentOperation.formData.averageWeight - previousOperationData.averageWeight).toLocaleString('it-IT')}</span>
+                      <span className="truncate">+{(currentOperation.formData.averageWeight - previousOperationData.averageWeight).toLocaleString('it-IT', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
                     </>
                   ) : (
                     <>
                       <TrendingDown className="h-3 w-3 mr-1 flex-shrink-0" /> 
-                      <span className="truncate">-{(previousOperationData.averageWeight - (currentOperation.formData.averageWeight || 0)).toLocaleString('it-IT')}</span>
+                      <span className="truncate">-{(previousOperationData.averageWeight - (currentOperation.formData.averageWeight || 0)).toLocaleString('it-IT', {minimumFractionDigits: 4, maximumFractionDigits: 4})}</span>
                     </>
                   )}
                 </div>
