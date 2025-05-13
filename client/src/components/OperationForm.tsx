@@ -119,6 +119,8 @@ interface OperationFormProps {
   isLoading?: boolean;
   editMode?: boolean;
   initialCycleId?: number | null; // Parametro aggiuntivo per preselezionare il ciclo
+  initialFlupsyId?: number | null; // Parametro per preselezionare il FLUPSY
+  initialBasketId?: number | null; // Parametro per preselezionare la cesta
 }
 
 export default function OperationForm({ 

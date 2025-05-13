@@ -786,7 +786,12 @@ export default function Operations() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-condensed font-bold text-gray-800">Registro Operazioni</h2>
         <div className="flex space-x-3">
-          <Button onClick={() => setIsCreateDialogOpen(true)}>
+          <Button onClick={() => {
+            // Resetta qualsiasi operazione precedentemente selezionata
+            setSelectedOperation(null);
+            // Apri il dialog di creazione operazione senza precompilare campi
+            setIsCreateDialogOpen(true);
+          }}>
             <Plus className="h-4 w-4 mr-1" />
             Nuova Operazione
           </Button>
