@@ -4327,6 +4327,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Fix Null Row Values Endpoint ===
+  app.post("/api/baskets/fix-null-rows", async (req, res) => {
+    try {
+      // Verifica la password
+      const { password } = req.body;
+      
+      if (password !== "Gianluigi") {
+        return res.status(401).json({
+          success: false,
+          message: "Password non valida. Operazione non autorizzata."
+        });
+      }
+      
+      // Importa la funzione dal modulo fix_null_rows.js
+      const { fixNullRows } = await import("../fix_null_rows.js");
+      
+      // Esegui la correzione
+      const result = await fixNullRows();
+      
+      // Invia broadcast WebSocket per notificare i client
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('baskets_updated', {
+          message: "Posizioni dei cestelli con fila 'null' sono state corrette."
+        });
+      }
+      
+      res.status(200).json({ 
+        success: true,
+        message: "Correzione completata: tutti i cestelli con fila 'null' sono stati corretti.",
+        result
+      });
+    } catch (error) {
+      console.error("Errore durante la correzione delle file null:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Errore durante la correzione delle file null",
+        error: error instanceof Error ? error.message : "Errore sconosciuto"
+      });
+    }
+  });
+  
   // === Target Size Annotations routes ===
   app.get("/api/target-size-annotations", async (req, res) => {
     try {

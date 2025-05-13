@@ -8,15 +8,25 @@
 
 // Importa le dipendenze necessarie
 import { db } from './server/db.js';
-import { baskets, flupsys } from '@shared/schema';
+import { baskets, flupsys } from './shared/schema.js';
 import { eq, and, isNull, not } from 'drizzle-orm';
 
 /**
  * Funzione principale per la correzione dei cestelli con fila null
+ * @returns {Promise<Object>} Un oggetto con i risultati dell'operazione
  */
-async function fixNullRows() {
+export async function fixNullRows() {
   try {
     console.log("Inizia la correzione dei cestelli con fila null...");
+    
+    // Tracciamento dei risultati
+    const results = {
+      processed: 0,
+      success: 0,
+      failed: 0,
+      skipped: 0,
+      fixedBaskets: []
+    };
     
     // 1. Trova tutti i cestelli che hanno flupsyId ma row nullo
     const basketsWithNullRow = await db.select()
@@ -30,8 +40,18 @@ async function fixNullRows() {
     
     console.log(`Trovati ${basketsWithNullRow.length} cestelli con fila null`);
     
+    if (basketsWithNullRow.length === 0) {
+      return {
+        success: true,
+        message: "Nessun cestello con fila null trovato, tutto ok!",
+        details: results
+      };
+    }
+    
     // Processa ogni cestello
     for (const basket of basketsWithNullRow) {
+      results.processed++;
+      
       // 2. Ottieni informazioni sul FLUPSY associato al cestello
       const flupsy = await db.select()
         .from(flupsys)
@@ -40,6 +60,7 @@ async function fixNullRows() {
       
       if (!flupsy || flupsy.length === 0) {
         console.warn(`FLUPSY non trovato per il cestello ID ${basket.id}, impossibile correggere la fila`);
+        results.skipped++;
         continue;
       }
       
@@ -90,18 +111,50 @@ async function fixNullRows() {
       // 6. Aggiorna il cestello con la nuova fila e posizione
       console.log(`Aggiornamento cestello ID ${basket.id}: fila ${targetRow}, posizione ${availablePosition}`);
       
-      await db.update(baskets)
-        .set({ 
-          row: targetRow,
-          position: availablePosition
-        })
-        .where(eq(baskets.id, basket.id));
+      try {
+        const updatedBasket = await db.update(baskets)
+          .set({ 
+            row: targetRow,
+            position: availablePosition
+          })
+          .where(eq(baskets.id, basket.id))
+          .returning();
+        
+        if (updatedBasket && updatedBasket.length > 0) {
+          results.success++;
+          results.fixedBaskets.push({
+            id: basket.id,
+            flupsyId: basket.flupsyId,
+            flupsyName: flupsy[0].name,
+            assignedRow: targetRow,
+            position: availablePosition
+          });
+          console.log(`✅ Cestello ID ${basket.id} aggiornato con successo`);
+        } else {
+          results.failed++;
+          console.log(`❌ Errore nell'aggiornamento del cestello ID ${basket.id}`);
+        }
+      } catch (updateError) {
+        results.failed++;
+        console.error(`Errore nell'aggiornamento del cestello ID ${basket.id}:`, updateError);
+      }
     }
     
     console.log("Correzione dei cestelli con fila null completata con successo");
+    console.log(`Risultati: ${results.processed} cestelli processati, ${results.success} corretti, ${results.failed} falliti, ${results.skipped} saltati`);
     
+    return {
+      success: true,
+      message: `Correzione completata: ${results.success} cestelli sono stati aggiornati.`,
+      details: results
+    };
   } catch (error) {
     console.error("Errore durante la correzione dei cestelli con fila null:", error);
+    return {
+      success: false,
+      message: "Si è verificato un errore durante la correzione dei cestelli",
+      error: error instanceof Error ? error.message : "Errore sconosciuto"
+    };
   }
 }
 
