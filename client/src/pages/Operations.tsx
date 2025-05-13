@@ -23,7 +23,7 @@ import { apiRequest, queryClient } from '@/lib/queryClient';
 import { monthlyToDaily } from '@/lib/utils';
 import OperationForm from '@/components/OperationForm';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
-import { useLocation } from 'wouter';
+import { useLocation, useSearch } from 'wouter';
 
 export default function Operations() {
   const [searchTerm, setSearchTerm] = useState('');
@@ -47,8 +47,10 @@ export default function Operations() {
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [selectedOperation, setSelectedOperation] = useState<any>(null);
   const [redirectToBasketAfterCreate, setRedirectToBasketAfterCreate] = useState<number | null>(null);
+  const [initialCycleId, setInitialCycleId] = useState<number | null>(null);
   
   const [_, navigate] = useLocation(); // using second parameter as navigate
+  const searchParams = useSearch();
   
   // Query operations
   const { data: operations, isLoading: isLoadingOperations } = useQuery({
@@ -87,6 +89,27 @@ export default function Operations() {
   
   // Alias for SGR data (for consistency in naming)
   const sgrs = sgrData;
+  
+  // Estrai il parametro selectedCycleId dall'URL se presente
+  useEffect(() => {
+    // Controlla se siamo nella route /operations/new
+    const isNewOperation = window.location.pathname.endsWith('/operations/new');
+    if (isNewOperation && searchParams) {
+      const urlParams = new URLSearchParams(searchParams);
+      const selectedCycleId = urlParams.get('selectedCycleId');
+      
+      if (selectedCycleId) {
+        const cycleIdNumber = parseInt(selectedCycleId, 10);
+        if (!isNaN(cycleIdNumber)) {
+          // Imposta il ciclo selezionato
+          setInitialCycleId(cycleIdNumber);
+          // Apri automaticamente il dialog di creazione operazione
+          setIsCreateDialogOpen(true);
+          console.log("Apertura automatica del dialog con ciclo:", cycleIdNumber);
+        }
+      }
+    }
+  }, [searchParams]);
 
   // Create mutation
   const createOperationMutation = useMutation({

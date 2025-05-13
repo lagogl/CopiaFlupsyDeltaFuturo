@@ -77,6 +77,7 @@ function Router() {
       <ProtectedRoute path="/flupsy-comparison-enhanced" component={FlupsyComparisonEnhanced}/>
       <ProtectedRoute path="/baskets" component={Baskets}/>
       <ProtectedRoute path="/operations" component={Operations}/>
+      <ProtectedRoute path="/operations/new" component={Operations}/>
       <ProtectedRoute path="/operations/edit/:id" component={EditOperation}/>
       <ProtectedRoute path="/operations/:id" component={OperationDetail}/>
       <ProtectedRoute path="/quick-operations" component={QuickOperations}/>
