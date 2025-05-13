@@ -205,33 +205,35 @@ export default function FlupsySelector({
           </Popover>
           
           {/* Badges per i FLUPSY selezionati */}
-          <div className="flex flex-wrap gap-1 overflow-x-auto">
-            {selectedFlupsyIds.length > 0 && allFlupsys && (
-              <>
-                {selectedFlupsyIds.map(id => {
-                  const flupsy = allFlupsys.find(f => f.id === id);
-                  if (!flupsy) return null;
-                  
-                  return (
-                    <Badge 
-                      key={id}
-                      variant="secondary"
-                      className="px-2 py-1 rounded-md flex items-center"
-                    >
-                      {flupsy.name}
-                      <X
-                        className="h-3 w-3 ml-1 cursor-pointer"
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          handleToggleFlupsy(id);
-                        }}
-                      />
-                    </Badge>
-                  );
-                })}
-              </>
-            )}
-          </div>
+          <ScrollArea className="w-full max-h-[100px]">
+            <div className="flex flex-wrap gap-1 p-1">
+              {selectedFlupsyIds.length > 0 && allFlupsys && (
+                <>
+                  {selectedFlupsyIds.map(id => {
+                    const flupsy = allFlupsys.find(f => f.id === id);
+                    if (!flupsy) return null;
+                    
+                    return (
+                      <Badge 
+                        key={id}
+                        variant="secondary"
+                        className="px-2 py-1 rounded-md flex items-center mb-1"
+                      >
+                        {flupsy.name}
+                        <X
+                          className="h-3 w-3 ml-1 cursor-pointer"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            handleToggleFlupsy(id);
+                          }}
+                        />
+                      </Badge>
+                    );
+                  })}
+                </>
+              )}
+            </div>
+          </ScrollArea>
         </div>
       </CardContent>
     </Card>
