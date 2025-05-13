@@ -44,6 +44,7 @@ export default function Operations() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isDeletePrimaAttivazioneDialogOpen, setIsDeletePrimaAttivazioneDialogOpen] = useState(false);
   const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [selectedOperation, setSelectedOperation] = useState<any>(null);
   const [redirectToBasketAfterCreate, setRedirectToBasketAfterCreate] = useState<number | null>(null);
@@ -2495,7 +2496,16 @@ export default function Operations() {
             </Button>
             <Button
               variant="destructive"
-              onClick={() => selectedOperation && deleteOperationMutation.mutate(selectedOperation.id)}
+              onClick={() => {
+                if (selectedOperation && selectedOperation.type === 'prima-attivazione') {
+                  // Se l'operazione è di tipo prima-attivazione, mostra il dialogo specifico
+                  setIsDeletePrimaAttivazioneDialogOpen(true);
+                  setIsDeleteDialogOpen(false); // Chiude il dialogo standard
+                } else {
+                  // Altrimenti procedi con l'eliminazione
+                  selectedOperation && deleteOperationMutation.mutate(selectedOperation.id);
+                }
+              }}
               disabled={deleteOperationMutation.isPending}
             >
               {deleteOperationMutation.isPending ? "Eliminazione in corso..." : "Elimina"}
@@ -2503,6 +2513,62 @@ export default function Operations() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Dialogo di conferma per eliminazione operazioni di PRIMA ATTIVAZIONE */}
+      <AlertDialog 
+        open={isDeletePrimaAttivazioneDialogOpen} 
+        onOpenChange={setIsDeletePrimaAttivazioneDialogOpen}
+      >
+        <AlertDialogContent className="max-w-[600px]">
+          <AlertDialogHeader>
+            <AlertDialogTitle className="text-red-600 flex items-center">
+              <AlertTriangle className="mr-2 h-5 w-5" />
+              Attenzione: operazione distruttiva
+            </AlertDialogTitle>
+            <AlertDialogDescription className="space-y-3">
+              <div className="bg-red-50 border border-red-200 rounded-md p-4 mt-2">
+                <p className="font-semibold text-red-700">Questa è un'operazione di Prima Attivazione!</p>
+                <p className="text-red-600 mt-1">
+                  L'eliminazione di questa operazione comporterà:
+                </p>
+                <ul className="list-disc pl-6 mt-2 space-y-1 text-red-700">
+                  <li>La cancellazione del ciclo associato alla cesta</li>
+                  <li>L'eliminazione di tutte le operazioni correlate a questo ciclo</li>
+                  <li>La pulizia degli storici delle posizioni della cesta</li>
+                  <li>Il ripristino della cesta allo stato "disponibile"</li>
+                </ul>
+                <p className="font-medium text-red-600 mt-3">Questa azione è irreversibile!</p>
+              </div>
+              <p>
+                Sei sicuro di voler eliminare definitivamente questa operazione di Prima Attivazione
+                {selectedOperation && selectedOperation.basket ? ` per la cesta #${selectedOperation.basket.physicalNumber}` : ''}?
+              </p>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel onClick={() => {
+              setIsDeletePrimaAttivazioneDialogOpen(false);
+            }}>
+              Annulla
+            </AlertDialogCancel>
+            <AlertDialogAction 
+              className="bg-red-600 hover:bg-red-700 text-white"
+              onClick={() => {
+                if (selectedOperation) {
+                  deleteOperationMutation.mutate(selectedOperation.id);
+                  setIsDeletePrimaAttivazioneDialogOpen(false);
+                }
+              }}
+              disabled={deleteOperationMutation.isPending}
+            >
+              {deleteOperationMutation.isPending ? 
+                "Eliminazione in corso..." : 
+                "Sì, elimina definitivamente"
+              }
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   );
 }
