@@ -468,24 +468,21 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
         // Per calcolare il peso effettivo degli animali vivi, stimiamo il peso medio per animale
         // e moltiplichiamo per il numero di animali vivi
         
-        // Se non ci sono animali morti, il peso totale è già il peso degli animali vivi
-        let liveWeight = sampleWeight;
+        // CORREZIONE FONDAMENTALE: il campione contiene già solo animali vivi
+        // Non dobbiamo dividere il peso tra vivi e morti, perché il campo sampleWeight
+        // è il peso degli animali vivi, non il peso totale di vivi + morti
         
-        // Se ci sono anche animali morti, calcola il peso proporzionale degli animali vivi
-        if (totalSampleCount > 0 && totalSampleCount > liveSampleCount) {
-          // Peso medio stimato per animale nel campione (sia vivi che morti)
-          const averageWeightPerAnimal = sampleWeight / totalSampleCount;
-          
-          // Peso stimato della parte viva del campione
-          liveWeight = liveSampleCount * averageWeightPerAnimal;
-        }
+        // Calcola direttamente animali vivi per kg
+        const animalsPerKg = Math.round((liveSampleCount * 1000) / sampleWeight);
         
-        // Calcola animali per kg basato SOLO sugli animali vivi
-        const animalsPerKg = Math.round((liveSampleCount * 1000) / liveWeight);
+        console.log(`Calcolo animali vivi per kg: ${liveSampleCount} animali vivi in ${sampleWeight}g = ${animalsPerKg} animali/kg`);
         updatedFormData.animalsPerKg = animalsPerKg;
         
         // Calcola peso medio in mg (basato sugli animali vivi) con 4 decimali
-        updatedFormData.averageWeight = parseFloat(((liveWeight * 1000) / liveSampleCount).toFixed(4));
+        // Poiché sampleWeight è il peso degli animali vivi, usiamo direttamente quello
+        const averageWeight = parseFloat(((sampleWeight * 1000) / liveSampleCount).toFixed(4));
+        updatedFormData.averageWeight = averageWeight;
+        console.log(`Calcolo peso medio: ${sampleWeight}g / ${liveSampleCount} animali = ${averageWeight}mg per animale`);
         
         // Se c'è anche il peso totale, aggiorna il conteggio stimato
         if (updatedFormData.totalWeight) {
@@ -497,27 +494,30 @@ export default function OperationsDropZoneContainer({ flupsyId }: OperationsDrop
             // Se abbiamo una percentuale di mortalità, calcoliamo il numero totale di animali
             // considerando la stessa proporzione di morti
             if (updatedFormData.mortalityRate !== undefined && updatedFormData.mortalityRate > 0) {
-              // Calcolo corretto del tasso di mortalità dal campione
               const mortalityRate = updatedFormData.mortalityRate;
               
-              // Definizione: tasso di mortalità = morti / (vivi + morti)
-              // Quindi il rapporto vivi/totali = (1 - mortalityRate)
+              // CORREZIONE:
+              // Per il peso totale di 1kg, avremo 1000 * animalsPerKg animali vivi
+              // Esempio con campione 100 animali vivi in 100g (senza morti) -> 1000 animali per kg
+              // Per 1kg di peso totale -> 1000 animali vivi
+              updatedFormData.animalCount = estimatedLiveCount;
               
-              // Calcoliamo prima il numero totale di animali (vivi + morti) usando il rapporto
-              // estimatedLiveCount / (1 - mortalityRate) = totale
-              const estimatedTotalCount = Math.round(estimatedLiveCount / (1 - mortalityRate));
+              // Se il tasso di mortalità è 9.1% significa che:
+              // Per ogni 91 animali vivi ci sono 9 morti, quindi il totale è 100
+              // Quindi: morti = (vivi * mortalityRate) / (1 - mortalityRate)
+              const estimatedDeadCount = Math.round((estimatedLiveCount * mortalityRate) / (1 - mortalityRate));
               
-              // Il numero di animali morti è il totale meno i vivi
-              const estimatedDeadCount = estimatedTotalCount - estimatedLiveCount;
+              // Il totale è la somma dei vivi e dei morti
+              const estimatedTotalCount = estimatedLiveCount + estimatedDeadCount;
               
-              console.log(`Calcolo animali con mortalità ${mortalityRate}:`, {
-                stimaVivi: estimatedLiveCount,
-                stimaTotali: estimatedTotalCount,
-                stimaMorti: estimatedDeadCount,
+              console.log(`Correzione calcolo animali con mortalità ${mortalityRate}:`, {
+                animaliViviStimati: estimatedLiveCount,
+                animaliMortiStimati: estimatedDeadCount,
+                animaliTotaliStimati: estimatedTotalCount,
                 tassoMortalita: mortalityRate
               });
               
-              // Salviamo solo gli animali vivi nel database, escludendo i morti
+              // Aggiorniamo i valori nel form
               updatedFormData.animalCount = estimatedLiveCount;
               updatedFormData.estimatedTotalCount = estimatedTotalCount;
               updatedFormData.estimatedDeadCount = estimatedDeadCount;
