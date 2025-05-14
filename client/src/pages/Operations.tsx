@@ -2,6 +2,93 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
+
+// Definizioni dei tipi principali
+interface Size {
+  id: number;
+  code: string;
+  name: string;
+  sizeMm: number | null;
+  minAnimalsPerKg: number;
+  maxAnimalsPerKg: number;
+  notes: string;
+  color: string;
+}
+
+interface Lot {
+  id: number;
+  name?: string; // Nome del lotto 
+  arrivalDate: string;
+  supplier: string;
+  supplierLot: string;
+  supplierLotNumber?: string | null; // Campo alternativo per il lotto fornitore
+  quantity: number;
+  unitOfMeasure: string;
+  notes: string;
+  animalCount: number;
+}
+
+interface Sgr {
+  id: number;
+  month: string;
+  percentage: number;
+  calculationMethod: string;
+}
+
+interface Flupsy {
+  id: number;
+  name: string;
+  location: string;
+  description: string;
+  active: boolean;
+  maxPositions: number;
+  productionCenter: string | null;
+}
+
+interface Basket {
+  id: number;
+  physicalNumber: number;
+  flupsyId: number;
+  cycleCode: string;
+  state: string;
+  currentCycleId: number | null;
+  nfcData: string | null;
+  row: string | null;
+  position: number | null;
+  flupsy: Flupsy;
+}
+
+interface Cycle {
+  id: number;
+  basketId: number;
+  startDate: string;
+  endDate: string | null;
+  state: string;
+}
+
+interface Operation {
+  id: number;
+  date: string;
+  type: string;
+  basketId: number;
+  cycleId: number;
+  sizeId: number | null;
+  sgrId: number | null;
+  lotId: number | null;
+  animalCount: number | null;
+  totalWeight: number | null;
+  animalsPerKg: number | null;
+  averageWeight: number | null;
+  deadCount: number | null;
+  mortalityRate: number | null;
+  notes: string | null;
+  metadata: any | null;
+  basket?: Basket;
+  cycle?: Cycle;
+  size?: Size | null;
+  sgr?: Sgr | null;
+  lot?: Lot | null;
+}
 import { 
   Eye, Search, Filter, Pencil, Plus, Trash2, AlertTriangle, Copy, 
   ArrowDown, ArrowUp, RotateCw, Calendar, Box, Target, Check,
@@ -79,37 +166,37 @@ export default function Operations() {
   const searchParams = useSearch();
   
   // Query operations
-  const { data: operations, isLoading: isLoadingOperations } = useQuery({
+  const { data: operations, isLoading: isLoadingOperations } = useQuery<Operation[]>({
     queryKey: ['/api/operations'],
   });
   
   // Query baskets for reference
-  const { data: baskets, isLoading: isLoadingBaskets } = useQuery({
+  const { data: baskets, isLoading: isLoadingBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
   });
   
   // Query flupsys for filter
-  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
+  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
   });
   
   // Query cycles for filter and grouping
-  const { data: cycles, isLoading: isLoadingCycles } = useQuery({
+  const { data: cycles, isLoading: isLoadingCycles } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles'],
   });
   
   // Query sizes for operation size display
-  const { data: sizes, isLoading: isLoadingSizes } = useQuery({
+  const { data: sizes, isLoading: isLoadingSizes } = useQuery<Size[]>({
     queryKey: ['/api/sizes'],
   });
   
   // Query lots for operation lot display
-  const { data: lots, isLoading: isLoadingLots } = useQuery({
+  const { data: lots, isLoading: isLoadingLots } = useQuery<Lot[]>({
     queryKey: ['/api/lots'],
   });
   
   // Query SGR data for growth performance calculation
-  const { data: sgrData, isLoading: isLoadingSgr } = useQuery({
+  const { data: sgrData, isLoading: isLoadingSgr } = useQuery<Sgr[]>({
     queryKey: ['/api/sgr'],
   });
   
@@ -366,7 +453,7 @@ export default function Operations() {
     })));
     
     // Log dei lotti disponibili
-    console.log("Lotti disponibili:", lots.map(l => ({ id: l.id, name: l.name })));
+    console.log("Lotti disponibili:", lots.map(l => ({ id: l.id })));
     
     const grouped: { [key: string]: any[] } = {};
     
@@ -981,9 +1068,9 @@ export default function Operations() {
                     Chiusi
                   </Button>
                   <Button
-                    variant={cycleStateFilter === 'all' ? 'default' : 'outline'}
+                    variant={filters.cycleStateFilter === 'all' ? 'default' : 'outline'}
                     size="sm"
-                    className={`px-3 py-1.5 rounded-r-md rounded-l-none ${cycleStateFilter === 'all' ? 'bg-blue-600 hover:bg-blue-700 border-blue-600' : 'border-gray-200 hover:bg-gray-50'}`}
+                    className={`px-3 py-1.5 rounded-r-md rounded-l-none ${filters.cycleStateFilter === 'all' ? 'bg-blue-600 hover:bg-blue-700 border-blue-600' : 'border-gray-200 hover:bg-gray-50'}`}
                     onClick={() => setCycleStateFilter('all')}
                   >
                     Tutti
