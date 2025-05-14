@@ -1030,7 +1030,16 @@ export default function Operations() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tutti i Cicli</SelectItem>
-                  {cycles?.map((cycle: any) => {
+                  {cycles?.filter((cycle: any) => {
+                    // Se non è selezionato un FLUPSY specifico, mostra tutti i cicli
+                    if (filters.flupsyFilter === 'all') return true;
+                    
+                    // Altrimenti, trova il cestello associato al ciclo
+                    const basket = baskets?.find((b: any) => b.id === cycle.basketId);
+                    
+                    // Mostra il ciclo solo se il cestello appartiene al FLUPSY selezionato
+                    return basket && basket.flupsyId.toString() === filters.flupsyFilter;
+                  }).map((cycle: any) => {
                     const basket = baskets?.find((b: any) => b.id === cycle.basketId);
                     return (
                       <SelectItem key={cycle.id} value={cycle.id.toString()}>
