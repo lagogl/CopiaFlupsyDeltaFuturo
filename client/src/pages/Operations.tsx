@@ -1446,38 +1446,40 @@ export default function Operations() {
                             >
                               <Trash2 className="h-5 w-5" />
                             </Button>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Button
-                                  variant="ghost"
-                                  size="icon"
-                                  onClick={() => {
-                                    // Duplica l'operazione
-                                    const nextDay = addDays(new Date(op.date), 1);
-                                    
-                                    // Se l'operazione era "prima-attivazione", cambiala in "misura"
-                                    const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
-                                    
-                                    const duplicatedOp = {
-                                      ...op,
-                                      type: operationType,
-                                      date: nextDay,
-                                      id: undefined // Rimuovi l'ID per creare una nuova operazione
-                                    };
-                                    
-                                    // Memorizza l'ID della cesta per la navigazione post-creazione
-                                    const basketId = op.basketId || op.basket?.id;
-                                    setRedirectToBasketAfterCreate(basketId);
-                                    
-                                    setSelectedOperation(duplicatedOp);
-                                    setIsCreateDialogOpen(true);
-                                  }}
-                                >
-                                  <Copy className="h-5 w-5 text-indigo-600" />
-                                </Button>
-                              </TooltipTrigger>
-                              <TooltipContent>Duplica operazione (rimani sulla stessa cesta)</TooltipContent>
-                            </Tooltip>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button
+                                    variant="ghost"
+                                    size="icon"
+                                    onClick={() => {
+                                      // Duplica l'operazione
+                                      const nextDay = addDays(new Date(op.date), 1);
+                                      
+                                      // Se l'operazione era "prima-attivazione", cambiala in "misura"
+                                      const operationType = op.type === 'prima-attivazione' ? 'misura' : op.type;
+                                      
+                                      const duplicatedOp = {
+                                        ...op,
+                                        type: operationType,
+                                        date: nextDay,
+                                        id: undefined // Rimuovi l'ID per creare una nuova operazione
+                                      };
+                                      
+                                      // Memorizza l'ID della cesta per la navigazione post-creazione
+                                      const basketId = op.basketId || op.basket?.id;
+                                      setRedirectToBasketAfterCreate(basketId);
+                                      
+                                      setSelectedOperation(duplicatedOp);
+                                      setIsCreateDialogOpen(true);
+                                    }}
+                                  >
+                                    <Copy className="h-5 w-5 text-indigo-600" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent>Duplica operazione (rimani sulla stessa cesta)</TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
 
                           </div>
                         </td>
