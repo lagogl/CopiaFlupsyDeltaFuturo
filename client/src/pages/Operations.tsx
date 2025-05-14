@@ -126,14 +126,8 @@ export default function Operations() {
     viewMode: 'cycles' as 'table' | 'cycles'
   });
   
-  // Estrazione di tutti i filtri per uso immediato
-  const searchTerm = filters.searchTerm as string;
-  const typeFilter = filters.typeFilter as string;
-  const dateFilter = filters.dateFilter as string;
-  const flupsyFilter = filters.flupsyFilter as string;
-  const cycleFilter = filters.cycleFilter as string;
-  const cycleStateFilter = filters.cycleStateFilter as string;
-  const viewMode = filters.viewMode as 'table' | 'cycles';
+  // Non estraiamo più i filtri in variabili locali perché non rimangono sincronizzate
+  // quando i filtri cambiano. Useremo direttamente filters.searchTerm, ecc.
   
   // Funzioni aggiornate per impostare i filtri
   const setSearchTerm = (value: string) => setFilters(prev => ({ ...prev, searchTerm: value }));
@@ -855,7 +849,7 @@ export default function Operations() {
     // Format operation type for display
     const displayType = type
       .split('-')
-      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
       .join(' ');
     
     return <span className={`px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${bgColor}`}>
@@ -2579,7 +2573,7 @@ export default function Operations() {
                   <p className="font-medium">
                     {selectedOperation.type
                       .split('-')
-                      .map(word => word.charAt(0).toUpperCase() + word.slice(1))
+                      .map((word: string) => word.charAt(0).toUpperCase() + word.slice(1))
                       .join(' ')
                     }
                   </p>
