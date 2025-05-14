@@ -892,7 +892,7 @@ export default function Operations() {
                 <Input
                   type="text"
                   placeholder="Cerca operazioni, ceste..."
-                  value={searchTerm}
+                  value={filters.searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
                 />
@@ -902,7 +902,7 @@ export default function Operations() {
               </div>
             </div>
             <div className="flex space-x-4">
-              <Select value={typeFilter} onValueChange={setTypeFilter}>
+              <Select value={filters.typeFilter} onValueChange={setTypeFilter}>
                 <SelectTrigger className="w-[180px]">
                   <SelectValue placeholder="Tipologia" />
                 </SelectTrigger>
@@ -919,7 +919,7 @@ export default function Operations() {
               </Select>
               <Input 
                 type="date" 
-                value={dateFilter} 
+                value={filters.dateFilter} 
                 onChange={(e) => setDateFilter(e.target.value)}
               />
             </div>
@@ -928,7 +928,7 @@ export default function Operations() {
           {/* Second row of filters */}
           <div className="flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-4">
             <div className="flex-1 md:flex-none md:w-1/2">
-              <Select value={flupsyFilter} onValueChange={setFlupsyFilter}>
+              <Select value={filters.flupsyFilter} onValueChange={setFlupsyFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtra per FLUPSY" />
                 </SelectTrigger>
@@ -943,7 +943,7 @@ export default function Operations() {
               </Select>
             </div>
             <div className="flex-1 md:flex-none md:w-1/2 flex flex-col md:flex-row space-y-4 md:space-y-0 md:space-x-3">
-              <Select value={cycleFilter} onValueChange={setCycleFilter}>
+              <Select value={filters.cycleFilter} onValueChange={setCycleFilter}>
                 <SelectTrigger>
                   <SelectValue placeholder="Filtra per Ciclo" />
                 </SelectTrigger>
@@ -965,17 +965,17 @@ export default function Operations() {
                 <span className="text-sm text-gray-500 mr-1">Stato:</span>
                 <div className="flex rounded-md shadow-sm">
                   <Button
-                    variant={cycleStateFilter === 'active' ? 'default' : 'outline'}
+                    variant={filters.cycleStateFilter === 'active' ? 'default' : 'outline'}
                     size="sm"
-                    className={`px-3 py-1.5 rounded-l-md rounded-r-none ${cycleStateFilter === 'active' ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600' : 'border-gray-200 hover:bg-gray-50'}`}
+                    className={`px-3 py-1.5 rounded-l-md rounded-r-none ${filters.cycleStateFilter === 'active' ? 'bg-emerald-600 hover:bg-emerald-700 border-emerald-600' : 'border-gray-200 hover:bg-gray-50'}`}
                     onClick={() => setCycleStateFilter('active')}
                   >
                     Attivi
                   </Button>
                   <Button
-                    variant={cycleStateFilter === 'closed' ? 'default' : 'outline'}
+                    variant={filters.cycleStateFilter === 'closed' ? 'default' : 'outline'}
                     size="sm"
-                    className={`px-3 py-1.5 rounded-none border-l-0 border-r-0 ${cycleStateFilter === 'closed' ? 'bg-red-600 hover:bg-red-700 border-red-600' : 'border-gray-200 hover:bg-gray-50'}`}
+                    className={`px-3 py-1.5 rounded-none border-l-0 border-r-0 ${filters.cycleStateFilter === 'closed' ? 'bg-red-600 hover:bg-red-700 border-red-600' : 'border-gray-200 hover:bg-gray-50'}`}
                     onClick={() => setCycleStateFilter('closed')}
                   >
                     Chiusi
