@@ -39,7 +39,13 @@ export default function Operations() {
     viewMode: 'cycles' as 'table' | 'cycles'
   });
   
-  // Uso diretto dei filtri salvati
+  // Estrazione di tutti i filtri per uso immediato
+  const searchTerm = filters.searchTerm as string;
+  const typeFilter = filters.typeFilter as string;
+  const dateFilter = filters.dateFilter as string;
+  const flupsyFilter = filters.flupsyFilter as string;
+  const cycleFilter = filters.cycleFilter as string;
+  const cycleStateFilter = filters.cycleStateFilter as string;
   const viewMode = filters.viewMode as 'table' | 'cycles';
   
   // Funzioni aggiornate per impostare i filtri
@@ -609,31 +615,31 @@ export default function Operations() {
     // Filtriamo prima le operazioni secondo i criteri
     const filtered = operations.filter((op: any) => {
       // Filter by search term
-      const matchesSearch = searchTerm === '' || 
-        `${op.basketId}`.includes(searchTerm) || 
-        `${op.cycleId}`.includes(searchTerm) ||
-        (op.basket && `${op.basket.physicalNumber}`.includes(searchTerm));
+      const matchesSearch = filters.searchTerm === '' || 
+        `${op.basketId}`.includes(filters.searchTerm) || 
+        `${op.cycleId}`.includes(filters.searchTerm) ||
+        (op.basket && `${op.basket.physicalNumber}`.includes(filters.searchTerm));
       
       // Filter by operation type
-      const matchesType = typeFilter === 'all' || op.type === typeFilter;
+      const matchesType = filters.typeFilter === 'all' || op.type === filters.typeFilter;
       
       // Filter by date
-      const matchesDate = dateFilter === '' || 
-        format(new Date(op.date), 'yyyy-MM-dd') === dateFilter;
+      const matchesDate = filters.dateFilter === '' || 
+        format(new Date(op.date), 'yyyy-MM-dd') === filters.dateFilter;
       
       // Filter by FLUPSY (baskets belong to a FLUPSY)
-      const matchesFlupsy = flupsyFilter === 'all' || 
-        (op.basket && op.basket.flupsyId.toString() === flupsyFilter);
+      const matchesFlupsy = filters.flupsyFilter === 'all' || 
+        (op.basket && op.basket.flupsyId.toString() === filters.flupsyFilter);
       
       // Filter by cycle
-      const matchesCycle = cycleFilter === 'all' || 
-        op.cycleId.toString() === cycleFilter;
+      const matchesCycle = filters.cycleFilter === 'all' || 
+        op.cycleId.toString() === filters.cycleFilter;
       
       // Filter by cycle state
       const cycle = cycles.find((c: any) => c.id === op.cycleId);
-      const matchesCycleState = cycleStateFilter === 'all' || 
-        (cycleStateFilter === 'active' && cycle && cycle.state === 'active') ||
-        (cycleStateFilter === 'closed' && cycle && cycle.state === 'closed');
+      const matchesCycleState = filters.cycleStateFilter === 'all' || 
+        (filters.cycleStateFilter === 'active' && cycle && cycle.state === 'active') ||
+        (filters.cycleStateFilter === 'closed' && cycle && cycle.state === 'closed');
       
       return matchesSearch && matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesCycleState;
     });
@@ -685,7 +691,7 @@ export default function Operations() {
     // Ora applichiamo l'ordinamento alle operazioni già arricchite
     return sortData(enrichedOperations);
     
-  }, [operations, cycles, lots, searchTerm, typeFilter, dateFilter, flupsyFilter, cycleFilter, cycleStateFilter, sortConfig]);
+  }, [operations, cycles, lots, filters.searchTerm, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, sortConfig]);
   
   // Get filtered cycles based on selected filters
   const filteredCycleIds = useMemo(() => {
@@ -698,39 +704,39 @@ export default function Operations() {
         if (cycleOps.length === 0) return false;
         
         // Check if any operation matches the type filter
-        const matchesType = typeFilter === 'all' || 
-          cycleOps.some((op: any) => op.type === typeFilter);
+        const matchesType = filters.typeFilter === 'all' || 
+          cycleOps.some((op: any) => op.type === filters.typeFilter);
         
         // Check if any operation matches the date filter
-        const matchesDate = dateFilter === '' || 
-          cycleOps.some((op: any) => format(new Date(op.date), 'yyyy-MM-dd') === dateFilter);
+        const matchesDate = filters.dateFilter === '' || 
+          cycleOps.some((op: any) => format(new Date(op.date), 'yyyy-MM-dd') === filters.dateFilter);
         
         // Get basket for this cycle
         const basket = baskets.find((b: any) => b.id === cycle.basketId);
         
         // Check if the basket's FLUPSY matches the FLUPSY filter
-        const matchesFlupsy = flupsyFilter === 'all' || 
-          (basket && basket.flupsyId.toString() === flupsyFilter);
+        const matchesFlupsy = filters.flupsyFilter === 'all' || 
+          (basket && basket.flupsyId.toString() === filters.flupsyFilter);
         
         // Check if the cycle matches the cycle filter
-        const matchesCycle = cycleFilter === 'all' || 
-          cycle.id.toString() === cycleFilter;
+        const matchesCycle = filters.cycleFilter === 'all' || 
+          cycle.id.toString() === filters.cycleFilter;
         
         // Check if the cycle state matches the cycle state filter
-        const matchesCycleState = cycleStateFilter === 'all' || 
-          (cycleStateFilter === 'active' && cycle.state === 'active') ||
-          (cycleStateFilter === 'closed' && cycle.state === 'closed');
+        const matchesCycleState = filters.cycleStateFilter === 'all' || 
+          (filters.cycleStateFilter === 'active' && cycle.state === 'active') ||
+          (filters.cycleStateFilter === 'closed' && cycle.state === 'closed');
         
         // Check if any operation matches the search term
-        const matchesSearch = searchTerm === '' || 
-          `${cycle.id}`.includes(searchTerm) || 
-          (basket && `${basket.physicalNumber}`.includes(searchTerm)) ||
-          cycleOps.some((op: any) => `${op.basketId}`.includes(searchTerm));
+        const matchesSearch = filters.searchTerm === '' || 
+          `${cycle.id}`.includes(filters.searchTerm) || 
+          (basket && `${basket.physicalNumber}`.includes(filters.searchTerm)) ||
+          cycleOps.some((op: any) => `${op.basketId}`.includes(filters.searchTerm));
         
         return matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesCycleState && matchesSearch;
       })
       .map((cycle: any) => cycle.id);
-  }, [cycles, baskets, operations, typeFilter, dateFilter, flupsyFilter, cycleFilter, cycleStateFilter, searchTerm]);
+  }, [cycles, baskets, operations, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, filters.searchTerm]);
 
   const getOperationTypeBadge = (type: string) => {
     let bgColor = 'bg-blue-100 text-blue-800';

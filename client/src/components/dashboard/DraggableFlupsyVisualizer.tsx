@@ -232,12 +232,39 @@ interface PendingBasketMove {
 export default function DraggableFlupsyVisualizer() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
-  // Inizializza con array vuoto, così il pulsante "Deseleziona tutti" sarà correttamente evidenziato
-  const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>([]);
-  const [showFlupsySelector, setShowFlupsySelector] = useState(false);
+  
+  // Utilizziamo il hook di persistenza per i filtri
+  const [filters, setFilters] = useFilterPersistence('flupsy_visualizer', {
+    selectedFlupsyIds: [] as number[],
+    showFlupsySelector: false,
+    userDeselectedAll: false
+  });
+  
+  // Accediamo ai valori persistenti
+  const selectedFlupsyIds = filters.selectedFlupsyIds as number[];
+  const showFlupsySelector = filters.showFlupsySelector as boolean;
+  const userDeselectedAll = filters.userDeselectedAll as boolean;
+  
+  // Funzioni per aggiornare i filtri
+  const setSelectedFlupsyIds = (value: number[] | ((prev: number[]) => number[])) => {
+    if (typeof value === 'function') {
+      setFilters(prev => ({ ...prev, selectedFlupsyIds: value(prev.selectedFlupsyIds as number[]) }));
+    } else {
+      setFilters(prev => ({ ...prev, selectedFlupsyIds: value }));
+    }
+  };
+  
+  const setShowFlupsySelector = (value: boolean) => {
+    setFilters(prev => ({ ...prev, showFlupsySelector: value }));
+  };
+  
+  const setUserDeselectedAll = (value: boolean) => {
+    setFilters(prev => ({ ...prev, userDeselectedAll: value }));
+  };
+  
+  // Stati non persistenti
   const [confirmDialogOpen, setConfirmDialogOpen] = useState(false);
   const [pendingBasketMove, setPendingBasketMove] = useState<PendingBasketMove | null>(null);
-  const [userDeselectedAll, setUserDeselectedAll] = useState(false);
 
   // Data queries
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
