@@ -943,7 +943,7 @@ export default function Operations() {
           <div className="flex justify-between items-center">
             <div className="flex space-x-4">
               <Button 
-                variant={viewMode === 'table' ? 'default' : 'outline'} 
+                variant={filters.viewMode === 'table' ? 'default' : 'outline'} 
                 onClick={() => setViewMode('table')}
                 className="w-32"
               >
@@ -951,7 +951,7 @@ export default function Operations() {
                 Tabella
               </Button>
               <Button 
-                variant={viewMode === 'cycles' ? 'default' : 'outline'} 
+                variant={filters.viewMode === 'cycles' ? 'default' : 'outline'} 
                 onClick={() => setViewMode('cycles')}
                 className="w-32"
               >
@@ -1083,7 +1083,7 @@ export default function Operations() {
           <p className="text-gray-500">Caricamento dati...</p>
         </div>
       ) : (
-        viewMode === 'table' ? (
+        filters.viewMode === 'table' ? (
           // Table/Card View (responsive)
           <div className="bg-white rounded-lg shadow overflow-hidden">
             {/* Desktop View (tabella) - visibile solo su desktop */}

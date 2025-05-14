@@ -69,13 +69,20 @@ export function initializeWebSocket() {
     }
     
     // In ambiente di sviluppo, usa direttamente l'URL del server
+    // Assicuriamoci che l'URL sia costruito correttamente
     let wsUrl = `${protocol}//${host}/ws`;
     
     // Verifica che wsUrl sia un URL WebSocket valido
     try {
+      // Test esplicito per verificare che l'URL sia valido
+      if (!wsUrl || wsUrl.includes('undefined')) {
+        throw new Error(`URL non valido: ${wsUrl}`);
+      }
+      
       new URL(wsUrl);
     } catch (e) {
       console.error("URL WebSocket non valido:", wsUrl, e);
+      // Fallback al socket dummy
       socket = createDummySocket();
       return socket;
     }
