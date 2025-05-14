@@ -17,12 +17,36 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BasketForm from '@/components/BasketForm';
 import NFCReader from '@/components/NFCReader';
 import BasketPositionHistory from '@/components/BasketPositionHistory';
+import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 
 export default function Baskets() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [stateFilter, setStateFilter] = useState('all');
-  const [flupsyFilter, setFlupsyFilter] = useState('all');
+  // Utilizziamo il hook di persistenza per i filtri
+  const [filters, setFilters] = useFilterPersistence('baskets', {
+    searchTerm: '',
+    stateFilter: 'all',
+    flupsyFilter: 'all',
+    sortConfig: {
+      key: 'size.code',
+      direction: 'asc' as 'asc' | 'desc'
+    }
+  });
+  
+  // Stato preferredSize viene mantenuto separato poiché era già salvato nel localStorage
   const [preferredSize, setPreferredSize] = useState(localStorage.getItem('preferredSizeCode') || 'TP-500');
+  
+  // Utilizzo dei filtri salvati
+  const searchTerm = filters.searchTerm;
+  const stateFilter = filters.stateFilter;
+  const flupsyFilter = filters.flupsyFilter;
+  const sortConfig = filters.sortConfig as {key: string, direction: 'asc' | 'desc'};
+  
+  // Funzioni per aggiornare i filtri
+  const setSearchTerm = (value: string) => setFilters(prev => ({ ...prev, searchTerm: value }));
+  const setStateFilter = (value: string) => setFilters(prev => ({ ...prev, stateFilter: value }));
+  const setFlupsyFilter = (value: string) => setFilters(prev => ({ ...prev, flupsyFilter: value }));
+  const setSortConfig = (value: {key: string, direction: 'asc' | 'desc'}) => 
+    setFilters(prev => ({ ...prev, sortConfig: value }));
+  
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -30,10 +54,6 @@ export default function Baskets() {
   const [selectedBasket, setSelectedBasket] = useState<any>(null);
   const [location] = useLocation();
   const [urlParamsLoaded, setUrlParamsLoaded] = useState(false);
-  const [sortConfig, setSortConfig] = useState<{key: string, direction: 'asc' | 'desc'}>({
-    key: 'size.code',  // Ordina per default per la colonna taglia
-    direction: 'asc'
-  });
   
   // Salva la taglia preferita nel localStorage ogni volta che cambia
   useEffect(() => {

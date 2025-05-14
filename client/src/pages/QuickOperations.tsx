@@ -20,6 +20,7 @@ import IntegratedSampleCalculator from '@/components/IntegratedSampleCalculator'
 import MisurazioneDirectFormFixed from '@/components/MisurazioneDirectFormFixed';
 import { PesoOperationResults } from '@/components/peso/PesoOperationResults';
 import PesoDirectForm from '@/components/PesoDirectForm';
+import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 
 // Tipi che useremo 
 interface Basket {
@@ -352,13 +353,29 @@ function BasketCard({
 
 // Componente principale
 export default function QuickOperations() {
-  const [selectedFlupsyId, setSelectedFlupsyId] = useState<string>('all');
+  // Utilizziamo il hook di persistenza per i filtri
+  const [filters, setFilters] = useFilterPersistence('quick_operations', {
+    selectedFlupsyId: 'all',
+    view: 'grid' as 'grid' | 'list',
+    filterDays: 'all'
+  });
+  
+  // Utilizzo dei filtri salvati
+  const selectedFlupsyId = filters.selectedFlupsyId as string;
+  const view = filters.view as 'grid' | 'list';
+  const filterDays = filters.filterDays as string;
+  
+  // Funzioni per aggiornare i filtri
+  const setSelectedFlupsyId = (value: string) => setFilters(prev => ({ ...prev, selectedFlupsyId: value }));
+  const setView = (value: 'grid' | 'list') => setFilters(prev => ({ ...prev, view: value }));
+  const setFilterDays = (value: string) => setFilters(prev => ({ ...prev, filterDays: value }));
+  
+  // Stati non persistenti
   const [selectedBaskets, setSelectedBaskets] = useState<number[]>([]);
   const [operationDialogOpen, setOperationDialogOpen] = useState(false);
   const [selectedOperationType, setSelectedOperationType] = useState<string | null>(null);
   const [selectedBasketId, setSelectedBasketId] = useState<number | null>(null);
-  const [view, setView] = useState<'grid' | 'list'>('grid');
-  const [filterDays, setFilterDays] = useState<string>('all');
+  
   // Funzione personalizzata per aggiornare i dati dell'operazione in modo tracciabile
   const [currentOperationData, setCurrentOperationDataInternal] = useState<CurrentOperationData | null>(null);
   

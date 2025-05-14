@@ -14,6 +14,7 @@ import { TooltipTrigger } from '@/components/ui/tooltip-trigger';
 import { useTooltip } from '@/contexts/TooltipContext';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertCircle } from 'lucide-react';
+import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 
 export default function Dashboard() {
   const { isFirstTimeUser, registerTooltip, showTooltip } = useTooltip();
@@ -24,9 +25,22 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
   
-  // Stato per il filtro dei FLUPSY
-  const [selectedCenter, setSelectedCenter] = useState<string>('');
-  const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>([]);
+  // Utilizzo del hook di persistenza per i filtri
+  const [filters, setFilters] = useFilterPersistence('dashboard', {
+    selectedCenter: '',
+    selectedFlupsyIds: [] as number[]
+  });
+  
+  // Utilizzo dei filtri salvati
+  const selectedCenter = filters.selectedCenter;
+  const selectedFlupsyIds = filters.selectedFlupsyIds as number[];
+  
+  // Funzioni per aggiornare i filtri
+  const setSelectedCenter = (value: string) => 
+    setFilters(prev => ({ ...prev, selectedCenter: value }));
+  
+  const setSelectedFlupsyIds = (value: number[]) => 
+    setFilters(prev => ({ ...prev, selectedFlupsyIds: value }));
   
   // Riferimenti agli elementi che avranno tooltip
   const dashboardTitleRef = useRef<HTMLHeadingElement>(null);

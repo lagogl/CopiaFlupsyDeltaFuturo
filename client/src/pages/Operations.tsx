@@ -25,15 +25,31 @@ import { monthlyToDaily } from '@/lib/utils';
 import OperationForm from '@/components/OperationForm';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
 import { useLocation, useSearch } from 'wouter';
+import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 
 export default function Operations() {
-  const [searchTerm, setSearchTerm] = useState('');
-  const [typeFilter, setTypeFilter] = useState('all');
-  const [dateFilter, setDateFilter] = useState('');
-  const [flupsyFilter, setFlupsyFilter] = useState('all');
-  const [cycleFilter, setCycleFilter] = useState('all');
-  const [cycleStateFilter, setCycleStateFilter] = useState('active'); // Nuovo filtro: 'active', 'closed', 'all'
-  const [viewMode, setViewMode] = useState<'table' | 'cycles'>('cycles');
+  // Filtri persistenti usando il nostro hook personalizzato
+  const [filters, setFilters] = useFilterPersistence('operations', {
+    searchTerm: '',
+    typeFilter: 'all',
+    dateFilter: '',
+    flupsyFilter: 'all',
+    cycleFilter: 'all',
+    cycleStateFilter: 'active',
+    viewMode: 'cycles' as 'table' | 'cycles'
+  });
+  
+  // Uso diretto dei filtri salvati
+  const viewMode = filters.viewMode as 'table' | 'cycles';
+  
+  // Funzioni aggiornate per impostare i filtri
+  const setSearchTerm = (value: string) => setFilters(prev => ({ ...prev, searchTerm: value }));
+  const setTypeFilter = (value: string) => setFilters(prev => ({ ...prev, typeFilter: value }));
+  const setDateFilter = (value: string) => setFilters(prev => ({ ...prev, dateFilter: value }));
+  const setFlupsyFilter = (value: string) => setFilters(prev => ({ ...prev, flupsyFilter: value }));
+  const setCycleFilter = (value: string) => setFilters(prev => ({ ...prev, cycleFilter: value }));
+  const setCycleStateFilter = (value: string) => setFilters(prev => ({ ...prev, cycleStateFilter: value }));
+  const setViewMode = (value: 'table' | 'cycles') => setFilters(prev => ({ ...prev, viewMode: value }));
   
   // Sorting state
   const [sortConfig, setSortConfig] = useState<{
