@@ -1041,9 +1041,28 @@ export default function Operations() {
                     return basket && basket.flupsyId.toString() === filters.flupsyFilter;
                   }).map((cycle: any) => {
                     const basket = baskets?.find((b: any) => b.id === cycle.basketId);
+                    // Recupera l'ultima operazione per questo ciclo per ottenere la taglia attuale
+                    const cycleOperations = operations?.filter((op: any) => op.cycleId === cycle.id) || [];
+                    const lastOperation = cycleOperations.length > 0 
+                      ? cycleOperations.sort((a: any, b: any) => 
+                          new Date(b.date).getTime() - new Date(a.date).getTime()
+                        )[0] 
+                      : null;
+                    
+                    // Recupera informazioni sulla taglia
+                    const sizeName = lastOperation?.size?.code || '-';
+                    
+                    // Formatta la data di inizio
+                    const startDate = cycle.startDate 
+                      ? format(new Date(cycle.startDate), 'dd/MM/yy') 
+                      : '';
+                    
+                    // Informazioni sulla posizione
+                    const posInfo = basket ? `[${basket.row || ''} ${basket.position || ''}]` : '';
+                    
                     return (
                       <SelectItem key={cycle.id} value={cycle.id.toString()}>
-                        Ciclo #{cycle.id} - Cesta #{basket?.physicalNumber || '?'}
+                        Ciclo #{cycle.id} - Cesta #{basket?.physicalNumber || '?'} {posInfo} - {startDate} - {sizeName}
                       </SelectItem>
                     );
                   })}
