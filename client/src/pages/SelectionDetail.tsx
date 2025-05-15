@@ -105,6 +105,7 @@ export default function VagliaturaDetailPage() {
   const [sourceBasketData, setSourceBasketData] = useState({
     basketId: "",
     cycleId: null,
+    flupsyFilter: "",
   });
 
   // Dati per il form di aggiunta cestello destinazione
@@ -1469,6 +1470,38 @@ export default function VagliaturaDetailPage() {
           </DialogHeader>
           
           <div className="space-y-4 py-4">
+            {/* Filtro per FLUPSY */}
+            <div className="space-y-2">
+              <Label htmlFor="flupsyFilter">FLUPSY</Label>
+              <Select
+                value={sourceBasketData.flupsyFilter || ""}
+                onValueChange={(value) => {
+                  setSourceBasketData({ 
+                    ...sourceBasketData, 
+                    flupsyFilter: value === "all" ? "" : value 
+                  });
+                }}
+              >
+                <SelectTrigger id="flupsyFilter">
+                  <SelectValue placeholder="Seleziona un FLUPSY" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">Tutti i FLUPSY</SelectItem>
+                  {/* Crea un elenco unico di FLUPSY */}
+                  {availableBaskets
+                    ?.map(b => ({ id: b.flupsyId, name: b.flupsyName }))
+                    .filter((flupsy, index, self) => 
+                      flupsy.id && self.findIndex(f => f.id === flupsy.id) === index)
+                    .map(flupsy => (
+                      <SelectItem key={flupsy.id} value={flupsy.id?.toString() || ""}>
+                        {flupsy.name}
+                      </SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
+            </div>
+
             <div className="space-y-2">
               <Label htmlFor="basketId">Cesta</Label>
               <Select
@@ -1491,8 +1524,12 @@ export default function VagliaturaDetailPage() {
                     <div className="flex justify-center py-2">
                       <Spinner size="sm" />
                     </div>
-                  ) : availableBaskets?.filter(b => b.state === "active" && b.cycleId)?.length ? (
+                  ) : availableBaskets
+                      ?.filter(b => b.state === "active" && b.cycleId)
+                      ?.filter(b => !sourceBasketData.flupsyFilter || b.flupsyId?.toString() === sourceBasketData.flupsyFilter)
+                      ?.length ? (
                     availableBaskets
+                      ?.filter(b => !sourceBasketData.flupsyFilter || b.flupsyId?.toString() === sourceBasketData.flupsyFilter)
                       .filter(b => b.state === "active" && b.cycleId)
                       // Filtra le ceste che sono già state aggiunte come origine
                       .filter(basket => {
