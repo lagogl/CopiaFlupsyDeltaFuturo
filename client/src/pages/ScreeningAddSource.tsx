@@ -21,6 +21,13 @@ import {
 } from '@/components/ui/table';
 
 import { Badge } from '@/components/ui/badge';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from "@/components/ui/select";
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 
@@ -39,6 +46,7 @@ export default function ScreeningAddSource() {
 
   // State
   const [searchTerm, setSearchTerm] = useState('');
+  const [flupsyFilter, setFlupsyFilter] = useState<string>('all');
   const [filteredBaskets, setFilteredBaskets] = useState<any[]>([]);
   const { toast } = useToast();
   const queryClient = useQueryClient();
@@ -90,6 +98,20 @@ export default function ScreeningAddSource() {
       });
     },
   });
+  
+  // Query per ottenere tutti i FLUPSY
+  const {
+    data: flupsys,
+    isLoading: flupsysLoading,
+  } = useQuery({
+    queryKey: ['/api/flupsys'],
+    queryFn: async () => {
+      return apiRequest<any[]>({
+        url: '/api/flupsys',
+        method: 'GET'
+      });
+    },
+  });
 
   // Mutation per aggiungere una cesta di origine
   const addSourceBasketMutation = useMutation({
@@ -136,16 +158,22 @@ export default function ScreeningAddSource() {
     return Math.abs(cycleMin - referenceMin) / (referenceMin || 1);
   };
 
-  // Filtra e ordina i cestelli in base alla ricerca e alla taglia di riferimento
+  // Filtra e ordina i cestelli in base alla ricerca, al FLUPSY selezionato e alla taglia di riferimento
   useEffect(() => {
     if (!activeCycles || !screeningOperation?.referenceSize) return;
     
-    // Prima filtriamo in base ai termini di ricerca
+    // Prima filtriamo in base ai termini di ricerca e al FLUPSY selezionato
     const filtered = activeCycles.filter(cycle => {
-      // Se non c'è un termine di ricerca, mostra tutti
+      const basket = cycle.basket;
+      
+      // Filtro per FLUPSY
+      if (flupsyFilter !== 'all' && basket.flupsyId.toString() !== flupsyFilter) {
+        return false;
+      }
+      
+      // Filtro per termine di ricerca
       if (!searchTerm) return true;
       
-      const basket = cycle.basket;
       const term = searchTerm.toLowerCase();
       
       return (
@@ -169,7 +197,7 @@ export default function ScreeningAddSource() {
     } else {
       setFilteredBaskets(filtered);
     }
-  }, [searchTerm, activeCycles, screeningOperation?.referenceSize]);
+  }, [searchTerm, flupsyFilter, activeCycles, screeningOperation?.referenceSize]);
 
   // Handler per aggiungere una cesta di origine
   const handleAddSourceBasket = (cycleId: number, basketId: number) => {
@@ -289,26 +317,66 @@ export default function ScreeningAddSource() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex items-center space-x-2 mb-4">
-            <Label htmlFor="search-basket" className="sr-only">
-              Cerca cesta
-            </Label>
-            <Input
-              id="search-basket"
-              placeholder="Cerca per numero, codice ciclo, fornitore..."
-              value={searchTerm}
-              onChange={(e) => setSearchTerm(e.target.value)}
-              className="max-w-md"
-            />
-            <Button variant="outline" className="flex items-center gap-2">
-              <Filter className="h-4 w-4" />
-              Filtri
-            </Button>
+          <div className="flex flex-col space-y-3 mb-4">
+            {/* Riga di filtri */}
+            <div className="flex items-center space-x-2">
+              <Label htmlFor="search-basket" className="sr-only">
+                Cerca cesta
+              </Label>
+              <Input
+                id="search-basket"
+                placeholder="Cerca per numero, codice ciclo, fornitore..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
+                className="max-w-md"
+              />
+              
+              {/* Selezione FLUPSY */}
+              <div className="flex items-center space-x-2">
+                <Label htmlFor="flupsy-filter" className="whitespace-nowrap">
+                  FLUPSY:
+                </Label>
+                <Select value={flupsyFilter} onValueChange={setFlupsyFilter}>
+                  <SelectTrigger className="w-[200px]">
+                    <SelectValue placeholder="Seleziona FLUPSY" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutti i FLUPSY</SelectItem>
+                    {flupsys?.filter(f => f.active).map((flupsy) => (
+                      <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                        {flupsy.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+            </div>
+            
+            {/* Badge che mostra i filtri attivi */}
+            <div className="flex flex-wrap gap-2">
+              {flupsyFilter !== 'all' && flupsys && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <span>FLUPSY: {flupsys.find(f => f.id.toString() === flupsyFilter)?.name}</span>
+                </Badge>
+              )}
+              {searchTerm && (
+                <Badge variant="secondary" className="flex items-center gap-1">
+                  <span>Ricerca: {searchTerm}</span>
+                </Badge>
+              )}
+              {filteredBaskets.length > 0 && (
+                <Badge variant="outline" className="ml-auto">
+                  <span>{filteredBaskets.length} ceste disponibili</span>
+                </Badge>
+              )}
+            </div>
           </div>
 
           {filteredBaskets?.length === 0 ? (
             <div className="text-center py-8 text-muted-foreground">
-              {searchTerm ? 'Nessun risultato trovato. Prova con un altro termine di ricerca.' : 'Nessuna cesta attiva disponibile.'}
+              {searchTerm || flupsyFilter !== 'all' ? 
+                'Nessun risultato trovato con i filtri attuali. Prova a modificare i criteri di ricerca o cambiare il FLUPSY selezionato.' 
+                : 'Nessuna cesta attiva disponibile.'}
             </div>
           ) : (
             <Table>
