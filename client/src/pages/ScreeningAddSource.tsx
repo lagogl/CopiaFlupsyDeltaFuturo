@@ -313,11 +313,32 @@ export default function ScreeningAddSource() {
         <CardContent>
           <div className="flex flex-col space-y-3 mb-4">
             {/* Riga di filtri */}
-            <div className="flex items-center space-x-2">
-              <Label htmlFor="search-basket" className="sr-only">
-                Cerca cesta
-              </Label>
-              <Input
+            <div className="flex flex-col sm:flex-row items-start sm:items-center gap-2 sm:space-x-2">
+              <div className="w-full sm:w-auto">
+                <Label htmlFor="flupsy-filter" className="font-bold mb-1 block">FLUPSY</Label>
+                <Select
+                  value={flupsyFilter}
+                  onValueChange={(value) => setFlupsyFilter(value)}
+                >
+                  <SelectTrigger id="flupsy-filter" className="border-2 border-primary">
+                    <SelectValue placeholder="Filtra per FLUPSY" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutti i FLUPSY</SelectItem>
+                    {flupsys?.map(flupsy => (
+                      <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                        {flupsy.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
+              </div>
+                
+              <div className="w-full mt-2 sm:mt-0">
+                <Label htmlFor="search-basket" className="mb-1 block">
+                  Cerca cesta
+                </Label>
+                <Input
                 id="search-basket"
                 placeholder="Cerca per numero, codice ciclo, fornitore..."
                 value={searchTerm}
