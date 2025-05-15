@@ -1494,17 +1494,12 @@ export default function VagliaturaDetailPage() {
                   <SelectItem value="all">Tutti i FLUPSY</SelectItem>
                   <SelectGroup>
                     <SelectLabel>FLUPSY disponibili</SelectLabel>
-                    {/* Crea un elenco unico di FLUPSY */}
-                    {availableBaskets
-                      ?.map(b => ({ id: b.flupsyId, name: b.flupsyName }))
-                      .filter((flupsy, index, self) => 
-                        flupsy.id && flupsy.name && self.findIndex(f => f.id === flupsy.id) === index)
-                      .map(flupsy => (
-                        <SelectItem key={flupsy.id} value={flupsy.id?.toString() || ""}>
-                          {flupsy.name}
-                        </SelectItem>
-                      ))
-                    }
+                    {/* Usa direttamente i FLUPSY dalla query dedicata */}
+                    {flupsys?.filter(f => f.active).map((flupsy) => (
+                      <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                        {flupsy.name}
+                      </SelectItem>
+                    ))}
                   </SelectGroup>
                 </SelectContent>
               </Select>
@@ -1512,9 +1507,8 @@ export default function VagliaturaDetailPage() {
               {sourceBasketData.flupsyFilter && (
                 <div className="mt-1 text-sm text-blue-600">
                   Filtro attivo: {
-                    availableBaskets
-                      ?.find(b => b.flupsyId?.toString() === sourceBasketData.flupsyFilter)
-                      ?.flupsyName || "FLUPSY selezionato"
+                    flupsys?.find(f => f.id.toString() === sourceBasketData.flupsyFilter)?.name || 
+                    "FLUPSY selezionato"
                   }
                 </div>
               )}
@@ -1544,10 +1538,10 @@ export default function VagliaturaDetailPage() {
                     </div>
                   ) : availableBaskets
                       ?.filter(b => b.state === "active" && b.cycleId)
-                      ?.filter(b => !sourceBasketData.flupsyFilter || b.flupsyId?.toString() === sourceBasketData.flupsyFilter)
+                      ?.filter(b => !sourceBasketData.flupsyFilter || sourceBasketData.flupsyFilter === "all" || b.flupsyId?.toString() === sourceBasketData.flupsyFilter)
                       ?.length ? (
                     availableBaskets
-                      ?.filter(b => !sourceBasketData.flupsyFilter || b.flupsyId?.toString() === sourceBasketData.flupsyFilter)
+                      ?.filter(b => !sourceBasketData.flupsyFilter || sourceBasketData.flupsyFilter === "all" || b.flupsyId?.toString() === sourceBasketData.flupsyFilter)
                       .filter(b => b.state === "active" && b.cycleId)
                       // Filtra le ceste che sono già state aggiunte come origine
                       .filter(basket => {
