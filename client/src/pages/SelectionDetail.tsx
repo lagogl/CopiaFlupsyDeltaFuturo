@@ -333,7 +333,7 @@ export default function VagliaturaDetailPage() {
       });
       
       setAddSourceDialogOpen(false);
-      setSourceBasketData({ basketId: "", cycleId: null });
+      setSourceBasketData({ basketId: "", cycleId: null, flupsyFilter: sourceBasketData.flupsyFilter });
       refetchSourceBaskets();
     } catch (error) {
       console.error("Errore:", error);
