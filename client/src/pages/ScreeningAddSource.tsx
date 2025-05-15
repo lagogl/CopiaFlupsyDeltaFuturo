@@ -345,6 +345,7 @@ export default function ScreeningAddSource() {
                 onChange={(e) => setSearchTerm(e.target.value)}
                 className="max-w-md"
               />
+              </div>
               
               {/* Selezione FLUPSY */}
               <div className="flex items-center space-x-2">
