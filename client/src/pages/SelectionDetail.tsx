@@ -57,6 +57,8 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  SelectGroup,
+  SelectLabel,
 } from "@/components/ui/select";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -1472,38 +1474,54 @@ export default function VagliaturaDetailPage() {
           <div className="space-y-4 py-4">
             {/* Filtro per FLUPSY */}
             <div className="space-y-2">
-              <Label htmlFor="flupsyFilter">FLUPSY</Label>
+              <Label htmlFor="flupsyFilter" className="font-bold">Filtra per FLUPSY</Label>
               <Select
-                value={sourceBasketData.flupsyFilter || ""}
+                value={sourceBasketData.flupsyFilter || "all"}
                 onValueChange={(value) => {
+                  console.log("Filtro FLUPSY selezionato:", value);
                   setSourceBasketData({ 
                     ...sourceBasketData, 
+                    basketId: "", // Reset della selezione cestello quando cambia il filtro
+                    cycleId: null,
                     flupsyFilter: value === "all" ? "" : value 
                   });
                 }}
               >
-                <SelectTrigger id="flupsyFilter">
+                <SelectTrigger id="flupsyFilter" className="border-2 border-primary">
                   <SelectValue placeholder="Seleziona un FLUPSY" />
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tutti i FLUPSY</SelectItem>
-                  {/* Crea un elenco unico di FLUPSY */}
-                  {availableBaskets
-                    ?.map(b => ({ id: b.flupsyId, name: b.flupsyName }))
-                    .filter((flupsy, index, self) => 
-                      flupsy.id && self.findIndex(f => f.id === flupsy.id) === index)
-                    .map(flupsy => (
-                      <SelectItem key={flupsy.id} value={flupsy.id?.toString() || ""}>
-                        {flupsy.name}
-                      </SelectItem>
-                    ))
-                  }
+                  <SelectGroup>
+                    <SelectLabel>FLUPSY disponibili</SelectLabel>
+                    {/* Crea un elenco unico di FLUPSY */}
+                    {availableBaskets
+                      ?.map(b => ({ id: b.flupsyId, name: b.flupsyName }))
+                      .filter((flupsy, index, self) => 
+                        flupsy.id && flupsy.name && self.findIndex(f => f.id === flupsy.id) === index)
+                      .map(flupsy => (
+                        <SelectItem key={flupsy.id} value={flupsy.id?.toString() || ""}>
+                          {flupsy.name}
+                        </SelectItem>
+                      ))
+                    }
+                  </SelectGroup>
                 </SelectContent>
               </Select>
+              
+              {sourceBasketData.flupsyFilter && (
+                <div className="mt-1 text-sm text-blue-600">
+                  Filtro attivo: {
+                    availableBaskets
+                      ?.find(b => b.flupsyId?.toString() === sourceBasketData.flupsyFilter)
+                      ?.flupsyName || "FLUPSY selezionato"
+                  }
+                </div>
+              )}
             </div>
 
-            <div className="space-y-2">
-              <Label htmlFor="basketId">Cesta</Label>
+            <div className="space-y-2 mt-4">
+              <Label htmlFor="basketId">Cesta da aggiungere</Label>
               <Select
                 value={sourceBasketData.basketId}
                 onValueChange={(value) => {
