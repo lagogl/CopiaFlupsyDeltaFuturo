@@ -319,7 +319,7 @@ export default function Lots() {
                   className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-20"
                   onClick={() => handleSortClick('weight')}
                 >
-                  Peso (g) {sortField === 'weight' && (sortDirection === 'asc' ? '▲' : '▼')}
+                  Peso (kg) {sortField === 'weight' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
                 <th 
                   scope="col" 
