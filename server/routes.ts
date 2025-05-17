@@ -34,7 +34,7 @@ import * as LotInventoryController from "./controllers/lot-inventory-controller"
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
 import { updateBasketPosition } from "./controllers/basket-position-controller";
-import { getAvailablePositions } from "./controllers/flupsy-position-controller";
+import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
 
 // Importazione del router per le API esterne
@@ -6162,4 +6162,4 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.put("/api/baskets/:id/position", updateBasketPosition);
 
   // Endpoint per ottenere le posizioni disponibili in un flupsy
-  app.get("/api/flupsys/:id/available-positions", getAvailablePositions);
+  app.get("/api/flupsys/:id/available-positions", getFlupsyAvailablePositions);
