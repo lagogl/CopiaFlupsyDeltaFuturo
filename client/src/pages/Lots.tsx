@@ -406,7 +406,7 @@ export default function Lots() {
                         {lot.animalCount ? lot.animalCount.toLocaleString() : '-'}
                       </td>
                       <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
-                        {lot.weight ? lot.weight.toLocaleString() : '-'}
+                        {lot.weight ? (lot.weight / 1000).toLocaleString() : '-'}
                       </td>
                       <td className="px-2 py-3 whitespace-nowrap">
                         <Badge className={`text-xs ${
