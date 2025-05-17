@@ -344,6 +344,7 @@ export default function LotFormNew({
                     step="0.01"
                     min="0"
                     placeholder="Peso campione in grammi"
+                    className=""
                     value={field.value || ''}
                     onChange={(e) => {
                       // Converti in numero o null se vuoto
@@ -369,6 +370,7 @@ export default function LotFormNew({
                     type="text" 
                     placeholder="Numero di animali nel campione"
                     {...field}
+                    className=""
                     value={field.value !== null && field.value !== undefined 
                       ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
                       : ''}
