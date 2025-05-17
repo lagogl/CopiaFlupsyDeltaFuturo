@@ -370,8 +370,10 @@ export default function Lots() {
               <div className="text-sm text-gray-600">Suddivisione per Qualità</div>
               <div className="text-sm mt-1">
                 {Object.entries(filteredLots.reduce((acc, lot) => {
-                  // Usiamo il supplierLotNumber o notes come identificatore della qualità
-                  const quality = lot.supplierLotNumber || lot.notes || 'Non specificata';
+                  // Determiniamo la qualità in base al filtro che usa supplierLotNumber e notes
+                  const quality = (filterValues.quality && filterValues.quality !== '') 
+                    ? filterValues.quality 
+                    : (lot.supplierLotNumber || lot.notes || 'Non specificata');
                   if (!acc[quality]) acc[quality] = 0;
                   acc[quality] += (lot.animalCount || 0);
                   return acc;
