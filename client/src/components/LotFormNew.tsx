@@ -123,7 +123,7 @@ export default function LotFormNew({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <FormField
             control={form.control}
@@ -186,32 +186,32 @@ export default function LotFormNew({
             control={form.control}
             name="quality"
             render={({ field }) => (
-              <FormItem className="space-y-3">
+              <FormItem className="space-y-1">
                 <FormLabel>Qualità</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    className="flex flex-col space-y-1"
+                    className="flex space-x-3"
                   >
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <RadioGroupItem value="teste" id="quality-teste" />
-                      <Label htmlFor="quality-teste" className="flex items-center cursor-pointer">
-                        <span className="mr-2">Teste/Head</span>
+                      <Label htmlFor="quality-teste" className="flex items-center cursor-pointer text-sm">
+                        <span className="mr-1">Teste</span>
                         <span className="text-yellow-500">★★★</span>
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <RadioGroupItem value="normali" id="quality-normali" />
-                      <Label htmlFor="quality-normali" className="flex items-center cursor-pointer">
-                        <span className="mr-2">Normali/Normal</span>
+                      <Label htmlFor="quality-normali" className="flex items-center cursor-pointer text-sm">
+                        <span className="mr-1">Normali</span>
                         <span className="text-yellow-500">★★</span>
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-2">
+                    <div className="flex items-center space-x-1">
                       <RadioGroupItem value="code" id="quality-code" />
-                      <Label htmlFor="quality-code" className="flex items-center cursor-pointer">
-                        <span className="mr-2">Code/Codes</span>
+                      <Label htmlFor="quality-code" className="flex items-center cursor-pointer text-sm">
+                        <span className="mr-1">Code</span>
                         <span className="text-yellow-500">★</span>
                       </Label>
                     </div>
@@ -252,8 +252,9 @@ export default function LotFormNew({
           />
 
           {/* Sezione per i calcoli automatici - span su tutte le colonne */}
-          <div className="col-span-3 pt-2 mt-1 border-t">
-            <h3 className="text-sm font-medium mb-0">Calcolo automatico</h3>
+          <div className="col-span-3 pt-1 mt-1 border-t flex items-center">
+            <h3 className="text-xs font-medium mb-0 mr-2">Calcolo automatico</h3>
+            <span className="text-xs text-muted-foreground">Inserisci peso e pezzi campione per calcolare automaticamente i totali</span>
           </div>
 
           {/* Peso del campione in grammi */}
@@ -402,12 +403,12 @@ export default function LotFormNew({
           control={form.control}
           name="notes"
           render={({ field }) => (
-            <FormItem>
+            <FormItem className="col-span-3">
               <FormLabel>Note</FormLabel>
               <FormControl>
                 <Textarea 
                   placeholder="Inserisci note aggiuntive" 
-                  rows={3}
+                  rows={2}
                   {...field}
                   value={field.value || ""}
                 />
@@ -417,11 +418,11 @@ export default function LotFormNew({
           )}
         />
 
-        <div className="flex justify-end space-x-2">
-          <Button variant="outline" type="button" onClick={() => form.reset()}>
+        <div className="flex justify-end space-x-2 mt-2">
+          <Button variant="outline" type="button" onClick={() => form.reset()} size="sm">
             Annulla
           </Button>
-          <Button type="submit" disabled={isLoading}>
+          <Button type="submit" disabled={isLoading} size="sm">
             {isLoading ? "Salvataggio..." : isEditing ? "Conferma" : "Crea Lotto"}
           </Button>
         </div>
