@@ -223,21 +223,21 @@ export default function LotFormNew({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="max-w-3xl mx-auto px-4">
-        <h2 className="font-semibold text-lg mb-4">Crea Nuovo Lotto</h2>
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="mx-auto">
+        <h2 className="text-lg mb-6">Crea Nuovo Lotto</h2>
         
-        <div className="flex flex-col space-y-4">
-          {/* Prima riga: Data Arrivo, Fornitore, Numero Lotto */}
-          <div className="grid grid-cols-3 gap-4">
-            <div>
+        <div className="flex flex-col space-y-5">
+          {/* Prima riga: esattamente come nello screenshot */}
+          <div className="flex items-start">
+            <div className="w-1/3 pr-2">
               <FormField
                 control={form.control}
                 name="arrivalDate"
                 render={({ field }) => (
-                  <FormItem className="space-y-1">
-                    <FormLabel className="text-sm">Data Arrivo</FormLabel>
+                  <FormItem className="space-y-1.5">
+                    <FormLabel className="text-sm font-medium">Data Arrivo</FormLabel>
                     <FormControl>
-                      <Input type="date" {...field} className="text-sm h-9" />
+                      <Input type="date" {...field} className="text-sm h-9 w-full" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -245,15 +245,15 @@ export default function LotFormNew({
               />
             </div>
 
-            <div>
+            <div className="w-1/3 px-2">
               <FormField
                 control={form.control}
                 name="supplier"
                 render={({ field }) => (
-                  <FormItem className="space-y-1">
-                    <FormLabel className="text-sm">Fornitore</FormLabel>
+                  <FormItem className="space-y-1.5">
+                    <FormLabel className="text-sm font-medium">Fornitore</FormLabel>
                     <FormControl>
-                      <Input placeholder="Nome fornitore" {...field} className="text-sm h-9" />
+                      <Input placeholder="Nome fornitore" {...field} className="text-sm h-9 w-full" />
                     </FormControl>
                     <FormMessage />
                   </FormItem>
@@ -261,7 +261,7 @@ export default function LotFormNew({
               />
             </div>
 
-            <div>
+            <div className="w-1/3 pl-2">
               <FormField
                 control={form.control}
                 name="supplierLotNumber"
@@ -270,8 +270,8 @@ export default function LotFormNew({
                   const isZeelandSupplier = supplier === "Zeeland" || supplier === "Ecotapes Zeeland";
                   
                   return (
-                    <FormItem className="space-y-1">
-                      <FormLabel className="text-sm">
+                    <FormItem className="space-y-1.5">
+                      <FormLabel className="text-sm font-medium">
                         Numero Lotto Fornitore
                         {isZeelandSupplier && <span className="text-red-500 ml-1">*</span>}
                       </FormLabel>
@@ -280,7 +280,7 @@ export default function LotFormNew({
                           placeholder="Numero lotto" 
                           {...field} 
                           value={field.value || ""} 
-                          className="text-sm h-9"
+                          className="text-sm h-9 w-full"
                         />
                       </FormControl>
                       <FormMessage />
@@ -292,36 +292,36 @@ export default function LotFormNew({
           </div>
           
           {/* Seconda riga: Qualità */}
-          <div className="col-span-3">
+          <div>
             <FormField
               control={form.control}
               name="quality"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel className="text-sm">Qualità</FormLabel>
+                  <FormLabel className="text-sm font-medium">Qualità</FormLabel>
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
                       defaultValue={field.value}
-                      className="flex space-x-3"
+                      className="flex space-x-6 pt-1"
                     >
                       <div className="flex items-center">
-                        <RadioGroupItem value="teste" id="quality-teste" className="h-3 w-3" />
-                        <Label htmlFor="quality-teste" className="ml-1 flex items-center cursor-pointer text-xs">
+                        <RadioGroupItem value="teste" id="quality-teste" />
+                        <Label htmlFor="quality-teste" className="ml-1.5 flex items-center cursor-pointer text-sm">
                           <span>Teste</span>
                           <span className="text-yellow-500 ml-1">★★★</span>
                         </Label>
                       </div>
                       <div className="flex items-center">
-                        <RadioGroupItem value="normali" id="quality-normali" className="h-3 w-3" />
-                        <Label htmlFor="quality-normali" className="ml-1 flex items-center cursor-pointer text-xs">
+                        <RadioGroupItem value="normali" id="quality-normali" />
+                        <Label htmlFor="quality-normali" className="ml-1.5 flex items-center cursor-pointer text-sm">
                           <span>Normali</span>
                           <span className="text-yellow-500 ml-1">★★</span>
                         </Label>
                       </div>
                       <div className="flex items-center">
-                        <RadioGroupItem value="code" id="quality-code" className="h-3 w-3" />
-                        <Label htmlFor="quality-code" className="ml-1 flex items-center cursor-pointer text-xs">
+                        <RadioGroupItem value="code" id="quality-code" />
+                        <Label htmlFor="quality-code" className="ml-1.5 flex items-center cursor-pointer text-sm">
                           <span>Tails</span>
                           <span className="text-yellow-500 ml-1">★</span>
                         </Label>
@@ -334,26 +334,28 @@ export default function LotFormNew({
             />
           </div>
 
-          {/* Sezione per i calcoli automatici */}
-          <div className="col-span-3 mt-4 mb-2">
-            <div className="flex flex-row justify-between items-start">
-              <h3 className="text-sm font-medium">Calcolo automatico</h3>
-              <span className="text-xs text-muted-foreground ml-2">
-                Inserisci peso e pezzi campione per calcolare automaticamente i totali
-              </span>
+          {/* Sezione per i calcoli automatici - allineata secondo lo screenshot */}
+          <div className="flex items-start">
+            <div className="w-1/3">
+              <div className="flex flex-col space-y-2 mb-3">
+                <div className="text-sm font-medium">Calcolo automatico</div>
+                <div className="text-xs text-muted-foreground">
+                  Inserisci peso e pezzi campione per calcolare automaticamente i totali
+                </div>
+              </div>
             </div>
           </div>
           
-          {/* Layout come nell'esempio, con campi allineati */}
-          <div className="col-span-3">
-            <div className="grid grid-cols-3 gap-4 mb-4">
-              {/* Primo campo - Peso Campione */}
+          {/* Campi di input per il calcolo - allineati orizzontalmente */}
+          <div className="flex space-x-4">
+            {/* Primo campo - Peso Campione */}
+            <div className="w-1/3">
               <FormField
                 control={form.control}
                 name="sampleWeight"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">Peso Campione (g)</FormLabel>
+                  <FormItem className="space-y-1.5">
+                    <FormLabel className="text-sm font-medium">Peso Campione (g)</FormLabel>
                     <FormControl>
                       <Input 
                         type="text"
@@ -373,20 +375,22 @@ export default function LotFormNew({
                           }
                           field.onChange(numericValue);
                         }}
-                        className="text-sm h-9 bg-white"
+                        className="text-sm h-9 bg-white w-full"
                       />
                     </FormControl>
                   </FormItem>
                 )}
               />
-              
-              {/* Secondo campo - N° Animali Campione */}
+            </div>
+            
+            {/* Secondo campo - N° Animali Campione */}
+            <div className="w-1/3">
               <FormField
                 control={form.control}
                 name="sampleCount"
                 render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm">N° Animali Campione</FormLabel>
+                  <FormItem className="space-y-1.5">
+                    <FormLabel className="text-sm font-medium">N° Animali Campione</FormLabel>
                     <FormControl>
                       <Input 
                         type="text" 
@@ -399,16 +403,18 @@ export default function LotFormNew({
                           const numericValue = e.target.value.replace(/[^\d]/g, '');
                           field.onChange(numericValue ? Number(numericValue) : null);
                         }}
-                        className="text-sm h-9 bg-white"
+                        className="text-sm h-9 bg-white w-full"
                       />
                     </FormControl>
                   </FormItem>
                 )}
               />
-              
-              {/* Terzo campo - Peso Totale */}
-              <FormItem>
-                <FormLabel className="text-sm">Peso Totale (g)</FormLabel>
+            </div>
+            
+            {/* Terzo campo - Peso Totale */}
+            <div className="w-1/3">
+              <FormItem className="space-y-1.5">
+                <FormLabel className="text-sm font-medium">Peso Totale (g)</FormLabel>
                 <FormControl>
                   <Input 
                     type="text"
@@ -435,11 +441,12 @@ export default function LotFormNew({
                         form.setValue("animalCount", totalAnimals);
                       }
                     }}
-                    className="text-sm h-9 bg-white"
+                    className="text-sm h-9 bg-white w-full"
                   />
                 </FormControl>
               </FormItem>
             </div>
+          </div>
             
             {/* Riquadro verde per i campi calcolati */}
             <div className="bg-green-50 p-3 rounded-md border border-green-100 mb-4">
