@@ -204,8 +204,8 @@ export default function LotFormNew({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           <FormField
             control={form.control}
             name="arrivalDate"
@@ -333,7 +333,7 @@ export default function LotFormNew({
           />
 
           {/* Sezione per i calcoli automatici - span su tutte le colonne */}
-          <div className="col-span-2 pt-1 mt-1 border-t flex items-center">
+          <div className="col-span-3 pt-1 mt-1 border-t flex items-center">
             <h3 className="text-xs font-medium mb-0 mr-2">Calcolo automatico</h3>
             <span className="text-xs text-muted-foreground">Inserisci peso e pezzi campione per calcolare automaticamente i totali</span>
           </div>
@@ -352,7 +352,6 @@ export default function LotFormNew({
                     min="0"
                     placeholder="Peso campione in grammi"
                     value={field.value || ''}
-                    className="bg-green-50"
                     onChange={(e) => {
                       // Converti in numero o null se vuoto
                       const numericValue = e.target.value ? Number(e.target.value) : null;
@@ -417,21 +416,20 @@ export default function LotFormNew({
           />
           
           {/* Peso totale in grammi (campo custom non incluso nel form) */}
-          <div className="space-y-2">
-            <FormItem>
-              <FormLabel>Peso Totale (g)</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Peso totale in grammi"
-                  className="bg-green-50"
-                  value={totalWeightGrams || ''}
-                  onChange={(e) => {
-                    // Converti in numero o null se vuoto
-                    const numericValue = e.target.value ? Number(e.target.value) : null;
-                    setTotalWeightGrams(numericValue);
+          <FormItem>
+            <FormLabel>Peso Totale (g)</FormLabel>
+            <FormControl>
+              <Input 
+                type="number"
+                step="0.01"
+                min="0"
+                placeholder="Peso totale in grammi"
+                className="bg-green-50"
+                value={totalWeightGrams || ''}
+                onChange={(e) => {
+                  // Converti in numero o null se vuoto
+                  const numericValue = e.target.value ? Number(e.target.value) : null;
+                  setTotalWeightGrams(numericValue);
                     
                     // Calcola il numero totale di animali
                     const piecesPerKg = form.getValues("weight");
