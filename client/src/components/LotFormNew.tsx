@@ -124,7 +124,7 @@ export default function LotFormNew({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-4">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           <FormField
             control={form.control}
             name="arrivalDate"
@@ -211,7 +211,7 @@ export default function LotFormNew({
                     <div className="flex items-center space-x-1">
                       <RadioGroupItem value="code" id="quality-code" />
                       <Label htmlFor="quality-code" className="flex items-center cursor-pointer text-sm">
-                        <span className="mr-1">Code</span>
+                        <span className="mr-1">Tails</span>
                         <span className="text-yellow-500">★</span>
                       </Label>
                     </div>
@@ -252,7 +252,7 @@ export default function LotFormNew({
           />
 
           {/* Sezione per i calcoli automatici - span su tutte le colonne */}
-          <div className="col-span-3 pt-1 mt-1 border-t flex items-center">
+          <div className="col-span-2 pt-1 mt-1 border-t flex items-center">
             <h3 className="text-xs font-medium mb-0 mr-2">Calcolo automatico</h3>
             <span className="text-xs text-muted-foreground">Inserisci peso e pezzi campione per calcolare automaticamente i totali</span>
           </div>
@@ -403,7 +403,7 @@ export default function LotFormNew({
           control={form.control}
           name="notes"
           render={({ field }) => (
-            <FormItem className="col-span-3">
+            <FormItem className="col-span-2">
               <FormLabel>Note</FormLabel>
               <FormControl>
                 <Textarea 
