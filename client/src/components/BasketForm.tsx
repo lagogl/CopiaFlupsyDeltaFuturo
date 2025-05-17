@@ -123,6 +123,7 @@ export default function BasketForm({
   });
 
   // Calcola il numero di posizioni disponibili quando i dati di posizione sono disponibili
+  // e seleziona automaticamente la fila con più posizioni disponibili
   useEffect(() => {
     if (nextPositionData && nextPositionData.availablePositions) {
       const available = { DX: 0, SX: 0 };
@@ -160,8 +161,26 @@ export default function BasketForm({
       }
       
       setAvailablePositionsCount(available);
+      
+      // Auto-selezione della fila con più posizioni disponibili
+      // Solo se non stiamo modificando una cesta esistente e non è già stata selezionata una fila
+      if (!basketId && !selectedRow && selectedFlupsyId) {
+        // Determina quale fila ha più posizioni disponibili
+        if (available.DX > 0 || available.SX > 0) {
+          const rowWithMoreSpace = available.DX >= available.SX ? 'DX' : 'SX';
+          
+          // Controlla che ci siano posizioni disponibili nella fila scelta
+          const hasPositionsAvailable = nextPositionData.availablePositions[rowWithMoreSpace] !== -1;
+          
+          if (hasPositionsAvailable) {
+            // Imposta automaticamente la fila con più spazio
+            form.setValue('row', rowWithMoreSpace);
+            setSelectedRow(rowWithMoreSpace);
+          }
+        }
+      }
     }
-  }, [nextPositionData]);
+  }, [nextPositionData, basketId, selectedRow, selectedFlupsyId, form]);
 
   // NON impostiamo più un valore FLUPSY predefinito, l'utente deve selezionarlo
   // Manteniamo il caso particolare di modifica di un cestello esistente (basketId presente)
@@ -172,7 +191,7 @@ export default function BasketForm({
     }
   }, [flupsys, form, basketId, defaultValues.flupsyId]);
   
-  // Set the next available basket number when it's fetched
+  // Set the next available basket number when it's fetched (più prioritizzato)
   useEffect(() => {
     if (nextBasketNumber && nextBasketNumber.nextNumber && !basketId) {
       form.setValue('physicalNumber', nextBasketNumber.nextNumber);
@@ -295,10 +314,11 @@ export default function BasketForm({
                   setSelectedFlupsyId(numValue);
                   
                   // Reset position and row when changing FLUPSY
+                  // Non resetta i campi ma aspetta il caricamento delle posizioni disponibili
+                  // per autoselezionare la fila con più posizioni libere e la prima posizione disponibile
                   if (!basketId) {
-                    form.setValue('position', undefined);
-                    form.setValue('row', '');
-                    setSelectedRow(null);
+                    // Non resettiamo più manualmente, la selezione automatica avverrà in base ai dati
+                    // caricati dall'API tramite l'useEffect che monitora nextPositionData
                   }
                 }}
                 defaultValue={field.value?.toString() || ""}
