@@ -13,7 +13,6 @@ import {
   FormMessage,
 } from "@/components/ui/form";
 import { Input } from "@/components/ui/input";
-import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Textarea } from "@/components/ui/textarea";
 import { lotSchema } from "@shared/schema";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
@@ -204,7 +203,7 @@ export default function LotFormNew({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3 w-full">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3 w-full max-w-5xl mx-auto">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           <FormField
             control={form.control}
@@ -303,6 +302,7 @@ export default function LotFormNew({
             )}
           />
 
+          {/* Taglia (calcolata automaticamente) */}
           <FormField
             control={form.control}
             name="sizeId"
@@ -344,7 +344,6 @@ export default function LotFormNew({
                     step="0.01"
                     min="0"
                     placeholder="Peso campione in grammi"
-                    className=""
                     value={field.value || ''}
                     onChange={(e) => {
                       // Converti in numero o null se vuoto
@@ -370,7 +369,6 @@ export default function LotFormNew({
                     type="text" 
                     placeholder="Numero di animali nel campione"
                     {...field}
-                    className=""
                     value={field.value !== null && field.value !== undefined 
                       ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
                       : ''}
@@ -455,34 +453,35 @@ export default function LotFormNew({
             </FormControl>
             <FormMessage />
           </FormItem>
-        </div>
+          
+          {/* Campo notes che occupa metà della larghezza */}
+          <FormField
+            control={form.control}
+            name="notes"
+            render={({ field }) => (
+              <FormItem className="col-span-3 md:col-span-2">
+                <FormLabel>Note</FormLabel>
+                <FormControl>
+                  <Textarea 
+                    placeholder="Inserisci note aggiuntive" 
+                    rows={2}
+                    {...field}
+                    value={field.value || ""}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
 
-        <FormField
-          control={form.control}
-          name="notes"
-          render={({ field }) => (
-            <FormItem className="col-span-2">
-              <FormLabel>Note</FormLabel>
-              <FormControl>
-                <Textarea 
-                  placeholder="Inserisci note aggiuntive" 
-                  rows={2}
-                  {...field}
-                  value={field.value || ""}
-                />
-              </FormControl>
-              <FormMessage />
-            </FormItem>
-          )}
-        />
-
-        <div className="flex justify-end space-x-2 mt-2">
-          <Button variant="outline" type="button" onClick={() => form.reset()} size="sm">
-            Annulla
-          </Button>
-          <Button type="submit" disabled={isLoading} size="sm">
-            {isLoading ? "Salvataggio..." : isEditing ? "Conferma" : "Crea Lotto"}
-          </Button>
+          <div className="col-span-3 flex justify-end space-x-2 mt-2">
+            <Button variant="outline" type="button" onClick={() => form.reset()} size="sm">
+              Annulla
+            </Button>
+            <Button type="submit" disabled={isLoading} size="sm">
+              {isLoading ? "Salvataggio..." : isEditing ? "Conferma" : "Crea Lotto"}
+            </Button>
+          </div>
         </div>
       </form>
     </Form>
