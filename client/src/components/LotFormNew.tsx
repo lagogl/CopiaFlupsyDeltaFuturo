@@ -314,7 +314,7 @@ export default function LotFormNew({
                   value={field.value?.toString() || "null"}
                 >
                   <FormControl>
-                    <SelectTrigger className={suggestedSizeId !== null ? "bg-blue-50" : ""}>
+                    <SelectTrigger className={suggestedSizeId !== null ? "bg-green-50" : ""}>
                       <SelectValue placeholder="Seleziona taglia" />
                     </SelectTrigger>
                   </FormControl>
