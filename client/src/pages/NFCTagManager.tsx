@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import NFCWriter from '@/components/NFCWriter';
 import { Button } from '@/components/ui/button';
@@ -26,6 +26,7 @@ import {
   DialogDescription,
   DialogHeader,
   DialogTitle,
+  DialogFooter,
   DialogTrigger,
 } from '@/components/ui/dialog';
 import {
@@ -37,7 +38,9 @@ import {
 } from '@/components/ui/select';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
-import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon } from 'lucide-react';
+import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from '@/components/ui/form';
+import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon } from 'lucide-react';
+import { useForm } from 'react-hook-form';
 
 interface Basket {
   id: number;
@@ -56,12 +59,28 @@ interface Flupsy {
   location: string | null;
 }
 
+interface PositionFormData {
+  row: string;
+  position: string;
+}
+
 export default function NFCTagManager() {
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [searchTerm, setSearchTerm] = useState<string>('');
   const [filter, setFilter] = useState<string>('all');
   const [selectedBasketId, setSelectedBasketId] = useState<number | null>(null);
   const [isWriterOpen, setIsWriterOpen] = useState(false);
+  const [isPositionDialogOpen, setIsPositionDialogOpen] = useState(false);
+  const [selectedBasketForPosition, setSelectedBasketForPosition] = useState<Basket | null>(null);
+  
+  // Form per l'assegnazione della posizione
+  const positionForm = useForm<PositionFormData>({
+    defaultValues: {
+      row: '',
+      position: ''
+    }
+  });
   
   // Carica i cestelli
   const {
@@ -78,6 +97,53 @@ export default function NFCTagManager() {
     isLoading: flupsysLoading
   } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
+  });
+  
+  // Mutation per aggiornare la posizione di un cestello
+  const updateBasketPosition = useMutation({
+    mutationFn: async (data: { basketId: number, row: string, position: number }) => {
+      const response = await fetch(`/api/baskets/${data.basketId}/position`, {
+        method: 'PUT',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          row: data.row,
+          position: data.position
+        }),
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Si è verificato un errore durante l\'aggiornamento della posizione');
+      }
+      
+      return response.json();
+    },
+    onSuccess: () => {
+      // Invalida la cache per ricaricare i cestelli
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      
+      // Chiudi il dialog
+      setIsPositionDialogOpen(false);
+      setSelectedBasketForPosition(null);
+      
+      // Mostra una notifica di successo
+      toast({
+        title: "Posizione aggiornata",
+        description: "La posizione del cestello è stata aggiornata con successo.",
+      });
+      
+      // Reset del form
+      positionForm.reset();
+    },
+    onError: (error: Error) => {
+      toast({
+        title: "Errore",
+        description: error.message,
+        variant: "destructive",
+      });
+    }
   });
 
   // Filtra i cestelli in base alla ricerca e ai filtri
@@ -117,6 +183,52 @@ export default function NFCTagManager() {
       description: "Il tag NFC è stato programmato con successo.",
     });
   };
+  
+  // Gestisce l'apertura del dialogo per l'assegnazione della posizione
+  const handleOpenPositionDialog = (basket: Basket) => {
+    setSelectedBasketForPosition(basket);
+    setIsPositionDialogOpen(true);
+    
+    // Se la cesta ha già una posizione, imposta i valori predefiniti
+    if (basket.row) {
+      positionForm.setValue('row', basket.row);
+    }
+    if (basket.position !== null) {
+      positionForm.setValue('position', basket.position.toString());
+    }
+  };
+  
+  // Gestisce la chiusura del dialogo per l'assegnazione della posizione
+  const handleClosePositionDialog = () => {
+    setIsPositionDialogOpen(false);
+    setSelectedBasketForPosition(null);
+    positionForm.reset();
+  };
+  
+  // Gestisce il salvataggio della posizione
+  const handleSavePosition = positionForm.handleSubmit((data) => {
+    if (!selectedBasketForPosition) return;
+    
+    // Converti i valori in string e number
+    const row = data.row;
+    const position = parseInt(data.position);
+    
+    if (isNaN(position)) {
+      toast({
+        title: "Errore",
+        description: "La posizione deve essere un numero valido",
+        variant: "destructive",
+      });
+      return;
+    }
+    
+    // Esegui la mutation per aggiornare la posizione
+    updateBasketPosition.mutate({
+      basketId: selectedBasketForPosition.id,
+      row,
+      position
+    });
+  });
 
   // Trova il nome del flupsy di un cestello
   const getFlupsyName = (flupsyId: number): string => {
@@ -230,14 +342,25 @@ export default function NFCTagManager() {
                           )}
                         </TableCell>
                         <TableCell className="text-right">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleOpenWriter(basket.id)}
-                          >
-                            <TagIcon className="mr-2 h-4 w-4" />
-                            {basket.nfcData ? 'Riprogramma' : 'Programma'}
-                          </Button>
+                          <div className="flex gap-2 justify-end">
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenPositionDialog(basket)}
+                              className={basket.row && basket.position ? "bg-blue-50" : "bg-orange-50"}
+                            >
+                              <MapPinIcon className="mr-2 h-4 w-4" />
+                              {basket.row && basket.position ? 'Modifica posizione' : 'Assegna posizione'}
+                            </Button>
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => handleOpenWriter(basket.id)}
+                            >
+                              <TagIcon className="mr-2 h-4 w-4" />
+                              {basket.nfcData ? 'Riprogramma' : 'Programma'}
+                            </Button>
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))
@@ -260,6 +383,84 @@ export default function NFCTagManager() {
               onCancel={handleCloseWriter}
             />
           )}
+        </DialogContent>
+      </Dialog>
+      
+      {/* Dialog per l'assegnazione della posizione */}
+      <Dialog open={isPositionDialogOpen} onOpenChange={setIsPositionDialogOpen}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle>
+              {selectedBasketForPosition?.row && selectedBasketForPosition?.position
+                ? 'Modifica posizione del cestello'
+                : 'Assegna posizione al cestello'}
+            </DialogTitle>
+            <DialogDescription>
+              {selectedBasketForPosition && (
+                <span>
+                  Cestello #{selectedBasketForPosition.physicalNumber} - {getFlupsyName(selectedBasketForPosition.flupsyId)}
+                  {selectedBasketForPosition.state === 'active' ? ' (In uso)' : ' (Disponibile)'}
+                </span>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <Form {...positionForm}>
+            <form onSubmit={handleSavePosition} className="space-y-4">
+              <FormField
+                control={positionForm.control}
+                name="row"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Fila</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Es. SX, DX, C" 
+                        {...field} 
+                        className="uppercase"
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <FormField
+                control={positionForm.control}
+                name="position"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Posizione</FormLabel>
+                    <FormControl>
+                      <Input 
+                        placeholder="Es. 1, 2, 3"
+                        type="number"
+                        min="1"
+                        {...field} 
+                      />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+              
+              <DialogFooter className="mt-6">
+                <Button type="button" variant="outline" onClick={handleClosePositionDialog}>
+                  Annulla
+                </Button>
+                <Button type="submit" disabled={updateBasketPosition.isPending}>
+                  {updateBasketPosition.isPending ? (
+                    <>
+                      <div className="animate-spin mr-2 h-4 w-4 border-2 border-b-transparent rounded-full"></div>
+                      Salvataggio...
+                    </>
+                  ) : (
+                    'Salva posizione'
+                  )}
+                </Button>
+              </DialogFooter>
+            </form>
+          </Form>
         </DialogContent>
       </Dialog>
     </div>
