@@ -284,19 +284,11 @@ export default function Lots() {
           <Button 
             variant="outline" 
             size="sm" 
-            onClick={() => setViewMode('detailed')}
-            className={viewMode !== 'simple' ? '' : 'bg-blue-600 hover:bg-blue-700 text-white'}
+            onClick={() => setViewMode(viewMode === 'simple' ? 'detailed' : 'simple')}
+            className={viewMode === 'simple' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
           >
-            <Table2 className="h-4 w-4 mr-1" /> Vista Dettagliata
-          </Button>
-
-          <Button 
-            variant="outline" 
-            size="sm" 
-            onClick={() => setViewMode('simple')}
-            className={viewMode === 'simple' ? '' : 'bg-blue-600 hover:bg-blue-700 text-white'}
-          >
-            <Table2 className="h-4 w-4 mr-1" /> Vista Semplice
+            <Table2 className="h-4 w-4 mr-1" /> 
+            {viewMode === 'simple' ? 'Vista Dettagliata' : 'Vista Semplice'}
           </Button>
           <Button 
             variant="outline" 
@@ -364,10 +356,8 @@ export default function Lots() {
               <div className="text-sm text-gray-600">Suddivisione per Qualità</div>
               <div className="text-sm mt-1">
                 {Object.entries(filteredLots.reduce((acc, lot) => {
-                  // Determiniamo la qualità in base al filtro che usa supplierLotNumber e notes
-                  const quality = (filterValues.quality && filterValues.quality !== '') 
-                    ? filterValues.quality 
-                    : (lot.supplierLotNumber || lot.notes || 'Non specificata');
+                  // Utilizziamo il campo quality come identificatore
+                  const quality = lot.quality || 'Non specificata';
                   if (!acc[quality]) acc[quality] = 0;
                   acc[quality] += (lot.animalCount || 0);
                   return acc;
