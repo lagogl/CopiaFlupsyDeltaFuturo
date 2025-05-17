@@ -95,16 +95,7 @@ export default function LotFormNew({
     
     console.log(`Determinazione taglia per ${piecesPerKg} pezzi/kg`);
     
-    // Poiché l'API potrebbe non restituire direttamente min_animals_per_kg e max_animals_per_kg,
-    // faremo una chiamata API dedicata per ottenere questi dati
-    fetch('/api/sizes/range-info')
-      .then(response => response.json())
-      .then(data => {
-        console.log("Range info delle taglie:", data);
-      })
-      .catch(error => {
-        console.error("Errore nel recupero dei range delle taglie:", error);
-      });
+    // Non facciamo chiamate API aggiuntive, utilizziamo i dati hardcoded
     
     // Per il momento utilizziamo questa mappa hardcoded con i range corretti ottenuti dal database
     const taglieRange = [
@@ -345,86 +336,94 @@ export default function LotFormNew({
             </div>
           </div>
           
-          {/* Campi di input con sfondo bianco */}
-          <div className="col-span-3 grid grid-cols-3 gap-4 mb-4">
-            {/* Peso Campione e N° Animali Campione */}
-            <FormField
-              control={form.control}
-              name="sampleWeight"
-              render={({ field }) => (
+          {/* Griglia per allineare orizzontalmente i campi input e calcolati */}
+          <div className="col-span-3">
+            {/* Prima riga: Peso Campione, N° Animali Campione, Peso Totale */}
+            <div className="mb-6">
+              <div className="grid grid-cols-3 gap-4">
+                {/* Campi input: peso campione */}
+                <FormField
+                  control={form.control}
+                  name="sampleWeight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">Peso Campione (g)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number"
+                          step="0.01"
+                          min="0"
+                          placeholder="Peso campione"
+                          value={field.value || ''}
+                          onChange={(e) => {
+                            const numericValue = e.target.value ? Number(e.target.value) : null;
+                            field.onChange(numericValue);
+                          }}
+                          className="text-sm h-9 bg-white"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Campo input: animali campione */}
+                <FormField
+                  control={form.control}
+                  name="sampleCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm">N° Animali Campione</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text" 
+                          placeholder="N° animali"
+                          {...field}
+                          value={field.value !== null && field.value !== undefined 
+                            ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                            : ''}
+                          onChange={(e) => {
+                            const numericValue = e.target.value.replace(/[^\d]/g, '');
+                            field.onChange(numericValue ? Number(numericValue) : null);
+                          }}
+                          className="text-sm h-9 bg-white"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Campo input: peso totale */}
                 <FormItem>
-                  <FormLabel className="text-sm">Peso Campione (g)</FormLabel>
+                  <FormLabel className="text-sm">Peso Totale (g)</FormLabel>
                   <FormControl>
                     <Input 
                       type="number"
                       step="0.01"
                       min="0"
-                      placeholder="Peso campione"
-                      value={field.value || ''}
+                      placeholder="Peso totale"
+                      value={totalWeightGrams || ''}
                       onChange={(e) => {
                         const numericValue = e.target.value ? Number(e.target.value) : null;
-                        field.onChange(numericValue);
+                        setTotalWeightGrams(numericValue);
+                        
+                        const piecesPerKg = form.getValues("weight");
+                        if (numericValue && piecesPerKg) {
+                          const totalAnimals = calculateTotalAnimals(numericValue, piecesPerKg);
+                          setCalculatedTotalAnimals(totalAnimals);
+                          form.setValue("animalCount", totalAnimals);
+                        }
                       }}
                       className="text-sm h-9 bg-white"
                     />
                   </FormControl>
                 </FormItem>
-              )}
-            />
+              </div>
+            </div>
             
-            <FormField
-              control={form.control}
-              name="sampleCount"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm">N° Animali Campione</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="N° animali"
-                      {...field}
-                      value={field.value !== null && field.value !== undefined 
-                        ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                        : ''}
-                      onChange={(e) => {
-                        const numericValue = e.target.value.replace(/[^\d]/g, '');
-                        field.onChange(numericValue ? Number(numericValue) : null);
-                      }}
-                      className="text-sm h-9 bg-white"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            
-            <FormItem>
-              <FormLabel className="text-sm">Peso Totale (g)</FormLabel>
-              <FormControl>
-                <Input 
-                  type="number"
-                  step="0.01"
-                  min="0"
-                  placeholder="Peso totale"
-                  value={totalWeightGrams || ''}
-                  onChange={(e) => {
-                    const numericValue = e.target.value ? Number(e.target.value) : null;
-                    setTotalWeightGrams(numericValue);
-                    
-                    const piecesPerKg = form.getValues("weight");
-                    if (numericValue && piecesPerKg) {
-                      const totalAnimals = calculateTotalAnimals(numericValue, piecesPerKg);
-                      setCalculatedTotalAnimals(totalAnimals);
-                      form.setValue("animalCount", totalAnimals);
-                    }
-                  }}
-                  className="text-sm h-9 bg-white"
-                />
-              </FormControl>
-            </FormItem>
-            
-            {/* Riquadro colorato per i campi calcolati */}
-            <div className="col-span-3 bg-green-50 p-3 rounded-md border border-green-100">
+            {/* Riquadro per valori calcolati */}
+            <div className="bg-green-50 p-3 rounded-md border border-green-100 mb-6">
               <div className="text-xs font-medium text-green-800 mb-2">Valori calcolati automaticamente</div>
+              
               <div className="grid grid-cols-3 gap-4">
                 {/* Taglia calcolata */}
                 <FormField
