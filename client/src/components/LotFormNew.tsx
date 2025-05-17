@@ -330,7 +330,16 @@ export default function LotFormNew({
                       }
                       
                       // Converti da formato europeo (con virgola) al formato numerico JavaScript
-                      const numericValue = value ? Number(parseFloat(value.replace(',', '.')).toFixed(2)) : null;
+                      let numericValue = null;
+                      if (value) {
+                        // Limitiamo a due decimali
+                        const parts = value.split(',');
+                        if (parts.length > 1 && parts[1].length > 2) {
+                          parts[1] = parts[1].substring(0, 2);
+                          value = parts.join(',');
+                        }
+                        numericValue = Number(value.replace(',', '.'));
+                      }
                       field.onChange(numericValue);
                     }}
                   />
@@ -416,7 +425,16 @@ export default function LotFormNew({
                     }
                     
                     // Converti da formato europeo (con virgola) al formato numerico JavaScript
-                    const numericValue = value ? Number(parseFloat(value.replace(',', '.')).toFixed(2)) : null;
+                    let numericValue = null;
+                    if (value) {
+                      // Limitiamo a due decimali
+                      const parts = value.split(',');
+                      if (parts.length > 1 && parts[1].length > 2) {
+                        parts[1] = parts[1].substring(0, 2);
+                        value = parts.join(',');
+                      }
+                      numericValue = Number(value.replace(',', '.'));
+                    }
                     setTotalWeightGrams(numericValue);
                     
                     // Calcola il numero totale di animali
