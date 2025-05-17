@@ -102,7 +102,7 @@ export default function LotFormNew({
       return matchingSize.id;
     }
     
-    // Fallback: ordina le taglie per codice
+    // Ordina le taglie in base al numero di animali per kg (dal valore numerico estratto dal codice)
     const sortedSizes = [...sizes].sort((a, b) => {
       // Estrai i numeri dai codici (es. "TP-600" -> 600)
       const numA = a.code ? parseInt(a.code.replace(/\D/g, '')) : 0;
@@ -110,34 +110,43 @@ export default function LotFormNew({
       return numB - numA; // Dal più grande al più piccolo
     });
     
-    // Trova la taglia in base ai pezzi per kg usando una tolleranza del 15%
-    for (const size of sortedSizes) {
-      const sizeNumber = size.code ? parseInt(size.code.replace(/\D/g, '')) : 0;
-      if (sizeNumber > 0) {
-        const lowerBound = sizeNumber * 0.85; // -15%
-        const upperBound = sizeNumber * 1.15; // +15%
-        
-        if (piecesPerKg >= lowerBound && piecesPerKg <= upperBound) {
-          console.log(`Taglia calcolata dal codice: ${size.code} (id: ${size.id})`);
-          return size.id;
+    // Se non esiste un range esplicito nel database, usa i valori numerici nei codici delle taglie
+    if (sortedSizes.length > 0) {
+      // Trova la taglia con il valore numerico più vicino al piecesPerKg
+      let bestMatch = sortedSizes[0];
+      let minDifference = Number.MAX_VALUE;
+      
+      for (const size of sortedSizes) {
+        const sizeNumber = size.code ? parseInt(size.code.replace(/\D/g, '')) : 0;
+        if (sizeNumber > 0) {
+          const difference = Math.abs(sizeNumber - piecesPerKg);
+          
+          // Se la differenza è minore della migliore trovata finora
+          if (difference < minDifference) {
+            minDifference = difference;
+            bestMatch = size;
+          }
+          
+          // Se il valore è ESATTAMENTE uguale, restituiamo immediatamente
+          if (difference === 0) {
+            console.log(`Corrispondenza esatta per taglia: ${size.code} (id: ${size.id})`);
+            return size.id;
+          }
         }
       }
-    }
-    
-    // Se non trova corrispondenza esatta, trova la taglia più vicina
-    for (const size of sortedSizes) {
-      const sizeNumber = size.code ? parseInt(size.code.replace(/\D/g, '')) : 0;
-      if (piecesPerKg >= sizeNumber) {
-        console.log(`Taglia approssimata: ${size.code} (id: ${size.id})`);
-        return size.id;
+      
+      // Calcola una percentuale di differenza per determinare se è accettabile
+      const matchNumber = parseInt(bestMatch.code.replace(/\D/g, ''));
+      const percentDifference = Math.abs((piecesPerKg - matchNumber) / matchNumber) * 100;
+      
+      // Se la differenza è inferiore al 15%, consideralo una buona corrispondenza
+      if (percentDifference <= 15) {
+        console.log(`Buona corrispondenza per taglia: ${bestMatch.code} (id: ${bestMatch.id}), differenza: ${percentDifference.toFixed(2)}%`);
+      } else {
+        console.log(`Corrispondenza approssimata per taglia: ${bestMatch.code} (id: ${bestMatch.id}), differenza: ${percentDifference.toFixed(2)}%`);
       }
-    }
-    
-    // Se proprio non trova nulla, restituisci la taglia più piccola
-    const lastOption = sortedSizes[sortedSizes.length - 1];
-    if (lastOption) {
-      console.log(`Taglia di fallback: ${lastOption.code} (id: ${lastOption.id})`);
-      return lastOption.id;
+      
+      return bestMatch.id;
     }
     
     return null;
@@ -417,7 +426,7 @@ export default function LotFormNew({
                 step="0.01"
                 min="0"
                 placeholder="Peso totale in grammi"
-                className="bg-green-50"
+                className=""
                 value={totalWeightGrams || ''}
                 onChange={(e) => {
                   // Converti in numero o null se vuoto
