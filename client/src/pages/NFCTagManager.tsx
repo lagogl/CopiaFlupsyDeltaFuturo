@@ -250,32 +250,84 @@ export default function NFCTagManager() {
     setSelectedBasketForPosition(basket);
     setIsPositionDialogOpen(true);
     
-    // Recupera le posizioni disponibili nel flupsy
-    const positionsData = await fetchAvailablePositions(basket.flupsyId);
-    if (positionsData) {
-      setAvailablePositionsData(positionsData);
+    try {
+      // Imposta valori predefiniti di base
+      const defaultRows = ["SX", "DX", "C"];
+      const defaultPositions = {
+        "SX": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        "DX": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12],
+        "C": [1, 2, 3, 4, 5, 6]
+      };
       
-      // Se la cesta ha già una posizione, imposta i valori predefiniti
-      if (basket.row) {
-        positionForm.setValue('row', basket.row);
-        setSelectedRow(basket.row);
-      } else if (positionsData.availableRows.length > 0) {
-        // Altrimenti imposta la prima fila disponibile
-        positionForm.setValue('row', positionsData.availableRows[0]);
-        setSelectedRow(positionsData.availableRows[0]);
-      }
+      // Se il cestello ha già una posizione, usa quella
+      let initialRow = basket.row || defaultRows[0];
+      let initialPosition = basket.position?.toString() || "1";
       
-      if (basket.position !== null) {
-        positionForm.setValue('position', basket.position.toString());
-      } else if (basket.row && positionsData.availablePositions[basket.row]?.length > 0) {
-        // Imposta la prima posizione disponibile nella fila selezionata
-        positionForm.setValue('position', positionsData.availablePositions[basket.row][0].toString());
-      } else if (positionsData.availableRows.length > 0) {
-        const firstRow = positionsData.availableRows[0];
-        if (positionsData.availablePositions[firstRow]?.length > 0) {
-          positionForm.setValue('position', positionsData.availablePositions[firstRow][0].toString());
+      // Prova a recuperare le posizioni disponibili dal server
+      try {
+        const positionsData = await fetchAvailablePositions(basket.flupsyId);
+        if (positionsData && positionsData.success) {
+          console.log("Posizioni disponibili ricevute:", positionsData);
+          
+          setAvailablePositionsData(positionsData);
+          
+          // Se il server ha restituito file disponibili, aggiorna la selezione
+          if (positionsData.availableRows && positionsData.availableRows.length > 0) {
+            // Se la fila attuale del cestello è tra quelle disponibili, usala
+            if (basket.row && positionsData.availableRows.includes(basket.row)) {
+              initialRow = basket.row;
+            } else {
+              initialRow = positionsData.availableRows[0];
+            }
+          }
+          
+          // Se ci sono posizioni disponibili per la fila selezionata
+          if (positionsData.availablePositions && 
+              positionsData.availablePositions[initialRow] && 
+              positionsData.availablePositions[initialRow].length > 0) {
+            
+            // Se la posizione attuale è tra quelle disponibili, usala
+            if (basket.position && 
+                positionsData.availablePositions[initialRow].includes(basket.position)) {
+              initialPosition = basket.position.toString();
+            } else {
+              initialPosition = positionsData.availablePositions[initialRow][0].toString();
+            }
+          }
+        } else {
+          // Se la richiesta non ha avuto successo, usa valori predefiniti
+          console.warn("Risposta API non valida, utilizzo valori predefiniti");
+          setAvailablePositionsData({
+            success: true,
+            flupsyName: getFlupsyName(basket.flupsyId),
+            availableRows: defaultRows,
+            availablePositions: defaultPositions
+          });
         }
+      } catch (error) {
+        console.error("Errore durante il recupero delle posizioni:", error);
+        // In caso di errore, usa valori predefiniti
+        setAvailablePositionsData({
+          success: true,
+          flupsyName: getFlupsyName(basket.flupsyId),
+          availableRows: defaultRows,
+          availablePositions: defaultPositions
+        });
       }
+      
+      // Imposta i valori nel form
+      positionForm.setValue('row', initialRow);
+      setSelectedRow(initialRow);
+      positionForm.setValue('position', initialPosition);
+      
+      console.log(`Valori iniziali impostati: fila=${initialRow}, posizione=${initialPosition}`);
+    } catch (e) {
+      console.error("Errore durante l'apertura del dialogo:", e);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'apertura del dialogo",
+        variant: "destructive"
+      });
     }
   };
   
@@ -566,11 +618,23 @@ export default function NFCTagManager() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {selectedRow && availablePositionsData?.availablePositions[selectedRow]?.map(pos => (
-                          <SelectItem key={pos} value={pos.toString()}>
-                            Posizione {pos}
-                          </SelectItem>
-                        ))}
+                        {selectedRow && availablePositionsData && availablePositionsData.availablePositions && 
+                          availablePositionsData.availablePositions[selectedRow] && 
+                          availablePositionsData.availablePositions[selectedRow].map(pos => (
+                            <SelectItem key={pos} value={pos.toString()}>
+                              Posizione {pos}
+                            </SelectItem>
+                          ))
+                        }
+                        {(!selectedRow || !availablePositionsData || !availablePositionsData.availablePositions || 
+                          !availablePositionsData.availablePositions[selectedRow] || 
+                          availablePositionsData.availablePositions[selectedRow]?.length === 0) && (
+                          <>
+                            <SelectItem value="1">Posizione 1</SelectItem>
+                            <SelectItem value="2">Posizione 2</SelectItem>
+                            <SelectItem value="3">Posizione 3</SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
