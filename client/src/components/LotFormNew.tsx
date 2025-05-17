@@ -38,7 +38,7 @@ const formSchema = z.object({
   notes: z.string().optional().nullable(),
   state: z.string().optional(),
   // Nuovi campi per il calcolo automatico
-  sampleWeight: z.number().optional().nullable(), // Peso del campione in grammi
+  sampleWeight: z.number().multipleOf(0.01).optional().nullable(), // Peso del campione in grammi con decimali
   sampleCount: z.number().int().optional().nullable(), // Numero di animali nel campione
 });
 
