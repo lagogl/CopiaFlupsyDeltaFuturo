@@ -80,6 +80,8 @@ export default function NFCTagManager() {
   const [isWriterOpen, setIsWriterOpen] = useState(false);
   const [isPositionDialogOpen, setIsPositionDialogOpen] = useState(false);
   const [selectedBasketForPosition, setSelectedBasketForPosition] = useState<Basket | null>(null);
+  const [availablePositionsData, setAvailablePositionsData] = useState<AvailablePositions | null>(null);
+  const [selectedRow, setSelectedRow] = useState<string>("");
   
   // Form per l'assegnazione della posizione
   const positionForm = useForm<PositionFormData>({
@@ -191,17 +193,57 @@ export default function NFCTagManager() {
     });
   };
   
+  // Query per ottenere le posizioni disponibili in un flupsy
+  const fetchAvailablePositions = async (flupsyId: number) => {
+    try {
+      const response = await fetch(`/api/flupsys/${flupsyId}/available-positions`);
+      if (!response.ok) {
+        throw new Error("Errore nel recupero delle posizioni disponibili");
+      }
+      const data = await response.json();
+      return data as AvailablePositions;
+    } catch (error) {
+      console.error("Errore durante il recupero delle posizioni disponibili:", error);
+      toast({
+        title: "Errore",
+        description: "Impossibile recuperare le posizioni disponibili",
+        variant: "destructive",
+      });
+      return null;
+    }
+  };
+
   // Gestisce l'apertura del dialogo per l'assegnazione della posizione
-  const handleOpenPositionDialog = (basket: Basket) => {
+  const handleOpenPositionDialog = async (basket: Basket) => {
     setSelectedBasketForPosition(basket);
     setIsPositionDialogOpen(true);
     
-    // Se la cesta ha già una posizione, imposta i valori predefiniti
-    if (basket.row) {
-      positionForm.setValue('row', basket.row);
-    }
-    if (basket.position !== null) {
-      positionForm.setValue('position', basket.position.toString());
+    // Recupera le posizioni disponibili nel flupsy
+    const positionsData = await fetchAvailablePositions(basket.flupsyId);
+    if (positionsData) {
+      setAvailablePositionsData(positionsData);
+      
+      // Se la cesta ha già una posizione, imposta i valori predefiniti
+      if (basket.row) {
+        positionForm.setValue('row', basket.row);
+        setSelectedRow(basket.row);
+      } else if (positionsData.availableRows.length > 0) {
+        // Altrimenti imposta la prima fila disponibile
+        positionForm.setValue('row', positionsData.availableRows[0]);
+        setSelectedRow(positionsData.availableRows[0]);
+      }
+      
+      if (basket.position !== null) {
+        positionForm.setValue('position', basket.position.toString());
+      } else if (basket.row && positionsData.availablePositions[basket.row]?.length > 0) {
+        // Imposta la prima posizione disponibile nella fila selezionata
+        positionForm.setValue('position', positionsData.availablePositions[basket.row][0].toString());
+      } else if (positionsData.availableRows.length > 0) {
+        const firstRow = positionsData.availableRows[0];
+        if (positionsData.availablePositions[firstRow]?.length > 0) {
+          positionForm.setValue('position', positionsData.availablePositions[firstRow][0].toString());
+        }
+      }
     }
   };
   
@@ -209,7 +251,22 @@ export default function NFCTagManager() {
   const handleClosePositionDialog = () => {
     setIsPositionDialogOpen(false);
     setSelectedBasketForPosition(null);
+    setAvailablePositionsData(null);
+    setSelectedRow("");
     positionForm.reset();
+  };
+  
+  // Gestisce il cambio di fila
+  const handleRowChange = (row: string) => {
+    setSelectedRow(row);
+    positionForm.setValue('row', row);
+    
+    // Se ci sono posizioni disponibili in questa fila, seleziona la prima
+    if (availablePositionsData && availablePositionsData.availablePositions[row] && availablePositionsData.availablePositions[row].length > 0) {
+      positionForm.setValue('position', availablePositionsData.availablePositions[row][0].toString());
+    } else {
+      positionForm.setValue('position', '');
+    }
   };
   
   // Gestisce il salvataggio della posizione
@@ -354,7 +411,9 @@ export default function NFCTagManager() {
                               variant="outline"
                               size="sm"
                               onClick={() => handleOpenPositionDialog(basket)}
-                              className={basket.row && basket.position ? "bg-blue-50" : "bg-orange-50"}
+                              className={basket.row && basket.position 
+                                ? "bg-blue-50" 
+                                : "bg-red-600 hover:bg-red-700 text-white"}
                             >
                               <MapPinIcon className="mr-2 h-4 w-4" />
                               {basket.row && basket.position ? 'Modifica posizione' : 'Assegna posizione'}
@@ -420,13 +479,24 @@ export default function NFCTagManager() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Fila</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Es. SX, DX, C" 
-                        {...field} 
-                        className="uppercase"
-                      />
-                    </FormControl>
+                    <Select
+                      value={field.value}
+                      onValueChange={(value) => handleRowChange(value)}
+                      disabled={!availablePositionsData || availablePositionsData.availableRows.length === 0}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={availablePositionsData ? "Seleziona una fila" : "Caricamento..."} />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {availablePositionsData?.availableRows.map(row => (
+                          <SelectItem key={row} value={row}>
+                            Fila {row}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
@@ -438,14 +508,30 @@ export default function NFCTagManager() {
                 render={({ field }) => (
                   <FormItem>
                     <FormLabel>Posizione</FormLabel>
-                    <FormControl>
-                      <Input 
-                        placeholder="Es. 1, 2, 3"
-                        type="number"
-                        min="1"
-                        {...field} 
-                      />
-                    </FormControl>
+                    <Select 
+                      value={field.value} 
+                      onValueChange={field.onChange}
+                      disabled={!selectedRow || !availablePositionsData?.availablePositions[selectedRow]?.length}
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder={
+                            !selectedRow 
+                              ? "Seleziona prima una fila" 
+                              : !availablePositionsData?.availablePositions[selectedRow]?.length 
+                                ? "Nessuna posizione disponibile" 
+                                : "Seleziona una posizione"
+                          } />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {selectedRow && availablePositionsData?.availablePositions[selectedRow]?.map(pos => (
+                          <SelectItem key={pos} value={pos.toString()}>
+                            Posizione {pos}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
                     <FormMessage />
                   </FormItem>
                 )}
