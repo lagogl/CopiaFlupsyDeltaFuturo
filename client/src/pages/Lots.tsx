@@ -486,6 +486,38 @@ export default function Lots() {
                           {lot.size ? lot.size.code : '-'}
                         </Badge>
                       </td>
+                      
+                      {/* Celle inventario per vista dettagliata */}
+                      {viewMode === 'detailed' && (() => {
+                        // Trova i dati di inventario per questo lotto
+                        const inventoryData = lotInventoryData?.find(inv => inv.lotId === lot.id);
+                        
+                        return (
+                          <>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500 bg-blue-50/30">
+                              {inventoryData?.ageInDays || '-'}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500 bg-blue-50/30">
+                              {inventoryData?.initialCount?.toLocaleString() || '-'}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500 bg-blue-50/30">
+                              {inventoryData?.currentCount?.toLocaleString() || '-'}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500 bg-blue-50/30">
+                              {inventoryData?.soldCount?.toLocaleString() || '-'}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500 bg-blue-50/30">
+                              {inventoryData?.mortalityCount?.toLocaleString() || '-'}
+                            </td>
+                            <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500 bg-blue-50/30">
+                              {inventoryData?.mortalityPercentage !== undefined 
+                                ? `${inventoryData.mortalityPercentage.toFixed(2)}%` 
+                                : '-'}
+                            </td>
+                          </>
+                        );
+                      })()}
+                      
                       <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
                         {lot.animalCount ? lot.animalCount.toLocaleString() : '-'}
                       </td>

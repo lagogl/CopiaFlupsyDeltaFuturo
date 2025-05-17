@@ -190,9 +190,6 @@ export class LotInventoryService {
         state: lots.state,
         supplierLotNumber: lots.supplierLotNumber,
         sizeId: lots.sizeId,
-        speciesId: lots.speciesId,
-        code: lots.code,
-        description: lots.description,
         notes: lots.notes
       }).from(lots);
       
