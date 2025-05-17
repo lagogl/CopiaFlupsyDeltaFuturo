@@ -23,11 +23,21 @@ export default function Lots() {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
+  const [isFilterDialogOpen, setIsFilterDialogOpen] = useState(false);
   const [selectedLot, setSelectedLot] = useState<any>(null);
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'simple' | 'detailed'>('simple');
+  
+  // Filtri avanzati
+  const [filterValues, setFilterValues] = useState({
+    id: '',
+    dateFrom: '',
+    dateTo: '',
+    supplier: '',
+    quality: ''
+  });
   
   // Query lots
   const { data: lots, isLoading } = useQuery({
@@ -170,7 +180,43 @@ export default function Lots() {
       (statusFilter === 'active' && lot.state === 'active') ||
       (statusFilter === 'exhausted' && lot.state === 'exhausted');
     
-    return matchesSearch && matchesStatus;
+    // Apply advanced filters
+    // Filter by ID
+    const matchesId = filterValues.id === '' || 
+      lot.id.toString() === filterValues.id.trim();
+    
+    // Filter by supplier
+    const matchesSupplier = filterValues.supplier === '' || 
+      lot.supplier.toLowerCase().includes(filterValues.supplier.toLowerCase().trim());
+    
+    // Filter by date range
+    let matchesDateRange = true;
+    if (filterValues.dateFrom || filterValues.dateTo) {
+      const lotDate = new Date(lot.arrivalDate);
+      
+      if (filterValues.dateFrom && filterValues.dateTo) {
+        const fromDate = new Date(filterValues.dateFrom);
+        const toDate = new Date(filterValues.dateTo);
+        // Aggiungiamo un giorno alla data finale per includere anche la data selezionata
+        toDate.setDate(toDate.getDate() + 1);
+        matchesDateRange = lotDate >= fromDate && lotDate <= toDate;
+      } else if (filterValues.dateFrom) {
+        const fromDate = new Date(filterValues.dateFrom);
+        matchesDateRange = lotDate >= fromDate;
+      } else if (filterValues.dateTo) {
+        const toDate = new Date(filterValues.dateTo);
+        // Aggiungiamo un giorno alla data finale per includere anche la data selezionata
+        toDate.setDate(toDate.getDate() + 1);
+        matchesDateRange = lotDate <= toDate;
+      }
+    }
+    
+    // Filter by quality
+    const matchesQuality = filterValues.quality === '' || 
+      (lot.notes && lot.notes.toLowerCase().includes(filterValues.quality.toLowerCase().trim())) ||
+      (lot.supplierLotNumber && lot.supplierLotNumber.toLowerCase().includes(filterValues.quality.toLowerCase().trim()));
+    
+    return matchesSearch && matchesStatus && matchesId && matchesSupplier && matchesDateRange && matchesQuality;
   }).sort((a: any, b: any) => {
     // Handle special cases for certain fields
     if (sortField === 'arrivalDate') {
@@ -239,9 +285,10 @@ export default function Lots() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
-                  variant="outline" 
+                  variant={viewMode === 'simple' ? 'outline' : 'default'} 
                   size="sm" 
                   onClick={() => setViewMode(viewMode === 'simple' ? 'detailed' : 'simple')}
+                  className={viewMode === 'detailed' ? 'bg-blue-600 hover:bg-blue-700' : ''}
                 >
                   {viewMode === 'simple' ? (
                     <><Table2 className="h-4 w-4 mr-1" /> Vista Dettagliata</>
@@ -257,7 +304,11 @@ export default function Lots() {
               </TooltipContent>
             </Tooltip>
           </TooltipProvider>
-          <Button variant="outline" size="sm">
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={() => setIsFilterDialogOpen(true)}
+          >
             <Filter className="h-4 w-4 mr-1" />
             Filtra
           </Button>
@@ -300,6 +351,42 @@ export default function Lots() {
         </div>
       </div>
 
+      {/* Stats Summary */}
+      {filteredLots.length > 0 && (
+        <div className="bg-white rounded-lg shadow p-4 mb-6">
+          <h3 className="text-lg font-semibold mb-2">Riepilogo Lotti</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+            <div className="bg-blue-50 p-3 rounded-lg">
+              <div className="text-sm text-gray-600">Totale Lotti</div>
+              <div className="text-xl font-bold">{filteredLots.length}</div>
+            </div>
+            <div className="bg-green-50 p-3 rounded-lg">
+              <div className="text-sm text-gray-600">Totale Animali</div>
+              <div className="text-xl font-bold">
+                {filteredLots.reduce((total, lot) => total + (lot.animalCount || 0), 0).toLocaleString()}
+              </div>
+            </div>
+            <div className="bg-purple-50 p-3 rounded-lg">
+              <div className="text-sm text-gray-600">Suddivisione per Qualità</div>
+              <div className="text-sm mt-1">
+                {Object.entries(filteredLots.reduce((acc, lot) => {
+                  // Usiamo il supplierLotNumber o notes come identificatore della qualità
+                  const quality = lot.supplierLotNumber || lot.notes || 'Non specificata';
+                  if (!acc[quality]) acc[quality] = 0;
+                  acc[quality] += (lot.animalCount || 0);
+                  return acc;
+                }, {})).map(([quality, count], index) => (
+                  <div key={index} className="flex justify-between">
+                    <span className="font-medium truncate max-w-[150px]">{quality}:</span>
+                    <span>{(count as number).toLocaleString()}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+      
       {/* Lots Table */}
       <div className="bg-white rounded-lg shadow overflow-hidden">
         <div className="overflow-x-auto">
@@ -573,6 +660,88 @@ export default function Lots() {
       </div>
 
       {/* Create Lot Dialog */}
+      {/* Filter Dialog */}
+      <Dialog open={isFilterDialogOpen} onOpenChange={setIsFilterDialogOpen}>
+        <DialogContent className="max-w-2xl">
+          <DialogHeader>
+            <DialogTitle>Filtra lotti</DialogTitle>
+            <DialogDescription>
+              Imposta i filtri avanzati per i lotti
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-4">
+            <div className="space-y-2">
+              <label className="text-sm font-medium">ID Lotto</label>
+              <Input 
+                placeholder="Inserisci ID numerico" 
+                value={filterValues.id}
+                onChange={(e) => setFilterValues({...filterValues, id: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Fornitore</label>
+              <Input 
+                placeholder="Nome fornitore" 
+                value={filterValues.supplier}
+                onChange={(e) => setFilterValues({...filterValues, supplier: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Data da</label>
+              <Input 
+                type="date" 
+                value={filterValues.dateFrom}
+                onChange={(e) => setFilterValues({...filterValues, dateFrom: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Data a</label>
+              <Input 
+                type="date" 
+                value={filterValues.dateTo}
+                onChange={(e) => setFilterValues({...filterValues, dateTo: e.target.value})}
+              />
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Qualità</label>
+              <Input 
+                placeholder="Qualità/Descrizione" 
+                value={filterValues.quality}
+                onChange={(e) => setFilterValues({...filterValues, quality: e.target.value})}
+              />
+            </div>
+          </div>
+          
+          <DialogFooter className="mt-6">
+            <Button
+              variant="outline"
+              onClick={() => {
+                setFilterValues({
+                  id: '',
+                  dateFrom: '',
+                  dateTo: '',
+                  supplier: '',
+                  quality: ''
+                });
+              }}
+            >
+              Reimposta filtri
+            </Button>
+            <Button 
+              type="submit"
+              onClick={() => setIsFilterDialogOpen(false)}
+            >
+              Applica filtri
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
         <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
