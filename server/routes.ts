@@ -3234,6 +3234,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to create lot" });
     }
   });
+  
+  // Endpoint di amministrazione per sincronizzare la sequenza degli ID dei lotti
+  app.post("/api/admin/lots/sync-sequence", async (req, res) => {
+    try {
+      // Importa il controller per la sequenza dei lotti
+      const { synchronizeLotIdSequence } = await import('./controllers/lot-sequence-controller');
+      
+      // Sincronizza la sequenza
+      const nextId = await synchronizeLotIdSequence();
+      
+      res.json({
+        success: true,
+        message: `Sequenza ID lotti sincronizzata correttamente. Il prossimo ID sarà: ${nextId}`,
+        nextId
+      });
+    } catch (error) {
+      console.error("Errore nella sincronizzazione della sequenza:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Errore nella sincronizzazione della sequenza degli ID",
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
 
   app.patch("/api/lots/:id", async (req, res) => {
     try {
