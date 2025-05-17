@@ -310,33 +310,15 @@ export default function LotFormNew({
                 <FormLabel>Peso Campione (g)</FormLabel>
                 <FormControl>
                   <Input 
-                    type="text" 
+                    type="number"
+                    step="0.01"
+                    min="0"
                     placeholder="Peso campione in grammi"
-                    inputMode="decimal"
-                    {...field}
-                    value={field.value !== null && field.value !== undefined 
-                      ? field.value.toString().replace('.', ',') 
-                      : ''}
+                    value={field.value || ''}
+                    className="bg-blue-50"
                     onChange={(e) => {
-                      // Rimuovi tutto tranne numeri, virgole e punti
-                      let value = e.target.value.replace(/[^\d.,]/g, '');
-                      
-                      // Sostituisci punti con virgole
-                      value = value.replace(/\./g, ',');
-                      
-                      // Gestisci caso con multiple virgole
-                      const parts = value.split(',');
-                      if (parts.length > 2) {
-                        value = parts[0] + ',' + parts.slice(1).join('');
-                      }
-                      
-                      // Converti valore per il modello
-                      let numericValue = null;
-                      if (value && value !== ',') {
-                        // Converti alla notazione con punto
-                        numericValue = parseFloat(value.replace(',', '.'));
-                      }
-                      
+                      // Converti in numero o null se vuoto
+                      const numericValue = e.target.value ? Number(e.target.value) : null;
                       field.onChange(numericValue);
                     }}
                   />
@@ -403,32 +385,15 @@ export default function LotFormNew({
               <FormLabel>Peso Totale (g)</FormLabel>
               <FormControl>
                 <Input 
-                  type="text" 
+                  type="number"
+                  step="0.01"
+                  min="0"
                   placeholder="Peso totale in grammi"
-                  inputMode="decimal"
-                  value={totalWeightGrams !== null && totalWeightGrams !== undefined 
-                    ? totalWeightGrams.toString().replace('.', ',') 
-                    : ''}
+                  className="bg-blue-50"
+                  value={totalWeightGrams || ''}
                   onChange={(e) => {
-                    // Rimuovi tutto tranne numeri, virgole e punti
-                    let value = e.target.value.replace(/[^\d.,]/g, '');
-                    
-                    // Sostituisci punti con virgole
-                    value = value.replace(/\./g, ',');
-                    
-                    // Gestisci caso con multiple virgole
-                    const parts = value.split(',');
-                    if (parts.length > 2) {
-                      value = parts[0] + ',' + parts.slice(1).join('');
-                    }
-                    
-                    // Converti valore per il modello
-                    let numericValue = null;
-                    if (value && value !== ',') {
-                      // Converti alla notazione con punto
-                      numericValue = parseFloat(value.replace(',', '.'));
-                    }
-                    
+                    // Converti in numero o null se vuoto
+                    const numericValue = e.target.value ? Number(e.target.value) : null;
                     setTotalWeightGrams(numericValue);
                     
                     // Calcola il numero totale di animali
