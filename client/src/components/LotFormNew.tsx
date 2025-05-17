@@ -212,16 +212,19 @@ export default function LotFormNew({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3 w-full max-w-5xl mx-auto">
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="max-w-xl mx-auto px-4">
+        <h2 className="font-semibold text-lg mb-4">Crea Nuovo Lotto</h2>
+        
+        <div className="grid grid-cols-3 gap-4 mb-4">
+          {/* Prima riga: Data Arrivo, Fornitore, Numero Lotto */}
           <FormField
             control={form.control}
             name="arrivalDate"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Data Arrivo</FormLabel>
+                <FormLabel className="text-sm">Data Arrivo</FormLabel>
                 <FormControl>
-                  <Input type="date" {...field} />
+                  <Input type="date" {...field} className="text-sm h-9" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -233,9 +236,9 @@ export default function LotFormNew({
             name="supplier"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Fornitore</FormLabel>
+                <FormLabel className="text-sm">Fornitore</FormLabel>
                 <FormControl>
-                  <Input placeholder="Nome fornitore" {...field} />
+                  <Input placeholder="Nome fornitore" {...field} className="text-sm h-9" />
                 </FormControl>
                 <FormMessage />
               </FormItem>
@@ -251,18 +254,16 @@ export default function LotFormNew({
               
               return (
                 <FormItem>
-                  <FormLabel>
+                  <FormLabel className="text-sm">
                     Numero Lotto Fornitore
                     {isZeelandSupplier && <span className="text-red-500 ml-1">*</span>}
                   </FormLabel>
                   <FormControl>
                     <Input 
-                      placeholder={isZeelandSupplier 
-                        ? "Numero lotto obbligatorio" 
-                        : "Numero lotto del fornitore (opzionale)"
-                      } 
+                      placeholder="Numero lotto" 
                       {...field} 
                       value={field.value || ""} 
+                      className="text-sm h-9"
                     />
                   </FormControl>
                   <FormMessage />
@@ -270,35 +271,36 @@ export default function LotFormNew({
               );
             }}
           />
-
+          
+          {/* Seconda riga: Qualità, Taglia (calcolata) */}
           <FormField
             control={form.control}
             name="quality"
             render={({ field }) => (
-              <FormItem className="col-span-2">
-                <FormLabel>Qualità</FormLabel>
+              <FormItem>
+                <FormLabel className="text-sm">Qualità</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    className="grid grid-cols-3 gap-1"
+                    className="flex space-x-3"
                   >
                     <div className="flex items-center">
-                      <RadioGroupItem value="teste" id="quality-teste" className="h-3.5 w-3.5" />
+                      <RadioGroupItem value="teste" id="quality-teste" className="h-3 w-3" />
                       <Label htmlFor="quality-teste" className="ml-1 flex items-center cursor-pointer text-xs">
                         <span>Teste</span>
                         <span className="text-yellow-500 ml-1">★★★</span>
                       </Label>
                     </div>
                     <div className="flex items-center">
-                      <RadioGroupItem value="normali" id="quality-normali" className="h-3.5 w-3.5" />
+                      <RadioGroupItem value="normali" id="quality-normali" className="h-3 w-3" />
                       <Label htmlFor="quality-normali" className="ml-1 flex items-center cursor-pointer text-xs">
                         <span>Normali</span>
                         <span className="text-yellow-500 ml-1">★★</span>
                       </Label>
                     </div>
                     <div className="flex items-center">
-                      <RadioGroupItem value="code" id="quality-code" className="h-3.5 w-3.5" />
+                      <RadioGroupItem value="code" id="quality-code" className="h-3 w-3" />
                       <Label htmlFor="quality-code" className="ml-1 flex items-center cursor-pointer text-xs">
                         <span>Tails</span>
                         <span className="text-yellow-500 ml-1">★</span>
@@ -311,13 +313,12 @@ export default function LotFormNew({
             )}
           />
 
-          {/* Taglia (calcolata automaticamente) */}
           <FormField
             control={form.control}
             name="sizeId"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel>Taglia (calcolata)</FormLabel>
+              <FormItem className="col-span-2">
+                <FormLabel className="text-sm">Taglia (calcolata)</FormLabel>
                 <FormControl>
                   <Input 
                     type="text" 
@@ -326,7 +327,7 @@ export default function LotFormNew({
                       ? (sizes.find(s => s.id === field.value)?.code || "") 
                       : ''}
                     readOnly
-                    className="bg-green-50"
+                    className="bg-green-50 text-sm h-9"
                   />
                 </FormControl>
                 <FormMessage />
@@ -334,160 +335,156 @@ export default function LotFormNew({
             )}
           />
 
-          {/* Sezione per i calcoli automatici - span su tutte le colonne */}
-          <div className="col-span-3 pt-1 mt-1 border-t flex items-center">
-            <h3 className="text-xs font-medium mb-0 mr-2">Calcolo automatico</h3>
-            <span className="text-xs text-muted-foreground">Inserisci peso e pezzi campione per calcolare automaticamente i totali</span>
+          {/* Sezione per i calcoli automatici */}
+          <div className="col-span-3 mt-4 mb-2">
+            <div className="flex flex-row justify-between items-start">
+              <h3 className="text-sm font-medium">Calcolo automatico</h3>
+              <span className="text-xs text-muted-foreground ml-2">
+                Inserisci peso e pezzi campione per calcolare automaticamente i totali
+              </span>
+            </div>
           </div>
-
-          {/* Peso del campione in grammi */}
-          <FormField
-            control={form.control}
-            name="sampleWeight"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Peso Campione (g)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number"
-                    step="0.01"
-                    min="0"
-                    placeholder="Peso campione in grammi"
-                    value={field.value || ''}
-                    onChange={(e) => {
-                      // Converti in numero o null se vuoto
-                      const numericValue = e.target.value ? Number(e.target.value) : null;
-                      field.onChange(numericValue);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
           
-          {/* Numero di animali nel campione */}
-          <FormField
-            control={form.control}
-            name="sampleCount"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>N° Animali Campione</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="text" 
-                    placeholder="Numero di animali nel campione"
-                    {...field}
-                    value={field.value !== null && field.value !== undefined 
-                      ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                      : ''}
-                    onChange={(e) => {
-                      // Rimuovi tutti i caratteri non numerici
-                      const numericValue = e.target.value.replace(/[^\d]/g, '');
-                      field.onChange(numericValue ? Number(numericValue) : null);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="col-span-3 grid grid-cols-3 gap-4">
+            {/* Peso Campione e N° Animali Campione */}
+            <FormField
+              control={form.control}
+              name="sampleWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Peso Campione (g)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number"
+                      step="0.01"
+                      min="0"
+                      placeholder="Peso campione"
+                      value={field.value || ''}
+                      onChange={(e) => {
+                        const numericValue = e.target.value ? Number(e.target.value) : null;
+                        field.onChange(numericValue);
+                      }}
+                      className="text-sm h-9"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="sampleCount"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">N° Animali Campione</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="N° animali"
+                      {...field}
+                      value={field.value !== null && field.value !== undefined 
+                        ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                        : ''}
+                      onChange={(e) => {
+                        const numericValue = e.target.value.replace(/[^\d]/g, '');
+                        field.onChange(numericValue ? Number(numericValue) : null);
+                      }}
+                      className="text-sm h-9"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            <FormField
+              control={form.control}
+              name="weight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Pezzi per Kg (calcolato)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="Calcolato automaticamente"
+                      {...field}
+                      value={field.value !== null && field.value !== undefined 
+                        ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                        : ''}
+                      readOnly
+                      className="bg-green-50 text-sm h-9"
+                    />
+                  </FormControl>
+                </FormItem>
+              )}
+            />
+            
+            {/* Peso Totale e N° Animali Totali */}
+            <FormItem>
+              <FormLabel className="text-sm">Peso Totale (g)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="number"
+                  step="0.01"
+                  min="0"
+                  placeholder="Peso totale"
+                  value={totalWeightGrams || ''}
+                  onChange={(e) => {
+                    const numericValue = e.target.value ? Number(e.target.value) : null;
+                    setTotalWeightGrams(numericValue);
+                    
+                    const piecesPerKg = form.getValues("weight");
+                    if (numericValue && piecesPerKg) {
+                      const totalAnimals = calculateTotalAnimals(numericValue, piecesPerKg);
+                      setCalculatedTotalAnimals(totalAnimals);
+                      form.setValue("animalCount", totalAnimals);
+                    }
+                  }}
+                  className="text-sm h-9"
+                />
+              </FormControl>
+            </FormItem>
+            
+            <FormItem className="col-span-2">
+              <FormLabel className="text-sm">N° Animali Totali (calcolato)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="text" 
+                  placeholder="Calcolato automaticamente"
+                  value={calculatedTotalAnimals !== null 
+                    ? calculatedTotalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                    : ''}
+                  readOnly
+                  className="bg-green-50 text-sm h-9"
+                />
+              </FormControl>
+            </FormItem>
+          </div>
           
-          {/* Pezzi per Kg (calcolato automaticamente) */}
-          <FormField
-            control={form.control}
-            name="weight"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Pezzi per Kg (calcolato)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="text" 
-                    placeholder="Calcolato automaticamente"
-                    {...field}
-                    value={field.value !== null && field.value !== undefined 
-                      ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                      : ''}
-                    readOnly
-                    className="bg-green-50"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-          
-          {/* Peso totale in grammi (campo custom non incluso nel form) */}
-          <FormItem>
-            <FormLabel>Peso Totale (g)</FormLabel>
-            <FormControl>
-              <Input 
-                type="number"
-                step="0.01"
-                min="0"
-                placeholder="Peso totale in grammi"
-                className=""
-                value={totalWeightGrams || ''}
-                onChange={(e) => {
-                  // Converti in numero o null se vuoto
-                  const numericValue = e.target.value ? Number(e.target.value) : null;
-                  setTotalWeightGrams(numericValue);
-                  
-                  // Calcola il numero totale di animali
-                  const piecesPerKg = form.getValues("weight");
-                  if (numericValue && piecesPerKg) {
-                    const totalAnimals = calculateTotalAnimals(numericValue, piecesPerKg);
-                    setCalculatedTotalAnimals(totalAnimals);
-                    form.setValue("animalCount", totalAnimals);
-                  }
-                }}
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-          
-          {/* Numero totale di animali (calcolato automaticamente) */}
-          <FormItem>
-            <FormLabel>N° Animali Totali (calcolato)</FormLabel>
-            <FormControl>
-              <Input 
-                type="text" 
-                placeholder="Calcolato automaticamente"
-                value={calculatedTotalAnimals !== null 
-                  ? calculatedTotalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                  : ''}
-                readOnly
-                className="bg-green-50"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
-          
-          {/* Campo notes che occupa metà della larghezza */}
+          {/* Campo note */}
           <FormField
             control={form.control}
             name="notes"
             render={({ field }) => (
-              <FormItem className="col-span-3 md:col-span-2">
-                <FormLabel>Note</FormLabel>
+              <FormItem className="col-span-3 mt-2">
+                <FormLabel className="text-sm">Note</FormLabel>
                 <FormControl>
                   <Textarea 
                     placeholder="Inserisci note aggiuntive" 
-                    rows={2}
+                    rows={3}
                     {...field}
                     value={field.value || ""}
+                    className="text-sm"
                   />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
 
-          <div className="col-span-3 flex justify-end space-x-2 mt-2">
+          <div className="col-span-3 flex justify-end space-x-2 mt-4">
             <Button variant="outline" type="button" onClick={() => form.reset()} size="sm">
               Annulla
             </Button>
-            <Button type="submit" disabled={isLoading} size="sm">
+            <Button type="submit" disabled={isLoading} size="sm" className="bg-blue-950 text-white">
               {isLoading ? "Salvataggio..." : isEditing ? "Conferma" : "Crea Lotto"}
             </Button>
           </div>
