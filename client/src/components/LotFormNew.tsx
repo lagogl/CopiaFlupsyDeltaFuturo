@@ -278,8 +278,7 @@ export default function LotFormNew({
                       <FormControl>
                         <Input 
                           placeholder="Numero lotto" 
-                          {...field} 
-                          value={field.value || ""} 
+                          {...field}
                           className="text-sm h-9 w-full"
                         />
                       </FormControl>
@@ -365,7 +364,6 @@ export default function LotFormNew({
                         inputMode="decimal"
                         placeholder="Peso campione"
                         {...field}
-                        value={field.value || ""}
                         onChange={(e) => {
                           // Gestisci il valore vuoto come null
                           const rawValue = e.target.value;
