@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle, BarChart, ArrowUpDown, Layers, Table2 } from 'lucide-react';
+import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle, BarChart, ArrowUpDown, Layers, Table2, FileDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -275,6 +275,60 @@ export default function Lots() {
     setSelectedLot(lot);
     setIsViewDialogOpen(true);
   };
+  
+  // Funzione per esportare i dati in CSV
+  const exportToCSV = () => {
+    try {
+      // Definiamo le intestazioni
+      const headers = [
+        'ID', 'Data Arrivo', 'Fornitore', 'Numero Lotto Fornitore', 
+        'Qualità', 'Note', 'Stato', 'Numero Animali'
+      ];
+      
+      // Prepariamo i dati
+      const csvData = filteredLots.map(lot => [
+        lot.id,
+        lot.arrivalDate,
+        lot.supplier,
+        lot.supplierLotNumber || '',
+        lot.quality || '',
+        lot.notes || '',
+        lot.state,
+        lot.animalCount || 0
+      ]);
+      
+      // Aggiungiamo le intestazioni all'inizio
+      csvData.unshift(headers);
+      
+      // Convertiamo in stringhe CSV (con virgole come separatori)
+      const csvContent = csvData.map(row => row.join(',')).join('\n');
+      
+      // Creiamo un blob e un link per il download
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.setAttribute('href', url);
+      link.setAttribute('download', `lotti_export_${new Date().toISOString().split('T')[0]}.csv`);
+      link.style.visibility = 'hidden';
+      
+      // Aggiungiamo il link, clicchiamo, e rimuoviamo
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      toast({
+        title: "Esportazione completata",
+        description: "I dati sono stati esportati con successo in formato CSV",
+      });
+    } catch (error) {
+      console.error('Errore durante l\'esportazione:', error);
+      toast({
+        title: "Errore di esportazione",
+        description: "Si è verificato un errore durante l'esportazione dei dati",
+        variant: "destructive",
+      });
+    }
+  };
 
   return (
     <div>
@@ -297,6 +351,14 @@ export default function Lots() {
           >
             <Filter className="h-4 w-4 mr-1" />
             Filtra
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            onClick={exportToCSV}
+          >
+            <FileDown className="h-4 w-4 mr-1" />
+            Esporta
           </Button>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
