@@ -1,8 +1,8 @@
 import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
-import { format } from 'date-fns';
+import { format, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle, BarChart, ArrowUpDown } from 'lucide-react';
+import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle, BarChart, ArrowUpDown, Layers, Table2 } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -14,6 +14,7 @@ import { useToast } from "@/hooks/use-toast";
 import LotFormNew from '@/components/LotFormNew';
 // Nessun bisogno di importare esplicitamente il tipo
 import LotInventoryPanel from '@/components/lot-inventory/LotInventoryPanel';
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 
 export default function Lots() {
   const { toast } = useToast();
@@ -26,10 +27,28 @@ export default function Lots() {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
+  const [viewMode, setViewMode] = useState<'simple' | 'detailed'>('simple');
   
   // Query lots
   const { data: lots, isLoading } = useQuery({
     queryKey: ['/api/lots'],
+  });
+  
+  // Query inventario per tutti i lotti
+  const { data: lotInventoryData, isLoading: isLoadingInventory } = useQuery({
+    queryKey: ['/api/lot-inventory/all-summary'],
+    queryFn: async () => {
+      try {
+        const response = await fetch('/api/lot-inventory/all-summary');
+        const data = await response.json();
+        if (!data.success) throw new Error(data.message || 'Errore nel caricamento dei dati di inventario');
+        return data.inventorySummaries || [];
+      } catch (error) {
+        console.error('Errore nel caricamento dei dati di inventario:', error);
+        return [];
+      }
+    },
+    enabled: viewMode === 'detailed'
   });
 
   // Create mutation
