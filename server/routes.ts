@@ -6156,3 +6156,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   return httpServer;
 }
+
+  // === Route per gestione posizione cestelli ===
+  app.put("/api/baskets/:id/position", updateBasketPosition);
