@@ -172,7 +172,7 @@ export default function BasketForm({
     }
   }, [flupsys, form, basketId, defaultValues.flupsyId]);
   
-  // Set the next available basket number when it's fetched (più prioritizzato)
+  // Set the next available basket number when it's fetched
   useEffect(() => {
     if (nextBasketNumber && nextBasketNumber.nextNumber && !basketId) {
       form.setValue('physicalNumber', nextBasketNumber.nextNumber);
@@ -201,46 +201,20 @@ export default function BasketForm({
     }
   }, [nextPositionData, form]);
   
-  // Nuovo useEffect per gestire l'autocompletamento di fila e posizione
+  // Suggerisci automaticamente la posizione disponibile quando si seleziona una fila
   useEffect(() => {
     // Skip if we're editing an existing basket
     if (basketId) return;
     
-    if (!selectedFlupsyId || !nextPositionData || !nextPositionData.availablePositions) return;
-    
-    // Determina quale fila ha più posizioni disponibili (su cui proporre numero posizione)
-    const available = { DX: 0, SX: 0 };
-    const posPerRow = Math.floor((nextPositionData.maxPositions || 20) / 2);
-    
-    // Calcola il numero di posizioni effettivamente disponibili per ogni fila
-    if (nextPositionData.availablePositions['DX'] !== undefined && nextPositionData.availablePositions['DX'] !== -1) {
-      const occupiedPositions = nextPositionData.availablePositions['DX'] - 1;
-      available.DX = posPerRow - occupiedPositions;
-    }
-    
-    if (nextPositionData.availablePositions['SX'] !== undefined && nextPositionData.availablePositions['SX'] !== -1) {
-      const occupiedPositions = nextPositionData.availablePositions['SX'] - 1;
-      available.SX = posPerRow - occupiedPositions;
-    }
-    
-    // Determina quale fila ha più posizioni disponibili
-    if (available.DX > 0 || available.SX > 0) {
-      const rowWithMoreSpace = available.DX >= available.SX ? 'DX' : 'SX';
+    if (selectedRow && nextPositionData && nextPositionData.availablePositions) {
+      const nextPos = nextPositionData.availablePositions[selectedRow];
       
-      // Controlla se ci sono posizioni disponibili nella fila selezionata
-      if (nextPositionData.availablePositions[rowWithMoreSpace] !== -1) {
-        // Imposta automaticamente la fila con più spazio
-        form.setValue('row', rowWithMoreSpace);
-        setSelectedRow(rowWithMoreSpace);
-        
-        // Imposta automaticamente la prima posizione disponibile
-        const firstAvailablePosition = nextPositionData.availablePositions[rowWithMoreSpace];
-        if (firstAvailablePosition && firstAvailablePosition !== -1) {
-          form.setValue('position', firstAvailablePosition);
-        }
+      // Se c'è una posizione disponibile (non -1), impostala automaticamente
+      if (nextPos !== undefined && nextPos !== -1) {
+        form.setValue('position', nextPos);
       }
     }
-  }, [nextPositionData, basketId, selectedFlupsyId, form]);
+  }, [selectedRow, nextPositionData, form, basketId]);
 
   // Define custom submit handler to prevent submission if there are validation errors
   const handleSubmit = (e: React.FormEvent) => {
@@ -320,10 +294,9 @@ export default function BasketForm({
                   field.onChange(numValue);
                   setSelectedFlupsyId(numValue);
                   
-                  // Reset position and row when changing FLUPSY per essere sicuri di non avere valori precedenti
+                  // Reset position and row when changing FLUPSY
                   if (!basketId) {
-                    // Resettiamo prima per evitare errori di input controllati/non controllati
-                    form.setValue('position', 0);
+                    form.setValue('position', undefined);
                     form.setValue('row', '');
                     setSelectedRow(null);
                   }
