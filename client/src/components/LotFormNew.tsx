@@ -226,62 +226,70 @@ export default function LotFormNew({
       <form onSubmit={form.handleSubmit(handleSubmit)} className="max-w-3xl mx-auto px-4">
         <h2 className="font-semibold text-lg mb-4">Crea Nuovo Lotto</h2>
         
-        <div className="grid grid-cols-3 gap-4 mb-4">
+        <div className="flex flex-col space-y-4">
           {/* Prima riga: Data Arrivo, Fornitore, Numero Lotto */}
-          <FormField
-            control={form.control}
-            name="arrivalDate"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm">Data Arrivo</FormLabel>
-                <FormControl>
-                  <Input type="date" {...field} className="text-sm h-9" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-3 gap-4">
+            <div>
+              <FormField
+                control={form.control}
+                name="arrivalDate"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-sm">Data Arrivo</FormLabel>
+                    <FormControl>
+                      <Input type="date" {...field} className="text-sm h-9" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-          <FormField
-            control={form.control}
-            name="supplier"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm">Fornitore</FormLabel>
-                <FormControl>
-                  <Input placeholder="Nome fornitore" {...field} className="text-sm h-9" />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+            <div>
+              <FormField
+                control={form.control}
+                name="supplier"
+                render={({ field }) => (
+                  <FormItem className="space-y-1">
+                    <FormLabel className="text-sm">Fornitore</FormLabel>
+                    <FormControl>
+                      <Input placeholder="Nome fornitore" {...field} className="text-sm h-9" />
+                    </FormControl>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
 
-          <FormField
-            control={form.control}
-            name="supplierLotNumber"
-            render={({ field }) => {
-              const supplier = form.watch("supplier") || "";
-              const isZeelandSupplier = supplier === "Zeeland" || supplier === "Ecotapes Zeeland";
-              
-              return (
-                <FormItem>
-                  <FormLabel className="text-sm">
-                    Numero Lotto Fornitore
-                    {isZeelandSupplier && <span className="text-red-500 ml-1">*</span>}
-                  </FormLabel>
-                  <FormControl>
-                    <Input 
-                      placeholder="Numero lotto" 
-                      {...field} 
-                      value={field.value || ""} 
-                      className="text-sm h-9"
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              );
-            }}
-          />
+            <div>
+              <FormField
+                control={form.control}
+                name="supplierLotNumber"
+                render={({ field }) => {
+                  const supplier = form.watch("supplier") || "";
+                  const isZeelandSupplier = supplier === "Zeeland" || supplier === "Ecotapes Zeeland";
+                  
+                  return (
+                    <FormItem className="space-y-1">
+                      <FormLabel className="text-sm">
+                        Numero Lotto Fornitore
+                        {isZeelandSupplier && <span className="text-red-500 ml-1">*</span>}
+                      </FormLabel>
+                      <FormControl>
+                        <Input 
+                          placeholder="Numero lotto" 
+                          {...field} 
+                          value={field.value || ""} 
+                          className="text-sm h-9"
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  );
+                }}
+              />
+            </div>
+          </div>
           
           {/* Seconda riga: Qualità */}
           <div className="col-span-3">
@@ -348,15 +356,18 @@ export default function LotFormNew({
                     <FormLabel className="text-sm">Peso Campione (g)</FormLabel>
                     <FormControl>
                       <Input 
-                        type="number"
-                        step="any"
-                        min="0.00001"
+                        type="text"
+                        inputMode="decimal"
                         placeholder="Peso campione"
-                        value={field.value || ''}
+                        value={field.value !== null && field.value !== undefined
+                          ? (field.value < 1 && field.value > 0 ? `0${field.value.toString().replace(/^0+/, '')}` : field.value.toString())
+                          : ''}
                         onChange={(e) => {
-                          const value = e.target.value;
+                          // Accetta solo numeri e punto decimale
+                          const value = e.target.value.replace(/[^\d.]/g, '');
+                          // Controlla se il valore è valido e non negativo
                           const numericValue = value ? Number(value) : null;
-                          // Controlliamo che non sia negativo
+                          
                           if (numericValue !== null && numericValue < 0) {
                             return;
                           }
@@ -400,15 +411,18 @@ export default function LotFormNew({
                 <FormLabel className="text-sm">Peso Totale (g)</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number"
-                    step="any"
-                    min="0.00001"
+                    type="text"
+                    inputMode="decimal"
                     placeholder="Peso totale"
-                    value={totalWeightGrams || ''}
+                    value={totalWeightGrams !== null && totalWeightGrams !== undefined 
+                      ? (totalWeightGrams < 1 && totalWeightGrams > 0 ? `0${totalWeightGrams.toString().replace(/^0+/, '')}` : totalWeightGrams.toString())
+                      : ''}
                     onChange={(e) => {
-                      const value = e.target.value;
+                      // Accetta solo numeri e punto decimale
+                      const value = e.target.value.replace(/[^\d.]/g, '');
+                      // Controlla se il valore è valido e non negativo
                       const numericValue = value ? Number(value) : null;
-                      // Controlliamo che non sia negativo
+                      
                       if (numericValue !== null && numericValue < 0) {
                         return;
                       }
