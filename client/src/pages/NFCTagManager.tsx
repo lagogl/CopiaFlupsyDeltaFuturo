@@ -370,6 +370,14 @@ export default function NFCTagManager() {
       return;
     }
     
+    // Nascondi l'eventuale messaggio di errore che potrebbe essere visualizzato
+    const errorElement = document.querySelector('.error-message-position');
+    if (errorElement) {
+      errorElement.classList.add('hidden');
+    }
+    
+    console.log(`Salvataggio posizione: cestello=${selectedBasketForPosition.id}, fila=${row}, posizione=${position}`);
+    
     // Esegui la mutation per aggiornare la posizione
     updateBasketPosition.mutate({
       basketId: selectedBasketForPosition.id,
