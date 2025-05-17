@@ -353,7 +353,7 @@ export default function LotFormNew({
               <FormField
                 control={form.control}
                 name="sampleWeight"
-                render={({ field }) => (
+                render={({ field: { onChange, value, ...restField } }) => (
                   <FormItem className="space-y-1.5">
                     <FormLabel className="text-sm font-medium">Peso Campione (g)</FormLabel>
                     <FormControl>
@@ -361,29 +361,33 @@ export default function LotFormNew({
                         type="text"
                         inputMode="decimal"
                         placeholder="Peso campione"
-                        value={field.value !== null && field.value !== undefined
-                          ? (field.value < 1 && field.value > 0 ? `0${field.value.toString().replace(/^0+/, '')}` : field.value.toString())
+                        value={value !== null && value !== undefined
+                          ? (value < 1 && value > 0 ? `0${value.toString().replace(/^0+/, '')}` : value.toString())
                           : ''}
                         onChange={(e) => {
                           // Accetta solo numeri e punto decimale, sostituisce virgola con punto
-                          const value = e.target.value.replace(/,/g, '.').replace(/[^\d.]/g, '');
+                          let inputValue = e.target.value.replace(/,/g, '.');
                           
                           // Assicura che ci sia un solo punto decimale
-                          const decimalCount = (value.match(/\./g) || []).length;
-                          let sanitizedValue = value;
-                          if (decimalCount > 1) {
-                            const parts = value.split('.');
-                            sanitizedValue = parts[0] + '.' + parts.slice(1).join('');
+                          const parts = inputValue.split('.');
+                          if (parts.length > 2) {
+                            inputValue = parts[0] + '.' + parts.slice(1).join('');
                           }
                           
-                          // Controlla se il valore è valido e non negativo
-                          const numericValue = sanitizedValue ? parseFloat(sanitizedValue) : null;
+                          // Rimuove tutti i caratteri non numerici eccetto il punto decimale
+                          inputValue = inputValue.replace(/[^\d.]/g, '');
                           
-                          if (numericValue !== null && numericValue < 0) {
-                            return;
+                          // Se il valore è un numero valido, passalo al campo
+                          if (inputValue === '' || inputValue === '.') {
+                            onChange(null);
+                          } else {
+                            const numValue = parseFloat(inputValue);
+                            if (!isNaN(numValue) && numValue >= 0) {
+                              onChange(numValue);
+                            }
                           }
-                          field.onChange(numericValue);
                         }}
+                        {...restField}
                         className="text-sm h-9 bg-white w-full"
                       />
                     </FormControl>
