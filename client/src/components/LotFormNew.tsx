@@ -356,33 +356,23 @@ export default function LotFormNew({
                     <FormLabel className="text-sm font-medium">Peso Campione (g)</FormLabel>
                     <FormControl>
                       <Input 
-                        type="text" 
+                        type="number" 
+                        step="0.01"
+                        min="0"
                         inputMode="decimal"
                         placeholder="Peso campione"
-                        value={field.value !== null && field.value !== undefined 
-                          ? (field.value < 1 && field.value > 0 
-                            ? `0${field.value.toString().replace(/^0+/, '')}` 
-                            : field.value.toString()) 
-                          : ""}
+                        {...field}
+                        value={field.value || ""}
                         onChange={(e) => {
                           // Gestisci il valore vuoto come null
-                          const rawValue = e.target.value.replace(/,/g, '.');
+                          const rawValue = e.target.value;
                           if (!rawValue) {
                             field.onChange(null);
                             return;
                           }
                           
-                          // Rimuovi caratteri non numerici eccetto il punto decimale
-                          const cleanValue = rawValue.replace(/[^\d.]/g, '');
-                          
-                          // Assicurati che ci sia un solo punto decimale
-                          const parts = cleanValue.split('.');
-                          const sanitizedValue = parts.length > 2 
-                            ? `${parts[0]}.${parts.slice(1).join('')}` 
-                            : cleanValue;
-                          
                           // Converte il valore in numero
-                          const numValue = parseFloat(sanitizedValue);
+                          const numValue = parseFloat(rawValue);
                           if (!isNaN(numValue) && numValue >= 0) {
                             field.onChange(numValue);
                           }
