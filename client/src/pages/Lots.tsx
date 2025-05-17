@@ -606,13 +606,7 @@ export default function Lots() {
                     <Button variant="outline" onClick={() => setIsViewDialogOpen(false)}>
                       Chiudi
                     </Button>
-                    <Button onClick={() => {
-                      setIsViewDialogOpen(false);
-                      handleEditLot(selectedLot);
-                    }}>
-                      <Edit className="h-4 w-4 mr-2" />
-                      Modifica
-                    </Button>
+                    {/* Il pulsante di modifica è stato rimosso come richiesto */}
                   </div>
                 </div>
               </TabsContent>
