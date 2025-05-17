@@ -235,6 +235,28 @@ export default function Lots() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-condensed font-bold text-gray-800">Gestione Lotti</h2>
         <div className="flex space-x-3">
+          <TooltipProvider>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  onClick={() => setViewMode(viewMode === 'simple' ? 'detailed' : 'simple')}
+                >
+                  {viewMode === 'simple' ? (
+                    <><Table2 className="h-4 w-4 mr-1" /> Vista Dettagliata</>
+                  ) : (
+                    <><Table2 className="h-4 w-4 mr-1" /> Vista Semplice</>
+                  )}
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                {viewMode === 'simple' 
+                  ? 'Mostra dettagli inventario e statistiche' 
+                  : 'Torna alla vista semplice'}
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
           <Button variant="outline" size="sm">
             <Filter className="h-4 w-4 mr-1" />
             Filtra
@@ -326,6 +348,49 @@ export default function Lots() {
                 >
                   Taglia {sortField === 'size' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
+                
+                {/* Colonne inventario per vista dettagliata */}
+                {viewMode === 'detailed' && (
+                  <>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer bg-blue-50"
+                    >
+                      Età (giorni)
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer bg-blue-50"
+                    >
+                      Q.tà Iniziale
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer bg-blue-50"
+                    >
+                      Q.tà Attuale
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer bg-blue-50"
+                    >
+                      Venduti
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer bg-blue-50"
+                    >
+                      Mortalità
+                    </th>
+                    <th 
+                      scope="col" 
+                      className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer bg-blue-50"
+                    >
+                      % Mortalità
+                    </th>
+                  </>
+                )}
+                
                 <th 
                   scope="col" 
                   className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
