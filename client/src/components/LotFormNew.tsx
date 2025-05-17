@@ -274,68 +274,48 @@ export default function LotFormNew({
             }}
           />
           
-          {/* Seconda riga: Qualità, Taglia (calcolata) */}
-          <FormField
-            control={form.control}
-            name="quality"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm">Qualità</FormLabel>
-                <FormControl>
-                  <RadioGroup
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                    className="flex space-x-3"
-                  >
-                    <div className="flex items-center">
-                      <RadioGroupItem value="teste" id="quality-teste" className="h-3 w-3" />
-                      <Label htmlFor="quality-teste" className="ml-1 flex items-center cursor-pointer text-xs">
-                        <span>Teste</span>
-                        <span className="text-yellow-500 ml-1">★★★</span>
-                      </Label>
-                    </div>
-                    <div className="flex items-center">
-                      <RadioGroupItem value="normali" id="quality-normali" className="h-3 w-3" />
-                      <Label htmlFor="quality-normali" className="ml-1 flex items-center cursor-pointer text-xs">
-                        <span>Normali</span>
-                        <span className="text-yellow-500 ml-1">★★</span>
-                      </Label>
-                    </div>
-                    <div className="flex items-center">
-                      <RadioGroupItem value="code" id="quality-code" className="h-3 w-3" />
-                      <Label htmlFor="quality-code" className="ml-1 flex items-center cursor-pointer text-xs">
-                        <span>Tails</span>
-                        <span className="text-yellow-500 ml-1">★</span>
-                      </Label>
-                    </div>
-                  </RadioGroup>
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="sizeId"
-            render={({ field }) => (
-              <FormItem className="col-span-2">
-                <FormLabel className="text-sm">Taglia (calcolata)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="text" 
-                    placeholder="Calcolata automaticamente"
-                    value={field.value !== null && field.value !== undefined 
-                      ? (sizes.find(s => s.id === field.value)?.code || "") 
-                      : ''}
-                    readOnly
-                    className="bg-green-50 text-sm h-9"
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          {/* Seconda riga: Qualità */}
+          <div className="col-span-3">
+            <FormField
+              control={form.control}
+              name="quality"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-sm">Qualità</FormLabel>
+                  <FormControl>
+                    <RadioGroup
+                      onValueChange={field.onChange}
+                      defaultValue={field.value}
+                      className="flex space-x-3"
+                    >
+                      <div className="flex items-center">
+                        <RadioGroupItem value="teste" id="quality-teste" className="h-3 w-3" />
+                        <Label htmlFor="quality-teste" className="ml-1 flex items-center cursor-pointer text-xs">
+                          <span>Teste</span>
+                          <span className="text-yellow-500 ml-1">★★★</span>
+                        </Label>
+                      </div>
+                      <div className="flex items-center">
+                        <RadioGroupItem value="normali" id="quality-normali" className="h-3 w-3" />
+                        <Label htmlFor="quality-normali" className="ml-1 flex items-center cursor-pointer text-xs">
+                          <span>Normali</span>
+                          <span className="text-yellow-500 ml-1">★★</span>
+                        </Label>
+                      </div>
+                      <div className="flex items-center">
+                        <RadioGroupItem value="code" id="quality-code" className="h-3 w-3" />
+                        <Label htmlFor="quality-code" className="ml-1 flex items-center cursor-pointer text-xs">
+                          <span>Tails</span>
+                          <span className="text-yellow-500 ml-1">★</span>
+                        </Label>
+                      </div>
+                    </RadioGroup>
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
 
           {/* Sezione per i calcoli automatici */}
           <div className="col-span-3 mt-4 mb-2">
@@ -347,7 +327,8 @@ export default function LotFormNew({
             </div>
           </div>
           
-          <div className="col-span-3 grid grid-cols-3 gap-4">
+          {/* Campi di input con sfondo bianco */}
+          <div className="col-span-3 grid grid-cols-3 gap-4 mb-4">
             {/* Peso Campione e N° Animali Campione */}
             <FormField
               control={form.control}
@@ -366,7 +347,7 @@ export default function LotFormNew({
                         const numericValue = e.target.value ? Number(e.target.value) : null;
                         field.onChange(numericValue);
                       }}
-                      className="text-sm h-9"
+                      className="text-sm h-9 bg-white"
                     />
                   </FormControl>
                 </FormItem>
@@ -391,36 +372,13 @@ export default function LotFormNew({
                         const numericValue = e.target.value.replace(/[^\d]/g, '');
                         field.onChange(numericValue ? Number(numericValue) : null);
                       }}
-                      className="text-sm h-9"
+                      className="text-sm h-9 bg-white"
                     />
                   </FormControl>
                 </FormItem>
               )}
             />
             
-            <FormField
-              control={form.control}
-              name="weight"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-sm">Pezzi per Kg (calcolato)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="Calcolato automaticamente"
-                      {...field}
-                      value={field.value !== null && field.value !== undefined 
-                        ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                        : ''}
-                      readOnly
-                      className="bg-green-50 text-sm h-9"
-                    />
-                  </FormControl>
-                </FormItem>
-              )}
-            />
-            
-            {/* Peso Totale e N° Animali Totali */}
             <FormItem>
               <FormLabel className="text-sm">Peso Totale (g)</FormLabel>
               <FormControl>
@@ -441,25 +399,77 @@ export default function LotFormNew({
                       form.setValue("animalCount", totalAnimals);
                     }
                   }}
-                  className="text-sm h-9"
+                  className="text-sm h-9 bg-white"
                 />
               </FormControl>
             </FormItem>
             
-            <FormItem className="col-span-2">
-              <FormLabel className="text-sm">N° Animali Totali (calcolato)</FormLabel>
-              <FormControl>
-                <Input 
-                  type="text" 
-                  placeholder="Calcolato automaticamente"
-                  value={calculatedTotalAnimals !== null 
-                    ? calculatedTotalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                    : ''}
-                  readOnly
-                  className="bg-green-50 text-sm h-9"
+            {/* Riquadro colorato per i campi calcolati */}
+            <div className="col-span-3 bg-green-50 p-3 rounded-md border border-green-100">
+              <div className="text-xs font-medium text-green-800 mb-2">Valori calcolati automaticamente</div>
+              <div className="grid grid-cols-3 gap-4">
+                {/* Taglia calcolata */}
+                <FormField
+                  control={form.control}
+                  name="sizeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm text-green-800">Taglia (calcolata)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text" 
+                          placeholder="Calcolata automaticamente"
+                          value={field.value !== null && field.value !== undefined 
+                            ? (sizes.find(s => s.id === field.value)?.code || "") 
+                            : ''}
+                          readOnly
+                          className="bg-white text-sm h-9 border-green-200"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
                 />
-              </FormControl>
-            </FormItem>
+                
+                {/* Pezzi per kg calcolati */}
+                <FormField
+                  control={form.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm text-green-800">Pezzi per Kg</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text" 
+                          placeholder="Calcolato automaticamente"
+                          {...field}
+                          value={field.value !== null && field.value !== undefined 
+                            ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                            : ''}
+                          readOnly
+                          className="bg-white text-sm h-9 border-green-200"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Animali totali calcolati */}
+                <FormItem>
+                  <FormLabel className="text-sm text-green-800">N° Animali Totali</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="Calcolato automaticamente"
+                      value={calculatedTotalAnimals !== null 
+                        ? calculatedTotalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                        : ''}
+                      readOnly
+                      className="bg-white text-sm h-9 border-green-200"
+                    />
+                  </FormControl>
+                </FormItem>
+              </div>
+            </div>
           </div>
           
           {/* Campo note */}
