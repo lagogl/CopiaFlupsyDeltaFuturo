@@ -260,11 +260,6 @@ export default function LotFormNew({
             </div>
 
             <div>
-              <div className="h-7 flex items-center">
-                <FormLabel className="text-sm font-medium block">
-                  Numero Lotto Fornitore
-                </FormLabel>
-              </div>
               <FormField
                 control={form.control}
                 name="supplierLotNumber"
@@ -274,6 +269,7 @@ export default function LotFormNew({
                   
                   return (
                     <FormItem>
+                      <FormLabel className="text-sm font-medium block mb-2">Numero Lotto Fornitore</FormLabel>
                       <FormControl>
                         <Input 
                           placeholder="Numero lotto" 
