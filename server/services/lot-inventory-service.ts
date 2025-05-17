@@ -182,8 +182,19 @@ export class LotInventoryService {
    */
   async getAllLotsSummary() {
     try {
-      // 1. Ottieni tutti i lotti attivi
-      const allLots = await db.select().from(lots);
+      // 1. Ottieni tutti i lotti attivi con informazioni sulle taglie
+      const allLots = await db.select({
+        id: lots.id,
+        supplier: lots.supplier,
+        arrivalDate: lots.arrivalDate,
+        state: lots.state,
+        supplierLotNumber: lots.supplierLotNumber,
+        sizeId: lots.sizeId,
+        speciesId: lots.speciesId,
+        code: lots.code,
+        description: lots.description,
+        notes: lots.notes
+      }).from(lots);
       
       if (!allLots || allLots.length === 0) {
         return [];
@@ -202,6 +213,11 @@ export class LotInventoryService {
             arrivalDate: lot.arrivalDate,
             state: lot.state,
             supplierLotNumber: lot.supplierLotNumber,
+            sizeId: lot.sizeId,
+            speciesId: lot.speciesId,
+            code: lot.code,
+            description: lot.description,
+            notes: lot.notes,
             ...inventorySummary
           });
         } catch (error) {

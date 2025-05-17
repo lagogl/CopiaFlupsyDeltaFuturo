@@ -6115,6 +6115,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Ottiene tutte le transazioni di inventario per un lotto
   app.get('/api/lot-inventory/:lotId/transactions', LotInventoryController.getLotTransactions);
   
+  // Ottiene il riepilogo dell'inventario per tutti i lotti
+  app.get('/api/lot-inventory/all-summary', LotInventoryController.getAllLotsSummary);
+  
   // === Eco-Impact Routes ===
   const ecoImpactController = new EcoImpactController();
   

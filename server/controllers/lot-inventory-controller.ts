@@ -91,7 +91,7 @@ export async function getAllLotsSummary(req: Request, res: Response) {
     // Mappa dei lotti arricchiti con le informazioni della taglia
     const enrichedSummaries = inventorySummaries.map(summary => {
       // Cerca la taglia per questo lotto
-      const size = allSizes.find(s => s.id === summary.sizeId);
+      const size = summary.sizeId ? allSizes.find(s => s.id === summary.sizeId) : null;
       
       // Calcola l'età del lotto in giorni
       const arrivalDate = summary.arrivalDate ? new Date(summary.arrivalDate) : null;
