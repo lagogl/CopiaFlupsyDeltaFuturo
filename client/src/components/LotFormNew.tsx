@@ -38,7 +38,7 @@ const formSchema = z.object({
   notes: z.string().optional().nullable(),
   state: z.string().optional(),
   // Nuovi campi per il calcolo automatico
-  sampleWeight: z.number().multipleOf(0.01).optional().nullable(), // Peso del campione in grammi con decimali
+  sampleWeight: z.number().multipleOf(0.01).min(0).max(999999999.99).optional().nullable(), // Peso del campione in grammi con 2 decimali
   sampleCount: z.number().int().optional().nullable(), // Numero di animali nel campione
 });
 
@@ -330,7 +330,7 @@ export default function LotFormNew({
                       }
                       
                       // Converti da formato europeo (con virgola) al formato numerico JavaScript
-                      const numericValue = value ? parseFloat(value.replace(',', '.')) : null;
+                      const numericValue = value ? Number(parseFloat(value.replace(',', '.')).toFixed(2)) : null;
                       field.onChange(numericValue);
                     }}
                   />
@@ -416,7 +416,7 @@ export default function LotFormNew({
                     }
                     
                     // Converti da formato europeo (con virgola) al formato numerico JavaScript
-                    const numericValue = value ? parseFloat(value.replace(',', '.')) : null;
+                    const numericValue = value ? Number(parseFloat(value.replace(',', '.')).toFixed(2)) : null;
                     setTotalWeightGrams(numericValue);
                     
                     // Calcola il numero totale di animali
