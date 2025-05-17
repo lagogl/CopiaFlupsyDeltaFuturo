@@ -223,7 +223,7 @@ export default function LotFormNew({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="max-w-xl mx-auto px-4">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="max-w-3xl mx-auto px-4">
         <h2 className="font-semibold text-lg mb-4">Crea Nuovo Lotto</h2>
         
         <div className="grid grid-cols-3 gap-4 mb-4">
