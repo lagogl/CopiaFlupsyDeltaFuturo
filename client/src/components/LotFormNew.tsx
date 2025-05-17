@@ -89,67 +89,69 @@ export default function LotFormNew({
   const determineSizeId = (piecesPerKg: number): number | null => {
     if (!sizes || sizes.length === 0 || !piecesPerKg) return null;
     
-    // Verifica prima se esiste una taglia che ha i range esplicitamente definiti
-    const matchingSize = sizes.find(size => 
+    // Stampa tutte le taglie disponibili per debug
+    console.log("Taglie disponibili nel database:", sizes.map(s => `${s.code} (min: ${s.minAnimalsPerKg}, max: ${s.maxAnimalsPerKg})`));
+    console.log(`Cercando taglia per ${piecesPerKg} pezzi per kg`);
+    
+    // Cerca prima taglie con range espliciti nel database
+    const sizesWithRange = sizes.filter(size => 
       size.minAnimalsPerKg !== undefined && 
-      size.maxAnimalsPerKg !== undefined && 
-      piecesPerKg >= size.minAnimalsPerKg && 
-      piecesPerKg <= size.maxAnimalsPerKg
+      size.maxAnimalsPerKg !== undefined
     );
     
-    if (matchingSize) {
-      console.log(`Taglia calcolata dai range del database: ${matchingSize.code} (id: ${matchingSize.id})`);
-      return matchingSize.id;
+    if (sizesWithRange.length > 0) {
+      // Trova la taglia che contiene il valore nel suo range
+      const matchingSize = sizesWithRange.find(size => 
+        piecesPerKg >= size.minAnimalsPerKg! && 
+        piecesPerKg <= size.maxAnimalsPerKg!
+      );
+      
+      if (matchingSize) {
+        console.log(`Taglia trovata nei range del database: ${matchingSize.code} (id: ${matchingSize.id}, range: ${matchingSize.minAnimalsPerKg}-${matchingSize.maxAnimalsPerKg})`);
+        return matchingSize.id;
+      }
     }
     
-    // Ordina le taglie in base al numero di animali per kg (dal valore numerico estratto dal codice)
-    const sortedSizes = [...sizes].sort((a, b) => {
-      // Estrai i numeri dai codici (es. "TP-600" -> 600)
-      const numA = a.code ? parseInt(a.code.replace(/\D/g, '')) : 0;
-      const numB = b.code ? parseInt(b.code.replace(/\D/g, '')) : 0;
-      return numB - numA; // Dal più grande al più piccolo
-    });
+    // Se non trova in range espliciti, estrarre il numero dalla taglia
+    // Ordinare le taglie per valore numerico (in ordine decrescente)
+    const taglieNumerate = sizes
+      .map(size => {
+        const match = size.code.match(/\d+/);
+        return {
+          ...size,
+          numericValue: match ? parseInt(match[0]) : 0
+        };
+      })
+      .filter(size => size.numericValue > 0)
+      .sort((a, b) => b.numericValue - a.numericValue);
     
-    // Se non esiste un range esplicito nel database, usa i valori numerici nei codici delle taglie
-    if (sortedSizes.length > 0) {
-      // Trova la taglia con il valore numerico più vicino al piecesPerKg
-      let bestMatch = sortedSizes[0];
-      let minDifference = Number.MAX_VALUE;
-      
-      for (const size of sortedSizes) {
-        const sizeNumber = size.code ? parseInt(size.code.replace(/\D/g, '')) : 0;
-        if (sizeNumber > 0) {
-          const difference = Math.abs(sizeNumber - piecesPerKg);
-          
-          // Se la differenza è minore della migliore trovata finora
-          if (difference < minDifference) {
-            minDifference = difference;
-            bestMatch = size;
-          }
-          
-          // Se il valore è ESATTAMENTE uguale, restituiamo immediatamente
-          if (difference === 0) {
-            console.log(`Corrispondenza esatta per taglia: ${size.code} (id: ${size.id})`);
-            return size.id;
-          }
-        }
-      }
-      
-      // Calcola una percentuale di differenza per determinare se è accettabile
-      const matchNumber = parseInt(bestMatch.code.replace(/\D/g, ''));
-      const percentDifference = Math.abs((piecesPerKg - matchNumber) / matchNumber) * 100;
-      
-      // Se la differenza è inferiore al 15%, consideralo una buona corrispondenza
-      if (percentDifference <= 15) {
-        console.log(`Buona corrispondenza per taglia: ${bestMatch.code} (id: ${bestMatch.id}), differenza: ${percentDifference.toFixed(2)}%`);
-      } else {
-        console.log(`Corrispondenza approssimata per taglia: ${bestMatch.code} (id: ${bestMatch.id}), differenza: ${percentDifference.toFixed(2)}%`);
-      }
-      
-      return bestMatch.id;
+    console.log("Taglie ordinate:", taglieNumerate.map(s => `${s.code} (${s.numericValue})`));
+    
+    // Caso 1: Trova la taglia che ha un valore numerico esattamente uguale
+    const exactMatch = taglieNumerate.find(size => size.numericValue === piecesPerKg);
+    if (exactMatch) {
+      console.log(`Corrispondenza esatta: ${exactMatch.code} (id: ${exactMatch.id})`);
+      return exactMatch.id;
     }
     
-    return null;
+    // Caso 2: Trova la taglia con valore numerico immediatamente inferiore a piecesPerKg
+    // Questo perché la taglia rappresenta il numero massimo di pezzi per kg
+    for (let i = 0; i < taglieNumerate.length; i++) {
+      if (taglieNumerate[i].numericValue <= piecesPerKg) {
+        console.log(`Taglia selezionata (prossima inferiore): ${taglieNumerate[i].code} (id: ${taglieNumerate[i].id}, valore: ${taglieNumerate[i].numericValue})`);
+        return taglieNumerate[i].id;
+      }
+    }
+    
+    // Caso 3: Se il valore è più grande di tutte le taglie, usa la taglia con il valore più alto
+    if (taglieNumerate.length > 0) {
+      console.log(`Valore troppo alto, usando taglia più grande: ${taglieNumerate[0].code} (id: ${taglieNumerate[0].id})`);
+      return taglieNumerate[0].id;
+    }
+    
+    // Caso 4: Fallback - usa la prima taglia disponibile
+    console.log("Nessuna taglia adatta trovata, usando fallback");
+    return sizes[0]?.id || null;
   };
   
   // Monitorare i cambiamenti nei campi e aggiornare i calcoli
