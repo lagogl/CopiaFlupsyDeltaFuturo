@@ -216,6 +216,12 @@ export default function LotFormNew({
     if (calculatedTotalAnimals !== null) {
       data.animalCount = calculatedTotalAnimals;
     }
+    
+    // Importante: aggiorna il campo weight con il peso totale in grammi
+    if (totalWeightGrams !== null) {
+      data.weight = totalWeightGrams;
+    }
+    
     onSubmit(data);
   };
 
