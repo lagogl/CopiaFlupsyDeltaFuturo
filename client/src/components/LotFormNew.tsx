@@ -124,7 +124,7 @@ export default function LotFormNew({
   return (
     <Form {...form}>
       <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
           <FormField
             control={form.control}
             name="arrivalDate"
@@ -251,12 +251,9 @@ export default function LotFormNew({
             )}
           />
 
-          {/* Sezione per i calcoli automatici */}
-          <div className="col-span-full pt-4 mt-4 border-t">
-            <h3 className="text-lg font-medium mb-2">Calcolo automatico del numero di animali</h3>
-            <p className="text-sm text-muted-foreground mb-4">
-              Inserisci il peso campione in grammi e il numero di animali campionati per calcolare automaticamente i pezzi per kg e il numero di animali totali.
-            </p>
+          {/* Sezione per i calcoli automatici - span su tutte le colonne */}
+          <div className="col-span-3 pt-2 mt-1 border-t">
+            <h3 className="text-sm font-medium mb-0">Calcolo automatico</h3>
           </div>
 
           {/* Peso del campione in grammi */}
