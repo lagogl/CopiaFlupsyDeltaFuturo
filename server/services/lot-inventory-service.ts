@@ -175,6 +175,48 @@ export class LotInventoryService {
       throw new Error("Impossibile recuperare la cronologia di mortalità");
     }
   }
+
+  /**
+   * Ottiene un riepilogo dell'inventario per tutti i lotti attivi
+   * @returns Array di dati di inventario per tutti i lotti
+   */
+  async getAllLotsSummary() {
+    try {
+      // 1. Ottieni tutti i lotti attivi
+      const allLots = await db.select().from(lots);
+      
+      if (!allLots || allLots.length === 0) {
+        return [];
+      }
+
+      // 2. Prepara l'array per i risultati finali
+      const results = [];
+      
+      // 3. Per ogni lotto, calcola il riepilogo dell'inventario
+      for (const lot of allLots) {
+        try {
+          const inventorySummary = await this.calculateCurrentInventory(lot.id);
+          results.push({
+            lotId: lot.id,
+            supplier: lot.supplier,
+            arrivalDate: lot.arrivalDate,
+            state: lot.state,
+            supplierLotNumber: lot.supplierLotNumber,
+            ...inventorySummary
+          });
+        } catch (error) {
+          // In caso di errore, passa al lotto successivo
+          console.error(`Errore durante il calcolo del riepilogo del lotto ${lot.id}:`, error);
+          continue;
+        }
+      }
+      
+      return results;
+    } catch (error) {
+      console.error("Errore durante il recupero del riepilogo di tutti i lotti:", error);
+      throw new Error("Impossibile recuperare il riepilogo di tutti i lotti");
+    }
+  }
 }
 
 // Esporta un'istanza del servizio
