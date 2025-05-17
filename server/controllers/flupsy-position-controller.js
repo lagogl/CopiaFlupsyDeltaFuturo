@@ -12,14 +12,33 @@ export async function getAvailablePositions(req, res) {
       return res.status(400).json({ success: false, message: "ID FLUPSY non valido" });
     }
     
-    // Verifica se il FLUPSY esiste
-    const flupsy = await storage.getFlupsy(flupsyId);
-    if (!flupsy) {
-      return res.status(404).json({ success: false, message: "FLUPSY non trovato" });
+    console.log(`Ricerca flupsy con ID: ${flupsyId}`);
+    
+    // Verifica se il FLUPSY esiste (tramite database direttamente)
+    let flupsy = null;
+    
+    try {
+      // Prova a recuperare dal database
+      const flupsys = await storage.getFlupsys();
+      flupsy = flupsys.find(f => f.id === flupsyId);
+      
+      if (!flupsy) {
+        console.log(`FLUPSY con ID ${flupsyId} non trovato nella lista completa`);
+        return res.status(404).json({ success: false, message: "FLUPSY non trovato" });
+      }
+      
+      console.log(`FLUPSY trovato: ${flupsy.name}`);
+    } catch (dbError) {
+      console.error("Errore durante il recupero del flupsy dal database:", dbError);
+      return res.status(500).json({ 
+        success: false, 
+        message: "Errore durante il recupero del flupsy dal database" 
+      });
     }
     
     // Ottieni tutte le ceste per questo FLUPSY
     const flupsyBaskets = await storage.getBasketsByFlupsy(flupsyId);
+    console.log(`Trovati ${flupsyBaskets.length} cestelli per il flupsy ${flupsy.name}`);
     
     // Raccogli le posizioni già occupate in questo FLUPSY
     const occupiedPositions = flupsyBaskets.reduce((acc, basket) => {
@@ -34,6 +53,7 @@ export async function getAvailablePositions(req, res) {
     
     // Determina quali file sono in uso (generalmente SX, DX, C - ma potrebbe esserci qualsiasi valore)
     const usedRows = Object.keys(occupiedPositions);
+    console.log(`File in uso: ${usedRows.join(', ') || 'nessuna'}`);
     
     // Se non ci sono file in uso, proponi le file standard
     const availableRows = usedRows.length > 0 ? usedRows : ['SX', 'DX', 'C'];
@@ -53,8 +73,10 @@ export async function getAvailablePositions(req, res) {
     
     availableRows.forEach(row => {
       const occupied = occupiedPositions[row] || [];
-      // Usa 12 come numero massimo predefinito di posizioni se non ci sono informazioni
-      const maxPos = maxPositions[row] || 12;
+      // Usa max_positions dal flupsy se disponibile, altrimenti 12 come default
+      const maxPos = flupsy.max_positions || maxPositions[row] || 12;
+      
+      console.log(`Fila ${row}: posizioni occupate ${occupied.join(', ') || 'nessuna'}, max posizioni ${maxPos}`);
       
       // Genera tutte le posizioni possibili da 1 a maxPos
       const allPositions = Array.from({ length: maxPos }, (_, i) => i + 1);
@@ -73,7 +95,7 @@ export async function getAvailablePositions(req, res) {
     console.error("Errore durante il recupero delle posizioni disponibili:", error);
     res.status(500).json({ 
       success: false, 
-      message: "Errore durante il recupero delle posizioni disponibili"
+      message: "Errore durante il recupero delle posizioni disponibili" 
     });
   }
 }
