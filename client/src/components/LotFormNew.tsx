@@ -315,7 +315,7 @@ export default function LotFormNew({
                     min="0"
                     placeholder="Peso campione in grammi"
                     value={field.value || ''}
-                    className="bg-blue-50"
+                    className="bg-green-50"
                     onChange={(e) => {
                       // Converti in numero o null se vuoto
                       const numericValue = e.target.value ? Number(e.target.value) : null;
@@ -371,7 +371,7 @@ export default function LotFormNew({
                       ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
                       : ''}
                     readOnly
-                    className="bg-blue-50"
+                    className="bg-green-50"
                   />
                 </FormControl>
                 <FormMessage />
