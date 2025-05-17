@@ -111,25 +111,44 @@ export default function NFCTagManager() {
   // Mutation per aggiornare la posizione di un cestello
   const updateBasketPosition = useMutation({
     mutationFn: async (data: { basketId: number, row: string, position: number }) => {
-      const response = await fetch(`/api/baskets/${data.basketId}/position`, {
-        method: 'PUT',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          row: data.row,
-          position: data.position
-        }),
-      });
+      console.log(`Invio richiesta di aggiornamento posizione: basketId=${data.basketId}, row=${data.row}, position=${data.position}`);
       
-      if (!response.ok) {
-        const error = await response.json();
-        throw new Error(error.message || 'Si è verificato un errore durante l\'aggiornamento della posizione');
+      try {
+        const response = await fetch(`/api/baskets/${data.basketId}/position`, {
+          method: 'PUT',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            row: data.row,
+            position: data.position
+          }),
+        });
+        
+        // Controlla se la risposta è un JSON valido
+        const contentType = response.headers.get("content-type");
+        if (contentType && contentType.indexOf("application/json") !== -1) {
+          const jsonData = await response.json();
+          
+          if (!response.ok) {
+            throw new Error(jsonData.message || 'Si è verificato un errore durante l\'aggiornamento della posizione');
+          }
+          
+          return jsonData;
+        } else {
+          // Se non è JSON, leggi come testo per il debug
+          const textData = await response.text();
+          console.error("Risposta non JSON ricevuta:", textData);
+          throw new Error("Risposta non valida dal server");
+        }
+      } catch (error) {
+        console.error("Errore durante l'aggiornamento della posizione:", error);
+        throw error;
       }
-      
-      return response.json();
     },
-    onSuccess: () => {
+    onSuccess: (data) => {
+      console.log("Posizione aggiornata con successo:", data);
+      
       // Invalida la cache per ricaricare i cestelli
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       
@@ -147,9 +166,11 @@ export default function NFCTagManager() {
       positionForm.reset();
     },
     onError: (error: Error) => {
+      console.error("Errore nella mutation:", error);
+      
       toast({
         title: "Errore",
-        description: error.message,
+        description: "Si è verificato un errore durante l'aggiornamento della posizione. Riprova.",
         variant: "destructive",
       });
     }

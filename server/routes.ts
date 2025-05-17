@@ -6155,11 +6155,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sequences", SequenceController.getSequencesInfo);
   app.post("/api/sequences/reset", SequenceController.resetSequence);
   
-  return httpServer;
-}
-
   // === Route per gestione posizione cestelli ===
   app.put("/api/baskets/:id/position", updateBasketPosition);
 
   // Endpoint per ottenere le posizioni disponibili in un flupsy
   app.get("/api/flupsys/:id/available-positions", getFlupsyAvailablePositions);
+  
+  return httpServer;
+}
