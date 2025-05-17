@@ -225,15 +225,15 @@ export default function LotFormNew({
         <h2 className="text-lg mb-6">Crea Nuovo Lotto</h2>
         
         <div className="flex flex-col space-y-5">
-          {/* Prima riga: esattamente come nello screenshot */}
-          <div className="flex items-start">
-            <div className="w-1/3 pr-2">
+          {/* Prima riga: allineata come nel nuovo screenshot */}
+          <div className="grid grid-cols-3 gap-4 mb-6">
+            <div>
               <FormField
                 control={form.control}
                 name="arrivalDate"
                 render={({ field }) => (
-                  <FormItem className="space-y-1.5">
-                    <FormLabel className="text-sm font-medium">Data Arrivo</FormLabel>
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium block mb-2">Data Arrivo</FormLabel>
                     <FormControl>
                       <Input type="date" {...field} className="text-sm h-9 w-full" />
                     </FormControl>
@@ -243,13 +243,13 @@ export default function LotFormNew({
               />
             </div>
 
-            <div className="w-1/3 px-2">
+            <div>
               <FormField
                 control={form.control}
                 name="supplier"
                 render={({ field }) => (
-                  <FormItem className="space-y-1.5">
-                    <FormLabel className="text-sm font-medium">Fornitore</FormLabel>
+                  <FormItem>
+                    <FormLabel className="text-sm font-medium block mb-2">Fornitore</FormLabel>
                     <FormControl>
                       <Input placeholder="Nome fornitore" {...field} className="text-sm h-9 w-full" />
                     </FormControl>
@@ -259,7 +259,12 @@ export default function LotFormNew({
               />
             </div>
 
-            <div className="w-1/3 pl-2">
+            <div>
+              <div className="h-7 flex items-center">
+                <FormLabel className="text-sm font-medium block">
+                  Numero Lotto Fornitore
+                </FormLabel>
+              </div>
               <FormField
                 control={form.control}
                 name="supplierLotNumber"
@@ -268,11 +273,7 @@ export default function LotFormNew({
                   const isZeelandSupplier = supplier === "Zeeland" || supplier === "Ecotapes Zeeland";
                   
                   return (
-                    <FormItem className="space-y-1.5">
-                      <FormLabel className="text-sm font-medium">
-                        Numero Lotto Fornitore
-                        {isZeelandSupplier && <span className="text-red-500 ml-1">*</span>}
-                      </FormLabel>
+                    <FormItem>
                       <FormControl>
                         <Input 
                           placeholder="Numero lotto" 
@@ -281,6 +282,7 @@ export default function LotFormNew({
                           className="text-sm h-9 w-full"
                         />
                       </FormControl>
+                      {isZeelandSupplier && <p className="text-xs text-red-500 mt-1">* Richiesto per Zeeland</p>}
                       <FormMessage />
                     </FormItem>
                   );
