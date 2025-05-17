@@ -336,92 +336,99 @@ export default function LotFormNew({
             </div>
           </div>
           
-          {/* Griglia per allineare orizzontalmente i campi input e calcolati */}
+          {/* Layout come nell'esempio, con campi allineati */}
           <div className="col-span-3">
-            {/* Prima riga: Peso Campione, N° Animali Campione, Peso Totale */}
-            <div className="mb-6">
-              <div className="grid grid-cols-3 gap-4">
-                {/* Campi input: peso campione */}
-                <FormField
-                  control={form.control}
-                  name="sampleWeight"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">Peso Campione (g)</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="number"
-                          step="0.01"
-                          min="0"
-                          placeholder="Peso campione"
-                          value={field.value || ''}
-                          onChange={(e) => {
-                            const numericValue = e.target.value ? Number(e.target.value) : null;
-                            field.onChange(numericValue);
-                          }}
-                          className="text-sm h-9 bg-white"
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                
-                {/* Campo input: animali campione */}
-                <FormField
-                  control={form.control}
-                  name="sampleCount"
-                  render={({ field }) => (
-                    <FormItem>
-                      <FormLabel className="text-sm">N° Animali Campione</FormLabel>
-                      <FormControl>
-                        <Input 
-                          type="text" 
-                          placeholder="N° animali"
-                          {...field}
-                          value={field.value !== null && field.value !== undefined 
-                            ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                            : ''}
-                          onChange={(e) => {
-                            const numericValue = e.target.value.replace(/[^\d]/g, '');
-                            field.onChange(numericValue ? Number(numericValue) : null);
-                          }}
-                          className="text-sm h-9 bg-white"
-                        />
-                      </FormControl>
-                    </FormItem>
-                  )}
-                />
-                
-                {/* Campo input: peso totale */}
-                <FormItem>
-                  <FormLabel className="text-sm">Peso Totale (g)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number"
-                      step="0.01"
-                      min="0"
-                      placeholder="Peso totale"
-                      value={totalWeightGrams || ''}
-                      onChange={(e) => {
-                        const numericValue = e.target.value ? Number(e.target.value) : null;
-                        setTotalWeightGrams(numericValue);
-                        
-                        const piecesPerKg = form.getValues("weight");
-                        if (numericValue && piecesPerKg) {
-                          const totalAnimals = calculateTotalAnimals(numericValue, piecesPerKg);
-                          setCalculatedTotalAnimals(totalAnimals);
-                          form.setValue("animalCount", totalAnimals);
-                        }
-                      }}
-                      className="text-sm h-9 bg-white"
-                    />
-                  </FormControl>
-                </FormItem>
-              </div>
+            <div className="grid grid-cols-3 gap-4 mb-4">
+              {/* Primo campo - Peso Campione */}
+              <FormField
+                control={form.control}
+                name="sampleWeight"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">Peso Campione (g)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="number"
+                        step="any"
+                        min="0.00001"
+                        placeholder="Peso campione"
+                        value={field.value || ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          const numericValue = value ? Number(value) : null;
+                          // Controlliamo che non sia negativo
+                          if (numericValue !== null && numericValue < 0) {
+                            return;
+                          }
+                          field.onChange(numericValue);
+                        }}
+                        className="text-sm h-9 bg-white"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {/* Secondo campo - N° Animali Campione */}
+              <FormField
+                control={form.control}
+                name="sampleCount"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel className="text-sm">N° Animali Campione</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="text" 
+                        placeholder="N° animali"
+                        {...field}
+                        value={field.value !== null && field.value !== undefined 
+                          ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                          : ''}
+                        onChange={(e) => {
+                          const numericValue = e.target.value.replace(/[^\d]/g, '');
+                          field.onChange(numericValue ? Number(numericValue) : null);
+                        }}
+                        className="text-sm h-9 bg-white"
+                      />
+                    </FormControl>
+                  </FormItem>
+                )}
+              />
+              
+              {/* Terzo campo - Peso Totale */}
+              <FormItem>
+                <FormLabel className="text-sm">Peso Totale (g)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="number"
+                    step="any"
+                    min="0.00001"
+                    placeholder="Peso totale"
+                    value={totalWeightGrams || ''}
+                    onChange={(e) => {
+                      const value = e.target.value;
+                      const numericValue = value ? Number(value) : null;
+                      // Controlliamo che non sia negativo
+                      if (numericValue !== null && numericValue < 0) {
+                        return;
+                      }
+                      setTotalWeightGrams(numericValue);
+                      
+                      const piecesPerKg = form.getValues("weight");
+                      if (numericValue && piecesPerKg) {
+                        const totalAnimals = calculateTotalAnimals(numericValue, piecesPerKg);
+                        setCalculatedTotalAnimals(totalAnimals);
+                        form.setValue("animalCount", totalAnimals);
+                      }
+                    }}
+                    className="text-sm h-9 bg-white"
+                  />
+                </FormControl>
+              </FormItem>
             </div>
             
-            {/* Riquadro per valori calcolati */}
-            <div className="bg-green-50 p-3 rounded-md border border-green-100 mb-6">
+            {/* Riquadro verde per i campi calcolati */}
+            <div className="bg-green-50 p-3 rounded-md border border-green-100 mb-4">
               <div className="text-xs font-medium text-green-800 mb-2">Valori calcolati automaticamente</div>
               
               <div className="grid grid-cols-3 gap-4">
