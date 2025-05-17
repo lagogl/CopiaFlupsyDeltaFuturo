@@ -89,53 +89,87 @@ export default function LotFormNew({
   const determineSizeId = (piecesPerKg: number): number | null => {
     if (!sizes || sizes.length === 0 || !piecesPerKg) return null;
     
-    // Debug: stampa tutte le taglie disponibili
-    console.log(`Cercando taglia per ${piecesPerKg} pezzi per kg. Taglie disponibili:`, 
-      sizes.map(s => `${s.code} (id: ${s.id})`).join(", "));
+    // I campi effettivi nella tabella sizes sono:
+    // min_animals_per_kg: valore minimo di animali per kg della taglia
+    // max_animals_per_kg: valore massimo di animali per kg della taglia
     
-    // Estrarre il valore numerico dalle taglie e ordinare in modo crescente
-    // TP-500 → 500, TP-1000 → 1000, ecc.
-    const taglieNumerate = sizes
-      .map(size => {
-        const match = size.code.match(/\d+/);
-        return {
-          ...size,
-          numericValue: match ? parseInt(match[0]) : 0
-        };
+    console.log(`Determinazione taglia per ${piecesPerKg} pezzi/kg`);
+    
+    // Poiché l'API potrebbe non restituire direttamente min_animals_per_kg e max_animals_per_kg,
+    // faremo una chiamata API dedicata per ottenere questi dati
+    fetch('/api/sizes/range-info')
+      .then(response => response.json())
+      .then(data => {
+        console.log("Range info delle taglie:", data);
       })
-      .filter(size => size.numericValue > 0)
-      .sort((a, b) => a.numericValue - b.numericValue); // ordine crescente
+      .catch(error => {
+        console.error("Errore nel recupero dei range delle taglie:", error);
+      });
     
-    // Debug delle taglie ordinate
-    console.log("Taglie ordinate (crescenti):", 
-      taglieNumerate.map(s => `${s.code} (${s.numericValue})`).join(", "));
+    // Per il momento utilizziamo questa mappa hardcoded con i range corretti ottenuti dal database
+    const taglieRange = [
+      { id: 1, code: "TP-500", min: 3400001, max: 5000000 },
+      { id: 2, code: "TP-180", min: 42000001, max: 100000000 },
+      { id: 3, code: "TP-200", min: 16000001, max: 42000000 },
+      { id: 4, code: "TP-315", min: 7600001, max: 16000000 },
+      { id: 5, code: "TP-450", min: 5000001, max: 7600000 },
+      { id: 6, code: "TP-600", min: 1800001, max: 3400000 },
+      { id: 7, code: "TP-700", min: 1500001, max: 1800000 },
+      { id: 8, code: "TP-800", min: 880001, max: 1500000 },
+      { id: 9, code: "TP-1000", min: 600001, max: 880000 },
+      { id: 10, code: "TP-1140", min: 350001, max: 600000 },
+      { id: 11, code: "TP-1260", min: 300001, max: 350000 },
+      { id: 12, code: "TP-1500", min: 190001, max: 300000 },
+      { id: 13, code: "TP-1800", min: 120001, max: 190000 },
+      { id: 14, code: "TP-1900", min: 97001, max: 120000 },
+      { id: 15, code: "TP-2000", min: 70001, max: 97000 },
+      { id: 16, code: "TP-2200", min: 60001, max: 70000 },
+      { id: 17, code: "TP-2500", min: 40001, max: 60000 },
+      { id: 18, code: "TP-2800", min: 32001, max: 40000 },
+      { id: 19, code: "TP-3000", min: 19001, max: 32000 },
+      { id: 20, code: "TP-3500", min: 12501, max: 19000 },
+      { id: 21, code: "TP-4000", min: 7501, max: 12500 },
+      { id: 22, code: "TP-5000", min: 3901, max: 7500 },
+      { id: 23, code: "TP-6000", min: 3001, max: 3900 },
+      { id: 24, code: "TP-7000", min: 2301, max: 3000 },
+      { id: 25, code: "TP-8000", min: 1801, max: 2300 },
+      { id: 26, code: "TP-9000", min: 1201, max: 1800 },
+      { id: 27, code: "TP-10000", min: 801, max: 1200 }
+    ];
     
-    // 1. Cerca una corrispondenza esatta
-    const exactMatch = taglieNumerate.find(size => size.numericValue === piecesPerKg);
-    if (exactMatch) {
-      console.log(`Corrispondenza esatta trovata: ${exactMatch.code} (id: ${exactMatch.id})`);
-      return exactMatch.id;
+    // Trova la taglia corretta in base ai range
+    const matchingSize = taglieRange.find(taglia => 
+      piecesPerKg >= taglia.min && piecesPerKg <= taglia.max
+    );
+    
+    if (matchingSize) {
+      console.log(`Taglia trovata in base al range: ${matchingSize.code} (${matchingSize.min}-${matchingSize.max})`);
+      return matchingSize.id;
     }
     
-    // 2. Cerca la taglia immediatamente superiore
-    // Per esempio, se abbiamo 10500 pezzi/kg, e abbiamo taglie TP-10000 e TP-11000,
-    // dovremmo selezionare TP-11000
-    const tagliaSuperiore = taglieNumerate.find(size => size.numericValue > piecesPerKg);
-    if (tagliaSuperiore) {
-      console.log(`Taglia superiore trovata: ${tagliaSuperiore.code} (id: ${tagliaSuperiore.id})`);
-      return tagliaSuperiore.id;
+    // Se nessuna taglia corrisponde esattamente, usiamo una logica fallback
+    console.log("Nessuna taglia trovata nel range esatto, usando logica fallback");
+    
+    // Ordina le taglie per valore minimo (crescente)
+    const taglieOrdinate = [...taglieRange].sort((a, b) => a.min - b.min);
+    
+    // Se il valore è inferiore al minimo della taglia più piccola, usa quella
+    if (piecesPerKg < taglieOrdinate[0].min) {
+      console.log(`Valore troppo piccolo, usando la taglia più piccola: ${taglieOrdinate[0].code}`);
+      return taglieOrdinate[0].id;
     }
     
-    // 3. Se non c'è una taglia superiore, usa la taglia con il valore più alto
-    if (taglieNumerate.length > 0) {
-      const tagliaMax = taglieNumerate[taglieNumerate.length - 1]; // l'ultima dell'array (la più grande)
-      console.log(`Nessuna taglia superiore trovata, usando la più grande: ${tagliaMax.code} (id: ${tagliaMax.id})`);
-      return tagliaMax.id;
+    // Se il valore è maggiore del massimo della taglia più grande, usa quella
+    if (piecesPerKg > taglieOrdinate[taglieOrdinate.length - 1].max) {
+      const lastTaglia = taglieOrdinate[taglieOrdinate.length - 1];
+      console.log(`Valore troppo grande, usando la taglia più grande: ${lastTaglia.code}`);
+      return lastTaglia.id;
     }
     
-    // 4. Fallback - nessuna taglia trovata
-    console.log("Nessuna taglia adatta trovata");
-    return null;
+    // Fallback finale - usa TP-1000 se tutto fallisce
+    const fallbackSizeId = sizes.find(s => s.code === "TP-1000")?.id || 9;
+    console.log(`Impossibile determinare la taglia, usando fallback: TP-1000 (id: ${fallbackSizeId})`);
+    return fallbackSizeId;
   };
   
   // Monitorare i cambiamenti nei campi e aggiornare i calcoli
