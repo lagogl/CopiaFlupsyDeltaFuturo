@@ -64,6 +64,13 @@ interface PositionFormData {
   position: string;
 }
 
+interface AvailablePositions {
+  success: boolean;
+  flupsyName: string;
+  availableRows: string[];
+  availablePositions: Record<string, number[]>;
+}
+
 export default function NFCTagManager() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
