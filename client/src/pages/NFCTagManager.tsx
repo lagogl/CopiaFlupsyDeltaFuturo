@@ -110,8 +110,8 @@ export default function NFCTagManager() {
   
   // Mutation per aggiornare la posizione di un cestello
   const updateBasketPosition = useMutation({
-    mutationFn: async (data: { basketId: number, row: string, position: number }) => {
-      console.log(`Invio richiesta di aggiornamento posizione: basketId=${data.basketId}, row=${data.row}, position=${data.position}`);
+    mutationFn: async (data: { basketId: number, row: string, position: number, flupsyId: number }) => {
+      console.log(`Invio richiesta di aggiornamento posizione: basketId=${data.basketId}, row=${data.row}, position=${data.position}, flupsyId=${data.flupsyId || 'non specificato'}`);
       
       try {
         const response = await fetch(`/api/baskets/${data.basketId}/position`, {
@@ -121,7 +121,8 @@ export default function NFCTagManager() {
           },
           body: JSON.stringify({
             row: data.row,
-            position: data.position
+            position: data.position,
+            flupsyId: data.flupsyId
           }),
         });
         
@@ -397,13 +398,14 @@ export default function NFCTagManager() {
       errorElement.classList.add('hidden');
     }
     
-    console.log(`Salvataggio posizione: cestello=${selectedBasketForPosition.id}, fila=${row}, posizione=${position}`);
+    console.log(`Salvataggio posizione: cestello=${selectedBasketForPosition.id}, fila=${row}, posizione=${position}, flupsyId=${selectedBasketForPosition.flupsyId}`);
     
-    // Esegui la mutation per aggiornare la posizione
+    // Esegui la mutation per aggiornare la posizione includendo il flupsyId
     updateBasketPosition.mutate({
       basketId: selectedBasketForPosition.id,
       row,
-      position
+      position,
+      flupsyId: selectedBasketForPosition.flupsyId
     });
   });
 
