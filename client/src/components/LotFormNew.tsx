@@ -317,29 +317,34 @@ export default function LotFormNew({
                       ? field.value.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
                       : ''}
                     onChange={(e) => {
-                      // Rimuovi tutti i caratteri non numerici eccetto la virgola e il punto
-                      let value = e.target.value.replace(/[^\d.,]/g, '');
+                      // Accetta solo cifre, backspace, cancella, virgola e punto
+                      const inputValue = e.target.value;
                       
-                      // Sostituisci i punti con virgole per standardizzare
-                      value = value.replace(/\./g, ',');
+                      // Rimuovi tutti i caratteri non validi
+                      let cleanValue = inputValue.replace(/[^\d.,]/g, '');
+                      
+                      // Sostituisci i punti con virgole
+                      cleanValue = cleanValue.replace(/\./g, ',');
                       
                       // Assicurati che ci sia al massimo una virgola
-                      const commaCount = (value.match(/,/g) || []).length;
-                      if (commaCount > 1) {
-                        value = value.replace(/,/g, (match, index) => index === value.indexOf(',') ? ',' : '');
+                      let parts = cleanValue.split(',');
+                      if (parts.length > 2) {
+                        // Tieni solo la prima parte e la seconda parte
+                        cleanValue = parts[0] + ',' + parts[1];
                       }
                       
-                      // Converti da formato europeo (con virgola) al formato numerico JavaScript
-                      let numericValue = null;
-                      if (value) {
-                        // Limitiamo a due decimali
-                        const parts = value.split(',');
-                        if (parts.length > 1 && parts[1].length > 2) {
-                          parts[1] = parts[1].substring(0, 2);
-                          value = parts.join(',');
-                        }
-                        numericValue = Number(value.replace(',', '.'));
+                      // Limita a massimo 2 decimali
+                      parts = cleanValue.split(',');
+                      if (parts.length === 2 && parts[1].length > 2) {
+                        parts[1] = parts[1].substring(0, 2);
+                        cleanValue = parts.join(',');
                       }
+                      
+                      // Aggiorna il valore visualizzato nel campo
+                      e.target.value = cleanValue;
+                      
+                      // Converti in formato numerico per JavaScript
+                      const numericValue = cleanValue ? Number(cleanValue.replace(',', '.')) : null;
                       field.onChange(numericValue);
                     }}
                   />
@@ -412,29 +417,34 @@ export default function LotFormNew({
                     ? totalWeightGrams.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
                     : ''}
                   onChange={(e) => {
-                    // Rimuovi tutti i caratteri non numerici eccetto la virgola e il punto
-                    let value = e.target.value.replace(/[^\d.,]/g, '');
+                    // Accetta solo cifre, backspace, cancella, virgola e punto
+                    const inputValue = e.target.value;
                     
-                    // Sostituisci i punti con virgole per standardizzare
-                    value = value.replace(/\./g, ',');
+                    // Rimuovi tutti i caratteri non validi
+                    let cleanValue = inputValue.replace(/[^\d.,]/g, '');
+                    
+                    // Sostituisci i punti con virgole
+                    cleanValue = cleanValue.replace(/\./g, ',');
                     
                     // Assicurati che ci sia al massimo una virgola
-                    const commaCount = (value.match(/,/g) || []).length;
-                    if (commaCount > 1) {
-                      value = value.replace(/,/g, (match, index) => index === value.indexOf(',') ? ',' : '');
+                    let parts = cleanValue.split(',');
+                    if (parts.length > 2) {
+                      // Tieni solo la prima parte e la seconda parte
+                      cleanValue = parts[0] + ',' + parts[1];
                     }
                     
-                    // Converti da formato europeo (con virgola) al formato numerico JavaScript
-                    let numericValue = null;
-                    if (value) {
-                      // Limitiamo a due decimali
-                      const parts = value.split(',');
-                      if (parts.length > 1 && parts[1].length > 2) {
-                        parts[1] = parts[1].substring(0, 2);
-                        value = parts.join(',');
-                      }
-                      numericValue = Number(value.replace(',', '.'));
+                    // Limita a massimo 2 decimali
+                    parts = cleanValue.split(',');
+                    if (parts.length === 2 && parts[1].length > 2) {
+                      parts[1] = parts[1].substring(0, 2);
+                      cleanValue = parts.join(',');
                     }
+                    
+                    // Aggiorna il valore visualizzato nel campo
+                    e.target.value = cleanValue;
+                    
+                    // Converti in formato numerico per JavaScript
+                    const numericValue = cleanValue ? Number(cleanValue.replace(',', '.')) : null;
                     setTotalWeightGrams(numericValue);
                     
                     // Calcola il numero totale di animali
