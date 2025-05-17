@@ -281,29 +281,23 @@ export default function Lots() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-condensed font-bold text-gray-800">Gestione Lotti</h2>
         <div className="flex space-x-3">
-          <TooltipProvider>
-            <Tooltip>
-              <TooltipTrigger asChild>
-                <Button 
-                  variant="outline" 
-                  size="sm" 
-                  onClick={() => setViewMode(viewMode === 'simple' ? 'detailed' : 'simple')}
-                  className={viewMode === 'detailed' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
-                >
-                  {viewMode === 'simple' ? (
-                    <><Table2 className="h-4 w-4 mr-1" /> Vista Dettagliata</>
-                  ) : (
-                    <><Table2 className="h-4 w-4 mr-1" /> Vista Semplice</>
-                  )}
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent>
-                {viewMode === 'simple' 
-                  ? 'Mostra dettagli inventario e statistiche' 
-                  : 'Torna alla vista semplice'}
-              </TooltipContent>
-            </Tooltip>
-          </TooltipProvider>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setViewMode('detailed')}
+            className={viewMode !== 'simple' ? '' : 'bg-blue-600 hover:bg-blue-700 text-white'}
+          >
+            <Table2 className="h-4 w-4 mr-1" /> Vista Dettagliata
+          </Button>
+
+          <Button 
+            variant="outline" 
+            size="sm" 
+            onClick={() => setViewMode('simple')}
+            className={viewMode === 'simple' ? '' : 'bg-blue-600 hover:bg-blue-700 text-white'}
+          >
+            <Table2 className="h-4 w-4 mr-1" /> Vista Semplice
+          </Button>
           <Button 
             variant="outline" 
             size="sm"
