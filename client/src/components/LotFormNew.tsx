@@ -38,7 +38,7 @@ const formSchema = z.object({
   notes: z.string().optional().nullable(),
   state: z.string().optional(),
   // Nuovi campi per il calcolo automatico
-  sampleWeight: z.number().multipleOf(0.01).min(0).max(999999999.99).optional().nullable(), // Peso del campione in grammi con 2 decimali
+  sampleWeight: z.number().min(0).optional().nullable(), // Peso del campione in grammi
   sampleCount: z.number().int().optional().nullable(), // Numero di animali nel campione
 });
 
@@ -312,39 +312,31 @@ export default function LotFormNew({
                   <Input 
                     type="text" 
                     placeholder="Peso campione in grammi"
+                    inputMode="decimal"
                     {...field}
                     value={field.value !== null && field.value !== undefined 
-                      ? field.value.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                      ? field.value.toString().replace('.', ',') 
                       : ''}
                     onChange={(e) => {
-                      // Accetta solo cifre, backspace, cancella, virgola e punto
-                      const inputValue = e.target.value;
+                      // Rimuovi tutto tranne numeri, virgole e punti
+                      let value = e.target.value.replace(/[^\d.,]/g, '');
                       
-                      // Rimuovi tutti i caratteri non validi
-                      let cleanValue = inputValue.replace(/[^\d.,]/g, '');
+                      // Sostituisci punti con virgole
+                      value = value.replace(/\./g, ',');
                       
-                      // Sostituisci i punti con virgole
-                      cleanValue = cleanValue.replace(/\./g, ',');
-                      
-                      // Assicurati che ci sia al massimo una virgola
-                      let parts = cleanValue.split(',');
+                      // Gestisci caso con multiple virgole
+                      const parts = value.split(',');
                       if (parts.length > 2) {
-                        // Tieni solo la prima parte e la seconda parte
-                        cleanValue = parts[0] + ',' + parts[1];
+                        value = parts[0] + ',' + parts.slice(1).join('');
                       }
                       
-                      // Limita a massimo 2 decimali
-                      parts = cleanValue.split(',');
-                      if (parts.length === 2 && parts[1].length > 2) {
-                        parts[1] = parts[1].substring(0, 2);
-                        cleanValue = parts.join(',');
+                      // Converti valore per il modello
+                      let numericValue = null;
+                      if (value && value !== ',') {
+                        // Converti alla notazione con punto
+                        numericValue = parseFloat(value.replace(',', '.'));
                       }
                       
-                      // Aggiorna il valore visualizzato nel campo
-                      e.target.value = cleanValue;
-                      
-                      // Converti in formato numerico per JavaScript
-                      const numericValue = cleanValue ? Number(cleanValue.replace(',', '.')) : null;
                       field.onChange(numericValue);
                     }}
                   />
@@ -413,38 +405,30 @@ export default function LotFormNew({
                 <Input 
                   type="text" 
                   placeholder="Peso totale in grammi"
+                  inputMode="decimal"
                   value={totalWeightGrams !== null && totalWeightGrams !== undefined 
-                    ? totalWeightGrams.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                    ? totalWeightGrams.toString().replace('.', ',') 
                     : ''}
                   onChange={(e) => {
-                    // Accetta solo cifre, backspace, cancella, virgola e punto
-                    const inputValue = e.target.value;
+                    // Rimuovi tutto tranne numeri, virgole e punti
+                    let value = e.target.value.replace(/[^\d.,]/g, '');
                     
-                    // Rimuovi tutti i caratteri non validi
-                    let cleanValue = inputValue.replace(/[^\d.,]/g, '');
+                    // Sostituisci punti con virgole
+                    value = value.replace(/\./g, ',');
                     
-                    // Sostituisci i punti con virgole
-                    cleanValue = cleanValue.replace(/\./g, ',');
-                    
-                    // Assicurati che ci sia al massimo una virgola
-                    let parts = cleanValue.split(',');
+                    // Gestisci caso con multiple virgole
+                    const parts = value.split(',');
                     if (parts.length > 2) {
-                      // Tieni solo la prima parte e la seconda parte
-                      cleanValue = parts[0] + ',' + parts[1];
+                      value = parts[0] + ',' + parts.slice(1).join('');
                     }
                     
-                    // Limita a massimo 2 decimali
-                    parts = cleanValue.split(',');
-                    if (parts.length === 2 && parts[1].length > 2) {
-                      parts[1] = parts[1].substring(0, 2);
-                      cleanValue = parts.join(',');
+                    // Converti valore per il modello
+                    let numericValue = null;
+                    if (value && value !== ',') {
+                      // Converti alla notazione con punto
+                      numericValue = parseFloat(value.replace(',', '.'));
                     }
                     
-                    // Aggiorna il valore visualizzato nel campo
-                    e.target.value = cleanValue;
-                    
-                    // Converti in formato numerico per JavaScript
-                    const numericValue = cleanValue ? Number(cleanValue.replace(',', '.')) : null;
                     setTotalWeightGrams(numericValue);
                     
                     // Calcola il numero totale di animali
