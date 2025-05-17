@@ -186,33 +186,33 @@ export default function LotFormNew({
             control={form.control}
             name="quality"
             render={({ field }) => (
-              <FormItem className="space-y-1">
+              <FormItem className="col-span-2">
                 <FormLabel>Qualità</FormLabel>
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
                     defaultValue={field.value}
-                    className="flex space-x-3"
+                    className="grid grid-cols-3 gap-1"
                   >
-                    <div className="flex items-center space-x-1">
-                      <RadioGroupItem value="teste" id="quality-teste" />
-                      <Label htmlFor="quality-teste" className="flex items-center cursor-pointer text-sm">
-                        <span className="mr-1">Teste</span>
-                        <span className="text-yellow-500">★★★</span>
+                    <div className="flex items-center">
+                      <RadioGroupItem value="teste" id="quality-teste" className="h-3.5 w-3.5" />
+                      <Label htmlFor="quality-teste" className="ml-1 flex items-center cursor-pointer text-xs">
+                        <span>Teste</span>
+                        <span className="text-yellow-500 ml-1">★★★</span>
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <RadioGroupItem value="normali" id="quality-normali" />
-                      <Label htmlFor="quality-normali" className="flex items-center cursor-pointer text-sm">
-                        <span className="mr-1">Normali</span>
-                        <span className="text-yellow-500">★★</span>
+                    <div className="flex items-center">
+                      <RadioGroupItem value="normali" id="quality-normali" className="h-3.5 w-3.5" />
+                      <Label htmlFor="quality-normali" className="ml-1 flex items-center cursor-pointer text-xs">
+                        <span>Normali</span>
+                        <span className="text-yellow-500 ml-1">★★</span>
                       </Label>
                     </div>
-                    <div className="flex items-center space-x-1">
-                      <RadioGroupItem value="code" id="quality-code" />
-                      <Label htmlFor="quality-code" className="flex items-center cursor-pointer text-sm">
-                        <span className="mr-1">Tails</span>
-                        <span className="text-yellow-500">★</span>
+                    <div className="flex items-center">
+                      <RadioGroupItem value="code" id="quality-code" className="h-3.5 w-3.5" />
+                      <Label htmlFor="quality-code" className="ml-1 flex items-center cursor-pointer text-xs">
+                        <span>Tails</span>
+                        <span className="text-yellow-500 ml-1">★</span>
                       </Label>
                     </div>
                   </RadioGroup>
