@@ -364,6 +364,7 @@ export default function LotFormNew({
                         inputMode="decimal"
                         placeholder="Peso campione"
                         {...field}
+                        value={field.value === null ? '' : field.value}
                         onChange={(e) => {
                           // Gestisci il valore vuoto come null
                           const rawValue = e.target.value;

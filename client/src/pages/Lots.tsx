@@ -267,68 +267,75 @@ export default function Lots() {
               <tr>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSortClick('id')}
                 >
-                  ID Lotto {sortField === 'id' && (sortDirection === 'asc' ? '▲' : '▼')}
+                  ID {sortField === 'id' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSortClick('arrivalDate')}
                 >
-                  Data Arrivo {sortField === 'arrivalDate' && (sortDirection === 'asc' ? '▲' : '▼')}
+                  Data {sortField === 'arrivalDate' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSortClick('supplier')}
                 >
                   Fornitore {sortField === 'supplier' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  onClick={() => handleSortClick('supplierLotNumber')}
+                >
+                  N.Lotto For. {sortField === 'supplierLotNumber' && (sortDirection === 'asc' ? '▲' : '▼')}
+                </th>
+                <th 
+                  scope="col" 
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSortClick('quality')}
                 >
                   Qualità {sortField === 'quality' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-16"
                   onClick={() => handleSortClick('size')}
                 >
                   Taglia {sortField === 'size' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSortClick('animalCount')}
                 >
-                  # Animali {sortField === 'animalCount' && (sortDirection === 'asc' ? '▲' : '▼')}
+                  # Anim. {sortField === 'animalCount' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-20"
                   onClick={() => handleSortClick('weight')}
                 >
                   Peso (g) {sortField === 'weight' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer w-16"
                   onClick={() => handleSortClick('state')}
                 >
                   Stato {sortField === 'state' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
                   onClick={() => handleSortClick('notes')}
                 >
                   Note {sortField === 'notes' && (sortDirection === 'asc' ? '▲' : '▼')}
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider w-20">
                   Azioni
                 </th>
               </tr>
@@ -353,33 +360,36 @@ export default function Lots() {
                   
                   return (
                     <tr key={lot.id}>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <td className="px-2 py-3 whitespace-nowrap text-sm font-medium text-gray-900">
                         #{lot.id}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
                         {arrivalDate}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
                         {lot.supplier}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
+                        {lot.supplierLotNumber || '-'}
+                      </td>
+                      <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
                         {lot.quality ? (
                           <span className="flex items-center">
                             {lot.quality === 'teste' && (
                               <span>
-                                <span className="mr-1">Teste/Head</span>
+                                <span className="mr-1">Teste</span>
                                 <span className="text-yellow-500">★★★</span>
                               </span>
                             )}
                             {lot.quality === 'normali' && (
                               <span>
-                                <span className="mr-1">Normali/Normal</span>
+                                <span className="mr-1">Normali</span>
                                 <span className="text-yellow-500">★★</span>
                               </span>
                             )}
                             {lot.quality === 'code' && (
                               <span>
-                                <span className="mr-1">Code/Codes</span>
+                                <span className="mr-1">Tails</span>
                                 <span className="text-yellow-500">★</span>
                               </span>
                             )}
@@ -387,56 +397,60 @@ export default function Lots() {
                           </span>
                         ) : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className="bg-blue-100 text-blue-800">
+                      <td className="px-2 py-3 whitespace-nowrap">
+                        <Badge className="bg-blue-100 text-blue-800 text-xs">
                           {lot.size ? lot.size.code : '-'}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
                         {lot.animalCount ? lot.animalCount.toLocaleString() : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500">
                         {lot.weight ? lot.weight.toLocaleString() : '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className={`${
+                      <td className="px-2 py-3 whitespace-nowrap">
+                        <Badge className={`text-xs ${
                           lot.state === 'active' ? 'bg-green-100 text-green-800' : 'bg-gray-100 text-gray-800'
                         }`}>
                           {lot.state === 'active' ? 'Attivo' : 'Esaurito'}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500 max-w-[200px] truncate">
+                      <td className="px-2 py-3 whitespace-nowrap text-sm text-gray-500 max-w-[180px] truncate">
                         {lot.notes || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
-                        <div className="flex space-x-2">
+                      <td className="px-2 py-3 whitespace-nowrap text-sm font-medium">
+                        <div className="flex space-x-1">
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             title="Visualizza dettagli"
-                            onClick={() => handleViewLot(lot)}>
-                            <Eye className="h-5 w-5 text-primary" />
+                            onClick={() => handleViewLot(lot)}
+                            className="h-7 w-7">
+                            <Eye className="h-4 w-4 text-primary" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             title="Modifica lotto"
-                            onClick={() => handleEditLot(lot)}>
-                            <Edit className="h-5 w-5 text-blue-500" />
+                            onClick={() => handleEditLot(lot)}
+                            className="h-7 w-7">
+                            <Edit className="h-4 w-4 text-blue-500" />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             title={lot.state === 'active' ? 'Segna come esaurito' : 'Riattiva lotto'}
-                            onClick={() => handleToggleLotState(lot)}>
-                            <Package2 className={`h-5 w-5 ${lot.state === 'active' ? 'text-warning' : 'text-success'}`} />
+                            onClick={() => handleToggleLotState(lot)}
+                            className="h-7 w-7">
+                            <Package2 className={`h-4 w-4 ${lot.state === 'active' ? 'text-warning' : 'text-success'}`} />
                           </Button>
                           <Button 
                             variant="ghost" 
                             size="icon" 
                             title="Elimina lotto"
-                            onClick={() => handleDeleteLot(lot)}>
-                            <Trash2 className="h-5 w-5 text-red-500" />
+                            onClick={() => handleDeleteLot(lot)}
+                            className="h-7 w-7">
+                            <Trash2 className="h-4 w-4 text-red-500" />
                           </Button>
                         </div>
                       </td>
