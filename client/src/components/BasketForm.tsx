@@ -164,7 +164,7 @@ export default function BasketForm({
       
       // Auto-selezione della fila con più posizioni disponibili
       // Solo se non stiamo modificando una cesta esistente e non è già stata selezionata una fila
-      if (!basketId && !selectedRow && selectedFlupsyId) {
+      if (!basketId && selectedFlupsyId) {
         // Determina quale fila ha più posizioni disponibili
         if (available.DX > 0 || available.SX > 0) {
           const rowWithMoreSpace = available.DX >= available.SX ? 'DX' : 'SX';
@@ -173,14 +173,22 @@ export default function BasketForm({
           const hasPositionsAvailable = nextPositionData.availablePositions[rowWithMoreSpace] !== -1;
           
           if (hasPositionsAvailable) {
+            console.log(`Autoselezione della fila ${rowWithMoreSpace} con più spazio disponibile`);
             // Imposta automaticamente la fila con più spazio
             form.setValue('row', rowWithMoreSpace);
             setSelectedRow(rowWithMoreSpace);
+            
+            // Imposta automaticamente anche la prima posizione disponibile sulla fila
+            const firstAvailablePosition = nextPositionData.availablePositions[rowWithMoreSpace];
+            if (firstAvailablePosition !== -1) {
+              console.log(`Autoselezione della posizione ${firstAvailablePosition} (prima disponibile)`);
+              form.setValue('position', firstAvailablePosition);
+            }
           }
         }
       }
     }
-  }, [nextPositionData, basketId, selectedRow, selectedFlupsyId, form]);
+  }, [nextPositionData, basketId, selectedFlupsyId, form]);
 
   // NON impostiamo più un valore FLUPSY predefinito, l'utente deve selezionarlo
   // Manteniamo il caso particolare di modifica di un cestello esistente (basketId presente)
@@ -313,12 +321,12 @@ export default function BasketForm({
                   field.onChange(numValue);
                   setSelectedFlupsyId(numValue);
                   
-                  // Reset position and row when changing FLUPSY
-                  // Non resetta i campi ma aspetta il caricamento delle posizioni disponibili
-                  // per autoselezionare la fila con più posizioni libere e la prima posizione disponibile
+                  // Reset position and row when changing FLUPSY per essere sicuri di non avere valori precedenti
                   if (!basketId) {
-                    // Non resettiamo più manualmente, la selezione automatica avverrà in base ai dati
-                    // caricati dall'API tramite l'useEffect che monitora nextPositionData
+                    // Resettiamo prima per evitare errori di input controllati/non controllati
+                    form.setValue('position', 0);
+                    form.setValue('row', '');
+                    setSelectedRow(null);
                   }
                 }}
                 defaultValue={field.value?.toString() || ""}
