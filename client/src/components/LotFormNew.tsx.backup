@@ -204,7 +204,7 @@ export default function LotFormNew({
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3 w-full">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-3">
         <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
           <FormField
             control={form.control}
@@ -438,21 +438,23 @@ export default function LotFormNew({
           </FormItem>
           
           {/* Numero totale di animali (calcolato automaticamente) */}
-          <FormItem>
-            <FormLabel>N° Animali Totali (calcolato)</FormLabel>
-            <FormControl>
-              <Input 
-                type="text" 
-                placeholder="Calcolato automaticamente"
-                value={calculatedTotalAnimals !== null 
-                  ? calculatedTotalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                  : ''}
-                readOnly
-                className="bg-green-50"
-              />
-            </FormControl>
-            <FormMessage />
-          </FormItem>
+          <div className="space-y-2">
+            <FormItem>
+              <FormLabel>N° Animali Totali (calcolato)</FormLabel>
+              <FormControl>
+                <Input 
+                  type="text" 
+                  placeholder="Calcolato automaticamente"
+                  value={calculatedTotalAnimals !== null 
+                    ? calculatedTotalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                    : ''}
+                  readOnly
+                  className="bg-green-50"
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          </div>
         </div>
 
         <FormField
