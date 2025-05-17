@@ -24,6 +24,9 @@ interface Size {
   id: number;
   code: string;
   name: string;
+  minAnimalsPerKg?: number;
+  maxAnimalsPerKg?: number;
+  color?: string;
 }
 
 // Creare un modello di form
@@ -85,26 +88,60 @@ export default function LotFormNew({
   
   // Funzione per determinare la taglia in base ai pezzi per kg
   const determineSizeId = (piecesPerKg: number): number | null => {
-    if (!sizes || sizes.length === 0) return null;
+    if (!sizes || sizes.length === 0 || !piecesPerKg) return null;
     
-    // Ordina le taglie per codice
+    // Verifica prima se esiste una taglia che ha i range esplicitamente definiti
+    const matchingSize = sizes.find(size => 
+      size.minAnimalsPerKg !== undefined && 
+      size.maxAnimalsPerKg !== undefined && 
+      piecesPerKg >= size.minAnimalsPerKg && 
+      piecesPerKg <= size.maxAnimalsPerKg
+    );
+    
+    if (matchingSize) {
+      console.log(`Taglia calcolata dai range del database: ${matchingSize.code} (id: ${matchingSize.id})`);
+      return matchingSize.id;
+    }
+    
+    // Fallback: ordina le taglie per codice
     const sortedSizes = [...sizes].sort((a, b) => {
-      // Estrai i numeri dai codici (es. "T-600" -> 600)
+      // Estrai i numeri dai codici (es. "TP-600" -> 600)
       const numA = a.code ? parseInt(a.code.replace(/\D/g, '')) : 0;
       const numB = b.code ? parseInt(b.code.replace(/\D/g, '')) : 0;
       return numB - numA; // Dal più grande al più piccolo
     });
     
-    // Trova la taglia in base ai pezzi per kg
+    // Trova la taglia in base ai pezzi per kg usando una tolleranza del 15%
+    for (const size of sortedSizes) {
+      const sizeNumber = size.code ? parseInt(size.code.replace(/\D/g, '')) : 0;
+      if (sizeNumber > 0) {
+        const lowerBound = sizeNumber * 0.85; // -15%
+        const upperBound = sizeNumber * 1.15; // +15%
+        
+        if (piecesPerKg >= lowerBound && piecesPerKg <= upperBound) {
+          console.log(`Taglia calcolata dal codice: ${size.code} (id: ${size.id})`);
+          return size.id;
+        }
+      }
+    }
+    
+    // Se non trova corrispondenza esatta, trova la taglia più vicina
     for (const size of sortedSizes) {
       const sizeNumber = size.code ? parseInt(size.code.replace(/\D/g, '')) : 0;
       if (piecesPerKg >= sizeNumber) {
+        console.log(`Taglia approssimata: ${size.code} (id: ${size.id})`);
         return size.id;
       }
     }
     
-    // Se non trova corrispondenza, restituisci la taglia più piccola
-    return sortedSizes[sortedSizes.length - 1]?.id || null;
+    // Se proprio non trova nulla, restituisci la taglia più piccola
+    const lastOption = sortedSizes[sortedSizes.length - 1];
+    if (lastOption) {
+      console.log(`Taglia di fallback: ${lastOption.code} (id: ${lastOption.id})`);
+      return lastOption.id;
+    }
+    
+    return null;
   };
   
   // Monitorare i cambiamenti nei campi e aggiornare i calcoli
@@ -389,7 +426,7 @@ export default function LotFormNew({
                   step="0.01"
                   min="0"
                   placeholder="Peso totale in grammi"
-                  className="bg-blue-50"
+                  className="bg-green-50"
                   value={totalWeightGrams || ''}
                   onChange={(e) => {
                     // Converti in numero o null se vuoto
@@ -422,7 +459,7 @@ export default function LotFormNew({
                     ? calculatedTotalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
                     : ''}
                   readOnly
-                  className="bg-blue-50"
+                  className="bg-green-50"
                 />
               </FormControl>
               <FormMessage />
