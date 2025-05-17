@@ -95,8 +95,6 @@ export default function LotFormNew({
     
     console.log(`Determinazione taglia per ${piecesPerKg} pezzi/kg`);
     
-    // Non facciamo chiamate API aggiuntive, utilizziamo i dati hardcoded
-    
     // Per il momento utilizziamo questa mappa hardcoded con i range corretti ottenuti dal database
     const taglieRange = [
       { id: 1, code: "TP-500", min: 3400001, max: 5000000 },
@@ -353,44 +351,36 @@ export default function LotFormNew({
               <FormField
                 control={form.control}
                 name="sampleWeight"
-                render={({ field: { onChange, value, ...restField } }) => (
+                render={({ field }) => (
                   <FormItem className="space-y-1.5">
                     <FormLabel className="text-sm font-medium">Peso Campione (g)</FormLabel>
                     <FormControl>
                       <Input 
-                        type="text"
+                        type="number" 
+                        step="0.01"
+                        min="0"
                         inputMode="decimal"
                         placeholder="Peso campione"
-                        value={value !== null && value !== undefined
-                          ? (value < 1 && value > 0 ? `0${value.toString().replace(/^0+/, '')}` : value.toString())
-                          : ''}
+                        {...field}
+                        value={field.value || ""}
                         onChange={(e) => {
-                          // Accetta solo numeri e punto decimale, sostituisce virgola con punto
-                          let inputValue = e.target.value.replace(/,/g, '.');
-                          
-                          // Assicura che ci sia un solo punto decimale
-                          const parts = inputValue.split('.');
-                          if (parts.length > 2) {
-                            inputValue = parts[0] + '.' + parts.slice(1).join('');
+                          // Gestisci il valore vuoto come null
+                          const rawValue = e.target.value;
+                          if (!rawValue) {
+                            field.onChange(null);
+                            return;
                           }
                           
-                          // Rimuove tutti i caratteri non numerici eccetto il punto decimale
-                          inputValue = inputValue.replace(/[^\d.]/g, '');
-                          
-                          // Se il valore è un numero valido, passalo al campo
-                          if (inputValue === '' || inputValue === '.') {
-                            onChange(null);
-                          } else {
-                            const numValue = parseFloat(inputValue);
-                            if (!isNaN(numValue) && numValue >= 0) {
-                              onChange(numValue);
-                            }
+                          // Converte il valore in numero
+                          const numValue = parseFloat(rawValue);
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            field.onChange(numValue);
                           }
                         }}
-                        {...restField}
                         className="text-sm h-9 bg-white w-full"
                       />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -406,19 +396,30 @@ export default function LotFormNew({
                     <FormLabel className="text-sm font-medium">N° Animali Campione</FormLabel>
                     <FormControl>
                       <Input 
-                        type="text" 
+                        type="number"
+                        min="0"
+                        step="1"
                         placeholder="N° animali"
                         {...field}
-                        value={field.value !== null && field.value !== undefined 
-                          ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                          : ''}
+                        value={field.value || ""}
                         onChange={(e) => {
-                          const numericValue = e.target.value.replace(/[^\d]/g, '');
-                          field.onChange(numericValue ? Number(numericValue) : null);
+                          // Gestisci il valore vuoto come null
+                          const rawValue = e.target.value;
+                          if (!rawValue) {
+                            field.onChange(null);
+                            return;
+                          }
+                          
+                          // Converte il valore in numero intero
+                          const numValue = parseInt(rawValue, 10);
+                          if (!isNaN(numValue) && numValue >= 0) {
+                            field.onChange(numValue);
+                          }
                         }}
                         className="text-sm h-9 bg-white w-full"
                       />
                     </FormControl>
+                    <FormMessage />
                   </FormItem>
                 )}
               />
@@ -430,28 +431,32 @@ export default function LotFormNew({
                 <FormLabel className="text-sm font-medium">Peso Totale (g)</FormLabel>
                 <FormControl>
                   <Input 
-                    type="text"
+                    type="number"
+                    step="0.01"
+                    min="0"
                     inputMode="decimal"
                     placeholder="Peso totale"
-                    value={totalWeightGrams !== null && totalWeightGrams !== undefined 
-                      ? (totalWeightGrams < 1 && totalWeightGrams > 0 ? `0${totalWeightGrams.toString().replace(/^0+/, '')}` : totalWeightGrams.toString())
-                      : ''}
+                    value={totalWeightGrams || ""}
                     onChange={(e) => {
-                      // Accetta solo numeri e punto decimale
-                      const value = e.target.value.replace(/[^\d.]/g, '');
-                      // Controlla se il valore è valido e non negativo
-                      const numericValue = value ? Number(value) : null;
-                      
-                      if (numericValue !== null && numericValue < 0) {
+                      // Gestisci il valore vuoto come null
+                      const rawValue = e.target.value;
+                      if (!rawValue) {
+                        setTotalWeightGrams(null);
                         return;
                       }
-                      setTotalWeightGrams(numericValue);
                       
-                      const piecesPerKg = form.getValues("weight");
-                      if (numericValue && piecesPerKg) {
-                        const totalAnimals = calculateTotalAnimals(numericValue, piecesPerKg);
-                        setCalculatedTotalAnimals(totalAnimals);
-                        form.setValue("animalCount", totalAnimals);
+                      // Converte il valore in numero
+                      const numValue = parseFloat(rawValue);
+                      if (!isNaN(numValue) && numValue >= 0) {
+                        setTotalWeightGrams(numValue);
+                        
+                        // Se abbiamo già un valore per pezzi per kg, calcola il totale animali
+                        const piecesPerKg = form.getValues("weight");
+                        if (numValue && piecesPerKg) {
+                          const totalAnimals = calculateTotalAnimals(numValue, piecesPerKg);
+                          setCalculatedTotalAnimals(totalAnimals);
+                          form.setValue("animalCount", totalAnimals);
+                        }
                       }
                     }}
                     className="text-sm h-9 bg-white w-full"
