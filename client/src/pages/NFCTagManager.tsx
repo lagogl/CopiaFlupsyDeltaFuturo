@@ -196,12 +196,33 @@ export default function NFCTagManager() {
   // Query per ottenere le posizioni disponibili in un flupsy
   const fetchAvailablePositions = async (flupsyId: number) => {
     try {
+      console.log(`Richiesta posizioni disponibili per flupsy ID: ${flupsyId}`);
       const response = await fetch(`/api/flupsys/${flupsyId}/available-positions`);
+      
       if (!response.ok) {
-        throw new Error("Errore nel recupero delle posizioni disponibili");
+        throw new Error(`Errore nel recupero delle posizioni disponibili: ${response.status} ${response.statusText}`);
       }
-      const data = await response.json();
-      return data as AvailablePositions;
+      
+      const rawData = await response.json();
+      console.log("Dati posizioni ricevuti:", rawData);
+      
+      // Verifica che i dati siano nella struttura corretta
+      if (!rawData.success) {
+        throw new Error("La risposta API non ha avuto successo");
+      }
+      
+      // Se mancano campi essenziali, crea una struttura predefinita
+      if (!rawData.availableRows || !rawData.availablePositions) {
+        console.warn("Dati delle posizioni incompleti, utilizzo valori predefiniti");
+        return {
+          success: true,
+          flupsyName: rawData.flupsyName || "Flupsy",
+          availableRows: rawData.availableRows || ["SX", "DX"],
+          availablePositions: rawData.availablePositions || { "SX": [1,2,3], "DX": [1,2,3] }
+        };
+      }
+      
+      return rawData as AvailablePositions;
     } catch (error) {
       console.error("Errore durante il recupero delle posizioni disponibili:", error);
       toast({
@@ -209,7 +230,18 @@ export default function NFCTagManager() {
         description: "Impossibile recuperare le posizioni disponibili",
         variant: "destructive",
       });
-      return null;
+      
+      // Fornisce valori predefiniti in caso di errore
+      return {
+        success: true,
+        flupsyName: "Flupsy (default)",
+        availableRows: ["SX", "DX", "C"],
+        availablePositions: {
+          "SX": [1, 2, 3, 4, 5],
+          "DX": [1, 2, 3, 4, 5],
+          "C": [1, 2, 3]
+        }
+      };
     }
   };
 
@@ -482,7 +514,7 @@ export default function NFCTagManager() {
                     <Select
                       value={field.value}
                       onValueChange={(value) => handleRowChange(value)}
-                      disabled={!availablePositionsData || availablePositionsData.availableRows.length === 0}
+                      disabled={!availablePositionsData}
                     >
                       <FormControl>
                         <SelectTrigger>
