@@ -285,10 +285,10 @@ export default function Lots() {
             <Tooltip>
               <TooltipTrigger asChild>
                 <Button 
-                  variant={viewMode === 'simple' ? 'outline' : 'default'} 
+                  variant="outline" 
                   size="sm" 
                   onClick={() => setViewMode(viewMode === 'simple' ? 'detailed' : 'simple')}
-                  className={viewMode === 'detailed' ? 'bg-blue-600 hover:bg-blue-700' : ''}
+                  className={viewMode === 'detailed' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
                 >
                   {viewMode === 'simple' ? (
                     <><Table2 className="h-4 w-4 mr-1" /> Vista Dettagliata</>
