@@ -36,7 +36,10 @@ const formSchema = z.object({
   weight: z.number().optional().nullable(),
   sizeId: z.number().optional().nullable(),
   notes: z.string().optional().nullable(),
-  state: z.string().optional()
+  state: z.string().optional(),
+  // Nuovi campi per il calcolo automatico
+  sampleWeight: z.number().optional().nullable(), // Peso del campione in grammi
+  sampleCount: z.number().int().optional().nullable(), // Numero di animali nel campione
 });
 
 type FormValues = z.infer<typeof formSchema>;
@@ -65,6 +68,27 @@ export default function LotForm({
     resolver: zodResolver(formSchema),
     defaultValues,
   });
+  
+  // Per gestire il calcolo di animali totali senza aggiungere un campo al form
+  const [calculatedTotalAnimals, setCalculatedTotalAnimals] = useState<number | null>(null);
+  
+  // Monitoriamo i cambiamenti nei campi rilevanti per calcolare automaticamente
+  useEffect(() => {
+    const subscription = form.watch((value, { name }) => {
+      // Se cambia uno dei valori rilevanti, ricalcola
+      if (['sampleWeight', 'sampleCount', 'animalCount', 'weight'].includes(name as string)) {
+        const piecesPerKg = form.getValues("weight");
+        const totalWeight = form.getValues("animalCount");
+        // Solo se entrambi i valori sono disponibili
+        if (piecesPerKg && totalWeight) {
+          const totalAnimals = Math.round(totalWeight * (piecesPerKg / 1000));
+          setCalculatedTotalAnimals(totalAnimals);
+        }
+      }
+    });
+    
+    return () => subscription.unsubscribe();
+  }, [form]);
 
   return (
     <Form {...form}>
@@ -197,42 +221,17 @@ export default function LotForm({
             )}
           />
 
+          {/* Peso totale in grammi */}
           <FormField
             control={form.control}
             name="animalCount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Numero Animali</FormLabel>
+                <FormLabel>Peso Totale (g)</FormLabel>
                 <FormControl>
                   <Input 
                     type="text" 
-                    placeholder="Numero di animali"
-                    {...field}
-                    value={field.value !== null && field.value !== undefined 
-                      ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                      : ''}
-                    onChange={(e) => {
-                      // Rimuovi tutti i caratteri non numerici, eccetto il punto
-                      const numericValue = e.target.value.replace(/[^\d]/g, '');
-                      field.onChange(numericValue ? Number(numericValue) : null);
-                    }}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
-          <FormField
-            control={form.control}
-            name="weight"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Peso (g)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="text" 
-                    placeholder="Peso in grammi"
+                    placeholder="Peso totale in grammi"
                     {...field}
                     value={field.value !== null && field.value !== undefined 
                       ? field.value.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
@@ -248,7 +247,178 @@ export default function LotForm({
                       // Converti da formato europeo (con virgola) al formato numerico JavaScript
                       const numericValue = value ? Number(value.replace(',', '.')) : null;
                       field.onChange(numericValue);
+                      
+                      // Calcola il numero totale di animali
+                      const piecesPerKg = form.getValues("weight");
+                      if (numericValue && piecesPerKg) {
+                        // In questo modo si calcola automaticamente il numero totale di animali
+                        // Il valore verrà sostituito più tardi con il vero numero di animali
+                        const totalAnimals = Math.round(numericValue * (piecesPerKg / 1000));
+                        
+                        // Salviamo temporaneamente il peso totale
+                        const totalWeightGrams = numericValue;
+                        
+                        // Aggiorneremo animalCount quando verrà inviato il form
+                        setTimeout(() => {
+                          form.setValue("animalCount", totalAnimals);
+                        }, 200);
+                      }
                     }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Numero totale di animali (calcolato automaticamente) */}
+          <FormField
+            control={form.control}
+            name="totalAnimals"
+            render={() => {
+              // Calcola il numero totale di animali
+              const piecesPerKg = form.watch("weight") || 0;
+              const totalWeight = form.watch("animalCount") || 0;
+              const totalAnimals = piecesPerKg > 0 && totalWeight > 0 
+                ? Math.round(totalWeight * (piecesPerKg / 1000))
+                : 0;
+                
+              return (
+                <FormItem>
+                  <FormLabel>N° Animali Totali (calcolato)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="Calcolato automaticamente"
+                      value={totalAnimals > 0 
+                        ? totalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                        : ''}
+                      readOnly
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              );
+            }}
+          />
+
+          {/* Peso del campione in grammi */}
+          <FormField
+            control={form.control}
+            name="sampleWeight"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Peso Campione (g)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="text" 
+                    placeholder="Peso campione in grammi"
+                    {...field}
+                    value={field.value !== null && field.value !== undefined 
+                      ? field.value.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                      : ''}
+                    onChange={(e) => {
+                      // Rimuovi tutti i caratteri non numerici eccetto la virgola
+                      let value = e.target.value.replace(/[^\d,]/g, '');
+                      // Assicurati che ci sia al massimo una virgola
+                      const commaCount = (value.match(/,/g) || []).length;
+                      if (commaCount > 1) {
+                        value = value.replace(/,/g, (match, index) => index === value.indexOf(',') ? ',' : '');
+                      }
+                      // Converti da formato europeo (con virgola) al formato numerico JavaScript
+                      const numericValue = value ? Number(value.replace(',', '.')) : null;
+                      field.onChange(numericValue);
+                      
+                      // Calcolo automatico dei pezzi per kg
+                      const sampleCount = form.getValues("sampleCount");
+                      if (numericValue && sampleCount) {
+                        // Calcola pezzi per kg (sampleCount / sampleWeight in kg)
+                        const piecesPerKg = Math.round(sampleCount / (numericValue / 1000));
+                        
+                        // Aggiorna il campo weight (pezzi per kg)
+                        form.setValue("weight", piecesPerKg);
+                        
+                        // Calcola il numero totale di animali se il peso totale è presente
+                        const totalWeight = form.getValues("animalCount");
+                        if (totalWeight) {
+                          // Il campo animalCount è usato temporaneamente per memorizzare il peso totale in grammi
+                          const totalAnimals = Math.round(totalWeight * (piecesPerKg / 1000));
+                          setTimeout(() => {
+                            form.setValue("animalCount", totalAnimals);
+                          }, 100);
+                        }
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Numero di animali nel campione */}
+          <FormField
+            control={form.control}
+            name="sampleCount"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>N° Animali Campione</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="text" 
+                    placeholder="Numero di animali nel campione"
+                    {...field}
+                    value={field.value !== null && field.value !== undefined 
+                      ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                      : ''}
+                    onChange={(e) => {
+                      // Rimuovi tutti i caratteri non numerici
+                      const numericValue = e.target.value.replace(/[^\d]/g, '');
+                      field.onChange(numericValue ? Number(numericValue) : null);
+                      
+                      // Calcolo automatico dei pezzi per kg
+                      const sampleWeight = form.getValues("sampleWeight");
+                      if (sampleWeight && numericValue) {
+                        // Calcola pezzi per kg (sampleCount / sampleWeight in kg)
+                        const piecesPerKg = Math.round(Number(numericValue) / (sampleWeight / 1000));
+                        
+                        // Aggiorna il campo weight (pezzi per kg)
+                        form.setValue("weight", piecesPerKg);
+                        
+                        // Calcola il numero totale di animali se il peso totale è presente
+                        const totalWeight = form.getValues("animalCount");
+                        if (totalWeight) {
+                          // Il campo animalCount è usato temporaneamente per memorizzare il peso totale in grammi
+                          const totalAnimals = Math.round(totalWeight * (piecesPerKg / 1000));
+                          setTimeout(() => {
+                            form.setValue("animalCount", totalAnimals);
+                          }, 100);
+                        }
+                      }
+                    }}
+                  />
+                </FormControl>
+                <FormMessage />
+              </FormItem>
+            )}
+          />
+          
+          {/* Pezzi per Kg (calcolato automaticamente) */}
+          <FormField
+            control={form.control}
+            name="weight"
+            render={({ field }) => (
+              <FormItem>
+                <FormLabel>Pezzi per Kg (calcolato)</FormLabel>
+                <FormControl>
+                  <Input 
+                    type="text" 
+                    placeholder="Calcolato automaticamente"
+                    {...field}
+                    value={field.value !== null && field.value !== undefined 
+                      ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                      : ''}
+                    readOnly
                   />
                 </FormControl>
                 <FormMessage />
