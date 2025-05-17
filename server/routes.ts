@@ -33,6 +33,7 @@ import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
+import { updateBasketPosition } from "./controllers/basket-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
 
 // Importazione del router per le API esterne
