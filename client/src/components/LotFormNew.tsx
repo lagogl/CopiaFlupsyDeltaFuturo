@@ -72,6 +72,7 @@ export default function LotFormNew({
   // Stato per i calcoli automatici
   const [totalWeightGrams, setTotalWeightGrams] = useState<number | null>(null);
   const [calculatedTotalAnimals, setCalculatedTotalAnimals] = useState<number | null>(null);
+  const [suggestedSizeId, setSuggestedSizeId] = useState<number | null>(null);
   
   // Funzioni di calcolo
   const calculatePiecesPerKg = (count: number, weightGrams: number): number => {
@@ -80,6 +81,30 @@ export default function LotFormNew({
   
   const calculateTotalAnimals = (weightGrams: number, piecesPerKg: number): number => {
     return Math.round(weightGrams * (piecesPerKg / 1000));
+  };
+  
+  // Funzione per determinare la taglia in base ai pezzi per kg
+  const determineSizeId = (piecesPerKg: number): number | null => {
+    if (!sizes || sizes.length === 0) return null;
+    
+    // Ordina le taglie per codice
+    const sortedSizes = [...sizes].sort((a, b) => {
+      // Estrai i numeri dai codici (es. "T-600" -> 600)
+      const numA = a.code ? parseInt(a.code.replace(/\D/g, '')) : 0;
+      const numB = b.code ? parseInt(b.code.replace(/\D/g, '')) : 0;
+      return numB - numA; // Dal più grande al più piccolo
+    });
+    
+    // Trova la taglia in base ai pezzi per kg
+    for (const size of sortedSizes) {
+      const sizeNumber = size.code ? parseInt(size.code.replace(/\D/g, '')) : 0;
+      if (piecesPerKg >= sizeNumber) {
+        return size.id;
+      }
+    }
+    
+    // Se non trova corrispondenza, restituisci la taglia più piccola
+    return sortedSizes[sortedSizes.length - 1]?.id || null;
   };
   
   // Monitorare i cambiamenti nei campi e aggiornare i calcoli
@@ -95,6 +120,13 @@ export default function LotFormNew({
           const piecesPerKg = calculatePiecesPerKg(sampleCount, sampleWeight);
           form.setValue("weight", piecesPerKg);
           
+          // Determina la taglia in base ai pezzi per kg e aggiorna il campo
+          const autoSizeId = determineSizeId(piecesPerKg);
+          setSuggestedSizeId(autoSizeId);
+          if (autoSizeId) {
+            form.setValue("sizeId", autoSizeId);
+          }
+          
           // Se è presente anche il peso totale, calcola gli animali totali
           if (totalWeightGrams) {
             const totalAnimals = calculateTotalAnimals(totalWeightGrams, piecesPerKg);
@@ -107,10 +139,22 @@ export default function LotFormNew({
           }
         }
       }
+      
+      // Se viene aggiornato il peso per kg manualmente, aggiorna anche la taglia suggerita
+      if (name === "weight") {
+        const piecesPerKg = form.getValues("weight");
+        if (piecesPerKg) {
+          const autoSizeId = determineSizeId(piecesPerKg);
+          setSuggestedSizeId(autoSizeId);
+          if (autoSizeId) {
+            form.setValue("sizeId", autoSizeId);
+          }
+        }
+      }
     });
     
     return () => subscription.unsubscribe();
-  }, [form, totalWeightGrams]);
+  }, [form, totalWeightGrams, sizes]);
   
   // Funzione per il submit che gestisce i calcoli finali
   const handleSubmit = (data: FormValues) => {
