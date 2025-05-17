@@ -89,31 +89,12 @@ export default function LotFormNew({
   const determineSizeId = (piecesPerKg: number): number | null => {
     if (!sizes || sizes.length === 0 || !piecesPerKg) return null;
     
-    // Stampa tutte le taglie disponibili per debug
-    console.log("Taglie disponibili nel database:", sizes.map(s => `${s.code} (min: ${s.minAnimalsPerKg}, max: ${s.maxAnimalsPerKg})`));
-    console.log(`Cercando taglia per ${piecesPerKg} pezzi per kg`);
+    // Debug: stampa tutte le taglie disponibili
+    console.log(`Cercando taglia per ${piecesPerKg} pezzi per kg. Taglie disponibili:`, 
+      sizes.map(s => `${s.code} (id: ${s.id})`).join(", "));
     
-    // Cerca prima taglie con range espliciti nel database
-    const sizesWithRange = sizes.filter(size => 
-      size.minAnimalsPerKg !== undefined && 
-      size.maxAnimalsPerKg !== undefined
-    );
-    
-    if (sizesWithRange.length > 0) {
-      // Trova la taglia che contiene il valore nel suo range
-      const matchingSize = sizesWithRange.find(size => 
-        piecesPerKg >= size.minAnimalsPerKg! && 
-        piecesPerKg <= size.maxAnimalsPerKg!
-      );
-      
-      if (matchingSize) {
-        console.log(`Taglia trovata nei range del database: ${matchingSize.code} (id: ${matchingSize.id}, range: ${matchingSize.minAnimalsPerKg}-${matchingSize.maxAnimalsPerKg})`);
-        return matchingSize.id;
-      }
-    }
-    
-    // Se non trova in range espliciti, estrarre il numero dalla taglia
-    // Ordinare le taglie per valore numerico (in ordine decrescente)
+    // Estrarre il valore numerico dalle taglie e ordinare in modo crescente
+    // TP-500 → 500, TP-1000 → 1000, ecc.
     const taglieNumerate = sizes
       .map(size => {
         const match = size.code.match(/\d+/);
@@ -123,35 +104,38 @@ export default function LotFormNew({
         };
       })
       .filter(size => size.numericValue > 0)
-      .sort((a, b) => b.numericValue - a.numericValue);
+      .sort((a, b) => a.numericValue - b.numericValue); // ordine crescente
     
-    console.log("Taglie ordinate:", taglieNumerate.map(s => `${s.code} (${s.numericValue})`));
+    // Debug delle taglie ordinate
+    console.log("Taglie ordinate (crescenti):", 
+      taglieNumerate.map(s => `${s.code} (${s.numericValue})`).join(", "));
     
-    // Caso 1: Trova la taglia che ha un valore numerico esattamente uguale
+    // 1. Cerca una corrispondenza esatta
     const exactMatch = taglieNumerate.find(size => size.numericValue === piecesPerKg);
     if (exactMatch) {
-      console.log(`Corrispondenza esatta: ${exactMatch.code} (id: ${exactMatch.id})`);
+      console.log(`Corrispondenza esatta trovata: ${exactMatch.code} (id: ${exactMatch.id})`);
       return exactMatch.id;
     }
     
-    // Caso 2: Trova la taglia con valore numerico immediatamente inferiore a piecesPerKg
-    // Questo perché la taglia rappresenta il numero massimo di pezzi per kg
-    for (let i = 0; i < taglieNumerate.length; i++) {
-      if (taglieNumerate[i].numericValue <= piecesPerKg) {
-        console.log(`Taglia selezionata (prossima inferiore): ${taglieNumerate[i].code} (id: ${taglieNumerate[i].id}, valore: ${taglieNumerate[i].numericValue})`);
-        return taglieNumerate[i].id;
-      }
+    // 2. Cerca la taglia immediatamente superiore
+    // Per esempio, se abbiamo 10500 pezzi/kg, e abbiamo taglie TP-10000 e TP-11000,
+    // dovremmo selezionare TP-11000
+    const tagliaSuperiore = taglieNumerate.find(size => size.numericValue > piecesPerKg);
+    if (tagliaSuperiore) {
+      console.log(`Taglia superiore trovata: ${tagliaSuperiore.code} (id: ${tagliaSuperiore.id})`);
+      return tagliaSuperiore.id;
     }
     
-    // Caso 3: Se il valore è più grande di tutte le taglie, usa la taglia con il valore più alto
+    // 3. Se non c'è una taglia superiore, usa la taglia con il valore più alto
     if (taglieNumerate.length > 0) {
-      console.log(`Valore troppo alto, usando taglia più grande: ${taglieNumerate[0].code} (id: ${taglieNumerate[0].id})`);
-      return taglieNumerate[0].id;
+      const tagliaMax = taglieNumerate[taglieNumerate.length - 1]; // l'ultima dell'array (la più grande)
+      console.log(`Nessuna taglia superiore trovata, usando la più grande: ${tagliaMax.code} (id: ${tagliaMax.id})`);
+      return tagliaMax.id;
     }
     
-    // Caso 4: Fallback - usa la prima taglia disponibile
-    console.log("Nessuna taglia adatta trovata, usando fallback");
-    return sizes[0]?.id || null;
+    // 4. Fallback - nessuna taglia trovata
+    console.log("Nessuna taglia adatta trovata");
+    return null;
   };
   
   // Monitorare i cambiamenti nei campi e aggiornare i calcoli
