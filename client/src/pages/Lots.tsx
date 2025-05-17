@@ -11,7 +11,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from "@/hooks/use-toast";
-import LotForm from '@/components/LotForm';
+import LotFormNew from '@/components/LotFormNew';
 import LotInventoryPanel from '@/components/lot-inventory/LotInventoryPanel';
 
 export default function Lots() {
