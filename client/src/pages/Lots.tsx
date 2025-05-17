@@ -12,6 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { useToast } from "@/hooks/use-toast";
 import LotFormNew from '@/components/LotFormNew';
+// Nessun bisogno di importare esplicitamente il tipo
 import LotInventoryPanel from '@/components/lot-inventory/LotInventoryPanel';
 
 export default function Lots() {
@@ -457,7 +458,7 @@ export default function Lots() {
               Inserisci i dettagli per creare un nuovo lotto
             </DialogDescription>
           </DialogHeader>
-          <LotForm 
+          <LotFormNew 
             onSubmit={(data) => createLotMutation.mutate(data)} 
             isLoading={createLotMutation.isPending}
           />
@@ -474,7 +475,7 @@ export default function Lots() {
                 Modifica i dettagli del lotto selezionato
               </DialogDescription>
             </DialogHeader>
-            <LotForm 
+            <LotFormNew 
               onSubmit={(data) => {
                 // Manteniamo l'ID del lotto selezionato
                 updateLotMutation.mutate({ ...data, id: selectedLot.id });
@@ -489,7 +490,9 @@ export default function Lots() {
                 animalCount: selectedLot.animalCount,
                 weight: selectedLot.weight,
                 state: selectedLot.state,
-                notes: selectedLot.notes
+                notes: selectedLot.notes,
+                sampleWeight: selectedLot.sampleWeight,
+                sampleCount: selectedLot.sampleCount
               }}
             />
           </DialogContent>

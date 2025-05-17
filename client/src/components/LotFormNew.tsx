@@ -42,7 +42,7 @@ const formSchema = z.object({
   sampleCount: z.number().int().optional().nullable(), // Numero di animali nel campione
 });
 
-type FormValues = z.infer<typeof formSchema>;
+export type FormValues = z.infer<typeof formSchema>;
 
 interface LotFormProps {
   onSubmit: (values: FormValues) => void;
