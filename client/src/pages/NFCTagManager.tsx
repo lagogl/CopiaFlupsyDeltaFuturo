@@ -522,11 +522,20 @@ export default function NFCTagManager() {
                         </SelectTrigger>
                       </FormControl>
                       <SelectContent>
-                        {availablePositionsData?.availableRows.map(row => (
-                          <SelectItem key={row} value={row}>
-                            Fila {row}
-                          </SelectItem>
-                        ))}
+                        {availablePositionsData && availablePositionsData.availableRows && 
+                          availablePositionsData.availableRows.map(row => (
+                            <SelectItem key={row} value={row}>
+                              Fila {row}
+                            </SelectItem>
+                          ))
+                        }
+                        {(!availablePositionsData || !availablePositionsData.availableRows || availablePositionsData.availableRows.length === 0) && (
+                          <>
+                            <SelectItem value="SX">Fila SX</SelectItem>
+                            <SelectItem value="DX">Fila DX</SelectItem>
+                            <SelectItem value="C">Fila C</SelectItem>
+                          </>
+                        )}
                       </SelectContent>
                     </Select>
                     <FormMessage />
