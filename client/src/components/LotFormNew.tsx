@@ -317,15 +317,20 @@ export default function LotFormNew({
                       ? field.value.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
                       : ''}
                     onChange={(e) => {
-                      // Rimuovi tutti i caratteri non numerici eccetto la virgola
-                      let value = e.target.value.replace(/[^\d,]/g, '');
+                      // Rimuovi tutti i caratteri non numerici eccetto la virgola e il punto
+                      let value = e.target.value.replace(/[^\d.,]/g, '');
+                      
+                      // Sostituisci i punti con virgole per standardizzare
+                      value = value.replace(/\./g, ',');
+                      
                       // Assicurati che ci sia al massimo una virgola
                       const commaCount = (value.match(/,/g) || []).length;
                       if (commaCount > 1) {
                         value = value.replace(/,/g, (match, index) => index === value.indexOf(',') ? ',' : '');
                       }
+                      
                       // Converti da formato europeo (con virgola) al formato numerico JavaScript
-                      const numericValue = value ? Number(value.replace(',', '.')) : null;
+                      const numericValue = value ? parseFloat(value.replace(',', '.')) : null;
                       field.onChange(numericValue);
                     }}
                   />
@@ -378,7 +383,7 @@ export default function LotFormNew({
                       ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
                       : ''}
                     readOnly
-                    className="bg-slate-50"
+                    className="bg-blue-50"
                   />
                 </FormControl>
                 <FormMessage />
@@ -398,15 +403,20 @@ export default function LotFormNew({
                     ? totalWeightGrams.toString().replace('.', ',').replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
                     : ''}
                   onChange={(e) => {
-                    // Rimuovi tutti i caratteri non numerici eccetto la virgola
-                    let value = e.target.value.replace(/[^\d,]/g, '');
+                    // Rimuovi tutti i caratteri non numerici eccetto la virgola e il punto
+                    let value = e.target.value.replace(/[^\d.,]/g, '');
+                    
+                    // Sostituisci i punti con virgole per standardizzare
+                    value = value.replace(/\./g, ',');
+                    
                     // Assicurati che ci sia al massimo una virgola
                     const commaCount = (value.match(/,/g) || []).length;
                     if (commaCount > 1) {
                       value = value.replace(/,/g, (match, index) => index === value.indexOf(',') ? ',' : '');
                     }
+                    
                     // Converti da formato europeo (con virgola) al formato numerico JavaScript
-                    const numericValue = value ? Number(value.replace(',', '.')) : null;
+                    const numericValue = value ? parseFloat(value.replace(',', '.')) : null;
                     setTotalWeightGrams(numericValue);
                     
                     // Calcola il numero totale di animali
@@ -435,7 +445,7 @@ export default function LotFormNew({
                     ? calculatedTotalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
                     : ''}
                   readOnly
-                  className="bg-slate-50"
+                  className="bg-blue-50"
                 />
               </FormControl>
               <FormMessage />
