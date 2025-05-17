@@ -810,10 +810,22 @@ export class DbStorage implements IStorage {
       lot.arrivalDate = lot.arrivalDate.toISOString().split('T')[0];
     }
     
+    // Importazione dinamica per evitare dipendenze circolari
+    const { getNextSequentialLotId, resetLotIdSequence } = await import('./controllers/lot-sequence-controller');
+    
+    // Ottiene il prossimo ID sequenziale
+    const nextId = await getNextSequentialLotId();
+    
+    // Reset della sequenza per assicurarsi che il prossimo ID generato sia quello corretto
+    await resetLotIdSequence(nextId);
+    
+    // Inserimento con ID esplicito per garantire la sequenzialità
     const results = await db.insert(lots).values({
       ...lot,
+      id: nextId,
       state: 'active'
     }).returning();
+    
     return results[0];
   }
 
