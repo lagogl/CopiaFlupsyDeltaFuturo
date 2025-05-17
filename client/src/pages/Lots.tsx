@@ -428,14 +428,7 @@ export default function Lots() {
                             className="h-7 w-7">
                             <Eye className="h-4 w-4 text-primary" />
                           </Button>
-                          <Button 
-                            variant="ghost" 
-                            size="icon" 
-                            title="Modifica lotto"
-                            onClick={() => handleEditLot(lot)}
-                            className="h-7 w-7">
-                            <Edit className="h-4 w-4 text-blue-500" />
-                          </Button>
+                          {/* Il pulsante di modifica è stato rimosso come richiesto */}
                           <Button 
                             variant="ghost" 
                             size="icon" 
