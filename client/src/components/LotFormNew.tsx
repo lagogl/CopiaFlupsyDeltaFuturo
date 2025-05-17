@@ -365,10 +365,19 @@ export default function LotFormNew({
                           ? (field.value < 1 && field.value > 0 ? `0${field.value.toString().replace(/^0+/, '')}` : field.value.toString())
                           : ''}
                         onChange={(e) => {
-                          // Accetta solo numeri e punto decimale
-                          const value = e.target.value.replace(/[^\d.]/g, '');
+                          // Accetta solo numeri e punto decimale, sostituisce virgola con punto
+                          const value = e.target.value.replace(/,/g, '.').replace(/[^\d.]/g, '');
+                          
+                          // Assicura che ci sia un solo punto decimale
+                          const decimalCount = (value.match(/\./g) || []).length;
+                          let sanitizedValue = value;
+                          if (decimalCount > 1) {
+                            const parts = value.split('.');
+                            sanitizedValue = parts[0] + '.' + parts.slice(1).join('');
+                          }
+                          
                           // Controlla se il valore è valido e non negativo
-                          const numericValue = value ? Number(value) : null;
+                          const numericValue = sanitizedValue ? parseFloat(sanitizedValue) : null;
                           
                           if (numericValue !== null && numericValue < 0) {
                             return;
