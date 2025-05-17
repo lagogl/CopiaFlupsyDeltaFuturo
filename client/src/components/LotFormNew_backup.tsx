@@ -453,66 +453,67 @@ export default function LotFormNew({
             <div className="text-xs font-medium text-green-800 mb-2">Valori calcolati automaticamente</div>
             
             <div className="grid grid-cols-3 gap-4">
-              {/* Taglia calcolata */}
-              <FormField
-                control={form.control}
-                name="sizeId"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm text-green-800">Taglia (calcolata)</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="text" 
-                        placeholder="Calcolata automaticamente"
-                        value={field.value !== null && field.value !== undefined 
-                          ? (sizes.find(s => s.id === field.value)?.code || "") 
-                          : ''}
-                        readOnly
-                        className="bg-white text-sm h-9 border-green-200"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              
-              {/* Pezzi per kg calcolati */}
-              <FormField
-                control={form.control}
-                name="weight"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel className="text-sm text-green-800">Pezzi per Kg</FormLabel>
-                    <FormControl>
-                      <Input 
-                        type="text" 
-                        placeholder="Calcolato automaticamente"
-                        {...field}
-                        value={field.value !== null && field.value !== undefined 
-                          ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                          : ''}
-                        readOnly
-                        className="bg-white text-sm h-9 border-green-200"
-                      />
-                    </FormControl>
-                  </FormItem>
-                )}
-              />
-              
-              {/* Animali totali calcolati */}
-              <FormItem>
-                <FormLabel className="text-sm text-green-800">N° Animali Totali</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="text" 
-                    placeholder="Calcolato automaticamente"
-                    value={calculatedTotalAnimals !== null 
-                      ? calculatedTotalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
-                      : ''}
-                    readOnly
-                    className="bg-white text-sm h-9 border-green-200"
-                  />
-                </FormControl>
-              </FormItem>
+                {/* Taglia calcolata */}
+                <FormField
+                  control={form.control}
+                  name="sizeId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm text-green-800">Taglia (calcolata)</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text" 
+                          placeholder="Calcolata automaticamente"
+                          value={field.value !== null && field.value !== undefined 
+                            ? (sizes.find(s => s.id === field.value)?.code || "") 
+                            : ''}
+                          readOnly
+                          className="bg-white text-sm h-9 border-green-200"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Pezzi per kg calcolati */}
+                <FormField
+                  control={form.control}
+                  name="weight"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-sm text-green-800">Pezzi per Kg</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text" 
+                          placeholder="Calcolato automaticamente"
+                          {...field}
+                          value={field.value !== null && field.value !== undefined 
+                            ? field.value.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                            : ''}
+                          readOnly
+                          className="bg-white text-sm h-9 border-green-200"
+                        />
+                      </FormControl>
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Animali totali calcolati */}
+                <FormItem>
+                  <FormLabel className="text-sm text-green-800">N° Animali Totali</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="Calcolato automaticamente"
+                      value={calculatedTotalAnimals !== null 
+                        ? calculatedTotalAnimals.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ".") 
+                        : ''}
+                      readOnly
+                      className="bg-white text-sm h-9 border-green-200"
+                    />
+                  </FormControl>
+                </FormItem>
+              </div>
             </div>
           </div>
           
@@ -521,23 +522,22 @@ export default function LotFormNew({
             control={form.control}
             name="notes"
             render={({ field }) => (
-              <FormItem>
-                <FormLabel className="text-sm font-medium">Note</FormLabel>
+              <FormItem className="col-span-3 mt-2">
+                <FormLabel className="text-sm">Note</FormLabel>
                 <FormControl>
                   <Textarea 
-                    placeholder="Note opzionali" 
-                    {...field} 
+                    placeholder="Inserisci note aggiuntive" 
+                    rows={3}
+                    {...field}
                     value={field.value || ""}
-                    className="text-sm resize-none h-20" 
+                    className="text-sm"
                   />
                 </FormControl>
-                <FormMessage />
               </FormItem>
             )}
           />
-          
-          {/* Pulsanti di azione */}
-          <div className="flex justify-end space-x-2 mt-4">
+
+          <div className="col-span-3 flex justify-end space-x-2 mt-4">
             <Button variant="outline" type="button" onClick={() => form.reset()} size="sm">
               Annulla
             </Button>
