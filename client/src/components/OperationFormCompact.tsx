@@ -614,11 +614,58 @@ export default function OperationFormCompact({
                         }}
                       >
                         <FormControl>
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue placeholder={watchFlupsyId ? 
-                              (flupsyBaskets.length > 0 ? "Seleziona cestello" : "Nessun cestello") : 
-                              "Seleziona prima FLUPSY"} 
-                            />
+                          <SelectTrigger className="min-h-10 text-sm py-1">
+                            <SelectValue>
+                              {watchBasketId ? (
+                                <div className="flex flex-col gap-0">
+                                  <div className="font-medium">
+                                    {(() => {
+                                      const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
+                                      if (!selectedBasket) return "Cestello selezionato";
+                                      
+                                      return (
+                                        <>
+                                          #{selectedBasket.physicalNumber} 
+                                          {selectedBasket.row && selectedBasket.position ? 
+                                            `(${selectedBasket.row}-${selectedBasket.position})` : ''}
+                                          {selectedBasket.state === 'active' ? ' ✅' : ''}
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                    {(() => {
+                                      const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
+                                      if (!selectedBasket) return null;
+                                      
+                                      // Recupera numero animali
+                                      const animalCount = selectedBasket.animalCount || 
+                                                         (selectedBasket.lastOperation?.animalCount);
+                                      
+                                      return (
+                                        <>
+                                          {animalCount ? 
+                                            <span>{animalCount.toLocaleString('it-IT')} animali</span> : 
+                                            "N° animali non disponibile"}
+                                          
+                                          {selectedBasket.size?.code ? 
+                                            <span className="ml-1 px-1.5 py-0.5 rounded-md" style={{
+                                              backgroundColor: selectedBasket.size?.color || '#e5e7eb',
+                                              color: '#fff'
+                                            }}>{selectedBasket.size?.code}</span> : null}
+                                        </>
+                                      );
+                                    })()}
+                                  </div>
+                                </div>
+                              ) : (
+                                <span>
+                                  {watchFlupsyId ? 
+                                    (flupsyBaskets.length > 0 ? "Seleziona cestello" : "Nessun cestello") : 
+                                    "Seleziona prima FLUPSY"}
+                                </span>
+                              )}
+                            </SelectValue>
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
