@@ -616,8 +616,12 @@ export default function OperationFormCompact({
                           {flupsyBaskets.length > 0 ? (
                             flupsyBaskets.map((basket) => (
                               <SelectItem key={basket.id} value={basket.id.toString()}>
-                                #{basket.physicalNumber} {basket.row && basket.position ? `(${basket.row}-${basket.position})` : ''}
-                                {basket.currentCycleId ? ' 🔄' : ''}
+                                #{basket.physicalNumber} {basket.row && basket.position ? `(${basket.row}-${basket.position})` : ''} 
+                                {basket.state === 'active' ? '✅ ' : basket.state === 'inactive' ? '⚪️ ' : ''}
+                                {basket.animalCount ? `${basket.animalCount.toLocaleString('it-IT')} anim. ` : ''}
+                                {basket.lastOperation?.sizeId ? `Taglia: ${basket.size?.code || 'N/D'} ` : ''}
+                                {basket.currentCycleId ? '🔄 ' : ''}
+                                {basket.lastOperation?.lotId ? `Lotto: ${basket.lastOperation.lotId}` : ''}
                               </SelectItem>
                             ))
                           ) : (
