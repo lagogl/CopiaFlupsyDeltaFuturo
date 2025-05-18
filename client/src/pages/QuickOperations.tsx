@@ -105,6 +105,228 @@ interface BasketCardProps {
   onDeleteOperation?: (operationId: number) => void;
 }
 
+// Componente per la visualizzazione tabellare compatta
+function BasketTableView({ 
+  baskets,
+  flupsys,
+  operations,
+  cycles,
+  lots,
+  sizes,
+  selectedBaskets,
+  onSelect,
+  onQuickOperation,
+  onDeleteOperation
+}: {
+  baskets: Basket[];
+  flupsys: Flupsy[] | undefined;
+  operations: Operation[] | undefined;
+  cycles: Cycle[] | undefined;
+  lots: Lot[] | undefined;
+  sizes: any[] | undefined;
+  selectedBaskets: number[];
+  onSelect: (basketId: number) => void;
+  onQuickOperation: (basketId: number, operationType: string) => void;
+  onDeleteOperation?: (operationId: number) => void;
+}) {
+  return (
+    <div className="overflow-x-auto">
+      <Table className="w-full border-collapse">
+        <TableHeader className="bg-gray-50">
+          <TableRow>
+            <TableHead className="w-10 text-center p-2">
+              <Checkbox
+                checked={baskets.length > 0 && selectedBaskets.length === baskets.length}
+                onCheckedChange={(checked) => {
+                  if (checked) {
+                    onSelect(-1); // Seleziona tutti
+                  } else {
+                    onSelect(-2); // Deseleziona tutti
+                  }
+                }}
+              />
+            </TableHead>
+            <TableHead className="p-2 text-xs">Cesta</TableHead>
+            <TableHead className="p-2 text-xs">Flupsy</TableHead>
+            <TableHead className="p-2 text-xs">Posizione</TableHead>
+            <TableHead className="p-2 text-xs">Ciclo</TableHead>
+            <TableHead className="p-2 text-xs">Ultima Op.</TableHead>
+            <TableHead className="p-2 text-xs">Data</TableHead>
+            <TableHead className="p-2 text-xs">Animali/Kg</TableHead>
+            <TableHead className="p-2 text-xs">Peso Medio (mg)</TableHead>
+            <TableHead className="p-2 text-xs">Lotto</TableHead>
+            <TableHead className="p-2 text-xs">Mortalità</TableHead>
+            <TableHead className="p-2 text-xs whitespace-nowrap">Azioni</TableHead>
+          </TableRow>
+        </TableHeader>
+        <TableBody>
+          {baskets.map((basket) => {
+            // Ottieni tutte le operazioni per questa cesta
+            const basketOperations = operations ? operations.filter((op) => op.basketId === basket.id) : [];
+            
+            // Trova il ciclo corrente
+            const cycle = cycles?.find((c) => c.id === basket.currentCycleId);
+            
+            // Ottieni l'ultima operazione per questa cesta nel ciclo corrente
+            const cycleOperations = basketOperations.filter((op) => op.cycleId === basket.currentCycleId);
+            const sortedOps = [...cycleOperations].sort((a, b) => 
+              new Date(b.date).getTime() - new Date(a.date).getTime()
+            );
+            const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
+            
+            // Trova il flupsy
+            const flupsy = flupsys?.find((f) => f.id === basket.flupsyId);
+            
+            // Trova il lotto
+            const lot = lastOperation?.lotId ? lots?.find((l) => l.id === lastOperation.lotId) : null;
+            
+            // Calcola il peso medio
+            const averageWeight = lastOperation?.averageWeight || 
+              (lastOperation?.animalsPerKg ? 1000000 / lastOperation.animalsPerKg : null);
+            
+            // Calcola mortalità cumulativa dall'inizio del ciclo
+            let cumulativeDeadCount = null;
+            let cumulativeMortality = null;
+            
+            if (cycle) {
+              // Tutte le operazioni del ciclo, ordinate per data
+              const cycleOps = basketOperations
+                .filter((op) => op.cycleId === cycle.id)
+                .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+              
+              // Operazione di prima attivazione
+              const firstOp = cycleOps.find((op) => 
+                op.type === 'prima-attivazione' || op.type === 'attivazione'
+              );
+              
+              // Somma di tutte le mortalità
+              let totalDead = 0;
+              cycleOps.forEach((op) => {
+                if (op.deadCount) {
+                  totalDead += op.deadCount;
+                }
+              });
+              
+              if (totalDead > 0 && firstOp?.animalCount) {
+                cumulativeDeadCount = totalDead;
+                cumulativeMortality = Math.round((totalDead / firstOp.animalCount) * 100 * 10) / 10;
+              }
+            }
+            
+            // Colore di sfondo in base alla taglia
+            let rowBgColor = "bg-white";
+            if (lastOperation?.sizeId && sizes) {
+              const size = sizes.find((s) => s.id === lastOperation.sizeId);
+              if (size) {
+                rowBgColor = getBasketColorBySize(size.code, "bg");
+              }
+            }
+            
+            return (
+              <TableRow key={basket.id} className={`${rowBgColor} hover:bg-gray-50 border-b`}>
+                <TableCell className="p-2 text-center">
+                  <Checkbox 
+                    checked={selectedBaskets.includes(basket.id)}
+                    onCheckedChange={() => onSelect(basket.id)}
+                  />
+                </TableCell>
+                <TableCell className="p-2">
+                  <div className="font-semibold whitespace-nowrap">#{basket.physicalNumber}</div>
+                </TableCell>
+                <TableCell className="p-2 text-xs">
+                  {flupsy?.name || "N/D"}
+                </TableCell>
+                <TableCell className="p-2 whitespace-nowrap text-xs">
+                  {basket.row}-{basket.position}
+                </TableCell>
+                <TableCell className="p-2 text-xs">
+                  {cycle ? (
+                    <div>
+                      {format(new Date(cycle.startDate), 'dd/MM', { locale: it })}
+                      {cycle.state === 'active' && (
+                        <Badge variant="outline" className="ml-1 text-[10px] px-1 py-0 bg-green-50 text-green-700 border-green-200">
+                          Attivo
+                        </Badge>
+                      )}
+                    </div>
+                  ) : "N/D"}
+                </TableCell>
+                <TableCell className="p-2 whitespace-nowrap text-xs">
+                  {lastOperation ? (
+                    <Badge 
+                      variant="outline" 
+                      className="text-[10px] px-1 py-0"
+                      style={{
+                        backgroundColor: `${getOperationTypeColor(lastOperation.type, 'bg')}`,
+                        color: `${getOperationTypeColor(lastOperation.type, 'text')}`,
+                        borderColor: `${getOperationTypeColor(lastOperation.type, 'border')}`
+                      }}
+                    >
+                      {getOperationTypeLabel(lastOperation.type)}
+                    </Badge>
+                  ) : "N/D"}
+                </TableCell>
+                <TableCell className="p-2 whitespace-nowrap text-xs">
+                  {lastOperation ? format(new Date(lastOperation.date), 'dd/MM/yy', { locale: it }) : "N/D"}
+                </TableCell>
+                <TableCell className="p-2 text-xs">
+                  {lastOperation?.animalsPerKg ? formatNumberWithCommas(lastOperation.animalsPerKg) : "N/D"}
+                </TableCell>
+                <TableCell className="p-2 text-xs">
+                  {averageWeight ? formatNumberWithCommas(averageWeight) : "N/D"}
+                </TableCell>
+                <TableCell className="p-2 text-xs">
+                  {lot ? (
+                    <span className="whitespace-nowrap">{lot.supplier}</span>
+                  ) : "N/D"}
+                </TableCell>
+                <TableCell className="p-2 text-xs">
+                  {cumulativeMortality !== null ? (
+                    <div className="flex items-center">
+                      <span className={cumulativeMortality > 5 ? "text-red-600 font-semibold" : ""}>
+                        {cumulativeMortality}%
+                      </span>
+                    </div>
+                  ) : "N/D"}
+                </TableCell>
+                <TableCell className="p-2">
+                  <div className="flex space-x-1">
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="h-7 text-xs px-2"
+                      onClick={() => onQuickOperation(basket.id, 'misura')}
+                    >
+                      Misura
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="outline"
+                      className="h-7 text-xs px-2 bg-blue-50 text-blue-600 hover:bg-blue-100 border-blue-200"
+                      onClick={() => onQuickOperation(basket.id, 'peso')}
+                    >
+                      Peso
+                    </Button>
+                    <Button 
+                      size="sm" 
+                      variant="secondary"
+                      className="h-7 text-xs px-2"
+                      onClick={() => onQuickOperation(basket.id, 'duplicate')}
+                    >
+                      <Zap className="h-3 w-3 mr-1" />
+                      Ripeti
+                    </Button>
+                  </div>
+                </TableCell>
+              </TableRow>
+            );
+          })}
+        </TableBody>
+      </Table>
+    </div>
+  );
+}
+
 // Componente card per singola cesta
 // Funzione per collegare il componente BasketCard al contesto globale
 function BasketCardContainer(props: BasketCardProps) {
@@ -869,13 +1091,14 @@ export default function QuickOperations() {
         <h2 className="text-2xl font-condensed font-bold text-gray-800">Operazioni Rapide</h2>
         
         <div className="flex space-x-2">
-          <Select value={view} onValueChange={(v) => setView(v as 'grid' | 'list')}>
+          <Select value={view} onValueChange={(v) => setView(v as 'grid' | 'list' | 'table')}>
             <SelectTrigger className="w-24">
               <SelectValue placeholder="Vista" />
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="grid">Griglia</SelectItem>
               <SelectItem value="list">Lista</SelectItem>
+              <SelectItem value="table">Tabella</SelectItem>
             </SelectContent>
           </Select>
           
