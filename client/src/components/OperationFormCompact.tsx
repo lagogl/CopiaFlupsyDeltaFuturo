@@ -640,7 +640,9 @@ export default function OperationFormCompact({
                                       <span className="font-medium">
                                         {basket.animalCount 
                                           ? `${basket.animalCount.toLocaleString('it-IT')} animali` 
-                                          : `N° animali non disponibile`}
+                                          : basket.lastOperation?.animalCount 
+                                            ? `${basket.lastOperation.animalCount.toLocaleString('it-IT')} animali` 
+                                            : `N° animali non disponibile`}
                                       </span>
                                       {basket.size?.code ? 
                                         <span className="ml-2 px-1.5 py-0.5 rounded-md" style={{
