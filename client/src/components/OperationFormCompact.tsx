@@ -200,9 +200,10 @@ export default function OperationFormCompact({
     }
   }, [watchFlupsyId, baskets]);
 
-  // Le operazioni disponibili sono sempre solo misura e vendita
+  // Le operazioni disponibili sono misura, peso e vendita
   const basketOperations = [
     { value: 'misura', label: 'Misura' },
+    { value: 'peso', label: 'Peso' },
     { value: 'vendita', label: 'Vendita' }
   ];
 
