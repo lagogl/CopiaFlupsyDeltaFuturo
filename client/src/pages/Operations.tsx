@@ -2,6 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
+import { formatNumberWithCommas } from '@/lib/utils';
 
 // Definizioni dei tipi principali
 interface Size {
@@ -2388,8 +2389,10 @@ export default function Operations() {
                                     <div>
                                       <p className="text-gray-500">Taglia</p>
                                       <div className="flex items-center">
-                                        {getSizeBadge(op.size)}
-                                        <span className="ml-2">{formatNumberWithCommas(op.averageWeight, 3)} mg</span>
+                                        <span className={`text-xs px-1.5 py-0.5 rounded-full ${op.size?.color ? `bg-opacity-20 bg-${op.size.color.replace('#', '')}` : 'bg-gray-100'}`}>
+                                          {op.size?.code || 'N/D'}
+                                        </span>
+                                        <span className="ml-2">{parseFloat(op.averageWeight).toLocaleString('it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3})} mg</span>
                                         <span className="ml-2 text-xs text-gray-500">({op.animalsPerKg.toLocaleString()} an/kg)</span>
                                       </div>
                                     </div>
