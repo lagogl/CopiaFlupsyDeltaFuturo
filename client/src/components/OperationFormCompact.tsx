@@ -303,6 +303,30 @@ export default function OperationFormCompact({
     }
   }, [watchTotalWeight, watchAnimalsPerKg, form, watchManualCountAdjustment]);
 
+  // Gestisce il tipo "peso" - recupera il conteggio animali dall'ultima operazione
+  useEffect(() => {
+    if (watchType === 'peso' && watchBasketId && operations && operations.length > 0 && prevOperationData) {
+      console.log("Operazione PESO selezionata: recupero conteggio animali dalla precedente operazione");
+      
+      // Se abbiamo un'operazione precedente e il conteggio degli animali
+      if (prevOperationData.animalCount) {
+        console.log(`Impostazione conteggio animali dall'ultima operazione: ${prevOperationData.animalCount}`);
+        
+        // Imposta il conteggio animali uguale a quello dell'ultima operazione
+        form.setValue('animalCount', prevOperationData.animalCount);
+        
+        // Assicurati che il form riconosca questo campo come "impostato" manualmente
+        toast({
+          title: "Conteggio animali preimpostato",
+          description: `Utilizzato conteggio di ${prevOperationData.animalCount.toLocaleString('it-IT')} animali dall'ultima operazione`,
+          duration: 3000
+        });
+      } else {
+        console.warn("Impossibile trovare il conteggio animali dall'ultima operazione");
+      }
+    }
+  }, [watchType, watchBasketId, operations, prevOperationData]);
+
   // Calcola valori derivati per misurazione
   useEffect(() => {
     if (watchType === 'misura') {
