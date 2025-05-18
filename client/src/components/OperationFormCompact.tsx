@@ -4,7 +4,7 @@ import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
 import { 
-  AlertTriangle, Spinner, ClipboardList, 
+  AlertTriangle, Loader2, ClipboardList, 
   MapPin, Link, Scale, Ruler 
 } from "lucide-react";
 import { useQuery } from "@tanstack/react-query";
@@ -1311,7 +1311,7 @@ export default function OperationFormCompact({
                 >
                   {isLoading ? (
                     <>
-                      <Spinner className="mr-2 h-4 w-4 animate-spin" />
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                       Salvataggio...
                     </>
                   ) : (
