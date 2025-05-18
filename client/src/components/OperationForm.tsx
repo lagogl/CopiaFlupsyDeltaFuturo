@@ -318,29 +318,48 @@ export default function OperationForm({
         
         // Verifica il tipo di min_animals_per_kg e max_animals_per_kg per ogni taglia
         sizes.forEach(size => {
-          console.log(`Taglia ${size.name}: min=${size.min_animals_per_kg} (${typeof size.min_animals_per_kg}), max=${size.max_animals_per_kg} (${typeof size.max_animals_per_kg})`);
+          console.log(`Taglia ${size.name}: min=${size.minAnimalsPerKg} (${typeof size.minAnimalsPerKg}), max=${size.maxAnimalsPerKg} (${typeof size.maxAnimalsPerKg})`);
         });
         
-        // Controlla che i valori min_animals_per_kg e max_animals_per_kg siano disponibili
+        // Controlla che i valori minAnimalsPerKg e maxAnimalsPerKg siano disponibili
         // e siano di tipo numerico
         const validSizes = sizes.filter(size => 
-          typeof size.min_animals_per_kg === 'number' && 
-          typeof size.max_animals_per_kg === 'number');
+          typeof size.minAnimalsPerKg === 'number' && 
+          typeof size.maxAnimalsPerKg === 'number');
         
         console.log("Sizes valide con range numerici:", validSizes);
-        console.log("Valore animali per kg:", watchAnimalsPerKg);
+        console.log("Valore animali per kg:", watchAnimalsPerKg, "Tipo:", typeof watchAnimalsPerKg);
+        
+        // Test manuale per la taglia corrispondente a 150000
+        const manualValue = 150000;
+        console.log("VERIFICA MANUALE per valore 150000");
+        const matchingSize = sizes.find(size => {
+          const min = Number(size.minAnimalsPerKg);
+          const max = Number(size.maxAnimalsPerKg);
+          console.log(`Taglia ${size.code}: range ${min}-${max}, valore test: ${manualValue}`);
+          console.log(`Test manuale: ${min} <= ${manualValue} <= ${max} ? ${(min <= manualValue && manualValue <= max)}`);
+          return !isNaN(min) && !isNaN(max) && min <= manualValue && max >= manualValue;
+        });
+        console.log("Taglia corrispondente a 150000:", matchingSize ? matchingSize.code : "nessuna");
         
         // Cerca la taglia in cui il valore degli animali per kg rientra nel range min-max
         // Assicuriamoci che i valori siano trattati come numeri
         selectedSize = sizes.find(size => {
           // Converti esplicitamente in numeri
-          const min = Number(size.min_animals_per_kg);
-          const max = Number(size.max_animals_per_kg);
+          const min = Number(size.minAnimalsPerKg);
+          const max = Number(size.maxAnimalsPerKg);
           const animalsPerKg = Number(watchAnimalsPerKg);
           
           // Log dettagliato
-          console.log(`Verifico taglia ${size.name}: range ${min}-${max}, valore: ${animalsPerKg}`);
+          console.log(`Verifico taglia ${size.code}: range ${min}-${max}, valore: ${animalsPerKg}`);
           console.log(`Confronto: ${min} <= ${animalsPerKg} <= ${max} ? ${(min <= animalsPerKg && animalsPerKg <= max)}`);
+          
+          // Debug dei valori precisi per la taglia TP-1800 (150.000 rientra in questo range per verifica)
+          if (size.code === 'TP-1800') {
+            console.log(`ANALISI DETTAGLIATA TP-1800: ${min} <= ${animalsPerKg} <= ${max}`);
+            console.log(`Tipi: min=${typeof min}, max=${typeof max}, animalsPerKg=${typeof animalsPerKg}`);
+            console.log(`Valori convertiti in numeri: min=${Number(min)}, max=${Number(max)}, animalsPerKg=${Number(animalsPerKg)}`);
+          }
           
           // Verifica se il valore è nel range
           return !isNaN(min) && !isNaN(max) && !isNaN(animalsPerKg) && 
