@@ -29,6 +29,41 @@ export function monthlyToDaily(monthlyPercentage: number): number {
   return monthlyPercentage;
 }
 
+/**
+ * Funzione migliorata per determinare la taglia in base al numero di animali per kg
+ * Questa funzione controlla sia i campi camelCase (minAnimalsPerKg) che snake_case (min_animals_per_kg)
+ * per garantire compatibilità con diverse API e versioni
+ * 
+ * @param animalsPerKg - Numero di animali per kg da confrontare
+ * @param sizes - Array di oggetti taglia dal database
+ * @returns La taglia corrispondente o null se nessuna taglia corrisponde
+ */
+export function findSizeByAnimalsPerKg(animalsPerKg: number, sizes: any[]): any | null {
+  if (!animalsPerKg || !sizes || !sizes.length) return null;
+  
+  // Converti esplicitamente a numero
+  const animalsPerKgValue = Number(animalsPerKg);
+  if (isNaN(animalsPerKgValue)) return null;
+  
+  // Cerca la taglia corrispondente
+  return sizes.find(size => {
+    // Gestisci sia camelCase che snake_case per compatibilità
+    const minValue = size.minAnimalsPerKg !== undefined ? size.minAnimalsPerKg : 
+                    (size.min_animals_per_kg !== undefined ? size.min_animals_per_kg : null);
+    
+    const maxValue = size.maxAnimalsPerKg !== undefined ? size.maxAnimalsPerKg : 
+                    (size.max_animals_per_kg !== undefined ? size.max_animals_per_kg : null);
+    
+    if (minValue === null || maxValue === null) return false;
+    
+    const min = Number(minValue);
+    const max = Number(maxValue);
+    
+    return !isNaN(min) && !isNaN(max) && 
+           animalsPerKgValue >= min && animalsPerKgValue <= max;
+  }) || null;
+}
+
 export function formatNumberWithCommas(value: number | string, decimals: number = 0): string {
   // Converti la stringa in numero se necessario
   const numValue = typeof value === 'string' ? parseFloat(value) : value;

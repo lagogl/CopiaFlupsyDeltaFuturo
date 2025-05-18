@@ -306,80 +306,23 @@ export default function OperationForm({
       
       // Auto-select size based on animals per kg
       if (sizes && sizes.length > 0) {
-        console.log("Sizes disponibili:", sizes);
         console.log("Cercando taglia per animali per kg:", watchAnimalsPerKg);
         
-        // Trova la taglia appropriata in base al numero di animali per kg
-        // usando i range min_animals_per_kg e max_animals_per_kg
-        let selectedSize = null;
-        
-        // Esamino i dati delle taglie disponibili
-        console.log("Tutte le taglie:", sizes);
-        
-        // Verifica il tipo di min_animals_per_kg e max_animals_per_kg per ogni taglia
-        sizes.forEach(size => {
-          console.log(`Taglia ${size.name}: min=${size.minAnimalsPerKg} (${typeof size.minAnimalsPerKg}), max=${size.maxAnimalsPerKg} (${typeof size.maxAnimalsPerKg})`);
-        });
-        
-        // Controlla che i valori minAnimalsPerKg e maxAnimalsPerKg siano disponibili
-        // e siano di tipo numerico
-        const validSizes = sizes.filter(size => 
-          typeof size.minAnimalsPerKg === 'number' && 
-          typeof size.maxAnimalsPerKg === 'number');
-        
-        console.log("Sizes valide con range numerici:", validSizes);
-        console.log("Valore animali per kg:", watchAnimalsPerKg, "Tipo:", typeof watchAnimalsPerKg);
-        
-        // Test manuale per la taglia corrispondente a 150000
-        const manualValue = 150000;
-        console.log("VERIFICA MANUALE per valore 150000");
-        const matchingSize = sizes.find(size => {
-          const min = Number(size.minAnimalsPerKg);
-          const max = Number(size.maxAnimalsPerKg);
-          console.log(`Taglia ${size.code}: range ${min}-${max}, valore test: ${manualValue}`);
-          console.log(`Test manuale: ${min} <= ${manualValue} <= ${max} ? ${(min <= manualValue && manualValue <= max)}`);
-          return !isNaN(min) && !isNaN(max) && min <= manualValue && max >= manualValue;
-        });
-        console.log("Taglia corrispondente a 150000:", matchingSize ? matchingSize.code : "nessuna");
-        
-        // Cerca la taglia in cui il valore degli animali per kg rientra nel range min-max
-        // Assicuriamoci che i valori siano trattati come numeri
-        selectedSize = sizes.find(size => {
-          // Converti esplicitamente in numeri
-          const min = Number(size.minAnimalsPerKg);
-          const max = Number(size.maxAnimalsPerKg);
-          const animalsPerKg = Number(watchAnimalsPerKg);
+        // Importa la funzione di utilità che gestisce sia camelCase che snake_case
+        import("@/lib/utils").then(({ findSizeByAnimalsPerKg }) => {
+          // Utilizza la funzione helper per trovare la taglia
+          const selectedSize = findSizeByAnimalsPerKg(watchAnimalsPerKg, sizes);
           
-          // Log dettagliato
-          console.log(`Verifico taglia ${size.code}: range ${min}-${max}, valore: ${animalsPerKg}`);
-          console.log(`Confronto: ${min} <= ${animalsPerKg} <= ${max} ? ${(min <= animalsPerKg && animalsPerKg <= max)}`);
-          
-          // Debug dei valori precisi per la taglia TP-1800 (150.000 rientra in questo range per verifica)
-          if (size.code === 'TP-1800') {
-            console.log(`ANALISI DETTAGLIATA TP-1800: ${min} <= ${animalsPerKg} <= ${max}`);
-            console.log(`Tipi: min=${typeof min}, max=${typeof max}, animalsPerKg=${typeof animalsPerKg}`);
-            console.log(`Valori convertiti in numeri: min=${Number(min)}, max=${Number(max)}, animalsPerKg=${Number(animalsPerKg)}`);
+          if (selectedSize) {
+            console.log(`Taglia trovata: ${selectedSize.code} (ID: ${selectedSize.id})`);
+            form.setValue('sizeId', selectedSize.id);
+          } else {
+            console.log("Nessuna taglia corrispondente trovata per", watchAnimalsPerKg, "animali per kg");
+            form.setValue('sizeId', null); // Resetta il valore della taglia se non ne troviamo una corrispondente
           }
-          
-          // Verifica se il valore è nel range
-          return !isNaN(min) && !isNaN(max) && !isNaN(animalsPerKg) && 
-                 min <= animalsPerKg && 
-                 max >= animalsPerKg;
+        }).catch(error => {
+          console.error("Errore nel caricamento delle funzioni di utilità:", error);
         });
-        
-        console.log("Taglia trovata nel range:", selectedSize);
-        
-        // NON selezioniamo una taglia se il valore non rientra in nessun range
-        // È responsabilità dell'utente inserire un valore che rientra in un range valido
-        // o configurare i range appropriati nella tabella sizes
-        
-        if (selectedSize) {
-          console.log("Impostazione taglia ID:", selectedSize.id, "Nome:", selectedSize.name);
-          form.setValue('sizeId', selectedSize.id);
-        } else {
-          console.log("Nessuna taglia trovata");
-          form.setValue('sizeId', null);
-        }
       }
     } else {
       form.setValue('averageWeight', null);
