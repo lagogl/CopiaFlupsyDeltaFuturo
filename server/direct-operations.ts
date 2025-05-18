@@ -120,6 +120,14 @@ export function implementDirectOperationRoute(app: Express) {
       // Ricorda il valore originale di animalCount
       const originalAnimalCount = operationData.animalCount;
       
+      // Recupera subito i dati del cestello per poterli utilizzare dopo
+      const basketResult = await db.select().from(baskets).where(eq(baskets.id, operationData.basketId)).limit(1);
+      if (!basketResult || basketResult.length === 0) {
+        throw new Error(`Cestello con ID ${operationData.basketId} non trovato`);
+      }
+      
+      const basket = basketResult[0];
+      
       // 3. Calcola averageWeight e sizeId appropriato se viene fornito animalsPerKg
       if (operationData.animalsPerKg && operationData.animalsPerKg > 0) {
         // Calcola il peso medio in mg per ogni animale
@@ -148,47 +156,56 @@ export function implementDirectOperationRoute(app: Express) {
           }
         }
       }
-      
-      // Gestisci la logica di animalCount per operazioni "misura" e "peso"
-      if (hasAnimalCount) {
-        // Per operazioni di tipo 'peso', mantieni SEMPRE il conteggio animali originale
-        if (operationData.type === 'peso') {
-          // L'operazione 'peso' non deve MAI modificare il numero di animali
-          console.log(`IMPORTANTE: Per operazione 'peso', preservato SEMPRE il conteggio animali originale:`, originalAnimalCount);
-          operationData.animalCount = originalAnimalCount;
-        } 
-        // Per operazioni di tipo 'misura', considera la mortalità
-        else if (operationData.type === 'misura') {
-          // Controlla se c'è stata una mortalità registrata
-          const hasMortality = operationData.deadCount && operationData.deadCount > 0;
-          
-          if (hasMortality) {
-            // Se c'è mortalità, utilizziamo il nuovo valore calcolato di animalCount (già presente in operationData)
-            console.log(`IMPORTANTE: Per operazione 'misura' CON MORTALITÀ (${operationData.deadCount} animali), utilizziamo il conteggio animali aggiornato:`, operationData.animalCount);
+
+      // Per le operazioni di tipo 'peso', dobbiamo recuperare l'ultima operazione
+      // per ottenere il conteggio animali reale da mantenere
+      if (operationData.type === 'peso') {
+        try {
+          // Ottieni l'ultima operazione per questo cestello
+          const lastOperation = await db
+            .select()
+            .from(operations)
+            .where(eq(operations.basketId, operationData.basketId))
+            .orderBy(sql`${operations.id} DESC`)
+            .limit(1);
+
+          if (lastOperation && lastOperation.length > 0) {
+            // Usa il conteggio animali dell'ultima operazione (indipendentemente da quella fornita dal client)
+            const lastAnimalCount = lastOperation[0].animalCount;
+            console.log(`IMPORTANTE: Per operazione 'peso', sostituito conteggio animali client (${operationData.animalCount}) con ultimo conteggio registrato:`, lastAnimalCount);
+            operationData.animalCount = lastAnimalCount;
           } else {
-            // Se non c'è mortalità, preserviamo il conteggio animali originale
-            console.log(`IMPORTANTE: Per operazione 'misura' SENZA MORTALITÀ, preservato conteggio animali originale:`, originalAnimalCount);
-            operationData.animalCount = originalAnimalCount;
+            console.log(`AVVISO: Nessuna operazione precedente trovata per cestello ${operationData.basketId}, si utilizzerà il conteggio animali fornito: ${operationData.animalCount}`);
           }
+        } catch (error) {
+          console.error("Errore durante il recupero dell'ultima operazione:", error);
+          console.log(`FALLBACK: Per operazione 'peso', si utilizza il conteggio animali fornito dal client:`, operationData.animalCount);
+        }
+      } 
+      // Per operazioni di tipo 'misura', considera la mortalità come prima
+      else if (operationData.type === 'misura' && hasAnimalCount) {
+        const hasMortality = operationData.deadCount && operationData.deadCount > 0;
+        
+        if (hasMortality) {
+          // Se c'è mortalità, utilizziamo il nuovo valore calcolato di animalCount (già presente in operationData)
+          console.log(`IMPORTANTE: Per operazione 'misura' CON MORTALITÀ (${operationData.deadCount} animali), utilizziamo il conteggio animali aggiornato:`, operationData.animalCount);
+        } else {
+          // Se non c'è mortalità, preserviamo il conteggio animali originale
+          console.log(`IMPORTANTE: Per operazione 'misura' SENZA MORTALITÀ, preservato conteggio animali originale:`, originalAnimalCount);
+          operationData.animalCount = originalAnimalCount;
         }
       }
       
       console.log("Dati operazione dopo la normalizzazione:");
       console.log(JSON.stringify(operationData, null, 2));
       
-      // Verifica la presenza del cestello
-      const basket = await db.select().from(baskets).where(eq(baskets.id, operationData.basketId)).limit(1);
-      if (!basket || basket.length === 0) {
-        throw new Error(`Cestello con ID ${operationData.basketId} non trovato`);
-      }
-      
       // 4. LOGICA SPECIALIZZATA PER PRIMA ATTIVAZIONE
       if (operationData.type === 'prima-attivazione') {
         console.log("Rilevata operazione di PRIMA ATTIVAZIONE - Esecuzione flusso speciale");
         
         // Verifica che il cestello sia disponibile o attivo senza ciclo
-        const isAvailable = basket[0].state === 'available';
-        const isActiveWithoutCycle = basket[0].state === 'active' && !basket[0].currentCycleId;
+        const isAvailable = basket.state === 'available';
+        const isActiveWithoutCycle = basket.state === 'active' && !basket.currentCycleId;
         
         if (!isAvailable && !isActiveWithoutCycle) {
           throw new Error(`Impossibile eseguire la prima attivazione: cestello ${operationData.basketId} ha già un ciclo attivo`);
