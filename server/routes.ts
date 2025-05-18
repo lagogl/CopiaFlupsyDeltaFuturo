@@ -2140,13 +2140,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const allSizes = await db.select().from(sizes).orderBy(sizes.code);
       
-      // Formatta i risultati per l'uso nel frontend includendo i campi min_animals_per_kg e max_animals_per_kg
+      // Formatta i risultati per l'uso nel frontend includendo i campi minAnimalsPerKg e maxAnimalsPerKg
       const formattedSizes = allSizes.map(size => ({
         id: size.id,
         code: size.code,
         name: size.name,
-        min_animals_per_kg: size.min_animals_per_kg,
-        max_animals_per_kg: size.max_animals_per_kg
+        minAnimalsPerKg: size.minAnimalsPerKg,
+        maxAnimalsPerKg: size.maxAnimalsPerKg
       }));
       
       return res.status(200).json(formattedSizes);
