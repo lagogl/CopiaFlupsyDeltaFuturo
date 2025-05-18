@@ -1123,156 +1123,190 @@ export default function OperationForm({
             )}
           />
 
-          {/* Campi standardizzati per inserimento dati di misurazione */}
-          <div className="border rounded-md p-4 mb-4 bg-blue-50 border-blue-100">
-            <h3 className="text-base font-semibold mb-3 text-blue-700">Dati di misurazione standardizzati</h3>
+          {/* Campi standardizzati per inserimento dati di misurazione - Layout compatto */}
+          <div className="border rounded-md p-3 mb-3 bg-blue-50 border-blue-100">
+            <h3 className="text-sm font-semibold mb-2 text-blue-700">Dati di misurazione standardizzati</h3>
             
-            {/* Peso campione (grammi sample) */}
-            <FormField
-              control={form.control}
-              name="sampleWeight"
-              render={({ field }) => (
-                <FormItem className="mb-3">
-                  <FormLabel>Grammi sample</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="number" 
-                      placeholder="Peso del campione in grammi"
-                      value={field.value === null || field.value === undefined ? '' : field.value}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        if (value === '') {
-                          field.onChange(null);
-                        } else {
-                          const numValue = parseFloat(value);
-                          field.onChange(isNaN(numValue) ? null : numValue);
-                        }
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {/* Numero animali vivi */}
-            <FormField
-              control={form.control}
-              name="liveAnimals"
-              render={({ field }) => (
-                <FormItem className="mb-3">
-                  <FormLabel>Numero animali vivi</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="Numero animali vivi nel campione"
-                      value={field.value === null || field.value === undefined 
-                        ? '' 
-                        : field.value.toLocaleString('it-IT')}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, '');
-                        if (value === '') {
-                          field.onChange(null);
-                        } else {
-                          const numValue = parseInt(value, 10);
-                          field.onChange(isNaN(numValue) ? null : numValue);
-                        }
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {/* Numero animali morti */}
-            <FormField
-              control={form.control}
-              name="deadCount"
-              render={({ field }) => (
-                <FormItem className="mb-3">
-                  <FormLabel>Numero animali morti</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="Numero animali morti nel campione"
-                      value={field.value === null || field.value === undefined 
-                        ? '' 
-                        : field.value.toLocaleString('it-IT')}
-                      onChange={(e) => {
-                        const value = e.target.value.replace(/[^0-9]/g, '');
-                        if (value === '') {
-                          field.onChange(null);
-                        } else {
-                          const numValue = parseInt(value, 10);
-                          field.onChange(isNaN(numValue) ? null : numValue);
-                        }
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
-                  </FormControl>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-            
-            {/* Totale campione (calcolato automaticamente) */}
-            <FormField
-              control={form.control}
-              name="totalSample"
-              render={({ field }) => (
-                <FormItem className="mb-3">
-                  <FormLabel>Totale sample</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="Calcolato automaticamente"
-                      value={field.value === null || field.value === undefined 
-                        ? 'Calcolato automaticamente' 
-                        : field.value.toLocaleString('it-IT')}
-                      readOnly
-                      className="bg-gray-50 border-gray-100 font-medium text-gray-700"
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    Totale sample = Numero animali vivi + Numero animali morti
-                  </FormDescription>
-                </FormItem>
-              )}
-            />
-            
-            {/* Percentuale morti (calcolata automaticamente) */}
-            <FormField
-              control={form.control}
-              name="mortalityRate"
-              render={({ field }) => (
-                <FormItem className="mb-3">
-                  <FormLabel>% morti</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="Calcolato automaticamente"
-                      value={field.value === null || field.value === undefined 
-                        ? 'Calcolato automaticamente' 
-                        : `${field.value.toFixed(2)}%`}
-                      readOnly
-                      className="bg-gray-50 border-gray-100 font-medium text-gray-700"
-                    />
-                  </FormControl>
-                  <FormDescription className="text-xs">
-                    % morti = (Numero animali morti / Totale sample) × 100
-                  </FormDescription>
-                </FormItem>
-              )}
-            />
+            <div className="grid grid-cols-2 gap-3">
+              {/* Prima colonna */}
+              <div>
+                {/* Peso campione (grammi sample) */}
+                <FormField
+                  control={form.control}
+                  name="sampleWeight"
+                  render={({ field }) => (
+                    <FormItem className="mb-2">
+                      <FormLabel className="text-xs">Grammi sample</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="number" 
+                          placeholder="Peso in grammi"
+                          className="h-8 text-sm"
+                          value={field.value === null || field.value === undefined ? '' : field.value}
+                          onChange={(e) => {
+                            const value = e.target.value;
+                            if (value === '') {
+                              field.onChange(null);
+                            } else {
+                              const numValue = parseFloat(value);
+                              field.onChange(isNaN(numValue) ? null : numValue);
+                            }
+                          }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Numero animali vivi */}
+                <FormField
+                  control={form.control}
+                  name="liveAnimals"
+                  render={({ field }) => (
+                    <FormItem className="mb-2">
+                      <FormLabel className="text-xs">Numero animali vivi</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text" 
+                          placeholder="Animali vivi"
+                          className="h-8 text-sm"
+                          value={field.value === null || field.value === undefined 
+                            ? '' 
+                            : field.value.toLocaleString('it-IT')}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^0-9]/g, '');
+                            if (value === '') {
+                              field.onChange(null);
+                            } else {
+                              const numValue = parseInt(value, 10);
+                              field.onChange(isNaN(numValue) ? null : numValue);
+                            }
+                          }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Numero animali morti */}
+                <FormField
+                  control={form.control}
+                  name="deadCount"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel className="text-xs">Numero animali morti</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text" 
+                          placeholder="Animali morti"
+                          className="h-8 text-sm"
+                          value={field.value === null || field.value === undefined 
+                            ? '' 
+                            : field.value.toLocaleString('it-IT')}
+                          onChange={(e) => {
+                            const value = e.target.value.replace(/[^0-9]/g, '');
+                            if (value === '') {
+                              field.onChange(null);
+                            } else {
+                              const numValue = parseInt(value, 10);
+                              field.onChange(isNaN(numValue) ? null : numValue);
+                            }
+                          }}
+                          onBlur={field.onBlur}
+                          name={field.name}
+                          ref={field.ref}
+                        />
+                      </FormControl>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </div>
+              
+              {/* Seconda colonna */}
+              <div>
+                {/* Totale campione (calcolato automaticamente) */}
+                <FormField
+                  control={form.control}
+                  name="totalSample"
+                  render={({ field }) => (
+                    <FormItem className="mb-2">
+                      <FormLabel className="text-xs">Totale sample</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text" 
+                          placeholder="Calcolato"
+                          className="h-8 text-sm bg-gray-50 border-gray-100 font-medium text-gray-700"
+                          value={field.value === null || field.value === undefined 
+                            ? 'Calcolato' 
+                            : field.value.toLocaleString('it-IT')}
+                          readOnly
+                        />
+                      </FormControl>
+                      <FormDescription className="text-[10px]">
+                        Vivi + Morti
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+                
+                {/* Percentuale morti (calcolata automaticamente) */}
+                <FormField
+                  control={form.control}
+                  name="mortalityRate"
+                  render={({ field }) => (
+                    <FormItem className="mb-2">
+                      <FormLabel className="text-xs">% morti</FormLabel>
+                      <FormControl>
+                        <Input 
+                          type="text" 
+                          placeholder="Calcolato"
+                          className="h-8 text-sm bg-gray-50 border-gray-100 font-medium text-gray-700"
+                          value={field.value === null || field.value === undefined 
+                            ? 'Calcolato' 
+                            : `${field.value.toFixed(2)}%`}
+                          readOnly
+                        />
+                      </FormControl>
+                      <FormDescription className="text-[10px]">
+                        (Morti / Totale) × 100
+                      </FormDescription>
+                    </FormItem>
+                  )}
+                />
+                
+                {/* FormField per animalCount spostato qui */}
+                <FormField
+                  control={form.control}
+                  name="manualCountAdjustment"
+                  render={({ field }) => (
+                    <div className="flex items-center mt-4">
+                      <input
+                        type="checkbox"
+                        id="manualCountAdjustment"
+                        checked={field.value}
+                        onChange={(e) => field.onChange(e.target.checked)}
+                        className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                      />
+                      <label
+                        htmlFor="manualCountAdjustment"
+                        className="ml-2 text-xs font-medium text-gray-700"
+                      >
+                        Abilita modifica manuale del conteggio
+                      </label>
+                    </div>
+                  )}
+                />
+              </div>
+            </div>
           </div>
           
           <FormField
@@ -1281,34 +1315,14 @@ export default function OperationForm({
             render={({ field }) => (
               <FormItem>
                 <div className="flex items-center justify-between">
-                  <FormLabel>Numero Animali</FormLabel>
-                  <FormField
-                    control={form.control}
-                    name="manualCountAdjustment"
-                    render={({ field: checkboxField }) => (
-                      <div className="flex items-center space-x-2">
-                        <input
-                          type="checkbox"
-                          id="manualCountAdjustment"
-                          checked={checkboxField.value}
-                          onChange={(e) => checkboxField.onChange(e.target.checked)}
-                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
-                        />
-                        <label
-                          htmlFor="manualCountAdjustment"
-                          className="text-xs font-medium text-gray-700"
-                        >
-                          Modifica manuale
-                        </label>
-                      </div>
-                    )}
-                  />
+                  <FormLabel className="text-xs">Numero Animali</FormLabel>
                 </div>
                 <FormControl>
                   <Input 
                     type="text" 
-                    placeholder={watchManualCountAdjustment ? "Inserisci numero animali" : "Calcolato automaticamente"}
+                    placeholder={watchManualCountAdjustment ? "Inserisci numero" : "Calcolato"}
                     readOnly={!watchManualCountAdjustment}
+                    className={`h-8 text-sm ${!watchManualCountAdjustment ? "bg-amber-50 border-amber-100 font-medium text-amber-700" : ""}`}
                     value={field.value === null || field.value === undefined 
                       ? '' 
                       : field.value.toLocaleString('it-IT')}
@@ -1325,93 +1339,95 @@ export default function OperationForm({
                     onBlur={field.onBlur}
                     name={field.name}
                     ref={field.ref}
-                    className={!watchManualCountAdjustment ? "bg-amber-50 border-amber-100 font-medium text-amber-700" : ""}
                   />
                 </FormControl>
-                <FormDescription className="text-xs">
+                <FormDescription className="text-[10px]">
                   {watchManualCountAdjustment 
                     ? "Inserisci manualmente il numero di animali" 
-                    : "Il numero di animali viene calcolato automaticamente in base alle misurazioni"}
+                    : "Calcolato automaticamente dalle misurazioni"}
                 </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
           />
 
-          <FormField
-            control={form.control}
-            name="totalWeight"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Peso Totale (g)</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="number" 
-                    step="0.01"
-                    placeholder="Calcolato automaticamente"
-                    value={field.value ? Number(field.value).toFixed(2) : ''}
-                    readOnly
-                    className="bg-amber-50 border-amber-100 font-medium text-amber-700"
-                  />
-                </FormControl>
-                <FormDescription className="text-xs">
-                  Calcolato automaticamente: (Numero animali × Peso medio) ÷ 1000
-                </FormDescription>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
+          <div className="grid grid-cols-2 gap-3">
+            <FormField
+              control={form.control}
+              name="totalWeight"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Peso Totale (g)</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      step="0.01"
+                      placeholder="Calcolato"
+                      value={field.value ? Number(field.value).toFixed(2) : ''}
+                      readOnly
+                      className="h-8 text-sm bg-amber-50 border-amber-100 font-medium text-amber-700"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-[10px]">
+                    (Numero animali × Peso medio) ÷ 1000
+                  </FormDescription>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
 
-          <FormField
-            control={form.control}
-            name="animalsPerKg"
-            render={({ field }) => (
-              <FormItem>
-                <FormLabel>Animali per Kg</FormLabel>
-                <FormControl>
-                  <Input 
-                    type="text" 
-                    placeholder="Inserisci animali per kg"
-                    value={field.value === null || field.value === undefined 
-                      ? '' 
-                      : field.value.toLocaleString('it-IT')}
-                    onChange={(e) => {
-                      // Rimuove tutti i separatori non numerici e li sostituisce con un formato valido
-                      const value = e.target.value.replace(/[^0-9]/g, '');
-                      if (value === '') {
-                        field.onChange(null);
-                      } else {
-                        const numValue = parseInt(value, 10);
-                        field.onChange(isNaN(numValue) ? null : numValue);
-                      }
-                    }}
-                    onBlur={field.onBlur}
-                    name={field.name}
-                    ref={field.ref}
-                  />
-                </FormControl>
-                <FormMessage />
-              </FormItem>
-            )}
-          />
-
+            <FormField
+              control={form.control}
+              name="animalsPerKg"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel className="text-xs">Animali per Kg</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="Animali per kg"
+                      className="h-8 text-sm"
+                      value={field.value === null || field.value === undefined 
+                        ? '' 
+                        : field.value.toLocaleString('it-IT')}
+                      onChange={(e) => {
+                        // Rimuove tutti i separatori non numerici e li sostituisce con un formato valido
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        if (value === '') {
+                          field.onChange(null);
+                        } else {
+                          const numValue = parseInt(value, 10);
+                          field.onChange(isNaN(numValue) ? null : numValue);
+                        }
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+          </div>
+          
           <FormField
             control={form.control}
             name="averageWeight"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Peso Medio (mg)</FormLabel>
+                <FormLabel className="text-xs">Peso Medio (mg)</FormLabel>
                 <FormControl>
                   <Input 
                     type="number" 
-                    placeholder="Calcolato automaticamente"
+                    placeholder="Calcolato"
                     value={field.value ? Math.round(field.value) : ''}
                     readOnly
-                    className="bg-green-50 border-green-100 font-medium text-green-700"
+                    className="h-8 text-sm bg-green-50 border-green-100 font-medium text-green-700"
                   />
                 </FormControl>
-                <FormDescription className="text-xs">
-                  Calcolato automaticamente: 1.000.000 ÷ (animali per kg)
+                <FormDescription className="text-[10px]">
+                  1.000.000 ÷ (animali per kg)
                 </FormDescription>
                 <FormMessage />
               </FormItem>
@@ -1420,9 +1436,9 @@ export default function OperationForm({
 
           {/* SGR viene determinato automaticamente, mostriamo solo le informazioni sulla crescita */}
           <div className="col-span-2 mb-2">
-            <h3 className="text-base font-semibold mb-1">Informazioni SGR</h3>
+            <h3 className="text-sm font-semibold mb-1">Informazioni SGR</h3>
             {watchAnimalsPerKg && basketOperations && basketOperations.length > 0 ? (
-              <div className="p-3 rounded-md border bg-muted/20">
+              <div className="p-2 rounded-md border bg-muted/20 text-sm">
                 {(() => {
                   // Ottieni il ciclo selezionato o corrente
                   const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
@@ -1430,7 +1446,7 @@ export default function OperationForm({
                   
                   if (!currentCycleId) {
                     return (
-                      <div className="text-muted-foreground">
+                      <div className="text-muted-foreground text-xs">
                         Nessun ciclo attivo selezionato.
                       </div>
                     );

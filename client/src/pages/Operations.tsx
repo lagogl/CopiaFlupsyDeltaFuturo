@@ -2484,7 +2484,7 @@ export default function Operations() {
         }
         setIsCreateDialogOpen(open);
       }}>
-        <DialogContent className="sm:max-w-[850px] max-h-[95vh] overflow-y-auto" aria-describedby="operation-form-description">
+        <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto" aria-describedby="operation-form-description">
           <DialogHeader>
             <DialogTitle>
               {selectedOperation ? "Duplica Operazione" : "Registra Nuova Operazione"}
@@ -2538,7 +2538,7 @@ export default function Operations() {
       
       {/* Edit Operation Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
-        <DialogContent className="sm:max-w-[850px] max-h-[95vh] overflow-y-auto">
+        <DialogContent className="sm:max-w-[750px] max-h-[90vh] overflow-y-auto">
           <DialogHeader>
             <DialogTitle>Modifica Operazione</DialogTitle>
           </DialogHeader>
