@@ -311,6 +311,136 @@ export class DbStorage implements IStorage {
   async getOperations(): Promise<Operation[]> {
     return await db.select().from(operations);
   }
+  
+  // Versione ottimizzata di getOperations che utilizza JOIN e paginazione
+  async getOperationsOptimized(options?: {
+    page?: number; 
+    pageSize?: number; 
+    cycleId?: number;
+    flupsyId?: number;
+    basketId?: number;
+    dateFrom?: Date;
+    dateTo?: Date;
+    type?: string;
+  }): Promise<{operations: Operation[]; totalCount: number}> {
+    console.log("Esecuzione query ottimizzata per operazioni con opzioni:", options);
+    
+    // Valori predefiniti per paginazione
+    const page = options?.page || 1;
+    const pageSize = options?.pageSize || 20;
+    const offset = (page - 1) * pageSize;
+    
+    try {
+      // Costruisci le condizioni di filtro
+      const whereConditions = [];
+      
+      if (options?.cycleId) {
+        whereConditions.push(eq(operations.cycleId, options.cycleId));
+      }
+      
+      if (options?.basketId) {
+        whereConditions.push(eq(operations.basketId, options.basketId));
+      }
+      
+      // Gestione dei filtri di data
+      if (options?.dateFrom) {
+        whereConditions.push(gte(operations.date, options.dateFrom));
+      }
+      
+      if (options?.dateTo) {
+        whereConditions.push(lte(operations.date, options.dateTo));
+      }
+      
+      if (options?.type) {
+        whereConditions.push(eq(operations.type, options.type));
+      }
+      
+      // Costruisci la condizione WHERE combinata
+      const whereClause = whereConditions.length > 0 
+        ? and(...whereConditions) 
+        : undefined;
+      
+      // 1. Prima esegui una query per ottenere il conteggio totale
+      let totalCountQuery = db
+        .select({ count: sql`count(*)` })
+        .from(operations);
+        
+      // Se c'è un filtro flupsyId, aggiungiamo la join
+      if (options?.flupsyId) {
+        totalCountQuery = totalCountQuery
+          .innerJoin(baskets, eq(operations.basketId, baskets.id))
+          .where(eq(baskets.flupsyId, options.flupsyId));
+      } else if (whereClause) {
+        totalCountQuery = totalCountQuery.where(whereClause);
+      }
+      
+      const [totalCountResult] = await totalCountQuery;
+      const totalCount = Number(totalCountResult?.count || 0);
+      
+      // 2. Esegui la query principale
+      // Prima otteniamo tutte le operazioni filtrate
+      let operationsQuery = db.select().from(operations);
+      
+      // Aggiungi condizioni di filtro
+      if (whereClause) {
+        operationsQuery = operationsQuery.where(whereClause);
+      }
+      
+      // Ordina per data decrescente
+      operationsQuery = operationsQuery.orderBy(desc(operations.date));
+      
+      // Aggiungi paginazione
+      operationsQuery = operationsQuery.limit(pageSize).offset(offset);
+      
+      // Esegui la query per ottenere le operazioni
+      const operationsResult = await operationsQuery;
+      
+      // Poi recuperiamo i dati correlati
+      const operationsWithDetails = await Promise.all(
+        operationsResult.map(async (op) => {
+          // Recupera i dati correlati in parallelo
+          const [basket, cycle, size, sgrRecord, lot] = await Promise.all([
+            this.getBasket(op.basketId),
+            this.getCycle(op.cycleId),
+            op.sizeId ? this.getSize(op.sizeId) : Promise.resolve(null),
+            op.sgrId ? this.getSgr(op.sgrId) : Promise.resolve(null),
+            op.lotId ? this.getLot(op.lotId) : Promise.resolve(null),
+          ]);
+          
+          // Aggiungi le relazioni come proprietà dell'oggetto operazione
+          const enhancedOperation: Operation = { ...op };
+          
+          if (basket) {
+            enhancedOperation.basket = basket;
+            // Se abbiamo un cestello, recuperiamo anche il flupsy associato
+            if (basket.flupsyId) {
+              const flupsy = await this.getFlupsy(basket.flupsyId);
+              if (flupsy) {
+                enhancedOperation.basket.flupsy = flupsy;
+              }
+            }
+          }
+          
+          if (cycle) enhancedOperation.cycle = cycle;
+          if (size) enhancedOperation.size = size;
+          if (sgrRecord) enhancedOperation.sgr = sgrRecord;
+          if (lot) enhancedOperation.lot = lot;
+          
+          return enhancedOperation;
+        })
+      );
+      
+      console.log(`Query ottimizzata completata. Recuperate ${operationsWithDetails.length} operazioni su ${totalCount} totali.`);
+      
+      return {
+        operations: operationsWithDetails,
+        totalCount
+      };
+    } catch (error) {
+      console.error("Errore nell'esecuzione della query ottimizzata:", error);
+      throw error;
+    }
+  }
 
   async getOperation(id: number): Promise<Operation | undefined> {
     const results = await db.select().from(operations).where(eq(operations.id, id));

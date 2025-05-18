@@ -1334,8 +1334,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Operation routes ===
+  app.get("/api/operations-optimized", async (req, res) => {
+    try {
+      console.log("Richiesta operazioni ottimizzate con query params:", req.query);
+      
+      // Estrai i parametri della query
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 20;
+      const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : undefined;
+      const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
+      const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : undefined;
+      
+      // Gestione date
+      const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined;
+      const dateTo = req.query.dateTo ? new Date(req.query.dateTo as string) : undefined;
+      
+      // Tipo di operazione
+      const type = req.query.type as string | undefined;
+      
+      // Chiama la funzione ottimizzata
+      const result = await storage.getOperationsOptimized({
+        page,
+        pageSize,
+        cycleId,
+        flupsyId,
+        basketId,
+        dateFrom,
+        dateTo,
+        type
+      });
+      
+      // Restituisci i dati con informazioni di paginazione
+      res.json({
+        operations: result.operations,
+        pagination: {
+          page,
+          pageSize,
+          totalItems: result.totalCount,
+          totalPages: Math.ceil(result.totalCount / pageSize)
+        }
+      });
+    } catch (error) {
+      console.error("Errore nell'endpoint ottimizzato delle operazioni:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Errore sconosciuto' 
+      });
+    }
+  });
+  
   app.get("/api/operations", async (req, res) => {
     try {
+      // Controlla se è stata richiesta la versione ottimizzata
+      const useOptimized = req.query.optimized === 'true';
+      
+      if (useOptimized) {
+        // Reindirizza alla versione ottimizzata
+        console.log("Reindirizzamento alla versione ottimizzata delle operazioni");
+        
+        // Estrai i parametri della query
+        const page = req.query.page ? parseInt(req.query.page as string) : 1;
+        const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 20;
+        const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : undefined;
+        const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
+        const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : undefined;
+        
+        // Gestione date
+        const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined;
+        const dateTo = req.query.dateTo ? new Date(req.query.dateTo as string) : undefined;
+        
+        // Tipo di operazione
+        const type = req.query.type as string | undefined;
+        
+        // Chiama la funzione ottimizzata
+        const result = await storage.getOperationsOptimized({
+          page,
+          pageSize,
+          cycleId,
+          flupsyId,
+          basketId,
+          dateFrom,
+          dateTo,
+          type
+        });
+        
+        // Restituisci solo le operazioni per mantenere la compatibilità con il frontend esistente
+        return res.json(result.operations);
+      }
+      
+      // Versione originale dell'endpoint
       // Controlla se c'è un filtro per cycleId
       const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : null;
       

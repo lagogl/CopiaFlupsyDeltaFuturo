@@ -158,13 +158,78 @@ export default function Operations() {
   const [initialFlupsyId, setInitialFlupsyId] = useState<number | null>(null);
   const [initialBasketId, setInitialBasketId] = useState<number | null>(null);
   
+  // Stato per la paginazione
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(20);
+  const [totalOperations, setTotalOperations] = useState<number>(0);
+  const [totalPages, setTotalPages] = useState<number>(1);
+  
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
   
-  // Query operations
-  const { data: operations, isLoading: isLoadingOperations, refetch: refetchOperations } = useQuery<Operation[]>({
-    queryKey: ['/api/operations'],
+  // Query operations utilizzando l'API ottimizzata con paginazione
+  const { 
+    data: operationsData, 
+    isLoading: isLoadingOperations, 
+    refetch: refetchOperations 
+  } = useQuery<{operations: Operation[], pagination: {page: number, pageSize: number, totalItems: number, totalPages: number}}>({
+    queryKey: ['/api/operations-optimized', currentPage, pageSize, filters.typeFilter, filters.flupsyFilter, filters.cycleFilter, filters.dateFilter],
+    queryFn: async () => {
+      // Costruisci i parametri della query in base ai filtri
+      const queryParams = new URLSearchParams();
+      queryParams.append('page', currentPage.toString());
+      queryParams.append('pageSize', pageSize.toString());
+      
+      // Applica i filtri selezionati
+      if (filters.typeFilter && filters.typeFilter !== 'all') {
+        queryParams.append('type', filters.typeFilter);
+      }
+      
+      if (filters.flupsyFilter && filters.flupsyFilter !== 'all') {
+        queryParams.append('flupsyId', filters.flupsyFilter);
+      }
+      
+      if (filters.cycleFilter && filters.cycleFilter !== 'all') {
+        queryParams.append('cycleId', filters.cycleFilter);
+      }
+      
+      if (filters.dateFilter) {
+        const today = new Date();
+        
+        if (filters.dateFilter === 'today') {
+          queryParams.append('dateFrom', today.toISOString().split('T')[0]);
+          queryParams.append('dateTo', today.toISOString().split('T')[0]);
+        } else if (filters.dateFilter === 'week') {
+          const weekAgo = new Date();
+          weekAgo.setDate(today.getDate() - 7);
+          queryParams.append('dateFrom', weekAgo.toISOString().split('T')[0]);
+          queryParams.append('dateTo', today.toISOString().split('T')[0]);
+        } else if (filters.dateFilter === 'month') {
+          const monthAgo = new Date();
+          monthAgo.setMonth(today.getMonth() - 1);
+          queryParams.append('dateFrom', monthAgo.toISOString().split('T')[0]);
+          queryParams.append('dateTo', today.toISOString().split('T')[0]);
+        }
+      }
+      
+      // Effettua la chiamata API
+      const response = await fetch(`/api/operations-optimized?${queryParams.toString()}`);
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento delle operazioni');
+      }
+      
+      const data = await response.json();
+      
+      // Aggiorna lo stato della paginazione
+      setTotalOperations(data.pagination.totalItems);
+      setTotalPages(data.pagination.totalPages);
+      
+      return data;
+    }
   });
+  
+  // Estrai le operazioni dal risultato
+  const operations = operationsData?.operations || [];
   
   // Query baskets for reference
   const { data: baskets, isLoading: isLoadingBaskets, refetch: refetchBaskets } = useQuery<Basket[]>({
