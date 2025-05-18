@@ -1348,14 +1348,7 @@ export default function OperationFormCompact({
                       name="animalCount"
                       render={({ field }) => (
                         <FormItem className="mb-1">
-                          <FormLabel className="text-xs font-medium">
-                            Numero animali
-                            {watchType === 'peso' && prevOperationData && (
-                              <span className="ml-2 font-bold text-amber-700">
-                                (Originale: {prevOperationData.animalCount?.toLocaleString('it-IT') || '0'})
-                              </span>
-                            )}
-                          </FormLabel>
+                          <FormLabel className="text-xs font-medium">Numero animali</FormLabel>
                           <FormControl>
                             <Input 
                               type="text" 
