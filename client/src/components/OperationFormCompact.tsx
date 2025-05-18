@@ -464,9 +464,12 @@ export default function OperationFormCompact({
                           if (value === 'prima-attivazione') {
                             form.setValue('cycleId', null);
                           } else if (value === 'peso') {
+                            // Per il tipo 'peso', resettiamo solo il peso totale e gli animali per kg
+                            // ma MANTENIAMO il numero di animali dall'operazione precedente
                             form.setValue('totalWeight', null);
                             form.setValue('animalsPerKg', null);
-                            form.setValue('sizeId', null);
+                            // NON resettiamo il sizeId, sarà ricalcolato automaticamente
+                            // form.setValue('sizeId', null);
                           } else if (value === 'misura') {
                             form.setValue('sampleWeight', null);
                             form.setValue('liveAnimals', null);
