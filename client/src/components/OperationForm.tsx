@@ -313,31 +313,31 @@ export default function OperationForm({
         // usando i range min_animals_per_kg e max_animals_per_kg
         let selectedSize = null;
         
-        // Controlla che i valori minAnimalsPerKg e maxAnimalsPerKg siano disponibili
+        // Controlla che i valori min_animals_per_kg e max_animals_per_kg siano disponibili
         // e siano di tipo numerico
         const validSizes = sizes.filter(size => 
-          typeof size.minAnimalsPerKg === 'number' && 
-          typeof size.maxAnimalsPerKg === 'number');
+          typeof size.min_animals_per_kg === 'number' && 
+          typeof size.max_animals_per_kg === 'number');
         
         console.log("Sizes valide con range numerici:", validSizes);
         
         // Cerca la taglia in cui il valore degli animali per kg rientra nel range min-max
         selectedSize = validSizes.find(size => 
-          size.minAnimalsPerKg <= watchAnimalsPerKg && 
-          size.maxAnimalsPerKg >= watchAnimalsPerKg
+          size.min_animals_per_kg <= watchAnimalsPerKg && 
+          size.max_animals_per_kg >= watchAnimalsPerKg
         );
         
         console.log("Taglia trovata nel range:", selectedSize);
         
         // Se non è stato trovato nel range, trova la taglia più vicina
         if (!selectedSize) {
-          // Cerca la taglia con maxAnimalsPerKg più vicino ma inferiore al valore
-          const lowerSizes = validSizes.filter(size => size.maxAnimalsPerKg < watchAnimalsPerKg)
-            .sort((a, b) => b.maxAnimalsPerKg - a.maxAnimalsPerKg);
+          // Cerca la taglia con max_animals_per_kg più vicino ma inferiore al valore
+          const lowerSizes = validSizes.filter(size => size.max_animals_per_kg < watchAnimalsPerKg)
+            .sort((a, b) => b.max_animals_per_kg - a.max_animals_per_kg);
           
-          // Cerca la taglia con minAnimalsPerKg più vicino ma superiore al valore
-          const higherSizes = validSizes.filter(size => size.minAnimalsPerKg > watchAnimalsPerKg)
-            .sort((a, b) => a.minAnimalsPerKg - b.minAnimalsPerKg);
+          // Cerca la taglia con min_animals_per_kg più vicino ma superiore al valore
+          const higherSizes = validSizes.filter(size => size.min_animals_per_kg > watchAnimalsPerKg)
+            .sort((a, b) => a.min_animals_per_kg - b.min_animals_per_kg);
           
           console.log("Taglie inferiori:", lowerSizes);
           console.log("Taglie superiori:", higherSizes);
@@ -1190,7 +1190,7 @@ export default function OperationForm({
                     />
                     <div className="text-xs text-sky-600 mt-1 ml-1">
                       {field.value && sizes ? 
-                        `Range: ${sizes.find(s => s.id === field.value)?.minAnimalsPerKg}-${sizes.find(s => s.id === field.value)?.maxAnimalsPerKg} animali/kg` : 
+                        `Range: ${sizes.find(s => s.id === field.value)?.min_animals_per_kg}-${sizes.find(s => s.id === field.value)?.max_animals_per_kg} animali/kg` : 
                         "Basato su animali per kg"
                       }
                     </div>
