@@ -21,6 +21,7 @@ import MisurazioneDirectFormFixed from '@/components/MisurazioneDirectFormFixed'
 import { PesoOperationResults } from '@/components/peso/PesoOperationResults';
 import PesoDirectForm from '@/components/PesoDirectForm';
 import { useFilterPersistence } from '@/hooks/useFilterPersistence';
+import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 
 // Tipi che useremo 
 interface Basket {
