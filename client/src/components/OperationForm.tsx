@@ -29,7 +29,7 @@ import {
 } from "@/components/ui/alert-dialog";
 import { operationSchema } from "@shared/schema";
 
-// Schema esteso per includere il campo FLUPSY
+// Schema esteso per includere il campo FLUPSY e i nuovi campi standardizzati
 const formSchemaWithFlupsy = operationSchema.extend({
   // Override della data per assicurarci che funzioni correttamente con il form
   date: z.coerce.date(),
@@ -39,6 +39,12 @@ const formSchemaWithFlupsy = operationSchema.extend({
   notes: z.string().optional(),
   // Aggiunto campo FLUPSY per la selezione in due fasi
   flupsyId: z.number().nullable().optional(),
+  // Nuovi campi standardizzati per tutte le operazioni
+  sampleWeight: z.coerce.number().optional().nullable(), // Grammi sample
+  liveAnimals: z.coerce.number().optional().nullable(), // Numero animali vivi
+  deadCount: z.coerce.number().optional().nullable(), // Numero animali morti (già esistente nello schema)
+  totalSample: z.coerce.number().optional().nullable(), // Totale sample (vivi + morti)
+  manualCountAdjustment: z.boolean().optional().default(false), // Flag per abilitare la modifica manuale del conteggio
   // Il campo cycleId è condizionalmente richiesto a seconda del tipo di operazione
   cycleId: z.number().nullable().optional().superRefine((val, ctx) => {
     // Otteniamo il tipo di operazione dalle data dell'oggetto ctx
@@ -193,6 +199,11 @@ export default function OperationForm({
   const watchCycleId = form.watch('cycleId');
   const watchType = form.watch('type');
   const watchDate = form.watch('date');
+  // Monitoraggio dei nuovi campi standardizzati
+  const watchSampleWeight = form.watch('sampleWeight');
+  const watchLiveAnimals = form.watch('liveAnimals');
+  const watchDeadCount = form.watch('deadCount');
+  const watchManualCountAdjustment = form.watch('manualCountAdjustment');
   // Calcoliamo manualmente l'average weight
   const averageWeight = watchAnimalsPerKg ? (1000000 / Number(watchAnimalsPerKg)) : 0;
   
@@ -321,6 +332,52 @@ export default function OperationForm({
       form.setValue('totalWeight', null);
     }
   }, [watchAnimalCount, watchAnimalsPerKg, form]);
+  
+  // Calcola il totale del campione e aggiorna mortalityRate quando i dati di misurazione cambiano
+  useEffect(() => {
+    // Calcola il totale del campione (vivi + morti)
+    if (watchLiveAnimals || watchDeadCount) {
+      const liveCount = watchLiveAnimals || 0;
+      const deadCount = watchDeadCount || 0;
+      const totalSample = liveCount + deadCount;
+      
+      // Imposta il totale del campione
+      form.setValue('totalSample', totalSample > 0 ? totalSample : null);
+      
+      // Calcola e imposta la percentuale di mortalità
+      if (totalSample > 0) {
+        const mortalityRate = (deadCount / totalSample) * 100;
+        form.setValue('mortalityRate', mortalityRate);
+      } else {
+        form.setValue('mortalityRate', null);
+      }
+    } else {
+      form.setValue('totalSample', null);
+      form.setValue('mortalityRate', null);
+    }
+  }, [watchLiveAnimals, watchDeadCount, form]);
+  
+  // Calcola automaticamente il numero di animali quando cambiano i dati del campione
+  useEffect(() => {
+    // Solo se non è attiva la correzione manuale
+    if (!watchManualCountAdjustment && watchLiveAnimals && watchLiveAnimals > 0) {
+      // Il numero totale di animali è stimato moltiplicando il numero di animali vivi
+      // per un fattore basato sulla percentuale di mortalità
+      const liveCount = watchLiveAnimals || 0;
+      const deadCount = watchDeadCount || 0;
+      const totalSample = liveCount + deadCount;
+      
+      if (totalSample > 0) {
+        // Calcoliamo il fattore di correzione basato sulla mortalità
+        const liveRatio = liveCount / totalSample;
+        // Stimiamo il numero totale di animali
+        const estimatedTotal = Math.round(liveCount / liveRatio);
+        
+        // Aggiorniamo il conteggio totale degli animali
+        form.setValue('animalCount', estimatedTotal);
+      }
+    }
+  }, [watchLiveAnimals, watchDeadCount, watchManualCountAdjustment, form]);
   
   // Questa variabile viene usata altrove nei calcoli
   const watchAverageWeight = watchAnimalsPerKg ? (1000000 / Number(watchAnimalsPerKg)) : 0;
@@ -478,6 +535,7 @@ export default function OperationForm({
   }, [watchBasketId, basketOperations, watchType, form]);
 
   // Get operation type options based on basket state
+  // Rimossi tipi di operazione: Vagliatura, Trattamento, Pulizia, Selezione per vendita, Cessazione
   const allOperationTypes = [
     { value: 'prima-attivazione', label: 'Prima Attivazione' },
     { value: 'misura', label: 'Misura' },
@@ -1065,16 +1123,192 @@ export default function OperationForm({
             )}
           />
 
+          {/* Campi standardizzati per inserimento dati di misurazione */}
+          <div className="border rounded-md p-4 mb-4 bg-blue-50 border-blue-100">
+            <h3 className="text-base font-semibold mb-3 text-blue-700">Dati di misurazione standardizzati</h3>
+            
+            {/* Peso campione (grammi sample) */}
+            <FormField
+              control={form.control}
+              name="sampleWeight"
+              render={({ field }) => (
+                <FormItem className="mb-3">
+                  <FormLabel>Grammi sample</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="number" 
+                      placeholder="Peso del campione in grammi"
+                      value={field.value === null || field.value === undefined ? '' : field.value}
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          field.onChange(null);
+                        } else {
+                          const numValue = parseFloat(value);
+                          field.onChange(isNaN(numValue) ? null : numValue);
+                        }
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Numero animali vivi */}
+            <FormField
+              control={form.control}
+              name="liveAnimals"
+              render={({ field }) => (
+                <FormItem className="mb-3">
+                  <FormLabel>Numero animali vivi</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="Numero animali vivi nel campione"
+                      value={field.value === null || field.value === undefined 
+                        ? '' 
+                        : field.value.toLocaleString('it-IT')}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        if (value === '') {
+                          field.onChange(null);
+                        } else {
+                          const numValue = parseInt(value, 10);
+                          field.onChange(isNaN(numValue) ? null : numValue);
+                        }
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Numero animali morti */}
+            <FormField
+              control={form.control}
+              name="deadCount"
+              render={({ field }) => (
+                <FormItem className="mb-3">
+                  <FormLabel>Numero animali morti</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="Numero animali morti nel campione"
+                      value={field.value === null || field.value === undefined 
+                        ? '' 
+                        : field.value.toLocaleString('it-IT')}
+                      onChange={(e) => {
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        if (value === '') {
+                          field.onChange(null);
+                        } else {
+                          const numValue = parseInt(value, 10);
+                          field.onChange(isNaN(numValue) ? null : numValue);
+                        }
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
+                    />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            
+            {/* Totale campione (calcolato automaticamente) */}
+            <FormField
+              control={form.control}
+              name="totalSample"
+              render={({ field }) => (
+                <FormItem className="mb-3">
+                  <FormLabel>Totale sample</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="Calcolato automaticamente"
+                      value={field.value === null || field.value === undefined 
+                        ? 'Calcolato automaticamente' 
+                        : field.value.toLocaleString('it-IT')}
+                      readOnly
+                      className="bg-gray-50 border-gray-100 font-medium text-gray-700"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    Totale sample = Numero animali vivi + Numero animali morti
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+            
+            {/* Percentuale morti (calcolata automaticamente) */}
+            <FormField
+              control={form.control}
+              name="mortalityRate"
+              render={({ field }) => (
+                <FormItem className="mb-3">
+                  <FormLabel>% morti</FormLabel>
+                  <FormControl>
+                    <Input 
+                      type="text" 
+                      placeholder="Calcolato automaticamente"
+                      value={field.value === null || field.value === undefined 
+                        ? 'Calcolato automaticamente' 
+                        : `${field.value.toFixed(2)}%`}
+                      readOnly
+                      className="bg-gray-50 border-gray-100 font-medium text-gray-700"
+                    />
+                  </FormControl>
+                  <FormDescription className="text-xs">
+                    % morti = (Numero animali morti / Totale sample) × 100
+                  </FormDescription>
+                </FormItem>
+              )}
+            />
+          </div>
+          
           <FormField
             control={form.control}
             name="animalCount"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Numero Animali</FormLabel>
+                <div className="flex items-center justify-between">
+                  <FormLabel>Numero Animali</FormLabel>
+                  <FormField
+                    control={form.control}
+                    name="manualCountAdjustment"
+                    render={({ field: checkboxField }) => (
+                      <div className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          id="manualCountAdjustment"
+                          checked={checkboxField.value}
+                          onChange={(e) => checkboxField.onChange(e.target.checked)}
+                          className="h-4 w-4 rounded border-gray-300 text-primary focus:ring-primary"
+                        />
+                        <label
+                          htmlFor="manualCountAdjustment"
+                          className="text-xs font-medium text-gray-700"
+                        >
+                          Modifica manuale
+                        </label>
+                      </div>
+                    )}
+                  />
+                </div>
                 <FormControl>
                   <Input 
                     type="text" 
-                    placeholder="Inserisci numero animali"
+                    placeholder={watchManualCountAdjustment ? "Inserisci numero animali" : "Calcolato automaticamente"}
+                    readOnly={!watchManualCountAdjustment}
                     value={field.value === null || field.value === undefined 
                       ? '' 
                       : field.value.toLocaleString('it-IT')}
@@ -1091,8 +1325,14 @@ export default function OperationForm({
                     onBlur={field.onBlur}
                     name={field.name}
                     ref={field.ref}
+                    className={!watchManualCountAdjustment ? "bg-amber-50 border-amber-100 font-medium text-amber-700" : ""}
                   />
                 </FormControl>
+                <FormDescription className="text-xs">
+                  {watchManualCountAdjustment 
+                    ? "Inserisci manualmente il numero di animali" 
+                    : "Il numero di animali viene calcolato automaticamente in base alle misurazioni"}
+                </FormDescription>
                 <FormMessage />
               </FormItem>
             )}
