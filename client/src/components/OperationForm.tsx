@@ -306,36 +306,32 @@ export default function OperationForm({
       
       // Auto-select size based on animals per kg
       if (sizes && sizes.length > 0) {
-        // Determina la taglia in base al numero di animali per kg
-        // Ordina le taglie per animali per kg (decrescente)
-        const sortedSizes = [...sizes].sort((a, b) => 
-          (b.animalsPerKg || 0) - (a.animalsPerKg || 0)
-        );
-        
-        // Trova la taglia appropriate in base al numero di animali per kg
+        // Trova la taglia appropriata in base al numero di animali per kg
+        // usando i range min_animals_per_kg e max_animals_per_kg
         let selectedSize = null;
         
-        // Prima verifica se il valore è maggiore o uguale al primo (più grande) valore
-        if (watchAnimalsPerKg >= (sortedSizes[0]?.animalsPerKg || 0)) {
-          selectedSize = sortedSizes[0];
-        } 
-        // Altrimenti, trova la taglia il cui valore di animalsPerKg è immediatamente inferiore
-        else {
-          for (let i = 1; i < sortedSizes.length; i++) {
-            const currentSize = sortedSizes[i];
-            const previousSize = sortedSizes[i-1];
-            
-            // Se il valore è tra il precedente e l'attuale, seleziona il precedente
-            if (watchAnimalsPerKg < (previousSize?.animalsPerKg || 0) && 
-                watchAnimalsPerKg >= (currentSize?.animalsPerKg || 0)) {
-              selectedSize = currentSize;
-              break;
-            }
-          }
+        // Cerca la taglia in cui il valore degli animali per kg rientra nel range min-max
+        selectedSize = sizes.find(size => 
+          size.minAnimalsPerKg <= watchAnimalsPerKg && 
+          size.maxAnimalsPerKg >= watchAnimalsPerKg
+        );
+        
+        // Se non è stato trovato nel range, trova la taglia più vicina
+        if (!selectedSize) {
+          // Cerca la taglia con maxAnimalsPerKg più vicino ma inferiore al valore
+          const lowerSizes = sizes.filter(size => size.maxAnimalsPerKg < watchAnimalsPerKg)
+            .sort((a, b) => b.maxAnimalsPerKg - a.maxAnimalsPerKg);
           
-          // Se non è stato trovato, prendi l'ultimo (più piccolo) valore
-          if (!selectedSize && sortedSizes.length > 0) {
-            selectedSize = sortedSizes[sortedSizes.length - 1];
+          // Cerca la taglia con minAnimalsPerKg più vicino ma superiore al valore
+          const higherSizes = sizes.filter(size => size.minAnimalsPerKg > watchAnimalsPerKg)
+            .sort((a, b) => a.minAnimalsPerKg - b.minAnimalsPerKg);
+          
+          if (lowerSizes.length > 0) {
+            // Preferisci la taglia inferiore più vicina
+            selectedSize = lowerSizes[0];
+          } else if (higherSizes.length > 0) {
+            // Altrimenti prendi la taglia superiore più vicina
+            selectedSize = higherSizes[0];
           }
         }
         
