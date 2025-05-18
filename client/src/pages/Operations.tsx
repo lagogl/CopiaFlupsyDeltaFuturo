@@ -2523,7 +2523,7 @@ export default function Operations() {
             initialBasketId={selectedOperation ? null : initialBasketId}
             defaultValues={selectedOperation ? {
               type: selectedOperation.type,
-              date: selectedOperation.date instanceof Date ? selectedOperation.date : new Date(selectedOperation.date),
+              date: new Date(), // Propone sempre la data odierna quando si duplica un'operazione
               basketId: selectedOperation.basketId,
               cycleId: selectedOperation.cycleId,
               flupsyId: selectedOperation.basket?.flupsyId || selectedOperation.flupsyId,
