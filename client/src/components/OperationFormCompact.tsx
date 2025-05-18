@@ -184,6 +184,15 @@ export default function OperationFormCompact({
     if (watchFlupsyId && baskets) {
       setIsLoadingFlupsyBaskets(true);
       const filtered = baskets.filter((basket: any) => basket.flupsyId === watchFlupsyId);
+      
+      // Log per debug
+      console.log("Cestelli filtrati per FLUPSY:", filtered);
+      if (filtered.length > 0) {
+        console.log("Esempio cestello:", filtered[0]);
+        console.log("Conteggio animali:", filtered[0].animalCount);
+        console.log("Ultima operazione:", filtered[0].lastOperation);
+      }
+      
       setFlupsyBaskets(filtered);
       setIsLoadingFlupsyBaskets(false);
     } else {
