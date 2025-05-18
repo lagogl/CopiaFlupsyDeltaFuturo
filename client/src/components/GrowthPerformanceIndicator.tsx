@@ -63,7 +63,8 @@ export default function GrowthPerformanceIndicator({
   }
 
   // Calcola la percentuale di prestazione rispetto al target
-  const performanceRatio = actualGrowthPercent / targetGrowthPercent;
+  const performanceRatio = targetGrowthPercent && targetGrowthPercent !== 0 ? 
+    actualGrowthPercent / targetGrowthPercent : 0;
   
   // Calcola la crescita giornaliera effettiva
   const dailyGrowthRate = getDailyGrowthRate(actualGrowthPercent, daysBetweenMeasurements);
@@ -200,12 +201,12 @@ export default function GrowthPerformanceIndicator({
                         <p><strong>Crescita target (SGR):</strong> {targetGrowthFormatted}%</p>
                         {sgrMonth && <p><strong>SGR di riferimento:</strong> {sgrMonth} ({sgrDailyPercentage}% al giorno)</p>}
                         <p><strong>Performance:</strong> {performancePercentFormatted}% del target</p>
-                        <p><strong>Rapporto di crescita reale:</strong> {performanceRatio.toFixed(2)}x</p>
+                        <p><strong>Rapporto di crescita reale:</strong> {typeof performanceRatio === 'number' ? performanceRatio.toFixed(2) : "0.00"}x</p>
                         {currentAverageWeight && previousAverageWeight && (
                           <>
-                            <p><strong>Peso precedente:</strong> {formatNumberWithCommas(previousAverageWeight, 4)} mg ({formatNumberWithCommas(Math.round(1000000/previousAverageWeight))} an/kg)</p>
-                            <p><strong>Peso attuale:</strong> {formatNumberWithCommas(currentAverageWeight, 4)} mg ({formatNumberWithCommas(Math.round(1000000/currentAverageWeight))} an/kg)</p>
-                            <p><strong>Incremento:</strong> {formatNumberWithCommas(currentAverageWeight - previousAverageWeight, 4)} mg</p>
+                            <p><strong>Peso precedente:</strong> {formatNumberWithCommas(previousAverageWeight || 0, 4)} mg ({formatNumberWithCommas(Math.round(1000000/(previousAverageWeight || 1)))} an/kg)</p>
+                            <p><strong>Peso attuale:</strong> {formatNumberWithCommas(currentAverageWeight || 0, 4)} mg ({formatNumberWithCommas(Math.round(1000000/(currentAverageWeight || 1)))} an/kg)</p>
+                            <p><strong>Incremento:</strong> {formatNumberWithCommas((currentAverageWeight || 0) - (previousAverageWeight || 0), 4)} mg</p>
                             <p><strong>Crescita giornaliera:</strong> {dailyGrowthFormatted}% al giorno</p>
                           </>
                         )}
@@ -236,7 +237,7 @@ export default function GrowthPerformanceIndicator({
             <div className="p-2 bg-white/50 rounded-md">
               <div className="text-gray-600 mb-1">Peso giornaliero</div>
               <div className="flex items-center">
-                {weightIncreasePerDay ? (
+                {weightIncreasePerDay !== null && typeof weightIncreasePerDay === 'number' ? (
                   <>
                     <span className="text-base font-medium">
                       {weightIncreasePerDay.toFixed(2)} mg/g
@@ -256,12 +257,17 @@ export default function GrowthPerformanceIndicator({
                   {dailyGrowthFormatted}% 
                 </span>
                 <span className="text-xs text-gray-500 ml-1">/ giorno</span>
-                {dailyGrowthRate > (sgrDailyPercentage || 0) ? (
-                  <ArrowUpRight className="h-4 w-4 ml-1 text-emerald-600" />
-                ) : dailyGrowthRate < (sgrDailyPercentage || 0) ? (
-                  <ArrowDownRight className="h-4 w-4 ml-1 text-red-600" />
+                {typeof dailyGrowthRate === 'number' && !isNaN(dailyGrowthRate) && 
+                 typeof sgrDailyPercentage === 'number' && !isNaN(sgrDailyPercentage) ? (
+                  dailyGrowthRate > sgrDailyPercentage ? (
+                    <ArrowUpRight className="h-4 w-4 ml-1 text-emerald-600" />
+                  ) : dailyGrowthRate < sgrDailyPercentage ? (
+                    <ArrowDownRight className="h-4 w-4 ml-1 text-red-600" />
+                  ) : (
+                    <ArrowRight className="h-4 w-4 ml-1 text-amber-600" />
+                  )
                 ) : (
-                  <ArrowRight className="h-4 w-4 ml-1 text-amber-600" />
+                  <ArrowRight className="h-4 w-4 ml-1 text-gray-400" />
                 )}
               </div>
             </div>
@@ -272,11 +278,14 @@ export default function GrowthPerformanceIndicator({
             <div>
               <span className="text-xs text-gray-600">
                 Crescita totale peso: 
-                {currentAverageWeight && previousAverageWeight ? (
+                {currentAverageWeight !== null && previousAverageWeight !== null && 
+                typeof currentAverageWeight === 'number' && typeof previousAverageWeight === 'number' ? (
                   <span className="ml-1 font-medium">
                     {formatNumberWithCommas((currentAverageWeight - previousAverageWeight), 0)} mg
                     <span className="text-xs text-gray-500 ml-1">
-                      ({(((currentAverageWeight - previousAverageWeight) / previousAverageWeight) * 100).toFixed(1)}%)
+                      {previousAverageWeight > 0 ? 
+                      `(${(((currentAverageWeight - previousAverageWeight) / previousAverageWeight) * 100).toFixed(1)}%)` : 
+                      "(N/D%)"}
                     </span>
                   </span>
                 ) : (
