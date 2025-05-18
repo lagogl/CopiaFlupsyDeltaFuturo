@@ -1158,7 +1158,7 @@ export default function QuickOperations() {
           lots={lots}
           sizes={sizes}
           selectedBaskets={selectedBaskets}
-          onSelect={handleBasketSelect}
+          onSelect={handleSelectBasket}
           onQuickOperation={handleQuickOperation}
           onDeleteOperation={handleDeleteOperation}
         />
