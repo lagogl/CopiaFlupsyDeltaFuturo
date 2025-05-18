@@ -1003,6 +1003,38 @@ export default function OperationForm({
                         />
                       </div>
                     )}
+                    
+                    {/* Taglia calcolata */}
+                    {watchAnimalsPerKg > 0 && sizes && sizes.length > 0 && (
+                      <div className="space-y-1 col-span-2">
+                        <h5 className="text-xs font-medium">Taglia calcolata</h5>
+                        <Input 
+                          type="text" 
+                          className="h-9 text-sm bg-slate-50"
+                          readOnly
+                          value={(() => {
+                            // Utilizziamo una IIFE per calcolare la taglia direttamente nell'attributo value
+                            let selectedSize = null;
+                            for (const size of sizes) {
+                              if (size.minAnimalsPerKg !== undefined && 
+                                  size.maxAnimalsPerKg !== undefined &&
+                                  watchAnimalsPerKg >= size.minAnimalsPerKg && 
+                                  watchAnimalsPerKg <= size.maxAnimalsPerKg) {
+                                selectedSize = size;
+                                // Aggiorna silenziosamente il sizeId nel form
+                                if (form.getValues('sizeId') !== size.id) {
+                                  form.setValue('sizeId', size.id);
+                                }
+                                break;
+                              }
+                            }
+                            return selectedSize ? 
+                              `${selectedSize.name} (${selectedSize.minAnimalsPerKg}-${selectedSize.maxAnimalsPerKg} animali/kg)` : 
+                              'Nessuna taglia corrispondente';
+                          })()}
+                        />
+                      </div>
+                    )}
                   </div>
                 </div>
               </TabsContent>
@@ -1242,6 +1274,38 @@ export default function OperationForm({
                               minimumFractionDigits: 3,
                               maximumFractionDigits: 3
                             }) : ''}
+                        />
+                      </div>
+                    )}
+                    
+                    {/* Taglia calcolata */}
+                    {watchAnimalsPerKg > 0 && sizes && sizes.length > 0 && (
+                      <div className="space-y-1 col-span-2">
+                        <h5 className="text-xs font-medium">Taglia calcolata</h5>
+                        <Input 
+                          type="text" 
+                          className="h-9 text-sm bg-slate-50"
+                          readOnly
+                          value={(() => {
+                            // Utilizziamo una IIFE per calcolare la taglia direttamente nell'attributo value
+                            let selectedSize = null;
+                            for (const size of sizes) {
+                              if (size.minAnimalsPerKg !== undefined && 
+                                  size.maxAnimalsPerKg !== undefined &&
+                                  watchAnimalsPerKg >= size.minAnimalsPerKg && 
+                                  watchAnimalsPerKg <= size.maxAnimalsPerKg) {
+                                selectedSize = size;
+                                // Aggiorna silenziosamente il sizeId nel form
+                                if (form.getValues('sizeId') !== size.id) {
+                                  form.setValue('sizeId', size.id);
+                                }
+                                break;
+                              }
+                            }
+                            return selectedSize ? 
+                              `${selectedSize.name} (${selectedSize.minAnimalsPerKg}-${selectedSize.maxAnimalsPerKg} animali/kg)` : 
+                              'Nessuna taglia corrispondente';
+                          })()}
                         />
                       </div>
                     )}
