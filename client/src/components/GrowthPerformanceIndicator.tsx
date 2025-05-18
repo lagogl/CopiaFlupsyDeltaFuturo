@@ -112,14 +112,14 @@ export default function GrowthPerformanceIndicator({
     borderColor = 'border-red-500';
   }
 
-  // Arrotonda le percentuali per la visualizzazione
-  const actualGrowthFormatted = actualGrowthPercent.toFixed(1);
-  const targetGrowthFormatted = targetGrowthPercent.toFixed(1);
-  const dailyGrowthFormatted = dailyGrowthRate.toFixed(2);
+  // Arrotonda le percentuali per la visualizzazione con controlli di sicurezza
+  const actualGrowthFormatted = actualGrowthPercent !== null ? actualGrowthPercent.toFixed(1) : "0.0";
+  const targetGrowthFormatted = targetGrowthPercent !== null ? targetGrowthPercent.toFixed(1) : "0.0";
+  const dailyGrowthFormatted = !isNaN(dailyGrowthRate) ? dailyGrowthRate.toFixed(2) : "0.00";
   
   // Mostra il valore reale senza limiti
-  const performancePercentFormatted = (performanceRatio * 100).toFixed(0);
-  const diffFromTarget = actualGrowthPercent - targetGrowthPercent;
+  const performancePercentFormatted = !isNaN(performanceRatio) ? (performanceRatio * 100).toFixed(0) : "0";
+  const diffFromTarget = (actualGrowthPercent ?? 0) - (targetGrowthPercent ?? 0);
   
   // Calcola variazione di peso giornaliera in mg
   const weightIncreasePerDay = currentAverageWeight && previousAverageWeight && daysBetweenMeasurements > 0 
@@ -146,7 +146,7 @@ export default function GrowthPerformanceIndicator({
                 <div className="text-sm font-medium">
                   Crescita: <span className={performanceColor}>{actualGrowthFormatted}%</span> 
                   <span className={diffFromTarget >= 0 ? "text-green-600" : "text-red-600"}>
-                    {" "}({diffFromTarget >= 0 ? "+" : ""}{diffFromTarget.toFixed(1)}%)
+                    {" "}({diffFromTarget >= 0 ? "+" : ""}{diffFromTarget.toFixed ? diffFromTarget.toFixed(1) : "0.0"}%)
                   </span>
                 </div>
               </div>
