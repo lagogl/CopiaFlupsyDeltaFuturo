@@ -313,6 +313,14 @@ export default function OperationForm({
         // usando i range min_animals_per_kg e max_animals_per_kg
         let selectedSize = null;
         
+        // Esamino i dati delle taglie disponibili
+        console.log("Tutte le taglie:", sizes);
+        
+        // Verifica il tipo di min_animals_per_kg e max_animals_per_kg per ogni taglia
+        sizes.forEach(size => {
+          console.log(`Taglia ${size.name}: min=${size.min_animals_per_kg} (${typeof size.min_animals_per_kg}), max=${size.max_animals_per_kg} (${typeof size.max_animals_per_kg})`);
+        });
+        
         // Controlla che i valori min_animals_per_kg e max_animals_per_kg siano disponibili
         // e siano di tipo numerico
         const validSizes = sizes.filter(size => 
@@ -323,10 +331,21 @@ export default function OperationForm({
         console.log("Valore animali per kg:", watchAnimalsPerKg);
         
         // Cerca la taglia in cui il valore degli animali per kg rientra nel range min-max
-        selectedSize = validSizes.find(size => {
-          console.log(`Verifico taglia ${size.name}: range ${size.min_animals_per_kg}-${size.max_animals_per_kg}`);
-          return size.min_animals_per_kg <= watchAnimalsPerKg && 
-                 size.max_animals_per_kg >= watchAnimalsPerKg;
+        // Assicuriamoci che i valori siano trattati come numeri
+        selectedSize = sizes.find(size => {
+          // Converti esplicitamente in numeri
+          const min = Number(size.min_animals_per_kg);
+          const max = Number(size.max_animals_per_kg);
+          const animalsPerKg = Number(watchAnimalsPerKg);
+          
+          // Log dettagliato
+          console.log(`Verifico taglia ${size.name}: range ${min}-${max}, valore: ${animalsPerKg}`);
+          console.log(`Confronto: ${min} <= ${animalsPerKg} <= ${max} ? ${(min <= animalsPerKg && animalsPerKg <= max)}`);
+          
+          // Verifica se il valore è nel range
+          return !isNaN(min) && !isNaN(max) && !isNaN(animalsPerKg) && 
+                 min <= animalsPerKg && 
+                 max >= animalsPerKg;
         });
         
         console.log("Taglia trovata nel range:", selectedSize);
