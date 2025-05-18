@@ -628,8 +628,11 @@ export default function OperationFormCompact({
                                       {basket.state === 'active' ? '✅' : basket.state === 'inactive' ? '⚪️' : ''}
                                     </div>
                                     <div className="text-xs text-muted-foreground">
-                                      {basket.animalCount ? 
-                                        <span className="font-medium">{basket.animalCount.toLocaleString('it-IT')} animali</span> : ''}
+                                      <span className="font-medium">
+                                        {basket.animalCount 
+                                          ? `${basket.animalCount.toLocaleString('it-IT')} animali` 
+                                          : `N° animali non disponibile`}
+                                      </span>
                                       {basket.size?.code ? 
                                         <span className="ml-2 px-1.5 py-0.5 rounded-md" style={{
                                           backgroundColor: basket.size?.color || '#e5e7eb',
