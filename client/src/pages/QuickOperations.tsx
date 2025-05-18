@@ -1203,7 +1203,22 @@ export default function QuickOperations() {
             Reimposta filtri
           </Button>
         </div>
+      ) : view === 'table' ? (
+        // Vista tabellare compatta
+        <BasketTableView
+          baskets={filteredBaskets}
+          flupsys={flupsys}
+          operations={operations}
+          cycles={cycles}
+          lots={lots}
+          sizes={sizes}
+          selectedBaskets={selectedBaskets}
+          onSelect={handleBasketSelect}
+          onQuickOperation={handleQuickOperation}
+          onDeleteOperation={handleDeleteOperation}
+        />
       ) : (
+        // Vista griglia/lista tradizionale
         <div className={`grid ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'} gap-4`}>
           {filteredBaskets.map((basket: Basket) => {
             const { flupsy, lastOperation, cycle, lot } = getBasketData(basket.id);
