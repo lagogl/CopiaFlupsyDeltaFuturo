@@ -417,42 +417,6 @@ export class DbStorage implements IStorage {
       };
     }
   }
-      // 2. Esegui la query principale
-      // Prima otteniamo tutte le operazioni filtrate
-      let operationsQuery = db.select().from(operations);
-      
-      // Aggiungi condizioni di filtro
-      if (whereClause) {
-        operationsQuery = operationsQuery.where(whereClause);
-      }
-      
-      // Ordina per data decrescente
-      operationsQuery = operationsQuery.orderBy(desc(operations.date));
-      
-      // Aggiungi paginazione
-      operationsQuery = operationsQuery.limit(pageSize).offset(offset);
-      
-      // Esegui la query per ottenere le operazioni
-      const operationsResult = await operationsQuery;
-      
-      // Poi recuperiamo i dati correlati
-      const operationsWithDetails = await Promise.all(
-        operationsResult.map(async (op) => {
-          // Recupera i dati correlati in parallelo
-          const [basket, cycle, size, sgrRecord, lot] = await Promise.all([
-            this.getBasket(op.basketId),
-            this.getCycle(op.cycleId),
-            op.sizeId ? this.getSize(op.sizeId) : Promise.resolve(null),
-            op.sgrId ? this.getSgr(op.sgrId) : Promise.resolve(null),
-            op.lotId ? this.getLot(op.lotId) : Promise.resolve(null),
-          ]);
-          
-          // Aggiungi le relazioni come proprietà dell'oggetto operazione
-          const enhancedOperation: Operation = { ...op };
-          
-          if (basket) {
-            enhancedOperation.basket = basket;
-            // Se abbiamo un cestello, recuperiamo anche il flupsy associato
             if (basket.flupsyId) {
               const flupsy = await this.getFlupsy(basket.flupsyId);
               if (flupsy) {
