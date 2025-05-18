@@ -1941,6 +1941,33 @@ export default function Operations() {
                   );
                 })}
               </div>
+              
+              {/* Controlli di paginazione per mobile nella vista tabellare */}
+              {totalPages > 1 && (
+                <div className="mt-4 p-4 border-t border-gray-200 flex items-center justify-between">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-sm"
+                    onClick={() => goToPage(currentPage - 1)}
+                    disabled={currentPage === 1}
+                  >
+                    Precedente
+                  </Button>
+                  <div className="text-sm text-gray-700">
+                    <span className="font-medium">{currentPage}</span> di <span className="font-medium">{totalPages}</span>
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="text-sm"
+                    onClick={() => goToPage(currentPage + 1)}
+                    disabled={currentPage === totalPages}
+                  >
+                    Successiva
+                  </Button>
+                </div>
+              )}
             </div>
           </div>
         ) : (
