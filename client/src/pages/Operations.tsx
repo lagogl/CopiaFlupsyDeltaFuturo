@@ -164,6 +164,15 @@ export default function Operations() {
   const [totalOperations, setTotalOperations] = useState<number>(0);
   const [totalPages, setTotalPages] = useState<number>(1);
   
+  // Funzione per cambiare pagina
+  const goToPage = (page: number) => {
+    if (page >= 1 && page <= totalPages) {
+      setCurrentPage(page);
+      // Scroll verso l'alto della tabella quando si cambia pagina
+      window.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+  
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
   
@@ -1607,6 +1616,98 @@ export default function Operations() {
                   )}
                 </tbody>
               </table>
+              
+              {/* Controlli di paginazione per desktop */}
+              {totalPages > 1 && (
+                <div className="flex items-center justify-between border-t border-gray-200 bg-white px-4 py-3 sm:px-6 mt-2">
+                  <div className="flex flex-1 justify-between sm:hidden">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage - 1)}
+                      disabled={currentPage === 1}
+                    >
+                      Precedente
+                    </Button>
+                    <span className="text-sm text-gray-700 mx-4">
+                      {currentPage} di {totalPages}
+                    </span>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => goToPage(currentPage + 1)}
+                      disabled={currentPage === totalPages}
+                    >
+                      Successiva
+                    </Button>
+                  </div>
+                  <div className="hidden sm:flex sm:flex-1 sm:items-center sm:justify-between">
+                    <div>
+                      <p className="text-sm text-gray-700">
+                        Visualizzazione <span className="font-medium">{Math.min((currentPage - 1) * pageSize + 1, totalOperations)}</span> a <span className="font-medium">{Math.min(currentPage * pageSize, totalOperations)}</span> di{' '}
+                        <span className="font-medium">{totalOperations}</span> risultati
+                      </p>
+                    </div>
+                    <div>
+                      <nav className="isolate inline-flex -space-x-px rounded-md shadow-sm" aria-label="Pagination">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-l-md px-2"
+                          onClick={() => goToPage(currentPage - 1)}
+                          disabled={currentPage === 1}
+                        >
+                          <span className="sr-only">Precedente</span>
+                          <svg className="h-5 w-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M12.79 5.23a.75.75 0 01-.02 1.06L8.832 10l3.938 3.71a.75.75 0 11-1.04 1.08l-4.5-4.25a.75.75 0 010-1.08l4.5-4.25a.75.75 0 011.06.02z" clipRule="evenodd" />
+                          </svg>
+                        </Button>
+                        
+                        {/* Pulsanti delle pagine */}
+                        {[...Array(Math.min(5, totalPages))].map((_, i) => {
+                          let pageNum;
+                          
+                          // Logica per mostrare 5 pagine intorno alla pagina corrente
+                          if (totalPages <= 5) {
+                            pageNum = i + 1;
+                          } else if (currentPage <= 3) {
+                            pageNum = i + 1;
+                          } else if (currentPage >= totalPages - 2) {
+                            pageNum = totalPages - 4 + i;
+                          } else {
+                            pageNum = currentPage - 2 + i;
+                          }
+                          
+                          return (
+                            <Button
+                              key={pageNum}
+                              variant={currentPage === pageNum ? "default" : "outline"}
+                              size="sm"
+                              className="px-4 hidden md:inline-flex"
+                              onClick={() => goToPage(pageNum)}
+                            >
+                              {pageNum}
+                            </Button>
+                          );
+                        })}
+                        
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="rounded-r-md px-2"
+                          onClick={() => goToPage(currentPage + 1)}
+                          disabled={currentPage === totalPages}
+                        >
+                          <span className="sr-only">Successiva</span>
+                          <svg className="h-5 w-5" aria-hidden="true" fill="currentColor" viewBox="0 0 20 20">
+                            <path fillRule="evenodd" d="M7.21 14.77a.75.75 0 01.02-1.06L11.168 10 7.23 6.29a.75.75 0 111.04-1.08l4.5 4.25a.75.75 0 010 1.08l-4.5 4.25a.75.75 0 01-1.06-.02z" clipRule="evenodd" />
+                          </svg>
+                        </Button>
+                      </nav>
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
             
             {/* Mobile View (cards) - stile compatto simile ai cicli */}
