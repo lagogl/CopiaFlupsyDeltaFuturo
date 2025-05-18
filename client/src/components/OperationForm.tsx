@@ -1425,16 +1425,18 @@ export default function OperationForm({
                   <FormLabel className="text-xs">Peso Totale (g)</FormLabel>
                   <FormControl>
                     <Input 
-                      type="number" 
-                      step="0.1"
-                      min="0"
-                      max="1000000"
+                      type="text" 
                       placeholder="Inserisci peso"
                       className="h-8 text-sm"
-                      value={field.value ? Number(field.value).toFixed(1) : ''}
+                      value={field.value !== null && field.value !== undefined ? field.value.toString() : ''}
                       onChange={(e) => {
                         const value = e.target.value;
-                        if (value === '') {
+                        // Accetta solo numeri e un punto decimale
+                        if (!/^(\d*\.?\d*)$/.test(value) && value !== '') {
+                          return;
+                        }
+                        
+                        if (value === '' || value === '.') {
                           field.onChange(null);
                         } else {
                           let numValue = parseFloat(value);
@@ -1494,9 +1496,9 @@ export default function OperationForm({
                 <FormLabel className="text-xs">Peso Medio (mg)</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
+                    type="text" 
                     placeholder="Calcolato"
-                    value={field.value ? Math.round(field.value) : ''}
+                    value={field.value ? field.value.toFixed(3) : ''}
                     readOnly
                     className="h-8 text-sm bg-green-50 border-green-100 font-medium text-green-700"
                   />
