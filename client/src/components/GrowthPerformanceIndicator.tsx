@@ -114,18 +114,26 @@ export default function GrowthPerformanceIndicator({
   }
 
   // Arrotonda le percentuali per la visualizzazione con controlli di sicurezza
-  const actualGrowthFormatted = actualGrowthPercent !== null ? actualGrowthPercent.toFixed(1) : "0.0";
-  const targetGrowthFormatted = targetGrowthPercent !== null ? targetGrowthPercent.toFixed(1) : "0.0";
-  const dailyGrowthFormatted = !isNaN(dailyGrowthRate) ? dailyGrowthRate.toFixed(2) : "0.00";
+  const actualGrowthFormatted = (actualGrowthPercent !== null && typeof actualGrowthPercent === 'number') ? 
+    actualGrowthPercent.toFixed(1) : "0.0";
+  const targetGrowthFormatted = (targetGrowthPercent !== null && typeof targetGrowthPercent === 'number') ? 
+    targetGrowthPercent.toFixed(1) : "0.0";
+  const dailyGrowthFormatted = (typeof dailyGrowthRate === 'number' && !isNaN(dailyGrowthRate)) ? 
+    dailyGrowthRate.toFixed(2) : "0.00";
   
   // Mostra il valore reale senza limiti
-  const performancePercentFormatted = !isNaN(performanceRatio) ? (performanceRatio * 100).toFixed(0) : "0";
-  const diffFromTarget = (actualGrowthPercent ?? 0) - (targetGrowthPercent ?? 0);
+  const performancePercentFormatted = (typeof performanceRatio === 'number' && !isNaN(performanceRatio)) ? 
+    (performanceRatio * 100).toFixed(0) : "0";
+  const diffFromTarget = (actualGrowthPercent !== null && typeof actualGrowthPercent === 'number' ? actualGrowthPercent : 0) - 
+                         (targetGrowthPercent !== null && typeof targetGrowthPercent === 'number' ? targetGrowthPercent : 0);
   
   // Calcola variazione di peso giornaliera in mg
-  const weightIncreasePerDay = currentAverageWeight && previousAverageWeight && daysBetweenMeasurements > 0 
-    ? (currentAverageWeight - previousAverageWeight) / daysBetweenMeasurements 
-    : null;
+  const weightIncreasePerDay = 
+    (currentAverageWeight !== null && typeof currentAverageWeight === 'number' && 
+     previousAverageWeight !== null && typeof previousAverageWeight === 'number' && 
+     daysBetweenMeasurements > 0)
+      ? (currentAverageWeight - previousAverageWeight) / daysBetweenMeasurements 
+      : null;
   
   return (
     <Collapsible 
@@ -147,7 +155,7 @@ export default function GrowthPerformanceIndicator({
                 <div className="text-sm font-medium">
                   Crescita: <span className={performanceColor}>{actualGrowthFormatted}%</span> 
                   <span className={diffFromTarget >= 0 ? "text-green-600" : "text-red-600"}>
-                    {" "}({diffFromTarget >= 0 ? "+" : ""}{diffFromTarget.toFixed ? diffFromTarget.toFixed(1) : "0.0"}%)
+                    {" "}({diffFromTarget >= 0 ? "+" : ""}{typeof diffFromTarget === 'number' ? diffFromTarget.toFixed(1) : "0.0"}%)
                   </span>
                 </div>
               </div>
