@@ -923,7 +923,27 @@ export default function Operations() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 className="text-2xl font-condensed font-bold text-gray-800">Registro Operazioni</h2>
+        <div className="flex items-center">
+          <h2 className="text-2xl font-condensed font-bold text-gray-800">Registro Operazioni</h2>
+          <Button 
+            variant="ghost" 
+            size="icon" 
+            className="ml-2" 
+            onClick={() => {
+              operationsQuery.refetch();
+              cyclesQuery.refetch();
+              basketsQuery.refetch();
+              toast({
+                title: "Aggiornamento completato",
+                description: "Il registro operazioni è stato aggiornato con i dati più recenti",
+                variant: "default"
+              });
+            }}
+            title="Aggiorna dati"
+          >
+            <RotateCw className="h-5 w-5 text-primary" />
+          </Button>
+        </div>
         <div className="flex space-x-3">
           <Button onClick={() => {
             // Resetta qualsiasi operazione precedentemente selezionata
