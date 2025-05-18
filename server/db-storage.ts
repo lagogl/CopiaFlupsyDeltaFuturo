@@ -342,41 +342,81 @@ export class DbStorage implements IStorage {
         whereConditions.push(eq(operations.basketId, options.basketId));
       }
       
+      // Se c'è un filtro per flupsyId, prima ottieni i cestelli in quel flupsy
+      // poi filtra per i loro ID
+      if (options?.flupsyId) {
+        const basketsInFlupsy = await this.getBasketsByFlupsy(options.flupsyId);
+        if (basketsInFlupsy.length > 0) {
+          const basketIds = basketsInFlupsy.map(b => b.id);
+          whereConditions.push(inArray(operations.basketId, basketIds));
+        }
+      }
+      
       // Gestione dei filtri di data
       if (options?.dateFrom) {
-        whereConditions.push(gte(operations.date, options.dateFrom));
+        const dateFromString = options.dateFrom instanceof Date 
+          ? options.dateFrom.toISOString().split('T')[0]
+          : String(options.dateFrom);
+        whereConditions.push(gte(operations.date, dateFromString));
       }
       
       if (options?.dateTo) {
-        whereConditions.push(lte(operations.date, options.dateTo));
+        const dateToString = options.dateTo instanceof Date 
+          ? options.dateTo.toISOString().split('T')[0] 
+          : String(options.dateTo);
+        whereConditions.push(lte(operations.date, dateToString));
       }
       
       if (options?.type) {
-        whereConditions.push(eq(operations.type, options.type));
+        whereConditions.push(eq(operations.type, options.type as any));
       }
       
-      // Costruisci la condizione WHERE combinata
+      // Costruisci la condizione WHERE completa
       const whereClause = whereConditions.length > 0 
         ? and(...whereConditions) 
         : undefined;
-      
+        
       // 1. Prima esegui una query per ottenere il conteggio totale
       let totalCountQuery = db
         .select({ count: sql`count(*)` })
         .from(operations);
         
-      // Se c'è un filtro flupsyId, aggiungiamo la join
-      if (options?.flupsyId) {
-        totalCountQuery = totalCountQuery
-          .innerJoin(baskets, eq(operations.basketId, baskets.id))
-          .where(eq(baskets.flupsyId, options.flupsyId));
-      } else if (whereClause) {
+      if (whereClause) {
         totalCountQuery = totalCountQuery.where(whereClause);
       }
       
-      const [totalCountResult] = await totalCountQuery;
-      const totalCount = Number(totalCountResult?.count || 0);
+      const totalCountResult = await totalCountQuery;
+      const totalCount = Number(totalCountResult[0].count || 0);
       
+      // 2. Poi esegui la query paginata per ottenere solo i record necessari
+      let query = db
+        .select()
+        .from(operations)
+        .orderBy(desc(operations.date));
+      
+      if (whereClause) {
+        query = query.where(whereClause);
+      }
+      
+      // Applica paginazione
+      query = query.limit(pageSize).offset(offset);
+      
+      const results = await query;
+      
+      console.log(`Query completata: ${results.length} risultati su ${totalCount} totali`);
+      
+      return {
+        operations: results,
+        totalCount
+      };
+    } catch (error) {
+      console.error("Errore in getOperationsOptimized:", error);
+      return {
+        operations: [],
+        totalCount: 0
+      };
+    }
+  }
       // 2. Esegui la query principale
       // Prima otteniamo tutte le operazioni filtrate
       let operationsQuery = db.select().from(operations);
