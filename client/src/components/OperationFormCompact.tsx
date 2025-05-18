@@ -614,11 +614,11 @@ export default function OperationFormCompact({
                         }}
                       >
                         <FormControl>
-                          <SelectTrigger className="min-h-10 text-sm py-1">
+                          <SelectTrigger className="min-h-16 text-sm py-2">
                             <SelectValue>
                               {watchBasketId ? (
-                                <div className="flex flex-col gap-0">
-                                  <div className="font-medium">
+                                <div className="flex flex-col gap-1">
+                                  <div className="font-semibold">
                                     {(() => {
                                       const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
                                       if (!selectedBasket) return "Cestello selezionato";
@@ -633,7 +633,7 @@ export default function OperationFormCompact({
                                       );
                                     })()}
                                   </div>
-                                  <div className="text-xs text-muted-foreground flex items-center gap-1 mt-0.5">
+                                  <div className="text-xs flex flex-wrap items-center gap-1 mt-0.5">
                                     {(() => {
                                       const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
                                       if (!selectedBasket) return null;
@@ -643,17 +643,30 @@ export default function OperationFormCompact({
                                                          (selectedBasket.lastOperation?.animalCount);
                                       
                                       return (
-                                        <>
-                                          {animalCount ? 
-                                            <span>{animalCount.toLocaleString('it-IT')} animali</span> : 
-                                            "N° animali non disponibile"}
+                                        <div className="flex flex-col gap-1 w-full">
+                                          <div className="flex items-center gap-2">
+                                            <span className="font-medium">
+                                              {animalCount ? 
+                                                `${animalCount.toLocaleString('it-IT')} animali` : 
+                                                "N° animali non disponibile"}
+                                            </span>
+                                            
+                                            {selectedBasket.size?.code ? 
+                                              <span className="px-1.5 py-0.5 rounded-md" style={{
+                                                backgroundColor: selectedBasket.size?.color || '#e5e7eb',
+                                                color: '#fff'
+                                              }}>{selectedBasket.size?.code}</span> : null}
+                                          </div>
                                           
-                                          {selectedBasket.size?.code ? 
-                                            <span className="ml-1 px-1.5 py-0.5 rounded-md" style={{
-                                              backgroundColor: selectedBasket.size?.color || '#e5e7eb',
-                                              color: '#fff'
-                                            }}>{selectedBasket.size?.code}</span> : null}
-                                        </>
+                                          {/* Informazioni su lotto */}
+                                          {selectedBasket.lastOperation?.lotId && (
+                                            <div className="text-muted-foreground">
+                                              Lotto #{selectedBasket.lastOperation.lotId}
+                                              {selectedBasket.lastOperation.lot?.supplier ? 
+                                                ` (${selectedBasket.lastOperation.lot.supplier})` : ''}
+                                            </div>
+                                          )}
+                                        </div>
                                       );
                                     })()}
                                   </div>
