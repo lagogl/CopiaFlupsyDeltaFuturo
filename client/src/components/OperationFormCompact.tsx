@@ -191,54 +191,11 @@ export default function OperationFormCompact({
     }
   }, [watchFlupsyId, baskets]);
 
-  // Determina le operazioni disponibili in base allo stato del cestello
-  const [basketOperations, setBasketOperations] = useState<{value: string, label: string}[]>([]);
-  
-  useEffect(() => {
-    if (watchBasketId) {
-      // Trova il cestello selezionato
-      const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
-      console.log("Stato cestello selezionato:", selectedBasket?.state);
-      
-      // Verifica se il cestello ha un ciclo attivo
-      const hasCycle = !!selectedBasket?.currentCycleId;
-      console.log("Cestello ha ciclo attivo?", hasCycle ? "Sì" : "No");
-      
-      // Determina le operazioni disponibili
-      let availableOperations = [];
-      
-      if (hasCycle) {
-        // Cestello con ciclo attivo
-        availableOperations = [
-          { value: 'pulizia', label: 'Pulizia' },
-          { value: 'misura', label: 'Misura' },
-          { value: 'peso', label: 'Peso' },
-          { value: 'vagliatura', label: 'Vagliatura' },
-          { value: 'trattamento', label: 'Trattamento' },
-          { value: 'vendita', label: 'Vendita' },
-          { value: 'cessazione', label: 'Cessazione' }
-        ];
-      } else {
-        // Cestello senza ciclo attivo (disponibile)
-        availableOperations = [
-          { value: 'prima-attivazione', label: 'Prima Attivazione' },
-          { value: 'misura', label: 'Misura' },
-          { value: 'vendita', label: 'Vendita' }
-        ];
-      }
-      
-      setBasketOperations(availableOperations);
-      console.log("Operazioni disponibili:", availableOperations);
-    } else {
-      const defaultOperations = [
-        { value: 'prima-attivazione', label: 'Prima Attivazione' },
-        { value: 'misura', label: 'Misura' },
-        { value: 'vendita', label: 'Vendita' }
-      ];
-      console.log("Nessun cestello selezionato - tutte operazioni:", defaultOperations);
-      setBasketOperations(defaultOperations);
-    }
-  }, [watchBasketId, baskets]);
+  // Le operazioni disponibili sono sempre solo misura e vendita
+  const basketOperations = [
+    { value: 'misura', label: 'Misura' },
+    { value: 'vendita', label: 'Vendita' }
+  ];
 
   // Imposta valori iniziali se forniti come props
   useEffect(() => {
@@ -957,6 +914,35 @@ export default function OperationFormCompact({
                             </FormItem>
                           )}
                         />
+                      )}
+                      
+                      {/* Size based on animals per kg */}
+                      {watchAnimalsPerKg > 0 && sizes && sizes.length > 0 && (
+                        <div className="col-span-2 mb-1">
+                          <div className="text-xs font-medium mb-1">Taglia calcolata</div>
+                          <Input 
+                            type="text" 
+                            className="h-8 text-sm bg-amber-50"
+                            readOnly
+                            value={(() => {
+                              // Trova la taglia in base al valore di animalsPerKg
+                              const size = sizes.find(s => 
+                                s.minAnimalsPerKg <= watchAnimalsPerKg && 
+                                s.maxAnimalsPerKg >= watchAnimalsPerKg
+                              );
+                              
+                              if (size) {
+                                // Imposta automaticamente il sizeId
+                                if (form.getValues('sizeId') !== size.id) {
+                                  form.setValue('sizeId', size.id);
+                                }
+                                return `${size.name} (${size.minAnimalsPerKg.toLocaleString('it-IT')}-${size.maxAnimalsPerKg.toLocaleString('it-IT')} animali/kg)`;
+                              } else {
+                                return 'Nessuna taglia corrispondente';
+                              }
+                            })()}
+                          />
+                        </div>
                       )}
                     </div>
                   </div>
