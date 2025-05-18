@@ -417,34 +417,6 @@ export class DbStorage implements IStorage {
       };
     }
   }
-            if (basket.flupsyId) {
-              const flupsy = await this.getFlupsy(basket.flupsyId);
-              if (flupsy) {
-                enhancedOperation.basket.flupsy = flupsy;
-              }
-            }
-          }
-          
-          if (cycle) enhancedOperation.cycle = cycle;
-          if (size) enhancedOperation.size = size;
-          if (sgrRecord) enhancedOperation.sgr = sgrRecord;
-          if (lot) enhancedOperation.lot = lot;
-          
-          return enhancedOperation;
-        })
-      );
-      
-      console.log(`Query ottimizzata completata. Recuperate ${operationsWithDetails.length} operazioni su ${totalCount} totali.`);
-      
-      return {
-        operations: operationsWithDetails,
-        totalCount
-      };
-    } catch (error) {
-      console.error("Errore nell'esecuzione della query ottimizzata:", error);
-      throw error;
-    }
-  }
 
   async getOperation(id: number): Promise<Operation | undefined> {
     const results = await db.select().from(operations).where(eq(operations.id, id));
