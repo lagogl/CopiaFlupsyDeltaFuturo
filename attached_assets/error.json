@@ -1,0 +1,5 @@
+{
+  "message": "Server error (HTTP status 500): {\"message\":\"Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.\",\"code\":\"\",\"detail\":null,\"hint\":null,\"position\":null,\"internalPosition\":null,\"internalQuery\":null,\"severity\":\"\",\"where\":null,\"table\":null,\"column\":null,\"schema\":null,\"dataType\":null,\"constraint\":null,\"file\":null,\"line\":null,\"routine\":null}",
+  "stacktrace": "NeonDbError: Server error (HTTP status 500): {\"message\":\"Failed to acquire permit to connect to the database. Too many database connection attempts are currently ongoing.\",\"code\":\"\",\"detail\":null,\"hint\":null,\"position\":null,\"internalPosition\":null,\"internalQuery\":null,\"severity\":\"\",\"where\":null,\"table\":null,\"column\":null,\"schema\":null,\"dataType\":null,\"constraint\":null,\"file\":null,\"line\":null,\"routine\":null}\n    at execute (https://cdn.replit.com/_next/static/chunks/8017.73a11b9f4d28ad39.js:11:8303)",
+  "userAgent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/136.0.0.0 Safari/537.36 Edg/136.0.0.0"
+}

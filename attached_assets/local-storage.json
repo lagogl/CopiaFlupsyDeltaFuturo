@@ -1,0 +1,1380 @@
+{
+  "drizzle-version": "3.0.0",
+  "drizzle-playground": {
+    "state": {
+      "currentFile": "sql",
+      "drizzleValue": null,
+      "sqlValue": "SELECT\n  *\nFROM\n  \"lots\"\nWHERE\n  id = '<value>'\nLIMIT\n  50;\n\nINSERT INTO\n  \"impact_categories\" (\n    \"id\",\n    \"name\",\n    \"description\",\n    \"icon\",\n    \"color\",\n    \"unit\",\n    \"created_at\",\n    \"updated_at\"\n  )\nOVERRIDING SYSTEM VALUE\nVALUES\n  (\n    DEFAULT,\n    'transport',\n    'Trasporto',\n    'trip',\n    'red',\n    'km',\n    'Sun Apr 27 2025 10:34:36 GMT+0200 (Ora legale dell’Europa centrale)',\n    NULL\n  )\nUPDATE \"impact_categories\"\nSET\n  \"created_at\" = 'Sun Apr 27 2025 10:34:36 GMT+0200 (Ora legale dell’Europa centrale)'\nWHERE\n  \"id\" = 1",
+      "showRecordsAsJson": false,
+      "drizzleResult": "{\"json\":null}",
+      "sqlResult": "{\"json\":{\"status\":\"error\",\"error\":\"invalid input syntax for type integer: \\\"<value>\\\"\",\"records\":null,\"executionTime\":0,\"executionType\":\"LISTING\"}}"
+    },
+    "version": 0
+  },
+  "drizzle-global": {
+    "state": {
+      "showCounts": false,
+      "flatSchemas": false,
+      "dataFormats": null,
+      "expandSubviews": false
+    },
+    "version": 0
+  },
+  "drizzle-db-39053693-postgresql://neondb_owner:npg_psjTOL6Y5PWh@ep-late-sunset-a48nc9zs.us-east-1.aws.neon.tech/neondb?sslmode=require": {
+    "state": {
+      "styleMode": "default",
+      "currentPage": "main",
+      "filterViews": {
+        "public.operations": [
+          {
+            "id": "filter-view-public.operations-NV917ubWuWjt-C3UXXavA",
+            "name": "View 1",
+            "filters": [],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": {
+              "column": "date",
+              "type": "DESC"
+            }
+          },
+          {
+            "id": "filter-view-public.operations-Kp3F24naCQiXfstn6ohTI",
+            "name": "View 2",
+            "filters": [],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": {
+              "column": "date",
+              "type": "DESC"
+            }
+          },
+          {
+            "id": "filter-view-public.operations-1-4QrBjREqufmRy9ku8Mh",
+            "name": "View 3",
+            "filters": [],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": {
+              "column": "date",
+              "type": "DESC"
+            }
+          },
+          {
+            "id": "filter-view-public.operations-IwEym8j8AjVa-fiRwIGo2",
+            "name": "View 4",
+            "filters": [],
+            "columnSettings": {
+              "id": {
+                "hidden": true
+              },
+              "date": {
+                "hidden": true
+              },
+              "type": {
+                "hidden": true
+              },
+              "basket_id": {
+                "hidden": false
+              },
+              "cycle_id": {
+                "hidden": false
+              },
+              "size_id": {
+                "hidden": false
+              },
+              "sgr_id": {
+                "hidden": true
+              },
+              "lot_id": {
+                "hidden": false
+              },
+              "animal_count": {
+                "hidden": true
+              },
+              "total_weight": {
+                "hidden": true
+              },
+              "animals_per_kg": {
+                "hidden": true
+              },
+              "average_weight": {
+                "hidden": true
+              },
+              "notes": {
+                "hidden": true
+              },
+              "dead_count": {
+                "hidden": true
+              },
+              "mortality_rate": {
+                "hidden": true
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.operations-42lXMa3aU5BdPuZOn2AgF",
+            "name": "View 5",
+            "filters": [],
+            "columnSettings": {
+              "id": {
+                "hidden": false
+              },
+              "date": {
+                "hidden": false
+              },
+              "type": {
+                "hidden": false
+              },
+              "basket_id": {
+                "hidden": false
+              },
+              "cycle_id": {
+                "hidden": false
+              },
+              "size_id": {
+                "hidden": false
+              },
+              "sgr_id": {
+                "hidden": false
+              },
+              "lot_id": {
+                "hidden": false
+              },
+              "animal_count": {
+                "hidden": false
+              },
+              "total_weight": {
+                "hidden": false
+              },
+              "animals_per_kg": {
+                "hidden": false
+              },
+              "average_weight": {
+                "hidden": false
+              },
+              "notes": {
+                "hidden": true
+              },
+              "dead_count": {
+                "hidden": false
+              },
+              "mortality_rate": {
+                "hidden": false
+              },
+              "id_lot_inventory_transactions_operation_id": {
+                "hidden": false
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.operations-reVAd54zNbD1-eflOP8zG",
+            "name": "View 6",
+            "filters": [],
+            "columnSettings": {
+              "id": {
+                "hidden": false
+              },
+              "date": {
+                "hidden": false
+              },
+              "type": {
+                "hidden": true
+              },
+              "basket_id": {
+                "hidden": false
+              },
+              "cycle_id": {
+                "hidden": false
+              },
+              "size_id": {
+                "hidden": true
+              },
+              "sgr_id": {
+                "hidden": true
+              },
+              "lot_id": {
+                "hidden": true
+              },
+              "animal_count": {
+                "hidden": true
+              },
+              "total_weight": {
+                "hidden": false
+              },
+              "animals_per_kg": {
+                "hidden": true
+              },
+              "average_weight": {
+                "hidden": false
+              },
+              "notes": {
+                "hidden": false
+              },
+              "dead_count": {
+                "hidden": true
+              },
+              "mortality_rate": {
+                "hidden": true
+              },
+              "id_lot_inventory_transactions_operation_id": {
+                "hidden": true
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.operations-iD-t7ArbdoyeYej8AkDVo",
+            "name": "View 7",
+            "filters": [],
+            "columnSettings": {
+              "id": {
+                "hidden": false
+              },
+              "date": {
+                "hidden": true
+              },
+              "type": {
+                "hidden": false
+              },
+              "basket_id": {
+                "hidden": false
+              },
+              "cycle_id": {
+                "hidden": true
+              },
+              "size_id": {
+                "hidden": true
+              },
+              "sgr_id": {
+                "hidden": true
+              },
+              "lot_id": {
+                "hidden": true
+              },
+              "animal_count": {
+                "hidden": true
+              },
+              "total_weight": {
+                "hidden": false
+              },
+              "animals_per_kg": {
+                "hidden": false
+              },
+              "average_weight": {
+                "hidden": false
+              },
+              "notes": {
+                "hidden": true
+              },
+              "dead_count": {
+                "hidden": true
+              },
+              "mortality_rate": {
+                "hidden": true
+              },
+              "id_lot_inventory_transactions_operation_id": {
+                "hidden": true
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.operations-6nbajxuatIA2_i26BOxHV",
+            "name": "View 8",
+            "filters": [],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": {
+              "column": "average_weight",
+              "type": "ASC"
+            }
+          },
+          {
+            "id": "filter-view-public.operations-zdd5dsdrZrfGUJwWWh4je",
+            "name": "View 9",
+            "filters": [
+              {
+                "id": "xBWiUQOQaRf8N3evx68aC",
+                "column": "cycle_id",
+                "type": "=",
+                "value": "13"
+              }
+            ],
+            "columnSettings": {
+              "id": {
+                "hidden": false
+              },
+              "date": {
+                "hidden": false
+              },
+              "type": {
+                "hidden": true
+              },
+              "basket_id": {
+                "hidden": false
+              },
+              "cycle_id": {
+                "hidden": false
+              },
+              "size_id": {
+                "hidden": true
+              },
+              "sgr_id": {
+                "hidden": true
+              },
+              "lot_id": {
+                "hidden": true
+              },
+              "animal_count": {
+                "hidden": true
+              },
+              "total_weight": {
+                "hidden": true
+              },
+              "animals_per_kg": {
+                "hidden": true
+              },
+              "average_weight": {
+                "hidden": false
+              },
+              "notes": {
+                "hidden": true
+              },
+              "dead_count": {
+                "hidden": true
+              },
+              "mortality_rate": {
+                "hidden": true
+              },
+              "id_lot_inventory_transactions_operation_id": {
+                "hidden": true
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.operations-hm_nM2NeZlAVl3vCnJWrY",
+            "name": "View 10",
+            "filters": [],
+            "columnSettings": {
+              "id": {
+                "hidden": false
+              },
+              "date": {
+                "hidden": false
+              },
+              "type": {
+                "hidden": false
+              },
+              "basket_id": {
+                "hidden": false
+              },
+              "cycle_id": {
+                "hidden": true
+              },
+              "size_id": {
+                "hidden": true
+              },
+              "sgr_id": {
+                "hidden": true
+              },
+              "lot_id": {
+                "hidden": true
+              },
+              "animal_count": {
+                "hidden": true
+              },
+              "total_weight": {
+                "hidden": true
+              },
+              "animals_per_kg": {
+                "hidden": true
+              },
+              "average_weight": {
+                "hidden": false
+              },
+              "notes": {
+                "hidden": true
+              },
+              "dead_count": {
+                "hidden": true
+              },
+              "mortality_rate": {
+                "hidden": true
+              },
+              "id_lot_inventory_transactions_operation_id": {
+                "hidden": true
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.operations-L8QQAZruhbe6hzI-VSR9K",
+            "name": "View 11",
+            "filters": [],
+            "columnSettings": {
+              "id": {
+                "hidden": false
+              },
+              "date": {
+                "hidden": true
+              },
+              "type": {
+                "hidden": true
+              },
+              "basket_id": {
+                "hidden": false
+              },
+              "cycle_id": {
+                "hidden": true
+              },
+              "size_id": {
+                "hidden": true
+              },
+              "sgr_id": {
+                "hidden": true
+              },
+              "lot_id": {
+                "hidden": true
+              },
+              "animal_count": {
+                "hidden": true
+              },
+              "total_weight": {
+                "hidden": true
+              },
+              "animals_per_kg": {
+                "hidden": true
+              },
+              "average_weight": {
+                "hidden": false
+              },
+              "notes": {
+                "hidden": true
+              },
+              "dead_count": {
+                "hidden": true
+              },
+              "mortality_rate": {
+                "hidden": true
+              },
+              "id_lot_inventory_transactions_operation_id": {
+                "hidden": true
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.operations-udJ7pEAyqHgjWHoNWOo_F",
+            "name": "cycle_id = 50",
+            "filters": [
+              {
+                "id": "gLHG8cF42tVYtyC5kOJZc",
+                "column": "cycle_id",
+                "type": "=",
+                "value": "50"
+              }
+            ],
+            "columnSettings": {
+              "id": {
+                "width": 100
+              },
+              "date": {
+                "width": 100
+              },
+              "type": {
+                "width": 100
+              },
+              "basket_id": {
+                "width": 100
+              },
+              "cycle_id": {
+                "width": 100
+              },
+              "size_id": {
+                "width": 100
+              },
+              "sgr_id": {
+                "width": 100
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.operations-ZczMHg6qFaWp8l7ATmNRC",
+            "name": "basket_id = 65",
+            "filters": [
+              {
+                "id": "drlzFgZoA_-uhCyl1Ut5x",
+                "column": "basket_id",
+                "type": "=",
+                "value": "65"
+              }
+            ],
+            "columnSettings": {
+              "id": {
+                "hidden": false
+              },
+              "date": {
+                "hidden": false
+              },
+              "type": {
+                "hidden": true
+              },
+              "basket_id": {
+                "hidden": false
+              },
+              "cycle_id": {
+                "hidden": true
+              },
+              "size_id": {
+                "hidden": true
+              },
+              "sgr_id": {
+                "hidden": true
+              },
+              "lot_id": {
+                "hidden": true
+              },
+              "animal_count": {
+                "hidden": false
+              },
+              "total_weight": {
+                "hidden": true
+              },
+              "animals_per_kg": {
+                "hidden": true
+              },
+              "average_weight": {
+                "hidden": true
+              },
+              "notes": {
+                "hidden": true
+              },
+              "dead_count": {
+                "hidden": true
+              },
+              "mortality_rate": {
+                "hidden": true
+              },
+              "metadata": {
+                "hidden": true
+              },
+              "id_lot_inventory_transactions_operation_id": {
+                "hidden": true
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          }
+        ],
+        "public.baskets": [
+          {
+            "id": "filter-view-public.baskets-DZw8ApAo3lqu-1qRDIv_z",
+            "name": "View 1",
+            "filters": [],
+            "columnSettings": {
+              "id": {
+                "hidden": false
+              },
+              "physical_number": {
+                "hidden": false
+              },
+              "state": {
+                "hidden": false
+              },
+              "current_cycle_id": {
+                "hidden": true
+              },
+              "nfc_data": {
+                "hidden": true
+              },
+              "flupsy_id": {
+                "hidden": false
+              },
+              "row": {
+                "hidden": false
+              },
+              "position": {
+                "hidden": false
+              },
+              "cycle_code": {
+                "hidden": true
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-DcjnW8Bx_A9b7SHlS0jSO",
+            "name": "flupsy_id = 608",
+            "filters": [
+              {
+                "id": "EuelGMh4Kv5joU_iWr93O",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "13"
+              }
+            ],
+            "columnSettings": {
+              "id": {
+                "width": 100
+              },
+              "physical_number": {
+                "width": 100
+              },
+              "state": {
+                "width": 100
+              },
+              "current_cycle_id": {
+                "width": 100
+              },
+              "nfc_data": {
+                "width": 100
+              },
+              "flupsy_id": {
+                "width": 100
+              },
+              "row": {
+                "width": 100
+              },
+              "position": {
+                "width": 100
+              },
+              "cycle_code": {
+                "width": 100
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-Mv-AnrxBnjuPMY0PoME06",
+            "name": "position = 1",
+            "filters": [
+              {
+                "id": "AsKfGVwhOhUX12mskGtl4",
+                "column": "position",
+                "type": "=",
+                "value": "1"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-F8yM3umrQOhxGWGF0bP_g",
+            "name": "flupsy_id = 618",
+            "filters": [
+              {
+                "id": "7BYcAzGKo0-bjyZ9N8kaX",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "618"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-TX8yZU7y91c8yomOd9-e6",
+            "name": "flupsy_id = 608",
+            "filters": [
+              {
+                "id": "gN4QtTG2f5BN33MtmA0n3",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "608"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-ijinmeewx7HlIavugz8Mz",
+            "name": "flupsy_id = 618",
+            "filters": [
+              {
+                "id": "QkeqW39Jf2daWuEIX_dWO",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "618"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-VNm8BFGgjC6i7AFUmbIxs",
+            "name": "View 7",
+            "filters": [],
+            "columnSettings": {
+              "id": {
+                "hidden": false
+              },
+              "physical_number": {
+                "hidden": true
+              },
+              "state": {
+                "hidden": true
+              },
+              "current_cycle_id": {
+                "hidden": true
+              },
+              "nfc_data": {
+                "hidden": true
+              },
+              "flupsy_id": {
+                "hidden": false
+              },
+              "row": {
+                "hidden": false
+              },
+              "position": {
+                "hidden": false
+              },
+              "cycle_code": {
+                "hidden": false
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-K5AFFc5h70L-z8J-wO6rN",
+            "name": "View 8",
+            "filters": [],
+            "columnSettings": {
+              "id": {
+                "hidden": false
+              },
+              "physical_number": {
+                "hidden": false
+              },
+              "state": {
+                "hidden": true
+              },
+              "current_cycle_id": {
+                "hidden": true
+              },
+              "nfc_data": {
+                "hidden": true
+              },
+              "flupsy_id": {
+                "hidden": true
+              },
+              "row": {
+                "hidden": true
+              },
+              "position": {
+                "hidden": true
+              },
+              "cycle_code": {
+                "hidden": false
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-DVbtRpaBaZ7zb_eG_KtI5",
+            "name": "current_cycle_id = 13",
+            "filters": [
+              {
+                "id": "tT6lZFZv3OT6slSTvckNQ",
+                "column": "current_cycle_id",
+                "type": "=",
+                "value": "13"
+              }
+            ],
+            "columnSettings": {
+              "id": {
+                "width": 100
+              },
+              "physical_number": {
+                "width": 100
+              },
+              "state": {
+                "width": 100
+              },
+              "current_cycle_id": {
+                "width": 100
+              },
+              "nfc_data": {
+                "width": 100
+              },
+              "flupsy_id": {
+                "width": 100
+              },
+              "row": {
+                "width": 100
+              },
+              "position": {
+                "width": 100
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-QQHNopeKVTU12L0etZQRh",
+            "name": "id = 61",
+            "filters": [
+              {
+                "id": "4uv3IOd5kxhZ3C1EwBoAL",
+                "column": "id",
+                "type": "=",
+                "value": "61"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-gkcu1we44cDfPNjEpbDEW",
+            "name": "id = 93",
+            "filters": [
+              {
+                "id": "WtBTxDrnDh6ydzgTuQaYp",
+                "column": "id",
+                "type": "=",
+                "value": "93"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-apkMY01VGk8tx7Fc24j1G",
+            "name": "id = 61",
+            "filters": [
+              {
+                "id": "uk-EU892Tc3X9OHf_rV7O",
+                "column": "id",
+                "type": "=",
+                "value": "61"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-OT8eBTrEJwOeQdZNOQ7L_",
+            "name": "id = 85",
+            "filters": [
+              {
+                "id": "CfBdRxAKR_AueniQR2qgP",
+                "column": "id",
+                "type": "=",
+                "value": "85"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-__twxJgTNFIiSRnRmjLz-",
+            "name": "id = 85",
+            "filters": [
+              {
+                "id": "texDd7dj8KuT-BXkApuYp",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "13"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-KXRnxeRxH7qDL0pQuCdtr",
+            "name": "id = 85",
+            "filters": [
+              {
+                "id": "uS19rugFuiic_kwAgt3MJ",
+                "column": "id",
+                "type": "=",
+                "value": "85"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.baskets-lBYhg1Mp7QHUzBNXE2yIr",
+            "name": "View 16",
+            "filters": [],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": {
+              "column": "id",
+              "type": "ASC"
+            }
+          },
+          {
+            "id": "filter-view-public.baskets-gbZNRHnpGaPjHmJoKjjOd",
+            "name": "flupsy_id = 618",
+            "filters": [
+              {
+                "id": "OeO9HIZmsuhpuq0KhfgFA",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "618"
+              },
+              {
+                "id": "B_9kdzNrv1uMAgKPfJBuY",
+                "column": "current_cycle_id",
+                "type": "=",
+                "value": "51"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          }
+        ],
+        "public.basket_position_history": [
+          {
+            "id": "filter-view-public.basket_position_history-tgyDzlkpI5Z0k4wmVehzd",
+            "name": "flupsy_id = 618",
+            "filters": [
+              {
+                "id": "RAtOtAPG53H_-2QlceeFu",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "618"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.basket_position_history-jsOUq6vV3mj8kEMbQ4U6Y",
+            "name": "flupsy_id = 618",
+            "filters": [
+              {
+                "id": "fuWma3vThJ83gcnzSNOvG",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "618"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.basket_position_history-NcBtGOIcY7otY6a1jB3bT",
+            "name": "flupsy_id = 608",
+            "filters": [
+              {
+                "id": "UoIztdqYRKZmkIN2qVf85",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "608"
+              },
+              {
+                "id": "IAspRq_NCrh2Zu4nTYRVs",
+                "column": "row",
+                "type": "=",
+                "value": "DX"
+              },
+              {
+                "id": "zTxcA3JrESkIntH-bIGMs",
+                "column": "id",
+                "type": "="
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.basket_position_history-1uabygWE7KC7rO86qzXmp",
+            "name": "basket_id = 23",
+            "filters": [
+              {
+                "id": "NxPvubvgNERKvhpmiBALa",
+                "column": "basket_id",
+                "type": "=",
+                "value": "23"
+              },
+              {
+                "id": "JNmxTLE-uTRzmMyXYHfio",
+                "column": "basket_id",
+                "type": "=",
+                "value": "24"
+              },
+              {
+                "id": "3okpmH7uXEAr9qVeGEzck",
+                "column": "basket_id",
+                "type": "=",
+                "value": "29"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.basket_position_history-5LuCDIQhMTpySWuURiIE_",
+            "name": "flupsy_id = 13",
+            "filters": [
+              {
+                "id": "3PisMHmA36CU4SfewAwMj",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "13"
+              }
+            ],
+            "columnSettings": {
+              "basket_id": {
+                "width": 100
+              },
+              "id": {
+                "width": 100
+              },
+              "flupsy_id": {
+                "width": 100
+              },
+              "row": {
+                "width": 100
+              },
+              "position": {
+                "width": 100
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.basket_position_history-PzW2S37Fd3-XTWN5kRUxf",
+            "name": "flupsy_id = 13",
+            "filters": [
+              {
+                "id": "a3h69m-n6rwsxrnhc07VM",
+                "column": "flupsy_id",
+                "type": "=",
+                "value": "13"
+              }
+            ],
+            "columnSettings": {
+              "operation_id": {
+                "width": 159
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.basket_position_history-_6n9TL0f8YMKbXi29lzwf",
+            "name": "id = 66",
+            "filters": [
+              {
+                "id": "bn-sA-x2gHY9Bhybjt-vZ",
+                "column": "id",
+                "type": "=",
+                "value": "66"
+              }
+            ],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          },
+          {
+            "id": "filter-view-public.basket_position_history-I3cpk8t2xLzbRvesS3776",
+            "name": "basket_id = 66",
+            "filters": [
+              {
+                "id": "HR89G93kAeBrGDK0AUneK",
+                "column": "basket_id",
+                "type": "=",
+                "value": "66"
+              }
+            ],
+            "columnSettings": {
+              "flupsy_id": {
+                "width": 102
+              },
+              "row": {
+                "width": 100
+              },
+              "position": {
+                "width": 100
+              },
+              "start_date": {
+                "width": 269
+              }
+            },
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": null
+          }
+        ],
+        "public.lots": [
+          {
+            "id": "filter-view-public.lots-xTyFSrCNP8n60RIKlaPT5",
+            "name": "View 1",
+            "filters": [],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": {
+              "column": "id",
+              "type": "DESC"
+            }
+          },
+          {
+            "id": "filter-view-public.lots-jbNz_XDTjZSVXVOKnzyWN",
+            "name": "View 2",
+            "filters": [],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": {
+              "column": "id",
+              "type": "ASC"
+            }
+          }
+        ],
+        "public.sizes": [
+          {
+            "id": "filter-view-public.sizes-ZTNUqK6To_XUvPkFe9coY",
+            "name": "View 1",
+            "filters": [],
+            "columnSettings": {},
+            "pagination": {
+              "limit": 50,
+              "offset": 0
+            },
+            "sort": {
+              "column": "min_animals_per_kg",
+              "type": "ASC"
+            }
+          }
+        ]
+      },
+      "isSidebarOpen": true,
+      "isShowSidebarContent": true,
+      "filtersVisible": true,
+      "sidebarWidth": 356,
+      "currentSchemaName": "public",
+      "currentTable": {
+        "id": "filter-view-public.operations-ZczMHg6qFaWp8l7ATmNRC",
+        "type": "table",
+        "name": "operations",
+        "schema": "public",
+        "createdRecords": [],
+        "editedFields": [],
+        "filters": [
+          {
+            "id": "drlzFgZoA_-uhCyl1Ut5x",
+            "column": "basket_id",
+            "type": "=",
+            "value": "65"
+          }
+        ],
+        "pagination": {
+          "limit": 50,
+          "offset": 0
+        },
+        "records": [],
+        "sort": null,
+        "columnSettings": {
+          "id": {
+            "hidden": false
+          },
+          "date": {
+            "hidden": false
+          },
+          "type": {
+            "hidden": true
+          },
+          "basket_id": {
+            "hidden": false
+          },
+          "cycle_id": {
+            "hidden": true
+          },
+          "size_id": {
+            "hidden": true
+          },
+          "sgr_id": {
+            "hidden": true
+          },
+          "lot_id": {
+            "hidden": true
+          },
+          "animal_count": {
+            "hidden": false
+          },
+          "total_weight": {
+            "hidden": true
+          },
+          "animals_per_kg": {
+            "hidden": true
+          },
+          "average_weight": {
+            "hidden": true
+          },
+          "notes": {
+            "hidden": true
+          },
+          "dead_count": {
+            "hidden": true
+          },
+          "mortality_rate": {
+            "hidden": true
+          },
+          "metadata": {
+            "hidden": true
+          },
+          "id_lot_inventory_transactions_operation_id": {
+            "hidden": true
+          }
+        },
+        "historyId": "tG-ZLddZK_gP5ERwRtRUV",
+        "executionTime": 252.70000004768372
+      }
+    },
+    "version": 1
+  }
+}
