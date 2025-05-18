@@ -852,7 +852,7 @@ export default function OperationFormCompact({
                 )}
 
                 {/* Size selection (condizionale) */}
-                {(watchType === 'misura' || watchType === 'peso' || watchType === 'prima-attivazione') && (
+                {(watchType === 'prima-attivazione') && (
                   <FormField
                     control={form.control}
                     name="sizeId"
@@ -861,7 +861,6 @@ export default function OperationFormCompact({
                         <FormLabel className="text-xs font-medium">Taglia</FormLabel>
                         <FormControl>
                           <Select
-                            disabled={(watchType === 'misura' || watchType === 'peso') && !!watchAnimalsPerKg}
                             value={field.value?.toString() || ''}
                             onValueChange={(value) => field.onChange(Number(value))}
                           >
@@ -879,11 +878,6 @@ export default function OperationFormCompact({
                             </SelectContent>
                           </Select>
                         </FormControl>
-                        {(watchType === 'misura' || watchType === 'peso') && (
-                          <FormDescription className="text-xs">
-                            Calcolata automaticamente
-                          </FormDescription>
-                        )}
                         <FormMessage />
                       </FormItem>
                     )}
@@ -1026,31 +1020,39 @@ export default function OperationFormCompact({
                       
                       {/* Size based on animals per kg */}
                       {watchAnimalsPerKg > 0 && sizes && sizes.length > 0 && (
-                        <div className="col-span-2 mb-1">
-                          <div className="text-xs font-medium mb-1">Taglia calcolata</div>
-                          <Input 
-                            type="text" 
-                            className="h-8 text-sm bg-amber-50"
-                            readOnly
-                            value={(() => {
-                              // Trova la taglia in base al valore di animalsPerKg
-                              const size = sizes.find(s => 
-                                s.minAnimalsPerKg <= watchAnimalsPerKg && 
-                                s.maxAnimalsPerKg >= watchAnimalsPerKg
-                              );
-                              
-                              if (size) {
-                                // Imposta automaticamente il sizeId
-                                if (form.getValues('sizeId') !== size.id) {
-                                  form.setValue('sizeId', size.id);
-                                }
-                                return `${size.name} (${size.minAnimalsPerKg.toLocaleString('it-IT')}-${size.maxAnimalsPerKg.toLocaleString('it-IT')} animali/kg)`;
-                              } else {
-                                return 'Nessuna taglia corrispondente';
-                              }
-                            })()}
-                          />
-                        </div>
+                        <FormField
+                          control={form.control}
+                          name="sizeId"
+                          render={() => (
+                            <FormItem className="col-span-2 mb-1">
+                              <FormLabel className="text-xs font-medium">Taglia calcolata</FormLabel>
+                              <FormControl>
+                                <Input 
+                                  type="text" 
+                                  className="h-8 text-sm bg-amber-50"
+                                  readOnly
+                                  value={(() => {
+                                    // Trova la taglia in base al valore di animalsPerKg
+                                    const size = sizes.find(s => 
+                                      s.minAnimalsPerKg <= watchAnimalsPerKg && 
+                                      s.maxAnimalsPerKg >= watchAnimalsPerKg
+                                    );
+                                    
+                                    if (size) {
+                                      // Imposta automaticamente il sizeId
+                                      if (form.getValues('sizeId') !== size.id) {
+                                        form.setValue('sizeId', size.id);
+                                      }
+                                      return `${size.name} (${size.minAnimalsPerKg.toLocaleString('it-IT')}-${size.maxAnimalsPerKg.toLocaleString('it-IT')} animali/kg)`;
+                                    } else {
+                                      return 'Nessuna taglia corrispondente';
+                                    }
+                                  })()}
+                                />
+                              </FormControl>
+                            </FormItem>
+                          )}
+                        />
                       )}
                     </div>
                   </div>
