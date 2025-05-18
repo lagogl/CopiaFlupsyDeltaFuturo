@@ -306,38 +306,58 @@ export default function OperationForm({
       
       // Auto-select size based on animals per kg
       if (sizes && sizes.length > 0) {
+        console.log("Sizes disponibili:", sizes);
+        console.log("Cercando taglia per animali per kg:", watchAnimalsPerKg);
+        
         // Trova la taglia appropriata in base al numero di animali per kg
         // usando i range min_animals_per_kg e max_animals_per_kg
         let selectedSize = null;
         
+        // Controlla che i valori minAnimalsPerKg e maxAnimalsPerKg siano disponibili
+        // e siano di tipo numerico
+        const validSizes = sizes.filter(size => 
+          typeof size.minAnimalsPerKg === 'number' && 
+          typeof size.maxAnimalsPerKg === 'number');
+        
+        console.log("Sizes valide con range numerici:", validSizes);
+        
         // Cerca la taglia in cui il valore degli animali per kg rientra nel range min-max
-        selectedSize = sizes.find(size => 
+        selectedSize = validSizes.find(size => 
           size.minAnimalsPerKg <= watchAnimalsPerKg && 
           size.maxAnimalsPerKg >= watchAnimalsPerKg
         );
         
+        console.log("Taglia trovata nel range:", selectedSize);
+        
         // Se non è stato trovato nel range, trova la taglia più vicina
         if (!selectedSize) {
           // Cerca la taglia con maxAnimalsPerKg più vicino ma inferiore al valore
-          const lowerSizes = sizes.filter(size => size.maxAnimalsPerKg < watchAnimalsPerKg)
+          const lowerSizes = validSizes.filter(size => size.maxAnimalsPerKg < watchAnimalsPerKg)
             .sort((a, b) => b.maxAnimalsPerKg - a.maxAnimalsPerKg);
           
           // Cerca la taglia con minAnimalsPerKg più vicino ma superiore al valore
-          const higherSizes = sizes.filter(size => size.minAnimalsPerKg > watchAnimalsPerKg)
+          const higherSizes = validSizes.filter(size => size.minAnimalsPerKg > watchAnimalsPerKg)
             .sort((a, b) => a.minAnimalsPerKg - b.minAnimalsPerKg);
+          
+          console.log("Taglie inferiori:", lowerSizes);
+          console.log("Taglie superiori:", higherSizes);
           
           if (lowerSizes.length > 0) {
             // Preferisci la taglia inferiore più vicina
             selectedSize = lowerSizes[0];
+            console.log("Selezionata taglia inferiore:", selectedSize);
           } else if (higherSizes.length > 0) {
             // Altrimenti prendi la taglia superiore più vicina
             selectedSize = higherSizes[0];
+            console.log("Selezionata taglia superiore:", selectedSize);
           }
         }
         
         if (selectedSize) {
+          console.log("Impostazione taglia ID:", selectedSize.id, "Nome:", selectedSize.name);
           form.setValue('sizeId', selectedSize.id);
         } else {
+          console.log("Nessuna taglia trovata");
           form.setValue('sizeId', null);
         }
       }
