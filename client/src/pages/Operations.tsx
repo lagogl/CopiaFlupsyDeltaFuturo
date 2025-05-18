@@ -161,22 +161,22 @@ export default function Operations() {
   const searchParams = useSearch();
   
   // Query operations
-  const { data: operations, isLoading: isLoadingOperations } = useQuery<Operation[]>({
+  const { data: operations, isLoading: isLoadingOperations, refetch: refetchOperations } = useQuery<Operation[]>({
     queryKey: ['/api/operations'],
   });
   
   // Query baskets for reference
-  const { data: baskets, isLoading: isLoadingBaskets } = useQuery<Basket[]>({
+  const { data: baskets, isLoading: isLoadingBaskets, refetch: refetchBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
   });
   
   // Query flupsys for filter
-  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
+  const { data: flupsys, isLoading: isLoadingFlupsys, refetch: refetchFlupsys } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
   });
   
   // Query cycles for filter and grouping
-  const { data: cycles, isLoading: isLoadingCycles } = useQuery<Cycle[]>({
+  const { data: cycles, isLoading: isLoadingCycles, refetch: refetchCycles } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles'],
   });
   
@@ -926,13 +926,13 @@ export default function Operations() {
         <div className="flex items-center">
           <h2 className="text-2xl font-condensed font-bold text-gray-800">Registro Operazioni</h2>
           <Button 
-            variant="ghost" 
-            size="icon" 
-            className="ml-2" 
+            variant="outline" 
+            size="sm" 
+            className="ml-2 bg-blue-100 hover:bg-blue-200 border-blue-300" 
             onClick={() => {
-              operationsQuery.refetch();
-              cyclesQuery.refetch();
-              basketsQuery.refetch();
+              refetchOperations();
+              refetchCycles();
+              refetchBaskets();
               toast({
                 title: "Aggiornamento completato",
                 description: "Il registro operazioni è stato aggiornato con i dati più recenti",
@@ -941,7 +941,8 @@ export default function Operations() {
             }}
             title="Aggiorna dati"
           >
-            <RotateCw className="h-5 w-5 text-primary" />
+            <RotateCw className="h-4 w-4 mr-1 text-blue-600" />
+            Aggiorna
           </Button>
         </div>
         <div className="flex space-x-3">
