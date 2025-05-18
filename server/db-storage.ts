@@ -346,9 +346,15 @@ export class DbStorage implements IStorage {
       // poi filtra per i loro ID
       if (options?.flupsyId) {
         const basketsInFlupsy = await this.getBasketsByFlupsy(options.flupsyId);
+        console.log(`Filtro per flupsyId ${options.flupsyId}: trovati ${basketsInFlupsy.length} cestelli`);
         if (basketsInFlupsy.length > 0) {
           const basketIds = basketsInFlupsy.map(b => b.id);
+          console.log(`ID cestelli trovati in flupsyId ${options.flupsyId}:`, basketIds);
           whereConditions.push(inArray(operations.basketId, basketIds));
+        } else {
+          // Se non ci sono cestelli, aggiungi una condizione impossibile per non trovare risultati
+          // invece di ignorare il filtro
+          whereConditions.push(eq(operations.id, -1));
         }
       }
       
