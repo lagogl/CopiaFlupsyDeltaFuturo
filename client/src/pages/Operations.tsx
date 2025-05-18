@@ -1999,7 +1999,7 @@ export default function Operations() {
                                         {cycleOps[0].animalsPerKg && (
                                           <>
                                             <span className="text-xs bg-gray-100 px-1 py-0.5 rounded">
-                                              {parseFloat(cycleOps[0].averageWeight).toFixed(2)} mg
+                                              {formatNumberWithCommas(cycleOps[0].averageWeight, 3)} mg
                                             </span>
                                             <span className="text-xs ml-1 text-gray-500">
                                               ({parseFloat(cycleOps[0].animalsPerKg).toLocaleString()} an/kg)
@@ -2389,7 +2389,7 @@ export default function Operations() {
                                       <p className="text-gray-500">Taglia</p>
                                       <div className="flex items-center">
                                         {getSizeBadge(op.size)}
-                                        <span className="ml-2">{parseFloat(op.averageWeight).toFixed(2)} mg</span>
+                                        <span className="ml-2">{formatNumberWithCommas(op.averageWeight, 3)} mg</span>
                                         <span className="ml-2 text-xs text-gray-500">({op.animalsPerKg.toLocaleString()} an/kg)</span>
                                       </div>
                                     </div>

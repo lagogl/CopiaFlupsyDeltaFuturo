@@ -73,10 +73,10 @@ export function formatNumberWithCommas(value: number | string, decimals: number 
     return "0";
   }
   
-  // Riconoscimento dei pesi medi (numeri maggiori di 10 di solito sono pesi medi in mg)
-  // Per questi valori, usiamo 4 decimali per maggiore precisione
-  if (numValue > 10 && numValue < 500 && decimals === 0) {
-    decimals = 4; // Default a 4 decimali per i pesi medi in mg
+  // Riconoscimento dei pesi medi (numeri maggiori di 0 e inferiori a 500 di solito sono pesi medi in mg)
+  // Per questi valori, usiamo 3 decimali per maggiore precisione come richiesto
+  if (numValue >= 0 && numValue < 500 && decimals === 0) {
+    decimals = 3; // Default a 3 decimali per i pesi medi in mg
   }
   // Gestiamo i numeri molto piccoli - se il valore è minore di 1 e maggiore di zero, usiamo decimali adattabili
   else if (numValue > 0 && numValue < 1 && decimals === 0) {
