@@ -203,6 +203,7 @@ export default function OperationForm({
   const watchSampleWeight = form.watch('sampleWeight');
   const watchLiveAnimals = form.watch('liveAnimals');
   const watchDeadCount = form.watch('deadCount');
+  const watchTotalWeight = form.watch('totalWeight');
   const watchManualCountAdjustment = form.watch('manualCountAdjustment');
   // Calcoliamo manualmente l'average weight
   const averageWeight = watchAnimalsPerKg ? (1000000 / Number(watchAnimalsPerKg)) : 0;
@@ -349,16 +350,21 @@ export default function OperationForm({
     }
   }, [watchAnimalsPerKg, sizes]);
   
-  // Calculate total weight when animalCount or animalsPerKg changes
+  // Calcola il numero di animali quando cambia il peso totale o animali per kg
   useEffect(() => {
-    if (watchAnimalCount && watchAnimalsPerKg && watchAnimalsPerKg > 0) {
-      const avgWeight = 1000000 / watchAnimalsPerKg;
-      const totalWeight = (watchAnimalCount * avgWeight) / 1000; // Convert from mg to g
-      form.setValue('totalWeight', totalWeight);
-    } else {
-      form.setValue('totalWeight', null);
+    if (watchTotalWeight && watchAnimalsPerKg && watchAnimalsPerKg > 0) {
+      // Peso medio in grammi = 1000 / animali per kg
+      const avgWeightInGrams = 1000 / watchAnimalsPerKg;
+      
+      // Numero di animali = peso totale / peso medio di un animale
+      const calculatedAnimalCount = Math.round(watchTotalWeight / avgWeightInGrams);
+      
+      // Imposta il valore calcolato solo se non è attiva la modifica manuale
+      if (!watchManualCountAdjustment) {
+        form.setValue('animalCount', calculatedAnimalCount);
+      }
     }
-  }, [watchAnimalCount, watchAnimalsPerKg, form]);
+  }, [watchTotalWeight, watchAnimalsPerKg, watchManualCountAdjustment, form]);
   
   // Calcola il totale del campione e aggiorna mortalityRate quando i dati di misurazione cambiano
   useEffect(() => {
@@ -1421,14 +1427,25 @@ export default function OperationForm({
                     <Input 
                       type="number" 
                       step="0.01"
-                      placeholder="Calcolato"
+                      placeholder="Inserisci peso"
+                      className="h-8 text-sm"
                       value={field.value ? Number(field.value).toFixed(2) : ''}
-                      readOnly
-                      className="h-8 text-sm bg-amber-50 border-amber-100 font-medium text-amber-700"
+                      onChange={(e) => {
+                        const value = e.target.value;
+                        if (value === '') {
+                          field.onChange(null);
+                        } else {
+                          const numValue = parseFloat(value);
+                          field.onChange(isNaN(numValue) ? null : numValue);
+                        }
+                      }}
+                      onBlur={field.onBlur}
+                      name={field.name}
+                      ref={field.ref}
                     />
                   </FormControl>
                   <FormDescription className="text-[10px]">
-                    (Numero animali × Peso medio) ÷ 1000
+                    Inserisci peso totale in grammi
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
