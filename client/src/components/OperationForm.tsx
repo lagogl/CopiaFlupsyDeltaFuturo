@@ -331,25 +331,28 @@ export default function OperationForm({
         
         // Se non è stato trovato nel range, trova la taglia più vicina
         if (!selectedSize) {
-          // Cerca la taglia con max_animals_per_kg più vicino ma inferiore al valore
-          const lowerSizes = validSizes.filter(size => size.max_animals_per_kg < watchAnimalsPerKg)
-            .sort((a, b) => b.max_animals_per_kg - a.max_animals_per_kg);
+          // Ordina tutte le taglie in base alla distanza dal valore target
+          const sortedSizes = [...validSizes].sort((a, b) => {
+            // Per taglie il cui range non contiene il valore, calcola la distanza minima
+            const distA = Math.min(
+              Math.abs(a.min_animals_per_kg - watchAnimalsPerKg),
+              Math.abs(a.max_animals_per_kg - watchAnimalsPerKg)
+            );
+            const distB = Math.min(
+              Math.abs(b.min_animals_per_kg - watchAnimalsPerKg),
+              Math.abs(b.max_animals_per_kg - watchAnimalsPerKg)
+            );
+            
+            // Ordina in base alla distanza minore
+            return distA - distB;
+          });
           
-          // Cerca la taglia con min_animals_per_kg più vicino ma superiore al valore
-          const higherSizes = validSizes.filter(size => size.min_animals_per_kg > watchAnimalsPerKg)
-            .sort((a, b) => a.min_animals_per_kg - b.min_animals_per_kg);
+          console.log("Taglie ordinate per distanza:", sortedSizes);
           
-          console.log("Taglie inferiori:", lowerSizes);
-          console.log("Taglie superiori:", higherSizes);
-          
-          if (lowerSizes.length > 0) {
-            // Preferisci la taglia inferiore più vicina
-            selectedSize = lowerSizes[0];
-            console.log("Selezionata taglia inferiore:", selectedSize);
-          } else if (higherSizes.length > 0) {
-            // Altrimenti prendi la taglia superiore più vicina
-            selectedSize = higherSizes[0];
-            console.log("Selezionata taglia superiore:", selectedSize);
+          // Seleziona la taglia più vicina
+          if (sortedSizes.length > 0) {
+            selectedSize = sortedSizes[0];
+            console.log("Selezionata taglia più vicina:", selectedSize);
           }
         }
         
