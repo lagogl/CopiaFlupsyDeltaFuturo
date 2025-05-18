@@ -1498,7 +1498,7 @@ export default function OperationForm({
                   <Input 
                     type="text" 
                     placeholder="Calcolato"
-                    value={field.value ? field.value.toFixed(3) : ''}
+                    value={field.value ? Number(field.value).toFixed(3).replace('.', ',') : ''}
                     readOnly
                     className="h-8 text-sm bg-green-50 border-green-100 font-medium text-green-700"
                   />
