@@ -305,14 +305,41 @@ export default function OperationForm({
       
       // Auto-select size based on animals per kg
       if (sizes && sizes.length > 0) {
-        const matchingSize = sizes.find(
-          size => 
-            size.minAnimalsPerKg <= watchAnimalsPerKg && 
-            size.maxAnimalsPerKg >= watchAnimalsPerKg
+        // Determina la taglia in base al numero di animali per kg
+        // Ordina le taglie per animali per kg (decrescente)
+        const sortedSizes = [...sizes].sort((a, b) => 
+          (b.animalsPerKg || 0) - (a.animalsPerKg || 0)
         );
         
-        if (matchingSize) {
-          form.setValue('sizeId', matchingSize.id);
+        // Trova la taglia appropriate in base al numero di animali per kg
+        let selectedSize = null;
+        
+        // Prima verifica se il valore è maggiore o uguale al primo (più grande) valore
+        if (watchAnimalsPerKg >= (sortedSizes[0]?.animalsPerKg || 0)) {
+          selectedSize = sortedSizes[0];
+        } 
+        // Altrimenti, trova la taglia il cui valore di animalsPerKg è immediatamente inferiore
+        else {
+          for (let i = 1; i < sortedSizes.length; i++) {
+            const currentSize = sortedSizes[i];
+            const previousSize = sortedSizes[i-1];
+            
+            // Se il valore è tra il precedente e l'attuale, seleziona il precedente
+            if (watchAnimalsPerKg < (previousSize?.animalsPerKg || 0) && 
+                watchAnimalsPerKg >= (currentSize?.animalsPerKg || 0)) {
+              selectedSize = currentSize;
+              break;
+            }
+          }
+          
+          // Se non è stato trovato, prendi l'ultimo (più piccolo) valore
+          if (!selectedSize && sortedSizes.length > 0) {
+            selectedSize = sortedSizes[sortedSizes.length - 1];
+          }
+        }
+        
+        if (selectedSize) {
+          form.setValue('sizeId', selectedSize.id);
         } else {
           form.setValue('sizeId', null);
         }
@@ -357,27 +384,59 @@ export default function OperationForm({
     }
   }, [watchLiveAnimals, watchDeadCount, form]);
   
-  // Calcola automaticamente il numero di animali quando cambiano i dati del campione
+  // Calcola animali per kg quando cambiano i valori del campione
+  useEffect(() => {
+    // Solo se non è attiva la correzione manuale e abbiamo dati validi
+    if (watchSampleWeight && watchLiveAnimals && 
+        watchSampleWeight > 0 && watchLiveAnimals > 0 && 
+        !watchManualCountAdjustment) {
+      // Peso medio di un animale in grammi = peso campione / numero animali vivi
+      const averageWeightInGrams = watchSampleWeight / watchLiveAnimals;
+      
+      // Animali per kg = 1000 grammi / peso medio in grammi di un animale
+      const calculatedAnimalsPerKg = Math.round(1000 / averageWeightInGrams);
+      
+      // Imposta animali per kg
+      form.setValue('animalsPerKg', calculatedAnimalsPerKg);
+    }
+  }, [watchSampleWeight, watchLiveAnimals, watchManualCountAdjustment, form]);
+  
+  // Calcola automaticamente i dati basati sul campione e aggiorna i campi correlati
   useEffect(() => {
     // Solo se non è attiva la correzione manuale
-    if (!watchManualCountAdjustment && watchLiveAnimals && watchLiveAnimals > 0) {
-      // Il numero totale di animali è stimato moltiplicando il numero di animali vivi
-      // per un fattore basato sulla percentuale di mortalità
-      const liveCount = watchLiveAnimals || 0;
-      const deadCount = watchDeadCount || 0;
-      const totalSample = liveCount + deadCount;
-      
-      if (totalSample > 0) {
-        // Calcoliamo il fattore di correzione basato sulla mortalità
-        const liveRatio = liveCount / totalSample;
-        // Stimiamo il numero totale di animali
-        const estimatedTotal = Math.round(liveCount / liveRatio);
+    if (!watchManualCountAdjustment) {
+      // Calcola peso medio e animali per kg se abbiamo i dati di misurazione
+      if (watchSampleWeight && watchLiveAnimals && watchSampleWeight > 0 && watchLiveAnimals > 0) {
+        // Peso medio di un animale in grammi = peso campione / numero animali vivi
+        const averageWeightInGrams = watchSampleWeight / watchLiveAnimals;
         
-        // Aggiorniamo il conteggio totale degli animali
-        form.setValue('animalCount', estimatedTotal);
+        // Animali per kg = 1000 grammi / peso medio in grammi di un animale
+        const calculatedAnimalsPerKg = Math.round(1000 / averageWeightInGrams);
+        
+        // Imposta animali per kg
+        form.setValue('animalsPerKg', calculatedAnimalsPerKg);
+      }
+      
+      // Calcola il numero totale di animali se abbiamo dati sulla mortalità
+      if (watchLiveAnimals && watchLiveAnimals > 0) {
+        // Il numero totale di animali è stimato moltiplicando il numero di animali vivi
+        // per un fattore basato sulla percentuale di mortalità
+        const liveCount = watchLiveAnimals || 0;
+        const deadCount = watchDeadCount || 0;
+        const totalSample = liveCount + deadCount;
+        
+        if (totalSample > 0) {
+          // Calcoliamo il fattore di correzione basato sulla mortalità
+          const liveRatio = liveCount / totalSample;
+          // Stimiamo il numero totale di animali
+          const estimatedTotal = Math.round(liveCount / liveRatio);
+          
+          // Aggiorniamo il conteggio totale degli animali
+          form.setValue('animalCount', estimatedTotal);
+        }
       }
     }
-  }, [watchLiveAnimals, watchDeadCount, watchManualCountAdjustment, form]);
+  }, [watchLiveAnimals, watchDeadCount, watchManualCountAdjustment, watchSampleWeight, form]);
   
   // Questa variabile viene usata altrove nei calcoli
   const watchAverageWeight = watchAnimalsPerKg ? (1000000 / Number(watchAnimalsPerKg)) : 0;
