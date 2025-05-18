@@ -614,16 +614,39 @@ export default function OperationFormCompact({
                         </FormControl>
                         <SelectContent>
                           {flupsyBaskets.length > 0 ? (
-                            flupsyBaskets.map((basket) => (
-                              <SelectItem key={basket.id} value={basket.id.toString()}>
-                                #{basket.physicalNumber} {basket.row && basket.position ? `(${basket.row}-${basket.position})` : ''} 
-                                {basket.state === 'active' ? '✅ ' : basket.state === 'inactive' ? '⚪️ ' : ''}
-                                {basket.animalCount ? `${basket.animalCount.toLocaleString('it-IT')} anim. ` : ''}
-                                {basket.lastOperation?.sizeId ? `Taglia: ${basket.size?.code || 'N/D'} ` : ''}
-                                {basket.currentCycleId ? '🔄 ' : ''}
-                                {basket.lastOperation?.lotId ? `Lotto: ${basket.lastOperation.lotId}` : ''}
-                              </SelectItem>
-                            ))
+                            flupsyBaskets.map((basket) => {
+                              // Estrai l'ultima operazione per informazioni aggiuntive
+                              const lastOp = basket.lastOperation || {};
+                              const lotInfo = lastOp.lotId ? 
+                                `Lotto #${lastOp.lotId}${lastOp.lot?.supplier ? ` (${lastOp.lot?.supplier})` : ''}` : '';
+                              
+                              return (
+                                <SelectItem key={basket.id} value={basket.id.toString()} className="py-2 px-1">
+                                  <div className="flex flex-col gap-0.5">
+                                    <div className="font-semibold">
+                                      #{basket.physicalNumber} {basket.row && basket.position ? `(${basket.row}-${basket.position})` : ''} 
+                                      {basket.state === 'active' ? '✅' : basket.state === 'inactive' ? '⚪️' : ''}
+                                    </div>
+                                    <div className="text-xs text-muted-foreground">
+                                      {basket.animalCount ? 
+                                        <span className="font-medium">{basket.animalCount.toLocaleString('it-IT')} animali</span> : ''}
+                                      {basket.size?.code ? 
+                                        <span className="ml-2 px-1.5 py-0.5 rounded-md" style={{
+                                          backgroundColor: basket.size?.color || '#e5e7eb',
+                                          color: '#fff'
+                                        }}>{basket.size?.code}</span> : ''}
+                                    </div>
+                                    {(lotInfo || lastOp.date) && (
+                                      <div className="text-xs text-muted-foreground">
+                                        {lotInfo}
+                                        {lastOp.date && lotInfo ? ' - ' : ''}
+                                        {lastOp.date ? `Ultima op: ${new Date(lastOp.date).toLocaleDateString('it-IT')} (${lastOp.type})` : ''}
+                                      </div>
+                                    )}
+                                  </div>
+                                </SelectItem>
+                              );
+                            })
                           ) : (
                             <SelectItem value="empty" disabled>
                               {watchFlupsyId ? "Nessun cestello" : "Seleziona FLUPSY"}
