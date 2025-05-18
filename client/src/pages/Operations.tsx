@@ -221,8 +221,15 @@ export default function Operations() {
       const data = await response.json();
       
       // Aggiorna lo stato della paginazione
-      setTotalOperations(data.pagination.totalItems);
-      setTotalPages(data.pagination.totalPages);
+      if (data.pagination) {
+        setTotalOperations(data.pagination.totalItems);
+        setTotalPages(data.pagination.totalPages);
+      } else {
+        // Se la paginazione non è disponibile (ad es. errore o risposta non conforme)
+        console.warn("Dati di paginazione non trovati nella risposta:", data);
+        setTotalOperations(data.operations?.length || 0);
+        setTotalPages(1);
+      }
       
       return data;
     }

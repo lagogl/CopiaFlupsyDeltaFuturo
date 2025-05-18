@@ -1364,16 +1364,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
         type
       });
       
+      // Calcola il numero totale di pagine
+      const totalPages = Math.ceil(result.totalCount / pageSize);
+      
       // Restituisci i dati con informazioni di paginazione
-      res.json({
+      const response = {
         operations: result.operations,
         pagination: {
           page,
           pageSize,
           totalItems: result.totalCount,
-          totalPages: Math.ceil(result.totalCount / pageSize)
+          totalPages
         }
-      });
+      };
+      
+      console.log(`Risposta API paginata: pagina ${page}/${totalPages}, ${result.operations.length} elementi su ${result.totalCount} totali`);
+      
+      res.json(response);
     } catch (error) {
       console.error("Errore nell'endpoint ottimizzato delle operazioni:", error);
       res.status(500).json({ 
