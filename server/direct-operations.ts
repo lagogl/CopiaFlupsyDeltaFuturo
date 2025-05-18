@@ -150,17 +150,26 @@ export function implementDirectOperationRoute(app: Express) {
       }
       
       // Gestisci la logica di animalCount per operazioni "misura" e "peso"
-      if (hasAnimalCount && (operationData.type === 'misura' || operationData.type === 'peso')) {
-        // Controlla se c'è stata una mortalità registrata
-        const hasMortality = operationData.deadCount && operationData.deadCount > 0;
-        
-        if (hasMortality) {
-          // Se c'è mortalità, utilizziamo il nuovo valore calcolato di animalCount (già presente in operationData)
-          console.log(`IMPORTANTE: Per operazione ${operationData.type} CON MORTALITÀ (${operationData.deadCount} animali), utilizziamo il conteggio animali aggiornato:`, operationData.animalCount);
-        } else {
-          // Se non c'è mortalità, preserviamo il conteggio animali originale
-          console.log(`IMPORTANTE: Per operazione ${operationData.type} SENZA MORTALITÀ, preservato conteggio animali originale:`, originalAnimalCount);
+      if (hasAnimalCount) {
+        // Per operazioni di tipo 'peso', mantieni SEMPRE il conteggio animali originale
+        if (operationData.type === 'peso') {
+          // L'operazione 'peso' non deve MAI modificare il numero di animali
+          console.log(`IMPORTANTE: Per operazione 'peso', preservato SEMPRE il conteggio animali originale:`, originalAnimalCount);
           operationData.animalCount = originalAnimalCount;
+        } 
+        // Per operazioni di tipo 'misura', considera la mortalità
+        else if (operationData.type === 'misura') {
+          // Controlla se c'è stata una mortalità registrata
+          const hasMortality = operationData.deadCount && operationData.deadCount > 0;
+          
+          if (hasMortality) {
+            // Se c'è mortalità, utilizziamo il nuovo valore calcolato di animalCount (già presente in operationData)
+            console.log(`IMPORTANTE: Per operazione 'misura' CON MORTALITÀ (${operationData.deadCount} animali), utilizziamo il conteggio animali aggiornato:`, operationData.animalCount);
+          } else {
+            // Se non c'è mortalità, preserviamo il conteggio animali originale
+            console.log(`IMPORTANTE: Per operazione 'misura' SENZA MORTALITÀ, preservato conteggio animali originale:`, originalAnimalCount);
+            operationData.animalCount = originalAnimalCount;
+          }
         }
       }
       
