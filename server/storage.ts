@@ -56,6 +56,18 @@ export interface IStorage {
   updateOperation(id: number, operation: Partial<Operation>): Promise<Operation | undefined>;
   deleteOperation(id: number): Promise<boolean>;
   
+  // Optimized Operation methods with pagination and full JOIN support
+  getOperationsOptimized(options?: {
+    page?: number; 
+    pageSize?: number; 
+    cycleId?: number;
+    flupsyId?: number;
+    basketId?: number;
+    dateFrom?: Date;
+    dateTo?: Date;
+    type?: string;
+  }): Promise<{operations: Operation[]; totalCount: number}>;
+  
   // Screening Operation methods
   getScreeningOperations(): Promise<ScreeningOperation[]>;
   getScreeningOperationsByStatus(status: string): Promise<ScreeningOperation[]>;
