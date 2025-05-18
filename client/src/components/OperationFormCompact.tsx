@@ -1173,6 +1173,35 @@ export default function OperationFormCompact({
                       />
                     )}
                     
+                    {/* Size based on animals per kg per misura */}
+                    {watchAnimalsPerKg > 0 && sizes && sizes.length > 0 && watchType === 'misura' && (
+                      <div className="col-span-2 mb-1">
+                        <div className="text-xs font-medium mb-1">Taglia calcolata</div>
+                        <Input 
+                          type="text" 
+                          className="h-8 text-sm bg-purple-50"
+                          readOnly
+                          value={(() => {
+                            // Trova la taglia in base al valore di animalsPerKg
+                            const size = sizes.find(s => 
+                              s.minAnimalsPerKg <= watchAnimalsPerKg && 
+                              s.maxAnimalsPerKg >= watchAnimalsPerKg
+                            );
+                            
+                            if (size) {
+                              // Imposta automaticamente il sizeId
+                              if (form.getValues('sizeId') !== size.id) {
+                                form.setValue('sizeId', size.id);
+                              }
+                              return `${size.name} (${size.minAnimalsPerKg.toLocaleString('it-IT')}-${size.maxAnimalsPerKg.toLocaleString('it-IT')} animali/kg)`;
+                            } else {
+                              return 'Nessuna taglia corrispondente';
+                            }
+                          })()}
+                        />
+                      </div>
+                    )}
+                    
                     {/* Average weight */}
                     {watchAnimalsPerKg > 0 && (
                       <FormField
