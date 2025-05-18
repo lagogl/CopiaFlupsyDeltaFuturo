@@ -320,41 +320,20 @@ export default function OperationForm({
           typeof size.max_animals_per_kg === 'number');
         
         console.log("Sizes valide con range numerici:", validSizes);
+        console.log("Valore animali per kg:", watchAnimalsPerKg);
         
         // Cerca la taglia in cui il valore degli animali per kg rientra nel range min-max
-        selectedSize = validSizes.find(size => 
-          size.min_animals_per_kg <= watchAnimalsPerKg && 
-          size.max_animals_per_kg >= watchAnimalsPerKg
-        );
+        selectedSize = validSizes.find(size => {
+          console.log(`Verifico taglia ${size.name}: range ${size.min_animals_per_kg}-${size.max_animals_per_kg}`);
+          return size.min_animals_per_kg <= watchAnimalsPerKg && 
+                 size.max_animals_per_kg >= watchAnimalsPerKg;
+        });
         
         console.log("Taglia trovata nel range:", selectedSize);
         
-        // Se non è stato trovato nel range, trova la taglia più vicina
-        if (!selectedSize) {
-          // Ordina tutte le taglie in base alla distanza dal valore target
-          const sortedSizes = [...validSizes].sort((a, b) => {
-            // Per taglie il cui range non contiene il valore, calcola la distanza minima
-            const distA = Math.min(
-              Math.abs(a.min_animals_per_kg - watchAnimalsPerKg),
-              Math.abs(a.max_animals_per_kg - watchAnimalsPerKg)
-            );
-            const distB = Math.min(
-              Math.abs(b.min_animals_per_kg - watchAnimalsPerKg),
-              Math.abs(b.max_animals_per_kg - watchAnimalsPerKg)
-            );
-            
-            // Ordina in base alla distanza minore
-            return distA - distB;
-          });
-          
-          console.log("Taglie ordinate per distanza:", sortedSizes);
-          
-          // Seleziona la taglia più vicina
-          if (sortedSizes.length > 0) {
-            selectedSize = sortedSizes[0];
-            console.log("Selezionata taglia più vicina:", selectedSize);
-          }
-        }
+        // NON selezioniamo una taglia se il valore non rientra in nessun range
+        // È responsabilità dell'utente inserire un valore che rientra in un range valido
+        // o configurare i range appropriati nella tabella sizes
         
         if (selectedSize) {
           console.log("Impostazione taglia ID:", selectedSize.id, "Nome:", selectedSize.name);
