@@ -614,10 +614,10 @@ export default function OperationFormCompact({
                         }}
                       >
                         <FormControl>
-                          <SelectTrigger className="min-h-16 text-sm py-2">
+                          <SelectTrigger className="min-h-[84px] text-sm py-2">
                             <SelectValue>
                               {watchBasketId ? (
-                                <div className="flex flex-col gap-1">
+                                <div className="flex flex-col gap-1 w-full">
                                   <div className="font-semibold">
                                     {(() => {
                                       const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
@@ -659,17 +659,15 @@ export default function OperationFormCompact({
                                           </div>
                                           
                                           {/* Informazioni su lotto */}
-                                          {selectedBasket.lastOperation?.lotId && (
-                                            <div className="text-muted-foreground">
-                                              Lotto #{selectedBasket.lastOperation.lotId}
-                                              {selectedBasket.lastOperation.lot?.supplier ? 
-                                                ` (${selectedBasket.lastOperation.lot.supplier})` : ''}
-                                            </div>
-                                          )}
+                                          <div className="text-muted-foreground">
+                                            {selectedBasket.lastOperation?.lotId 
+                                              ? `Lotto #${selectedBasket.lastOperation.lotId}` 
+                                              : ""}
+                                          </div>
 
                                           {/* Informazione ultima operazione */}
                                           {selectedBasket.lastOperation?.date && (
-                                            <div className="text-muted-foreground text-xs">
+                                            <div className="text-muted-foreground">
                                               Ultima op: {new Date(selectedBasket.lastOperation.date).toLocaleDateString('it-IT')} 
                                               {selectedBasket.lastOperation.type ? 
                                                 ` (${selectedBasket.lastOperation.type})` : ''}
