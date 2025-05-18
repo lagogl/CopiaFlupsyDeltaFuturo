@@ -1161,16 +1161,16 @@ export default function OperationForm({
                 <FormControl>
                   <div>
                     <Input
-                      value={field.value ? 
-                        sizes?.find(s => s.id === field.value)?.code || "Nessuna taglia" : 
+                      value={field.value && sizes ? 
+                        sizes.find(s => s.id === field.value)?.name || "Nessuna taglia" : 
                         "Calcolato automaticamente"
                       }
                       readOnly
                       className="bg-sky-50 border-sky-100 font-medium text-sky-700"
                     />
                     <div className="text-xs text-sky-600 mt-1 ml-1">
-                      {field.value ? 
-                        sizes?.find(s => s.id === field.value)?.name : 
+                      {field.value && sizes ? 
+                        `Range: ${sizes.find(s => s.id === field.value)?.minAnimalsPerKg}-${sizes.find(s => s.id === field.value)?.maxAnimalsPerKg} animali/kg` : 
                         "Basato su animali per kg"
                       }
                     </div>
