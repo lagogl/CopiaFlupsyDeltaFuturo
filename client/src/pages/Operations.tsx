@@ -792,8 +792,12 @@ export default function Operations() {
         format(new Date(op.date), 'yyyy-MM-dd') === filters.dateFilter;
       
       // Filter by FLUPSY (baskets belong to a FLUPSY)
-      const matchesFlupsy = filters.flupsyFilter === 'all' || 
-        (op.basket && op.basket.flupsyId.toString() === filters.flupsyFilter);
+      const matchesFlupsy = filters.flupsyFilter === 'all' || (() => {
+        // Cerca il basket associato all'operazione
+        const associatedBasket = baskets?.find((b: any) => b.id === op.basketId);
+        // Verifica se il basket appartiene al flupsy selezionato
+        return associatedBasket && associatedBasket.flupsyId.toString() === filters.flupsyFilter;
+      })();
       
       // Filter by cycle
       const matchesCycle = filters.cycleFilter === 'all' || 
