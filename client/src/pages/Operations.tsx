@@ -154,6 +154,7 @@ export default function Operations() {
   const [selectedOperation, setSelectedOperation] = useState<any>(null);
   const [redirectToBasketAfterCreate, setRedirectToBasketAfterCreate] = useState<number | null>(null);
   const [initialCycleId, setInitialCycleId] = useState<number | null>(null);
+  const [isRefreshingData, setIsRefreshingData] = useState<boolean>(false);
   const [initialFlupsyId, setInitialFlupsyId] = useState<number | null>(null);
   const [initialBasketId, setInitialBasketId] = useState<number | null>(null);
   
@@ -929,20 +930,44 @@ export default function Operations() {
             variant="outline" 
             size="sm" 
             className="ml-2 bg-blue-100 hover:bg-blue-200 border-blue-300" 
-            onClick={() => {
-              refetchOperations();
-              refetchCycles();
-              refetchBaskets();
-              toast({
-                title: "Aggiornamento completato",
-                description: "Il registro operazioni è stato aggiornato con i dati più recenti",
-                variant: "default"
-              });
+            onClick={async () => {
+              try {
+                setIsRefreshingData(true);
+                await Promise.all([
+                  refetchOperations(),
+                  refetchCycles(),
+                  refetchBaskets()
+                ]);
+                
+                toast({
+                  title: "Aggiornamento completato",
+                  description: "Il registro operazioni è stato aggiornato con i dati più recenti",
+                  variant: "default"
+                });
+              } catch (error) {
+                toast({
+                  title: "Errore durante l'aggiornamento",
+                  description: "Si è verificato un problema durante l'aggiornamento dei dati",
+                  variant: "destructive"
+                });
+              } finally {
+                setIsRefreshingData(false);
+              }
             }}
+            disabled={isRefreshingData}
             title="Aggiorna dati"
           >
-            <RotateCw className="h-4 w-4 mr-1 text-blue-600" />
-            Aggiorna
+            {isRefreshingData ? (
+              <div className="flex items-center">
+                <div className="animate-spin w-4 h-4 mr-2 border-2 border-blue-600 border-t-transparent rounded-full"></div>
+                Aggiornamento...
+              </div>
+            ) : (
+              <>
+                <RotateCw className="h-4 w-4 mr-1 text-blue-600" />
+                Aggiorna
+              </>
+            )}
           </Button>
         </div>
         <div className="flex space-x-3">
