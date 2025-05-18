@@ -1426,16 +1426,24 @@ export default function OperationForm({
                   <FormControl>
                     <Input 
                       type="number" 
-                      step="0.01"
+                      step="0.1"
+                      min="0"
+                      max="1000000"
                       placeholder="Inserisci peso"
                       className="h-8 text-sm"
-                      value={field.value ? Number(field.value).toFixed(2) : ''}
+                      value={field.value ? Number(field.value).toFixed(1) : ''}
                       onChange={(e) => {
                         const value = e.target.value;
                         if (value === '') {
                           field.onChange(null);
                         } else {
-                          const numValue = parseFloat(value);
+                          let numValue = parseFloat(value);
+                          // Limita il valore massimo a 1.000.000
+                          if (numValue > 1000000) {
+                            numValue = 1000000;
+                          }
+                          // Arrotonda a una cifra decimale
+                          numValue = Math.round(numValue * 10) / 10;
                           field.onChange(isNaN(numValue) ? null : numValue);
                         }
                       }}
@@ -1445,7 +1453,7 @@ export default function OperationForm({
                     />
                   </FormControl>
                   <FormDescription className="text-[10px]">
-                    Inserisci peso totale in grammi
+                    Inserisci peso totale in grammi (max 1.000.000)
                   </FormDescription>
                   <FormMessage />
                 </FormItem>
@@ -1461,26 +1469,17 @@ export default function OperationForm({
                   <FormControl>
                     <Input 
                       type="text" 
-                      placeholder="Animali per kg"
-                      className="h-8 text-sm"
+                      placeholder="Calcolato"
+                      className="h-8 text-sm bg-amber-50 border-amber-100 font-medium text-amber-700"
                       value={field.value === null || field.value === undefined 
-                        ? '' 
+                        ? 'Calcolato automaticamente' 
                         : field.value.toLocaleString('it-IT')}
-                      onChange={(e) => {
-                        // Rimuove tutti i separatori non numerici e li sostituisce con un formato valido
-                        const value = e.target.value.replace(/[^0-9]/g, '');
-                        if (value === '') {
-                          field.onChange(null);
-                        } else {
-                          const numValue = parseInt(value, 10);
-                          field.onChange(isNaN(numValue) ? null : numValue);
-                        }
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
+                      readOnly
                     />
                   </FormControl>
+                  <FormDescription className="text-[10px]">
+                    Calcolato dal peso del campione
+                  </FormDescription>
                   <FormMessage />
                 </FormItem>
               )}
