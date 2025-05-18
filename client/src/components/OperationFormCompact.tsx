@@ -666,6 +666,15 @@ export default function OperationFormCompact({
                                                 ` (${selectedBasket.lastOperation.lot.supplier})` : ''}
                                             </div>
                                           )}
+
+                                          {/* Informazione ultima operazione */}
+                                          {selectedBasket.lastOperation?.date && (
+                                            <div className="text-muted-foreground text-xs">
+                                              Ultima op: {new Date(selectedBasket.lastOperation.date).toLocaleDateString('it-IT')} 
+                                              {selectedBasket.lastOperation.type ? 
+                                                ` (${selectedBasket.lastOperation.type})` : ''}
+                                            </div>
+                                          )}
                                         </div>
                                       );
                                     })()}
