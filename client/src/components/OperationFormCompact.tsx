@@ -305,27 +305,52 @@ export default function OperationFormCompact({
 
   // Gestisce il tipo "peso" - recupera il conteggio animali dall'ultima operazione
   useEffect(() => {
-    if (watchType === 'peso' && watchBasketId && operations && operations.length > 0 && prevOperationData) {
-      console.log("Operazione PESO selezionata: recupero conteggio animali dalla precedente operazione");
-      
-      // Se abbiamo un'operazione precedente e il conteggio degli animali
-      if (prevOperationData.animalCount) {
-        console.log(`Impostazione conteggio animali dall'ultima operazione: ${prevOperationData.animalCount}`);
+    const handlePesoOperation = async () => {
+      if (watchType === 'peso' && watchBasketId && operations && operations.length > 0) {
+        console.log("Operazione PESO selezionata: ricerca conteggio animali dalla precedente operazione");
         
-        // Imposta il conteggio animali uguale a quello dell'ultima operazione
-        form.setValue('animalCount', prevOperationData.animalCount);
+        // Cerca l'ultima operazione per questo cestello/ciclo
+        let lastOperation = null;
         
-        // Assicurati che il form riconosca questo campo come "impostato" manualmente
-        toast({
-          title: "Conteggio animali preimpostato",
-          description: `Utilizzato conteggio di ${prevOperationData.animalCount.toLocaleString('it-IT')} animali dall'ultima operazione`,
-          duration: 3000
-        });
-      } else {
-        console.warn("Impossibile trovare il conteggio animali dall'ultima operazione");
+        // Ottieni il cycleId corrente
+        const cycleId = form.getValues('cycleId');
+        
+        // Filtra le operazioni per questo cestello e ciclo
+        const basketOperations = operations
+          .filter((op: any) => op.basketId === watchBasketId && (!cycleId || op.cycleId === cycleId))
+          .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+        
+        if (basketOperations.length > 0) {
+          lastOperation = basketOperations[0];
+          console.log("Trovata ultima operazione per cestello/ciclo:", lastOperation);
+        }
+        
+        // Se abbiamo un'operazione precedente e il conteggio degli animali
+        if (lastOperation && lastOperation.animalCount) {
+          console.log(`Impostazione conteggio animali dall'ultima operazione: ${lastOperation.animalCount}`);
+          
+          // Imposta il conteggio animali uguale a quello dell'ultima operazione
+          form.setValue('animalCount', lastOperation.animalCount);
+          
+          // Assicurati che il form riconosca questo campo come "impostato" manualmente
+          toast({
+            title: "Conteggio animali preimpostato",
+            description: `Utilizzato conteggio di ${lastOperation.animalCount.toLocaleString('it-IT')} animali dall'ultima operazione`,
+            duration: 3000
+          });
+        } else if (prevOperationData && prevOperationData.animalCount) {
+          // Se non abbiamo trovato un'operazione ma abbiamo dati precedenti
+          console.log(`Fallback: impostazione conteggio animali da prevOperationData: ${prevOperationData.animalCount}`);
+          form.setValue('animalCount', prevOperationData.animalCount);
+        } else {
+          console.warn("Impossibile trovare il conteggio animali dall'ultima operazione");
+        }
       }
-    }
-  }, [watchType, watchBasketId, operations, prevOperationData]);
+    };
+    
+    // Esegui la funzione quando cambia il tipo di operazione o il cestello
+    handlePesoOperation();
+  }, [watchType, watchBasketId, form, operations, prevOperationData]);
 
   // Calcola valori derivati per misurazione
   useEffect(() => {
