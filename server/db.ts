@@ -18,16 +18,17 @@ console.log(`Tentativo di connessione a database: ${obscuredDbUrl}`);
 
 // Create a PostgreSQL connection with enhanced options
 export const queryClient = postgres(process.env.DATABASE_URL, {
-  max: 10, // Max number of connections in the pool
-  prepare: false, // No prepared statements
-  debug: true, // Abilita debug per diagnostica
-  idle_timeout: 30, // Chiude connessioni inattive dopo 30 secondi
-  connect_timeout: 10, // 10 secondi di timeout per la connessione
+  max: 5, // Reduce max connections
+  prepare: false,
+  debug: false, // Disable debug in production
+  idle_timeout: 20,
+  connect_timeout: 30,
+  max_lifetime: 60 * 30, // Connection TTL: 30 minutes
   connection: {
-    application_name: 'flupsy-app', // Nome applicativo per query diagnostiche
+    application_name: 'flupsy-app',
   },
-  onnotice: (notice) => console.log('PostgreSQL Notice:', notice),
-  onparameter: (param) => console.log('PostgreSQL Parameter:', param),
+  onnotice: (notice) => console.error('PostgreSQL Notice:', notice),
+  onparameter: (param) => console.error('PostgreSQL Parameter:', param),
 });
 
 // Log di conferma

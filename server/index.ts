@@ -153,33 +153,12 @@ app.use((req, res, next) => {
   const maxPortAttempts = 10;
   
   const startServer = () => {
-    const tryPort = (attemptPort: number, attempt = 1) => {
-      server.listen({
-        port: attemptPort,
-        host: "0.0.0.0",
-        reusePort: true,
-      }, () => {
-        log(`${app.get("env")} server serving on port ${attemptPort}`);
-      }).on('error', (err: any) => {
-        if (err.code === 'EADDRINUSE') {
-          if (attempt < maxPortAttempts) {
-            // Try the next port
-            const nextPort = attemptPort + 1;
-            log(`Port ${attemptPort} is already in use. Trying port ${nextPort}...`);
-            tryPort(nextPort, attempt + 1);
-          } else {
-            log(`Failed to find an available port after ${maxPortAttempts} attempts.`);
-            process.exit(1);
-          }
-        } else {
-          console.error('Server error:', err);
-          process.exit(1);
-        }
-      });
-    };
-    
-    // Start with the initial port
-    tryPort(port);
+    server.listen(5000, "0.0.0.0", () => {
+      log(`${app.get("env")} server serving on port 5000`);
+    }).on('error', (err) => {
+      console.error('Server error:', err);
+      process.exit(1);
+    });
   };
 
   // Graceful shutdown
