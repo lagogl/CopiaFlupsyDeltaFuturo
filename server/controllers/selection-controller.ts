@@ -789,19 +789,18 @@ export async function addSourceBaskets(req: Request, res: Response) {
         });
         
         // MODIFICA: Aggiungi anche il cestello come destinazione immediatamente
-        // Questo permette di avere i cestelli origine disponibili immediatamente come destinazione
+        // Questo permette di rendere i cestelli origine immediatamente disponibili come destinazione
         await tx.insert(selectionDestinationBaskets).values({
-          selectionId: Number(id),
-          basketId: sourceBasket.basketId,
-          cycleId: sourceBasket.cycleId,
-          destinationType: 'placed',  // Tutti i cestelli di origine saranno posizionati per default
-          row: basket?.row || null,
-          position: basket?.position || null,
-          flupsyId: basket?.flupsyId || null,
-          animalCount: sourceBasket.animalCount || lastOp?.animalCount || null,
-          totalWeight: sourceBasket.totalWeight || lastOp?.totalWeight || null,
-          animalsPerKg: sourceBasket.animalsPerKg || lastOp?.animalsPerKg || null,
-          sizeId: sourceBasket.sizeId || lastOp?.sizeId || null
+          selection_id: Number(id),  // Corretto il nome del campo da selectionId a selection_id
+          basket_id: sourceBasket.basketId,  // Corretto il nome del campo da basketId a basket_id
+          cycle_id: sourceBasket.cycleId,  // Corretto il nome del campo da cycleId a cycle_id
+          destination_type: 'placed',  // Tutti i cestelli di origine saranno posizionati per default
+          position: basket?.position ? String(basket.position) : null,  // La posizione è salvata come testo nel DB
+          flupsy_id: basket?.flupsyId || null,  // Corretto il nome del campo da flupsyId a flupsy_id
+          animal_count: sourceBasket.animalCount || lastOp?.animalCount || null,  // Corretto il nome del campo
+          total_weight: sourceBasket.totalWeight || lastOp?.totalWeight || null,  // Corretto il nome del campo
+          animals_per_kg: sourceBasket.animalsPerKg || lastOp?.animalsPerKg || null,  // Corretto il nome del campo
+          size_id: sourceBasket.sizeId || lastOp?.sizeId || null  // Corretto il nome del campo
         });
         
         // Aggiungi dettagli per la notifica
