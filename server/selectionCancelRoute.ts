@@ -3,7 +3,7 @@
  * Da includere in routes.ts
  */
 
-function implementSelectionCancelRoute(app, db, selections, eq) {
+function implementSelectionCancelRoute(app, db, selections, selectionDestinationBaskets, eq) {
   // Annulla una selezione
   app.post("/api/selections/:id/cancel", async (req, res) => {
     try {
@@ -36,13 +36,24 @@ function implementSelectionCancelRoute(app, db, selections, eq) {
         });
       }
       
-      // Aggiorna lo stato della selezione a 'cancelled'
-      await db.update(selections)
-        .set({ 
-          status: 'cancelled',
-          updatedAt: new Date()
-        })
-        .where(eq(selections.id, Number(id)));
+      // Esegui l'operazione in una transazione
+      await db.transaction(async (tx) => {
+        // 1. Aggiorna lo stato della selezione a 'cancelled'
+        await tx.update(selections)
+          .set({ 
+            status: 'cancelled',
+            updatedAt: new Date()
+          })
+          .where(eq(selections.id, Number(id)));
+          
+        // 2. Rimuovi tutti i cestelli di destinazione per questa selezione
+        // Questo è fondamentale per evitare problemi se i cestelli origine sono stati
+        // inseriti automaticamente come destinazione
+        await tx.delete(selectionDestinationBaskets)
+          .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
+          
+        console.log(`Rimossi tutti i cestelli di destinazione per la selezione #${id} durante l'annullamento`);
+      });
       
       // Recupera la selezione aggiornata
       const updatedSelection = await db.select().from(selections)
