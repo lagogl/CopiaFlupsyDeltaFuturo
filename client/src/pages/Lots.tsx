@@ -339,7 +339,7 @@ export default function Lots() {
             variant="outline" 
             size="sm" 
             onClick={() => setViewMode(viewMode === 'simple' ? 'detailed' : 'simple')}
-            className={viewMode === 'simple' ? 'bg-blue-600 hover:bg-blue-700 text-white' : ''}
+            className={viewMode === 'detailed' ? '' : 'bg-blue-600 hover:bg-blue-700 text-white'}
           >
             <Table2 className="h-4 w-4 mr-1" /> 
             {viewMode === 'simple' ? 'Vista Dettagliata' : 'Vista Semplice'}
@@ -417,18 +417,57 @@ export default function Lots() {
             <div className="bg-purple-50 p-3 rounded-lg">
               <div className="text-sm text-gray-600">Suddivisione per Qualità</div>
               <div className="text-sm mt-1">
-                {Object.entries(filteredLots.reduce((acc, lot) => {
-                  // Utilizziamo il campo quality come identificatore
-                  const quality = lot.quality || 'Non specificata';
-                  if (!acc[quality]) acc[quality] = 0;
-                  acc[quality] += (lot.animalCount || 0);
-                  return acc;
-                }, {})).map(([quality, count], index) => (
-                  <div key={index} className="flex justify-between">
-                    <span className="font-medium truncate max-w-[150px]">{quality}:</span>
-                    <span>{(count as number).toLocaleString()}</span>
-                  </div>
-                ))}
+                {(() => {
+                  // Calcoliamo la suddivisione per le qualità standard prima
+                  const standardQualityMap = {
+                    'teste': 'Teste ★★★',
+                    'normali': 'Normali ★★',
+                    'code': 'Tails ★'
+                  };
+                  
+                  // Raccogliamo i conteggi per qualità
+                  const qualityCounts = filteredLots.reduce((acc, lot) => {
+                    const quality = lot.quality || 'Non specificata';
+                    if (!acc[quality]) acc[quality] = 0;
+                    acc[quality] += (lot.animalCount || 0);
+                    return acc;
+                  }, {});
+                  
+                  // Otteniamo il totale degli animali
+                  const totalAnimals: number = Object.values(qualityCounts).reduce((sum: number, count: any) => sum + (count as number), 0);
+                  
+                  // Riordiniamo e rendiamo più leggibili le qualità
+                  return Object.entries(qualityCounts).sort((a, b) => {
+                    // Mettiamo le qualità standard in cima
+                    const aIsStandard = Object.keys(standardQualityMap).includes(a[0]);
+                    const bIsStandard = Object.keys(standardQualityMap).includes(b[0]);
+                    
+                    if (aIsStandard && !bIsStandard) return -1;
+                    if (!aIsStandard && bIsStandard) return 1;
+                    
+                    // Ordiniamo per conteggio (più alto in cima)
+                    return (b[1] as number) - (a[1] as number);
+                  }).map(([quality, count], index) => {
+                    const displayQuality = Object.keys(standardQualityMap).includes(quality) 
+                      ? standardQualityMap[quality as keyof typeof standardQualityMap]
+                      : quality;
+                    
+                    const countValue = count as number;
+                    const percentage = totalAnimals > 0 
+                      ? (countValue / totalAnimals * 100).toFixed(1) 
+                      : '0';
+                    
+                    return (
+                      <div key={index} className="flex justify-between mt-1">
+                        <span className="font-medium truncate max-w-[150px]">{displayQuality}:</span>
+                        <span>
+                          {(count as number).toLocaleString()} 
+                          <span className="text-gray-500 ml-1">({percentage}%)</span>
+                        </span>
+                      </div>
+                    );
+                  });
+                })()}
               </div>
             </div>
           </div>
@@ -625,7 +664,7 @@ export default function Lots() {
                       {/* Celle inventario per vista dettagliata */}
                       {viewMode === 'detailed' && (() => {
                         // Trova i dati di inventario per questo lotto
-                        const inventoryData = lotInventoryData?.find(inv => inv.lotId === lot.id);
+                        const inventoryData = lotInventoryData?.find((inv: { lotId: number }) => inv.lotId === lot.id);
                         
                         return (
                           <>
