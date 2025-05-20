@@ -791,16 +791,16 @@ export async function addSourceBaskets(req: Request, res: Response) {
         // MODIFICA: Aggiungi anche il cestello come destinazione immediatamente
         // Questo permette di rendere i cestelli origine immediatamente disponibili come destinazione
         await tx.insert(selectionDestinationBaskets).values({
-          selection_id: Number(id),  // Corretto il nome del campo da selectionId a selection_id
-          basket_id: sourceBasket.basketId,  // Corretto il nome del campo da basketId a basket_id
-          cycle_id: sourceBasket.cycleId,  // Corretto il nome del campo da cycleId a cycle_id
-          destination_type: 'placed',  // Tutti i cestelli di origine saranno posizionati per default
+          selectionId: Number(id),
+          basketId: sourceBasket.basketId,
+          cycleId: sourceBasket.cycleId,
+          destinationType: 'placed',  // Tutti i cestelli di origine saranno posizionati per default
           position: basket?.position ? String(basket.position) : null,  // La posizione è salvata come testo nel DB
-          flupsy_id: basket?.flupsyId || null,  // Corretto il nome del campo da flupsyId a flupsy_id
-          animal_count: sourceBasket.animalCount || lastOp?.animalCount || null,  // Corretto il nome del campo
-          total_weight: sourceBasket.totalWeight || lastOp?.totalWeight || null,  // Corretto il nome del campo
-          animals_per_kg: sourceBasket.animalsPerKg || lastOp?.animalsPerKg || null,  // Corretto il nome del campo
-          size_id: sourceBasket.sizeId || lastOp?.sizeId || null  // Corretto il nome del campo
+          flupsyId: basket?.flupsyId || null,
+          animalCount: sourceBasket.animalCount || lastOp?.animalCount || null,
+          totalWeight: sourceBasket.totalWeight || lastOp?.totalWeight || null,
+          animalsPerKg: sourceBasket.animalsPerKg || lastOp?.animalsPerKg || null,
+          sizeId: sourceBasket.sizeId || lastOp?.sizeId || null
         });
         
         // Aggiungi dettagli per la notifica
@@ -1122,7 +1122,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           cycleId: 0, // Temporaneo, sarà aggiornato durante il completamento
           destinationType: destBasket.destinationType,
           flupsyId: destBasket.flupsyId,
-          position: destBasket.position,
+          position: destBasket.position ? String(destBasket.position) : null,
           animalCount: destBasket.animalCount,
           liveAnimals: destBasket.animalCount - (destBasket.deadCount || 0),
           totalWeight: destBasket.totalWeight,
@@ -1132,8 +1132,8 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           mortalityRate: destBasket.mortalityRate || 0,
           sampleWeight: destBasket.sampleWeight,
           sampleCount: destBasket.sampleCount,
-          saleClient: destBasket.saleClient || null,
-          saleDate: destBasket.saleDate || null
+          notes: destBasket.notes || null
+          // Non includiamo saleClient o saleDate poiché non esistono nella definizione
         });
       }
       
