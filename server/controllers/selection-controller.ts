@@ -776,6 +776,7 @@ export async function addSourceBaskets(req: Request, res: Response) {
         const basket = basketData.length > 0 ? basketData[0] : null;
         const flupsy = flupsyData && flupsyData.length > 0 ? flupsyData[0] : null;
         
+        // Aggiungi il cestello di origine alla tabella selectionSourceBaskets
         await tx.insert(selectionSourceBaskets).values({
           selectionId: Number(id),
           basketId: sourceBasket.basketId,
@@ -785,6 +786,22 @@ export async function addSourceBaskets(req: Request, res: Response) {
           animalsPerKg: sourceBasket.animalsPerKg || lastOp?.animalsPerKg || null,
           sizeId: sourceBasket.sizeId || lastOp?.sizeId || null,
           lotId: sourceBasket.lotId || cycle?.lotId || null
+        });
+        
+        // MODIFICA: Aggiungi anche il cestello come destinazione immediatamente
+        // Questo permette di avere i cestelli origine disponibili immediatamente come destinazione
+        await tx.insert(selectionDestinationBaskets).values({
+          selectionId: Number(id),
+          basketId: sourceBasket.basketId,
+          cycleId: sourceBasket.cycleId,
+          destinationType: 'placed',  // Tutti i cestelli di origine saranno posizionati per default
+          row: basket?.row || null,
+          position: basket?.position || null,
+          flupsyId: basket?.flupsyId || null,
+          animalCount: sourceBasket.animalCount || lastOp?.animalCount || null,
+          totalWeight: sourceBasket.totalWeight || lastOp?.totalWeight || null,
+          animalsPerKg: sourceBasket.animalsPerKg || lastOp?.animalsPerKg || null,
+          sizeId: sourceBasket.sizeId || lastOp?.sizeId || null
         });
         
         // Aggiungi dettagli per la notifica
