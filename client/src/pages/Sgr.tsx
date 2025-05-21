@@ -130,7 +130,7 @@ export default function Sgr() {
         </TabsList>
 
         <TabsContent value="indici-sgr">
-          <div className="flex justify-between items-center mb-6">
+          <div className="flex justify-between items-center mb-3">
             <h2 className="text-2xl font-condensed font-bold text-gray-800">Indici SGR Mensili</h2>
             <div className="flex space-x-3">
               <Button onClick={() => setIsCreateDialogOpen(true)}>
@@ -138,6 +138,14 @@ export default function Sgr() {
                 Nuovo SGR
               </Button>
             </div>
+          </div>
+          
+          {/* Nota informativa SGR */}
+          <div className="bg-blue-50 p-3 rounded-md mb-6 border border-blue-100">
+            <p className="text-blue-700 text-sm font-medium">
+              <span className="inline-block mr-2">ℹ️</span>
+              I valori SGR rappresentano la percentuale di accrescimento giornaliero degli animali
+            </p>
           </div>
 
           {/* Search */}

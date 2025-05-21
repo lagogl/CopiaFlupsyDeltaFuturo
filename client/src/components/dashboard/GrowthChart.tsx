@@ -79,15 +79,20 @@ export default function GrowthChart() {
 
   return (
     <div className="bg-white rounded-lg shadow relative">
-      <div className="p-4 border-b border-gray-200 flex justify-between items-center">
-        <h3 className="font-condensed font-bold text-lg text-gray-800">Andamento Crescita</h3>
-        <button 
-          onClick={() => setExpanded(!expanded)} 
-          className="p-1 rounded-full hover:bg-gray-100 transition-colors"
-          aria-label={expanded ? "Comprimi pannello" : "Espandi pannello"}
-        >
-          {expanded ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
-        </button>
+      <div className="p-4 border-b border-gray-200 flex flex-col">
+        <div className="flex justify-between items-center">
+          <h3 className="font-condensed font-bold text-lg text-gray-800">Andamento Crescita</h3>
+          <button 
+            onClick={() => setExpanded(!expanded)} 
+            className="p-1 rounded-full hover:bg-gray-100 transition-colors"
+            aria-label={expanded ? "Comprimi pannello" : "Espandi pannello"}
+          >
+            {expanded ? <ChevronUp className="h-5 w-5 text-gray-500" /> : <ChevronDown className="h-5 w-5 text-gray-500" />}
+          </button>
+        </div>
+        <div className="mt-1 text-blue-700 text-xs font-medium">
+          <span className="inline-block">ℹ️</span> SGR = percentuale di accrescimento giornaliero
+        </div>
       </div>
       
       <div className="relative overflow-hidden" style={{ 
