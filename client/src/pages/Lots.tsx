@@ -29,6 +29,8 @@ export default function Lots() {
   const [sortField, setSortField] = useState('id');
   const [sortDirection, setSortDirection] = useState<'asc' | 'desc'>('desc');
   const [viewMode, setViewMode] = useState<'simple' | 'detailed'>('simple');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
   
   // Filtri avanzati
   const [filterValues, setFilterValues] = useState({
@@ -36,13 +38,47 @@ export default function Lots() {
     dateFrom: '',
     dateTo: '',
     supplier: '',
-    quality: ''
+    quality: '',
+    sizeId: ''
   });
   
-  // Query lots
-  const { data: lots, isLoading } = useQuery({
-    queryKey: ['/api/lots'],
+  // Prepara i parametri per la query ottimizzata
+  const buildQueryParams = () => {
+    const params = new URLSearchParams();
+    params.append('page', currentPage.toString());
+    params.append('pageSize', pageSize.toString());
+    
+    // Aggiungi i filtri avanzati solo se valorizzati
+    if (filterValues.supplier) params.append('supplier', filterValues.supplier);
+    if (filterValues.quality) params.append('quality', filterValues.quality);
+    if (filterValues.dateFrom) params.append('dateFrom', filterValues.dateFrom);
+    if (filterValues.dateTo) params.append('dateTo', filterValues.dateTo);
+    if (filterValues.sizeId) params.append('sizeId', filterValues.sizeId);
+    
+    return params.toString();
+  };
+  
+  // Query lotti ottimizzata con paginazione e filtri
+  const { data: lotsData, isLoading } = useQuery({
+    queryKey: ['/api/lots/optimized', currentPage, pageSize, filterValues],
+    queryFn: async () => {
+      const queryParams = buildQueryParams();
+      const response = await fetch(`/api/lots/optimized?${queryParams}`);
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei lotti');
+      }
+      return response.json();
+    }
   });
+  
+  // Estrai i dati dai risultati
+  const lots = lotsData?.lots || [];
+  const totalPages = lotsData?.totalPages || 1;
+  const totalCount = lotsData?.totalCount || 0;
+  const statistics = lotsData?.statistics || { 
+    counts: { normali: 0, teste: 0, code: 0, totale: 0 },
+    percentages: { normali: 0, teste: 0, code: 0 }
+  };
   
   // Query inventario per tutti i lotti
   const { data: lotInventoryData, isLoading: isLoadingInventory } = useQuery({

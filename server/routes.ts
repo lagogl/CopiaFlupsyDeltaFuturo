@@ -3253,6 +3253,95 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch lots" });
     }
   });
+  
+  app.get("/api/lots/optimized", async (req, res) => {
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 20;
+      const supplier = req.query.supplier as string;
+      const quality = req.query.quality as string;
+      const sizeId = req.query.sizeId ? parseInt(req.query.sizeId as string) : undefined;
+      
+      // Gestione delle date
+      let dateFrom: Date | undefined;
+      let dateTo: Date | undefined;
+      
+      if (req.query.dateFrom) {
+        dateFrom = new Date(req.query.dateFrom as string);
+      }
+      
+      if (req.query.dateTo) {
+        dateTo = new Date(req.query.dateTo as string);
+      }
+      
+      // Verifica che le date siano valide
+      if (dateFrom && isNaN(dateFrom.getTime())) {
+        return res.status(400).json({ message: "Data di inizio non valida" });
+      }
+      
+      if (dateTo && isNaN(dateTo.getTime())) {
+        return res.status(400).json({ message: "Data di fine non valida" });
+      }
+      
+      // Ottieni i lotti con paginazione e filtri
+      const result = await storage.getLotsOptimized({
+        page,
+        pageSize,
+        supplier,
+        quality,
+        dateFrom,
+        dateTo,
+        sizeId
+      });
+      
+      // Arricchisci i dati recuperando le informazioni sulle taglie
+      const lotsWithSizes = await Promise.all(
+        result.lots.map(async (lot) => {
+          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
+          return { ...lot, size };
+        })
+      );
+      
+      // Calcolo le statistiche sulla qualità per i lotti filtrati
+      const qualityStats = {
+        normali: 0,
+        teste: 0,
+        code: 0,
+        totale: 0
+      };
+      
+      result.lots.forEach(lot => {
+        const count = lot.animalCount || 0;
+        qualityStats.totale += count;
+        
+        if (lot.quality === 'normali') qualityStats.normali += count;
+        else if (lot.quality === 'teste') qualityStats.teste += count;
+        else if (lot.quality === 'code') qualityStats.code += count;
+      });
+      
+      // Prepara percentuali
+      const percentages = {
+        normali: qualityStats.totale > 0 ? Math.round((qualityStats.normali / qualityStats.totale) * 100) : 0,
+        teste: qualityStats.totale > 0 ? Math.round((qualityStats.teste / qualityStats.totale) * 100) : 0,
+        code: qualityStats.totale > 0 ? Math.round((qualityStats.code / qualityStats.totale) * 100) : 0
+      };
+      
+      res.json({
+        lots: lotsWithSizes,
+        totalCount: result.totalCount,
+        currentPage: page,
+        pageSize,
+        totalPages: Math.ceil(result.totalCount / pageSize),
+        statistics: {
+          counts: qualityStats,
+          percentages
+        }
+      });
+    } catch (error) {
+      console.error("Error fetching optimized lots:", error);
+      res.status(500).json({ message: "Errore nel recupero dei lotti ottimizzati" });
+    }
+  });
 
   app.get("/api/lots/active", async (req, res) => {
     try {
