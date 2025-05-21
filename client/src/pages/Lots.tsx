@@ -212,57 +212,33 @@ export default function Lots() {
     }
   };
 
-  // Filter and sort lots
-  const filteredLots = lots && Array.isArray(lots) ? lots.filter((lot: any) => {
-    // Filter by search term
+  // La paginazione e i filtri principali sono ora gestiti dal server
+  // Funzione per gestire il cambio pagina
+  const handlePageChange = (newPage: number) => {
+    if (newPage > 0 && newPage <= totalPages) {
+      setCurrentPage(newPage);
+    }
+  };
+  
+  // Funzione per applicare il filtro di ricerca rapida
+  // Nota: questa funzione ora utilizza i lotti già filtrati dal server
+  const filteredBySearch = lots.filter((lot: any) => {
+    // Filtro per termine di ricerca
     const matchesSearch = searchTerm === '' || 
       `${lot.id}`.includes(searchTerm) || 
       lot.supplier.toLowerCase().includes(searchTerm.toLowerCase());
     
-    // Filter by status
+    // Filtro per stato
     const matchesStatus = statusFilter === 'all' || 
       (statusFilter === 'active' && lot.state === 'active') ||
       (statusFilter === 'exhausted' && lot.state === 'exhausted');
     
-    // Apply advanced filters
-    // Filter by ID
-    const matchesId = filterValues.id === '' || 
-      lot.id.toString() === filterValues.id.trim();
-    
-    // Filter by supplier
-    const matchesSupplier = filterValues.supplier === '' || 
-      lot.supplier.toLowerCase().includes(filterValues.supplier.toLowerCase().trim());
-    
-    // Filter by date range
-    let matchesDateRange = true;
-    if (filterValues.dateFrom || filterValues.dateTo) {
-      const lotDate = new Date(lot.arrivalDate);
-      
-      if (filterValues.dateFrom && filterValues.dateTo) {
-        const fromDate = new Date(filterValues.dateFrom);
-        const toDate = new Date(filterValues.dateTo);
-        // Aggiungiamo un giorno alla data finale per includere anche la data selezionata
-        toDate.setDate(toDate.getDate() + 1);
-        matchesDateRange = lotDate >= fromDate && lotDate <= toDate;
-      } else if (filterValues.dateFrom) {
-        const fromDate = new Date(filterValues.dateFrom);
-        matchesDateRange = lotDate >= fromDate;
-      } else if (filterValues.dateTo) {
-        const toDate = new Date(filterValues.dateTo);
-        // Aggiungiamo un giorno alla data finale per includere anche la data selezionata
-        toDate.setDate(toDate.getDate() + 1);
-        matchesDateRange = lotDate <= toDate;
-      }
-    }
-    
-    // Filter by quality
-    const matchesQuality = filterValues.quality === '' || 
-      (lot.notes && lot.notes.toLowerCase().includes(filterValues.quality.toLowerCase().trim())) ||
-      (lot.supplierLotNumber && lot.supplierLotNumber.toLowerCase().includes(filterValues.quality.toLowerCase().trim()));
-    
-    return matchesSearch && matchesStatus && matchesId && matchesSupplier && matchesDateRange && matchesQuality;
-  }).sort((a: any, b: any) => {
-    // Handle special cases for certain fields
+    return matchesSearch && matchesStatus;
+  });
+  
+  // Ordinamento degli elementi (ordinamento lato client)
+  const sortedLots = [...filteredBySearch].sort((a: any, b: any) => {
+    // Gestione casi speciali per campi specifici
     if (sortField === 'arrivalDate') {
       const dateA = new Date(a[sortField]);
       const dateB = new Date(b[sortField]);
@@ -279,7 +255,7 @@ export default function Lots() {
         : sizeB.localeCompare(sizeA);
     }
     
-    // Default sorting for string and number fields
+    // Ordinamento predefinito per campi stringa e numerici
     if (typeof a[sortField] === 'string') {
       return sortDirection === 'asc'
         ? a[sortField].localeCompare(b[sortField])
@@ -289,7 +265,7 @@ export default function Lots() {
       const valB = b[sortField] || 0;
       return sortDirection === 'asc' ? valA - valB : valB - valA;
     }
-  }) : [];
+  });
 
   const handleToggleLotState = (lot: any) => {
     const newState = lot.state === 'active' ? 'exhausted' : 'active';
@@ -330,7 +306,7 @@ export default function Lots() {
       ];
       
       // Prepariamo i dati
-      const csvData = filteredLots.map(lot => [
+      const csvData = sortedLots.map(lot => [
         lot.id,
         lot.arrivalDate,
         lot.supplier,
@@ -644,14 +620,14 @@ export default function Lots() {
                     Caricamento lotti...
                   </td>
                 </tr>
-              ) : filteredLots.length === 0 ? (
+              ) : sortedLots.length === 0 ? (
                 <tr>
                   <td colSpan={9} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                     Nessun lotto trovato
                   </td>
                 </tr>
               ) : (
-                filteredLots.map((lot) => {
+                sortedLots.map((lot) => {
                   // Format date
                   const arrivalDate = format(new Date(lot.arrivalDate), 'dd MMM yyyy', { locale: it });
                   
