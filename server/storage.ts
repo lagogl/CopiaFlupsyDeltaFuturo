@@ -133,6 +133,15 @@ export interface IStorage {
   
   // Lot methods
   getLots(): Promise<Lot[]>;
+  getLotsOptimized(options: {
+    page?: number;
+    pageSize?: number;
+    supplier?: string;
+    quality?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    sizeId?: number;
+  }): Promise<{ lots: Lot[], totalCount: number }>;
   getActiveLots(): Promise<Lot[]>;
   getLot(id: number): Promise<Lot | undefined>;
   createLot(lot: InsertLot): Promise<Lot>;

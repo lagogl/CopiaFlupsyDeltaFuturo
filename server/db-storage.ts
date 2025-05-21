@@ -906,6 +906,84 @@ export class DbStorage implements IStorage {
   async getLots(): Promise<Lot[]> {
     return await db.select().from(lots);
   }
+  
+  /**
+   * Ottiene i lotti con supporto paginazione e filtri
+   * @param options Opzioni di paginazione e filtraggio
+   * @returns Lista paginata di lotti e conteggio totale
+   */
+  async getLotsOptimized(options: {
+    page?: number;
+    pageSize?: number;
+    supplier?: string;
+    quality?: string;
+    dateFrom?: Date;
+    dateTo?: Date;
+    sizeId?: number;
+  }): Promise<{ lots: Lot[], totalCount: number }> {
+    try {
+      // Valori predefiniti
+      const page = options.page || 1;
+      const pageSize = options.pageSize || 20;
+      const offset = (page - 1) * pageSize;
+      
+      // Costruisci la query base per il conteggio totale
+      let countQuery = db.select({ count: sql<number>`count(*)` }).from(lots);
+      
+      // Costruisci la query principale
+      let query = db.select().from(lots);
+      
+      // Applica i filtri a entrambe le query
+      const filters = [];
+      
+      if (options.supplier) {
+        filters.push(eq(lots.supplier, options.supplier));
+      }
+      
+      if (options.quality) {
+        filters.push(eq(lots.quality, options.quality));
+      }
+      
+      if (options.sizeId) {
+        filters.push(eq(lots.sizeId, options.sizeId));
+      }
+      
+      if (options.dateFrom) {
+        const dateFromStr = options.dateFrom.toISOString().split('T')[0];
+        filters.push(gte(lots.arrivalDate, dateFromStr));
+      }
+      
+      if (options.dateTo) {
+        const dateToStr = options.dateTo.toISOString().split('T')[0];
+        filters.push(lte(lots.arrivalDate, dateToStr));
+      }
+      
+      // Applica tutti i filtri alle query
+      if (filters.length > 0) {
+        const condition = and(...filters);
+        countQuery = countQuery.where(condition);
+        query = query.where(condition);
+      }
+      
+      // Esegui la query di conteggio
+      const countResult = await countQuery;
+      const totalCount = countResult[0]?.count || 0;
+      
+      // Esegui la query principale con paginazione e ordinamento
+      const results = await query
+        .orderBy(desc(lots.arrivalDate))
+        .limit(pageSize)
+        .offset(offset);
+      
+      return {
+        lots: results,
+        totalCount
+      };
+    } catch (error) {
+      console.error('Errore nell\'ottenere i lotti con paginazione:', error);
+      throw error;
+    }
+  }
 
   async getActiveLots(): Promise<Lot[]> {
     return await db.select().from(lots).where(eq(lots.state, 'active'));
