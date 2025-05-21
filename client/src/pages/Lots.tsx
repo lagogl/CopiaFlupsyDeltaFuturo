@@ -380,6 +380,14 @@ export default function Lots() {
             <FileDown className="h-4 w-4 mr-1" />
             Esporta
           </Button>
+          <Button 
+            variant="outline" 
+            className="bg-blue-100 hover:bg-blue-200 mr-2"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/lots/optimized'] })}
+          >
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Aggiorna
+          </Button>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
             Nuovo Lotto
@@ -758,6 +766,54 @@ export default function Lots() {
               )}
             </tbody>
           </table>
+          
+          {/* Paginazione */}
+          {totalPages > 1 && (
+            <div className="py-4 flex justify-center">
+              <Pagination>
+                <PaginationContent>
+                  <PaginationItem>
+                    <PaginationPrevious 
+                      onClick={() => handlePageChange(currentPage - 1)} 
+                      className={currentPage === 1 ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                  
+                  {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                    // Logica per mostrare le pagine intorno alla pagina corrente
+                    let pageNum;
+                    if (totalPages <= 5) {
+                      pageNum = i + 1; // Mostra tutte le pagine se sono 5 o meno
+                    } else if (currentPage <= 3) {
+                      pageNum = i + 1; // All'inizio mostra le prime 5 pagine
+                    } else if (currentPage >= totalPages - 2) {
+                      pageNum = totalPages - 4 + i; // Alla fine mostra le ultime 5 pagine
+                    } else {
+                      pageNum = currentPage - 2 + i; // Nel mezzo mostra 2 pagine prima e 2 dopo
+                    }
+                    
+                    return (
+                      <PaginationItem key={pageNum}>
+                        <PaginationLink 
+                          isActive={currentPage === pageNum}
+                          onClick={() => handlePageChange(pageNum)}
+                        >
+                          {pageNum}
+                        </PaginationLink>
+                      </PaginationItem>
+                    );
+                  })}
+                  
+                  <PaginationItem>
+                    <PaginationNext 
+                      onClick={() => handlePageChange(currentPage + 1)} 
+                      className={currentPage === totalPages ? "pointer-events-none opacity-50" : "cursor-pointer"}
+                    />
+                  </PaginationItem>
+                </PaginationContent>
+              </Pagination>
+            </div>
+          )}
         </div>
       </div>
 
