@@ -2,7 +2,7 @@ import { useState } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { format, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle, BarChart, ArrowUpDown, Layers, Table2, FileDown } from 'lucide-react';
+import { Eye, Search, Filter, Plus, Package2, Edit, Trash2, AlertCircle, BarChart, ArrowUpDown, Layers, Table2, FileDown, RefreshCw } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -15,6 +15,14 @@ import LotFormNew from '@/components/LotFormNew';
 // Nessun bisogno di importare esplicitamente il tipo
 import LotInventoryPanel from '@/components/lot-inventory/LotInventoryPanel';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { 
+  Pagination, 
+  PaginationContent, 
+  PaginationItem, 
+  PaginationLink, 
+  PaginationNext, 
+  PaginationPrevious 
+} from "@/components/ui/pagination";
 
 export default function Lots() {
   const { toast } = useToast();
@@ -436,38 +444,33 @@ export default function Lots() {
       </div>
 
       {/* Stats Summary */}
-      {filteredLots.length > 0 && (
+      {lots.length > 0 && (
         <div className="bg-white rounded-lg shadow p-4 mb-6">
           <h3 className="text-lg font-semibold mb-2">Riepilogo Lotti</h3>
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="bg-blue-50 p-3 rounded-lg">
               <div className="text-sm text-gray-600">Totale Lotti</div>
-              <div className="text-xl font-bold">{filteredLots.length}</div>
+              <div className="text-xl font-bold">{totalCount}</div>
             </div>
             <div className="bg-green-50 p-3 rounded-lg">
               <div className="text-sm text-gray-600">Totale Animali</div>
               <div className="text-xl font-bold">
-                {filteredLots.reduce((total, lot) => total + (lot.animalCount || 0), 0).toLocaleString()}
+                {statistics.counts.totale.toLocaleString()}
               </div>
             </div>
             <div className="bg-purple-50 p-3 rounded-lg">
               <div className="text-sm text-gray-600">Suddivisione per Qualità</div>
               <div className="text-sm mt-1">
                 {(() => {
-                  // Calcoliamo la suddivisione per le qualità standard prima
+                  // Definizione standard delle qualità
                   const standardQualityMap = {
                     'teste': 'Teste ★★★',
                     'normali': 'Normali ★★',
-                    'code': 'Tails ★'
+                    'code': 'Code ★'
                   };
                   
-                  // Raccogliamo i conteggi per qualità
-                  const qualityCounts = filteredLots.reduce((acc, lot) => {
-                    const quality = lot.quality || 'Non specificata';
-                    if (!acc[quality]) acc[quality] = 0;
-                    acc[quality] += (lot.animalCount || 0);
-                    return acc;
-                  }, {});
+                  // Dati ottenuti dal server
+                  const qualityCounts = statistics.counts;
                   
                   // Otteniamo il totale degli animali
                   const totalAnimals: number = Object.values(qualityCounts).reduce((sum: number, count: any) => sum + (count as number), 0);
@@ -832,11 +835,42 @@ export default function Lots() {
             
             <div className="space-y-2">
               <label className="text-sm font-medium">Qualità</label>
-              <Input 
-                placeholder="Qualità/Descrizione" 
+              <Select 
                 value={filterValues.quality}
-                onChange={(e) => setFilterValues({...filterValues, quality: e.target.value})}
-              />
+                onValueChange={(value) => setFilterValues({...filterValues, quality: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tutte le qualità" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tutte</SelectItem>
+                  <SelectItem value="normali">Normali</SelectItem>
+                  <SelectItem value="teste">Teste</SelectItem>
+                  <SelectItem value="code">Code</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+            
+            <div className="space-y-2">
+              <label className="text-sm font-medium">Taglia</label>
+              <Select 
+                value={filterValues.sizeId}
+                onValueChange={(value) => setFilterValues({...filterValues, sizeId: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Tutte le taglie" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="">Tutte</SelectItem>
+                  {lots && lots.length > 0 && [...new Set(lots.filter(lot => lot.size).map(lot => JSON.stringify(lot.size)))]
+                    .map(sizeStr => JSON.parse(sizeStr))
+                    .sort((a, b) => a.code.localeCompare(b.code))
+                    .map(size => (
+                      <SelectItem key={size.id} value={size.id.toString()}>{size.code}</SelectItem>
+                    ))
+                  }
+                </SelectContent>
+              </Select>
             </div>
           </div>
           
@@ -849,8 +883,11 @@ export default function Lots() {
                   dateFrom: '',
                   dateTo: '',
                   supplier: '',
-                  quality: ''
+                  quality: '',
+                  sizeId: ''
                 });
+                // Dopo aver resettato i filtri, torniamo alla prima pagina
+                setCurrentPage(1);
               }}
             >
               Reimposta filtri
