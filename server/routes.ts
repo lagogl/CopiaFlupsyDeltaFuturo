@@ -2521,6 +2521,99 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ message: "Failed to fetch cycles" });
     }
   });
+  
+  // Endpoint ottimizzato per i cicli con paginazione
+  app.get("/api/cycles/optimized", async (req, res) => {
+    console.time('cycles-optimized');
+    try {
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 20;
+      const state = req.query.state as string;
+      
+      // Costruisci query SQL ottimizzata per recuperare cicli con dettagli cestello in un'unica query
+      const whereConditions = [];
+      const params = [];
+      let paramIndex = 1;
+      
+      if (state) {
+        whereConditions.push(`c.state = $${paramIndex}`);
+        params.push(state);
+        paramIndex++;
+      }
+      
+      const whereClause = whereConditions.length > 0 
+        ? `WHERE ${whereConditions.join(' AND ')}` 
+        : '';
+        
+      // Query per contare il totale
+      const countQuery = `
+        SELECT COUNT(*) 
+        FROM cycles c
+        ${whereClause}
+      `;
+      
+      // Query principale ottimizzata con JOIN
+      const mainQuery = `
+        SELECT 
+          c.*,
+          b.id as basket_id,
+          b.physical_number as basket_physical_number,
+          b.flupsy_id as basket_flupsy_id,
+          b.state as basket_state,
+          b.row as basket_row,
+          b.position as basket_position
+        FROM cycles c
+        LEFT JOIN baskets b ON c.basket_id = b.id
+        ${whereClause}
+        ORDER BY c.start_date DESC, c.id DESC
+        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
+      `;
+      
+      params.push(pageSize, (page - 1) * pageSize);
+      
+      // Esegui entrambe le query in parallelo
+      const [countResult, cyclesResult] = await Promise.all([
+        db.execute(countQuery),
+        db.execute(mainQuery)
+      ]);
+      
+      // Estrai risultati
+      const totalCount = parseInt(countResult[0].count);
+      const totalPages = Math.ceil(totalCount / pageSize);
+      
+      // Formatta i risultati
+      const formattedCycles = cyclesResult.map(row => ({
+        id: row.id,
+        basketId: row.basket_id,
+        startDate: row.start_date,
+        endDate: row.end_date,
+        state: row.state,
+        notes: row.notes,
+        createdAt: row.created_at,
+        updatedAt: row.updated_at,
+        basket: row.basket_id ? {
+          id: row.basket_id,
+          physicalNumber: row.basket_physical_number,
+          flupsyId: row.basket_flupsy_id,
+          state: row.basket_state,
+          row: row.basket_row,
+          position: row.basket_position
+        } : null
+      }));
+      
+      console.timeEnd('cycles-optimized');
+      res.json({
+        cycles: formattedCycles,
+        page,
+        pageSize,
+        totalPages,
+        totalCount
+      });
+    } catch (error) {
+      console.error("Error fetching optimized cycles:", error);
+      res.status(500).json({ message: "Failed to fetch cycles" });
+    }
+  });
 
   app.get("/api/cycles/active", async (req, res) => {
     try {

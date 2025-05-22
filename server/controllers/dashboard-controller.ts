@@ -40,7 +40,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
               ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
             FROM operations o
             JOIN baskets b ON o.basket_id = b.id
-            WHERE b.state = 'active' AND b.flupsy_id = ANY(${flupsyIds})
+            WHERE b.state = 'active' AND b.flupsy_id IN (${sql.join(flupsyIds)})
           )
           SELECT * FROM ranked_operations WHERE rn = 1
         `
@@ -63,7 +63,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           SELECT o.* FROM operations o
           JOIN baskets b ON o.basket_id = b.id
           WHERE b.state = 'active' AND o.date = ${today}
-          AND b.flupsy_id = ANY(${flupsyIds})
+          AND b.flupsy_id IN (${sql.join(flupsyIds)})
         `
       : sql`
           SELECT o.* FROM operations o
