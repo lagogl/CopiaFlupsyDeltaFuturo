@@ -940,6 +940,7 @@ export class DbStorage implements IStorage {
   }> {
     try {
       console.time('db-lots-optimized');
+      console.log('Richiesta ottimizzazione lotti con opzioni:', JSON.stringify(options));
       
       // Valori predefiniti
       const page = options.page || 1;
@@ -955,30 +956,42 @@ export class DbStorage implements IStorage {
       // Applica i filtri a entrambe le query
       const filters = [];
       
-      if (options.supplier) {
+      if (options.supplier && options.supplier.trim() !== '') {
         filters.push(eq(lots.supplier, options.supplier));
+        console.log('Filtro applicato: supplier =', options.supplier);
       }
       
-      if (options.quality) {
+      if (options.quality && options.quality.trim() !== '') {
         filters.push(eq(lots.quality, options.quality));
+        console.log('Filtro applicato: quality =', options.quality);
       }
       
       if (options.sizeId) {
         filters.push(eq(lots.sizeId, options.sizeId));
+        console.log('Filtro applicato: sizeId =', options.sizeId);
       }
       
       if (options.dateFrom) {
         const dateFromStr = options.dateFrom.toISOString().split('T')[0];
         filters.push(gte(lots.arrivalDate, dateFromStr));
+        console.log('Filtro applicato: arrivalDate >=', dateFromStr);
       }
       
       if (options.dateTo) {
         const dateToStr = options.dateTo.toISOString().split('T')[0];
         filters.push(lte(lots.arrivalDate, dateToStr));
+        console.log('Filtro applicato: arrivalDate <=', dateToStr);
       }
+      
+      // Log per debug
+      console.log('Numero di filtri applicati:', filters.length);
       
       // Crea la condizione combinata per tutti i filtri
       const condition = filters.length > 0 ? and(...filters) : undefined;
+      
+      // Debug query SQL
+      const debugQuery = query.toSQL();
+      console.log('Query SQL di base:', debugQuery.sql, debugQuery.params);
       
       // Applica i filtri alla query di conteggio
       if (condition) {
@@ -988,6 +1001,7 @@ export class DbStorage implements IStorage {
       // Esegui la query di conteggio
       const countResult = await countQuery;
       const totalCount = countResult[0]?.count || 0;
+      console.log('Conteggio totale lotti:', totalCount);
       
       // Applica i filtri alla query principale
       if (condition) {
@@ -999,6 +1013,8 @@ export class DbStorage implements IStorage {
         .orderBy(desc(lots.arrivalDate))
         .limit(pageSize)
         .offset(offset);
+        
+      console.log(`Recuperati ${results.length} lotti`);
       
       // Se richiesto, calcola le statistiche sulla qualità direttamente dal database
       let statistics;
