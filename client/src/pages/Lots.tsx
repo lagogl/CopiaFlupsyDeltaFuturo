@@ -66,48 +66,48 @@ export default function Lots() {
     return params.toString();
   };
   
-  // Dati statici precaricati - soluzione temporanea per evitare problemi di performance
+  // Query che utilizza direttamente l'API del database per i dati reali
   const { data: lotsData, isLoading } = useQuery({
-    queryKey: ['/api/lots', currentPage, pageSize, filterValues],
+    queryKey: ['/api/lots/paged', currentPage, pageSize, filterValues],
     queryFn: async () => {
-      // Usa un timeout artificiale di 500ms solo per simulare la richiesta
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // L'API /api/lots è troppo lenta, per ora usiamo dati statici
-      return {
-        lots: [
-          { id: 41, arrivalDate: "2025-05-18", supplier: "Marinova", supplierLotNumber: "2025-05-A", quality: "normali", animalCount: 25000, weight: 3.5, sizeId: 9, state: "active" },
-          { id: 40, arrivalDate: "2025-05-15", supplier: "Mitilicoltori Spezzini", supplierLotNumber: "2025-05-B", quality: "normali", animalCount: 28000, weight: 4.2, sizeId: 10, state: "active" },
-          { id: 39, arrivalDate: "2025-05-10", supplier: "Mare Nostrum", supplierLotNumber: "2025-05-C", quality: "normali", animalCount: 35000, weight: 8.2, sizeId: 11, state: "active" },
-          { id: 38, arrivalDate: "2025-05-02", supplier: "Marinova", supplierLotNumber: "2025-05-D", quality: "code", animalCount: 18000, weight: 2.1, sizeId: 8, state: "active" },
-          { id: 36, arrivalDate: "2025-04-28", supplier: "Mytilus", supplierLotNumber: "2025-04-A", quality: "teste", animalCount: 22000, weight: 2.8, sizeId: 9, state: "active" },
-          { id: 31, arrivalDate: "2025-04-10", supplier: "Mare Nostrum", supplierLotNumber: "2025-04-B", quality: "normali", animalCount: 32000, weight: 5.1, sizeId: 10, state: "active" },
-          { id: 30, arrivalDate: "2025-04-02", supplier: "Mitilicoltori Spezzini", supplierLotNumber: "2025-04-C", quality: "normali", animalCount: 30000, weight: 4.5, sizeId: 9, state: "active" },
-          { id: 29, arrivalDate: "2025-03-25", supplier: "Marinova", supplierLotNumber: "2025-03-A", quality: "code", animalCount: 15000, weight: 1.8, sizeId: 8, state: "active" },
-          { id: 28, arrivalDate: "2025-03-18", supplier: "Mare Nostrum", supplierLotNumber: "2025-03-B", quality: "teste", animalCount: 20000, weight: 2.2, sizeId: 9, state: "active" },
-          { id: 27, arrivalDate: "2025-03-10", supplier: "Mytilus", supplierLotNumber: "2025-03-C", quality: "normali", animalCount: 28000, weight: 3.8, sizeId: 10, state: "active" },
-          { id: 26, arrivalDate: "2025-03-05", supplier: "Mitilicoltori Spezzini", supplierLotNumber: "2025-03-D", quality: "normali", animalCount: 30000, weight: 4.2, sizeId: 9, state: "active" },
-          { id: 25, arrivalDate: "2025-02-28", supplier: "Marinova", supplierLotNumber: "2025-02-A", quality: "code", animalCount: 16000, weight: 1.9, sizeId: 8, state: "active" },
-          { id: 24, arrivalDate: "2025-02-20", supplier: "Mare Nostrum", supplierLotNumber: "2025-02-B", quality: "teste", animalCount: 21000, weight: 2.5, sizeId: 9, state: "active" },
-          { id: 23, arrivalDate: "2025-02-15", supplier: "Mytilus", supplierLotNumber: "2025-02-C", quality: "normali", animalCount: 29000, weight: 4.0, sizeId: 10, state: "active" },
-          { id: 22, arrivalDate: "2025-02-10", supplier: "Mitilicoltori Spezzini", supplierLotNumber: "2025-02-D", quality: "normali", animalCount: 31000, weight: 4.5, sizeId: 9, state: "active" },
-          { id: 21, arrivalDate: "2025-02-05", supplier: "Marinova", supplierLotNumber: "2025-02-E", quality: "code", animalCount: 17000, weight: 2.0, sizeId: 8, state: "active" },
-          { id: 20, arrivalDate: "2025-01-30", supplier: "Mare Nostrum", supplierLotNumber: "2025-01-A", quality: "teste", animalCount: 20000, weight: 2.3, sizeId: 9, state: "active" },
-          { id: 19, arrivalDate: "2025-01-25", supplier: "Mytilus", supplierLotNumber: "2025-01-B", quality: "normali", animalCount: 27000, weight: 3.5, sizeId: 10, state: "active" },
-          { id: 18, arrivalDate: "2025-01-20", supplier: "Mitilicoltori Spezzini", supplierLotNumber: "2025-01-C", quality: "normali", animalCount: 29000, weight: 4.0, sizeId: 9, state: "active" },
-          { id: 17, arrivalDate: "2025-01-15", supplier: "Marinova", supplierLotNumber: "2025-01-D", quality: "code", animalCount: 15000, weight: 1.7, sizeId: 8, state: "active" }
-        ],
-        totalCount: 41,
-        currentPage: currentPage,
-        pageSize: pageSize, 
-        totalPages: 3,
-        statistics: { 
-          counts: { normali: 66980019, teste: 125359048, code: 11938810, totale: 204277877 },
-          percentages: { normali: 32.8, teste: 61.4, code: 5.8 }
+      try {
+        const queryParams = buildQueryParams();
+        // Fai la richiesta all'endpoint ottimizzato di paginazione
+        const response = await fetch(`/api/lots?${queryParams}`);
+        
+        if (!response.ok) {
+          throw new Error('Errore nel caricamento dei lotti');
         }
-      };
+        
+        // Ottieni i dati dei lotti
+        const lots = await response.json();
+        
+        // Calcola il numero totale di pagine
+        const totalPages = Math.ceil(lots.length / pageSize);
+        const paginatedLots = lots.slice((currentPage - 1) * pageSize, currentPage * pageSize);
+        
+        // Fai una richiesta separata per le statistiche
+        const statsResponse = await fetch('/api/lots/statistics');
+        if (!statsResponse.ok) {
+          throw new Error('Errore nel caricamento delle statistiche');
+        }
+        
+        const statistics = await statsResponse.json();
+        
+        return {
+          lots: paginatedLots,
+          totalCount: lots.length,
+          currentPage: currentPage,
+          pageSize: pageSize,
+          totalPages: totalPages,
+          statistics: statistics
+        };
+      } catch (error) {
+        console.error('Errore durante il recupero dei dati:', error);
+        throw error;
+      }
     },
-    staleTime: 300000 // Cache dei risultati per 5 minuti
+    staleTime: 60000 // Cache dei risultati per 1 minuto
   });
   
   // Estrai i dati dai risultati
