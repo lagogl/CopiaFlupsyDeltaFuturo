@@ -83,6 +83,59 @@ ALTER SYSTEM SET log_min_duration_statement = '3000';  -- In millisecondi (3 sec
 ALTER SYSTEM SET autovacuum_vacuum_scale_factor = 0.05;
 ALTER SYSTEM SET autovacuum_analyze_scale_factor = 0.025;
 
+-- Aumenta la frequenza delle operazioni di autovacuum
+ALTER SYSTEM SET autovacuum_naptime = '1min';
+
+-- Riduce il numero di tuple morte prima che venga attivato l'autovacuum
+ALTER SYSTEM SET autovacuum_vacuum_threshold = 50;
+ALTER SYSTEM SET autovacuum_analyze_threshold = 50;
+
+-- =========================================================
+-- OTTIMIZZAZIONI SPECIFICHE PER IL CASO D'USO FLUPSY
+-- =========================================================
+
+-- Ottimizzazione per le tabelle di join
+-- Queste impostazioni migliorano le prestazioni per le query che coinvolgono
+-- operazioni di join su tabelle come baskets, operations, cycles, ecc.
+ALTER SYSTEM SET enable_nestloop = on;
+ALTER SYSTEM SET enable_hashjoin = on;
+ALTER SYSTEM SET enable_mergejoin = on;
+ALTER SYSTEM SET hash_mem_multiplier = 2.0;
+
+-- Ottimizzazione per query materializzate
+-- Aumenta il tempo di timeout per query complesse
+ALTER SYSTEM SET statement_timeout = '300s';
+
+-- Ottimizzazione per le ricerche e gli ordinamenti
+ALTER SYSTEM SET cpu_tuple_cost = 0.01;
+ALTER SYSTEM SET cpu_index_tuple_cost = 0.005;
+
+-- =========================================================
+-- PIANIFICAZIONE DELLE OPERAZIONI DI MANUTENZIONE
+-- =========================================================
+
+-- Creazione di un job pianificato per l'aggiornamento delle viste materializzate
+-- Il seguente codice deve essere eseguito una sola volta per creare il job pianificato
+
+/*
+-- Installa l'estensione pg_cron (richiede privilegi di superuser)
+CREATE EXTENSION IF NOT EXISTS pg_cron;
+
+-- Crea un job che aggiorna le viste materializzate ogni ora
+SELECT cron.schedule('0 * * * *', 'SELECT refresh_all_materialized_views()');
+
+-- Crea un job che esegue VACUUM ANALYZE sulle tabelle principali ogni notte
+SELECT cron.schedule('0 3 * * *', $$
+  VACUUM ANALYZE baskets;
+  VACUUM ANALYZE operations;
+  VACUUM ANALYZE cycles;
+  VACUUM ANALYZE flupsys;
+  VACUUM ANALYZE lots;
+  VACUUM ANALYZE sizes;
+  VACUUM ANALYZE basket_position_history;
+$$);
+*/
+
 -- =========================================================
 -- APPLICAZIONE DELLE MODIFICHE
 -- =========================================================
