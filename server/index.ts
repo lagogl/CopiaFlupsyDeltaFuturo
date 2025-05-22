@@ -19,6 +19,28 @@ globalThis.app = app;
 // Abilita il middleware di cache per velocizzare le risposte API
 app.use(cacheMiddleware);
 
+// Registra un endpoint per visualizzare le statistiche della cache
+import cacheService from './lib/cache-service';
+
+// Logga statistiche ogni 30 minuti per monitorare le prestazioni
+setInterval(() => {
+  cacheService.logPerformance();
+}, 30 * 60 * 1000); // 30 minuti
+
+// Endpoint amministrativo per visualizzare le statistiche della cache
+app.get('/api/admin/cache-stats', (req, res) => {
+  const stats = cacheService.getStats();
+  const hitRatio = stats.hits > 0 
+    ? Math.round((stats.hits / (stats.hits + stats.misses)) * 100) 
+    : 0;
+  
+  res.json({
+    ...stats,
+    hitRatio: `${hitRatio}%`,
+    status: 'active'
+  });
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;

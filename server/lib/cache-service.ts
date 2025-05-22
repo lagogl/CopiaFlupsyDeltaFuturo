@@ -88,8 +88,31 @@ class CacheService {
       ? keys.filter(key => key.includes(pattern))
       : keys.filter(key => pattern.test(key));
     
-    keysToDelete.forEach(key => this.cache.del(key));
-    console.log(`Invalidated ${keysToDelete.length} cache entries matching pattern: ${pattern}`);
+    if (keysToDelete.length > 0) {
+      keysToDelete.forEach(key => this.cache.del(key));
+      console.log(`Invalidated ${keysToDelete.length} cache entries matching pattern: ${pattern}`);
+    }
+  }
+  
+  /**
+   * Ottiene statistiche sulla cache
+   * @returns Oggetto con statistiche sulla cache
+   */
+  getStats(): {keys: number, hits: number, misses: number, ksize: number, vsize: number} {
+    return this.cache.getStats();
+  }
+  
+  /**
+   * Registra le prestazioni della cache
+   * Utile per monitorare l'efficacia della cache
+   */
+  logPerformance(): void {
+    const stats = this.getStats();
+    const hitRatio = stats.hits > 0 
+      ? Math.round((stats.hits / (stats.hits + stats.misses)) * 100) 
+      : 0;
+    
+    console.log(`Cache performance: ${stats.keys} keys, ${hitRatio}% hit ratio (${stats.hits} hits, ${stats.misses} misses)`);
   }
 }
 
