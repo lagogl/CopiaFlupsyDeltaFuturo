@@ -233,88 +233,115 @@ const FlupsyBasketRenderer: React.FC<Props> = ({
   }
   
   // Cestello con ciclo attivo e operazioni - renderizzazione completa
-  return (
-    <TooltipProvider>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <div 
-            className={`basket-card p-2 rounded border-2 border-solid ${colorClass} ${height} ${width} flex flex-col cursor-pointer`}
-            onClick={() => onClick && onClick(basket.id)}
-            data-basket-id={basket.id}
-            data-basket-number={basket.physicalNumber}
-          >
-            <div className="flex justify-between items-start mb-1">
-              <div className="font-bold text-xs">CESTA #{basket.physicalNumber}</div>
-              <div className="text-[9px] bg-white px-1 rounded border border-current">
-                {size?.code || 'N/D'}
-              </div>
-            </div>
-            
-            {operation?.animalsPerKg ? (
-              <div className="text-[9px] text-gray-600">
-                <span className="font-medium">{operation.animalsPerKg.toLocaleString('it-IT')}/kg</span>
-              </div>
-            ) : (
-              <div className="text-[9px] text-gray-600">
-                <span className="font-medium">N/D /kg</span>
-              </div>
-            )}
-            
-            {operation?.animalCount ? (
-              <div className="text-[9px] mt-auto text-gray-700">
-                <span className="font-medium">{operation.animalCount.toLocaleString('it-IT')}</span> animali
-              </div>
-            ) : (
-              <div className="text-[9px] mt-auto text-gray-700">
-                <span className="font-medium">N/D</span> animali
-              </div>
-            )}
-            
-            {currentWeight ? (
-              <div className="text-[9px] text-gray-700">
-                <span className="font-medium">{currentWeight.toLocaleString('it-IT')} mg</span>
-              </div>
-            ) : (
-              <div className="text-[9px] text-gray-700">
-                <span className="font-medium">N/D mg</span>
-              </div>
-            )}
-            
-            {cycle && (
-              <div className="text-[8px] mt-auto text-gray-500">
-                Op: {operation ? format(new Date(operation.date), 'dd/MM') : format(new Date(cycle.startDate), 'dd/MM')} 
-              </div>
-            )}
-          </div>
-        </TooltipTrigger>
-        <HighContrastTooltip>
-          <div className="p-2 max-w-xs">
-            <div className="font-bold mb-1">Cestello #{basket.physicalNumber}</div>
-            
-            <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
-              <div className="text-gray-500">Taglia:</div>
-              <div>{size?.code || 'N/D'} - {size?.name || 'Non disponibile'}</div>
-              
-              <div className="text-gray-500">Peso medio:</div>
-              <div>{currentWeight ? `${currentWeight.toLocaleString('it-IT')} mg` : 'N/D'}</div>
-              
-              <div className="text-gray-500">Animali/kg:</div>
-              <div>{operation?.animalsPerKg?.toLocaleString('it-IT') || 'N/D'}</div>
-              
-              <div className="text-gray-500">Numero animali:</div>
-              <div>{operation?.animalCount?.toLocaleString('it-IT') || 'N/D'}</div>
-              
-              <div className="text-gray-500">Ciclo attivo dal:</div>
-              <div>{cycle ? format(new Date(cycle.startDate), 'dd/MM/yyyy') : 'N/D'}</div>
-              
-              <div className="text-gray-500">Ultima operazione:</div>
-              <div>{operation ? format(new Date(operation.date), 'dd/MM/yyyy') : 'N/D'}</div>
+  const renderContent = () => {
+    try {
+      return (
+        <div 
+          className={`basket-card p-2 rounded border-2 border-solid ${colorClass} ${height} ${width} flex flex-col cursor-pointer`}
+          onClick={() => onClick && onClick(basket.id)}
+          data-basket-id={basket.id}
+          data-basket-number={basket.physicalNumber}
+        >
+          <div className="flex justify-between items-start mb-1">
+            <div className="font-bold text-xs">CESTA #{basket.physicalNumber}</div>
+            <div className="text-[9px] bg-white px-1 rounded border border-current">
+              {size?.code || 'N/D'}
             </div>
           </div>
-        </HighContrastTooltip>
-      </Tooltip>
-    </TooltipProvider>
-  );
+          
+          {/* Informazioni animali/kg - mostrato sempre */}
+          <div className="text-[9px] text-gray-600">
+            <span className="font-medium">
+              {operation?.animalsPerKg ? operation.animalsPerKg.toLocaleString('it-IT') : 'N/D'}/kg
+            </span>
+          </div>
+          
+          {/* Numero animali - mostrato sempre */}
+          <div className="text-[9px] mt-auto text-gray-700">
+            <span className="font-medium">
+              {operation?.animalCount ? operation.animalCount.toLocaleString('it-IT') : 'N/D'}
+            </span> animali
+          </div>
+          
+          {/* Peso medio - mostrato sempre */}
+          <div className="text-[9px] text-gray-700">
+            <span className="font-medium">
+              {currentWeight ? currentWeight.toLocaleString('it-IT') : 'N/D'} mg
+            </span>
+          </div>
+          
+          {/* Data operazione o ciclo - mostrato sempre */}
+          <div className="text-[8px] mt-auto text-gray-500">
+            Op: {operation ? format(new Date(operation.date), 'dd/MM') : (cycle ? format(new Date(cycle.startDate), 'dd/MM') : 'N/D')} 
+          </div>
+        </div>
+      );
+    } catch (error) {
+      // Fallback in caso di errore nel rendering
+      console.error("Errore nel rendering del cestello:", error, basket);
+      return (
+        <div 
+          className={`basket-card p-2 rounded border-2 border-dashed border-red-300 bg-red-50 ${height} ${width} flex flex-col cursor-pointer`}
+          onClick={() => onClick && onClick(basket.id)}
+          data-basket-id={basket.id}
+          data-basket-number={basket.physicalNumber}
+        >
+          <div className="font-bold text-xs">CESTA #{basket.physicalNumber}</div>
+          <div className="text-[9px] text-red-500 mt-1">Errore di visualizzazione</div>
+        </div>
+      );
+    }
+  };
+
+  try {
+    return (
+      <TooltipProvider>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            {renderContent()}
+          </TooltipTrigger>
+          <HighContrastTooltip>
+            <div className="p-2 max-w-xs">
+              <div className="font-bold mb-1">Cestello #{basket.physicalNumber}</div>
+              
+              <div className="grid grid-cols-2 gap-x-2 gap-y-1 text-sm">
+                <div className="text-gray-500">Taglia:</div>
+                <div>{size?.code || 'N/D'} - {size?.name || 'Non disponibile'}</div>
+                
+                <div className="text-gray-500">Peso medio:</div>
+                <div>{currentWeight ? `${currentWeight.toLocaleString('it-IT')} mg` : 'N/D'}</div>
+                
+                <div className="text-gray-500">Animali/kg:</div>
+                <div>{operation?.animalsPerKg?.toLocaleString('it-IT') || 'N/D'}</div>
+                
+                <div className="text-gray-500">Numero animali:</div>
+                <div>{operation?.animalCount?.toLocaleString('it-IT') || 'N/D'}</div>
+                
+                <div className="text-gray-500">Ciclo attivo dal:</div>
+                <div>{cycle ? format(new Date(cycle.startDate), 'dd/MM/yyyy') : 'N/D'}</div>
+                
+                <div className="text-gray-500">Ultima operazione:</div>
+                <div>{operation ? format(new Date(operation.date), 'dd/MM/yyyy') : 'N/D'}</div>
+              </div>
+            </div>
+          </HighContrastTooltip>
+        </Tooltip>
+      </TooltipProvider>
+    );
+  } catch (error) {
+    // Fallback in caso di errore nel tooltip
+    console.error("Errore nel tooltip:", error, basket);
+    return (
+      <div 
+        className={`basket-card p-2 rounded border-2 border-dashed border-red-300 bg-red-50 ${height} ${width} flex flex-col cursor-pointer`}
+        onClick={() => onClick && onClick(basket.id)}
+        data-basket-id={basket?.id}
+      >
+        <div className="font-bold text-xs">CESTA #{basket?.physicalNumber || "N/D"}</div>
+        <div className="text-[9px] text-red-500 mt-1">Errore di visualizzazione</div>
+      </div>
+    );
+  }
 };
 
 export default FlupsyBasketRenderer;
