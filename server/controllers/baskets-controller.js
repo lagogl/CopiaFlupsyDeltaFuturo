@@ -151,7 +151,9 @@ export async function getBasketsOptimized(options = {}) {
       whereConditions.push(eq(baskets.currentCycleId, cycleId));
     }
     
-    if (!includeEmpty) {
+    // Non filtriamo i cestelli senza posizione quando includeAll=true
+    // perché è importante per la dashboard vedere tutti i cestelli
+    if (!includeEmpty && !includeAll) {
       // Escludi i cestelli senza posizione assegnata
       whereConditions.push(not(and(
         isNull(baskets.row),
@@ -165,10 +167,12 @@ export async function getBasketsOptimized(options = {}) {
     }
     
     // Conta il totale dei record
+    // Assicuriamoci che usiamo gli stessi filtri della query principale
     const countQuery = db.select({
       count: sql`count(*)`
     })
     .from(baskets)
+    .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
     .where(whereConditions.length > 0 ? and(...whereConditions) : undefined);
     
     const [countResult] = await countQuery;
