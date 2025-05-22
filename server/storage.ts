@@ -39,6 +39,13 @@ export interface IStorage {
   
   // Basket methods
   getBaskets(): Promise<Basket[]>;
+  getBasketsOptimized(options: {
+    page?: number;
+    pageSize?: number;
+    flupsyId?: number;
+    state?: string;
+    includeDetails?: boolean;
+  }): Promise<{ baskets: Basket[], totalCount: number }>;
   getBasketsByFlupsy(flupsyId: number): Promise<Basket[]>;
   getBasket(id: number): Promise<Basket | undefined>;
   getBasketByPhysicalNumber(physicalNumber: number): Promise<Basket | undefined>;

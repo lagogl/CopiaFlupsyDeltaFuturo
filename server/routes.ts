@@ -28,7 +28,6 @@ import * as ScreeningController from "./controllers/screening-controller";
 // WhatsApp controller rimosso
 import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
-import * as DbSyncController from "./controllers/db-sync-controller";
 import * as NotificationController from "./controllers/notification-controller";
 import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
@@ -291,6 +290,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Basket routes ===
   app.get("/api/baskets", async (req, res) => {
     try {
+      console.log("Ricevuta richiesta cestelli. Verifico se è presente il flag ottimizzato...");
+      
+      // Verifica se è richiesta la versione ottimizzata con paginazione
+      const useOptimized = req.query.optimized === "true" || process.env.USE_OPTIMIZED_APIS === "true";
+      
+      if (useOptimized) {
+        console.log("Utilizzando endpoint ottimizzato per i cestelli");
+        
+        // Estrai i parametri della query
+        const page = req.query.page ? parseInt(req.query.page as string) : 1;
+        const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 100;
+        const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
+        const state = req.query.state as string | undefined;
+        const search = req.query.search as string | undefined;
+        const sortBy = req.query.sortBy as string | undefined;
+        const sortDir = req.query.sortDir as "asc" | "desc" | undefined;
+        
+        // Includi sempre i dettagli per mantenere la compatibilità con il frontend esistente
+        const includeDetails = true;
+        
+        // Chiama la funzione ottimizzata
+        const result = await storage.getBasketsOptimized({
+          page,
+          pageSize,
+          flupsyId,
+          state,
+          search,
+          sortBy,
+          sortDir,
+          includeDetails
+        });
+        
+        // Se è richiesta la paginazione completa, restituisci anche il conteggio totale
+        if (req.query.includePagination === "true") {
+          return res.json({
+            baskets: result.baskets,
+            totalCount: result.totalCount,
+            page,
+            pageSize,
+            totalPages: Math.ceil(result.totalCount / pageSize)
+          });
+        }
+        
+        // Altrimenti restituisci solo i cestelli per mantenere la compatibilità
+        return res.json(result.baskets);
+      }
+      
+      // Versione originale dell'endpoint
+      console.log("Utilizzando endpoint originale per i cestelli");
       const baskets = await storage.getBaskets();
       
       // Ottieni i dettagli completi per ogni cesta
@@ -1391,14 +1439,79 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/operations", async (req, res) => {
+  app.get("/api/dashboard-data", async (req, res) => {
     try {
-      // Controlla se è stata richiesta la versione ottimizzata
-      const useOptimized = req.query.optimized === 'true';
+      console.log("Recupero dati specifici per la dashboard");
       
-      if (useOptimized) {
-        // Reindirizza alla versione ottimizzata
-        console.log("Reindirizzamento alla versione ottimizzata delle operazioni");
+      // Ottieni tutti i dati necessari per la dashboard senza paginazione
+      const baskets = await storage.getBaskets();
+      const operations = await storage.getOperations();
+      const cycles = await storage.getCycles();
+      const lots = await storage.getLots();
+      
+      // Calcola i totali e i conteggi necessari
+      const totalBaskets = baskets.length;
+      const activeBaskets = baskets.filter(b => b.state === 'active').length;
+      const activeCycles = cycles.filter(c => c.state === 'active').length;
+      
+      // Calcola il numero totale di animali nelle ceste attive
+      const totalAnimals = baskets
+        .filter(b => b.state === 'active')
+        .reduce((total, basket) => {
+          // Trova le operazioni più recenti per ogni cesta attiva
+          const basketOperations = operations
+            .filter(op => op.basketId === basket.id)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          // Prendi la più recente operazione che ha un conteggio di animali
+          const latestOperationWithCount = basketOperations.find(op => op.animalCount !== null && op.animalCount !== undefined);
+          
+          // Aggiungi al totale se abbiamo un conteggio di animali
+          if (latestOperationWithCount?.animalCount) {
+            return total + latestOperationWithCount.animalCount;
+          }
+          
+          return total;
+        }, 0);
+      
+      // Restituisci i dati essenziali per la dashboard
+      res.json({
+        totalBaskets,
+        activeBaskets,
+        activeCycles,
+        totalAnimals,
+        recentOperations: operations
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 10), // Solo le 10 operazioni più recenti
+        activeLots: lots.filter(l => l.state === 'active').length
+      });
+    } catch (error) {
+      console.error("Errore nel recupero dei dati per la dashboard:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Errore sconosciuto' 
+      });
+    }
+});
+
+app.get("/api/operations", async (req, res) => {
+    try {
+      // Verifica se la richiesta proviene dalla dashboard
+      const isForDashboard = req.query.dashboard === 'true';
+      
+      if (isForDashboard) {
+        console.log("Richiesta completa di operazioni per la dashboard");
+        const operations = await storage.getOperations();
+        return res.json(operations);
+      }
+      
+      // Controlla se è stata richiesta la versione NON ottimizzata esplicitamente
+      const useOptimized = process.env.USE_OPTIMIZED_APIS === 'true' || req.query.optimized === 'true';
+      const useOriginal = req.query.original === 'true';
+      
+      if (useOptimized && !useOriginal) {
+        // Utilizza la versione ottimizzata
+        console.log("Utilizzando endpoint ottimizzato per le operazioni");
         
         // Estrai i parametri della query
         const page = req.query.page ? parseInt(req.query.page as string) : 1;
@@ -1430,7 +1543,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(result.operations);
       }
       
-      // Versione originale dell'endpoint
+      // Versione originale dell'endpoint (utilizzata solo se richiesto esplicitamente)
       // Controlla se c'è un filtro per cycleId
       const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : null;
       
@@ -6346,12 +6459,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Endpoint per ottenere le posizioni disponibili in un flupsy
   app.get("/api/flupsys/:id/available-positions", getFlupsyAvailablePositions);
-  
-  // API per la sincronizzazione del database
-  app.get('/api/db-sync/backups', DbSyncController.getBackups);
-  app.post('/api/db-sync/backup', DbSyncController.createBackup);
-  app.post('/api/db-sync/from-remote', DbSyncController.syncFromRemote);
-  app.post('/api/db-sync/to-remote', DbSyncController.syncToRemote);
   
   return httpServer;
 }
