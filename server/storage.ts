@@ -848,6 +848,11 @@ export class MemStorage implements IStorage {
     return Array.from(this.sizes.values());
   }
   
+  async getAllSizes(): Promise<Size[]> {
+    // Added this method to support FLUPSY units view with main sizes data
+    return Array.from(this.sizes.values());
+  }
+  
   async getSize(id: number): Promise<Size | undefined> {
     return this.sizes.get(id);
   }

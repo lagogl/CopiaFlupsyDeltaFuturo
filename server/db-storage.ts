@@ -850,6 +850,11 @@ export class DbStorage implements IStorage {
   async getSizes(): Promise<Size[]> {
     return await db.select().from(sizes);
   }
+  
+  // Added this method to support FLUPSY units view with main sizes data
+  async getAllSizes(): Promise<Size[]> {
+    return await db.select().from(sizes);
+  }
 
   async getSize(id: number): Promise<Size | undefined> {
     const results = await db.select().from(sizes).where(eq(sizes.id, id));
