@@ -3273,10 +3273,45 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.time('lots-statistics-api');
       
-      // Creiamo istanza del servizio
-      const statsService = await import('./services/lot-statistics-service.js');
-      const statsInstance = new statsService.LotStatisticsService(db);
-      const statistics = await statsInstance.getGlobalStatistics();
+      // Query diretta ottimizzata per ottenere le statistiche dei lotti
+      const statsQuery = await db.execute(sql`
+        SELECT
+          COUNT(*) as total_count,
+          COALESCE(SUM(CAST(animal_count AS FLOAT)), 0) as totale,
+          COALESCE(SUM(CASE WHEN quality = 'normali' THEN CAST(animal_count AS FLOAT) ELSE 0 END), 0) as normali,
+          COALESCE(SUM(CASE WHEN quality = 'teste' THEN CAST(animal_count AS FLOAT) ELSE 0 END), 0) as teste,
+          COALESCE(SUM(CASE WHEN quality = 'code' THEN CAST(animal_count AS FLOAT) ELSE 0 END), 0) as code
+        FROM lots
+      `);
+      
+      // Estrai i risultati con conversione esplicita a numeri
+      const stats = statsQuery[0] || { 
+        total_count: 0,
+        totale: 0, 
+        normali: 0, 
+        teste: 0, 
+        code: 0 
+      };
+      
+      // Calcola le percentuali
+      const totalCount = Number(stats.total_count) || 0;
+      const totale = Number(stats.totale) || 0;
+      const normali = Number(stats.normali) || 0;
+      const teste = Number(stats.teste) || 0;
+      const code = Number(stats.code) || 0;
+      
+      // Evita divisione per zero
+      const percentages = {
+        normali: totale > 0 ? Number(((normali / totale) * 100).toFixed(1)) : 0,
+        teste: totale > 0 ? Number(((teste / totale) * 100).toFixed(1)) : 0,
+        code: totale > 0 ? Number(((code / totale) * 100).toFixed(1)) : 0
+      };
+      
+      const statistics = {
+        totalCount,
+        counts: { normali, teste, code, totale },
+        percentages
+      };
       
       console.timeEnd('lots-statistics-api');
       
@@ -3326,17 +3361,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.time('lots-query'); // Timing per la query principale ottimizzata
       
-      // Otteniamo i lotti con paginazione e filtri (versione originale)
-      const result = await storage.getLotsOptimized({
-        page,
-        pageSize,
-        supplier,
-        quality,
-        dateFrom,
-        dateTo,
-        sizeId,
-        includeStatistics: true
-      });
+      // Otteniamo i lotti direttamente dal database con query ottimizzata
+      let query = db.select().from(schema.lots);
+      let countQuery = db.select({ count: sql`count(*)` }).from(schema.lots);
+      
+      // Applica i filtri se sono stati specificati
+      let conditions = [];
+      
+      if (supplier) {
+        conditions.push(eq(schema.lots.supplier, supplier));
+      }
+      
+      if (quality) {
+        conditions.push(eq(schema.lots.quality, quality));
+      }
+      
+      if (sizeId) {
+        conditions.push(eq(schema.lots.sizeId, sizeId));
+      }
+      
+      if (dateFrom) {
+        conditions.push(gte(schema.lots.arrivalDate, dateFrom));
+      }
+      
+      if (dateTo) {
+        conditions.push(lte(schema.lots.arrivalDate, dateTo));
+      }
+      
+      // Applica tutti i filtri
+      if (conditions.length > 0) {
+        query = query.where(and(...conditions));
+        countQuery = countQuery.where(and(...conditions));
+      }
+      
+      // Esegue la query di conteggio
+      const totalCountResult = await countQuery;
+      const totalCount = Number(totalCountResult[0]?.count || '0');
+      
+      // Aggiungi paginazione
+      query = query.limit(pageSize).offset((page - 1) * pageSize);
+      
+      // Esegui la query principale
+      const lots = await query;
       
       console.timeEnd('lots-query');
       
