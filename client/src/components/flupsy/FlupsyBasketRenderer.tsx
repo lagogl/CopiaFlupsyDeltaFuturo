@@ -61,19 +61,25 @@ const getBasketColor = (size: Size | null | undefined, isActive: boolean) => {
     return 'bg-gray-50 border-gray-200';
   }
 
+  // Se non c'è una taglia definita o il codice è nullo, usiamo un colore predefinito
   if (!size || !size.code) {
     return 'bg-blue-50 border-blue-300';
   }
   
-  // Qui possiamo utilizzare i colori specifici per taglia
-  if (size.color) {
-    // Se esiste un colore custom nella definizione della taglia
-    return `bg-[${size.color}] border-[${size.color}]`;
+  // Utilizziamo le classi Tailwind predefinite invece di classi personalizzate
+  // per garantire maggiore compatibilità
+  if (size.color && !size.color.startsWith('[')) {
+    // Se esiste un colore custom già formattato correttamente nella definizione della taglia
+    return size.color;
+  } else if (size.color) {
+    // Gestione colori definiti come valori esadecimali
+    const colorName = size.color.replace(/\[|\]/g, '').replace('#', '');
+    return `bg-gray-50 border-gray-300`;  // Fallback sicuro
   }
   
   // Colorazioni basate sul codice taglia
   if (size.code.startsWith('TP-')) {
-    const sizeNum = parseInt(size.code.replace('TP-', ''));
+    const sizeNum = parseInt(size.code.replace('TP-', '')) || 0;
     
     if (sizeNum <= 500) {
       return 'bg-purple-50 border-purple-300';
@@ -87,8 +93,14 @@ const getBasketColor = (size: Size | null | undefined, isActive: boolean) => {
       return 'bg-orange-50 border-orange-300';
     } else if (sizeNum <= 5000) {
       return 'bg-amber-50 border-amber-300';
-    } else {
+    } else if (sizeNum <= 6000) {
+      return 'bg-yellow-50 border-yellow-300';
+    } else if (sizeNum <= 7000) {
       return 'bg-lime-50 border-lime-300';
+    } else if (sizeNum <= 8000) {
+      return 'bg-green-50 border-green-300';
+    } else {
+      return 'bg-emerald-50 border-emerald-300';
     }
   } else if (size.code.startsWith('T')) {
     // Per taglie tipo T1, T2, T3...
@@ -228,6 +240,8 @@ const FlupsyBasketRenderer: React.FC<Props> = ({
           <div 
             className={`basket-card p-2 rounded border-2 border-solid ${colorClass} ${height} ${width} flex flex-col cursor-pointer`}
             onClick={() => onClick && onClick(basket.id)}
+            data-basket-id={basket.id}
+            data-basket-number={basket.physicalNumber}
           >
             <div className="flex justify-between items-start mb-1">
               <div className="font-bold text-xs">CESTA #{basket.physicalNumber}</div>
@@ -236,27 +250,39 @@ const FlupsyBasketRenderer: React.FC<Props> = ({
               </div>
             </div>
             
-            {operation?.animalsPerKg && (
+            {operation?.animalsPerKg ? (
               <div className="text-[9px] text-gray-600">
                 <span className="font-medium">{operation.animalsPerKg.toLocaleString('it-IT')}/kg</span>
               </div>
-            )}
-            
-            {operation?.animalCount && (
-              <div className="text-[9px] mt-auto text-gray-700">
-                <span className="font-medium">{operation.animalCount.toLocaleString('it-IT')}</span> animali
+            ) : (
+              <div className="text-[9px] text-gray-600">
+                <span className="font-medium">N/D /kg</span>
               </div>
             )}
             
-            {currentWeight && (
+            {operation?.animalCount ? (
+              <div className="text-[9px] mt-auto text-gray-700">
+                <span className="font-medium">{operation.animalCount.toLocaleString('it-IT')}</span> animali
+              </div>
+            ) : (
+              <div className="text-[9px] mt-auto text-gray-700">
+                <span className="font-medium">N/D</span> animali
+              </div>
+            )}
+            
+            {currentWeight ? (
               <div className="text-[9px] text-gray-700">
                 <span className="font-medium">{currentWeight.toLocaleString('it-IT')} mg</span>
+              </div>
+            ) : (
+              <div className="text-[9px] text-gray-700">
+                <span className="font-medium">N/D mg</span>
               </div>
             )}
             
             {cycle && (
               <div className="text-[8px] mt-auto text-gray-500">
-                Op: {format(new Date(operation?.date || cycle.startDate), 'dd/MM')}
+                Op: {operation ? format(new Date(operation.date), 'dd/MM') : format(new Date(cycle.startDate), 'dd/MM')} 
               </div>
             )}
           </div>
