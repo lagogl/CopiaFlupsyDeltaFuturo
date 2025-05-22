@@ -49,6 +49,9 @@ app.use((req, res, next) => {
   console.log("Test di connessione database temporaneamente disabilitato per debug");
   console.log("===== FINE TEST DI CONNESSIONE DATABASE =====\n");
   
+  // Configura le ottimizzazioni di prestazioni (indici, caching, monitoraggio)
+  await setupPerformanceOptimizations(app);
+  
   const server = await registerRoutes(app);
   
   // Registra il servizio di creazione notifiche per operazioni di vendita
