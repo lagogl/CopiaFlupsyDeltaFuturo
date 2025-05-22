@@ -3301,38 +3301,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.timeEnd('lots-query');
       
-      // Ora recuperiamo tutte le taglie necessarie in un'unica query
+      // Accesso più efficiente alle taglie
       console.time('sizes-query');
       
-      // Assicuriamoci che result.lots esista e sia un array prima di procedere
+      // Assicuriamoci che result.lots sia un array
       if (!result || !result.lots || !Array.isArray(result.lots)) {
         throw new Error('Formato dati non valido: result.lots non è un array');
       }
       
-      // Estraiamo tutti gli ID delle taglie dai lotti (escludendo i null/undefined)
-      const sizeIds = result.lots
-        .map(lot => lot.sizeId)
-        .filter(id => id !== null && id !== undefined) as number[];
+      // Creiamo una cache di taglie (sizes)
+      let sizeCache = new Map();
       
-      // Utilizziamo Set per rimuovere duplicati
-      const uniqueSizeIds = Array.from(new Set(sizeIds));
+      // Recuperiamo solo gli ID delle taglie che servono davvero
+      const neededSizeIds = [];
+      for (const lot of result.lots) {
+        if (lot.sizeId && !sizeCache.has(lot.sizeId)) {
+          neededSizeIds.push(lot.sizeId);
+        }
+      }
       
-      // Recuperiamo tutte le taglie necessarie in un'unica query
-      const sizesList = uniqueSizeIds.length > 0 
-        ? await db.select().from(sizes).where(inArray(sizes.id, uniqueSizeIds))
-        : [];
+      // Solo se abbiamo effettivamente bisogno di taglie, facciamo la query
+      if (neededSizeIds.length > 0) {
+        // Recuperiamo le taglie in un'unica query ottimizzata
+        const sizeData = await db.select().from(sizes).where(inArray(sizes.id, neededSizeIds));
+        
+        // Popoliamo la cache
+        sizeData.forEach(size => {
+          sizeCache.set(size.id, size);
+        });
+      }
       
       console.timeEnd('sizes-query');
       
       console.time('data-processing');
       
-      // Creiamo una mappa per le taglie per accesso veloce
-      const sizeMap = new Map(sizesList.map(size => [size.id, size]));
-      
-      // Arricchiamo i lotti con le informazioni sulle taglie usando la mappa (senza query aggiuntive)
+      // Arricchiamo i lotti con le informazioni sulle taglie usando la cache
       const lotsWithSizes = result.lots.map(lot => ({
         ...lot,
-        size: lot.sizeId ? sizeMap.get(lot.sizeId) || null : null
+        size: lot.sizeId ? sizeCache.get(lot.sizeId) || null : null
       }));
       
       console.timeEnd('data-processing');

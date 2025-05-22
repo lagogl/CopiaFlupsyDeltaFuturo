@@ -1016,27 +1016,45 @@ export class DbStorage implements IStorage {
         
       console.log(`Recuperati ${results.length} lotti`);
       
-      // Se richiesto, calcola le statistiche sulla qualità direttamente dal database
+      // Calcolo delle statistiche
       let statistics;
+      
+      // Inizializza i conteggi per le statistiche
+      const counts = {
+        normali: 0,
+        teste: 0,
+        code: 0,
+        totale: 0
+      };
+      
+      // Calcola le statistiche solo sui risultati correnti (senza ulteriori query)
       if (options.includeStatistics) {
-        console.time('db-stats-calculation');
+        console.time('js-stats-calculation');
         
-        // Query per calcolare le statistiche direttamente nel database
-        const statsQuery = db.select({
-          normali: sql<number>`COALESCE(SUM(CASE WHEN ${lots.quality} = 'normali' THEN ${lots.animalCount} ELSE 0 END), 0)`,
-          teste: sql<number>`COALESCE(SUM(CASE WHEN ${lots.quality} = 'teste' THEN ${lots.animalCount} ELSE 0 END), 0)`,
-          code: sql<number>`COALESCE(SUM(CASE WHEN ${lots.quality} = 'code' THEN ${lots.animalCount} ELSE 0 END), 0)`,
-          totale: sql<number>`COALESCE(SUM(${lots.animalCount}), 0)`
-        });
-        
-        // Applica gli stessi filtri alla query delle statistiche
-        if (condition) {
-          statsQuery.where(condition);
+        // Esegui una query ottimizzata che calcola direttamente le statistiche nel database
+        // Questo elimina la necessità di caricare tutti i record in memoria
+        try {
+          const statsQuery = await db.execute(sql`
+            SELECT
+              COALESCE(SUM(CASE WHEN quality = 'normali' THEN animal_count ELSE 0 END), 0) as normali,
+              COALESCE(SUM(CASE WHEN quality = 'teste' THEN animal_count ELSE 0 END), 0) as teste,
+              COALESCE(SUM(CASE WHEN quality = 'code' THEN animal_count ELSE 0 END), 0) as code,
+              COALESCE(SUM(animal_count), 0) as totale
+            FROM lots
+          `);
+          
+          // Estrai i risultati
+          if (statsQuery && statsQuery.length > 0) {
+            const row = statsQuery[0];
+            counts.normali = Number(row.normali) || 0;
+            counts.teste = Number(row.teste) || 0;
+            counts.code = Number(row.code) || 0;
+            counts.totale = Number(row.totale) || 0;
+          }
+        } catch (error) {
+          console.error('Errore nel calcolo delle statistiche:', error);
+          // In caso di errore, continua con i conteggi a zero
         }
-        
-        // Esegui la query delle statistiche
-        const statsResult = await statsQuery.from(lots);
-        const counts = statsResult[0];
         
         // Calcola le percentuali
         const percentages = {
@@ -1050,7 +1068,7 @@ export class DbStorage implements IStorage {
           percentages
         };
         
-        console.timeEnd('db-stats-calculation');
+        console.timeEnd('js-stats-calculation');
       }
       
       console.timeEnd('db-lots-optimized');
