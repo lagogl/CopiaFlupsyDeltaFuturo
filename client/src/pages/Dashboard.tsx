@@ -186,8 +186,8 @@ export default function Dashboard() {
     // Prendi la più recente operazione che ha un conteggio di animali
     const latestOperationWithCount = basketOperations.find(op => op.animalCount !== null && op.animalCount !== undefined);
     
-    // Aggiungi al totale se abbiamo un conteggio di animali
-    if (latestOperationWithCount?.animalCount) {
+    // Aggiungi al totale se abbiamo un conteggio di animali (anche se è zero)
+    if (latestOperationWithCount && latestOperationWithCount.animalCount !== null && latestOperationWithCount.animalCount !== undefined) {
       return total + latestOperationWithCount.animalCount;
     }
     
