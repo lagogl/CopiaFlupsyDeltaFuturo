@@ -77,11 +77,15 @@ export default function BasicFlupsyVisualizer({ selectedFlupsyIds = [] }: BasicF
   });
   
   const { data: operations } = useQuery({ 
-    queryKey: ['/api/operations'] 
+    queryKey: ['/api/operations', {
+      includeAll: true
+    }] 
   });
   
   const { data: cycles } = useQuery({ 
-    queryKey: ['/api/cycles'] 
+    queryKey: ['/api/cycles', {
+      includeAll: true
+    }] 
   });
   
   const { data: lots } = useQuery({ 
