@@ -3639,13 +3639,40 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === FLUPSY routes ===
+  // Nuovo endpoint ottimizzato con paginazione
+  app.get("/api/flupsys/optimized", async (req, res) => {
+    try {
+      // Parametri di paginazione
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 10;
+      const includeStats = req.query.includeStats === 'true';
+      
+      // Utilizza il controller ottimizzato
+      const result = await getPaginatedFlupsys(page, pageSize, includeStats);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching paginated FLUPSY units:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch FLUPSY units", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Manteniamo l'endpoint originale per retrocompatibilità, ma lo ottimizziamo
   app.get("/api/flupsys", async (req, res) => {
     try {
-      // Ottenere i FLUPSY base
-      const flupsys = await storage.getFlupsys();
-      
-      // Aggiungere statistiche per ciascun FLUPSY se richiesto
+      // Recuperiamo tutti i dati senza paginazione
       const includeStats = req.query.includeStats === 'true';
+      
+      // Utilizziamo la stessa funzione ottimizzata ma recuperiamo tutti i risultati
+      // impostando una dimensione pagina grande (100 è più che sufficiente per coprire tutti i FLUPSY)
+      const result = await getPaginatedFlupsys(1, 100, includeStats);
+      
+      // Restituisci solo l'array di dati per mantenere la compatibilità con l'API originale
+      res.json(result.data);
+      return;
       
       if (includeStats) {
         // Per ogni FLUPSY, aggiungi informazioni sui cestelli e cicli attivi
