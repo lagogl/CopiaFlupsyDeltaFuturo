@@ -9,7 +9,6 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useLocation } from 'wouter';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { MapPin } from "lucide-react";
 import { 
   Tooltip, 
   TooltipContent, 
@@ -574,18 +573,6 @@ export default function FlupsyVisualizer() {
                                       <div className="mt-1 text-gray-500">
                                         {basket.state === 'active' ? 'Attiva' : 'Disponibile'}
                                       </div>
-                                      <Button 
-                                        size="sm" 
-                                        variant="destructive"
-                                        className="mt-2 w-full text-xs py-0 px-2 h-6"
-                                        onClick={(e) => {
-                                          e.stopPropagation();
-                                          handleBasketClick(basket);
-                                        }}
-                                      >
-                                        <MapPin className="h-3 w-3 mr-1" />
-                                        Assegna posizione
-                                      </Button>
                                     </div>
                                   </TooltipTrigger>
                                   <TooltipContent side="top" align="center" className="z-50">

@@ -66,43 +66,17 @@ export default function Lots() {
     return params.toString();
   };
   
-  // Query ottimizzata che utilizza solo dati reali dal database con prestazioni migliorate
+  // Query lotti ottimizzata con paginazione e filtri
   const { data: lotsData, isLoading } = useQuery({
     queryKey: ['/api/lots/optimized', currentPage, pageSize, filterValues],
     queryFn: async () => {
-      try {
-        console.time('lots-fetch');
-        
-        const queryParams = buildQueryParams();
-        
-        // Usiamo Promise.all per fare le richieste in parallelo invece che sequenzialmente
-        const [lotsResponse, statsResponse] = await Promise.all([
-          // Richiesta dei lotti
-          fetch(`/api/lots/optimized?${queryParams}`).then(res => {
-            if (!res.ok) throw new Error('Errore nel caricamento dei lotti');
-            return res.json();
-          }),
-          
-          // Richiesta delle statistiche (in parallelo)
-          fetch('/api/lots/statistics').then(res => {
-            if (!res.ok) throw new Error('Errore nel caricamento delle statistiche');
-            return res.json();
-          })
-        ]);
-        
-        console.timeEnd('lots-fetch');
-        
-        return {
-          ...lotsResponse,
-          statistics: statsResponse
-        };
-      } catch (error) {
-        console.error('Errore durante il recupero dei dati:', error);
-        throw error;
+      const queryParams = buildQueryParams();
+      const response = await fetch(`/api/lots/optimized?${queryParams}`);
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei lotti');
       }
-    },
-    staleTime: 60000, // Cache dei risultati per 1 minuto (aumentato per migliori performance)
-    refetchOnWindowFocus: false // Non aggiornare quando la finestra torna in focus
+      return response.json();
+    }
   });
   
   // Estrai i dati dai risultati

@@ -1568,5 +1568,7 @@ export class MemStorage implements IStorage {
   }
 }
 
-// Manteniamo la classe MemStorage originale per non rompere la compatibilità
-export const storage = new MemStorage();
+import { DbStorage } from './db-storage';
+
+// Utilizziamo DbStorage per accedere ai dati reali nel database PostgreSQL
+export const storage = new DbStorage();

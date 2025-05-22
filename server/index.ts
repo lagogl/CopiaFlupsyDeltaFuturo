@@ -4,8 +4,6 @@ import { setupVite, serveStatic, log } from "./vite";
 import { createSaleNotification } from "./sales-notification-handler";
 import { registerScreeningNotificationHandler } from "./screening-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
-import GlobalDataCache from "./services/global-data-cache";
-import { db } from "./db";
 
 const app = express();
 app.use(express.json());
@@ -49,11 +47,6 @@ app.use((req, res, next) => {
   console.log("\n===== TEST DI CONNESSIONE DATABASE =====");
   console.log("Test di connessione database temporaneamente disabilitato per debug");
   console.log("===== FINE TEST DI CONNESSIONE DATABASE =====\n");
-  
-  // NOTA: Disabilitiamo temporaneamente la cache globale per ripristinare la visualizzazione dei dati
-  console.log("\n===== CACHE GLOBALE TEMPORANEAMENTE DISABILITATA =====");
-  console.log("Ripristino visualizzazione dati nelle pagine");
-  console.log("===== FINE CACHE GLOBALE =====\n");
   
   const server = await registerRoutes(app);
   

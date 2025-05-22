@@ -21,12 +21,6 @@ import {
 import { 
   checkCyclesForTP3000 
 } from "./controllers/growth-notification-handler";
-// Importa il servizio statistiche ottimizzato con cache interna
-import LotStatisticsService from './services/lot-statistics-service.js';
-// Importa il servizio database ottimizzato
-import { dbStorage } from './db-storage';
-// Importa il servizio di cache globale
-// La cache globale viene inizializzata in server/index.ts e resa disponibile tramite globalThis.globalCache
 
 // Importazione dei controller
 import * as SelectionController from "./controllers/selection-controller";
@@ -1398,7 +1392,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/operations", async (req, res) => {
     try {
-      // Versione originale della API, per ripristinare la funzionalità
       // Controlla se è stata richiesta la versione ottimizzata
       const useOptimized = req.query.optimized === 'true';
       
@@ -3244,88 +3237,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Lot routes ===
   app.get("/api/lots", async (req, res) => {
     try {
-      console.time('lots-api-cache');
+      const lots = await storage.getLots();
       
-      // Query diretta e semplice al database
-      console.log("Esecuzione query diretta per recuperare i lotti");
-      const query = `SELECT * FROM lots ORDER BY id DESC`;
-      const result = await db.execute(sql.raw(query));
+      // Fetch size for each lot
+      const lotsWithSizes = await Promise.all(
+        lots.map(async (lot) => {
+          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
+          return { ...lot, size };
+        })
+      );
       
-      console.log(`Trovati ${result.length} lotti nel database`);
-      
-      console.timeEnd('lots-api-cache');
-      res.json(result);
-    
+      res.json(lotsWithSizes);
     } catch (error) {
       console.error("Error fetching lots:", error);
       res.status(500).json({ message: "Failed to fetch lots" });
     }
   });
   
-  // Endpoint per statistiche reali sui lotti
-  app.get("/api/lots/statistics", async (req, res) => {
-    try {
-      console.time('lots-statistics-api');
-      
-      // Query diretta ottimizzata per ottenere le statistiche dei lotti
-      const statsQuery = await db.execute(sql`
-        SELECT
-          COUNT(*) as total_count,
-          COALESCE(SUM(CAST(animal_count AS FLOAT)), 0) as totale,
-          COALESCE(SUM(CASE WHEN quality = 'normali' THEN CAST(animal_count AS FLOAT) ELSE 0 END), 0) as normali,
-          COALESCE(SUM(CASE WHEN quality = 'teste' THEN CAST(animal_count AS FLOAT) ELSE 0 END), 0) as teste,
-          COALESCE(SUM(CASE WHEN quality = 'code' THEN CAST(animal_count AS FLOAT) ELSE 0 END), 0) as code
-        FROM lots
-      `);
-      
-      // Estrai i risultati con conversione esplicita a numeri
-      const stats = statsQuery[0] || { 
-        total_count: 0,
-        totale: 0, 
-        normali: 0, 
-        teste: 0, 
-        code: 0 
-      };
-      
-      // Calcola le percentuali
-      const totalCount = Number(stats.total_count) || 0;
-      const totale = Number(stats.totale) || 0;
-      const normali = Number(stats.normali) || 0;
-      const teste = Number(stats.teste) || 0;
-      const code = Number(stats.code) || 0;
-      
-      // Evita divisione per zero
-      const percentages = {
-        normali: totale > 0 ? Number(((normali / totale) * 100).toFixed(1)) : 0,
-        teste: totale > 0 ? Number(((teste / totale) * 100).toFixed(1)) : 0,
-        code: totale > 0 ? Number(((code / totale) * 100).toFixed(1)) : 0
-      };
-      
-      const statistics = {
-        totalCount,
-        counts: { normali, teste, code, totale },
-        percentages
-      };
-      
-      console.timeEnd('lots-statistics-api');
-      
-      return res.json(statistics);
-    } catch (error) {
-      console.error("Errore nel recupero delle statistiche dei lotti:", error);
-      return res.status(500).json({ 
-        success: false, 
-        message: "Errore interno del server",
-        totalCount: 0,
-        counts: { normali: 0, teste: 0, code: 0, totale: 0 },
-        percentages: { normali: 0, teste: 0, code: 0 }
-      });
-    }
-  });
-  
   app.get("/api/lots/optimized", async (req, res) => {
     try {
-      console.time('lots-optimized-request'); // Misurazione del tempo per diagnostica
-      
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 20;
       const supplier = req.query.supplier as string;
@@ -3353,99 +3283,48 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Data di fine non valida" });
       }
       
-      console.time('lots-query'); // Timing per la query principale ottimizzata
+      // Ottieni i lotti con paginazione e filtri
+      const result = await storage.getLotsOptimized({
+        page,
+        pageSize,
+        supplier,
+        quality,
+        dateFrom,
+        dateTo,
+        sizeId
+      });
       
-      // Otteniamo i lotti direttamente dal database con query ottimizzata
-      let query = db.select().from(schema.lots);
-      let countQuery = db.select({ count: sql`count(*)` }).from(schema.lots);
+      // Arricchisci i dati recuperando le informazioni sulle taglie
+      const lotsWithSizes = await Promise.all(
+        result.lots.map(async (lot) => {
+          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
+          return { ...lot, size };
+        })
+      );
       
-      // Applica i filtri se sono stati specificati
-      let conditions = [];
+      // Calcolo le statistiche sulla qualità per i lotti filtrati
+      const qualityStats = {
+        normali: 0,
+        teste: 0,
+        code: 0,
+        totale: 0
+      };
       
-      if (supplier) {
-        conditions.push(eq(schema.lots.supplier, supplier));
-      }
-      
-      if (quality) {
-        conditions.push(eq(schema.lots.quality, quality));
-      }
-      
-      if (sizeId) {
-        conditions.push(eq(schema.lots.sizeId, sizeId));
-      }
-      
-      if (dateFrom) {
-        conditions.push(gte(schema.lots.arrivalDate, dateFrom));
-      }
-      
-      if (dateTo) {
-        conditions.push(lte(schema.lots.arrivalDate, dateTo));
-      }
-      
-      // Applica tutti i filtri
-      if (conditions.length > 0) {
-        query = query.where(and(...conditions));
-        countQuery = countQuery.where(and(...conditions));
-      }
-      
-      // Esegue la query di conteggio
-      const totalCountResult = await countQuery;
-      const totalCount = Number(totalCountResult[0]?.count || '0');
-      
-      // Aggiungi paginazione
-      query = query.limit(pageSize).offset((page - 1) * pageSize);
-      
-      // Esegui la query principale
-      const lots = await query;
-      
-      console.timeEnd('lots-query');
-      
-      // Accesso più efficiente alle taglie
-      console.time('sizes-query');
-      
-      // Assicuriamoci che result.lots sia un array
-      if (!result || !result.lots || !Array.isArray(result.lots)) {
-        throw new Error('Formato dati non valido: result.lots non è un array');
-      }
-      
-      // Creiamo una cache di taglie (sizes)
-      let sizeCache = new Map();
-      
-      // Recuperiamo solo gli ID delle taglie che servono davvero
-      const neededSizeIds = [];
-      for (const lot of result.lots) {
-        if (lot.sizeId && !sizeCache.has(lot.sizeId)) {
-          neededSizeIds.push(lot.sizeId);
-        }
-      }
-      
-      // Solo se abbiamo effettivamente bisogno di taglie, facciamo la query
-      if (neededSizeIds.length > 0) {
-        // Recuperiamo le taglie in un'unica query ottimizzata
-        const sizeData = await db.select().from(sizes).where(inArray(sizes.id, neededSizeIds));
+      result.lots.forEach(lot => {
+        const count = lot.animalCount || 0;
+        qualityStats.totale += count;
         
-        // Popoliamo la cache
-        sizeData.forEach(size => {
-          sizeCache.set(size.id, size);
-        });
-      }
+        if (lot.quality === 'normali') qualityStats.normali += count;
+        else if (lot.quality === 'teste') qualityStats.teste += count;
+        else if (lot.quality === 'code') qualityStats.code += count;
+      });
       
-      console.timeEnd('sizes-query');
-      
-      console.time('data-processing');
-      
-      // Arricchiamo i lotti con le informazioni sulle taglie usando la cache
-      const lotsWithSizes = result.lots.map(lot => ({
-        ...lot,
-        size: lot.sizeId ? sizeCache.get(lot.sizeId) || null : null
-      }));
-      
-      console.timeEnd('data-processing');
-      console.timeEnd('lots-optimized-request');
-      
-      // Otteniamo le statistiche usando il lotStatisticsService
-      const lotStatsService = new LotStatisticsService(db);
-      const statistics = await lotStatsService.getGlobalStatistics();
+      // Prepara percentuali
+      const percentages = {
+        normali: qualityStats.totale > 0 ? Math.round((qualityStats.normali / qualityStats.totale) * 100) : 0,
+        teste: qualityStats.totale > 0 ? Math.round((qualityStats.teste / qualityStats.totale) * 100) : 0,
+        code: qualityStats.totale > 0 ? Math.round((qualityStats.code / qualityStats.totale) * 100) : 0
+      };
       
       res.json({
         lots: lotsWithSizes,
@@ -3453,11 +3332,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentPage: page,
         pageSize,
         totalPages: Math.ceil(result.totalCount / pageSize),
-        statistics: statistics
+        statistics: {
+          counts: qualityStats,
+          percentages
+        }
       });
     } catch (error) {
       console.error("Error fetching optimized lots:", error);
-      res.status(500).json({ message: `Errore nel recupero dei lotti ottimizzati: ${error}` });
+      res.status(500).json({ message: "Errore nel recupero dei lotti ottimizzati" });
     }
   });
 
