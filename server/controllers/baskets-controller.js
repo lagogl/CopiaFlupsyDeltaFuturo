@@ -183,9 +183,16 @@ export async function getBasketsOptimized(options = {}) {
       query = query.orderBy(sortOrder === 'asc' ? asc(baskets.id) : desc(baskets.id));
     }
     
-    // Applica paginazione
-    const offset = (page - 1) * pageSize;
-    query = query.limit(pageSize).offset(offset);
+    // Applica paginazione, a meno che non sia richiesto di recuperare tutti i dati
+    // Il parametro includeAll viene usato principalmente dalla dashboard
+    const includeAll = options.includeAll === true || options.pageSize > 1000;
+    
+    if (!includeAll) {
+      const offset = (page - 1) * pageSize;
+      query = query.limit(pageSize).offset(offset);
+    } else {
+      console.log("Recupero tutti i cestelli senza paginazione (richiesto da dashboard)");
+    }
     
     // Esegui la query
     const basketsResult = await query;
