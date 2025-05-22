@@ -320,18 +320,19 @@ export default function ScreeningAddDestination() {
     return isSourceBasket;
   }) || [];
   
-  // Otteniamo gli ID dei FLUPSY delle ceste di origine
-  const sourceFlupsyIds = sourceBaskets?.map(sb => {
-    // Se la cesta ha dettagli flupsy, prendi l'ID
-    if (sb.basket && sb.basket.flupsyId) {
-      return sb.basket.flupsyId;
-    }
-    return null;
-  }).filter(id => id !== null) || [];
+  // Otteniamo gli ID dei FLUPSY delle ceste di origine (solo quelle dismesse)
+  const sourceFlupsyIds = sourceBaskets?.filter(sb => sb.dismissed === true)
+    .map(sb => {
+      // Se la cesta ha dettagli flupsy, prendi l'ID
+      if (sb.basket && sb.basket.flupsyId) {
+        return sb.basket.flupsyId;
+      }
+      return null;
+    }).filter(id => id !== null) || [];
   
   // Dividiamo le ceste in categorie
   const sourceBasketOptions = allAvailableBaskets.filter(basket => 
-    sourceBaskets?.some(sb => sb.basketId === basket.id)
+    sourceBaskets?.some(sb => sb.basketId === basket.id && sb.dismissed === true)
   );
   
   const sameFlupsyBasketOptions = allAvailableBaskets.filter(basket => 
