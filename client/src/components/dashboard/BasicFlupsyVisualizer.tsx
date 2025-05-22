@@ -89,12 +89,16 @@ export default function BasicFlupsyVisualizer({ selectedFlupsyIds = [] }: BasicF
   });
   
   const { data: lots } = useQuery({ 
-    queryKey: ['/api/lots'] 
+    queryKey: ['/api/lots', {
+      includeAll: true
+    }] 
   });
   
   // Aggiungi la query per le taglie a livello globale, invece che in una condizione
   const { data: allSizes } = useQuery({ 
-    queryKey: ['/api/sizes'] 
+    queryKey: ['/api/sizes', {
+      includeAll: true
+    }] 
   });
   
   // Handler per aggiornare i contatori dei badge
