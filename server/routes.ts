@@ -36,6 +36,7 @@ import * as SequenceController from "./controllers/sequence-controller";
 import { updateBasketPosition } from "./controllers/basket-position-controller";
 import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
+import { checkDatabaseIntegrityHandler } from "./controllers/database-integrity-controller";
 
 // Importazione del router per le API esterne
 // API esterne disabilitate
@@ -2007,6 +2008,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
   app.get("/api/diario/month-data", diarioController.getMonthData);
+  
+  // API per il controllo dell'integrità del database
+  app.get("/api/database/integrity-check", checkDatabaseIntegrityHandler);
   
   // API - Esporta il calendario in formato CSV
   app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
