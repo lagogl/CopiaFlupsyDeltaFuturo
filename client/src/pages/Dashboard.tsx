@@ -58,15 +58,15 @@ export default function Dashboard() {
   });
 
   const { data: cycles, isLoading: cyclesLoading, dataUpdatedAt: cyclesUpdatedAt } = useQuery<Cycle[]>({
-    queryKey: ['/api/cycles'],
+    queryKey: ['/api/cycles', { includeAll: true }],
   });
 
   const { data: operations, isLoading: operationsLoading, dataUpdatedAt: operationsUpdatedAt } = useQuery<Operation[]>({
-    queryKey: ['/api/operations'],
+    queryKey: ['/api/operations', { includeAll: true }],
   });
 
   const { data: lots, isLoading: lotsLoading, dataUpdatedAt: lotsUpdatedAt } = useQuery<Lot[]>({
-    queryKey: ['/api/lots'],
+    queryKey: ['/api/lots', { includeAll: true }],
   });
   
   // Funzione per aggiornare i dati

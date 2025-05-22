@@ -69,23 +69,23 @@ export default function FlupsyVisualizer() {
 
   // Fetch flupsys
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
-    queryKey: ['/api/flupsys'],
+    queryKey: ['/api/flupsys', { includeAll: true }],
   });
   
-  // Fetch baskets - Utilizziamo l'endpoint standard invece di quello ottimizzato per garantire
-  // che tutti i dati vengano recuperati correttamente per la visualizzazione FLUPSY
+  // Fetch baskets - Utilizziamo l'endpoint standard con il flag includeAll
+  // per garantire che tutti i dati vengano recuperati correttamente per la visualizzazione FLUPSY
   const { data: baskets, isLoading: isLoadingBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets', { includeAll: true }],
   });
   
-  // Fetch operations
+  // Fetch operations con includeAll per avere tutti i dati
   const { data: operations } = useQuery<Operation[]>({
-    queryKey: ['/api/operations'],
+    queryKey: ['/api/operations', { includeAll: true }],
   });
   
-  // Fetch cycles
+  // Fetch cycles con includeAll per avere tutti i dati
   const { data: cycles } = useQuery<Cycle[]>({
-    queryKey: ['/api/cycles'],
+    queryKey: ['/api/cycles', { includeAll: true }],
   });
   
   // Select all FLUPSYs by default

@@ -43,9 +43,9 @@ export default function ActiveCycles({ activeCycles }: ActiveCyclesProps) {
     return localStorage.getItem('preferredSizeCode') || 'TP-500';
   });
 
-  // Query for active cycles with more details
+  // Query for active cycles with more details - includeAll per ottenere tutti i cicli attivi
   const { data: detailedCycles, isLoading } = useQuery<Cycle[]>({
-    queryKey: ['/api/cycles/active-with-details'],
+    queryKey: ['/api/cycles/active-with-details', { includeAll: true }],
   });
 
   // Salva la taglia preferita in localStorage
