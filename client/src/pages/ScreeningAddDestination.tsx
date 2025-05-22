@@ -298,10 +298,22 @@ export default function ScreeningAddDestination() {
     );
   }
 
-  // Filtra le ceste disponibili (non assegnate a cicli attivi)
-  const availableBasketOptions = availableBaskets?.filter(basket => 
-    basket.state === 'available' || basket.state === 'inactive'
-  ) || [];
+  // Filtra le ceste disponibili (non assegnate a cicli attivi o ceste di origine dell'operazione corrente)
+  const availableBasketOptions = availableBaskets?.filter(basket => {
+    // Se la cesta è disponibile o inattiva, può essere usata
+    if (basket.state === 'available' || basket.state === 'inactive') {
+      return true;
+    }
+    
+    // Verifica se la cesta è una delle ceste di origine della vagliatura corrente
+    const isSourceBasket = sourceBaskets?.some(sourceBasket => 
+      sourceBasket.basketId === basket.id && 
+      // Verifica se la cesta è stata dismessa (è stato liberato il suo ciclo)
+      sourceBasket.dismissed === true
+    );
+    
+    return isSourceBasket;
+  }) || [];
 
   return (
     <div className="container mx-auto p-4">
