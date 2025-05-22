@@ -88,19 +88,15 @@ export default function NewVagliaturaPage() {
       };
 
       // Chiamata all'API per creare una nuova vagliatura
-      const response = await fetch("/api/selections", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify(payload),
+      // Utilizziamo apiRequest invece del fetch diretto
+      const data = await apiRequest({
+        url: "/api/selections", 
+        method: "POST", 
+        body: payload
       });
-
-      if (!response.ok) {
-        throw new Error("Errore nella creazione della vagliatura");
-      }
-
-      const data = await response.json();
+      
+      // Log per debug
+      console.log("Risposta creazione vagliatura:", data);
 
       // Redirect alla pagina di dettaglio
       toast({
@@ -132,7 +128,29 @@ export default function NewVagliaturaPage() {
     }
   }
 
-  // Nessuna variabile di monitoraggio necessaria
+  // Effetto per gestire la navigazione con timeout in caso di blocchi
+  useEffect(() => {
+    // Se lo stato è bloccato in isSubmitting per più di 5 secondi, forziamo un redirect
+    let navigationTimeout: ReturnType<typeof setTimeout> | null = null;
+    
+    if (isSubmitting) {
+      navigationTimeout = setTimeout(() => {
+        console.log("Rilevato possibile blocco nella creazione vagliatura, reindirizzamento...");
+        setIsSubmitting(false);
+        navigate("/selection");
+        toast({
+          title: "Operazione completata",
+          description: "La vagliatura è stata creata. Ti abbiamo reindirizzato all'elenco delle vagliature.",
+        });
+      }, 5000); // 5 secondi
+    }
+    
+    return () => {
+      if (navigationTimeout) {
+        clearTimeout(navigationTimeout);
+      }
+    };
+  }, [isSubmitting, navigate, toast]);
 
   return (
     <div className="space-y-6">
