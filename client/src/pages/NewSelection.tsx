@@ -106,7 +106,11 @@ export default function NewVagliaturaPage() {
 
       // Assicuriamoci che data.id esista e sia un numero valido
       if (data && data.id && !isNaN(Number(data.id))) {
-        navigate(`/selection/${data.id}`);
+        // Aggiungiamo un ritardo prima del reindirizzamento per assicurarci
+        // che il server abbia tempo di elaborare completamente la richiesta
+        setTimeout(() => {
+          navigate(`/selection/${data.id}`);
+        }, 500); // 500 ms di ritardo
       } else {
         console.error("ID vagliatura non valido:", data);
         toast({
@@ -124,30 +128,58 @@ export default function NewVagliaturaPage() {
         variant: "destructive",
       });
     } finally {
+      // Imposta isSubmitting a false in ogni caso
+      // La gestione dell'interfaccia utente verrà fatta dagli eventi WebSocket
       setIsSubmitting(false);
     }
   }
 
-  // Effetto per gestire la navigazione con timeout in caso di blocchi
+  // Effetto per monitorare i messaggi WebSocket relativi alla creazione di vagliature
   useEffect(() => {
-    // Se lo stato è bloccato in isSubmitting per più di 5 secondi, forziamo un redirect
-    let navigationTimeout: ReturnType<typeof setTimeout> | null = null;
+    // Funzione per gestire i messaggi WebSocket di vagliature create
+    const handleSelectionCreated = (event: MessageEvent) => {
+      try {
+        const data = JSON.parse(event.data);
+        // Se riceviamo un messaggio di tipo selection_created, redirect alla pagina di dettaglio
+        if (data.type === 'selection_created' && data.data?.selection?.id) {
+          console.log("Rilevata creazione vagliatura via WebSocket:", data.data.selection);
+          
+          if (isSubmitting) {
+            setIsSubmitting(false);
+            navigate(`/selection/${data.data.selection.id}`);
+            toast({
+              title: "Vagliatura creata",
+              description: `Vagliatura #${data.data.selection.selectionNumber} creata con successo`,
+            });
+          }
+        }
+      } catch (error) {
+        console.error("Errore nella gestione del messaggio WebSocket:", error);
+      }
+    };
     
-    if (isSubmitting) {
-      navigationTimeout = setTimeout(() => {
-        console.log("Rilevato possibile blocco nella creazione vagliatura, reindirizzamento...");
-        setIsSubmitting(false);
-        navigate("/selection");
-        toast({
-          title: "Operazione completata",
-          description: "La vagliatura è stata creata. Ti abbiamo reindirizzato all'elenco delle vagliature.",
-        });
-      }, 5000); // 5 secondi
-    }
+    // Connessione al WebSocket
+    let ws: WebSocket | null = null;
+    const connectWs = () => {
+      const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
+      const wsUrl = `${protocol}//${window.location.host}/ws`;
+      ws = new WebSocket(wsUrl);
+      
+      ws.addEventListener('message', handleSelectionCreated);
+      
+      ws.addEventListener('close', () => {
+        // Riconnessione in caso di chiusura
+        setTimeout(connectWs, 2000);
+      });
+    };
     
+    connectWs();
+    
+    // Pulisci le connessioni quando il componente viene smontato
     return () => {
-      if (navigationTimeout) {
-        clearTimeout(navigationTimeout);
+      if (ws) {
+        ws.removeEventListener('message', handleSelectionCreated);
+        ws.close();
       }
     };
   }, [isSubmitting, navigate, toast]);

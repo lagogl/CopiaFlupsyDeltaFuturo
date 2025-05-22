@@ -1666,23 +1666,25 @@ export default function VagliaturaDetailPage() {
                         // Verifica se ci sono cestelli di origine
                         const hasSourceBaskets = sourceBaskets && sourceBaskets.length > 0;
                         
-                        // Ottieni gli ID dei cestelli di origine
-                        const sourceBasketIds = hasSourceBaskets 
+                        // Ottieni gli ID dei cestelli di origine (con controllo di sicurezza)
+                        const sourceBasketIds = hasSourceBaskets && Array.isArray(sourceBaskets)
                           ? sourceBaskets.map(sb => sb.basketId) 
                           : [];
                         
-                        // Ottieni gli ID dei FLUPSY delle ceste di origine
-                        const sourceFlupsyIds = hasSourceBaskets 
+                        // Ottieni gli ID dei FLUPSY delle ceste di origine (con controllo di sicurezza)
+                        const sourceFlupsyIds = hasSourceBaskets && Array.isArray(sourceBaskets)
                           ? [...new Set(sourceBaskets
-                              .filter(sb => sb.flupsyId)
+                              .filter(sb => sb && sb.flupsyId)
                               .map(sb => sb.flupsyId))]
                           : [];
                         
-                        // Filtro più inclusivo per le ceste disponibili
+                        // Filtro più inclusivo per le ceste disponibili - con controlli di sicurezza aggiuntivi
                         // Includiamo sia le ceste con state=available, sia le ceste che sono origine
-                        const availableBasketsList = availableBaskets.filter(b => {
+                        const availableBasketsList = Array.isArray(availableBaskets) ? availableBaskets.filter(b => {
+                          if (!b || typeof b !== 'object') return false;
+                          
                           // Se è una cesta origine la includiamo sempre
-                          const isSourceBasket = sourceBasketIds.includes(b.basketId);
+                          const isSourceBasket = Array.isArray(sourceBasketIds) && sourceBasketIds.includes(b.basketId);
                           
                           // Altrimenti verifichiamo se è disponibile nel senso tradizionale
                           const isStandardAvailable = (b.state === "available" && !b.cycleId);
@@ -1691,16 +1693,16 @@ export default function VagliaturaDetailPage() {
                           
                           // Includiamo la cesta se è origine oppure è disponibile
                           return isSourceBasket || isStandardAvailable;
-                        });
+                        }) : [];
                         
-                        // Otteniamo le ceste origine dalle ceste disponibili
+                        // Otteniamo le ceste origine dalle ceste disponibili (con controllo di sicurezza)
                         const sourceBasketList = availableBasketsList.filter(b => 
-                          sourceBasketIds.includes(b.basketId)
+                          Array.isArray(sourceBasketIds) && sourceBasketIds.includes(b.basketId)
                         );
                         
-                        // Otteniamo le altre ceste disponibili escludendo quelle origine
+                        // Otteniamo le altre ceste disponibili escludendo quelle origine (con controllo di sicurezza)
                         const otherAvailableBaskets = availableBasketsList.filter(b => 
-                          !sourceBasketIds.includes(b.basketId)
+                          !Array.isArray(sourceBasketIds) || !sourceBasketIds.includes(b.basketId)
                         );
                         
                         // Ordina le altre ceste disponibili prima per FLUPSY (dando priorità ai FLUPSY origine)
