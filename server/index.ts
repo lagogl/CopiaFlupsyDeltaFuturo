@@ -50,14 +50,10 @@ app.use((req, res, next) => {
   console.log("Test di connessione database temporaneamente disabilitato per debug");
   console.log("===== FINE TEST DI CONNESSIONE DATABASE =====\n");
   
-  // Inizializza la cache globale all'avvio dell'applicazione
-  console.log("\n===== INIZIALIZZAZIONE CACHE GLOBALE =====");
-  console.time('global-cache-init');
-  const globalCache = new GlobalDataCache(db);
-  // Rendi disponibile globalmente
-  globalThis.globalCache = globalCache;
-  console.timeEnd('global-cache-init');
-  console.log("===== CACHE GLOBALE INIZIALIZZATA =====\n");
+  // NOTA: Disabilitiamo temporaneamente la cache globale per ripristinare la visualizzazione dei dati
+  console.log("\n===== CACHE GLOBALE TEMPORANEAMENTE DISABILITATA =====");
+  console.log("Ripristino visualizzazione dati nelle pagine");
+  console.log("===== FINE CACHE GLOBALE =====\n");
   
   const server = await registerRoutes(app);
   
