@@ -5,7 +5,7 @@
 
 import { BasketsCache } from '../baskets-cache-service.js';
 import { db } from '../db.js';
-import { baskets, flupsys, cycles, basketPositions } from '../../shared/schema.js';
+import { baskets, flupsys, cycles, basketPositionHistory } from '../../shared/schema.js';
 import { eq, and, desc, asc, isNull, sql, or, not } from 'drizzle-orm';
 
 /**
@@ -198,9 +198,10 @@ export async function getBasketsOptimized(options = {}) {
     
     let cyclesMap = {};
     if (cycleIds.length > 0) {
+      // Utilizza il metodo corretto per passare un array di valori a una query IN
       const cyclesResult = await db.select()
         .from(cycles)
-        .where(sql`id IN (${cycleIds.join(',')})`);
+        .where(sql`id IN ${cycleIds}`);
       
       cyclesMap = cyclesResult.reduce((map, cycle) => {
         map[cycle.id] = cycle;
@@ -211,10 +212,10 @@ export async function getBasketsOptimized(options = {}) {
     // Recupera le posizioni attuali dei cestelli in una singola query
     const basketIds = basketsResult.map(basket => basket.id);
     const positionsResult = await db.select()
-      .from(basketPositions)
+      .from(basketPositionHistory)
       .where(and(
-        sql`basket_id IN (${basketIds.join(',')})`,
-        isNull(basketPositions.endDate)
+        sql`basket_id IN ${basketIds}`,
+        isNull(basketPositionHistory.endDate)
       ));
     
     const positionsMap = positionsResult.reduce((map, pos) => {
