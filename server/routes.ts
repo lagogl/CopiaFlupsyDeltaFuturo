@@ -3258,17 +3258,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // Endpoint per statistiche reali sui lotti - SUPER OTTIMIZZATO con caching
+  // Endpoint per statistiche reali sui lotti - ULTRA OTTIMIZZATO con cache globale
   app.get("/api/lots/statistics", async (req, res) => {
     try {
       console.time('lots-statistics-api');
       
       // Imposta l'header di cache per il browser
-      res.setHeader('Cache-Control', 'public, max-age=30'); // 30 secondi
+      res.setHeader('Cache-Control', 'public, max-age=120'); // 2 minuti
       
-      // Usa il servizio statistiche ottimizzato con cache interna
-      const lotStatisticsService = new LotStatisticsService(db);
-      const statistics = await lotStatisticsService.getGlobalStatistics();
+      // Utilizza la cache globale invece di interrogare il database ogni volta
+      // I dati vengono caricati all'avvio dell'applicazione e aggiornati automaticamente
+      const statistics = globalThis.globalCache.getLotStatistics();
       
       console.timeEnd('lots-statistics-api');
       
