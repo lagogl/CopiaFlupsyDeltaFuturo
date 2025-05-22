@@ -1433,8 +1433,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  app.get("/api/operations", async (req, res) => {
+  app.get("/api/dashboard-data", async (req, res) => {
     try {
+      console.log("Recupero dati specifici per la dashboard");
+      
+      // Ottieni tutti i dati necessari per la dashboard senza paginazione
+      const baskets = await storage.getBaskets();
+      const operations = await storage.getOperations();
+      const cycles = await storage.getCycles();
+      const lots = await storage.getLots();
+      
+      // Calcola i totali e i conteggi necessari
+      const totalBaskets = baskets.length;
+      const activeBaskets = baskets.filter(b => b.state === 'active').length;
+      const activeCycles = cycles.filter(c => c.state === 'active').length;
+      
+      // Calcola il numero totale di animali nelle ceste attive
+      const totalAnimals = baskets
+        .filter(b => b.state === 'active')
+        .reduce((total, basket) => {
+          // Trova le operazioni più recenti per ogni cesta attiva
+          const basketOperations = operations
+            .filter(op => op.basketId === basket.id)
+            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+          
+          // Prendi la più recente operazione che ha un conteggio di animali
+          const latestOperationWithCount = basketOperations.find(op => op.animalCount !== null && op.animalCount !== undefined);
+          
+          // Aggiungi al totale se abbiamo un conteggio di animali
+          if (latestOperationWithCount?.animalCount) {
+            return total + latestOperationWithCount.animalCount;
+          }
+          
+          return total;
+        }, 0);
+      
+      // Restituisci i dati essenziali per la dashboard
+      res.json({
+        totalBaskets,
+        activeBaskets,
+        activeCycles,
+        totalAnimals,
+        recentOperations: operations
+          .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+          .slice(0, 10), // Solo le 10 operazioni più recenti
+        activeLots: lots.filter(l => l.state === 'active').length
+      });
+    } catch (error) {
+      console.error("Errore nel recupero dei dati per la dashboard:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Errore sconosciuto' 
+      });
+    }
+});
+
+app.get("/api/operations", async (req, res) => {
+    try {
+      // Verifica se la richiesta proviene dalla dashboard
+      const isForDashboard = req.query.dashboard === 'true';
+      
+      if (isForDashboard) {
+        console.log("Richiesta completa di operazioni per la dashboard");
+        const operations = await storage.getOperations();
+        return res.json(operations);
+      }
+      
       // Controlla se è stata richiesta la versione NON ottimizzata esplicitamente
       const useOptimized = process.env.USE_OPTIMIZED_APIS === 'true' || req.query.optimized === 'true';
       const useOriginal = req.query.original === 'true';

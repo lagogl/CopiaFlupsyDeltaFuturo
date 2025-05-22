@@ -52,7 +52,7 @@ export default function Dashboard() {
   const growthChartRef = useRef<HTMLDivElement>(null);
   const flupsyVisualizerRef = useRef<HTMLDivElement>(null);
 
-  // Query for active baskets and cycles
+  // Dati completi per singole tabelle (potrebbero essere paginati)
   const { data: baskets, isLoading: basketsLoading, dataUpdatedAt: basketsUpdatedAt } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
   });
@@ -62,11 +62,16 @@ export default function Dashboard() {
   });
 
   const { data: operations, isLoading: operationsLoading, dataUpdatedAt: operationsUpdatedAt } = useQuery<Operation[]>({
-    queryKey: ['/api/operations'],
+    queryKey: ['/api/operations', { dashboard: true }],
   });
 
   const { data: lots, isLoading: lotsLoading, dataUpdatedAt: lotsUpdatedAt } = useQuery<Lot[]>({
     queryKey: ['/api/lots'],
+  });
+  
+  // Query specifica per i dati aggregati della dashboard
+  const { data: dashboardData, isLoading: dashboardLoading, dataUpdatedAt: dashboardUpdatedAt } = useQuery({
+    queryKey: ['/api/dashboard-data'],
   });
   
   // Funzione per aggiornare i dati
