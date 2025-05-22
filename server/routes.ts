@@ -3958,12 +3958,15 @@ app.get("/api/operations", async (req, res) => {
           totalAnimals = parseInt(animalStats.rows[0].total_animals || '0', 10);
         }
         
-        // Recupera la distribuzione delle taglie
+        // Recupera la distribuzione delle taglie dalle operazioni
         const sizeStats = await db.execute(
-          sql`SELECT s.code, COALESCE(SUM(b.animal_count), 0) as count
-              FROM mv_active_baskets b
-              LEFT JOIN sizes s ON b.size_id = s.id
-              WHERE b.flupsy_id = ${id} AND s.code IS NOT NULL
+          sql`SELECT s.code, COALESCE(SUM(o.animal_count), 0) as count
+              FROM operations o
+              JOIN sizes s ON o.size_id = s.id
+              JOIN baskets b ON o.basket_id = b.id
+              WHERE b.flupsy_id = ${id} 
+                AND b.current_cycle_id IS NOT NULL
+                AND s.code IS NOT NULL
               GROUP BY s.code`
         );
         
