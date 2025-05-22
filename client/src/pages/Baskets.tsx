@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { 
   Eye, Copy, Download, Plus, Filter, Upload, Pencil, Search, Waves,
-  Trash2, AlertTriangle, History, MapPin, Info
+  Trash2, AlertTriangle, History, MapPin, Info, ChevronLeft, ChevronRight
 } from 'lucide-react';
 import { getSizeBadgeStyle, getSizeColor } from '@/lib/sizeUtils';
 import { Button } from '@/components/ui/button';
@@ -41,11 +41,25 @@ export default function Baskets() {
   const sortConfig = filters.sortConfig as {key: string, direction: 'asc' | 'desc'};
   
   // Funzioni per aggiornare i filtri
-  const setSearchTerm = (value: string) => setFilters(prev => ({ ...prev, searchTerm: value }));
-  const setStateFilter = (value: string) => setFilters(prev => ({ ...prev, stateFilter: value }));
-  const setFlupsyFilter = (value: string) => setFilters(prev => ({ ...prev, flupsyFilter: value }));
-  const setSortConfig = (value: {key: string, direction: 'asc' | 'desc'}) => 
+  const setSearchTerm = (value: string) => {
+    setFilters(prev => ({ ...prev, searchTerm: value }));
+    setPage(1); // Reset alla prima pagina quando cambia la ricerca
+  };
+  
+  const setStateFilter = (value: string) => {
+    setFilters(prev => ({ ...prev, stateFilter: value }));
+    setPage(1); // Reset alla prima pagina quando cambia il filtro stato
+  };
+  
+  const setFlupsyFilter = (value: string) => {
+    setFilters(prev => ({ ...prev, flupsyFilter: value }));
+    setPage(1); // Reset alla prima pagina quando cambia il filtro FLUPSY
+  };
+  
+  const setSortConfig = (value: {key: string, direction: 'asc' | 'desc'}) => {
     setFilters(prev => ({ ...prev, sortConfig: value }));
+    setPage(1); // Reset alla prima pagina quando cambia l'ordinamento
+  };
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -944,38 +958,84 @@ export default function Baskets() {
                     <td colSpan={11} className="px-6 py-4">
                       <div className="flex items-center justify-between">
                         <div className="flex items-center space-x-2">
-                          <select 
-                            className="border rounded p-1 text-sm"
-                            value={pageSize}
-                            onChange={(e) => {
-                              setPageSize(Number(e.target.value));
-                              setPage(1); // Torna alla prima pagina quando cambia la dimensione
+                          <Select
+                            value={pageSize.toString()}
+                            onValueChange={(value) => {
+                              setPageSize(Number(value));
+                              setPage(1); // Reset alla prima pagina quando cambia la dimensione
                             }}
                           >
-                            <option value={25}>25 per pagina</option>
-                            <option value={50}>50 per pagina</option>
-                            <option value={100}>100 per pagina</option>
-                          </select>
+                            <SelectTrigger className="w-[150px]">
+                              <SelectValue placeholder="Elementi per pagina" />
+                            </SelectTrigger>
+                            <SelectContent>
+                              <SelectItem value="10">10 per pagina</SelectItem>
+                              <SelectItem value="25">25 per pagina</SelectItem>
+                              <SelectItem value="50">50 per pagina</SelectItem>
+                              <SelectItem value="100">100 per pagina</SelectItem>
+                            </SelectContent>
+                          </Select>
                           <span className="text-sm text-gray-500">
-                            Pagina {page} di {Math.ceil(totalBaskets / pageSize)}
+                            Mostrando <span className="font-medium">{totalBaskets > 0 ? (page - 1) * pageSize + 1 : 0}</span> a <span className="font-medium">{Math.min(page * pageSize, totalBaskets)}</span> di <span className="font-medium">{totalBaskets}</span> cestelli
                           </span>
                         </div>
-                        <div className="flex space-x-2">
+                        
+                        <div className="flex items-center space-x-2">
                           <Button 
                             variant="outline" 
                             size="sm" 
                             onClick={() => setPage(prev => Math.max(prev - 1, 1))}
                             disabled={page === 1}
                           >
+                            <ChevronLeft className="h-4 w-4 mr-1" />
                             Precedente
                           </Button>
+                          
+                          {/* Visualizza i numeri di pagina se ci sono più pagine */}
+                          {totalBaskets > pageSize && (
+                            <div className="flex space-x-1">
+                              {Array.from({ length: Math.min(5, Math.ceil(totalBaskets / pageSize)) }).map((_, i) => {
+                                // Calcola quali pagine mostrare in base alla pagina corrente
+                                let pageNumber;
+                                const totalPages = Math.ceil(totalBaskets / pageSize);
+                                
+                                if (totalPages <= 5) {
+                                  // Se ci sono 5 o meno pagine, mostra tutte
+                                  pageNumber = i + 1;
+                                } else if (page <= 3) {
+                                  // Se siamo all'inizio, mostra pagine 1-5
+                                  pageNumber = i + 1;
+                                } else if (page >= totalPages - 2) {
+                                  // Se siamo alla fine, mostra le ultime 5 pagine
+                                  pageNumber = totalPages - 4 + i;
+                                } else {
+                                  // Altrimenti mostra 2 pagine prima e 2 dopo quella corrente
+                                  pageNumber = page - 2 + i;
+                                }
+                                
+                                return (
+                                  <Button
+                                    key={pageNumber}
+                                    variant={page === pageNumber ? "default" : "outline"}
+                                    size="sm"
+                                    onClick={() => setPage(pageNumber)}
+                                    className="w-10 h-9 p-0"
+                                  >
+                                    {pageNumber}
+                                  </Button>
+                                );
+                              })}
+                            </div>
+                          )}
+                          
                           <Button 
                             variant="outline" 
                             size="sm" 
-                            onClick={() => setPage(prev => prev + 1)}
+                            onClick={() => setPage(prev => Math.min(prev + 1, Math.ceil(totalBaskets / pageSize)))}
                             disabled={page >= Math.ceil(totalBaskets / pageSize)}
                           >
                             Successiva
+                            <ChevronRight className="h-4 w-4 ml-1" />
                           </Button>
                         </div>
                       </div>
