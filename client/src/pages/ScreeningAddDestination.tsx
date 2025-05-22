@@ -83,6 +83,23 @@ export default function ScreeningAddDestination() {
       });
     },
   });
+  
+  // Query per ottenere le ceste di origine dell'operazione corrente
+  const {
+    data: sourceBaskets,
+    isLoading: sourceBasketLoading,
+    error: sourceBasketError
+  } = useQuery({
+    queryKey: ['/api/screening/source-baskets', screeningId],
+    queryFn: async () => {
+      if (!screeningId) return [];
+      return apiRequest<any[]>({ 
+        url: `/api/screening/source-baskets/${screeningId}`,
+        method: 'GET'
+      });
+    },
+    enabled: !!screeningId,
+  });
 
   // Query per ottenere le taglie
   const {
@@ -209,7 +226,7 @@ export default function ScreeningAddDestination() {
     }
   };
 
-  if (operationLoading || basketsLoading || sizesLoading) {
+  if (operationLoading || basketsLoading || sizesLoading || sourceBasketLoading) {
     return (
       <div className="container mx-auto p-4">
         <div className="flex items-center gap-4 mb-6">
@@ -239,7 +256,7 @@ export default function ScreeningAddDestination() {
     );
   }
 
-  if (operationError || basketsError || sizesError) {
+  if (operationError || basketsError || sizesError || sourceBasketError) {
     return (
       <div className="container mx-auto p-4">
         <div className="p-6 bg-red-50 rounded-lg">
