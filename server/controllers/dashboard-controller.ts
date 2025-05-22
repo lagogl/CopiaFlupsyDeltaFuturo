@@ -32,27 +32,44 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     // Utilizzando SQL nativo per massimizzare le prestazioni
     
     // Query SQL per recuperare l'ultima operazione per ogni cestello
-    const latestOperationsSql = sql`
-      WITH ranked_operations AS (
-        SELECT 
-          o.*,
-          ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
-        FROM operations o
-        JOIN baskets b ON o.basket_id = b.id
-        WHERE b.state = 'active'
-        ${flupsyIds.length > 0 ? sql`AND b.flupsy_id IN (${flupsyIds})` : sql``}
-      )
-      SELECT * FROM ranked_operations WHERE rn = 1
-    `;
+    const latestOperationsSql = flupsyIds.length > 0
+      ? sql`
+          WITH ranked_operations AS (
+            SELECT 
+              o.*,
+              ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
+            FROM operations o
+            JOIN baskets b ON o.basket_id = b.id
+            WHERE b.state = 'active' AND b.flupsy_id = ANY(${flupsyIds})
+          )
+          SELECT * FROM ranked_operations WHERE rn = 1
+        `
+      : sql`
+          WITH ranked_operations AS (
+            SELECT 
+              o.*,
+              ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
+            FROM operations o
+            JOIN baskets b ON o.basket_id = b.id
+            WHERE b.state = 'active'
+          )
+          SELECT * FROM ranked_operations WHERE rn = 1
+        `;
     
     // Query per recuperare le operazioni di oggi - ottimizzata
     const today = format(new Date(), 'yyyy-MM-dd');
-    const todayOperationsSql = sql`
-      SELECT o.* FROM operations o
-      JOIN baskets b ON o.basket_id = b.id
-      WHERE b.state = 'active' AND o.date = ${today}
-      ${flupsyIds.length > 0 ? sql`AND b.flupsy_id IN (${flupsyIds})` : sql``}
-    `;
+    const todayOperationsSql = flupsyIds.length > 0
+      ? sql`
+          SELECT o.* FROM operations o
+          JOIN baskets b ON o.basket_id = b.id
+          WHERE b.state = 'active' AND o.date = ${today}
+          AND b.flupsy_id = ANY(${flupsyIds})
+        `
+      : sql`
+          SELECT o.* FROM operations o
+          JOIN baskets b ON o.basket_id = b.id
+          WHERE b.state = 'active' AND o.date = ${today}
+        `;
 
     // Esegue le query in parallelo per massimizzare la velocità
     const [
