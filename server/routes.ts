@@ -30,7 +30,7 @@ import * as ScreeningController from "./controllers/screening-controller";
 import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
-import { diarioController } from "./controllers/index";
+// import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
@@ -39,6 +39,7 @@ import { getAvailablePositions as getFlupsyAvailablePositions } from "./controll
 import { getPaginatedFlupsys } from "./controllers/flupsy-optimized-controller";
 import { getPaginatedBaskets } from "./controllers/basket-optimized-controller";
 import { getDashboardStatistics } from "./controllers/dashboard-optimized-controller";
+import { getPaginatedLots, getLotStatistics } from "./controllers/lot-optimized-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
 
 // Importazione del router per le API esterne
@@ -2035,10 +2036,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Diario di Bordo API routes ===
   
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
-  app.get("/api/diario/month-data", diarioController.getMonthData);
+  // Temporaneamente disabilitato per l'implementazione delle ottimizzazioni
+  // app.get("/api/diario/month-data", diarioController.getMonthData);
   
   // API - Esporta il calendario in formato CSV
-  app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
+  // Temporaneamente disabilitato per l'implementazione delle ottimizzazioni
+  // app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
   
   // API - [VECCHIO ENDPOINT - DA RIMUOVERE QUANDO IL NUOVO SARÀ TESTATO]
   app.get("/api/diario/month-data-old", async (req, res) => {

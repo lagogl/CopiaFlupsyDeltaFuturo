@@ -8,6 +8,174 @@ import {
 } from "../../shared/schema";
 import { and, count, desc, eq, inArray, isNull } from "drizzle-orm";
 
+// Tipo per le statistiche dei FLUPSY
+export interface FlupsyStatistics {
+  totalBaskets: number;
+  activeBaskets: number;
+  availableBaskets: number;
+  occupationPercentage: number;
+  totalAnimals: number;
+  sizeDistribution: Record<string, number>;
+  basketsWithAnimals: number;
+}
+
+/**
+ * Funzione per calcolare statistiche di un singolo FLUPSY
+ * @param flupsyId ID del FLUPSY
+ * @returns Statistiche complete del FLUPSY
+ */
+export async function getFlupsyStatistics(flupsyId: number): Promise<FlupsyStatistics> {
+  try {
+    // Ottieni informazioni sui cestelli nel FLUPSY
+    const basketStats = await db.select({
+      totalBaskets: count()
+    })
+    .from(baskets)
+    .where(eq(baskets.flupsyId, flupsyId));
+    
+    const totalBaskets = basketStats[0]?.totalBaskets || 0;
+    
+    // Se non ci sono cestelli, restituisci statistiche vuote
+    if (totalBaskets === 0) {
+      return {
+        totalBaskets: 0,
+        activeBaskets: 0,
+        availableBaskets: 0,
+        occupationPercentage: 0,
+        totalAnimals: 0,
+        sizeDistribution: {},
+        basketsWithAnimals: 0
+      };
+    }
+    
+    // Ottieni i cestelli in questo FLUPSY
+    const basketsQuery = await db.select({ id: baskets.id })
+      .from(baskets)
+      .where(eq(baskets.flupsyId, flupsyId));
+    
+    const basketIds = basketsQuery.map(b => b.id);
+    
+    // Conta i cicli attivi
+    const activeCyclesCount = await db.select({ count: count() })
+      .from(cycles)
+      .where(
+        and(
+          inArray(cycles.basketId, basketIds),
+          isNull(cycles.endDate)
+        )
+      );
+    
+    const activeBaskets = activeCyclesCount[0]?.count || 0;
+    const availableBaskets = totalBaskets - activeBaskets;
+    
+    // Ottieni il FLUPSY per le informazioni sulla capacità
+    const flupsyInfo = await db.select()
+      .from(flupsys)
+      .where(eq(flupsys.id, flupsyId))
+      .limit(1);
+    
+    // Calcola le posizioni occupate e libere
+    const maxPositions = flupsyInfo[0]?.maxPositions || 0;
+    const occupiedPositions = totalBaskets;
+    const occupationPercentage = maxPositions > 0 
+      ? Math.round((occupiedPositions / maxPositions) * 100) 
+      : 0;
+    
+    // Ottieni i cicli attivi
+    const activeCycles = await db.select()
+      .from(cycles)
+      .where(
+        and(
+          inArray(cycles.basketId, basketIds),
+          isNull(cycles.endDate)
+        )
+      );
+    
+    // Ottieni le statistiche sugli animali
+    let totalAnimals = 0;
+    let basketsWithAnimals = 0;
+    const sizeDistribution: Record<string, number> = {};
+    
+    // Usa una query più efficiente per ottenere l'ultima operazione per ogni ciclo
+    const cycleIds = activeCycles.map(cycle => cycle.id);
+    
+    if (cycleIds.length > 0) {
+      // Strategia ottimizzata
+      const latestOperations = await db.select({
+        cycleId: operations.cycleId,
+        animalCount: operations.animalCount,
+        sizeId: operations.sizeId
+      })
+      .from(operations)
+      .where(inArray(operations.cycleId, cycleIds))
+      .orderBy(desc(operations.date));
+      
+      // Mappa per tenere traccia dell'ultima operazione per ciascun ciclo
+      const cycleToOperation = new Map();
+      
+      // Filtra solo l'ultima operazione valida per ciascun ciclo
+      for (const operation of latestOperations) {
+        if (!cycleToOperation.has(operation.cycleId) && 
+            operation.animalCount !== null && 
+            operation.animalCount > 0) {
+          cycleToOperation.set(operation.cycleId, operation);
+        }
+      }
+      
+      // Ottieni le taglie in un'unica query
+      const sizeIds = Array.from(cycleToOperation.values())
+        .map(op => op.sizeId)
+        .filter(sizeId => sizeId !== null);
+      
+      // Mappa delle taglie
+      const sizeMap = new Map();
+      
+      if (sizeIds.length > 0) {
+        const sizeData = await db.select()
+          .from(sizes)
+          .where(inArray(sizes.id, sizeIds as number[]));
+        
+        for (const size of sizeData) {
+          sizeMap.set(size.id, size.code);
+        }
+      }
+      
+      // Elabora le operazioni e calcola le statistiche
+      for (const operation of cycleToOperation.values()) {
+        if (operation.animalCount !== null && operation.animalCount > 0) {
+          totalAnimals += operation.animalCount;
+          basketsWithAnimals++;
+          
+          // Aggiungi alla distribuzione per taglia
+          const sizeCode = operation.sizeId !== null ? sizeMap.get(operation.sizeId) || 'Sconosciuta' : 'Sconosciuta';
+          sizeDistribution[sizeCode] = (sizeDistribution[sizeCode] || 0) + operation.animalCount;
+        }
+      }
+    }
+    
+    return {
+      totalBaskets,
+      activeBaskets,
+      availableBaskets,
+      occupationPercentage,
+      totalAnimals,
+      sizeDistribution,
+      basketsWithAnimals
+    };
+  } catch (error) {
+    console.error(`Errore nel calcolo delle statistiche del FLUPSY ${flupsyId}:`, error);
+    return {
+      totalBaskets: 0,
+      activeBaskets: 0,
+      availableBaskets: 0,
+      occupationPercentage: 0,
+      totalAnimals: 0,
+      sizeDistribution: {},
+      basketsWithAnimals: 0
+    };
+  }
+}
+
 /**
  * Ottiene tutti i FLUPSY con statistiche ottimizzate e paginazione
  * @param page Numero di pagina (default: 1)
