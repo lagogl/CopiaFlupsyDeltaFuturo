@@ -3689,32 +3689,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
               )
             );
           
+          console.log(`FLUPSY ${flupsy.id}: Trovati ${activeCycles.length} cicli attivi`);
+          
           // Per ogni ciclo attivo, ottieni l'ultima operazione con il conteggio animali
           for (const cycle of activeCycles) {
-            const operations = await storage.getOperationsByCycle(cycle.id);
+            // Ottieni l'ultima operazione direttamente dal database invece di usare storage.getOperationsByCycle
+            const lastOperations = await db.select()
+              .from(operations)
+              .where(eq(operations.cycleId, cycle.id))
+              .orderBy(desc(operations.date))
+              .limit(20); // Prendi le ultime 20 operazioni per sicurezza
             
-            // Ordina le operazioni per data (la più recente prima)
-            operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            // Filtriamo le operazioni con conteggio animali valido
+            const validOperations = lastOperations.filter(op => op.animalCount !== null && op.animalCount > 0);
             
-            // Prendi solo le operazioni con conteggio animali
-            const operationsWithCount = operations.filter(op => op.animalCount !== null);
-            
-            if (operationsWithCount.length > 0) {
-              const lastOperation = operationsWithCount[0];
-              if (lastOperation.animalCount) {
-                totalAnimals += lastOperation.animalCount;
-                basketsWithAnimals++; // Incrementa il contatore di cestelli con animali
-                
-                // Aggiungi i dati di distribuzione per taglia
-                if (lastOperation.sizeId) {
-                  const size = await storage.getSize(lastOperation.sizeId);
-                  if (size) {
-                    const sizeCode = size.code;
-                    if (!sizeDistribution[sizeCode]) {
-                      sizeDistribution[sizeCode] = 0;
-                    }
-                    sizeDistribution[sizeCode] += lastOperation.animalCount;
+            if (validOperations.length > 0) {
+              // Usa la prima operazione valida trovata (la più recente)
+              const lastOperation = validOperations[0];
+              
+              console.log(`Ciclo ${cycle.id}: Trovata operazione con ${lastOperation.animalCount} animali`);
+              
+              totalAnimals += lastOperation.animalCount;
+              basketsWithAnimals++;
+              
+              // Aggiungi i dati di distribuzione per taglia
+              if (lastOperation.sizeId) {
+                const size = await storage.getSize(lastOperation.sizeId);
+                if (size) {
+                  const sizeCode = size.code;
+                  if (!sizeDistribution[sizeCode]) {
+                    sizeDistribution[sizeCode] = 0;
                   }
+                  sizeDistribution[sizeCode] += lastOperation.animalCount;
                 }
               }
             }
