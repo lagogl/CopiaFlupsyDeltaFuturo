@@ -1656,18 +1656,76 @@ export default function VagliaturaDetailPage() {
                       <div className="flex justify-center py-2">
                         <Spinner size="sm" />
                       </div>
-                    ) : availableBaskets?.filter(b => b.state === "available" && !b.cycleId)?.length ? (
-                      // CORREZIONE: Stampa i dati delle ceste prima del filtro
-                      console.log("DEBUG - Ceste disponibili prima del filtro:", availableBaskets),
+                    ) : availableBaskets?.length ? (
+                      // Organizziamo le ceste in due gruppi:
+                      // 1. Prima le ceste origine della stessa vagliatura
+                      // 2. Poi le altre ceste disponibili, ordinate per FLUPSY
                       
-                      // Mostra solo ceste available (vuote) in questo menù
-                      availableBaskets
-                        .filter(b => {
+                      // Funzione per ottenere l'array di cestelli ordinato
+                      (() => {
+                        // Verifica se ci sono cestelli di origine
+                        const hasSourceBaskets = sourceBaskets && sourceBaskets.length > 0;
+                        
+                        // Ottieni gli ID dei cestelli di origine
+                        const sourceBasketIds = hasSourceBaskets 
+                          ? sourceBaskets.map(sb => sb.basketId) 
+                          : [];
+                        
+                        // Ottieni gli ID dei FLUPSY delle ceste di origine
+                        const sourceFlupsyIds = hasSourceBaskets 
+                          ? [...new Set(sourceBaskets
+                              .filter(sb => sb.flupsyId)
+                              .map(sb => sb.flupsyId))]
+                          : [];
+                        
+                        // Filtra prima tutte le ceste disponibili
+                        const availableBasketsList = availableBaskets.filter(b => {
                           // Verifica se la cesta è available e senza ciclo
                           const isAvailable = (b.state === "available" && !b.cycleId);
                           console.log(`Cesta ${b.physicalNumber}: state=${b.state}, cycleId=${b.cycleId}, basketId=${b.basketId}, isAvailable=${isAvailable}`);
                           return isAvailable;
-                        })
+                        });
+                        
+                        // Dividi in due gruppi: ceste origine e altre ceste disponibili
+                        const sourceBasketList = availableBasketsList.filter(b => 
+                          sourceBasketIds.includes(b.basketId)
+                        );
+                        
+                        const otherAvailableBaskets = availableBasketsList.filter(b => 
+                          !sourceBasketIds.includes(b.basketId)
+                        );
+                        
+                        // Ordina le altre ceste disponibili prima per FLUPSY (dando priorità ai FLUPSY origine)
+                        // e poi per numero fisico
+                        otherAvailableBaskets.sort((a, b) => {
+                          // Priorità 1: FLUPSY che sono nelle ceste origine
+                          const aIsInSourceFlupsy = a.flupsyId && sourceFlupsyIds.includes(a.flupsyId);
+                          const bIsInSourceFlupsy = b.flupsyId && sourceFlupsyIds.includes(b.flupsyId);
+                          
+                          if (aIsInSourceFlupsy && !bIsInSourceFlupsy) return -1;
+                          if (!aIsInSourceFlupsy && bIsInSourceFlupsy) return 1;
+                          
+                          // Priorità 2: ID FLUPSY (se entrambi hanno o non hanno un FLUPSY origine)
+                          if (a.flupsyId !== b.flupsyId) {
+                            return (a.flupsyId || 9999) - (b.flupsyId || 9999);
+                          }
+                          
+                          // Priorità 3: Numero fisico della cesta
+                          return a.physicalNumber - b.physicalNumber;
+                        });
+                        
+                        // Preparazione array finale con i cestelli raggruppati e etichettati
+                        return sourceBasketList.length > 0 || otherAvailableBaskets.length > 0 ? [
+                          ...(sourceBasketList.length > 0 ? [
+                            { id: 'source-group-label', isLabel: true, label: 'Cestelli Origine della Vagliatura' },
+                            ...sourceBasketList
+                          ] : []),
+                          ...(otherAvailableBaskets.length > 0 ? [
+                            { id: 'other-group-label', isLabel: true, label: 'Altri Cestelli Disponibili' },
+                            ...otherAvailableBaskets
+                          ] : [])
+                        ] : [];
+                      })()
                         // Filtra le ceste che sono già state aggiunte come destinazione
                         .filter(basket => {
                           // Controlla se la cesta è già stata aggiunta alle ceste di destinazione nel database
