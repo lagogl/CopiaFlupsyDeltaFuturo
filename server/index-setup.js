@@ -146,6 +146,19 @@ export async function setupPerformanceOptimizations(app) {
     console.error('Errore durante la configurazione delle ottimizzazioni per cestelli:', error);
   }
   
+  // Importa e configura la cache per i cicli
+  try {
+    const { setupCyclesCacheInvalidation } = await import('./controllers/cycles-controller.js');
+    
+    // Configurazione invalidazione cache per cicli
+    if (app) {
+      setupCyclesCacheInvalidation(app);
+      console.log('Configurazione cache per i cicli completata');
+    }
+  } catch (error) {
+    console.error('Errore durante la configurazione delle ottimizzazioni per cicli:', error);
+  }
+  
   // Configurazione invalidazione cache
   if (app) {
     setupCacheInvalidation(app);

@@ -2625,11 +2625,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Utilizzo del nuovo controller ottimizzato con cache
       const startTime = Date.now();
       
-      // Importa il controller solo una volta per evitare errori di dipendenza circolare
-      const { getActiveCyclesWithDetails } = require('./controllers/cycles-controller');
+      // Importa il controller in modo dinamico per evitare errori di dipendenza circolare
+      const cyclesController = await import('./controllers/cycles-controller.js');
       
       // Ottieni i cicli attivi con dettagli in modo ottimizzato
-      const activeCyclesWithDetails = await getActiveCyclesWithDetails();
+      const activeCyclesWithDetails = await cyclesController.getActiveCyclesWithDetails();
       
       const duration = Date.now() - startTime;
       console.log(`Cicli attivi con dettagli recuperati in ${duration}ms`);
