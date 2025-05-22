@@ -14,7 +14,7 @@ export const getFlupsyDashboardData = async (req: Request, res: Response) => {
       ? flupsyIdsParam.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id)) 
       : [];
 
-    // Query SQL ottimizzata che recupera i dati necessari in un'unica richiesta
+    // Query semplificata che recupera solo i dati essenziali
     const query = flupsyIds.length > 0 
       ? sql`
         SELECT 
@@ -24,11 +24,7 @@ export const getFlupsyDashboardData = async (req: Request, res: Response) => {
           b.row,
           b.position,
           f.name as flupsy_name,
-          c.id as cycle_id,
-          c.code as cycle_code,
-          l.id as lot_id,
-          l.supplier as lot_supplier,
-          l.quality as lot_quality,
+          b.current_cycle_id as cycle_id,
           (
             SELECT animal_count
             FROM operations
@@ -38,8 +34,6 @@ export const getFlupsyDashboardData = async (req: Request, res: Response) => {
             LIMIT 1
           ) as animal_count
         FROM baskets b
-        LEFT JOIN cycles c ON b.current_cycle_id = c.id
-        LEFT JOIN lots l ON c.lot_id = l.id
         LEFT JOIN flupsys f ON b.flupsy_id = f.id
         WHERE b.state = 'active'
         AND b.flupsy_id IN (${flupsyIds.join(',')})
@@ -53,11 +47,7 @@ export const getFlupsyDashboardData = async (req: Request, res: Response) => {
           b.row,
           b.position,
           f.name as flupsy_name,
-          c.id as cycle_id,
-          c.code as cycle_code,
-          l.id as lot_id,
-          l.supplier as lot_supplier,
-          l.quality as lot_quality,
+          b.current_cycle_id as cycle_id,
           (
             SELECT animal_count
             FROM operations
@@ -67,8 +57,6 @@ export const getFlupsyDashboardData = async (req: Request, res: Response) => {
             LIMIT 1
           ) as animal_count
         FROM baskets b
-        LEFT JOIN cycles c ON b.current_cycle_id = c.id
-        LEFT JOIN lots l ON c.lot_id = l.id
         LEFT JOIN flupsys f ON b.flupsy_id = f.id
         WHERE b.state = 'active'
         ORDER BY b.flupsy_id, b.row, b.position
@@ -137,41 +125,36 @@ export const getIncomingBasketsData = async (req: Request, res: Response) => {
   try {
     const { targetSize = 'TP-3000', days = 14 } = req.query;
     
-    // Query ottimizzata che recupera direttamente i cestelli in arrivo alla taglia target
+    // Query ottimizzata semplificata per cestelli in arrivo
     const query = sql`
-      WITH BasketsSizes AS (
-        SELECT 
-          b.id,
-          b.physical_number,
-          c.id as cycle_id,
-          c.code as cycle_code,
-          l.id as lot_id,
-          l.supplier,
-          l.quality,
-          b.flupsy_id,
-          f.name as flupsy_name,
-          (
-            SELECT animal_count 
-            FROM operations 
-            WHERE basket_id = b.id AND animal_count IS NOT NULL 
-            ORDER BY date DESC, id DESC LIMIT 1
-          ) as animal_count,
-          (
-            SELECT weight
-            FROM measurements
-            WHERE basket_id = b.id
-            ORDER BY created_at DESC, id DESC
-            LIMIT 1
-          ) as current_weight
-        FROM baskets b
-        JOIN cycles c ON b.current_cycle_id = c.id
-        JOIN lots l ON c.lot_id = l.id
-        LEFT JOIN flupsys f ON b.flupsy_id = f.id
-        WHERE b.state = 'active'
+      WITH LatestMeasurements AS (
+        SELECT DISTINCT ON (basket_id) 
+          basket_id, weight as current_weight
+        FROM measurements
+        WHERE weight > 0
+        ORDER BY basket_id, created_at DESC, id DESC
+      ),
+      LatestAnimalCounts AS (
+        SELECT DISTINCT ON (basket_id) 
+          basket_id, animal_count
+        FROM operations
+        WHERE animal_count IS NOT NULL AND animal_count > 0
+        ORDER BY basket_id, date DESC, id DESC
       )
-      SELECT * FROM BasketsSizes
-      WHERE current_weight > 0
-      ORDER BY current_weight DESC
+      SELECT 
+        b.id,
+        b.physical_number,
+        b.current_cycle_id as cycle_id,
+        b.flupsy_id,
+        f.name as flupsy_name,
+        a.animal_count,
+        m.current_weight
+      FROM baskets b
+      JOIN LatestMeasurements m ON b.id = m.basket_id
+      LEFT JOIN LatestAnimalCounts a ON b.id = a.basket_id
+      LEFT JOIN flupsys f ON b.flupsy_id = f.id
+      WHERE b.state = 'active'
+      ORDER BY m.current_weight DESC
       LIMIT 50
     `;
     
@@ -227,31 +210,66 @@ export const getActiveCycles = async (req: Request, res: Response) => {
     const { limit = 20 } = req.query;
     const limitNum = parseInt(String(limit), 10) || 20;
     
-    // Query ottimizzata che recupera direttamente i cicli con le informazioni essenziali
+    // Query ottimizzata semplificata che usa sottoconsulte per evitare problemi di schema
     const query = sql`
-      SELECT 
-        c.id, 
-        c.code,
-        c.start_date,
-        l.id as lot_id,
-        l.supplier,
-        l.quality,
-        COUNT(b.id) as basket_count,
-        SUM(
+      WITH ActiveCycles AS (
+        SELECT 
+          c.id, 
+          c.start_date,
+          COUNT(b.id) as basket_count
+        FROM cycles c
+        LEFT JOIN baskets b ON b.current_cycle_id = c.id
+        WHERE c.state = 'active'
+        GROUP BY c.id, c.start_date
+        ORDER BY c.start_date DESC
+        LIMIT ${limitNum}
+      ),
+      CycleAnimalCounts AS (
+        SELECT 
+          c.id as cycle_id,
+          SUM(
+            (
+              SELECT animal_count 
+              FROM operations 
+              WHERE basket_id = b.id AND animal_count IS NOT NULL 
+              ORDER BY date DESC, id DESC LIMIT 1
+            )
+          ) as total_animals
+        FROM cycles c
+        JOIN baskets b ON b.current_cycle_id = c.id
+        WHERE c.state = 'active'
+        GROUP BY c.id
+      ),
+      CycleLots AS (
+        SELECT DISTINCT 
+          c.id as cycle_id,
           (
-            SELECT animal_count 
-            FROM operations 
-            WHERE basket_id = b.id AND animal_count IS NOT NULL 
-            ORDER BY date DESC, id DESC LIMIT 1
-          )
-        ) as total_animals
-      FROM cycles c
-      JOIN lots l ON c.lot_id = l.id
-      LEFT JOIN baskets b ON b.current_cycle_id = c.id
-      WHERE c.state = 'active'
-      GROUP BY c.id, c.code, c.start_date, l.id, l.supplier, l.quality
-      ORDER BY c.start_date DESC
-      LIMIT ${limitNum}
+            SELECT o.lot_id
+            FROM operations o
+            JOIN baskets b ON o.basket_id = b.id
+            WHERE b.current_cycle_id = c.id
+            AND o.lot_id IS NOT NULL
+            ORDER BY o.date DESC, o.id DESC
+            LIMIT 1
+          ) as lot_id
+        FROM cycles c
+        WHERE c.state = 'active'
+      )
+      SELECT 
+        ac.id,
+        ac.start_date,
+        ac.basket_count,
+        cl.lot_id,
+        (
+          SELECT supplier FROM lots WHERE id = cl.lot_id
+        ) as supplier,
+        (
+          SELECT quality FROM lots WHERE id = cl.lot_id
+        ) as quality,
+        COALESCE(cac.total_animals, 0) as total_animals
+      FROM ActiveCycles ac
+      LEFT JOIN CycleAnimalCounts cac ON ac.id = cac.cycle_id
+      LEFT JOIN CycleLots cl ON ac.id = cl.cycle_id
     `;
     
     const result = await db.execute(query);
