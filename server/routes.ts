@@ -23,6 +23,8 @@ import {
 } from "./controllers/growth-notification-handler";
 // Importa il servizio statistiche ottimizzato con cache interna
 import LotStatisticsService from './services/lot-statistics-service.js';
+// Importa il servizio database ottimizzato
+import { dbStorage } from './db-storage';
 
 // Importazione dei controller
 import * as SelectionController from "./controllers/selection-controller";
@@ -3259,14 +3261,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint per statistiche reali sui lotti - SUPER OTTIMIZZATO con caching
   app.get("/api/lots/statistics", async (req, res) => {
     try {
-      // Inizializza il servizio statistiche (viene rimosso dal codice sopra)
-      const lotStatisticsService = new LotStatisticsService(db);
+      console.time('lots-statistics-api');
       
       // Imposta l'header di cache per il browser
-      res.setHeader('Cache-Control', 'public, max-age=300'); // 5 minuti
+      res.setHeader('Cache-Control', 'public, max-age=30'); // 30 secondi
       
-      // Usa il servizio ottimizzato per ottenere le statistiche con caching interno
-      const statistics = await lotStatisticsService.getGlobalStatistics();
+      // Usa il servizio ottimizzato con accesso diretto al database
+      const statistics = await dbStorage.getLotStatistics();
+      
+      console.timeEnd('lots-statistics-api');
       
       return res.json(statistics);
     } catch (error) {
@@ -3312,9 +3315,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Data di fine non valida" });
       }
       
-      console.time('lots-query'); // Timing per la query principale
+      console.time('lots-query'); // Timing per la query principale ottimizzata
       
-      // Otteniamo i lotti con paginazione e filtri
+      // Otteniamo i lotti con paginazione e filtri (versione originale)
       const result = await storage.getLotsOptimized({
         page,
         pageSize,
@@ -3323,7 +3326,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         dateFrom,
         dateTo,
         sizeId,
-        includeStatistics: true // Chiediamo di includere le statistiche direttamente nella query
+        includeStatistics: true
       });
       
       console.timeEnd('lots-query');
@@ -3371,20 +3374,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.timeEnd('data-processing');
       console.timeEnd('lots-optimized-request');
       
-      // Prepara le statistiche di default se non sono presenti
-      const statistics = result.statistics || {
-        counts: {
-          normali: 0,
-          teste: 0,
-          code: 0,
-          totale: 0
-        },
-        percentages: {
-          normali: 0,
-          teste: 0,
-          code: 0
-        }
-      };
+      // Otteniamo le statistiche usando il lotStatisticsService
+      const lotStatsService = new LotStatisticsService(db);
+      const statistics = await lotStatsService.getGlobalStatistics();
       
       res.json({
         lots: lotsWithSizes,

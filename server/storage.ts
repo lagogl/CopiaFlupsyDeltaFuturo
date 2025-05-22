@@ -1568,7 +1568,7 @@ export class MemStorage implements IStorage {
   }
 }
 
-import { DbStorage } from './db-storage';
+import { DatabaseStorage } from './db-storage';
 
-// Utilizziamo DbStorage per accedere ai dati reali nel database PostgreSQL
-export const storage = new DbStorage();
+// Utilizziamo DatabaseStorage per accedere ai dati reali nel database PostgreSQL
+export const storage = new DatabaseStorage();
