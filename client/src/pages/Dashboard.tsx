@@ -386,36 +386,7 @@ export default function Dashboard() {
         </TooltipTrigger>
       </div>
 
-      {/* Recent Activities and Charts */}
-      <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-8">
-        <TooltipTrigger 
-          tooltip={{
-            id: 'recent-operations',
-            content: 'Qui puoi vedere le operazioni più recenti. Clicca su una operazione per vederne i dettagli.',
-            position: 'left'
-          }}
-          showOnMount={isFirstTimeUser}
-          onlyFirstTime={true}
-        >
-          <div ref={recentOperationsRef}>
-            <RecentOperations operations={operations?.slice(0, 5) || []} />
-          </div>
-        </TooltipTrigger>
-        
-        <TooltipTrigger 
-          tooltip={{
-            id: 'growth-chart',
-            content: 'Questo grafico mostra l\'andamento di crescita nel tempo per aiutarti a monitorare lo sviluppo degli organismi.',
-            position: 'right'
-          }}
-          showOnMount={isFirstTimeUser}
-          onlyFirstTime={true}
-        >
-          <div ref={growthChartRef}>
-            <GrowthChart />
-          </div>
-        </TooltipTrigger>
-      </div>
+      {/* I riquadri "Operazioni recenti" e "Andamento crescita" sono stati rimossi per semplificare l'interfaccia */}
 
       {/* Target Size Predictions */}
       <div className="mb-8">
