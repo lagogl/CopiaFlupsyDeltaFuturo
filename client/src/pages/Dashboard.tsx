@@ -412,8 +412,7 @@ export default function Dashboard() {
         </TooltipTrigger>
       </div>
       
-      {/* Active Cycles Table */}
-      <ActiveCycles activeCycles={activeCycles} />
+      {/* Il componente "Cicli Produttivi Attivi" è stato rimosso per semplificare l'interfaccia */}
     </div>
   );
 }
