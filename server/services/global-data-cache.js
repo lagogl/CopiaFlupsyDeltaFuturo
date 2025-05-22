@@ -9,17 +9,39 @@
  */
 
 import { sql } from 'drizzle-orm';
+import * as schema from '../../shared/schema';
 
 class GlobalDataCache {
   constructor(db) {
     this.db = db;
     this.cache = {
       lotStatistics: null,
+      lots: null,
+      operations: null,
+      baskets: null,
+      flupsys: null,
+      cycles: null,
+      sizes: null,
+      dashboard: null,
       lastUpdate: {
-        lotStatistics: null
+        lotStatistics: null,
+        lots: null,
+        operations: null,
+        baskets: null,
+        flupsys: null,
+        cycles: null,
+        sizes: null,
+        dashboard: null
       },
       updateInterval: {
-        lotStatistics: 5 * 60 * 1000 // 5 minuti in millisecondi
+        lotStatistics: 5 * 60 * 1000, // 5 minuti in millisecondi
+        lots: 5 * 60 * 1000, // 5 minuti
+        operations: 3 * 60 * 1000, // 3 minuti
+        baskets: 5 * 60 * 1000, // 5 minuti
+        flupsys: 10 * 60 * 1000, // 10 minuti
+        cycles: 5 * 60 * 1000, // 5 minuti
+        sizes: 24 * 60 * 60 * 1000, // 24 ore (cambiano raramente)
+        dashboard: 2 * 60 * 1000 // 2 minuti
       }
     };
 
@@ -41,8 +63,17 @@ class GlobalDataCache {
     try {
       console.log('Inizializzazione cache globale...');
       
-      // Carica le statistiche dei lotti
-      await this.updateLotStatistics();
+      // Carica tutti i dati in parallelo per ridurre il tempo di avvio
+      await Promise.all([
+        this.updateLotStatistics(),
+        this.updateLots(),
+        this.updateOperations(),
+        this.updateBaskets(),
+        this.updateFlupsys(),
+        this.updateCycles(),
+        this.updateSizes(),
+        this.updateDashboard()
+      ]);
       
       console.log('Cache globale inizializzata con successo');
     } catch (error) {
@@ -69,9 +100,45 @@ class GlobalDataCache {
   async checkAndUpdateCache() {
     const now = Date.now();
     
-    // Controlla se le statistiche dei lotti devono essere aggiornate
+    // Controlla quali dati devono essere aggiornati
+    const updatePromises = [];
+    
     if (this.shouldUpdate('lotStatistics', now)) {
-      await this.updateLotStatistics();
+      updatePromises.push(this.updateLotStatistics());
+    }
+    
+    if (this.shouldUpdate('lots', now)) {
+      updatePromises.push(this.updateLots());
+    }
+    
+    if (this.shouldUpdate('operations', now)) {
+      updatePromises.push(this.updateOperations());
+    }
+    
+    if (this.shouldUpdate('baskets', now)) {
+      updatePromises.push(this.updateBaskets());
+    }
+    
+    if (this.shouldUpdate('flupsys', now)) {
+      updatePromises.push(this.updateFlupsys());
+    }
+    
+    if (this.shouldUpdate('cycles', now)) {
+      updatePromises.push(this.updateCycles());
+    }
+    
+    if (this.shouldUpdate('sizes', now)) {
+      updatePromises.push(this.updateSizes());
+    }
+    
+    if (this.shouldUpdate('dashboard', now)) {
+      updatePromises.push(this.updateDashboard());
+    }
+    
+    // Esegui tutti gli aggiornamenti in parallelo
+    if (updatePromises.length > 0) {
+      await Promise.all(updatePromises);
+      console.log(`Aggiornamento cache completato: ${updatePromises.length} entità aggiornate`);
     }
   }
   
@@ -145,13 +212,191 @@ class GlobalDataCache {
   }
   
   /**
+   * Aggiorna i lotti nella cache
+   */
+  async updateLots() {
+    console.time('cache-lots-update');
+    
+    try {
+      // Query ottimizzata per ottenere tutti i lotti
+      const lotsQuery = await this.db.select().from(schema.lots);
+      
+      // Salva nella cache
+      this.cache.lots = lotsQuery;
+      
+      // Aggiorna il timestamp dell'ultimo aggiornamento
+      this.cache.lastUpdate.lots = Date.now();
+      
+      console.timeEnd('cache-lots-update');
+      console.log(`Cache lotti aggiornata: ${lotsQuery.length} lotti caricati`);
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento dei lotti:', error);
+    }
+  }
+  
+  /**
+   * Aggiorna le operazioni nella cache
+   */
+  async updateOperations() {
+    console.time('cache-operations-update');
+    
+    try {
+      // Query ottimizzata per ottenere tutte le operazioni
+      const operationsQuery = await this.db.select().from(schema.operations);
+      
+      // Salva nella cache
+      this.cache.operations = operationsQuery;
+      
+      // Aggiorna il timestamp dell'ultimo aggiornamento
+      this.cache.lastUpdate.operations = Date.now();
+      
+      console.timeEnd('cache-operations-update');
+      console.log(`Cache operazioni aggiornata: ${operationsQuery.length} operazioni caricate`);
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento delle operazioni:', error);
+    }
+  }
+  
+  /**
+   * Aggiorna i cestelli nella cache
+   */
+  async updateBaskets() {
+    console.time('cache-baskets-update');
+    
+    try {
+      // Query ottimizzata per ottenere tutti i cestelli
+      const basketsQuery = await this.db.select().from(schema.baskets);
+      
+      // Salva nella cache
+      this.cache.baskets = basketsQuery;
+      
+      // Aggiorna il timestamp dell'ultimo aggiornamento
+      this.cache.lastUpdate.baskets = Date.now();
+      
+      console.timeEnd('cache-baskets-update');
+      console.log(`Cache cestelli aggiornata: ${basketsQuery.length} cestelli caricati`);
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento dei cestelli:', error);
+    }
+  }
+  
+  /**
+   * Aggiorna i flupsy nella cache
+   */
+  async updateFlupsys() {
+    console.time('cache-flupsys-update');
+    
+    try {
+      // Query ottimizzata per ottenere tutti i flupsy
+      const flupsysQuery = await this.db.select().from(schema.flupsys);
+      
+      // Salva nella cache
+      this.cache.flupsys = flupsysQuery;
+      
+      // Aggiorna il timestamp dell'ultimo aggiornamento
+      this.cache.lastUpdate.flupsys = Date.now();
+      
+      console.timeEnd('cache-flupsys-update');
+      console.log(`Cache flupsy aggiornata: ${flupsysQuery.length} flupsy caricati`);
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento dei flupsy:', error);
+    }
+  }
+  
+  /**
+   * Aggiorna i cicli nella cache
+   */
+  async updateCycles() {
+    console.time('cache-cycles-update');
+    
+    try {
+      // Query ottimizzata per ottenere tutti i cicli
+      const cyclesQuery = await this.db.select().from(schema.cycles);
+      
+      // Salva nella cache
+      this.cache.cycles = cyclesQuery;
+      
+      // Aggiorna il timestamp dell'ultimo aggiornamento
+      this.cache.lastUpdate.cycles = Date.now();
+      
+      console.timeEnd('cache-cycles-update');
+      console.log(`Cache cicli aggiornata: ${cyclesQuery.length} cicli caricati`);
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento dei cicli:', error);
+    }
+  }
+  
+  /**
+   * Aggiorna le taglie nella cache
+   */
+  async updateSizes() {
+    console.time('cache-sizes-update');
+    
+    try {
+      // Query ottimizzata per ottenere tutte le taglie
+      const sizesQuery = await this.db.select().from(schema.sizes);
+      
+      // Salva nella cache
+      this.cache.sizes = sizesQuery;
+      
+      // Aggiorna il timestamp dell'ultimo aggiornamento
+      this.cache.lastUpdate.sizes = Date.now();
+      
+      console.timeEnd('cache-sizes-update');
+      console.log(`Cache taglie aggiornata: ${sizesQuery.length} taglie caricate`);
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento delle taglie:', error);
+    }
+  }
+  
+  /**
+   * Aggiorna i dati della dashboard nella cache
+   */
+  async updateDashboard() {
+    console.time('cache-dashboard-update');
+    
+    try {
+      // Calcola i dati della dashboard usando i dati già in cache quando possibile
+      const dashboard = {
+        summary: {
+          totalLots: this.cache.lots ? this.cache.lots.length : 0,
+          totalBaskets: this.cache.baskets ? this.cache.baskets.length : 0,
+          totalOperations: this.cache.operations ? this.cache.operations.length : 0,
+          animalCount: this.cache.lotStatistics ? this.cache.lotStatistics.counts.totale : 0
+        },
+        charts: []
+      };
+      
+      // Salva nella cache
+      this.cache.dashboard = dashboard;
+      
+      // Aggiorna il timestamp dell'ultimo aggiornamento
+      this.cache.lastUpdate.dashboard = Date.now();
+      
+      console.timeEnd('cache-dashboard-update');
+      console.log('Cache dashboard aggiornata');
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento della dashboard:', error);
+    }
+  }
+  
+  /**
    * Forza l'aggiornamento di tutti i dati nella cache
    */
   async forceUpdate() {
     console.log('Forzando aggiornamento di tutti i dati nella cache globale...');
     
-    // Aggiorna le statistiche dei lotti
-    await this.updateLotStatistics();
+    // Aggiorna tutte le entità
+    await Promise.all([
+      this.updateLotStatistics(),
+      this.updateLots(),
+      this.updateOperations(),
+      this.updateBaskets(),
+      this.updateFlupsys(),
+      this.updateCycles(),
+      this.updateSizes(),
+      this.updateDashboard()
+    ]);
     
     console.log('Aggiornamento forzato completato');
   }
@@ -170,6 +415,55 @@ class GlobalDataCache {
     }
     
     return this.cache.lotStatistics;
+  }
+  
+  /**
+   * Ottiene i lotti dalla cache
+   */
+  getLots() {
+    return this.cache.lots || [];
+  }
+  
+  /**
+   * Ottiene le operazioni dalla cache
+   */
+  getOperations() {
+    return this.cache.operations || [];
+  }
+  
+  /**
+   * Ottiene i cestelli dalla cache
+   */
+  getBaskets() {
+    return this.cache.baskets || [];
+  }
+  
+  /**
+   * Ottiene i flupsy dalla cache
+   */
+  getFlupsys() {
+    return this.cache.flupsys || [];
+  }
+  
+  /**
+   * Ottiene i cicli dalla cache
+   */
+  getCycles() {
+    return this.cache.cycles || [];
+  }
+  
+  /**
+   * Ottiene le taglie dalla cache
+   */
+  getSizes() {
+    return this.cache.sizes || [];
+  }
+  
+  /**
+   * Ottiene i dati della dashboard dalla cache
+   */
+  getDashboard() {
+    return this.cache.dashboard || { summary: {}, charts: [] };
   }
   
   /**
