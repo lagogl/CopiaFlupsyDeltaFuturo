@@ -198,30 +198,55 @@ export async function getBasketsOptimized(options = {}) {
     
     let cyclesMap = {};
     if (cycleIds.length > 0) {
-      // Utilizza il metodo corretto per passare un array di valori a una query IN
-      const cyclesResult = await db.select()
-        .from(cycles)
-        .where(sql`id IN ${cycleIds}`);
+      // Usa una query SQL nativa con IN per migliorare le prestazioni
+      const cyclesResult = await db.execute(sql`
+        SELECT * FROM cycles WHERE id IN ${cycleIds}
+      `);
       
       cyclesMap = cyclesResult.reduce((map, cycle) => {
-        map[cycle.id] = cycle;
+        // Converti i nomi delle colonne in camelCase per compatibilità
+        const formattedCycle = {
+          id: cycle.id,
+          basketId: cycle.basket_id,
+          startDate: cycle.start_date,
+          endDate: cycle.end_date,
+          state: cycle.state
+        };
+        map[formattedCycle.id] = formattedCycle;
         return map;
       }, {});
     }
     
     // Recupera le posizioni attuali dei cestelli in una singola query
     const basketIds = basketsResult.map(basket => basket.id);
-    const positionsResult = await db.select()
-      .from(basketPositionHistory)
-      .where(and(
-        sql`basket_id IN ${basketIds}`,
-        isNull(basketPositionHistory.endDate)
-      ));
     
-    const positionsMap = positionsResult.reduce((map, pos) => {
-      map[pos.basketId] = pos;
-      return map;
-    }, {});
+    // Verifica che ci siano cestelli da cercare
+    let positionsMap = {};
+    if (basketIds.length > 0) {
+      // Usa la query SQL nativa per accedere alla tabella con il suo nome corretto
+      const positionsResult = await db.execute(sql`
+        SELECT * FROM basket_position_history 
+        WHERE basket_id IN ${basketIds} AND end_date IS NULL
+      `);
+      
+      // Quando usiamo db.execute, il risultato è un array di oggetti con proprietà in snake_case
+      // dobbiamo convertire i nomi delle colonne da snake_case a camelCase
+      positionsMap = positionsResult.reduce((map, pos) => {
+        // Converti i nomi delle colonne in camelCase per compatibilità
+        const position = {
+          id: pos.id,
+          basketId: pos.basket_id,
+          flupsyId: pos.flupsy_id,
+          row: pos.row,
+          position: pos.position,
+          startDate: pos.start_date,
+          endDate: pos.end_date,
+          operationId: pos.operation_id
+        };
+        map[position.basketId] = position;
+        return map;
+      }, {});
+    }
     
     // Combina tutti i dati
     const enrichedBaskets = basketsResult.map(basket => {
