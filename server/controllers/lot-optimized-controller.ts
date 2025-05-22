@@ -1,6 +1,6 @@
 import { db } from '../db';
 import { and, count, eq, gte, ilike, inArray, like, lte, or, sql } from 'drizzle-orm';
-import { lots, sizes, cycles, baskets, operations, measurements } from '@shared/schema';
+import { lots, sizes, cycles, baskets, operations } from '@shared/schema';
 
 /**
  * Interfaccia per i filtri dei lotti
@@ -151,21 +151,22 @@ async function enhanceLotsWithInventoryData(lotsData: any[]) {
   
   const lotIds = lotsData.map(lot => lot.id);
   
-  // Ottieni tutti i cicli per questi lotti
-  const cyclesData = await db
-    .select({
-      id: cycles.id,
-      lotId: cycles.lotId,
-      state: cycles.state,
-      basketCount: count(baskets.id)
-    })
-    .from(cycles)
-    .leftJoin(baskets, eq(baskets.currentCycleId, cycles.id))
-    .where(inArray(cycles.lotId, lotIds))
-    .groupBy(cycles.id);
+  // Ottieni tutti i cicli per questi lotti attraverso le operazioni
+  const cyclesData = await db.execute(sql`
+    SELECT 
+      c.id,
+      o.lot_id AS lotId,
+      c.state,
+      COUNT(DISTINCT b.id) AS basketCount
+    FROM cycles c
+    LEFT JOIN baskets b ON b.current_cycle_id = c.id
+    JOIN operations o ON o.cycle_id = c.id
+    WHERE o.lot_id IN (${sql.join(lotIds)})
+    GROUP BY c.id, o.lot_id, c.state
+  `);
     
   // Ottieni le ultime operazioni per ogni ciclo
-  const cycleIds = cyclesData.map(cycle => cycle.id);
+  const cycleIds = cyclesData.rows.map((cycle: any) => cycle.id);
   
   let lastOperations: any[] = [];
   if (cycleIds.length > 0) {

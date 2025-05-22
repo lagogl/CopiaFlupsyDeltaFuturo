@@ -3286,72 +3286,65 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API - Ottieni lotti paginati con filtri e statistiche (versione ottimizzata con Drizzle ORM)
   app.get("/api/lots/optimized", async (req, res) => {
     try {
+      console.log("Richiesta lotti ottimizzati con query params:", req.query);
+      
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 20;
-      const supplier = req.query.supplier as string;
-      const quality = req.query.quality as string;
-      const sizeId = req.query.sizeId ? parseInt(req.query.sizeId as string) : undefined;
       
-      // Gestione delle date
-      let dateFrom: Date | undefined;
-      let dateTo: Date | undefined;
+      // Elabora i filtri dalla query string
+      const filters = {
+        id: req.query.id ? parseInt(req.query.id as string) : undefined,
+        supplier: req.query.supplier as string,
+        quality: req.query.quality as string,
+        sizeId: req.query.sizeId ? parseInt(req.query.sizeId as string) : undefined,
+        state: req.query.state as string
+      };
       
+      // Gestione delle date per il filtro
       if (req.query.dateFrom) {
-        dateFrom = new Date(req.query.dateFrom as string);
+        const dateFrom = new Date(req.query.dateFrom as string);
+        if (isNaN(dateFrom.getTime())) {
+          return res.status(400).json({ message: "Data di inizio non valida" });
+        }
+        filters.fromDate = dateFrom.toISOString().split('T')[0];
       }
       
       if (req.query.dateTo) {
-        dateTo = new Date(req.query.dateTo as string);
+        const dateTo = new Date(req.query.dateTo as string);
+        if (isNaN(dateTo.getTime())) {
+          return res.status(400).json({ message: "Data di fine non valida" });
+        }
+        filters.toDate = dateTo.toISOString().split('T')[0];
       }
       
-      // Verifica che le date siano valide
-      if (dateFrom && isNaN(dateFrom.getTime())) {
-        return res.status(400).json({ message: "Data di inizio non valida" });
-      }
-      
-      if (dateTo && isNaN(dateTo.getTime())) {
-        return res.status(400).json({ message: "Data di fine non valida" });
-      }
-      
-      // Ottieni i lotti con paginazione e filtri
-      const result = await storage.getLotsOptimized({
+      console.log("Esecuzione query ottimizzata per lotti con opzioni:", {
         page,
         pageSize,
-        supplier,
-        quality,
-        dateFrom,
-        dateTo,
-        sizeId
+        filters
       });
       
-      // Arricchisci i dati recuperando le informazioni sulle taglie
-      const lotsWithSizes = await Promise.all(
-        result.lots.map(async (lot) => {
-          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
-          return { ...lot, size };
-        })
-      );
+      // Ottieni i dati paginati e filtrati usando il nuovo controller ottimizzato
+      const result = await getPaginatedLots(page, pageSize, filters);
       
-      // Calcolo le statistiche sulla qualità per i lotti filtrati
+      // Formatta la risposta per mantenere compatibilità col frontend esistente
       const qualityStats = {
         normali: 0,
         teste: 0,
         code: 0,
-        totale: 0
+        totale: result.statistics.totalAnimals || 0
       };
       
-      result.lots.forEach(lot => {
-        const count = lot.animalCount || 0;
-        qualityStats.totale += count;
-        
-        if (lot.quality === 'normali') qualityStats.normali += count;
-        else if (lot.quality === 'teste') qualityStats.teste += count;
-        else if (lot.quality === 'code') qualityStats.code += count;
-      });
+      // Elabora le statistiche di qualità dai dati ritornati
+      if (result.statistics.byQuality) {
+        qualityStats.normali = result.statistics.byQuality['normali'] || 0;
+        qualityStats.teste = result.statistics.byQuality['teste'] || 0;
+        qualityStats.code = result.statistics.byQuality['code'] || 0;
+      }
       
-      // Prepara percentuali
+      // Calcola le percentuali
       const percentages = {
         normali: qualityStats.totale > 0 ? Math.round((qualityStats.normali / qualityStats.totale) * 100) : 0,
         teste: qualityStats.totale > 0 ? Math.round((qualityStats.teste / qualityStats.totale) * 100) : 0,
@@ -3359,19 +3352,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       res.json({
-        lots: lotsWithSizes,
-        totalCount: result.totalCount,
-        currentPage: page,
-        pageSize,
-        totalPages: Math.ceil(result.totalCount / pageSize),
+        lots: result.data,
+        sizes: result.sizes,
+        totalCount: result.meta.totalItems,
+        currentPage: result.meta.currentPage,
+        pageSize: result.meta.pageSize,
+        totalPages: result.meta.totalPages,
         statistics: {
           counts: qualityStats,
-          percentages
+          percentages,
+          bySupplier: result.statistics.bySupplier
         }
       });
     } catch (error) {
-      console.error("Error fetching optimized lots:", error);
-      res.status(500).json({ message: "Errore nel recupero dei lotti ottimizzati" });
+      console.error("Errore nel recuperare i lotti ottimizzati:", error);
+      res.status(500).json({ 
+        message: "Errore nel recupero dei lotti ottimizzati", 
+        error: String(error) 
+      });
     }
   });
 
