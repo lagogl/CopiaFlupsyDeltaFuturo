@@ -975,6 +975,8 @@ export default function BasicFlupsyVisualizer({ selectedFlupsyIds = [] }: BasicF
         {/* Filtra i FLUPSY in base agli ID selezionati, se presenti */}
         {flupsys
           ?.filter((flupsy: any) => 
+            // Se non sono selezionati FLUPSY, mostriamo tutti i FLUPSY
+            // altrimenti mostriamo solo quelli selezionati
             selectedFlupsyIds.length === 0 || selectedFlupsyIds.includes(flupsy.id)
           )
           .map((flupsy: any) => (
