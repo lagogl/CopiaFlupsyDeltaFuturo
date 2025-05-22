@@ -182,11 +182,29 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     // Prendi la più recente operazione che ha un conteggio di animali
-    const latestOperationWithCount = basketOperations.find(op => op.animalCount !== null && op.animalCount !== undefined);
+    const latestOperationWithCount = basketOperations.find(op => 
+      op.animalCount !== null && 
+      op.animalCount !== undefined && 
+      op.animalCount > 0
+    );
     
     // Aggiungi al totale se abbiamo un conteggio di animali
-    if (latestOperationWithCount?.animalCount) {
-      return total + latestOperationWithCount.animalCount;
+    if (latestOperationWithCount && latestOperationWithCount.animalCount > 0) {
+      return total + Number(latestOperationWithCount.animalCount);
+    }
+    
+    // Se non ci sono operazioni con conteggio, prova a cercare nelle operazioni recenti dal server
+    if (operations && operations.length > 0) {
+      const serverOperation = operations.find(op => 
+        op.basketId === basket.id && 
+        op.animalCount !== null && 
+        op.animalCount !== undefined &&
+        op.animalCount > 0
+      );
+      
+      if (serverOperation && serverOperation.animalCount > 0) {
+        return total + Number(serverOperation.animalCount);
+      }
     }
     
     return total;
