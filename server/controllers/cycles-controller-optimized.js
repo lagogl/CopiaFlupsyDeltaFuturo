@@ -5,16 +5,7 @@
 
 import { sql, eq, and, asc, desc, inArray, isNull } from 'drizzle-orm';
 import { db } from "../db";
-import { 
-  cycles, 
-  baskets, 
-  operations, 
-  sizes, 
-  flupsys, 
-  lots, 
-  mortalityRates,
-  sgr 
-} from "../../shared/schema";
+import { cycles, baskets, operations, sizes, flupsys, lots, mortalityRates, sgr } from "../../shared/schema";
 
 /**
  * Servizio di cache per i cicli
@@ -22,25 +13,28 @@ import {
 class CyclesCacheService {
   constructor() {
     this.cache = new Map();
-    this.ttl = 120; // 2 minuti (in secondi)
+    this.ttl = 120 * 1000; // 2 minuti (120 secondi)
   }
 
   /**
    * Genera una chiave di cache basata sui parametri di filtro
    */
   generateCacheKey(options = {}) {
-    const keys = Object.keys(options).sort();
-    const keyParts = keys.map(key => `${key}_${options[key]}`);
-    return `cycles_${keyParts.join('_')}`;
+    return Object.keys(options)
+      .filter(key => options[key] !== undefined && options[key] !== null)
+      .sort()
+      .map(key => `${key}_${options[key]}`)
+      .join('_');
   }
 
   /**
    * Salva i risultati nella cache
    */
   set(key, data) {
-    const expiresAt = Date.now() + (this.ttl * 1000);
-    this.cache.set(key, { data, expiresAt });
-    console.log(`Cache cicli: dati salvati con chiave "${key}", scadenza in ${this.ttl} secondi`);
+    this.cache.set(key, {
+      data,
+      expiresAt: Date.now() + this.ttl
+    });
   }
 
   /**
@@ -53,13 +47,13 @@ class CyclesCacheService {
       return null;
     }
 
-    if (Date.now() > cached.expiresAt) {
+    if (cached.expiresAt < Date.now()) {
       console.log(`Cache cicli: dati scaduti per chiave "${key}"`);
       this.cache.delete(key);
       return null;
     }
 
-    console.log(`Cache cicli: dati recuperati dalla cache per chiave "${key}"`);
+    console.log(`Cache cicli: hit per chiave "${key}"`);
     return cached.data;
   }
 
@@ -68,14 +62,13 @@ class CyclesCacheService {
    */
   clear() {
     this.cache.clear();
-    console.log("Cache cicli: cache completamente svuotata");
+    console.log('Cache cicli: svuotata');
   }
 
   /**
    * Invalida la cache quando i dati cambiano
    */
   invalidate() {
-    console.log("Invalidazione cache cicli");
     this.clear();
   }
 }
@@ -206,7 +199,7 @@ export async function getCycles(options = {}) {
     const cycleBasketIds = cyclesResult.map(cycle => cycle.basketId);
     
     const basketsResult = await db.execute(sql`
-      SELECT * FROM baskets WHERE id IN ${cycleBasketIds}
+      SELECT * FROM baskets WHERE id IN (${cycleBasketIds.join(',')})
     `);
     
     // Mappa dei cestelli per ID
@@ -236,8 +229,9 @@ export async function getCycles(options = {}) {
     
     let flupsysMap = {};
     if (flupsyIds.size > 0) {
+      const flupsyIdsArray = Array.from(flupsyIds);
       const flupsysResult = await db.execute(sql`
-        SELECT * FROM flupsys WHERE id IN ${Array.from(flupsyIds)}
+        SELECT * FROM flupsys WHERE id IN (${flupsyIdsArray.join(',')})
       `);
       
       // Mappa dei FLUPSY per ID
@@ -311,12 +305,12 @@ export async function getActiveCyclesWithDetails() {
   if (cached) {
     return cached;
   }
-
+  
   console.log("Richiesta cicli attivi con dettagli (ottimizzata)");
   const startTime = Date.now();
-
+  
   try {
-    // 1. Ottieni tutti i cicli attivi in una singola query
+    // 1. Ottieni i cicli attivi con una singola query
     const activeCycles = await db.select()
       .from(cycles)
       .where(eq(cycles.state, 'active'));
@@ -324,237 +318,98 @@ export async function getActiveCyclesWithDetails() {
     if (activeCycles.length === 0) {
       return [];
     }
-
-    // 2. Prepara gli ID dei cestelli
+    
+    // 2. Ottieni i cestelli associati in batch
     const basketIds = activeCycles.map(cycle => cycle.basketId);
-
-    // 3. Ottieni tutti i cestelli correlati in una singola query
-    const basketsResult = await db.execute(sql`
-      SELECT * FROM baskets WHERE id IN ${basketIds}
-    `);
-
-    // Mappa dei cestelli per ID
-    const basketsMap = basketsResult.reduce((map, basket) => {
-      // Converti i nomi delle colonne da snake_case a camelCase
-      map[basket.id] = {
-        id: basket.id,
-        flupsyId: basket.flupsy_id,
-        physicalNumber: basket.physical_number,
-        cycleCode: basket.cycle_code,
-        state: basket.state,
-        currentCycleId: basket.current_cycle_id,
-        nfcData: basket.nfc_data,
-        row: basket.row,
-        position: basket.position
-      };
-      return map;
-    }, {});
-
-    // 4. Prepara gli ID dei cicli
+    const allBaskets = await db.select()
+      .from(baskets)
+      .where(inArray(baskets.id, basketIds));
+    
+    // Crea mappa dei cestelli per ID
+    const basketsMap = {};
+    for (const basket of allBaskets) {
+      basketsMap[basket.id] = basket;
+    }
+    
+    // 3. Ottieni le operazioni più recenti per ogni ciclo in batch
     const cycleIds = activeCycles.map(cycle => cycle.id);
-
-    // 5. Ottieni tutte le operazioni per questi cicli in una singola query
-    const operationsResult = await db.execute(sql`
-      SELECT * FROM operations 
-      WHERE cycle_id IN ${cycleIds}
-      ORDER BY date DESC
-    `);
-
-    // Raggruppa le operazioni per ID ciclo
+    const allOperations = await db.select()
+      .from(operations)
+      .where(inArray(operations.cycleId, cycleIds))
+      .orderBy(desc(operations.date));
+    
+    // Organizza le operazioni per ciclo (la prima è la più recente per ogni ciclo)
     const operationsByCycle = {};
-    for (const op of operationsResult) {
-      // Converti i nomi delle colonne da snake_case a camelCase
-      const operation = {
-        id: op.id,
-        date: op.date,
-        type: op.type,
-        cycleId: op.cycle_id,
-        basketId: op.basket_id,
-        sizeId: op.size_id,
-        lotId: op.lot_id,
-        sgrId: op.sgr_id,
-        sgrDailyId: op.sgr_daily_id,
-        animalCount: op.animal_count,
-        totalWeight: op.total_weight,
-        averageWeight: op.average_weight,
-        animalsPerKg: op.animals_per_kg,
-        notes: op.notes,
-        mortalityRate: op.mortality_rate,
-        metadata: op.metadata
-      };
-
-      if (!operationsByCycle[op.cycle_id]) {
-        operationsByCycle[op.cycle_id] = [];
+    for (const operation of allOperations) {
+      if (!operationsByCycle[operation.cycleId]) {
+        operationsByCycle[operation.cycleId] = [];
       }
-      operationsByCycle[op.cycle_id].push(operation);
+      operationsByCycle[operation.cycleId].push(operation);
     }
-
-    // 6. Raccogli tutti gli ID delle taglie dalle operazioni
+    
+    // 4. Raccogli tutti gli ID delle taglie e SGR utilizzati
     const sizeIds = new Set();
-    for (const op of operationsResult) {
-      if (op.size_id) {
-        sizeIds.add(op.size_id);
-      }
-    }
-
-    // 7. Ottieni tutte le taglie in una singola query
-    const sizesResult = await db.execute(sql`
-      SELECT * FROM sizes WHERE id IN ${Array.from(sizeIds)}
-    `);
-
-    // Mappa delle taglie per ID
-    const sizesMap = sizesResult.reduce((map, size) => {
-      // Converti i nomi delle colonne da snake_case a camelCase
-      map[size.id] = {
-        id: size.id,
-        name: size.name,
-        code: size.code,
-        notes: size.notes,
-        sizeMm: size.size_mm,
-        minAnimalsPerKg: size.min_animals_per_kg,
-        maxAnimalsPerKg: size.max_animals_per_kg,
-        color: size.color
-      };
-      return map;
-    }, {});
-
-    // 8. Raccogli tutti gli ID dei FLUPSY dai cestelli
-    const flupsyIds = new Set();
-    for (const basket of basketsResult) {
-      if (basket.flupsy_id) {
-        flupsyIds.add(basket.flupsy_id);
-      }
-    }
-
-    // 9. Ottieni tutti i FLUPSY in una singola query
-    const flupsysResult = await db.execute(sql`
-      SELECT * FROM flupsys WHERE id IN ${Array.from(flupsyIds)}
-    `);
-
-    // Mappa dei FLUPSY per ID
-    const flupsysMap = flupsysResult.reduce((map, flupsy) => {
-      // Converti i nomi delle colonne da snake_case a camelCase
-      map[flupsy.id] = {
-        id: flupsy.id,
-        name: flupsy.name,
-        location: flupsy.location,
-        description: flupsy.description,
-        active: flupsy.active,
-        maxPositions: flupsy.max_positions,
-        productionCenter: flupsy.production_center
-      };
-      return map;
-    }, {});
-
-    // 10. Raccogli tutti gli ID dei lotti dalle operazioni
-    const lotIds = new Set();
-    for (const op of operationsResult) {
-      if (op.lot_id) {
-        lotIds.add(op.lot_id);
-      }
-    }
-
-    // 11. Ottieni tutti i lotti in una singola query se necessario
-    let lotsMap = {};
-    if (lotIds.size > 0) {
-      const lotsResult = await db.execute(sql`
-        SELECT * FROM lots WHERE id IN ${Array.from(lotIds)}
-      `);
-
-      // Mappa dei lotti per ID
-      lotsMap = lotsResult.reduce((map, lot) => {
-        // Converti i nomi delle colonne da snake_case a camelCase
-        map[lot.id] = {
-          id: lot.id,
-          state: lot.state,
-          arrivalDate: lot.arrival_date,
-          supplier: lot.supplier,
-          supplierLotNumber: lot.supplier_lot_number,
-          sizeId: lot.size_id,
-          animalCount: lot.animal_count,
-          weight: lot.weight,
-          quality: lot.quality,
-          notes: lot.notes
-        };
-        return map;
-      }, {});
-    }
-
-    // 12. Raccogli tutti gli ID degli SGR dalle operazioni
     const sgrIds = new Set();
-    for (const op of operationsResult) {
-      if (op.sgr_id) {
-        sgrIds.add(op.sgr_id);
+    
+    for (const operations of Object.values(operationsByCycle)) {
+      if (operations.length > 0) {
+        const latestOperation = operations[0];
+        if (latestOperation.sizeId) sizeIds.add(latestOperation.sizeId);
+        if (latestOperation.sgrId) sgrIds.add(latestOperation.sgrId);
       }
     }
-
-    // 13. Ottieni tutti gli SGR in una singola query se necessario
-    let sgrMap = {};
-    if (sgrIds.size > 0) {
-      const sgrResult = await db.execute(sql`
-        SELECT * FROM sgr WHERE id IN ${Array.from(sgrIds)}
-      `);
-
-      // Mappa degli SGR per ID
-      sgrMap = sgrResult.reduce((map, sgrItem) => {
-        // Converti i nomi delle colonne da snake_case a camelCase
-        map[sgrItem.id] = {
-          id: sgrItem.id,
-          month: sgrItem.month,
-          percentage: sgrItem.percentage,
-          calculatedFromReal: sgrItem.calculated_from_real
-        };
-        return map;
-      }, {});
+    
+    // 5. Ottieni tutte le taglie in batch
+    let sizesMap = {};
+    if (sizeIds.size > 0) {
+      const allSizes = await db.select()
+        .from(sizes)
+        .where(inArray(sizes.id, Array.from(sizeIds)));
+      
+      // Crea mappa delle taglie per ID
+      for (const size of allSizes) {
+        sizesMap[size.id] = size;
+      }
     }
-
-    // 14. Componi i dati completi per ogni ciclo
+    
+    // 6. Ottieni tutti gli SGR in batch
+    let sgrsMap = {};
+    if (sgrIds.size > 0) {
+      const allSgrs = await db.select()
+        .from(sgr)
+        .where(inArray(sgr.id, Array.from(sgrIds)));
+      
+      // Crea mappa degli SGR per ID
+      for (const sgrItem of allSgrs) {
+        sgrsMap[sgrItem.id] = sgrItem;
+      }
+    }
+    
+    // 7. Costruisci il risultato finale con tutti i dettagli
     const activeCyclesWithDetails = activeCycles.map(cycle => {
       const basket = basketsMap[cycle.basketId];
       const operations = operationsByCycle[cycle.id] || [];
-      const lastOperation = operations.length > 0 ? operations[0] : null;
+      const latestOperation = operations.length > 0 ? operations[0] : null;
       
-      let flupsy = null;
-      if (basket && basket.flupsyId) {
-        flupsy = flupsysMap[basket.flupsyId];
-      }
-      
-      let size = null;
-      if (lastOperation && lastOperation.sizeId) {
-        size = sizesMap[lastOperation.sizeId];
-      }
-      
-      let lot = null;
-      if (lastOperation && lastOperation.lotId) {
-        lot = lotsMap[lastOperation.lotId];
+      let currentSize = null;
+      if (latestOperation && latestOperation.sizeId) {
+        currentSize = sizesMap[latestOperation.sizeId];
       }
       
       let currentSgr = null;
-      if (lastOperation && lastOperation.sgrId) {
-        currentSgr = sgrMap[lastOperation.sgrId];
+      if (latestOperation && latestOperation.sgrId) {
+        currentSgr = sgrsMap[latestOperation.sgrId];
       }
       
-      // Calcola la durata del ciclo in giorni
-      let cycleDuration = null;
-      if (cycle.startDate) {
-        const startDate = new Date(cycle.startDate);
-        const today = new Date();
-        const diffTime = today.getTime() - startDate.getTime();
-        cycleDuration = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-      }
-      
-      return { 
-        ...cycle, 
-        basket, 
-        flupsy,
-        latestOperation: lastOperation, 
-        currentSize: size,
-        currentSgr,
-        cycleDuration,
-        lot
+      return {
+        ...cycle,
+        basket,
+        latestOperation,
+        currentSize,
+        currentSgr
       };
     });
-
+    
     // Salva nella cache
     CyclesCache.set(cacheKey, activeCyclesWithDetails);
     
@@ -563,7 +418,7 @@ export async function getActiveCyclesWithDetails() {
     
     return activeCyclesWithDetails;
   } catch (error) {
-    console.error("Errore nel recupero dei cicli attivi con dettagli:", error);
+    console.error("Errore nel recupero dei cicli attivi:", error);
     throw error;
   }
 }
@@ -572,8 +427,9 @@ export async function getActiveCyclesWithDetails() {
  * Configura l'invalidazione della cache per i cicli
  */
 export function setupCyclesCacheInvalidation(app) {
-  // Invalida la cache quando un ciclo viene creato, aggiornato o eliminato
-  const invalidateCache = () => CyclesCache.invalidate();
+  function invalidateCache() {
+    CyclesCache.invalidate();
+  }
   
   app.post('/api/cycles*', invalidateCache);
   app.put('/api/cycles*', invalidateCache);

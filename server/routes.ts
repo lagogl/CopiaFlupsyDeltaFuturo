@@ -2559,17 +2559,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Cycle routes ===
   app.get("/api/cycles", async (req, res) => {
     try {
-      const cycles = await storage.getCycles();
+      const startTime = Date.now();
       
-      // Fetch baskets for each cycle
-      const cyclesWithBaskets = await Promise.all(
-        cycles.map(async (cycle) => {
-          const basket = await storage.getBasket(cycle.basketId);
-          return { ...cycle, basket };
-        })
-      );
+      // Parametri di query per filtro e paginazione
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 10;
+      const state = req.query.state ? String(req.query.state) : null;
+      const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : null;
+      const startDateFrom = req.query.startDateFrom ? String(req.query.startDateFrom) : null;
+      const startDateTo = req.query.startDateTo ? String(req.query.startDateTo) : null;
+      const sortBy = req.query.sortBy ? String(req.query.sortBy) : 'startDate';
+      const sortOrder = req.query.sortOrder ? String(req.query.sortOrder) : 'desc';
       
-      res.json(cyclesWithBaskets);
+      // Utilizzo del controller ottimizzato
+      const cyclesController = await import('./controllers/cycles-controller-optimized.js');
+      
+      const result = await cyclesController.getCycles({
+        page,
+        pageSize,
+        state,
+        flupsyId,
+        startDateFrom,
+        startDateTo,
+        sortBy,
+        sortOrder
+      });
+      
+      const duration = Date.now() - startTime;
+      if (duration > 200) {
+        console.log(`Cicli recuperati in ${duration}ms`);
+      }
+      
+      // Per mantenere la compatibilità con l'API esistente, se il client non ha richiesto
+      // la paginazione esplicitamente, restituiamo solo l'array dei cicli
+      if (!req.query.page && !req.query.pageSize) {
+        res.json(result.cycles);
+      } else {
+        res.json(result);
+      }
     } catch (error) {
       console.error("Error fetching cycles:", error);
       res.status(500).json({ message: "Failed to fetch cycles" });
