@@ -52,7 +52,7 @@ export default function Dashboard() {
   const growthChartRef = useRef<HTMLDivElement>(null);
   const flupsyVisualizerRef = useRef<HTMLDivElement>(null);
 
-  // Query ottimizzate per la dashboard
+  // Query ottimizzate per la dashboard principale
   const { data: dashboardStats, isLoading: statsLoading, dataUpdatedAt: statsUpdatedAt } = useQuery({
     queryKey: ['/api/dashboard/stats', selectedCenter, selectedFlupsyIds],
     queryFn: async () => {
@@ -71,11 +71,61 @@ export default function Dashboard() {
     staleTime: 5 * 60 * 1000, // 5 minuti
   });
   
+  // Query ottimizzata per i dati FLUPSY (visualizzazione FLUPSY)
+  const { data: flupsyDashboardData } = useQuery({
+    queryKey: ['/api/dashboard/flupsy', selectedFlupsyIds],
+    queryFn: async () => {
+      const params = new URLSearchParams();
+      if (selectedFlupsyIds.length > 0) params.append('flupsyIds', selectedFlupsyIds.join(','));
+      
+      const response = await fetch(`/api/dashboard/flupsy?${params}`);
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei dati FLUPSY');
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minuti
+    enabled: !statsLoading, // Carica solo dopo che le statistiche base sono pronte
+  });
+  
+  // Query ottimizzata per i cestelli in arrivo
+  const { data: incomingBasketsData } = useQuery({
+    queryKey: ['/api/dashboard/incoming-baskets'],
+    queryFn: async () => {
+      const response = await fetch('/api/dashboard/incoming-baskets');
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei cestelli in arrivo');
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minuti
+    enabled: !statsLoading, // Carica solo dopo che le statistiche base sono pronte
+  });
+  
+  // Query ottimizzata per i cicli attivi
+  const { data: activeCyclesData } = useQuery({
+    queryKey: ['/api/dashboard/active-cycles'],
+    queryFn: async () => {
+      const response = await fetch('/api/dashboard/active-cycles');
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei cicli attivi');
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minuti
+    enabled: !statsLoading, // Carica solo dopo che le statistiche base sono pronte
+  });
+  
   // Usa i dati recuperati ottimizzati
   const baskets = dashboardStats?.baskets || [];
   const cycles = dashboardStats?.cycles || [];
   const operations = dashboardStats?.operations || [];
   const lots = dashboardStats?.lots || [];
+  
+  // Dati aggiuntivi dai nuovi endpoint ottimizzati
+  const flupsyData = flupsyDashboardData?.data || [];
+  const incomingBaskets = incomingBasketsData?.data || [];
+  const detailedActiveCycles = activeCyclesData?.data || [];
   
   // Flag di caricamento
   const isLoading = statsLoading;
@@ -85,7 +135,13 @@ export default function Dashboard() {
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
-      await queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
+      // Invalida tutte le query ottimizzate della dashboard
+      await Promise.all([
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/flupsy'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/incoming-baskets'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/active-cycles'] })
+      ]);
       setLastRefresh(new Date());
       setNeedsRefresh(false);
     } finally {
