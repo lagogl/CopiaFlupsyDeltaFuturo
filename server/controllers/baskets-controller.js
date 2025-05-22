@@ -156,10 +156,13 @@ export async function getBasketsOptimized(options = {}) {
         if (flupsyId.includes(',')) {
           // Split string e converti in array di numeri
           const flupsyIds = flupsyId.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
-          const flupsyConditions = flupsyIds.map(id => eq(baskets.flupsyId, id));
-          if (flupsyConditions.length > 0) {
-            whereConditions.push(or(...flupsyConditions));
-          }
+          
+          // IMPORTANTE: Non usare OR per molti ID perché può causare problemi di performance
+          // Usa SQL nativo per gestire una lista di ID
+          console.log(`Ricerca cestelli per ${flupsyIds.length} FLUPSY`);
+          
+          // Utilizziamo inArray che è più efficiente con le liste rispetto a OR multipli
+          whereConditions.push(sql`flupsy_id IN ${flupsyIds}`);
         } else {
           // Singolo ID come stringa
           const parsedId = parseInt(flupsyId, 10);
@@ -172,10 +175,13 @@ export async function getBasketsOptimized(options = {}) {
       else if (Array.isArray(flupsyId) && flupsyId.length > 0) {
         // Converte ogni elemento in numero (potrebbero arrivare come stringhe)
         const flupsyIds = flupsyId.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(id => !isNaN(id));
-        const flupsyConditions = flupsyIds.map(id => eq(baskets.flupsyId, id));
-        if (flupsyConditions.length > 0) {
-          whereConditions.push(or(...flupsyConditions));
-        }
+        
+        // IMPORTANTE: Non usare OR per molti ID perché può causare problemi di performance
+        // Usa SQL nativo per gestire una lista di ID
+        console.log(`Ricerca cestelli per ${flupsyIds.length} FLUPSY (array)`);
+        
+        // Utilizziamo inArray che è più efficiente con le liste rispetto a OR multipli
+        whereConditions.push(sql`flupsy_id IN ${flupsyIds}`);
       }
     }
     
@@ -222,14 +228,14 @@ export async function getBasketsOptimized(options = {}) {
     }
     
     // Applica paginazione, a meno che non sia richiesto di recuperare tutti i dati
-    // Il parametro includeAll viene usato principalmente dalla dashboard
+    // Il parametro includeAll viene usato principalmente dalla dashboard e dal visualizzatore FLUPSY
     const skipPagination = options.includeAll === true || pageSize > 1000;
     
     if (!skipPagination) {
       const offset = (page - 1) * pageSize;
       query = query.limit(pageSize).offset(offset);
     } else {
-      console.log("Recupero tutti i cestelli senza paginazione (richiesto da dashboard)");
+      console.log("Recupero tutti i cestelli senza paginazione (richiesto da dashboard o visualizzatore FLUPSY)");
     }
     
     // Esegui la query
