@@ -67,8 +67,13 @@ export default function BasicFlupsyVisualizer({ selectedFlupsyIds = [] }: BasicF
     queryKey: ['/api/flupsys'] 
   });
   
+  // Utilizziamo includeAll=true per recuperare tutti i cestelli senza paginazione
+  // e passiamo i flupsyId selezionati per filtrare i dati correttamente
   const { data: baskets, isLoading: isLoadingBaskets } = useQuery({ 
-    queryKey: ['/api/baskets'] 
+    queryKey: ['/api/baskets', { 
+      includeAll: true,
+      flupsyId: selectedFlupsyIds?.length > 0 ? selectedFlupsyIds : undefined
+    }] 
   });
   
   const { data: operations } = useQuery({ 
