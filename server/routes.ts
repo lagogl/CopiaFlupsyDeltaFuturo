@@ -3701,6 +3701,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // Endpoint ottimizzato con paginazione per i FLUPSY
+  app.get("/api/flupsys/optimized", async (req, res) => {
+    try {
+      // Parametri di paginazione
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 10;
+      const includeStats = req.query.includeStats === 'true';
+      
+      // Utilizziamo la funzione ottimizzata
+      const result = await getPaginatedFlupsys(page, pageSize, includeStats);
+      
+      // Restituisce l'oggetto completo con paginazione
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching paginated flupsys:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch flupsys", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // Manteniamo l'endpoint originale per retrocompatibilità, ma lo ottimizziamo
   app.get("/api/flupsys", async (req, res) => {
     try {
@@ -3710,6 +3732,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Utilizziamo la stessa funzione ottimizzata ma recuperiamo tutti i risultati
       // impostando una dimensione pagina grande (100 è più che sufficiente per coprire tutti i FLUPSY)
       const result = await getPaginatedFlupsys(1, 100, includeStats);
+      
+      console.log("API flupsys chiamata, restituendo dati ottimizzati");
       
       // Restituisci solo l'array di dati per mantenere la compatibilità con l'API originale
       res.json(result.data);
