@@ -66,7 +66,7 @@ export default function Lots() {
     return params.toString();
   };
   
-  // Query che utilizza direttamente l'API del database per i dati reali
+  // Query ottimizzata che utilizza solo dati reali dal database con prestazioni migliorate
   const { data: lotsData, isLoading } = useQuery({
     queryKey: ['/api/lots/optimized', currentPage, pageSize, filterValues],
     queryFn: async () => {
@@ -74,37 +74,35 @@ export default function Lots() {
         console.time('lots-fetch');
         
         const queryParams = buildQueryParams();
-        // Fai la richiesta all'endpoint ottimizzato di paginazione
-        const response = await fetch(`/api/lots/optimized?${queryParams}`);
         
-        if (!response.ok) {
-          throw new Error('Errore nel caricamento dei lotti');
-        }
-        
-        // Ottieni i dati dei lotti
-        const lotsResponse = await response.json();
-        
-        // Fai una richiesta separata per le statistiche reali
-        const statsResponse = await fetch('/api/lots/statistics');
-        if (!statsResponse.ok) {
-          throw new Error('Errore nel caricamento delle statistiche');
-        }
-        
-        const statistics = await statsResponse.json();
+        // Usiamo Promise.all per fare le richieste in parallelo invece che sequenzialmente
+        const [lotsResponse, statsResponse] = await Promise.all([
+          // Richiesta dei lotti
+          fetch(`/api/lots/optimized?${queryParams}`).then(res => {
+            if (!res.ok) throw new Error('Errore nel caricamento dei lotti');
+            return res.json();
+          }),
+          
+          // Richiesta delle statistiche (in parallelo)
+          fetch('/api/lots/statistics').then(res => {
+            if (!res.ok) throw new Error('Errore nel caricamento delle statistiche');
+            return res.json();
+          })
+        ]);
         
         console.timeEnd('lots-fetch');
-        console.log('Statistiche caricate:', statistics);
         
         return {
           ...lotsResponse,
-          statistics: statistics // Usa i dati reali dalle statistiche
+          statistics: statsResponse
         };
       } catch (error) {
         console.error('Errore durante il recupero dei dati:', error);
         throw error;
       }
     },
-    staleTime: 30000 // Cache dei risultati per 30 secondi (ridotto per maggiore freschezza dei dati)
+    staleTime: 60000, // Cache dei risultati per 1 minuto (aumentato per migliori performance)
+    refetchOnWindowFocus: false // Non aggiornare quando la finestra torna in focus
   });
   
   // Estrai i dati dai risultati
