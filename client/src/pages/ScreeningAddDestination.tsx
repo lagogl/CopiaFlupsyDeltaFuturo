@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo } from 'react';
 import { useRoute, useLocation } from 'wouter';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { ArrowLeft, Plus, Loader2 } from 'lucide-react';
@@ -303,55 +303,73 @@ export default function ScreeningAddDestination() {
   // 2. Ceste disponibili dello stesso flupsy delle ceste di origine
   // 3. Altre ceste disponibili
   
-  // Raccogliamo prima tutte le ceste disponibili
-  const allAvailableBaskets = availableBaskets?.filter(basket => {
-    // Se la cesta è disponibile o inattiva, può essere usata
-    if (basket.state === 'available' || basket.state === 'inactive') {
-      return true;
-    }
-    
-    // Verifica se la cesta è una delle ceste di origine della vagliatura corrente
-    const isSourceBasket = sourceBaskets?.some(sourceBasket => 
-      sourceBasket.basketId === basket.id && 
-      // Verifica se la cesta è stata dismessa (è stato liberato il suo ciclo)
-      sourceBasket.dismissed === true
+  // Creiamo una cache per velocizzare le ricerche
+  const dismissedSourceBasketIds = useMemo(() => {
+    return new Set(
+      sourceBaskets
+        ?.filter(sb => sb.dismissed === true)
+        .map(sb => sb.basketId) || []
     );
-    
-    return isSourceBasket;
-  }) || [];
+  }, [sourceBaskets]);
+  
+  // Raccogliamo prima tutte le ceste disponibili (utilizziamo useMemo per evitare ricalcoli inutili)
+  const allAvailableBaskets = useMemo(() => {
+    return availableBaskets?.filter(basket => {
+      // Se la cesta è disponibile o inattiva, può essere usata
+      if (basket.state === 'available' || basket.state === 'inactive') {
+        return true;
+      }
+      
+      // Verifica se la cesta è una delle ceste di origine dismesse (usando la cache Set per velocizzare)
+      return dismissedSourceBasketIds.has(basket.id);
+    }) || [];
+  }, [availableBaskets, dismissedSourceBasketIds]);
   
   // Otteniamo gli ID dei FLUPSY delle ceste di origine (solo quelle dismesse)
-  const sourceFlupsyIds = sourceBaskets?.filter(sb => sb.dismissed === true)
-    .map(sb => {
-      // Se la cesta ha dettagli flupsy, prendi l'ID
-      if (sb.basket && sb.basket.flupsyId) {
-        return sb.basket.flupsyId;
-      }
-      return null;
-    }).filter(id => id !== null) || [];
+  const sourceFlupsyIds = useMemo(() => {
+    // Utilizziamo Set per eliminare i duplicati e velocizzare le ricerche
+    const flupsyIdSet = new Set(
+      sourceBaskets?.filter(sb => sb.dismissed === true)
+        .map(sb => {
+          // Se la cesta ha dettagli flupsy, prendi l'ID
+          if (sb.basket && sb.basket.flupsyId) {
+            return sb.basket.flupsyId;
+          }
+          return null;
+        })
+        .filter(id => id !== null) || []
+    );
+    return Array.from(flupsyIdSet);
+  }, [sourceBaskets]);
   
-  // Dividiamo le ceste in categorie
-  const sourceBasketOptions = allAvailableBaskets.filter(basket => 
-    sourceBaskets?.some(sb => sb.basketId === basket.id && sb.dismissed === true)
-  );
+  // Dividiamo le ceste in categorie (usando useMemo per evitare calcoli ripetuti)
+  const sourceBasketOptions = useMemo(() => {
+    return allAvailableBaskets.filter(basket => 
+      sourceBaskets?.some(sb => sb.basketId === basket.id && sb.dismissed === true)
+    );
+  }, [allAvailableBaskets, sourceBaskets]);
   
-  const sameFlupsyBasketOptions = allAvailableBaskets.filter(basket => 
-    // Non è una cesta di origine ma appartiene a uno dei FLUPSY di origine
-    !sourceBasketOptions.includes(basket) && 
-    sourceFlupsyIds.includes(basket.flupsyId)
-  );
+  const sameFlupsyBasketOptions = useMemo(() => {
+    return allAvailableBaskets.filter(basket => 
+      // Non è una cesta di origine ma appartiene a uno dei FLUPSY di origine
+      !sourceBasketOptions.includes(basket) && 
+      sourceFlupsyIds.includes(basket.flupsyId)
+    );
+  }, [allAvailableBaskets, sourceBasketOptions, sourceFlupsyIds]);
   
-  const otherBasketOptions = allAvailableBaskets.filter(basket => 
-    !sourceBasketOptions.includes(basket) && 
-    !sameFlupsyBasketOptions.includes(basket)
-  );
+  const otherBasketOptions = useMemo(() => {
+    return allAvailableBaskets.filter(basket => 
+      !sourceBasketOptions.includes(basket) && 
+      !sameFlupsyBasketOptions.includes(basket)
+    );
+  }, [allAvailableBaskets, sourceBasketOptions, sameFlupsyBasketOptions]);
   
-  // Combiniamo le categorie nell'ordine desiderato
-  const availableBasketOptions = [
+  // Combiniamo le categorie nell'ordine desiderato (usando useMemo per calcolare una sola volta)
+  const availableBasketOptions = useMemo(() => [
     ...sourceBasketOptions.map(basket => ({ ...basket, category: 'source' })),
     ...sameFlupsyBasketOptions.map(basket => ({ ...basket, category: 'same-flupsy' })),
     ...otherBasketOptions.map(basket => ({ ...basket, category: 'other' }))
-  ];
+  ], [sourceBasketOptions, sameFlupsyBasketOptions, otherBasketOptions]);
 
   return (
     <div className="container mx-auto p-4">
