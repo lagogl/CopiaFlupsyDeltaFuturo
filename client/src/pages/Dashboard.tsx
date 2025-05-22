@@ -25,23 +25,6 @@ export default function Dashboard() {
   const [isRefreshing, setIsRefreshing] = useState<boolean>(false);
   const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
   
-  // Statistiche della dashboard ottimizzate
-  const { data: dashboardStats, isLoading: isLoadingStats, refetch: refetchStats } = useQuery({
-    queryKey: ['/api/statistics/dashboard/optimized'],
-    queryFn: async () => {
-      console.log("Caricamento statistiche dashboard ottimizzate...");
-      const startTime = performance.now();
-      const response = await fetch('/api/statistics/dashboard/optimized');
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento delle statistiche dashboard');
-      }
-      const data = await response.json();
-      const endTime = performance.now();
-      console.log(`Statistiche dashboard caricate in ${(endTime - startTime).toFixed(2)}ms`);
-      return data;
-    }
-  });
-  
   // Utilizzo del hook di persistenza per i filtri
   const [filters, setFilters] = useFilterPersistence('dashboard', {
     selectedCenter: '',

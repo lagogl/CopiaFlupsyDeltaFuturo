@@ -70,18 +70,11 @@ export default function Flupsys() {
   const { data: flupsys = [], isLoading } = useQuery<EnhancedFlupsy[]>({
     queryKey: ['/api/flupsys'],
     queryFn: async () => {
-      console.log("Inizio caricamento FLUPSY ottimizzato");
-      const startTime = performance.now();
-      // Utilizzo l'endpoint ottimizzato dei FLUPSY per migliorare le prestazioni
-      const response = await fetch('/api/flupsys/optimized?page=1&pageSize=100&includeStats=true');
+      const response = await fetch('/api/flupsys?includeStats=true');
       if (!response.ok) {
         throw new Error('Errore nel caricamento dei FLUPSY');
       }
-      const result = await response.json();
-      const endTime = performance.now();
-      console.log(`Caricamento FLUPSY completato in ${(endTime - startTime).toFixed(2)}ms`);
-      // Restituisco i dati direttamente, mantenendo la compatibilità con il formato esistente
-      return result.data || [];
+      return response.json();
     },
     select: (data: EnhancedFlupsy[]) => data || []
   });

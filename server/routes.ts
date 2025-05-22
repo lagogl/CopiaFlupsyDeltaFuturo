@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import path from 'path';
 import fs from 'fs';
 import { db } from "./db";
-import { eq, and, isNull, sql, count, inArray, desc } from "drizzle-orm";
+import { eq, and, isNull, sql, count, inArray } from "drizzle-orm";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, subDays } from "date-fns";
 import { 
   selections, 
@@ -12,8 +12,7 @@ import {
   selectionDestinationBaskets,
   insertUserSchema,
   cycles,
-  sizes,
-  operations
+  sizes
 } from "../shared/schema";
 import { 
   getNotificationSettings, 
@@ -30,16 +29,12 @@ import * as ScreeningController from "./controllers/screening-controller";
 import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
-// import { diarioController } from "./controllers/index";
+import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
 import { updateBasketPosition } from "./controllers/basket-position-controller";
 import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
-import { getPaginatedFlupsys } from "./controllers/flupsy-optimized-controller";
-import { getPaginatedBaskets } from "./controllers/basket-optimized-controller";
-import { getDashboardStatistics } from "./controllers/dashboard-optimized-controller";
-import { getPaginatedLots, getLotStatistics } from "./controllers/lot-optimized-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
 
 // Importazione del router per le API esterne
@@ -293,31 +288,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sequences/info", SequenceController.getSequencesInfo);
   
   // === Basket routes ===
-  // Endpoint ottimizzato e paginato per i cestelli
-  app.get("/api/baskets/optimized", async (req, res) => {
-    try {
-      // Parametri di paginazione
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 20;
-      
-      // Parametri di filtro
-      const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
-      const withActiveCycle = req.query.withActiveCycle === 'true';
-      
-      // Utilizza il controller ottimizzato
-      const result = await getPaginatedBaskets(page, pageSize, flupsyId, withActiveCycle);
-      
-      res.json(result);
-    } catch (error) {
-      console.error("Error fetching paginated baskets:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch baskets", 
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-  
-  // Manteniamo l'endpoint originale per retrocompatibilità
   app.get("/api/baskets", async (req, res) => {
     try {
       const baskets = await storage.getBaskets();
@@ -2036,12 +2006,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Diario di Bordo API routes ===
   
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
-  // Temporaneamente disabilitato per l'implementazione delle ottimizzazioni
-  // app.get("/api/diario/month-data", diarioController.getMonthData);
+  app.get("/api/diario/month-data", diarioController.getMonthData);
   
   // API - Esporta il calendario in formato CSV
-  // Temporaneamente disabilitato per l'implementazione delle ottimizzazioni
-  // app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
+  app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
   
   // API - [VECCHIO ENDPOINT - DA RIMUOVERE QUANDO IL NUOVO SARÀ TESTATO]
   app.get("/api/diario/month-data-old", async (req, res) => {
@@ -3286,65 +3254,72 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // API - Ottieni lotti paginati con filtri e statistiche (versione ottimizzata con Drizzle ORM)
   app.get("/api/lots/optimized", async (req, res) => {
     try {
-      console.log("Richiesta lotti ottimizzati con query params:", req.query);
-      
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 20;
+      const supplier = req.query.supplier as string;
+      const quality = req.query.quality as string;
+      const sizeId = req.query.sizeId ? parseInt(req.query.sizeId as string) : undefined;
       
-      // Elabora i filtri dalla query string con date
-      const filters: any = {
-        id: req.query.id ? parseInt(req.query.id as string) : undefined,
-        supplier: req.query.supplier as string,
-        quality: req.query.quality as string,
-        sizeId: req.query.sizeId ? parseInt(req.query.sizeId as string) : undefined,
-        state: req.query.state as string
-      };
+      // Gestione delle date
+      let dateFrom: Date | undefined;
+      let dateTo: Date | undefined;
       
-      // Gestione delle date per il filtro
       if (req.query.dateFrom) {
-        const dateFrom = new Date(req.query.dateFrom as string);
-        if (isNaN(dateFrom.getTime())) {
-          return res.status(400).json({ message: "Data di inizio non valida" });
-        }
-        filters.fromDate = dateFrom.toISOString().split('T')[0];
+        dateFrom = new Date(req.query.dateFrom as string);
       }
       
       if (req.query.dateTo) {
-        const dateTo = new Date(req.query.dateTo as string);
-        if (isNaN(dateTo.getTime())) {
-          return res.status(400).json({ message: "Data di fine non valida" });
-        }
-        filters.toDate = dateTo.toISOString().split('T')[0];
+        dateTo = new Date(req.query.dateTo as string);
       }
       
-      console.log("Esecuzione query ottimizzata per lotti con opzioni:", {
+      // Verifica che le date siano valide
+      if (dateFrom && isNaN(dateFrom.getTime())) {
+        return res.status(400).json({ message: "Data di inizio non valida" });
+      }
+      
+      if (dateTo && isNaN(dateTo.getTime())) {
+        return res.status(400).json({ message: "Data di fine non valida" });
+      }
+      
+      // Ottieni i lotti con paginazione e filtri
+      const result = await storage.getLotsOptimized({
         page,
         pageSize,
-        filters
+        supplier,
+        quality,
+        dateFrom,
+        dateTo,
+        sizeId
       });
       
-      // Ottieni i dati paginati e filtrati usando il nuovo controller ottimizzato
-      const result = await getPaginatedLots(page, pageSize, filters);
+      // Arricchisci i dati recuperando le informazioni sulle taglie
+      const lotsWithSizes = await Promise.all(
+        result.lots.map(async (lot) => {
+          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
+          return { ...lot, size };
+        })
+      );
       
-      // Formatta la risposta per mantenere compatibilità col frontend esistente
+      // Calcolo le statistiche sulla qualità per i lotti filtrati
       const qualityStats = {
         normali: 0,
         teste: 0,
         code: 0,
-        totale: result.statistics.totalAnimals || 0
+        totale: 0
       };
       
-      // Elabora le statistiche di qualità dai dati ritornati
-      if (result.statistics.byQuality) {
-        qualityStats.normali = result.statistics.byQuality['normali'] || 0;
-        qualityStats.teste = result.statistics.byQuality['teste'] || 0;
-        qualityStats.code = result.statistics.byQuality['code'] || 0;
-      }
+      result.lots.forEach(lot => {
+        const count = lot.animalCount || 0;
+        qualityStats.totale += count;
+        
+        if (lot.quality === 'normali') qualityStats.normali += count;
+        else if (lot.quality === 'teste') qualityStats.teste += count;
+        else if (lot.quality === 'code') qualityStats.code += count;
+      });
       
-      // Calcola le percentuali
+      // Prepara percentuali
       const percentages = {
         normali: qualityStats.totale > 0 ? Math.round((qualityStats.normali / qualityStats.totale) * 100) : 0,
         teste: qualityStats.totale > 0 ? Math.round((qualityStats.teste / qualityStats.totale) * 100) : 0,
@@ -3352,24 +3327,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
       };
       
       res.json({
-        lots: result.data,
-        sizes: result.sizes,
-        totalCount: result.meta.totalItems,
-        currentPage: result.meta.currentPage,
-        pageSize: result.meta.pageSize,
-        totalPages: result.meta.totalPages,
+        lots: lotsWithSizes,
+        totalCount: result.totalCount,
+        currentPage: page,
+        pageSize,
+        totalPages: Math.ceil(result.totalCount / pageSize),
         statistics: {
           counts: qualityStats,
-          percentages,
-          bySupplier: result.statistics.bySupplier
+          percentages
         }
       });
     } catch (error) {
-      console.error("Errore nel recuperare i lotti ottimizzati:", error);
-      res.status(500).json({ 
-        message: "Errore nel recupero dei lotti ottimizzati", 
-        error: String(error) 
-      });
+      console.error("Error fetching optimized lots:", error);
+      res.status(500).json({ message: "Errore nel recupero dei lotti ottimizzati" });
     }
   });
 
@@ -3599,20 +3569,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
-  // === Dashboard statistics optimized ===
-  app.get("/api/statistics/dashboard/optimized", async (req, res) => {
-    try {
-      const statistics = await getDashboardStatistics();
-      res.json(statistics);
-    } catch (error) {
-      console.error("Error fetching dashboard statistics:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch dashboard statistics", 
-        error: error instanceof Error ? error.message : String(error) 
-      });
-    }
-  });
-  
   app.get("/api/statistics/cycles/comparison", async (req, res) => {
     try {
       // Get query parameters for cycle IDs to compare
@@ -3681,64 +3637,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === FLUPSY routes ===
-  // Nuovo endpoint ottimizzato con paginazione
-  app.get("/api/flupsys/optimized", async (req, res) => {
-    try {
-      // Parametri di paginazione
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 10;
-      const includeStats = req.query.includeStats === 'true';
-      
-      // Utilizza il controller ottimizzato
-      const result = await getPaginatedFlupsys(page, pageSize, includeStats);
-      
-      res.json(result);
-    } catch (error) {
-      console.error("Error fetching paginated FLUPSY units:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch FLUPSY units", 
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-  
-  // Endpoint ottimizzato con paginazione per i FLUPSY
-  app.get("/api/flupsys/optimized", async (req, res) => {
-    try {
-      // Parametri di paginazione
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 10;
-      const includeStats = req.query.includeStats === 'true';
-      
-      // Utilizziamo la funzione ottimizzata
-      const result = await getPaginatedFlupsys(page, pageSize, includeStats);
-      
-      // Restituisce l'oggetto completo con paginazione
-      res.json(result);
-    } catch (error) {
-      console.error("Error fetching paginated flupsys:", error);
-      res.status(500).json({ 
-        message: "Failed to fetch flupsys", 
-        error: error instanceof Error ? error.message : String(error)
-      });
-    }
-  });
-
-  // Manteniamo l'endpoint originale per retrocompatibilità, ma lo ottimizziamo
   app.get("/api/flupsys", async (req, res) => {
     try {
-      // Recuperiamo tutti i dati senza paginazione
+      // Ottenere i FLUPSY base
+      const flupsys = await storage.getFlupsys();
+      
+      // Aggiungere statistiche per ciascun FLUPSY se richiesto
       const includeStats = req.query.includeStats === 'true';
-      
-      // Utilizziamo la stessa funzione ottimizzata ma recuperiamo tutti i risultati
-      // impostando una dimensione pagina grande (100 è più che sufficiente per coprire tutti i FLUPSY)
-      const result = await getPaginatedFlupsys(1, 100, includeStats);
-      
-      console.log("API flupsys chiamata, restituendo dati ottimizzati");
-      
-      // Restituisci solo l'array di dati per mantenere la compatibilità con l'API originale
-      res.json(result.data);
-      return;
       
       if (includeStats) {
         // Per ogni FLUPSY, aggiungi informazioni sui cestelli e cicli attivi
@@ -3784,38 +3689,32 @@ export async function registerRoutes(app: Express): Promise<Server> {
               )
             );
           
-          console.log(`FLUPSY ${flupsy.id}: Trovati ${activeCycles.length} cicli attivi`);
-          
           // Per ogni ciclo attivo, ottieni l'ultima operazione con il conteggio animali
           for (const cycle of activeCycles) {
-            // Ottieni l'ultima operazione direttamente dal database invece di usare storage.getOperationsByCycle
-            const lastOperations = await db.select()
-              .from(operations)
-              .where(eq(operations.cycleId, cycle.id))
-              .orderBy(desc(operations.date))
-              .limit(20); // Prendi le ultime 20 operazioni per sicurezza
+            const operations = await storage.getOperationsByCycle(cycle.id);
             
-            // Filtriamo le operazioni con conteggio animali valido
-            const validOperations = lastOperations.filter(op => op.animalCount !== null && op.animalCount > 0);
+            // Ordina le operazioni per data (la più recente prima)
+            operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
             
-            if (validOperations.length > 0) {
-              // Usa la prima operazione valida trovata (la più recente)
-              const lastOperation = validOperations[0];
-              
-              console.log(`Ciclo ${cycle.id}: Trovata operazione con ${lastOperation.animalCount} animali`);
-              
-              totalAnimals += lastOperation.animalCount;
-              basketsWithAnimals++;
-              
-              // Aggiungi i dati di distribuzione per taglia
-              if (lastOperation.sizeId) {
-                const size = await storage.getSize(lastOperation.sizeId);
-                if (size) {
-                  const sizeCode = size.code;
-                  if (!sizeDistribution[sizeCode]) {
-                    sizeDistribution[sizeCode] = 0;
+            // Prendi solo le operazioni con conteggio animali
+            const operationsWithCount = operations.filter(op => op.animalCount !== null);
+            
+            if (operationsWithCount.length > 0) {
+              const lastOperation = operationsWithCount[0];
+              if (lastOperation.animalCount) {
+                totalAnimals += lastOperation.animalCount;
+                basketsWithAnimals++; // Incrementa il contatore di cestelli con animali
+                
+                // Aggiungi i dati di distribuzione per taglia
+                if (lastOperation.sizeId) {
+                  const size = await storage.getSize(lastOperation.sizeId);
+                  if (size) {
+                    const sizeCode = size.code;
+                    if (!sizeDistribution[sizeCode]) {
+                      sizeDistribution[sizeCode] = 0;
+                    }
+                    sizeDistribution[sizeCode] += lastOperation.animalCount;
                   }
-                  sizeDistribution[sizeCode] += lastOperation.animalCount;
                 }
               }
             }
