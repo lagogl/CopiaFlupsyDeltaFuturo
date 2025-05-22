@@ -920,8 +920,27 @@ export class DbStorage implements IStorage {
     dateFrom?: Date;
     dateTo?: Date;
     sizeId?: number;
-  }): Promise<{ lots: Lot[], totalCount: number }> {
+    includeStatistics?: boolean;
+  }): Promise<{ 
+    lots: Lot[], 
+    totalCount: number,
+    statistics?: {
+      counts: {
+        normali: number;
+        teste: number;
+        code: number;
+        totale: number;
+      },
+      percentages: {
+        normali: number;
+        teste: number;
+        code: number;
+      }
+    }
+  }> {
     try {
+      console.time('db-lots-optimized');
+      
       // Valori predefiniti
       const page = options.page || 1;
       const pageSize = options.pageSize || 20;
@@ -958,16 +977,22 @@ export class DbStorage implements IStorage {
         filters.push(lte(lots.arrivalDate, dateToStr));
       }
       
-      // Applica tutti i filtri alle query
-      if (filters.length > 0) {
-        const condition = and(...filters);
+      // Crea la condizione combinata per tutti i filtri
+      const condition = filters.length > 0 ? and(...filters) : undefined;
+      
+      // Applica i filtri alla query di conteggio
+      if (condition) {
         countQuery = countQuery.where(condition);
-        query = query.where(condition);
       }
       
       // Esegui la query di conteggio
       const countResult = await countQuery;
       const totalCount = countResult[0]?.count || 0;
+      
+      // Applica i filtri alla query principale
+      if (condition) {
+        query = query.where(condition);
+      }
       
       // Esegui la query principale con paginazione e ordinamento
       const results = await query
@@ -975,9 +1000,49 @@ export class DbStorage implements IStorage {
         .limit(pageSize)
         .offset(offset);
       
+      // Se richiesto, calcola le statistiche sulla qualità direttamente dal database
+      let statistics;
+      if (options.includeStatistics) {
+        console.time('db-stats-calculation');
+        
+        // Query per calcolare le statistiche direttamente nel database
+        const statsQuery = db.select({
+          normali: sql<number>`COALESCE(SUM(CASE WHEN ${lots.quality} = 'normali' THEN ${lots.animalCount} ELSE 0 END), 0)`,
+          teste: sql<number>`COALESCE(SUM(CASE WHEN ${lots.quality} = 'teste' THEN ${lots.animalCount} ELSE 0 END), 0)`,
+          code: sql<number>`COALESCE(SUM(CASE WHEN ${lots.quality} = 'code' THEN ${lots.animalCount} ELSE 0 END), 0)`,
+          totale: sql<number>`COALESCE(SUM(${lots.animalCount}), 0)`
+        });
+        
+        // Applica gli stessi filtri alla query delle statistiche
+        if (condition) {
+          statsQuery.where(condition);
+        }
+        
+        // Esegui la query delle statistiche
+        const statsResult = await statsQuery.from(lots);
+        const counts = statsResult[0];
+        
+        // Calcola le percentuali
+        const percentages = {
+          normali: counts.totale > 0 ? Math.round((counts.normali / counts.totale) * 100) : 0,
+          teste: counts.totale > 0 ? Math.round((counts.teste / counts.totale) * 100) : 0,
+          code: counts.totale > 0 ? Math.round((counts.code / counts.totale) * 100) : 0
+        };
+        
+        statistics = {
+          counts,
+          percentages
+        };
+        
+        console.timeEnd('db-stats-calculation');
+      }
+      
+      console.timeEnd('db-lots-optimized');
+      
       return {
         lots: results,
-        totalCount
+        totalCount,
+        statistics
       };
     } catch (error) {
       console.error('Errore nell\'ottenere i lotti con paginazione:', error);

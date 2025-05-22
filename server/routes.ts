@@ -3256,6 +3256,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/lots/optimized", async (req, res) => {
     try {
+      console.time('lots-optimized-request'); // Misurazione del tempo per diagnostica
+      
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 20;
       const supplier = req.query.supplier as string;
@@ -3283,7 +3285,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ message: "Data di fine non valida" });
       }
       
-      // Ottieni i lotti con paginazione e filtri
+      console.time('lots-query'); // Timing per la query principale
+      
+      // Otteniamo i lotti con paginazione e filtri
       const result = await storage.getLotsOptimized({
         page,
         pageSize,
@@ -3291,39 +3295,57 @@ export async function registerRoutes(app: Express): Promise<Server> {
         quality,
         dateFrom,
         dateTo,
-        sizeId
+        sizeId,
+        includeStatistics: true // Chiediamo di includere le statistiche direttamente nella query
       });
       
-      // Arricchisci i dati recuperando le informazioni sulle taglie
-      const lotsWithSizes = await Promise.all(
-        result.lots.map(async (lot) => {
-          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
-          return { ...lot, size };
-        })
-      );
+      console.timeEnd('lots-query');
       
-      // Calcolo le statistiche sulla qualità per i lotti filtrati
-      const qualityStats = {
-        normali: 0,
-        teste: 0,
-        code: 0,
-        totale: 0
-      };
+      // Ora recuperiamo tutte le taglie necessarie in un'unica query
+      console.time('sizes-query');
       
-      result.lots.forEach(lot => {
-        const count = lot.animalCount || 0;
-        qualityStats.totale += count;
-        
-        if (lot.quality === 'normali') qualityStats.normali += count;
-        else if (lot.quality === 'teste') qualityStats.teste += count;
-        else if (lot.quality === 'code') qualityStats.code += count;
-      });
+      // Estraiamo tutti gli ID delle taglie dai lotti (escludendo i null/undefined)
+      const sizeIds = result.lots
+        .map(lot => lot.sizeId)
+        .filter(id => id !== null && id !== undefined) as number[];
       
-      // Prepara percentuali
-      const percentages = {
-        normali: qualityStats.totale > 0 ? Math.round((qualityStats.normali / qualityStats.totale) * 100) : 0,
-        teste: qualityStats.totale > 0 ? Math.round((qualityStats.teste / qualityStats.totale) * 100) : 0,
-        code: qualityStats.totale > 0 ? Math.round((qualityStats.code / qualityStats.totale) * 100) : 0
+      // Utilizziamo Set per rimuovere duplicati
+      const uniqueSizeIds = Array.from(new Set(sizeIds));
+      
+      // Recuperiamo tutte le taglie necessarie in un'unica query
+      const sizesList = uniqueSizeIds.length > 0 
+        ? await db.select().from(sizes).where(inArray(sizes.id, uniqueSizeIds))
+        : [];
+      
+      console.timeEnd('sizes-query');
+      
+      console.time('data-processing');
+      
+      // Creiamo una mappa per le taglie per accesso veloce
+      const sizeMap = new Map(sizesList.map(size => [size.id, size]));
+      
+      // Arricchiamo i lotti con le informazioni sulle taglie usando la mappa (senza query aggiuntive)
+      const lotsWithSizes = result.lots.map(lot => ({
+        ...lot,
+        size: lot.sizeId ? sizeMap.get(lot.sizeId) || null : null
+      }));
+      
+      console.timeEnd('data-processing');
+      console.timeEnd('lots-optimized-request');
+      
+      // Prepara le statistiche di default se non sono presenti
+      const statistics = result.statistics || {
+        counts: {
+          normali: 0,
+          teste: 0,
+          code: 0,
+          totale: 0
+        },
+        percentages: {
+          normali: 0,
+          teste: 0,
+          code: 0
+        }
       };
       
       res.json({
@@ -3332,14 +3354,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentPage: page,
         pageSize,
         totalPages: Math.ceil(result.totalCount / pageSize),
-        statistics: {
-          counts: qualityStats,
-          percentages
-        }
+        statistics: statistics
       });
     } catch (error) {
       console.error("Error fetching optimized lots:", error);
-      res.status(500).json({ message: "Errore nel recupero dei lotti ottimizzati" });
+      res.status(500).json({ message: `Errore nel recupero dei lotti ottimizzati: ${error}` });
     }
   });
 
