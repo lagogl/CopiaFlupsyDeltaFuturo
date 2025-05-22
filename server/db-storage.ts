@@ -218,7 +218,7 @@ export class DbStorage implements IStorage {
       const offset = (page - 1) * pageSize;
       
       // Preparazione della clausola where
-      let whereClause = undefined;
+      let whereClause: any = undefined;
       
       if (options.flupsyId) {
         whereClause = eq(baskets.flupsyId, options.flupsyId);
@@ -231,9 +231,9 @@ export class DbStorage implements IStorage {
       
       // Prima otteniamo il conteggio totale
       const countResult = await db
-        .select({ count: count() })
+        .select({ count: sql<number>`count(*)` })
         .from(baskets)
-        .where(whereClause || undefined);
+        .where(whereClause);
       
       const totalCount = Number(countResult[0].count);
       console.log(`Conteggio totale cestelli: ${totalCount}`);
@@ -241,15 +241,13 @@ export class DbStorage implements IStorage {
       // Poi eseguiamo la query principale con paginazione
       let query = db
         .select()
-        .from(baskets)
-        .orderBy(baskets.id);
-      
+        .from(baskets);
+        
       if (whereClause) {
         query = query.where(whereClause);
       }
       
-      // Applica paginazione
-      query = query.limit(pageSize).offset(offset);
+      query = query.orderBy(baskets.id).limit(pageSize).offset(offset);
       
       const basketResults = await query;
       console.log(`Query completata: ${basketResults.length} risultati su ${totalCount} totali`);
@@ -260,19 +258,20 @@ export class DbStorage implements IStorage {
         const basketIds = basketResults.map(b => b.id);
         
         // Recupera i FLUPSY correlati in un'unica query
-        const flupsysData = await db
-          .select()
-          .from(flupsys)
-          .where(inArray(flupsys.id, basketResults.map(b => b.flupsyId).filter(id => id !== null) as number[]));
+        const flupsyIds = basketResults
+          .map(b => b.flupsyId)
+          .filter(id => id !== null) as number[];
+          
+        const flupsysData = flupsyIds.length > 0 ? 
+          await db.select().from(flupsys).where(inArray(flupsys.id, flupsyIds)) : 
+          [];
         
         const flupsysMap = new Map(flupsysData.map(f => [f.id, f]));
         
         // Recupera le ultime operazioni per ogni cestello in un'unica query
-        const latestOperations = await db
-          .select()
-          .from(operations)
-          .where(inArray(operations.basketId, basketIds))
-          .orderBy(desc(operations.date));
+        const latestOperations = basketIds.length > 0 ?
+          await db.select().from(operations).where(inArray(operations.basketId, basketIds)).orderBy(desc(operations.date)) :
+          [];
         
         // Raggruppa le operazioni per basketId
         const operationsMap = new Map<number, Operation[]>();
@@ -283,10 +282,13 @@ export class DbStorage implements IStorage {
         });
         
         // Recupera i cicli attivi per i cestelli
-        const cyclesData = await db
-          .select()
-          .from(cycles)
-          .where(inArray(cycles.id, basketResults.filter(b => b.currentCycleId !== null).map(b => b.currentCycleId as number)));
+        const cycleIds = basketResults
+          .filter(b => b.currentCycleId !== null)
+          .map(b => b.currentCycleId as number);
+          
+        const cyclesData = cycleIds.length > 0 ? 
+          await db.select().from(cycles).where(inArray(cycles.id, cycleIds)) : 
+          [];
         
         const cyclesMap = new Map(cyclesData.map(c => [c.id, c]));
         

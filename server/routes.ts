@@ -290,6 +290,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Basket routes ===
   app.get("/api/baskets", async (req, res) => {
     try {
+      console.log("Ricevuta richiesta cestelli. Verifico se è presente il flag ottimizzato...");
+      
+      // Verifica se è richiesta la versione ottimizzata con paginazione
+      const useOptimized = req.query.optimized === "true" || process.env.USE_OPTIMIZED_APIS === "true";
+      
+      if (useOptimized) {
+        console.log("Utilizzando endpoint ottimizzato per i cestelli");
+        
+        // Estrai i parametri della query
+        const page = req.query.page ? parseInt(req.query.page as string) : 1;
+        const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 100;
+        const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
+        const state = req.query.state as string | undefined;
+        
+        // Includi sempre i dettagli per mantenere la compatibilità con il frontend esistente
+        const includeDetails = true;
+        
+        // Chiama la funzione ottimizzata
+        const result = await storage.getBasketsOptimized({
+          page,
+          pageSize,
+          flupsyId,
+          state,
+          includeDetails
+        });
+        
+        // Se è richiesta la paginazione completa, restituisci anche il conteggio totale
+        if (req.query.includePagination === "true") {
+          return res.json({
+            baskets: result.baskets,
+            totalCount: result.totalCount,
+            page,
+            pageSize,
+            totalPages: Math.ceil(result.totalCount / pageSize)
+          });
+        }
+        
+        // Altrimenti restituisci solo i cestelli per mantenere la compatibilità
+        return res.json(result.baskets);
+      }
+      
+      // Versione originale dell'endpoint
+      console.log("Utilizzando endpoint originale per i cestelli");
       const baskets = await storage.getBaskets();
       
       // Ottieni i dettagli completi per ogni cesta

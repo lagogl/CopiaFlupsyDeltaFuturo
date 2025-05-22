@@ -5,6 +5,9 @@ import { createSaleNotification } from "./sales-notification-handler";
 import { registerScreeningNotificationHandler } from "./screening-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
 
+// Abilitiamo le API ottimizzate per migliorare le prestazioni del server
+process.env.USE_OPTIMIZED_APIS = "true";
+
 const app = express();
 app.use(express.json());
 app.use(express.urlencoded({ extended: false }));
