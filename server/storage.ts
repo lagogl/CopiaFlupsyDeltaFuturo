@@ -522,6 +522,14 @@ export class MemStorage implements IStorage {
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
   }
   
+  async getLastOperationByCycle(cycleId: number): Promise<Operation | undefined> {
+    const cycleOperations = Array.from(this.operations.values())
+      .filter(operation => operation.cycleId === cycleId)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    return cycleOperations.length > 0 ? cycleOperations[0] : undefined;
+  }
+  
   async getOperationsByDate(date: Date): Promise<Operation[]> {
     const targetDate = new Date(date);
     targetDate.setHours(0, 0, 0, 0);
