@@ -95,7 +95,7 @@ export default function Baskets() {
   
   // Query baskets con paginazione
   const { data: basketsData, isLoading } = useQuery({
-    queryKey: ['/api/baskets', page, pageSize, flupsyFilter],
+    queryKey: ['/api/baskets', page, pageSize, flupsyFilter, stateFilter, searchTerm],
     queryFn: async () => {
       const flupsyId = flupsyFilter !== 'all' ? flupsyFilter : undefined;
       const stateParam = stateFilter !== 'all' ? stateFilter : undefined;
@@ -106,6 +106,13 @@ export default function Baskets() {
       params.append('includePagination', 'true');
       if (flupsyId) params.append('flupsyId', flupsyId);
       if (stateParam) params.append('state', stateParam);
+      if (searchTerm) params.append('search', searchTerm);
+      
+      // Aggiunge il parametro di ordinamento
+      if (sortConfig.key) {
+        params.append('sortBy', sortConfig.key);
+        params.append('sortDir', sortConfig.direction);
+      }
       
       const response = await fetch(`/api/baskets?${params.toString()}`);
       const data = await response.json();
