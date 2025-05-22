@@ -28,6 +28,7 @@ import * as ScreeningController from "./controllers/screening-controller";
 // WhatsApp controller rimosso
 import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
+import * as DbSyncController from "./controllers/db-sync-controller";
 import * as NotificationController from "./controllers/notification-controller";
 import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
