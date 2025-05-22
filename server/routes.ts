@@ -3649,6 +3649,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Aggiungere statistiche per ciascun FLUPSY se richiesto
       const includeStats = req.query.includeStats === 'true';
       
+      console.log("Server: Richiesta FLUPSY con includeStats =", includeStats);
+      
       if (includeStats) {
         // Per ogni FLUPSY, aggiungi informazioni sui cestelli e cicli attivi
         const enhancedFlupsys = await Promise.all(flupsys.map(async (flupsy) => {

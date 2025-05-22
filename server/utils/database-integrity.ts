@@ -12,15 +12,15 @@ import {
   baskets,
   cycles,
   operations,
-  basketPositions,
   sizes,
-  screenings,
+  screeningOperations,
   screeningSourceBaskets,
   screeningDestinationBaskets,
   screeningBasketHistory,
   lots,
   sgrRates,
-  growthForecasts
+  growthForecasts,
+  basketPositionHistory
 } from '../../shared/schema';
 
 // Interfaccia per i risultati dei controlli di integrità
@@ -526,16 +526,16 @@ async function checkBasketsWithoutPositions(): Promise<number> {
   const basketsWithoutPositions = await db.select()
     .from(baskets)
     .leftJoin(
-      basketPositions,
+      basketPositionHistory,
       and(
-        eq(baskets.id, basketPositions.basketId),
-        isNull(basketPositions.endDate)
+        eq(baskets.id, basketPositionHistory.basketId),
+        isNull(basketPositionHistory.endDate)
       )
     )
     .where(
       and(
         sql`${baskets.flupsyId} IS NOT NULL`,
-        isNull(basketPositions.id)
+        isNull(basketPositionHistory.id)
       )
     );
   
