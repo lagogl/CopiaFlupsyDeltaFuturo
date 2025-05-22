@@ -24,10 +24,14 @@ import {
 import { CheckSquare, Square, Filter, Eye, Layers, Fan } from 'lucide-react';
 
 // Implementazione completamente nuova che mostra tutti i FLUPSY selezionati contemporaneamente
-export default function FlupsyVisualizer() {
+interface FlupsyVisualizerProps {
+  selectedFlupsyIds?: number[];
+}
+
+export default function FlupsyVisualizer({ selectedFlupsyIds: propSelectedFlupsyIds }: FlupsyVisualizerProps) {
   const isMobile = useIsMobile();
   const [, navigate] = useLocation();
-  const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>([]);
+  const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>(propSelectedFlupsyIds || []);
   const [selectedTab, setSelectedTab] = useState<string>("all");
   const [showFlupsySelector, setShowFlupsySelector] = useState<boolean>(false);
   
