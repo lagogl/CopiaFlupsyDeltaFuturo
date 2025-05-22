@@ -98,30 +98,30 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
   });
   
   // Select all FLUPSYs by default
-  if (flupsys && flupsys.length > 0 && selectedFlupsyIds.length === 0) {
-    setSelectedFlupsyIds(flupsys.map(f => f.id));
+  if (flupsys && flupsys.length > 0 && effectiveSelectedFlupsyIds.length === 0) {
+    setSelectedFlupsyIdsLocal(flupsys.map(f => f.id));
   }
   
   // Handle FLUPSY selection/deselection
   const toggleFlupsySelection = (id: number) => {
-    if (selectedFlupsyIds.includes(id)) {
+    if (effectiveSelectedFlupsyIds.includes(id)) {
       // If already selected, remove it
-      setSelectedFlupsyIds(selectedFlupsyIds.filter(fId => fId !== id));
+      setSelectedFlupsyIdsLocal(effectiveSelectedFlupsyIds.filter(fId => fId !== id));
     } else {
       // If not selected, add it
-      setSelectedFlupsyIds([...selectedFlupsyIds, id]);
+      setSelectedFlupsyIdsLocal([...effectiveSelectedFlupsyIds, id]);
     }
   };
   
   // Select all FLUPSYs
   const selectAllFlupsys = () => {
     if (!flupsys) return;
-    setSelectedFlupsyIds(flupsys.map(f => f.id));
+    setSelectedFlupsyIdsLocal(flupsys.map(f => f.id));
   };
   
   // Deselect all FLUPSYs
   const deselectAllFlupsys = () => {
-    setSelectedFlupsyIds([]);
+    setSelectedFlupsyIdsLocal([]);
   };
   
   // Get the currently active FLUPSY based on the selected tab
@@ -131,7 +131,7 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
     }
     
     const selectedId = parseInt(selectedTab, 10);
-    return selectedFlupsyIds.includes(selectedId) ? selectedId : null;
+    return effectiveSelectedFlupsyIds.includes(selectedId) ? selectedId : null;
   };
   
   const activeFlupsyId = getActiveFlupsyId();
@@ -346,7 +346,7 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
         
         <div className="pt-2">
           <div className="flex items-center justify-between mb-4">
-            <div className="text-sm font-medium">Unità FLUPSY selezionate ({selectedFlupsyIds.length}):</div>
+            <div className="text-sm font-medium">Unità FLUPSY selezionate ({effectiveSelectedFlupsyIds.length}):</div>
             <Button 
               variant="outline" 
               size="sm"
@@ -378,13 +378,13 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
                     key={flupsy.id} 
                     className={`
                       flex items-center gap-2 p-2 rounded border 
-                      ${selectedFlupsyIds.includes(flupsy.id) ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}
+                      ${effectiveSelectedFlupsyIds.includes(flupsy.id) ? 'bg-blue-50 border-blue-200' : 'bg-white border-gray-200'}
                       cursor-pointer hover:bg-blue-50 hover:border-blue-300 transition-colors
                     `}
                     onClick={() => toggleFlupsySelection(flupsy.id)}
                   >
                     <Checkbox 
-                      checked={selectedFlupsyIds.includes(flupsy.id)}
+                      checked={effectiveSelectedFlupsyIds.includes(flupsy.id)}
                       onCheckedChange={() => toggleFlupsySelection(flupsy.id)}
                       className="mr-1"
                     />
@@ -399,10 +399,10 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
             <TabsList className="w-full">
               <TabsTrigger value="all" className="flex-1">
                 <Layers className="h-4 w-4 mr-1" />
-                Tutti i FLUPSY ({selectedFlupsyIds.length})
+                Tutti i FLUPSY ({effectiveSelectedFlupsyIds.length})
               </TabsTrigger>
               
-              {flupsys && selectedFlupsyIds.map((flupsyId) => {
+              {flupsys && effectiveSelectedFlupsyIds.map((flupsyId) => {
                 const flupsy = flupsys.find(f => f.id === flupsyId);
                 if (!flupsy) return null;
                 
@@ -420,12 +420,12 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
       <CardContent>
         {isLoadingBaskets || isLoadingFlupsys ? (
           <div className="text-center py-4">Caricamento...</div>
-        ) : selectedFlupsyIds.length > 0 ? (
+        ) : effectiveSelectedFlupsyIds.length > 0 ? (
           <div className="space-y-8">
             {selectedTab === "all" ? (
               // Mostra tutti i FLUPSY selezionati contemporaneamente
               <div>
-                {selectedFlupsyIds.map(flupsyId => {
+                {effectiveSelectedFlupsyIds.map(flupsyId => {
                   // Ottieni i dettagli per questo specifico FLUPSY
                   const flupsy = flupsys?.find(f => f.id === flupsyId);
                   if (!flupsy || !baskets) return null;
