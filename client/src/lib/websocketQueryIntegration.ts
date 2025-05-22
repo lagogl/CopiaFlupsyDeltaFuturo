@@ -6,20 +6,17 @@ import { queryClient } from './queryClient';
 // Mappa dei tipi di messaggi WebSocket alle query da invalidare
 const messageTypeToQueryKeys: Record<string, string[]> = {
   // Operazioni
-  'operation_created': ['/api/operations', '/api/baskets', '/api/cycles/active', '/api/cycles', '/api/dashboard-data'],
-  'operation_updated': ['/api/operations', '/api/baskets', '/api/cycles/active', '/api/cycles', '/api/dashboard-data'],
-  'operation_deleted': ['/api/operations', '/api/baskets', '/api/cycles/active', '/api/cycles', '/api/dashboard-data'],
+  'operation_created': ['/api/operations', '/api/baskets', '/api/cycles/active', '/api/cycles'],
+  'operation_updated': ['/api/operations', '/api/baskets', '/api/cycles/active', '/api/cycles'],
+  'operation_deleted': ['/api/operations', '/api/baskets', '/api/cycles/active', '/api/cycles'],
   
   // Cicli
-  'cycle_created': ['/api/cycles', '/api/cycles/active', '/api/baskets', '/api/dashboard-data', '/api/cycles/active-with-details'],
-  'cycle_updated': ['/api/cycles', '/api/cycles/active', '/api/baskets', '/api/dashboard-data', '/api/cycles/active-with-details'],
-  'cycle_deleted': ['/api/cycles', '/api/cycles/active', '/api/baskets', '/api/dashboard-data', '/api/cycles/active-with-details'],
+  'cycle_created': ['/api/cycles', '/api/cycles/active', '/api/baskets'],
+  'cycle_updated': ['/api/cycles', '/api/cycles/active', '/api/baskets'],
+  'cycle_deleted': ['/api/cycles', '/api/cycles/active', '/api/baskets'],
   
   // Statistiche
   'statistics_updated': ['/api/statistics/cycles/comparison', '/api/size-predictions'],
-  
-  // Posizioni
-  'position_updated': ['/api/baskets', '/api/flupsys'],
 };
 
 /**

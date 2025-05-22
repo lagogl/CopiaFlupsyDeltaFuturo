@@ -337,9 +337,6 @@ export default function FlupsyComparison() {
     const width = cardSize.width;
     const height = cardSize.height;
     
-    // Per debug
-    console.log("Rendering basket:", basket);
-    
     if (!basket) return (
       <TooltipProvider>
         <Tooltip>

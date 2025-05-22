@@ -15,9 +15,6 @@ export const NOTIFICATION_TYPES = {
   ERROR: 'error'
 };
 
-// Import cache service for cache invalidation
-import { invalidateCache } from './middleware/cache-middleware';
-
 // WebSocket server configuration
 export function configureWebSocketServer(httpServer: Server) {
   // Create WebSocket server on a different path to avoid conflicts with Vite HMR
@@ -148,32 +145,6 @@ export function configureWebSocketServer(httpServer: Server) {
   // Broadcast operation notification
   const broadcastOperationNotification = (operation: any, action: 'created' | 'updated' | 'deleted' = 'created') => {
     const notification = formatOperationNotification(operation, action);
-    
-    // Invalidate relevant caches based on operation type
-    if (action === 'created' || action === 'updated' || action === 'deleted') {
-      invalidateCache('/api/operations');
-      invalidateCache('/api/dashboard-data');
-      
-      // Also invalidate basket-specific caches
-      if (operation.basketId) {
-        invalidateCache(`/api/baskets/${operation.basketId}`);
-        invalidateCache('/api/baskets');
-      }
-      
-      // Also invalidate cycle-specific caches if applicable
-      if (operation.cycleId) {
-        invalidateCache(`/api/cycles/${operation.cycleId}`);
-        invalidateCache('/api/cycles/active');
-        invalidateCache('/api/cycles/active-with-details');
-      }
-      
-      // Invalidate statistics if weight or measurement operations
-      if (operation.type === 'peso' || operation.type === 'misura') {
-        invalidateCache('/api/statistics/cycles/comparison');
-        invalidateCache('/api/size-predictions');
-      }
-    }
-    
     return broadcastMessage(notification.type, {
       operation,
       message: notification.message
@@ -182,13 +153,6 @@ export function configureWebSocketServer(httpServer: Server) {
 
   // Function to handle basket position updates
   const broadcastPositionUpdate = (basketPosition: any) => {
-    // Invalidate relevant caches when positions are updated
-    invalidateCache('/api/baskets');
-    invalidateCache('/api/flupsys');
-    if (basketPosition.basketId) {
-      invalidateCache(`/api/baskets/${basketPosition.basketId}`);
-    }
-    
     return broadcastMessage(NOTIFICATION_TYPES.POSITION_UPDATED, {
       basketPosition,
       message: `Posizione aggiornata per la cesta #${basketPosition.basketId} in FLUPSY #${basketPosition.flupsyId}`
@@ -198,20 +162,6 @@ export function configureWebSocketServer(httpServer: Server) {
   // Function to handle cycle updates
   const broadcastCycleUpdate = (cycle: any, action: 'created' | 'updated' | 'closed' = 'created') => {
     const actionText = action === 'created' ? 'creato' : action === 'updated' ? 'aggiornato' : 'chiuso';
-    
-    // Invalidate relevant caches when cycles are updated
-    invalidateCache('/api/cycles');
-    invalidateCache('/api/cycles/active');
-    invalidateCache('/api/cycles/active-with-details');
-    invalidateCache('/api/dashboard-data');
-    invalidateCache('/api/statistics/cycles/comparison');
-    
-    // Also invalidate basket-specific caches
-    if (cycle.basketId) {
-      invalidateCache(`/api/baskets/${cycle.basketId}`);
-      invalidateCache('/api/baskets');
-    }
-    
     return broadcastMessage(NOTIFICATION_TYPES.CYCLE_UPDATED, {
       cycle,
       message: `Ciclo ${actionText} per la cesta #${cycle.basketId}`

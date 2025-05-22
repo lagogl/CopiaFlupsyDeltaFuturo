@@ -4,10 +4,6 @@ import { setupVite, serveStatic, log } from "./vite";
 import { createSaleNotification } from "./sales-notification-handler";
 import { registerScreeningNotificationHandler } from "./screening-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
-import { cacheMiddleware } from "./middleware/cache-middleware";
-
-// Abilitiamo le API ottimizzate per migliorare le prestazioni del server
-process.env.USE_OPTIMIZED_APIS = "true";
 
 const app = express();
 app.use(express.json());
@@ -15,31 +11,6 @@ app.use(express.urlencoded({ extended: false }));
 
 // Rendi disponibile globalmente per l'uso nei controller
 globalThis.app = app;
-
-// Abilita il middleware di cache per velocizzare le risposte API
-app.use(cacheMiddleware);
-
-// Registra un endpoint per visualizzare le statistiche della cache
-import cacheService from './lib/cache-service';
-
-// Logga statistiche ogni 30 minuti per monitorare le prestazioni
-setInterval(() => {
-  cacheService.logPerformance();
-}, 30 * 60 * 1000); // 30 minuti
-
-// Endpoint amministrativo per visualizzare le statistiche della cache
-app.get('/api/admin/cache-stats', (req, res) => {
-  const stats = cacheService.getStats();
-  const hitRatio = stats.hits > 0 
-    ? Math.round((stats.hits / (stats.hits + stats.misses)) * 100) 
-    : 0;
-  
-  res.json({
-    ...stats,
-    hitRatio: `${hitRatio}%`,
-    status: 'active'
-  });
-});
 
 app.use((req, res, next) => {
   const start = Date.now();
