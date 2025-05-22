@@ -22,55 +22,69 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const flupsyIds = flupsyIdsParam ? flupsyIdsParam.split(',').map(id => parseInt(id, 10)) : [];
     
     // Query per recuperare SOLO i cestelli attivi (o filtrati)
-    let basketsQuery = db.select().from(baskets).where(eq(baskets.state, 'active'));
-    
-    // Applica filtri aggiuntivi se specificati
+    let basketsQuery;
     if (flupsyIds.length > 0) {
-      basketsQuery = basketsQuery.where(inArray(baskets.flupsyId, flupsyIds));
+      basketsQuery = db.select().from(baskets)
+        .where(eq(baskets.state, 'active'))
+        .where(inArray(baskets.flupsyId, flupsyIds));
+    } else {
+      basketsQuery = db.select().from(baskets)
+        .where(eq(baskets.state, 'active'));
     }
     
     // Costruisci la query SQL ottimizzata direttamente per recuperare le ultime operazioni per cestello
     // Utilizzando SQL nativo per massimizzare le prestazioni
     
     // Query SQL per recuperare l'ultima operazione per ogni cestello
-    const latestOperationsSql = flupsyIds.length > 0
-      ? sql`
-          WITH ranked_operations AS (
-            SELECT 
-              o.*,
-              ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
-            FROM operations o
-            JOIN baskets b ON o.basket_id = b.id
-            WHERE b.state = 'active' AND b.flupsy_id IN (${flupsyIds.join(',')})
-          )
-          SELECT * FROM ranked_operations WHERE rn = 1
-        `
-      : sql`
-          WITH ranked_operations AS (
-            SELECT 
-              o.*,
-              ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
-            FROM operations o
-            JOIN baskets b ON o.basket_id = b.id
-            WHERE b.state = 'active'
-          )
-          SELECT * FROM ranked_operations WHERE rn = 1
-        `;
-    
-    // Query per recuperare le operazioni di oggi - ottimizzata
+    let latestOperationsSql;
+    let todayOperationsSql;
     const today = format(new Date(), 'yyyy-MM-dd');
-    const todayOperationsSql = flupsyIds.length > 0
-      ? sql`
-          SELECT o.* FROM operations o
+    
+    if (flupsyIds.length > 0) {
+      // Costruisci query dinamica con parametri IN
+      let flupsyCondition = '';
+      flupsyIds.forEach((id, index) => {
+        if (index > 0) flupsyCondition += ' OR ';
+        flupsyCondition += `b.flupsy_id = ${id}`;
+      });
+      
+      latestOperationsSql = sql`
+        WITH ranked_operations AS (
+          SELECT 
+            o.*,
+            ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
+          FROM operations o
           JOIN baskets b ON o.basket_id = b.id
-          WHERE b.state = 'active' AND o.date = ${today}
-          AND b.flupsy_id IN (${flupsyIds.join(',')})
-        `
-      : sql`
-          SELECT o.* FROM operations o
+          WHERE b.state = 'active' AND (${sql.raw(flupsyCondition)})
+        )
+        SELECT * FROM ranked_operations WHERE rn = 1
+      `;
+      
+      todayOperationsSql = sql`
+        SELECT o.* FROM operations o
+        JOIN baskets b ON o.basket_id = b.id
+        WHERE b.state = 'active' AND o.date = ${today}
+        AND (${sql.raw(flupsyCondition)})
+      `;
+    } else {
+      latestOperationsSql = sql`
+        WITH ranked_operations AS (
+          SELECT 
+            o.*,
+            ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
+          FROM operations o
           JOIN baskets b ON o.basket_id = b.id
-          WHERE b.state = 'active' AND o.date = ${today}
-        `;
+          WHERE b.state = 'active'
+        )
+        SELECT * FROM ranked_operations WHERE rn = 1
+      `;
+      
+      todayOperationsSql = sql`
+        SELECT o.* FROM operations o
+        JOIN baskets b ON o.basket_id = b.id
+        WHERE b.state = 'active' AND o.date = ${today}
+      `;
+    }
 
     // Esegue le query in parallelo per massimizzare la velocità
     // Usiamo try/catch individuali per prevenire che un errore in una query blocchi tutte le altre
