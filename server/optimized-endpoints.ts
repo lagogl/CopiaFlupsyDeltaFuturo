@@ -22,34 +22,66 @@ export function registerOptimizedEndpoints(app: Express) {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = (page - 1) * limit;
       
+      // Filtri opzionali
+      const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : null;
+      const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : null;
+      const operationType = req.query.type as string || null;
+      const fromDate = req.query.fromDate as string || null;
+      const toDate = req.query.toDate as string || null;
+      
       console.time('operations-query');
       
-      // Query con JOIN per ottenere i dati correlati in una sola query
-      const result = await db.query.operations.findMany({
-        limit,
-        offset,
-        orderBy: [desc(operations.date), desc(operations.id)],
-        with: {
-          // Definire le relazioni nelle query è necessario per questo approccio
-          // Per semplicità qui usiamo una query SQL personalizzata
-        }
-      });
-      
-      // In alternativa, usa SQL diretto per ottenere dati con join
-      const operationsWithRelations = await db.execute(sql`
+      // Costruiamo la query di base
+      let sqlQuery = `
         SELECT o.*, 
-               b.physical_number as basket_number, b.flupsy_id,
-               c.start_date as cycle_start_date,
-               s.code as size_code, s.name as size_name,
+               b.physical_number as basket_number, b.flupsy_id, b.row as basket_row, b.position as basket_position,
+               f.name as flupsy_name, f.location as flupsy_location,
+               c.start_date as cycle_start_date, c.state as cycle_state,
+               s.code as size_code, s.name as size_name, s.color as size_color,
                l.name as lot_name, l.supplier as lot_supplier
         FROM operations o
         LEFT JOIN baskets b ON o.basket_id = b.id
+        LEFT JOIN flupsys f ON b.flupsy_id = f.id  
         LEFT JOIN cycles c ON o.cycle_id = c.id
         LEFT JOIN sizes s ON o.size_id = s.id
         LEFT JOIN lots l ON o.lot_id = l.id
-        ORDER BY o.date DESC, o.id DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `);
+        WHERE 1=1
+      `;
+      
+      const queryParams: any[] = [];
+      
+      // Aggiungiamo filtri condizionali
+      if (flupsyId) {
+        sqlQuery += ` AND b.flupsy_id = $${queryParams.length + 1}`;
+        queryParams.push(flupsyId);
+      }
+      
+      if (basketId) {
+        sqlQuery += ` AND o.basket_id = $${queryParams.length + 1}`;
+        queryParams.push(basketId);
+      }
+      
+      if (operationType) {
+        sqlQuery += ` AND o.type = $${queryParams.length + 1}`;
+        queryParams.push(operationType);
+      }
+      
+      if (fromDate) {
+        sqlQuery += ` AND o.date >= $${queryParams.length + 1}`;
+        queryParams.push(fromDate);
+      }
+      
+      if (toDate) {
+        sqlQuery += ` AND o.date <= $${queryParams.length + 1}`;
+        queryParams.push(toDate);
+      }
+      
+      // Completiamo la query con ordinamento e paginazione
+      sqlQuery += ` ORDER BY o.date DESC, o.id DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+      queryParams.push(limit, offset);
+      
+      // Eseguiamo la query con i parametri
+      const operationsWithRelations = await db.execute(sql.raw(sqlQuery, ...queryParams));
       
       // Ottieni il numero totale di operazioni per la paginazione
       const [countResult] = await db.select({

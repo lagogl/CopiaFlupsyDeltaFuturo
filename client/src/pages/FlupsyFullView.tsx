@@ -21,25 +21,53 @@ export default function FlupsyFullView() {
   const [viewMode, setViewMode] = useState<ViewMode>('detailed');
   const [showSidebar, setShowSidebar] = useState(true);
   
-  // Fetch flupsys
+  // Fetch flupsys (questi sono pochi dati, quindi possiamo caricarli tutti)
   const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
     queryKey: ['/api/flupsys'],
   });
   
-  // Fetch baskets
-  const { data: baskets, isLoading: isLoadingBaskets } = useQuery({
-    queryKey: ['/api/baskets'],
+  // Fetch baskets with preloaded FLUPSY data
+  const { data: basketsData, isLoading: isLoadingBaskets } = useQuery({
+    queryKey: ['/api/baskets-optimized', 1, 1000], // Utilizziamo una paginazione ampia ma limitata
+    queryFn: async () => {
+      const response = await fetch('/api/baskets-optimized?page=1&limit=1000');
+      if (!response.ok) throw new Error('Errore nel caricamento dei cestelli');
+      return response.json();
+    },
   });
   
-  // Fetch operations
-  const { data: operations, isLoading: isLoadingOperations } = useQuery({
-    queryKey: ['/api/operations'],
+  // I dati estratti includono cestelli con relazioni precaricate
+  const baskets = basketsData?.baskets || [];
+  
+  // Fetch operations only for the selected FLUPSY (paginato e filtrato)
+  const { data: operationsData, isLoading: isLoadingOperations } = useQuery({
+    queryKey: ['/api/operations-optimized', 1, 200, selectedFlupsyId], // Paginiamo ma aumentiamo il limite
+    queryFn: async () => {
+      if (!selectedFlupsyId) return { operations: [] };
+      const response = await fetch(`/api/operations-optimized?page=1&limit=200&flupsyId=${selectedFlupsyId}`);
+      if (!response.ok) throw new Error('Errore nel caricamento delle operazioni');
+      return response.json();
+    },
+    enabled: !!selectedFlupsyId,
   });
   
-  // Fetch cycles
-  const { data: cycles, isLoading: isLoadingCycles } = useQuery({
-    queryKey: ['/api/cycles'],
+  // I dati estratti includono operazioni con relazioni precaricate
+  const operations = operationsData?.operations || [];
+  
+  // Fetch cycles filtered by FLUPSY ID  
+  const { data: cyclesData, isLoading: isLoadingCycles } = useQuery({
+    queryKey: ['/api/cycles-optimized', 1, 100, selectedFlupsyId],
+    queryFn: async () => {
+      if (!selectedFlupsyId) return { cycles: [] };
+      const response = await fetch(`/api/cycles-optimized?page=1&limit=100&flupsyId=${selectedFlupsyId}`);
+      if (!response.ok) throw new Error('Errore nel caricamento dei cicli');
+      return response.json();
+    },
+    enabled: !!selectedFlupsyId,
   });
+  
+  // I dati estratti includono i cicli con relazioni precaricate
+  const cycles = cyclesData?.cycles || [];
   
   // Select the first FLUPSY by default
   if (flupsys && flupsys.length > 0 && !selectedFlupsyId) {
