@@ -187,9 +187,9 @@ export async function getBasketsOptimized(options = {}) {
     
     // Applica paginazione, a meno che non sia richiesto di recuperare tutti i dati
     // Il parametro includeAll viene usato principalmente dalla dashboard
-    const includeAll = options.includeAll === true || options.pageSize > 1000;
+    const skipPagination = options.includeAll === true || pageSize > 1000;
     
-    if (!includeAll) {
+    if (!skipPagination) {
       const offset = (page - 1) * pageSize;
       query = query.limit(pageSize).offset(offset);
     } else {
