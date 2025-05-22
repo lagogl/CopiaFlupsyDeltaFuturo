@@ -291,6 +291,47 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Basket routes ===
   app.get("/api/baskets", async (req, res) => {
     try {
+      const startTime = Date.now();
+      
+      // Importa il controller ottimizzato dei cestelli
+      const { getBasketsOptimized } = await import('./controllers/baskets-controller.js');
+      
+      // Estrai i parametri di paginazione e filtro
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 50;
+      const state = req.query.state as string | undefined;
+      const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
+      const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : undefined;
+      const includeEmpty = req.query.includeEmpty === 'true';
+      const sortBy = req.query.sortBy as string || 'id';
+      const sortOrder = req.query.sortOrder as 'asc' | 'desc' || 'asc';
+      
+      // Controlla se è stata richiesta la versione originale (non ottimizzata)
+      const useOriginal = req.query.original === 'true';
+      
+      if (!useOriginal) {
+        // Usa la nuova implementazione ottimizzata con cache
+        console.log("Utilizzo implementazione ottimizzata per i cestelli");
+        
+        const result = await getBasketsOptimized({
+          page,
+          pageSize,
+          state,
+          flupsyId,
+          cycleId,
+          includeEmpty,
+          sortBy,
+          sortOrder
+        });
+        
+        const duration = Date.now() - startTime;
+        console.log(`Cestelli recuperati in ${duration}ms (ottimizzato)`);
+        
+        return res.json(result.baskets);
+      }
+      
+      // Versione originale dell'endpoint (legacy)
+      console.log("Utilizzo implementazione originale per i cestelli (legacy)");
       const baskets = await storage.getBaskets();
       
       // Ottieni i dettagli completi per ogni cesta
@@ -337,6 +378,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
           } : null
         };
       }));
+      
+      // Registra il tempo di risposta
+      const duration = Date.now() - startTime;
+      console.log(`Cestelli recuperati in ${duration}ms (non ottimizzato)`);
       
       res.json(basketsWithDetails);
     } catch (error) {

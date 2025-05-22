@@ -129,6 +129,20 @@ export async function setupPerformanceOptimizations(app) {
     console.error('Errore durante la configurazione delle ottimizzazioni per operazioni:', error);
   }
   
+  // Importa e configura gli indici per i cestelli
+  try {
+    const { setupBasketsIndexes, setupBasketsCacheInvalidation } = await import('./controllers/baskets-controller.js');
+    await setupBasketsIndexes();
+    
+    // Configurazione invalidazione cache per cestelli
+    if (app) {
+      setupBasketsCacheInvalidation(app);
+      console.log('Configurazione cache e indici per i cestelli completata');
+    }
+  } catch (error) {
+    console.error('Errore durante la configurazione delle ottimizzazioni per cestelli:', error);
+  }
+  
   // Configurazione invalidazione cache
   if (app) {
     setupCacheInvalidation(app);

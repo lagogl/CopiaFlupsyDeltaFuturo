@@ -5,7 +5,7 @@
 
 import { BasketsCache } from '../baskets-cache-service.js';
 import { db } from '../db.js';
-import { baskets, flupsys, basketPositions, cycles } from '../../shared/schema.js';
+import { baskets, flupsys, cycles, basketPositions } from '../../shared/schema.js';
 import { eq, and, desc, asc, isNull, sql, or, not } from 'drizzle-orm';
 
 /**
