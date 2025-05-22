@@ -214,7 +214,7 @@ export default function Baskets() {
       method: 'DELETE'
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets', page, pageSize, flupsyFilter] });
       setIsDeleteDialogOpen(false);
       setSelectedBasket(null);
       toast({
