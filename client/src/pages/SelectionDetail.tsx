@@ -1678,19 +1678,27 @@ export default function VagliaturaDetailPage() {
                               .map(sb => sb.flupsyId))]
                           : [];
                         
-                        // Filtra prima tutte le ceste disponibili
+                        // Filtro più inclusivo per le ceste disponibili
+                        // Includiamo sia le ceste con state=available, sia le ceste che sono origine
                         const availableBasketsList = availableBaskets.filter(b => {
-                          // Verifica se la cesta è available e senza ciclo
-                          const isAvailable = (b.state === "available" && !b.cycleId);
-                          console.log(`Cesta ${b.physicalNumber}: state=${b.state}, cycleId=${b.cycleId}, basketId=${b.basketId}, isAvailable=${isAvailable}`);
-                          return isAvailable;
+                          // Se è una cesta origine la includiamo sempre
+                          const isSourceBasket = sourceBasketIds.includes(b.basketId);
+                          
+                          // Altrimenti verifichiamo se è disponibile nel senso tradizionale
+                          const isStandardAvailable = (b.state === "available" && !b.cycleId);
+                          
+                          console.log(`Cesta ${b.physicalNumber}: state=${b.state}, cycleId=${b.cycleId}, basketId=${b.basketId}, isSourceBasket=${isSourceBasket}, isStandardAvailable=${isStandardAvailable}`);
+                          
+                          // Includiamo la cesta se è origine oppure è disponibile
+                          return isSourceBasket || isStandardAvailable;
                         });
                         
-                        // Dividi in due gruppi: ceste origine e altre ceste disponibili
+                        // Otteniamo le ceste origine dalle ceste disponibili
                         const sourceBasketList = availableBasketsList.filter(b => 
                           sourceBasketIds.includes(b.basketId)
                         );
                         
+                        // Otteniamo le altre ceste disponibili escludendo quelle origine
                         const otherAvailableBaskets = availableBasketsList.filter(b => 
                           !sourceBasketIds.includes(b.basketId)
                         );
