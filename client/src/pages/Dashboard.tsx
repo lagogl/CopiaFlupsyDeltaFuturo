@@ -52,9 +52,9 @@ export default function Dashboard() {
   const growthChartRef = useRef<HTMLDivElement>(null);
   const flupsyVisualizerRef = useRef<HTMLDivElement>(null);
 
-  // Query for active baskets and cycles
+  // Query for active baskets and cycles - includeAll per ottenere tutti i cestelli per la dashboard
   const { data: baskets, isLoading: basketsLoading, dataUpdatedAt: basketsUpdatedAt } = useQuery<Basket[]>({
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets', { includeAll: true }],
   });
 
   const { data: cycles, isLoading: cyclesLoading, dataUpdatedAt: cyclesUpdatedAt } = useQuery<Cycle[]>({

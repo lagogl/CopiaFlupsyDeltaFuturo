@@ -313,15 +313,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Usa la nuova implementazione ottimizzata con cache
         console.log("Utilizzo implementazione ottimizzata per i cestelli");
         
+        // Verifica se stiamo richiedendo tutti i cestelli (tipicamente per la dashboard)
+        const includeAll = req.query.includeAll === 'true';
+        
+        // Se la richiesta proviene dalla dashboard o dal visualizzatore FLUPSY, aumenta il pageSize 
+        // per includere tutti i cestelli
+        let finalPageSize = pageSize;
+        if (includeAll) {
+          console.log("Richiesta di tutti i cestelli (per dashboard o visualizzatore FLUPSY)");
+          finalPageSize = 1000; // Valore sufficientemente alto per includere tutti i cestelli
+        }
+        
         const result = await getBasketsOptimized({
           page,
-          pageSize,
+          pageSize: finalPageSize,
           state,
           flupsyId,
           cycleId,
           includeEmpty,
           sortBy,
-          sortOrder
+          sortOrder,
+          includeAll
         });
         
         const duration = Date.now() - startTime;
