@@ -2609,11 +2609,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log(`Cicli recuperati in ${duration}ms`);
       }
       
-      // Per mantenere la compatibilità con l'API esistente, se il client non ha richiesto
-      // la paginazione esplicitamente, restituiamo solo l'array dei cicli
-      if (!req.query.page && !req.query.pageSize) {
+      // Per mantenere la compatibilità con l'API esistente e gestire la richiesta includeAll
+      if (req.query.includeAll === 'true') {
+        // Se includeAll=true, restituisci direttamente l'array di cicli
+        console.log(`Restituisco tutti i ${Array.isArray(result) ? result.length : 'N/A'} cicli (includeAll=true)`);
+        res.json(result);
+      } else if (!req.query.page && !req.query.pageSize) {
+        // Retrocompatibilità: se non viene richiesta esplicitamente la paginazione
         res.json(result.cycles);
       } else {
+        // Formato paginato standard
         res.json(result);
       }
     } catch (error) {
