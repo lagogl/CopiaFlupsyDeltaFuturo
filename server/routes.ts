@@ -3304,6 +3304,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Ora recuperiamo tutte le taglie necessarie in un'unica query
       console.time('sizes-query');
       
+      // Assicuriamoci che result.lots esista e sia un array prima di procedere
+      if (!result || !result.lots || !Array.isArray(result.lots)) {
+        throw new Error('Formato dati non valido: result.lots non è un array');
+      }
+      
       // Estraiamo tutti gli ID delle taglie dai lotti (escludendo i null/undefined)
       const sizeIds = result.lots
         .map(lot => lot.sizeId)

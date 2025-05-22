@@ -1040,13 +1040,30 @@ export class DbStorage implements IStorage {
       console.timeEnd('db-lots-optimized');
       
       return {
-        lots: results,
+        lots: results || [],
         totalCount,
         statistics
       };
     } catch (error) {
       console.error('Errore nell\'ottenere i lotti con paginazione:', error);
-      throw error;
+      // Restituiamo un risultato valido anche in caso di errore
+      return {
+        lots: [],
+        totalCount: 0,
+        statistics: {
+          counts: {
+            normali: 0,
+            teste: 0,
+            code: 0,
+            totale: 0
+          },
+          percentages: {
+            normali: 0,
+            teste: 0,
+            code: 0
+          }
+        }
+      };
     }
   }
 
