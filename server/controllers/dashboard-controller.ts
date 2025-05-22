@@ -4,6 +4,7 @@ import { eq, inArray, sql } from "drizzle-orm";
 import { format } from "date-fns";
 import { baskets, cycles, lots, operations } from "@shared/schema";
 import { storage } from "../storage";
+import { PgSelect } from "drizzle-orm/pg-core";
 
 /**
  * Controller ottimizzato per la dashboard
@@ -32,8 +33,6 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     // Utilizzando SQL nativo per massimizzare le prestazioni
     
     // Query SQL per recuperare l'ultima operazione per ogni cestello
-    const flupsyIdsList = flupsyIds.map(id => sql.literal(id));
-    
     const latestOperationsSql = flupsyIds.length > 0
       ? sql`
           WITH ranked_operations AS (
@@ -42,7 +41,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
               ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
             FROM operations o
             JOIN baskets b ON o.basket_id = b.id
-            WHERE b.state = 'active' AND b.flupsy_id IN (${sql.join(flupsyIdsList)})
+            WHERE b.state = 'active' AND b.flupsy_id IN (${flupsyIds.join(',')})
           )
           SELECT * FROM ranked_operations WHERE rn = 1
         `
@@ -65,7 +64,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           SELECT o.* FROM operations o
           JOIN baskets b ON o.basket_id = b.id
           WHERE b.state = 'active' AND o.date = ${today}
-          AND b.flupsy_id IN (${sql.join(flupsyIdsList)})
+          AND b.flupsy_id IN (${flupsyIds.join(',')})
         `
       : sql`
           SELECT o.* FROM operations o
@@ -74,28 +73,53 @@ export const getDashboardStats = async (req: Request, res: Response) => {
         `;
 
     // Esegue le query in parallelo per massimizzare la velocità
-    const [
-      activeBasketsData,
-      activeCyclesData,
-      activeLotsData,
-      recentOperations,
-      todayOperationsData
-    ] = await Promise.all([
+    // Usiamo try/catch individuali per prevenire che un errore in una query blocchi tutte le altre
+    
+    let activeBasketsData = [];
+    let activeCyclesData = [];
+    let activeLotsData = [];
+    let recentOperations = [];
+    let todayOperationsData = [];
+    
+    try {
       // Query cestelli già definita sopra
-      basketsQuery,
-      
+      activeBasketsData = await basketsQuery;
+      console.log(`Dashboard: Recuperati ${activeBasketsData.length} cestelli attivi`);
+    } catch (error) {
+      console.error("Errore nel recupero dei cestelli attivi:", error);
+    }
+    
+    try {
       // Query per recuperare solo i cicli attivi
-      db.select().from(cycles).where(eq(cycles.state, 'active')),
-      
+      activeCyclesData = await db.select().from(cycles).where(eq(cycles.state, 'active'));
+      console.log(`Dashboard: Recuperati ${activeCyclesData.length} cicli attivi`);
+    } catch (error) {
+      console.error("Errore nel recupero dei cicli attivi:", error);
+    }
+    
+    try {
       // Query per recuperare solo i lotti attivi
-      db.select().from(lots).where(eq(lots.state, 'active')),
-      
+      activeLotsData = await db.select().from(lots).where(eq(lots.state, 'active'));
+      console.log(`Dashboard: Recuperati ${activeLotsData.length} lotti attivi`);
+    } catch (error) {
+      console.error("Errore nel recupero dei lotti attivi:", error);
+    }
+    
+    try {
       // Query ottimizzata per le operazioni più recenti
-      db.execute(latestOperationsSql),
-      
+      recentOperations = await db.execute(latestOperationsSql);
+      console.log(`Dashboard: Recuperate ${recentOperations.length} operazioni recenti`);
+    } catch (error) {
+      console.error("Errore nel recupero delle operazioni recenti:", error);
+    }
+    
+    try {
       // Query ottimizzata per le operazioni di oggi
-      db.execute(todayOperationsSql)
-    ]);
+      todayOperationsData = await db.execute(todayOperationsSql);
+      console.log(`Dashboard: Recuperate ${todayOperationsData.length} operazioni di oggi`);
+    } catch (error) {
+      console.error("Errore nel recupero delle operazioni di oggi:", error);
+    }
     
     // Trova l'operazione più recente per ogni cestello
     const lastOperationByBasket = new Map();
