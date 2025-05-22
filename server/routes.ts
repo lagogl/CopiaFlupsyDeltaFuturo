@@ -2582,6 +2582,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startDateTo = req.query.startDateTo ? String(req.query.startDateTo) : null;
       const sortBy = req.query.sortBy ? String(req.query.sortBy) : 'startDate';
       const sortOrder = req.query.sortOrder ? String(req.query.sortOrder) : 'desc';
+      // Aggiungi supporto per includeAll per ottenere tutti i cicli senza paginazione
+      const includeAll = req.query.includeAll === 'true';
+      
+      if (includeAll) {
+        console.log("Richiesta di tutti i cicli con includeAll=true");
+      }
       
       // Utilizzo del controller ottimizzato
       const cyclesController = await import('./controllers/cycles-controller-optimized.js');
@@ -2594,7 +2600,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         startDateFrom,
         startDateTo,
         sortBy,
-        sortOrder
+        sortOrder,
+        includeAll
       });
       
       const duration = Date.now() - startTime;
