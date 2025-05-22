@@ -3768,78 +3768,124 @@ app.get("/api/operations", async (req, res) => {
           // Array per memorizzare gli ID dei cestelli
           const basketIds = baskets.map(b => b.id);
           
-          // Ottieni tutti i cicli attivi (senza endDate) di questo FLUPSY
-          const activeCyclesCount = await db.select({ count: count() })
-            .from(cycles)
-            .where(
-              and(
-                inArray(cycles.basketId, basketIds),
-                isNull(cycles.endDate)
-              )
-            );
-          
-          // Calcola il numero di cestelli disponibili e con cicli attivi
-          const totalBaskets = baskets.length;
-          const activeBaskets = activeCyclesCount[0]?.count || 0;
-          const availableBaskets = totalBaskets - activeBaskets;
-          
-          // Calcola le posizioni occupate e posizioni libere
-          const maxPositions = flupsy.maxPositions;
-          const occupiedPositions = totalBaskets;
-          const freePositions = Math.max(0, maxPositions - occupiedPositions);
-          
-          // Ottieni le operazioni per i cestelli attivi per contare il numero di animali totale
+          // Ottieni i conteggi dei cicli attivi e cestelli dalla vista materializzata
+          let activeBaskets = 0;
           let totalAnimals = 0;
-          let sizeDistribution: Record<string, number> = {};
-          let basketsWithAnimals = 0; // Conta i cestelli che hanno effettivamente animali
+          const sizeDistribution: Record<string, number> = {};
           
-          // Ottieni i cicli attivi per questo FLUPSY
-          const activeCycles = await db.select()
-            .from(cycles)
-            .where(
-              and(
-                inArray(cycles.basketId, basketIds),
-                isNull(cycles.endDate)
-              )
+          try {
+            console.log(`Recupero statistiche per FLUPSY ${flupsy.id} da vista materializzata`);
+            
+            // Query sulla vista materializzata per ottenere conteggi e somme
+            const activeBasketStats = await db.execute(
+              sql`SELECT COUNT(*) as active_count 
+                  FROM mv_active_baskets 
+                  WHERE flupsy_id = ${flupsy.id}`
             );
-          
-          // Per ogni ciclo attivo, ottieni l'ultima operazione con il conteggio animali
-          for (const cycle of activeCycles) {
-            const operations = await storage.getOperationsByCycle(cycle.id);
             
-            // Ordina le operazioni per data (la più recente prima)
-            operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            if (activeBasketStats && activeBasketStats.rows && activeBasketStats.rows.length > 0) {
+              activeBaskets = parseInt(activeBasketStats.rows[0].active_count || '0', 10);
+            }
             
-            // Prendi solo le operazioni con conteggio animali
-            const operationsWithCount = operations.filter(op => op.animalCount !== null);
+            // Recupera il totale animali dalla vista materializzata
+            const animalStats = await db.execute(
+              sql`SELECT COALESCE(SUM(animal_count), 0) as total_animals 
+                  FROM mv_active_baskets 
+                  WHERE flupsy_id = ${flupsy.id}`
+            );
             
-            if (operationsWithCount.length > 0) {
-              const lastOperation = operationsWithCount[0];
-              if (lastOperation.animalCount) {
-                totalAnimals += lastOperation.animalCount;
-                basketsWithAnimals++; // Incrementa il contatore di cestelli con animali
-                
-                // Aggiungi i dati di distribuzione per taglia
-                if (lastOperation.sizeId) {
-                  const size = await storage.getSize(lastOperation.sizeId);
-                  if (size) {
-                    const sizeCode = size.code;
-                    if (!sizeDistribution[sizeCode]) {
-                      sizeDistribution[sizeCode] = 0;
+            if (animalStats && animalStats.rows && animalStats.rows.length > 0) {
+              totalAnimals = parseInt(animalStats.rows[0].total_animals || '0', 10);
+            }
+            
+            // Recupera la distribuzione delle taglie
+            const sizeStats = await db.execute(
+              sql`SELECT s.code, COALESCE(SUM(b.animal_count), 0) as count
+                  FROM mv_active_baskets b
+                  LEFT JOIN sizes s ON b.size_id = s.id
+                  WHERE b.flupsy_id = ${flupsy.id} AND s.code IS NOT NULL
+                  GROUP BY s.code`
+            );
+            
+            if (sizeStats && sizeStats.rows && sizeStats.rows.length > 0) {
+              sizeStats.rows.forEach(row => {
+                if (row.code) {
+                  sizeDistribution[row.code] = parseInt(row.count || '0', 10);
+                }
+              });
+            }
+            
+          } catch (e) {
+            console.error(`Errore recupero statistiche da vista materializzata per FLUPSY ${flupsy.id}:`, e);
+            console.log('Fallback al metodo di calcolo tradizionale...');
+            
+            // Fallback al metodo originale in caso di errore
+            // Ottieni tutti i cicli attivi (senza endDate) di questo FLUPSY
+            const activeCyclesCount = await db.select({ count: count() })
+              .from(cycles)
+              .where(
+                and(
+                  inArray(cycles.basketId, basketIds),
+                  isNull(cycles.endDate)
+                )
+              );
+            
+            activeBaskets = activeCyclesCount[0]?.count || 0;
+            
+            // Ottieni i cicli attivi per questo FLUPSY
+            const activeCycles = await db.select()
+              .from(cycles)
+              .where(
+                and(
+                  inArray(cycles.basketId, basketIds),
+                  isNull(cycles.endDate)
+                )
+              );
+            
+            // Per ogni ciclo attivo, ottieni l'ultima operazione con il conteggio animali
+            for (const cycle of activeCycles) {
+              const operations = await storage.getOperationsByCycle(cycle.id);
+              
+              // Ordina le operazioni per data (la più recente prima)
+              operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+              
+              // Prendi solo le operazioni con conteggio animali
+              const operationsWithCount = operations.filter(op => op.animalCount !== null);
+              
+              if (operationsWithCount.length > 0) {
+                const lastOperation = operationsWithCount[0];
+                if (lastOperation.animalCount) {
+                  totalAnimals += lastOperation.animalCount;
+                  
+                  // Aggiungi i dati di distribuzione per taglia
+                  if (lastOperation.sizeId) {
+                    const size = await storage.getSize(lastOperation.sizeId);
+                    if (size) {
+                      const sizeCode = size.code;
+                      if (!sizeDistribution[sizeCode]) {
+                        sizeDistribution[sizeCode] = 0;
+                      }
+                      sizeDistribution[sizeCode] += lastOperation.animalCount;
                     }
-                    sizeDistribution[sizeCode] += lastOperation.animalCount;
                   }
                 }
               }
             }
           }
           
-          // Calcola la densità media degli animali (numero di animali / cestelli con animali)
-          const avgAnimalDensity = basketsWithAnimals > 0 ? Math.round(totalAnimals / basketsWithAnimals) : 0;
+          // Calcola il resto delle statistiche
+          const totalBaskets = baskets.length;
+          const availableBaskets = totalBaskets - activeBaskets;
+          const maxPositions = flupsy.maxPositions || 10;
+          const freePositions = Math.max(0, maxPositions - totalBaskets);
+          
+          // Calcola la densità media degli animali
+          const basketsWithAnimals = activeBaskets > 0 ? activeBaskets : 1; // Evita divisione per zero
+          const avgAnimalDensity = Math.round(totalAnimals / basketsWithAnimals);
           
           // Calcola la percentuale di occupazione con cestelli attivi
-          const activeBasketPercentage = flupsy.maxPositions > 0 
-            ? Math.round((activeBaskets / flupsy.maxPositions) * 100) 
+          const activeBasketPercentage = maxPositions > 0 
+            ? Math.round((activeBaskets / maxPositions) * 100) 
             : 0;
           
           // Aggiungi le statistiche al FLUPSY
@@ -3879,49 +3925,95 @@ app.get("/api/operations", async (req, res) => {
         return res.status(404).json({ message: "FLUPSY not found" });
       }
       
-      // Arricchisci il FLUPSY con statistiche aggiuntive
-      const basketsInFlupsy = await storage.getBasketsByFlupsy(id);
+      // Ottieni tutti i cestelli per questo FLUPSY
+      const baskets = await storage.getBasketsByFlupsy(id);
       
-      // Calcola statistiche
-      const totalBaskets = basketsInFlupsy.length;
-      const activeBaskets = basketsInFlupsy.filter(basket => basket.currentCycleId !== null).length;
-      const availableBaskets = basketsInFlupsy.filter(basket => basket.currentCycleId === null).length;
-      const freePositions = flupsy.maxPositions - totalBaskets;
-      
-      // Calcola statistiche sugli animali
+      // Calcola statistiche dalla vista materializzata
+      let activeBaskets = 0;
       let totalAnimals = 0;
-      let basketsWithAnimals = 0;
       const sizeDistribution: Record<string, number> = {};
       
-      // Per ogni cestello attivo, ottieni l'ultima operazione e raccogli statistiche
-      for (const basket of basketsInFlupsy.filter(b => b.currentCycleId !== null)) {
-        if (basket.currentCycleId) {
-          // Ottieni tutte le operazioni per questo ciclo
-          const cycleOperations = await storage.getOperationsByCycle(basket.currentCycleId);
-          
-          // Filtra per ottenere solo le operazioni di questo cestello
-          const operations = cycleOperations.filter(op => op.basketId === basket.id);
-          
-          // Ordina per data discendente per ottenere l'operazione più recente per prima
-          const operationsWithCount = operations
-            .filter(op => op.animalCount !== null) // Considera solo operazioni con conteggio degli animali
-            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          
-          if (operationsWithCount.length > 0) {
-            const lastOperation = operationsWithCount[0];
-            if (lastOperation.animalCount) {
-              totalAnimals += lastOperation.animalCount;
-              basketsWithAnimals++; 
-              
-              // Aggiungi i dati di distribuzione per taglia
-              if (lastOperation.sizeId) {
-                const size = await storage.getSize(lastOperation.sizeId);
-                if (size) {
-                  const sizeCode = size.code;
-                  if (!sizeDistribution[sizeCode]) {
-                    sizeDistribution[sizeCode] = 0;
+      try {
+        console.log(`Recupero statistiche singolo FLUPSY ${id} da vista materializzata`);
+        
+        // Query sulla vista materializzata per ottenere conteggi e somme
+        const activeBasketStats = await db.execute(
+          sql`SELECT COUNT(*) as active_count 
+              FROM mv_active_baskets 
+              WHERE flupsy_id = ${id}`
+        );
+        
+        if (activeBasketStats && activeBasketStats.rows && activeBasketStats.rows.length > 0) {
+          activeBaskets = parseInt(activeBasketStats.rows[0].active_count || '0', 10);
+        }
+        
+        // Recupera il totale animali dalla vista materializzata
+        const animalStats = await db.execute(
+          sql`SELECT COALESCE(SUM(animal_count), 0) as total_animals 
+              FROM mv_active_baskets 
+              WHERE flupsy_id = ${id}`
+        );
+        
+        if (animalStats && animalStats.rows && animalStats.rows.length > 0) {
+          totalAnimals = parseInt(animalStats.rows[0].total_animals || '0', 10);
+        }
+        
+        // Recupera la distribuzione delle taglie
+        const sizeStats = await db.execute(
+          sql`SELECT s.code, COALESCE(SUM(b.animal_count), 0) as count
+              FROM mv_active_baskets b
+              LEFT JOIN sizes s ON b.size_id = s.id
+              WHERE b.flupsy_id = ${id} AND s.code IS NOT NULL
+              GROUP BY s.code`
+        );
+        
+        if (sizeStats && sizeStats.rows && sizeStats.rows.length > 0) {
+          sizeStats.rows.forEach(row => {
+            if (row.code) {
+              sizeDistribution[row.code] = parseInt(row.count || '0', 10);
+            }
+          });
+        }
+        
+      } catch (e) {
+        console.error(`Errore recupero statistiche da vista materializzata per FLUPSY ${id}:`, e);
+        
+        // Metodo di fallback
+        activeBaskets = baskets.filter(b => b.currentCycleId !== null).length;
+        
+        // Calcola il totale degli animali e la distribuzione delle taglie
+        let basketsWithAnimals = 0;
+        
+        // Per ogni cestello attivo, ottieni l'ultima operazione e raccogli statistiche
+        for (const basket of baskets.filter(b => b.currentCycleId !== null)) {
+          if (basket.currentCycleId) {
+            // Ottieni tutte le operazioni per questo ciclo
+            const cycleOperations = await storage.getOperationsByCycle(basket.currentCycleId);
+            
+            // Filtra per ottenere solo le operazioni di questo cestello
+            const operations = cycleOperations.filter(op => op.basketId === basket.id);
+            
+            // Ordina per data discendente per ottenere l'operazione più recente per prima
+            const operationsWithCount = operations
+              .filter(op => op.animalCount !== null) // Considera solo operazioni con conteggio degli animali
+              .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+            
+            if (operationsWithCount.length > 0) {
+              const lastOperation = operationsWithCount[0];
+              if (lastOperation.animalCount) {
+                totalAnimals += lastOperation.animalCount;
+                basketsWithAnimals++; 
+                
+                // Aggiungi i dati di distribuzione per taglia
+                if (lastOperation.sizeId) {
+                  const size = await storage.getSize(lastOperation.sizeId);
+                  if (size) {
+                    const sizeCode = size.code;
+                    if (!sizeDistribution[sizeCode]) {
+                      sizeDistribution[sizeCode] = 0;
+                    }
+                    sizeDistribution[sizeCode] += lastOperation.animalCount;
                   }
-                  sizeDistribution[sizeCode] += lastOperation.animalCount;
                 }
               }
             }
@@ -3929,12 +4021,19 @@ app.get("/api/operations", async (req, res) => {
         }
       }
       
+      // Calcola il resto delle statistiche
+      const totalBaskets = baskets.length;
+      const availableBaskets = totalBaskets - activeBaskets;
+      const maxPositions = flupsy.maxPositions || 10;
+      const freePositions = Math.max(0, maxPositions - totalBaskets);
+      
       // Calcola la densità media degli animali
-      const avgAnimalDensity = basketsWithAnimals > 0 ? Math.round(totalAnimals / basketsWithAnimals) : 0;
+      const basketsWithAnimals = activeBaskets > 0 ? activeBaskets : 1; // Evita divisione per zero
+      const avgAnimalDensity = Math.round(totalAnimals / basketsWithAnimals);
       
       // Calcola la percentuale di occupazione con cestelli attivi
-      const activeBasketPercentage = flupsy.maxPositions > 0 
-        ? Math.round((activeBaskets / flupsy.maxPositions) * 100) 
+      const activeBasketPercentage = maxPositions > 0 
+        ? Math.round((activeBaskets / maxPositions) * 100) 
         : 0;
       
       // Aggiungi le statistiche al FLUPSY
