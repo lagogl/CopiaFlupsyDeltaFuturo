@@ -52,35 +52,40 @@ export default function Dashboard() {
   const growthChartRef = useRef<HTMLDivElement>(null);
   const flupsyVisualizerRef = useRef<HTMLDivElement>(null);
 
-  // Query for active baskets and cycles
-  const { data: baskets, isLoading: basketsLoading, dataUpdatedAt: basketsUpdatedAt } = useQuery<Basket[]>({
-    queryKey: ['/api/baskets'],
+  // Query ottimizzate per la dashboard
+  const { data: dashboardStats, isLoading: statsLoading, dataUpdatedAt: statsUpdatedAt } = useQuery({
+    queryKey: ['/api/dashboard/stats', selectedCenter, selectedFlupsyIds],
+    queryFn: async () => {
+      // Crea parametri per il filtro di centro e flupsy
+      const params = new URLSearchParams();
+      if (selectedCenter) params.append('center', selectedCenter);
+      if (selectedFlupsyIds.length > 0) params.append('flupsyIds', selectedFlupsyIds.join(','));
+      
+      console.log('Caricamento statistiche dashboard ottimizzate...');
+      const response = await fetch(`/api/dashboard/stats?${params}`);
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento delle statistiche della dashboard');
+      }
+      return response.json();
+    },
+    staleTime: 5 * 60 * 1000, // 5 minuti
   });
-
-  const { data: cycles, isLoading: cyclesLoading, dataUpdatedAt: cyclesUpdatedAt } = useQuery<Cycle[]>({
-    queryKey: ['/api/cycles'],
-  });
-
-  const { data: operations, isLoading: operationsLoading, dataUpdatedAt: operationsUpdatedAt } = useQuery<Operation[]>({
-    queryKey: ['/api/operations'],
-  });
-
-  const { data: lots, isLoading: lotsLoading, dataUpdatedAt: lotsUpdatedAt } = useQuery<Lot[]>({
-    queryKey: ['/api/lots'],
-  });
+  
+  // Usa i dati recuperati ottimizzati
+  const baskets = dashboardStats?.baskets || [];
+  const cycles = dashboardStats?.cycles || [];
+  const operations = dashboardStats?.operations || [];
+  const lots = dashboardStats?.lots || [];
+  
+  // Flag di caricamento
+  const isLoading = statsLoading;
+  const dataUpdatedAt = statsUpdatedAt;
   
   // Funzione per aggiornare i dati
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
-      await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/operations'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/lots'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/sizes'] })
-      ]);
+      await queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] });
       setLastRefresh(new Date());
       setNeedsRefresh(false);
     } finally {
@@ -104,17 +109,10 @@ export default function Dashboard() {
   
   // Verifica l'aggiornamento dei dati
   useEffect(() => {
-    const latestUpdate = Math.max(
-      basketsUpdatedAt || 0,
-      cyclesUpdatedAt || 0,
-      operationsUpdatedAt || 0,
-      lotsUpdatedAt || 0
-    );
-    
-    if (latestUpdate > 0) {
-      setLastRefresh(new Date(latestUpdate));
+    if (statsUpdatedAt > 0) {
+      setLastRefresh(new Date(statsUpdatedAt));
     }
-  }, [basketsUpdatedAt, cyclesUpdatedAt, operationsUpdatedAt, lotsUpdatedAt]);
+  }, [statsUpdatedAt]);
 
   // Registrazione dei tooltip solo una volta all'avvio del componente
   useEffect(() => {
@@ -198,7 +196,7 @@ export default function Dashboard() {
   const lastMonthBaskets = activeBaskets.length - 3; // Mocked diff (+3 from last month)
 
   // Loading state
-  if (basketsLoading || cyclesLoading || operationsLoading || lotsLoading) {
+  if (isLoading) {
     return <div className="flex justify-center items-center h-full">Caricamento dashboard...</div>;
   }
 
