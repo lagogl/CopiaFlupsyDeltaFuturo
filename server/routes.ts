@@ -28,7 +28,6 @@ import * as ScreeningController from "./controllers/screening-controller";
 // WhatsApp controller rimosso
 import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
-import * as DbSyncController from "./controllers/db-sync-controller";
 import * as NotificationController from "./controllers/notification-controller";
 import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
@@ -6346,12 +6345,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Endpoint per ottenere le posizioni disponibili in un flupsy
   app.get("/api/flupsys/:id/available-positions", getFlupsyAvailablePositions);
-  
-  // API per la sincronizzazione del database
-  app.get('/api/db-sync/backups', DbSyncController.getBackups);
-  app.post('/api/db-sync/backup', DbSyncController.createBackup);
-  app.post('/api/db-sync/from-remote', DbSyncController.syncFromRemote);
-  app.post('/api/db-sync/to-remote', DbSyncController.syncToRemote);
   
   return httpServer;
 }
