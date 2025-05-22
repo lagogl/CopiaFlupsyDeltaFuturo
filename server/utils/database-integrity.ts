@@ -13,13 +13,13 @@ import {
   cycles,
   operations,
   sizes,
-  screeningOperations,
+  screeningOperations as screenings,
   screeningSourceBaskets,
   screeningDestinationBaskets,
   screeningBasketHistory,
   lots,
-  sgrRates,
-  growthForecasts,
+  sgr as sgrRates,
+  sgrGiornalieri as growthForecasts,
   basketPositionHistory
 } from '../../shared/schema';
 
@@ -219,14 +219,14 @@ async function checkOrphanedBasketPositions(fix: boolean): Promise<number> {
   
   // Trova posizioni con riferimenti a cestelli non esistenti
   const orphanedPositions1 = await db.select()
-    .from(basketPositions)
-    .leftJoin(baskets, eq(basketPositions.basketId, baskets.id))
+    .from(basketPositionHistory)
+    .leftJoin(baskets, eq(basketPositionHistory.basketId, baskets.id))
     .where(isNull(baskets.id));
   
   // Trova posizioni con riferimenti a FLUPSY non esistenti
   const orphanedPositions2 = await db.select()
-    .from(basketPositions)
-    .leftJoin(flupsys, eq(basketPositions.flupsyId, flupsys.id))
+    .from(basketPositionHistory)
+    .leftJoin(flupsys, eq(basketPositionHistory.flupsyId, flupsys.id))
     .where(isNull(flupsys.id));
   
   const totalOrphaned = orphanedPositions1.length + orphanedPositions2.length;
@@ -238,13 +238,13 @@ async function checkOrphanedBasketPositions(fix: boolean): Promise<number> {
     console.log('Eliminazione posizioni cestelli orfane...');
     // Elimina posizioni con cestelli non validi
     for (const pos of orphanedPositions1) {
-      await db.delete(basketPositions)
-        .where(eq(basketPositions.id, pos.basket_positions.id));
+      await db.delete(basketPositionHistory)
+        .where(eq(basketPositionHistory.id, pos.basket_position_history.id));
     }
     // Elimina posizioni con FLUPSY non validi
     for (const pos of orphanedPositions2) {
-      await db.delete(basketPositions)
-        .where(eq(basketPositions.id, pos.basket_positions.id));
+      await db.delete(basketPositionHistory)
+        .where(eq(basketPositionHistory.id, pos.basket_position_history.id));
     }
     console.log(`Eliminate ${totalOrphaned} posizioni cestelli orfane`);
   }

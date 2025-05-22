@@ -3742,16 +3742,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             activeBasketPercentage,
             sizeDistribution
           };
-            }
-          }
-          
-          // Calcola la densità media degli animali (numero di animali / cestelli con animali)
-          const avgAnimalDensity = basketsWithAnimals > 0 ? Math.round(totalAnimals / basketsWithAnimals) : 0;
-          
-          // Calcola la percentuale di occupazione con cestelli attivi
-          const activeBasketPercentage = flupsy.maxPositions > 0 
-            ? Math.round((activeBaskets / flupsy.maxPositions) * 100) 
-            : 0;
           
           // Log per debug
           console.log(`FLUPSY ${flupsy.id} (${flupsy.name}) - Statistiche:`, {
