@@ -88,15 +88,59 @@ export default function Baskets() {
     }
   }, [location]);
   
-  // Query baskets
-  const { data: baskets, isLoading } = useQuery({
-    queryKey: ['/api/baskets'],
+  // Stato paginazione
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  
+  // Query ottimizzata per i cestelli con paginazione
+  const { data: basketsData, isLoading } = useQuery({
+    queryKey: ['/api/baskets/optimized', currentPage, pageSize, flupsyFilter],
+    queryFn: async () => {
+      console.log("Caricamento cestelli ottimizzato...");
+      const startTime = performance.now();
+      
+      // Costruzione query params
+      const params = new URLSearchParams();
+      params.append('page', currentPage.toString());
+      params.append('pageSize', pageSize.toString());
+      
+      // Aggiungi filtro per FLUPSY se selezionato
+      if (flupsyFilter !== 'all') {
+        params.append('flupsyId', flupsyFilter);
+      }
+      
+      const response = await fetch(`/api/baskets/optimized?${params.toString()}`);
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei cestelli');
+      }
+      
+      const result = await response.json();
+      const endTime = performance.now();
+      console.log(`Cestelli caricati in ${(endTime - startTime).toFixed(2)}ms`);
+      return result;
+    }
   });
   
-  // Query FLUPSY units for filter
-  const { data: flupsys } = useQuery({
-    queryKey: ['/api/flupsys'],
-  }) as { data: any[] };
+  // Alias per mantenere compatibilità con il codice esistente
+  const baskets = basketsData?.data || [];
+  const totalBaskets = basketsData?.pagination?.total || 0;
+  const totalPages = basketsData?.pagination?.totalPages || 1;
+  
+  // Query FLUPSY units per filtro - utilizzando l'API ottimizzata
+  const { data: flupsysData } = useQuery({
+    queryKey: ['/api/flupsys/optimized'],
+    queryFn: async () => {
+      const response = await fetch('/api/flupsys/optimized?page=1&pageSize=100');
+      if (!response.ok) {
+        throw new Error('Errore nel caricamento dei FLUPSY');
+      }
+      const result = await response.json();
+      return result;
+    }
+  });
+  
+  // Alias per mantenere compatibilità con il codice esistente
+  const flupsys = flupsysData?.data || [];
 
   // Create mutation
   const createBasketMutation = useMutation({
