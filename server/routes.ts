@@ -30,6 +30,11 @@ import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
 import { getDashboardStats } from "./controllers/dashboard-controller";
+import { 
+  getFlupsyDashboardData, 
+  getIncomingBasketsData, 
+  getActiveCycles 
+} from "./controllers/flupsy-dashboard-controller";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
@@ -6436,6 +6441,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Route per operazioni di vagliatura ===
   app.post("/api/screening/prepare", ScreeningController.prepareScreeningOperation);
   app.post("/api/screening/execute", ScreeningController.executeScreeningOperation);
+  
+  // Dashboard optimized endpoints
+  app.get("/api/dashboard/stats", getDashboardStats);
+  app.get("/api/dashboard/flupsy", getFlupsyDashboardData);
+  app.get("/api/dashboard/incoming-baskets", getIncomingBasketsData);
+  app.get("/api/dashboard/active-cycles", getActiveCycles);
   
   // Configure WebSocket server
   const { 
