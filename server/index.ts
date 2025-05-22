@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { createSaleNotification } from "./sales-notification-handler";
 import { registerScreeningNotificationHandler } from "./screening-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
+import { setupPerformanceOptimizations } from "./index-setup.js";
 
 const app = express();
 app.use(express.json());

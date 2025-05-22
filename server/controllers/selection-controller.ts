@@ -584,8 +584,11 @@ export async function getAvailablePositions(req: Request, res: Response) {
   }
 }
 
+import { CacheService } from "../cache-service";
+
 /**
  * Ottiene tutte le posizioni disponibili in tutti i FLUPSY senza alcun legame con le selezioni
+ * Versione ottimizzata con caching per migliorare le prestazioni
  */
 export async function getAllAvailablePositions(req: Request, res: Response) {
   try {
@@ -597,91 +600,119 @@ export async function getAllAvailablePositions(req: Request, res: Response) {
       originFlupsyId = Number(originFlupsyIdParam);
     }
     
-    // Lista finale di tutte le posizioni disponibili
-    const allAvailablePositions: Array<{
-      flupsyId: number,
-      flupsyName: string,
-      row: string,
-      position: number,
-      positionDisplay: string,
-      available: boolean,
-      sameFlupsy: boolean
-    }> = [];
+    // Genera una chiave di cache basata sui parametri della richiesta
+    const cacheKey = `flupsy_available_positions_${originFlupsyId || 'all'}`;
     
-    // Recupera tutti i FLUPSY attivi direttamente
-    const activeFlupsys = await db.select().from(flupsys).where(eq(flupsys.active, true));
-    
-    // Per ogni FLUPSY attivo, recuperiamo le posizioni disponibili
-    for (const flupsy of activeFlupsys) {
-      // Ottieni le posizioni già occupate
-      const occupiedPositions = await db.select({
-        position: baskets.position,
-        row: baskets.row
-      })
-      .from(baskets)
-      .where(and(
-        eq(baskets.flupsyId, flupsy.id),
-        eq(baskets.state, 'active'),
-        sql`${baskets.position} IS NOT NULL`
-      ));
-      
-      // Mappatura delle posizioni occupate
-      const occupiedPositionsMap = new Map();
-      occupiedPositions.forEach(p => {
-        if (p.position && p.row) {
-          const key = `${p.row}-${p.position}`;
-          occupiedPositionsMap.set(key, true);
-        }
-      });
-      
-      // Determina se è lo stesso FLUPSY di origine
-      const isSameFlupsy = originFlupsyId !== null && originFlupsyId === flupsy.id;
-      
-      // Generiamo le posizioni in formato "DX-1", "DX-2", "SX-1", "SX-2", ecc.
-      const rows = ['DX', 'SX'];
-      
-      // Usa maxPositions dal flupsy o fallback a 10 se per qualche motivo non è definito
-      const maxPos = flupsy.maxPositions || 10;
-      const positions = Array.from({ length: maxPos }, (_, i) => i + 1); // [1, 2, ..., maxPositions]
-      
-      rows.forEach(posRow => {
-        positions.forEach(pos => {
-          const key = `${posRow}-${pos}`;
-          const isOccupied = occupiedPositionsMap.has(key);
-          
-          if (!isOccupied) {
-            allAvailablePositions.push({
-              flupsyId: flupsy.id,
-              flupsyName: flupsy.name,
-              row: posRow,
-              position: pos,
-              positionDisplay: `${flupsy.name} ${posRow}-${pos}`,
-              available: true,
-              sameFlupsy: isSameFlupsy
-            });
+    // Prova a recuperare i risultati dalla cache (TTL: 2 minuti)
+    // I risultati vengono restituiti immediatamente se sono in cache, 
+    // altrimenti la funzione generator viene eseguita per calcolarli
+    const allAvailablePositions = await CacheService.getOrSet(
+      cacheKey,
+      async () => {
+        console.time('get_available_positions_db_query');
+        
+        // Lista finale di tutte le posizioni disponibili
+        const positions: Array<{
+          flupsyId: number,
+          flupsyName: string,
+          row: string,
+          position: number,
+          positionDisplay: string,
+          available: boolean,
+          sameFlupsy: boolean
+        }> = [];
+        
+        // Recupera tutti i FLUPSY attivi in una singola query ottimizzata
+        const activeFlupsys = await db.select().from(flupsys).where(eq(flupsys.active, true));
+        
+        // Ottimizzazione: recupera tutte le posizioni occupate in un'unica query per ridurre le query al database
+        const allOccupiedPositions = await db.select({
+          flupsyId: baskets.flupsyId,
+          position: baskets.position,
+          row: baskets.row
+        })
+        .from(baskets)
+        .where(and(
+          eq(baskets.state, 'active'),
+          sql`${baskets.position} IS NOT NULL`,
+          sql`${baskets.flupsyId} IS NOT NULL`
+        ));
+        
+        // Creazione di una mappa per accesso veloce alle posizioni occupate
+        // Struttura: { flupsyId: { 'row-position': true } }
+        const occupiedByFlupsy = new Map<number, Map<string, boolean>>();
+        
+        // Popola la mappa delle posizioni occupate
+        allOccupiedPositions.forEach(p => {
+          if (p.position && p.row && p.flupsyId) {
+            if (!occupiedByFlupsy.has(p.flupsyId)) {
+              occupiedByFlupsy.set(p.flupsyId, new Map());
+            }
+            const key = `${p.row}-${p.position}`;
+            occupiedByFlupsy.get(p.flupsyId)?.set(key, true);
           }
         });
-      });
-    }
-    
-    // Ordina le posizioni: prima quelle nello stesso FLUPSY di origine, poi le altre
-    allAvailablePositions.sort((a, b) => {
-      // Se sono entrambe nello stesso FLUPSY di origine o entrambe in FLUPSY differenti, ordina per nome FLUPSY
-      if (a.sameFlupsy === b.sameFlupsy) {
-        // Ordina prima per nome FLUPSY
-        if (a.flupsyName !== b.flupsyName) {
-          return a.flupsyName.localeCompare(b.flupsyName);
+        
+        // Per ogni FLUPSY attivo, calcola le posizioni disponibili
+        for (const flupsy of activeFlupsys) {
+          // Ottieni la mappa delle posizioni occupate per questo FLUPSY
+          const occupiedPositionsMap = occupiedByFlupsy.get(flupsy.id) || new Map();
+          
+          // Determina se è lo stesso FLUPSY di origine
+          const isSameFlupsy = originFlupsyId !== null && originFlupsyId === flupsy.id;
+          
+          // Generiamo le posizioni in formato "DX-1", "DX-2", "SX-1", "SX-2", ecc.
+          const rows = ['DX', 'SX'];
+          
+          // Usa maxPositions dal flupsy o fallback a 10 se per qualche motivo non è definito
+          const maxPos = flupsy.maxPositions || 10;
+          const positionArray = Array.from({ length: maxPos }, (_, i) => i + 1); // [1, 2, ..., maxPositions]
+          
+          rows.forEach(posRow => {
+            positionArray.forEach(pos => {
+              const key = `${posRow}-${pos}`;
+              const isOccupied = occupiedPositionsMap.has(key);
+              
+              if (!isOccupied) {
+                positions.push({
+                  flupsyId: flupsy.id,
+                  flupsyName: flupsy.name,
+                  row: posRow,
+                  position: pos,
+                  positionDisplay: `${flupsy.name} ${posRow}-${pos}`,
+                  available: true,
+                  sameFlupsy: isSameFlupsy
+                });
+              }
+            });
+          });
         }
-        // Poi per fila (DX prima di SX)
-        if (a.row !== b.row) {
-          return a.row === 'DX' ? -1 : 1;
-        }
-        // Infine per posizione
-        return a.position - b.position;
-      }
-      // Altrimenti, mostra prima quelle nello stesso FLUPSY di origine
-      return a.sameFlupsy ? -1 : 1;
-    });
+        
+        // Ordina le posizioni: prima quelle nello stesso FLUPSY di origine, poi le altre
+        positions.sort((a, b) => {
+          // Se sono entrambe nello stesso FLUPSY di origine o entrambe in FLUPSY differenti, ordina per nome FLUPSY
+          if (a.sameFlupsy === b.sameFlupsy) {
+            // Ordina prima per nome FLUPSY
+            if (a.flupsyName !== b.flupsyName) {
+              return a.flupsyName.localeCompare(b.flupsyName);
+            }
+            // Poi per fila (DX prima di SX)
+            if (a.row !== b.row) {
+              return a.row === 'DX' ? -1 : 1;
+            }
+            // Infine per posizione
+            return a.position - b.position;
+          }
+          // Altrimenti, mostra prima quelle nello stesso FLUPSY di origine
+          return a.sameFlupsy ? -1 : 1;
+        });
+        
+        console.timeEnd('get_available_positions_db_query');
+        return positions;
+      },
+      // Cache per 2 minuti - è un buon compromesso tra prestazioni e dati aggiornati
+      2 * 60 * 1000
+    );
     
     return res.status(200).json(allAvailablePositions);
     
