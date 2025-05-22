@@ -26,7 +26,7 @@ import LotStatisticsService from './services/lot-statistics-service.js';
 // Importa il servizio database ottimizzato
 import { dbStorage } from './db-storage';
 // Importa il servizio di cache globale
-import globalDataCache from './services/global-data-cache';
+// La cache globale viene inizializzata in server/index.ts e resa disponibile tramite globalThis.globalCache
 
 // Importazione dei controller
 import * as SelectionController from "./controllers/selection-controller";
@@ -3245,20 +3245,29 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.time('lots-api-cache');
       
-      // Usa la cache globale per ottenere i lotti
-      const lots = globalDataCache.getLots();
+      let lots = [];
+      let sizes = [];
       
-      // Usa la cache globale per ottenere le taglie
-      const sizes = globalDataCache.getSizes();
+      // Verifica che la cache globale sia inizializzata
+      if ((globalThis as any).globalCache) {
+        console.log("Usando la cache globale per i lotti");
+        lots = (globalThis as any).globalCache.getLots() || [];
+        sizes = (globalThis as any).globalCache.getSizes() || [];
+      } else {
+        // Fallback alla storage normale
+        console.log("Cache globale non disponibile, usando storage standard");
+        lots = await storage.getLots();
+        sizes = await storage.getSizes();
+      }
       
       // Crea una mappa di taglie per lookup veloce
       const sizeMap = new Map();
-      sizes.forEach(size => {
+      sizes.forEach((size: any) => {
         sizeMap.set(size.id, size);
       });
       
       // Combina i lotti con le loro taglie
-      const lotsWithSizes = lots.map(lot => {
+      const lotsWithSizes = lots.map((lot: any) => {
         const size = lot.sizeId ? sizeMap.get(lot.sizeId) || null : null;
         return { ...lot, size };
       });
