@@ -2,6 +2,8 @@ import { Request, Response } from "express";
 import { db } from "../db";
 import { format } from "date-fns";
 import { storage } from "../storage";
+import { eq, desc, and, gt, isNotNull } from "drizzle-orm";
+import { baskets, cycles, lots, operations } from "@shared/schema";
 
 /**
  * Controller ottimizzato per la dashboard
@@ -27,40 +29,56 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     
     // Eseguiamo le query SQL direttamente per evitare problemi di tipizzazione e ottimizzare le prestazioni
     try {
+      // Utilizziamo metodi semplici e diretti di Drizzle ORM
       // 1. Recupera i cestelli attivi
-      const basketsQuery = flupsyIds.length > 0 
-        ? `SELECT * FROM baskets WHERE state = 'active' AND flupsy_id IN (${flupsyIds.join(',')})` 
-        : `SELECT * FROM baskets WHERE state = 'active'`;
-      
-      const basketsResult = await db.execute(basketsQuery);
-      activeBasketsData = basketsResult.rows || [];
+      if (flupsyIds.length > 0) {
+        activeBasketsData = await db
+          .select()
+          .from(baskets)
+          .where(
+            and(
+              eq(baskets.state, 'active'),
+              inArray(baskets.flupsyId, flupsyIds)
+            )
+          );
+      } else {
+        activeBasketsData = await db
+          .select()
+          .from(baskets)
+          .where(eq(baskets.state, 'active'));
+      }
       console.log(`Dashboard: Recuperati ${activeBasketsData.length} cestelli attivi`);
       
       // 2. Recupera i cicli attivi
-      const cyclesResult = await db.execute(`SELECT * FROM cycles WHERE state = 'active' LIMIT 100`);
-      activeCyclesData = cyclesResult.rows || [];
+      activeCyclesData = await db
+        .select()
+        .from(cycles)
+        .where(eq(cycles.state, 'active'))
+        .limit(100);
       console.log(`Dashboard: Recuperati ${activeCyclesData.length} cicli attivi`);
       
       // 3. Recupera i lotti attivi
-      const lotsResult = await db.execute(`SELECT * FROM lots WHERE state = 'active' LIMIT 100`);
-      activeLotsData = lotsResult.rows || [];
+      activeLotsData = await db
+        .select()
+        .from(lots)
+        .where(eq(lots.state, 'active'))
+        .limit(100);
       console.log(`Dashboard: Recuperati ${activeLotsData.length} lotti attivi`);
       
       // 4. Recupera le operazioni recenti
-      const operationsResult = await db.execute(`
-        SELECT * FROM operations 
-        ORDER BY date DESC, id DESC 
-        LIMIT 200
-      `);
-      recentOperationsData = operationsResult.rows || [];
+      recentOperationsData = await db
+        .select()
+        .from(operations)
+        .orderBy(desc(operations.date), desc(operations.id))
+        .limit(200);
       console.log(`Dashboard: Recuperate ${recentOperationsData.length} operazioni recenti`);
       
       // 5. Filtra le operazioni di oggi
       todayOperationsData = recentOperationsData.filter(op => op.date === today);
       console.log(`Dashboard: Filtrate ${todayOperationsData.length} operazioni di oggi`);
       
-      // 6. Recupera il conteggio animali più recente per ogni cestello
-      const animalCountResult = await db.execute(`
+      // 6. Recupera il conteggio degli animali con una query SQL nativa
+      const animalCountQuery = `
         WITH LastOperationWithCount AS (
           SELECT DISTINCT ON (basket_id) 
             basket_id, 
@@ -70,14 +88,17 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           ORDER BY basket_id, date DESC, id DESC
         )
         SELECT basket_id, animal_count FROM LastOperationWithCount
-      `);
+      `;
+      
+      const animalCounts = await db.execute(animalCountQuery);
       
       // Associa i conteggi animali ai cestelli corrispondenti
       const animalCountByBasket = new Map();
       
-      if (animalCountResult.rows && animalCountResult.rows.length > 0) {
+      // Processa i risultati della query SQL
+      if (animalCounts.rows && animalCounts.rows.length > 0) {
         // Elabora i risultati
-        for (const row of animalCountResult.rows) {
+        for (const row of animalCounts.rows) {
           const basketId = Number(row.basket_id);
           const count = Number(row.animal_count);
           
