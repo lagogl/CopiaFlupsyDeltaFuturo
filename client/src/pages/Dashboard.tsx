@@ -52,95 +52,34 @@ export default function Dashboard() {
   const growthChartRef = useRef<HTMLDivElement>(null);
   const flupsyVisualizerRef = useRef<HTMLDivElement>(null);
 
-  // Query ottimizzate per la dashboard principale
-  const { data: dashboardStats, isLoading: statsLoading, dataUpdatedAt: statsUpdatedAt } = useQuery({
-    queryKey: ['/api/dashboard/stats', selectedCenter, selectedFlupsyIds],
-    queryFn: async () => {
-      // Crea parametri per il filtro di centro e flupsy
-      const params = new URLSearchParams();
-      if (selectedCenter) params.append('center', selectedCenter);
-      if (selectedFlupsyIds.length > 0) params.append('flupsyIds', selectedFlupsyIds.join(','));
-      
-      console.log('Caricamento statistiche dashboard ottimizzate...');
-      const response = await fetch(`/api/dashboard/stats?${params}`);
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento delle statistiche della dashboard');
-      }
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000, // 5 minuti
+  // Query for active baskets and cycles
+  const { data: baskets, isLoading: basketsLoading, dataUpdatedAt: basketsUpdatedAt } = useQuery<Basket[]>({
+    queryKey: ['/api/baskets'],
   });
-  
-  // Query ottimizzata per i dati FLUPSY (visualizzazione FLUPSY)
-  const { data: flupsyDashboardData } = useQuery({
-    queryKey: ['/api/dashboard/flupsy', selectedFlupsyIds],
-    queryFn: async () => {
-      const params = new URLSearchParams();
-      if (selectedFlupsyIds.length > 0) params.append('flupsyIds', selectedFlupsyIds.join(','));
-      
-      const response = await fetch(`/api/dashboard/flupsy?${params}`);
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento dei dati FLUPSY');
-      }
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000, // 5 minuti
-    enabled: !statsLoading, // Carica solo dopo che le statistiche base sono pronte
+
+  const { data: cycles, isLoading: cyclesLoading, dataUpdatedAt: cyclesUpdatedAt } = useQuery<Cycle[]>({
+    queryKey: ['/api/cycles'],
   });
-  
-  // Query ottimizzata per i cestelli in arrivo
-  const { data: incomingBasketsData } = useQuery({
-    queryKey: ['/api/dashboard/incoming-baskets'],
-    queryFn: async () => {
-      const response = await fetch('/api/dashboard/incoming-baskets');
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento dei cestelli in arrivo');
-      }
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000, // 5 minuti
-    enabled: !statsLoading, // Carica solo dopo che le statistiche base sono pronte
+
+  const { data: operations, isLoading: operationsLoading, dataUpdatedAt: operationsUpdatedAt } = useQuery<Operation[]>({
+    queryKey: ['/api/operations'],
   });
-  
-  // Query ottimizzata per i cicli attivi
-  const { data: activeCyclesData } = useQuery({
-    queryKey: ['/api/dashboard/active-cycles'],
-    queryFn: async () => {
-      const response = await fetch('/api/dashboard/active-cycles');
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento dei cicli attivi');
-      }
-      return response.json();
-    },
-    staleTime: 5 * 60 * 1000, // 5 minuti
-    enabled: !statsLoading, // Carica solo dopo che le statistiche base sono pronte
+
+  const { data: lots, isLoading: lotsLoading, dataUpdatedAt: lotsUpdatedAt } = useQuery<Lot[]>({
+    queryKey: ['/api/lots'],
   });
-  
-  // Usa i dati recuperati ottimizzati
-  const baskets = dashboardStats?.baskets || [];
-  const cycles = dashboardStats?.cycles || [];
-  const operations = dashboardStats?.operations || [];
-  const lots = dashboardStats?.lots || [];
-  
-  // Dati aggiuntivi dai nuovi endpoint ottimizzati
-  const flupsyData = flupsyDashboardData?.data || [];
-  const incomingBaskets = incomingBasketsData?.data || [];
-  const detailedActiveCycles = activeCyclesData?.data || [];
-  
-  // Flag di caricamento
-  const isLoading = statsLoading;
-  const dataUpdatedAt = statsUpdatedAt;
   
   // Funzione per aggiornare i dati
   const refreshData = async () => {
     setIsRefreshing(true);
     try {
-      // Invalida tutte le query ottimizzate della dashboard
       await Promise.all([
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/stats'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/flupsy'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/incoming-baskets'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard/active-cycles'] })
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/operations'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/lots'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] }),
+        queryClient.invalidateQueries({ queryKey: ['/api/sizes'] })
       ]);
       setLastRefresh(new Date());
       setNeedsRefresh(false);
@@ -165,10 +104,17 @@ export default function Dashboard() {
   
   // Verifica l'aggiornamento dei dati
   useEffect(() => {
-    if (statsUpdatedAt > 0) {
-      setLastRefresh(new Date(statsUpdatedAt));
+    const latestUpdate = Math.max(
+      basketsUpdatedAt || 0,
+      cyclesUpdatedAt || 0,
+      operationsUpdatedAt || 0,
+      lotsUpdatedAt || 0
+    );
+    
+    if (latestUpdate > 0) {
+      setLastRefresh(new Date(latestUpdate));
     }
-  }, [statsUpdatedAt]);
+  }, [basketsUpdatedAt, cyclesUpdatedAt, operationsUpdatedAt, lotsUpdatedAt]);
 
   // Registrazione dei tooltip solo una volta all'avvio del componente
   useEffect(() => {
@@ -238,29 +184,11 @@ export default function Dashboard() {
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
     // Prendi la più recente operazione che ha un conteggio di animali
-    const latestOperationWithCount = basketOperations.find(op => 
-      op.animalCount !== null && 
-      op.animalCount !== undefined && 
-      op.animalCount > 0
-    );
+    const latestOperationWithCount = basketOperations.find(op => op.animalCount !== null && op.animalCount !== undefined);
     
     // Aggiungi al totale se abbiamo un conteggio di animali
-    if (latestOperationWithCount && latestOperationWithCount.animalCount > 0) {
-      return total + Number(latestOperationWithCount.animalCount);
-    }
-    
-    // Se non ci sono operazioni con conteggio, prova a cercare nelle operazioni recenti dal server
-    if (operations && operations.length > 0) {
-      const serverOperation = operations.find(op => 
-        op.basketId === basket.id && 
-        op.animalCount !== null && 
-        op.animalCount !== undefined &&
-        op.animalCount > 0
-      );
-      
-      if (serverOperation && serverOperation.animalCount > 0) {
-        return total + Number(serverOperation.animalCount);
-      }
+    if (latestOperationWithCount?.animalCount) {
+      return total + latestOperationWithCount.animalCount;
     }
     
     return total;
@@ -270,7 +198,7 @@ export default function Dashboard() {
   const lastMonthBaskets = activeBaskets.length - 3; // Mocked diff (+3 from last month)
 
   // Loading state
-  if (isLoading) {
+  if (basketsLoading || cyclesLoading || operationsLoading || lotsLoading) {
     return <div className="flex justify-center items-center h-full">Caricamento dashboard...</div>;
   }
 

@@ -29,12 +29,7 @@ import * as ScreeningController from "./controllers/screening-controller";
 import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
-import { getDashboardStats } from "./controllers/dashboard-controller";
-import { 
-  getFlupsyDashboardData, 
-  getIncomingBasketsData, 
-  getActiveCycles 
-} from "./controllers/flupsy-dashboard-controller";
+import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
@@ -293,9 +288,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sequences/info", SequenceController.getSequencesInfo);
   
   // === Basket routes ===
-  // Endpoint ottimizzato per la dashboard
-  app.get("/api/dashboard/stats", getDashboardStats);
-  
   app.get("/api/baskets", async (req, res) => {
     try {
       const baskets = await storage.getBaskets();
@@ -1400,6 +1392,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/operations", async (req, res) => {
     try {
+      // Controlla se è stata richiesta la versione ottimizzata
+      const useOptimized = req.query.optimized === 'true';
+      
+      if (useOptimized) {
+        // Reindirizza alla versione ottimizzata
+        console.log("Reindirizzamento alla versione ottimizzata delle operazioni");
+        
+        // Estrai i parametri della query
+        const page = req.query.page ? parseInt(req.query.page as string) : 1;
+        const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 20;
+        const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : undefined;
+        const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
+        const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : undefined;
+        
+        // Gestione date
+        const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined;
+        const dateTo = req.query.dateTo ? new Date(req.query.dateTo as string) : undefined;
+        
+        // Tipo di operazione
+        const type = req.query.type as string | undefined;
+        
+        // Chiama la funzione ottimizzata
+        const result = await storage.getOperationsOptimized({
+          page,
+          pageSize,
+          cycleId,
+          flupsyId,
+          basketId,
+          dateFrom,
+          dateTo,
+          type
+        });
+        
+        // Restituisci solo le operazioni per mantenere la compatibilità con il frontend esistente
+        return res.json(result.operations);
+      }
+      
+      // Versione originale dell'endpoint
       // Controlla se c'è un filtro per cycleId
       const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : null;
       
@@ -1471,196 +1501,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     } catch (error) {
       console.error("Error fetching operations:", error);
       res.status(500).json({ message: "Failed to fetch operations" });
-    }
-  });
-  
-  // Endpoint ottimizzato per le operazioni con paginazione e ricerca avanzata
-  app.get("/api/operations-optimized", async (req, res) => {
-    console.time('operations-optimized');
-    try {
-      // Estrai i parametri della query
-      const page = req.query.page ? parseInt(req.query.page as string) : 1;
-      const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 20;
-      const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : undefined;
-      const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
-      const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : undefined;
-      
-      // Gestione date
-      const dateFrom = req.query.dateFrom ? req.query.dateFrom as string : undefined;
-      const dateTo = req.query.dateTo ? req.query.dateTo as string : undefined;
-      
-      // Tipo di operazione
-      const type = req.query.type as string | undefined;
-      
-      console.log("API operations-optimized params:", { 
-        page, pageSize, cycleId, flupsyId, basketId, dateFrom, dateTo, type 
-      });
-      
-      // Costruisci query SQL ottimizzata per recuperare operazioni con JOIN
-      // Questo è significativamente più veloce che fare query separate per ogni relazione
-      const whereConditions = [];
-      const params = [];
-      let paramIndex = 1;
-      
-      if (cycleId) {
-        whereConditions.push(`o.cycle_id = ${cycleId}`);
-      }
-      
-      if (basketId) {
-        whereConditions.push(`o.basket_id = ${basketId}`);
-      }
-      
-      if (flupsyId) {
-        whereConditions.push(`b.flupsy_id = ${flupsyId}`);
-      }
-      
-      if (type) {
-        whereConditions.push(`o.type = '${type}'`);
-      }
-      
-      if (dateFrom) {
-        whereConditions.push(`o.date >= '${dateFrom}'`);
-      }
-      
-      if (dateTo) {
-        whereConditions.push(`o.date <= '${dateTo}'`);
-      }
-      
-      const whereClause = whereConditions.length > 0 
-        ? `WHERE ${whereConditions.join(' AND ')}` 
-        : '';
-      
-      // Query per contare il totale delle operazioni
-      const countQuery = `
-        SELECT COUNT(*) as total
-        FROM operations o
-        LEFT JOIN baskets b ON o.basket_id = b.id
-        ${whereClause}
-      `;
-      
-      // Query principale ottimizzata con JOIN per recuperare tutte le relazioni in una sola query
-      const mainQuery = `
-        SELECT 
-          o.*,
-          b.id as basket_id,
-          b.physical_number as basket_physical_number,
-          b.flupsy_id as basket_flupsy_id,
-          b.state as basket_state,
-          b.row as basket_row,
-          b.position as basket_position,
-          c.id as cycle_id,
-          c.start_date as cycle_start_date,
-          c.end_date as cycle_end_date,
-          c.state as cycle_state,
-          s.id as size_id,
-          s.code as size_code,
-          s.name as size_name,
-          s.size_mm as size_mm,
-          s.min_animals_per_kg as size_min_animals,
-          s.max_animals_per_kg as size_max_animals,
-          s.color as size_color,
-          f.id as flupsy_id,
-          f.name as flupsy_name,
-          l.id as lot_id,
-          l.supplier as lot_supplier,
-          l.supplier_lot as lot_supplier_lot,
-          l.animal_count as lot_animal_count
-        FROM operations o
-        LEFT JOIN baskets b ON o.basket_id = b.id
-        LEFT JOIN cycles c ON o.cycle_id = c.id
-        LEFT JOIN sizes s ON o.size_id = s.id
-        LEFT JOIN flupsys f ON b.flupsy_id = f.id
-        LEFT JOIN lots l ON o.lot_id = l.id
-        ${whereClause}
-        ORDER BY o.date DESC, o.id DESC
-        LIMIT ${pageSize} OFFSET ${(page - 1) * pageSize}
-      `;
-      
-      // Esegui entrambe le query
-      const [countResult, operationsResult] = await Promise.all([
-        db.execute(countQuery),
-        db.execute(mainQuery)
-      ]);
-      
-      // Elabora i risultati
-      const totalItems = parseInt(countResult[0].total);
-      const totalPages = Math.ceil(totalItems / pageSize);
-      
-      // Formatta i risultati in un formato più utilizzabile dal client
-      const formattedOperations = operationsResult.map(row => ({
-        id: row.id,
-        date: row.date,
-        type: row.type,
-        basketId: row.basket_id,
-        cycleId: row.cycle_id,
-        sizeId: row.size_id,
-        sgrId: row.sgr_id,
-        lotId: row.lot_id,
-        animalCount: row.animal_count,
-        totalWeight: row.total_weight,
-        animalsPerKg: row.animals_per_kg,
-        averageWeight: row.average_weight,
-        deadCount: row.dead_count,
-        mortalityRate: row.mortality_rate,
-        notes: row.notes,
-        metadata: row.metadata,
-        // Dati cestello formattati
-        basket: row.basket_id ? {
-          id: row.basket_id,
-          physicalNumber: row.basket_physical_number,
-          flupsyId: row.basket_flupsy_id,
-          state: row.basket_state,
-          row: row.basket_row,
-          position: row.basket_position,
-          flupsyName: row.flupsy_name
-        } : null,
-        // Dati ciclo formattati
-        cycle: row.cycle_id ? {
-          id: row.cycle_id,
-          startDate: row.cycle_start_date,
-          endDate: row.cycle_end_date,
-          state: row.cycle_state
-        } : null,
-        // Dati taglia formattati
-        size: row.size_id ? {
-          id: row.size_id,
-          code: row.size_code,
-          name: row.size_name,
-          sizeMm: row.size_mm,
-          minAnimalsPerKg: row.size_min_animals,
-          maxAnimalsPerKg: row.size_max_animals,
-          color: row.size_color
-        } : null,
-        // Dati lotto formattati
-        lot: row.lot_id ? {
-          id: row.lot_id,
-          supplier: row.lot_supplier,
-          supplierLot: row.lot_supplier_lot,
-          animalCount: row.lot_animal_count
-        } : null
-      }));
-      
-      // Prepara i dati di paginazione
-      const pagination = {
-        page,
-        pageSize,
-        totalItems,
-        totalPages
-      };
-      
-      console.timeEnd('operations-optimized');
-      
-      // Restituisci i risultati
-      res.json({
-        operations: formattedOperations,
-        pagination
-      });
-    } catch (error) {
-      console.error("Error in operations-optimized:", error);
-      res.status(500).json({ 
-        message: "Errore nel recupero delle operazioni ottimizzate",
-        error: error.message
-      });
     }
   });
 
@@ -2164,14 +2004,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Diario di Bordo API routes ===
-  // Temporaneamente disabilitato per fix
-  /* 
+  
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
-  // app.get("/api/diario/month-data", diarioController.getMonthData);
+  app.get("/api/diario/month-data", diarioController.getMonthData);
   
   // API - Esporta il calendario in formato CSV
-  // app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
-  */
+  app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
   
   // API - [VECCHIO ENDPOINT - DA RIMUOVERE QUANDO IL NUOVO SARÀ TESTATO]
   app.get("/api/diario/month-data-old", async (req, res) => {
@@ -2675,99 +2513,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.json(cyclesWithBaskets);
     } catch (error) {
       console.error("Error fetching cycles:", error);
-      res.status(500).json({ message: "Failed to fetch cycles" });
-    }
-  });
-  
-  // Endpoint ottimizzato per i cicli con paginazione
-  app.get("/api/cycles/optimized", async (req, res) => {
-    console.time('cycles-optimized');
-    try {
-      const page = parseInt(req.query.page as string) || 1;
-      const pageSize = parseInt(req.query.pageSize as string) || 20;
-      const state = req.query.state as string;
-      
-      // Costruisci query SQL ottimizzata per recuperare cicli con dettagli cestello in un'unica query
-      const whereConditions = [];
-      const params = [];
-      let paramIndex = 1;
-      
-      if (state) {
-        whereConditions.push(`c.state = $${paramIndex}`);
-        params.push(state);
-        paramIndex++;
-      }
-      
-      const whereClause = whereConditions.length > 0 
-        ? `WHERE ${whereConditions.join(' AND ')}` 
-        : '';
-        
-      // Query per contare il totale
-      const countQuery = `
-        SELECT COUNT(*) 
-        FROM cycles c
-        ${whereClause}
-      `;
-      
-      // Query principale ottimizzata con JOIN
-      const mainQuery = `
-        SELECT 
-          c.*,
-          b.id as basket_id,
-          b.physical_number as basket_physical_number,
-          b.flupsy_id as basket_flupsy_id,
-          b.state as basket_state,
-          b.row as basket_row,
-          b.position as basket_position
-        FROM cycles c
-        LEFT JOIN baskets b ON c.basket_id = b.id
-        ${whereClause}
-        ORDER BY c.start_date DESC, c.id DESC
-        LIMIT $${paramIndex} OFFSET $${paramIndex + 1}
-      `;
-      
-      params.push(pageSize, (page - 1) * pageSize);
-      
-      // Esegui entrambe le query in parallelo
-      const [countResult, cyclesResult] = await Promise.all([
-        db.execute(countQuery),
-        db.execute(mainQuery)
-      ]);
-      
-      // Estrai risultati
-      const totalCount = parseInt(countResult[0].count);
-      const totalPages = Math.ceil(totalCount / pageSize);
-      
-      // Formatta i risultati
-      const formattedCycles = cyclesResult.map(row => ({
-        id: row.id,
-        basketId: row.basket_id,
-        startDate: row.start_date,
-        endDate: row.end_date,
-        state: row.state,
-        notes: row.notes,
-        createdAt: row.created_at,
-        updatedAt: row.updated_at,
-        basket: row.basket_id ? {
-          id: row.basket_id,
-          physicalNumber: row.basket_physical_number,
-          flupsyId: row.basket_flupsy_id,
-          state: row.basket_state,
-          row: row.basket_row,
-          position: row.basket_position
-        } : null
-      }));
-      
-      console.timeEnd('cycles-optimized');
-      res.json({
-        cycles: formattedCycles,
-        page,
-        pageSize,
-        totalPages,
-        totalCount
-      });
-    } catch (error) {
-      console.error("Error fetching optimized cycles:", error);
       res.status(500).json({ message: "Failed to fetch cycles" });
     }
   });
@@ -6441,12 +6186,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Route per operazioni di vagliatura ===
   app.post("/api/screening/prepare", ScreeningController.prepareScreeningOperation);
   app.post("/api/screening/execute", ScreeningController.executeScreeningOperation);
-  
-  // Dashboard optimized endpoints
-  app.get("/api/dashboard/stats", getDashboardStats);
-  app.get("/api/dashboard/flupsy", getFlupsyDashboardData);
-  app.get("/api/dashboard/incoming-baskets", getIncomingBasketsData);
-  app.get("/api/dashboard/active-cycles", getActiveCycles);
   
   // Configure WebSocket server
   const { 
