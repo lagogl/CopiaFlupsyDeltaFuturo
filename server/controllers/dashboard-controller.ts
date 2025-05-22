@@ -32,6 +32,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     // Utilizzando SQL nativo per massimizzare le prestazioni
     
     // Query SQL per recuperare l'ultima operazione per ogni cestello
+    const flupsyIdsList = flupsyIds.map(id => sql.literal(id));
+    
     const latestOperationsSql = flupsyIds.length > 0
       ? sql`
           WITH ranked_operations AS (
@@ -40,7 +42,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
               ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
             FROM operations o
             JOIN baskets b ON o.basket_id = b.id
-            WHERE b.state = 'active' AND b.flupsy_id IN (${flupsyIds.join(',')})
+            WHERE b.state = 'active' AND b.flupsy_id IN (${sql.join(flupsyIdsList)})
           )
           SELECT * FROM ranked_operations WHERE rn = 1
         `
@@ -63,7 +65,7 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           SELECT o.* FROM operations o
           JOIN baskets b ON o.basket_id = b.id
           WHERE b.state = 'active' AND o.date = ${today}
-          AND b.flupsy_id IN (${flupsyIds.join(',')})
+          AND b.flupsy_id IN (${sql.join(flupsyIdsList)})
         `
       : sql`
           SELECT o.* FROM operations o
