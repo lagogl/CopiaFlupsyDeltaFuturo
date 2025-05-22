@@ -72,9 +72,10 @@ export default function FlupsyVisualizer() {
     queryKey: ['/api/flupsys'],
   });
   
-  // Fetch baskets
+  // Fetch baskets - Utilizziamo l'endpoint standard invece di quello ottimizzato per garantire
+  // che tutti i dati vengano recuperati correttamente per la visualizzazione FLUPSY
   const { data: baskets, isLoading: isLoadingBaskets } = useQuery<Basket[]>({
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets', { includeAll: true }],
   });
   
   // Fetch operations
