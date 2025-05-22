@@ -72,9 +72,25 @@ export default function BasicFlupsyVisualizer({ selectedFlupsyIds = [] }: BasicF
   const { data: baskets, isLoading: isLoadingBaskets } = useQuery({ 
     queryKey: ['/api/baskets', { 
       includeAll: true,
-      flupsyId: selectedFlupsyIds?.length > 0 ? selectedFlupsyIds : undefined
+      flupsyId: selectedFlupsyIds?.length > 0 ? 
+        // Convertiamo l'array in stringa separata da virgole per migliorare la compatibilità
+        selectedFlupsyIds.join(',') : 
+        undefined
     }] 
   });
+  
+  // Aggiungiamo un log per debug
+  React.useEffect(() => {
+    if (baskets) {
+      console.log(`BasicFlupsyVisualizer: Ricevuti ${baskets.length} cestelli`);
+      // Raggruppiamo per FLUPSY
+      const basketsByFlupsy = baskets.reduce((acc, basket) => {
+        acc[basket.flupsyId] = (acc[basket.flupsyId] || 0) + 1;
+        return acc;
+      }, {});
+      console.log('Distribuzione cestelli per FLUPSY:', basketsByFlupsy);
+    }
+  }, [baskets]);
   
   const { data: operations } = useQuery({ 
     queryKey: ['/api/operations', {
