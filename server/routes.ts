@@ -25,6 +25,8 @@ import {
 import LotStatisticsService from './services/lot-statistics-service.js';
 // Importa il servizio database ottimizzato
 import { dbStorage } from './db-storage';
+// Importa il servizio di cache globale
+import globalDataCache from './services/global-data-cache';
 
 // Importazione dei controller
 import * as SelectionController from "./controllers/selection-controller";
@@ -3241,16 +3243,30 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Lot routes ===
   app.get("/api/lots", async (req, res) => {
     try {
-      const lots = await storage.getLots();
+      console.time('lots-api-cache');
       
-      // Fetch size for each lot
-      const lotsWithSizes = await Promise.all(
-        lots.map(async (lot) => {
-          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
-          return { ...lot, size };
-        })
-      );
+      // Usa la cache globale per ottenere i lotti
+      const lots = globalDataCache.getLots();
       
+      // Usa la cache globale per ottenere le taglie
+      const sizes = globalDataCache.getSizes();
+      
+      // Crea una mappa di taglie per lookup veloce
+      const sizeMap = new Map();
+      sizes.forEach(size => {
+        sizeMap.set(size.id, size);
+      });
+      
+      // Combina i lotti con le loro taglie
+      const lotsWithSizes = lots.map(lot => {
+        const size = lot.sizeId ? sizeMap.get(lot.sizeId) || null : null;
+        return { ...lot, size };
+      });
+      
+      // Imposta l'header di cache per il browser
+      res.setHeader('Cache-Control', 'public, max-age=60'); // 1 minuto
+      
+      console.timeEnd('lots-api-cache');
       res.json(lotsWithSizes);
     } catch (error) {
       console.error("Error fetching lots:", error);
@@ -3268,7 +3284,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Utilizza la cache globale invece di interrogare il database ogni volta
       // I dati vengono caricati all'avvio dell'applicazione e aggiornati automaticamente
-      const statistics = globalThis.globalCache.getLotStatistics();
+      const statistics = globalDataCache.getLotStatistics();
       
       console.timeEnd('lots-statistics-api');
       
