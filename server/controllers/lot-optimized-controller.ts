@@ -190,15 +190,15 @@ async function enhanceLotsWithInventoryData(lotsData: any[]) {
   
   // Mappa i dati ai lotti
   return lotsData.map(lot => {
-    const lotCycles = cyclesData.filter(cycle => cycle.lotId === lot.id);
+    const lotCycles = cyclesData.rows.filter((cycle: any) => cycle.lotid === lot.id);
     
     // Calcola informazioni di inventario
-    const activeCyclesCount = lotCycles.filter(cycle => cycle.state === 'active').length;
-    const totalBaskets = lotCycles.reduce((sum, cycle) => sum + Number(cycle.basketCount || 0), 0);
+    const activeCyclesCount = lotCycles.filter((cycle: any) => cycle.state === 'active').length;
+    const totalBaskets = lotCycles.reduce((sum, cycle: any) => sum + Number(cycle.basketcount || 0), 0);
     
     // Trova le ultime operazioni per ciascun ciclo del lotto
     const cycleOpMap = new Map();
-    lotCycles.forEach(cycle => {
+    lotCycles.forEach((cycle: any) => {
       const lastOp = lastOperations.find(op => op.cycleId === cycle.id);
       if (lastOp) {
         cycleOpMap.set(cycle.id, lastOp);
@@ -207,7 +207,7 @@ async function enhanceLotsWithInventoryData(lotsData: any[]) {
     
     // Calcola animali totali dalle ultime operazioni
     let totalAnimals = 0;
-    cycleOpMap.forEach(op => {
+    cycleOpMap.forEach((op: any) => {
       if (op.animalCount !== null) {
         totalAnimals += Number(op.animalCount);
       }

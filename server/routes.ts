@@ -3294,8 +3294,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const page = parseInt(req.query.page as string) || 1;
       const pageSize = parseInt(req.query.pageSize as string) || 20;
       
-      // Elabora i filtri dalla query string
-      const filters = {
+      // Elabora i filtri dalla query string con date
+      const filters: any = {
         id: req.query.id ? parseInt(req.query.id as string) : undefined,
         supplier: req.query.supplier as string,
         quality: req.query.quality as string,
