@@ -102,8 +102,8 @@ export default function Lots() {
         pageSize: pageSize, 
         totalPages: 3,
         statistics: { 
-          counts: { normali: 391000, teste: 105000, code: 132000, totale: 628000 },
-          percentages: { normali: 62.3, teste: 16.7, code: 21.0 }
+          counts: { normali: 66980019, teste: 125359048, code: 11938810, totale: 204277877 },
+          percentages: { normali: 32.8, teste: 61.4, code: 5.8 }
         }
       };
     },
