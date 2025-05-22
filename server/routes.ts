@@ -3246,22 +3246,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.time('lots-api-cache');
       
-      // Ripristinato alla versione originale, senza cache globale
-      const lots = await storage.getLots();
+      // Query diretta e semplice al database
+      console.log("Esecuzione query diretta per recuperare i lotti");
+      const query = `SELECT * FROM lots ORDER BY id DESC`;
+      const result = await db.execute(sql.raw(query));
       
-      // Recupero delle taglie per ogni lotto
-      const lotsWithSizes = await Promise.all(
-        lots.map(async (lot) => {
-          let size = null;
-          if (lot.sizeId) {
-            size = await storage.getSize(lot.sizeId);
-          }
-          return { ...lot, size };
-        })
-      );
+      console.log(`Trovati ${result.length} lotti nel database`);
       
       console.timeEnd('lots-api-cache');
-      res.json(lotsWithSizes);
+      res.json(result);
+    
     } catch (error) {
       console.error("Error fetching lots:", error);
       res.status(500).json({ message: "Failed to fetch lots" });
