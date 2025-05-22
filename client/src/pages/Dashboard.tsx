@@ -52,18 +52,31 @@ export default function Dashboard() {
   const growthChartRef = useRef<HTMLDivElement>(null);
   const flupsyVisualizerRef = useRef<HTMLDivElement>(null);
 
-  // Query for active baskets and cycles
-  const { data: baskets, isLoading: basketsLoading, dataUpdatedAt: basketsUpdatedAt } = useQuery<Basket[]>({
-    queryKey: ['/api/baskets'],
+  // Query for data using optimized endpoints with pagination
+  const { data: dashboardData, isLoading: dashboardLoading } = useQuery({
+    queryKey: ['/api/dashboard-data'],
+    queryFn: () => fetch('/api/dashboard-data').then(res => res.json()),
   });
 
-  const { data: cycles, isLoading: cyclesLoading, dataUpdatedAt: cyclesUpdatedAt } = useQuery<Cycle[]>({
-    queryKey: ['/api/cycles'],
-  });
-
-  const { data: operations, isLoading: operationsLoading, dataUpdatedAt: operationsUpdatedAt } = useQuery<Operation[]>({
-    queryKey: ['/api/operations'],
-  });
+  // Create derivate state from optimized endpoint
+  const baskets = dashboardData?.activeCycles?.map((cycle: any) => ({
+    ...cycle,
+    id: cycle.basketId,
+    physicalNumber: cycle.basket_number,
+    flupsyId: cycle.flupsy_id,
+    flupsyName: cycle.flupsy_name
+  })) || [];
+  
+  const cycles = dashboardData?.activeCycles || [];
+  const operations = dashboardData?.recentOperations || [];
+  
+  const basketsLoading = dashboardLoading;
+  const cyclesLoading = dashboardLoading;
+  const operationsLoading = dashboardLoading;
+  
+  const basketsUpdatedAt = dashboardData ? Date.now() : 0;
+  const cyclesUpdatedAt = dashboardData ? Date.now() : 0;
+  const operationsUpdatedAt = dashboardData ? Date.now() : 0;
 
   const { data: lots, isLoading: lotsLoading, dataUpdatedAt: lotsUpdatedAt } = useQuery<Lot[]>({
     queryKey: ['/api/lots'],
