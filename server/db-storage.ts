@@ -599,16 +599,6 @@ export class DbStorage implements IStorage {
   async getOperationsByCycle(cycleId: number): Promise<Operation[]> {
     return await db.select().from(operations).where(eq(operations.cycleId, cycleId));
   }
-  
-  async getLastOperationByCycle(cycleId: number): Promise<Operation | undefined> {
-    const results = await db.select()
-      .from(operations)
-      .where(eq(operations.cycleId, cycleId))
-      .orderBy(desc(operations.date))
-      .limit(1);
-    
-    return results[0];
-  }
 
   async getOperationsByDate(date: Date): Promise<Operation[]> {
     // Convert Date to string in format YYYY-MM-DD

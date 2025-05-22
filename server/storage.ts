@@ -44,9 +44,6 @@ export interface IStorage {
     pageSize?: number;
     flupsyId?: number;
     state?: string;
-    search?: string;
-    sortBy?: string;
-    sortDir?: 'asc' | 'desc';
     includeDetails?: boolean;
   }): Promise<{ baskets: Basket[], totalCount: number }>;
   getBasketsByFlupsy(flupsyId: number): Promise<Basket[]>;
@@ -61,7 +58,6 @@ export interface IStorage {
   getOperation(id: number): Promise<Operation | undefined>;
   getOperationsByBasket(basketId: number): Promise<Operation[]>;
   getOperationsByCycle(cycleId: number): Promise<Operation[]>;
-  getLastOperationByCycle(cycleId: number): Promise<Operation | undefined>;
   getOperationsByDate(date: Date): Promise<Operation[]>;
   createOperation(operation: InsertOperation): Promise<Operation>;
   updateOperation(id: number, operation: Partial<Operation>): Promise<Operation | undefined>;
@@ -520,14 +516,6 @@ export class MemStorage implements IStorage {
     return Array.from(this.operations.values())
       .filter(operation => operation.cycleId === cycleId)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
-  }
-  
-  async getLastOperationByCycle(cycleId: number): Promise<Operation | undefined> {
-    const cycleOperations = Array.from(this.operations.values())
-      .filter(operation => operation.cycleId === cycleId)
-      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-    
-    return cycleOperations.length > 0 ? cycleOperations[0] : undefined;
   }
   
   async getOperationsByDate(date: Date): Promise<Operation[]> {
