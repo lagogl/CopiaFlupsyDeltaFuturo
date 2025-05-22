@@ -201,6 +201,141 @@ export class DbStorage implements IStorage {
   async getBaskets(): Promise<Basket[]> {
     return await db.select().from(baskets);
   }
+  
+  async getBasketsOptimized(options: {
+    page?: number;
+    pageSize?: number;
+    flupsyId?: number;
+    state?: string;
+    includeDetails?: boolean;
+  }): Promise<{ baskets: Basket[], totalCount: number }> {
+    try {
+      console.log("Richiesta cestelli ottimizzata con opzioni:", JSON.stringify(options));
+      
+      // Imposta i valori predefiniti
+      const page = options.page || 1;
+      const pageSize = options.pageSize || 100;
+      const offset = (page - 1) * pageSize;
+      
+      // Preparazione della clausola where
+      let whereClause = undefined;
+      
+      if (options.flupsyId) {
+        whereClause = eq(baskets.flupsyId, options.flupsyId);
+      }
+      
+      if (options.state) {
+        const stateCondition = eq(baskets.state, options.state);
+        whereClause = whereClause ? and(whereClause, stateCondition) : stateCondition;
+      }
+      
+      // Prima otteniamo il conteggio totale
+      const countResult = await db
+        .select({ count: count() })
+        .from(baskets)
+        .where(whereClause || undefined);
+      
+      const totalCount = Number(countResult[0].count);
+      console.log(`Conteggio totale cestelli: ${totalCount}`);
+      
+      // Poi eseguiamo la query principale con paginazione
+      let query = db
+        .select()
+        .from(baskets)
+        .orderBy(baskets.id);
+      
+      if (whereClause) {
+        query = query.where(whereClause);
+      }
+      
+      // Applica paginazione
+      query = query.limit(pageSize).offset(offset);
+      
+      const basketResults = await query;
+      console.log(`Query completata: ${basketResults.length} risultati su ${totalCount} totali`);
+      
+      // Se richiesto, aggiungi i dettagli in un'unica query
+      if (options.includeDetails && basketResults.length > 0) {
+        // Estrai gli ID dei cestelli
+        const basketIds = basketResults.map(b => b.id);
+        
+        // Recupera i FLUPSY correlati in un'unica query
+        const flupsysData = await db
+          .select()
+          .from(flupsys)
+          .where(inArray(flupsys.id, basketResults.map(b => b.flupsyId).filter(id => id !== null) as number[]));
+        
+        const flupsysMap = new Map(flupsysData.map(f => [f.id, f]));
+        
+        // Recupera le ultime operazioni per ogni cestello in un'unica query
+        const latestOperations = await db
+          .select()
+          .from(operations)
+          .where(inArray(operations.basketId, basketIds))
+          .orderBy(desc(operations.date));
+        
+        // Raggruppa le operazioni per basketId
+        const operationsMap = new Map<number, Operation[]>();
+        latestOperations.forEach(op => {
+          const ops = operationsMap.get(op.basketId) || [];
+          ops.push(op);
+          operationsMap.set(op.basketId, ops);
+        });
+        
+        // Recupera i cicli attivi per i cestelli
+        const cyclesData = await db
+          .select()
+          .from(cycles)
+          .where(inArray(cycles.id, basketResults.filter(b => b.currentCycleId !== null).map(b => b.currentCycleId as number)));
+        
+        const cyclesMap = new Map(cyclesData.map(c => [c.id, c]));
+        
+        // Arricchisci i risultati con i dettagli
+        const enrichedBaskets = basketResults.map(basket => {
+          // Aggiungi il FLUPSY
+          const flupsy = basket.flupsyId ? flupsysMap.get(basket.flupsyId) : null;
+          
+          // Aggiungi l'ultima operazione
+          const basketOperations = operationsMap.get(basket.id) || [];
+          const lastOperation = basketOperations.length > 0 ? basketOperations[0] : null;
+          
+          // Aggiungi il ciclo corrente
+          const currentCycle = basket.currentCycleId ? cyclesMap.get(basket.currentCycleId) : null;
+          
+          return {
+            ...basket,
+            flupsy,
+            flupsyName: flupsy ? flupsy.name : null,
+            lastOperation: lastOperation ? {
+              ...lastOperation,
+              type: lastOperation.type,
+              date: lastOperation.date,
+            } : null,
+            currentCycle: currentCycle ? {
+              ...currentCycle,
+              startDate: currentCycle.startDate
+            } : null
+          };
+        });
+        
+        return {
+          baskets: enrichedBaskets,
+          totalCount
+        };
+      }
+      
+      return {
+        baskets: basketResults,
+        totalCount
+      };
+    } catch (error) {
+      console.error("Errore in getBasketsOptimized:", error);
+      return {
+        baskets: [],
+        totalCount: 0
+      };
+    }
+  }
 
   async getBasket(id: number): Promise<Basket | undefined> {
     const results = await db.select().from(baskets).where(eq(baskets.id, id));
