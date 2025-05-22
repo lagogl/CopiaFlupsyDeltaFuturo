@@ -161,26 +161,103 @@ export function registerOptimizedEndpoints(app: Express) {
       const limit = parseInt(req.query.limit as string) || 50;
       const offset = (page - 1) * limit;
       
+      // Filtri opzionali
+      const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : null;
+      const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : null;
+      const cycleState = req.query.state as string || null; // active, closed
+      const fromDate = req.query.fromDate as string || null;
+      const toDate = req.query.toDate as string || null;
+      
       console.time('cycles-query');
       
-      // Query con JOIN per ottenere i dati dei cicli con cestello e ultima operazione
-      const cyclesWithRelations = await db.execute(sql`
+      // Costruiamo la query di base
+      let sqlQuery = `
         SELECT c.*, 
-               b.physical_number as basket_number, b.flupsy_id,
-               f.name as flupsy_name
+               b.physical_number as basket_number, b.flupsy_id, b.row as basket_row, b.position as basket_position,
+               f.name as flupsy_name, f.location as flupsy_location,
+               (SELECT COUNT(*) FROM operations o WHERE o.cycle_id = c.id) as operation_count,
+               (SELECT MAX(o.date) FROM operations o WHERE o.cycle_id = c.id) as last_operation_date
         FROM cycles c
         LEFT JOIN baskets b ON c.basket_id = b.id
         LEFT JOIN flupsys f ON b.flupsy_id = f.id
-        ORDER BY c.start_date DESC, c.id DESC
-        LIMIT ${limit} OFFSET ${offset}
-      `);
+        WHERE 1=1
+      `;
       
-      // Ottieni il numero totale di cicli per la paginazione
-      const [countResult] = await db.select({
-        count: sql`count(*)`
-      }).from(cycles);
+      const queryParams: any[] = [];
       
-      const totalItems = Number(countResult.count);
+      // Aggiungiamo filtri condizionali
+      if (flupsyId) {
+        sqlQuery += ` AND b.flupsy_id = $${queryParams.length + 1}`;
+        queryParams.push(flupsyId);
+      }
+      
+      if (basketId) {
+        sqlQuery += ` AND c.basket_id = $${queryParams.length + 1}`;
+        queryParams.push(basketId);
+      }
+      
+      if (cycleState) {
+        sqlQuery += ` AND c.state = $${queryParams.length + 1}`;
+        queryParams.push(cycleState);
+      }
+      
+      if (fromDate) {
+        sqlQuery += ` AND c.start_date >= $${queryParams.length + 1}`;
+        queryParams.push(fromDate);
+      }
+      
+      if (toDate) {
+        // Se la data di fine è specificata, controlla sia start_date che end_date
+        sqlQuery += ` AND (c.start_date <= $${queryParams.length + 1} OR (c.end_date IS NOT NULL AND c.end_date <= $${queryParams.length + 1}))`;
+        queryParams.push(toDate);
+      }
+      
+      // Completiamo la query con ordinamento e paginazione
+      sqlQuery += ` ORDER BY c.start_date DESC, c.id DESC LIMIT $${queryParams.length + 1} OFFSET $${queryParams.length + 2}`;
+      queryParams.push(limit, offset);
+      
+      // Eseguiamo la query con i parametri
+      const cyclesWithRelations = await db.execute(sql.raw(sqlQuery, ...queryParams));
+      
+      // Otteniamo il conteggio totale con gli stessi filtri (ma senza limit/offset)
+      let countSqlQuery = `
+        SELECT COUNT(*) as count
+        FROM cycles c
+        LEFT JOIN baskets b ON c.basket_id = b.id
+        WHERE 1=1
+      `;
+      
+      // Riusiamo gli stessi filtri senza limit/offset
+      const countParams = [...queryParams];
+      countParams.pop(); // Rimuoviamo offset
+      countParams.pop(); // Rimuoviamo limit
+      
+      // Aggiungiamo di nuovo i filtri condizionali alla query di conteggio
+      if (flupsyId) {
+        countSqlQuery += ` AND b.flupsy_id = $1`;
+      }
+      
+      if (basketId) {
+        countSqlQuery += ` AND c.basket_id = $${flupsyId ? 2 : 1}`;
+      }
+      
+      if (cycleState) {
+        const paramIdx = (flupsyId ? 1 : 0) + (basketId ? 1 : 0) + 1;
+        countSqlQuery += ` AND c.state = $${paramIdx}`;
+      }
+      
+      if (fromDate) {
+        const paramIdx = (flupsyId ? 1 : 0) + (basketId ? 1 : 0) + (cycleState ? 1 : 0) + 1;
+        countSqlQuery += ` AND c.start_date >= $${paramIdx}`;
+      }
+      
+      if (toDate) {
+        const paramIdx = (flupsyId ? 1 : 0) + (basketId ? 1 : 0) + (cycleState ? 1 : 0) + (fromDate ? 1 : 0) + 1;
+        countSqlQuery += ` AND (c.start_date <= $${paramIdx} OR (c.end_date IS NOT NULL AND c.end_date <= $${paramIdx}))`;
+      }
+      
+      const [countResult] = await db.execute(sql.raw(countSqlQuery, ...countParams));
+      const totalItems = Number(countResult?.count || 0);
       const totalPages = Math.ceil(totalItems / limit);
       
       console.timeEnd('cycles-query');
