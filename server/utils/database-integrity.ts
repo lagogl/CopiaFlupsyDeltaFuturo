@@ -12,15 +12,15 @@ import {
   baskets,
   cycles,
   operations,
-  basketPositions,
+  basket_positions as basketPositions,
   sizes,
   screenings,
-  screeningSourceBaskets,
-  screeningDestinationBaskets,
-  screeningBasketHistory,
+  screening_source_baskets as screeningSourceBaskets,
+  screening_destination_baskets as screeningDestinationBaskets,
+  screening_basket_history as screeningBasketHistory,
   lots,
-  sgrRates,
-  growthForecasts
+  sgr_rates as sgrRates,
+  growth_forecasts as growthForecasts
 } from '../../shared/schema';
 
 // Interfaccia per i risultati dei controlli di integrità
