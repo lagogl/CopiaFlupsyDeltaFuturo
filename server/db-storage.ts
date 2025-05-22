@@ -207,6 +207,9 @@ export class DbStorage implements IStorage {
     pageSize?: number;
     flupsyId?: number;
     state?: string;
+    search?: string;
+    sortBy?: string;
+    sortDir?: 'asc' | 'desc';
     includeDetails?: boolean;
   }): Promise<{ baskets: Basket[], totalCount: number }> {
     try {
@@ -229,6 +232,13 @@ export class DbStorage implements IStorage {
         whereClause = whereClause ? and(whereClause, stateCondition) : stateCondition;
       }
       
+      // Aggiunge filtro di ricerca se presente
+      if (options.search) {
+        const searchTerm = options.search.toLowerCase();
+        const searchCondition = sql`CAST(${baskets.physicalNumber} AS TEXT) LIKE ${'%' + searchTerm + '%'}`;
+        whereClause = whereClause ? and(whereClause, searchCondition) : searchCondition;
+      }
+      
       // Prima otteniamo il conteggio totale
       const countResult = await db
         .select({ count: sql<number>`count(*)` })
@@ -247,7 +257,23 @@ export class DbStorage implements IStorage {
         query = query.where(whereClause);
       }
       
-      query = query.orderBy(baskets.id).limit(pageSize).offset(offset);
+      // Gestione dell'ordinamento
+      if (options.sortBy && options.sortDir) {
+        if (options.sortBy === 'physicalNumber') {
+          query = options.sortDir === 'asc' 
+            ? query.orderBy(baskets.physicalNumber) 
+            : query.orderBy(desc(baskets.physicalNumber));
+        } else {
+          // Ordinamento predefinito per ID se il campo di ordinamento non è supportato
+          query = query.orderBy(baskets.id);
+        }
+      } else {
+        // Ordinamento predefinito per ID
+        query = query.orderBy(baskets.id);
+      }
+      
+      // Applica la paginazione
+      query = query.limit(pageSize).offset(offset);
       
       const basketResults = await query;
       console.log(`Query completata: ${basketResults.length} risultati su ${totalCount} totali`);

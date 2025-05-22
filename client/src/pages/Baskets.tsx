@@ -95,7 +95,7 @@ export default function Baskets() {
   
   // Query baskets con paginazione
   const { data: basketsData, isLoading } = useQuery({
-    queryKey: ['/api/baskets', page, pageSize, flupsyFilter, stateFilter, searchTerm],
+    queryKey: ['/api/baskets', page, pageSize, flupsyFilter, stateFilter, searchTerm, sortConfig],
     queryFn: async () => {
       const flupsyId = flupsyFilter !== 'all' ? flupsyFilter : undefined;
       const stateParam = stateFilter !== 'all' ? stateFilter : undefined;
@@ -123,7 +123,9 @@ export default function Baskets() {
       }
       
       return data.baskets || [];
-    }
+    },
+    // Aggiungiamo un piccolo ritardo per evitare troppe richieste quando si cerca del testo
+    refetchOnWindowFocus: false,
   });
   
   // Query FLUPSY units for filter
@@ -403,8 +405,8 @@ export default function Baskets() {
     setSortConfig({ key, direction });
   };
 
-  // Filter baskets
-  let filteredBaskets = [...basketsArray].filter((basket: any) => {
+  // Prepariamo i dati per la visualizzazione
+  let processedBaskets = basketsArray.map((basket: any) => {
     // Aggiungiamo il nome del FLUPSY per ogni cesta
     const flupsy = flupsysArray.find((f: any) => f.id === basket.flupsyId);
     if (flupsy) {
@@ -416,9 +418,8 @@ export default function Baskets() {
       basket.animalCount = basket.lastOperation.animalCount;
     }
     
-    // Assicuriamoci che basket.size sia definito per l'ordinamento
+    // Assicuriamoci che basket.size sia definito per la visualizzazione
     if (!basket.size) {
-      // Per le ceste senza taglia, creiamo un oggetto size vuoto
       basket.size = {
         code: null,
         name: 'Non disponibile',
@@ -426,26 +427,11 @@ export default function Baskets() {
       };
     }
     
-    // Filter by search term
-    const matchesSearch = searchTerm === '' || 
-      `${basket.physicalNumber}`.includes(searchTerm) || 
-      (basket.currentCycleId ? `${basket.currentCycleId}`.includes(searchTerm) : false) ||
-      (basket.flupsyName && basket.flupsyName.toLowerCase().includes(searchTerm.toLowerCase()));
-    
-    // Filter by state
-    const matchesState = stateFilter === 'all' || 
-      (stateFilter === 'active' && basket.state === 'active') ||
-      (stateFilter === 'available' && basket.state === 'available');
-    
-    // Filter by FLUPSY
-    const matchesFlupsy = flupsyFilter === 'all' || 
-      String(basket.flupsyId) === flupsyFilter;
-    
-    return matchesSearch && matchesState && matchesFlupsy;
+    return basket;
   });
   
-  // Applichiamo l'ordinamento
-  filteredBaskets = sortData(filteredBaskets);
+  // I dati già filtrati dal server non richiedono ulteriore filtraggio client
+  const filteredBaskets = processedBaskets;
 
   return (
     <div>
