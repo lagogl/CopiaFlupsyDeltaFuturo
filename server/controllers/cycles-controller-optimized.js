@@ -98,7 +98,8 @@ export async function getCycles(options = {}) {
     startDateFrom = null,
     startDateTo = null,
     sortBy = 'startDate',
-    sortOrder = 'desc'
+    sortOrder = 'desc',
+    includeAll = false
   } = options;
 
   // Genera una chiave di cache basata sui parametri di filtro
