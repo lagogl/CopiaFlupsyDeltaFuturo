@@ -178,17 +178,27 @@ export default function Dashboard() {
 
   // Calcola il numero totale di animali nelle ceste attive
   const totalAnimalsInActiveBaskets = activeBaskets.reduce((total, basket) => {
-    // Trova le operazioni più recenti per ogni cesta attiva (usando le operazioni filtrate)
+    // Prendi solo operazioni con conteggio animali o animalsPerKg per ogni cesta
     const basketOperations = filteredOperations
-      .filter(op => op.basketId === basket.id)
+      .filter(op => op.basketId === basket.id && 
+         (op.animalCount !== null || 
+          op.animalsPerKg !== null))
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
-    // Prendi la più recente operazione che ha un conteggio di animali
-    const latestOperationWithCount = basketOperations.find(op => op.animalCount !== null && op.animalCount !== undefined);
+    if (basketOperations.length === 0) return total;
     
-    // Aggiungi al totale se abbiamo un conteggio di animali (anche se è zero)
-    if (latestOperationWithCount && latestOperationWithCount.animalCount !== null && latestOperationWithCount.animalCount !== undefined) {
-      return total + latestOperationWithCount.animalCount;
+    // Prendi la più recente operazione
+    const latestOperation = basketOperations[0];
+    
+    // Se c'è un conteggio animali esplicito, usa quello
+    if (latestOperation.animalCount !== null && latestOperation.animalCount !== undefined) {
+      return total + latestOperation.animalCount;
+    }
+    
+    // Se non c'è un conteggio esplicito ma c'è animalsPerKg, prova a stimare il numero
+    if (latestOperation.animalsPerKg !== null && latestOperation.animalsPerKg !== undefined) {
+      // Stima usando animali per kg (approssimazione alta per sicurezza)
+      return total + Math.max(1000, latestOperation.animalsPerKg * 10);
     }
     
     return total;
