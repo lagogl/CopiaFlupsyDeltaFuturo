@@ -298,8 +298,13 @@ export default function ScreeningAddDestination() {
     );
   }
 
-  // Filtra le ceste disponibili (non assegnate a cicli attivi o ceste di origine dell'operazione corrente)
-  const availableBasketOptions = availableBaskets?.filter(basket => {
+  // Organizza le ceste disponibili in categorie ordinate:
+  // 1. Ceste di origine della vagliatura corrente
+  // 2. Ceste disponibili dello stesso flupsy delle ceste di origine
+  // 3. Altre ceste disponibili
+  
+  // Raccogliamo prima tutte le ceste disponibili
+  const allAvailableBaskets = availableBaskets?.filter(basket => {
     // Se la cesta è disponibile o inattiva, può essere usata
     if (basket.state === 'available' || basket.state === 'inactive') {
       return true;
@@ -314,6 +319,38 @@ export default function ScreeningAddDestination() {
     
     return isSourceBasket;
   }) || [];
+  
+  // Otteniamo gli ID dei FLUPSY delle ceste di origine
+  const sourceFlupsyIds = sourceBaskets?.map(sb => {
+    // Se la cesta ha dettagli flupsy, prendi l'ID
+    if (sb.basket && sb.basket.flupsyId) {
+      return sb.basket.flupsyId;
+    }
+    return null;
+  }).filter(id => id !== null) || [];
+  
+  // Dividiamo le ceste in categorie
+  const sourceBasketOptions = allAvailableBaskets.filter(basket => 
+    sourceBaskets?.some(sb => sb.basketId === basket.id)
+  );
+  
+  const sameFlupsyBasketOptions = allAvailableBaskets.filter(basket => 
+    // Non è una cesta di origine ma appartiene a uno dei FLUPSY di origine
+    !sourceBasketOptions.includes(basket) && 
+    sourceFlupsyIds.includes(basket.flupsyId)
+  );
+  
+  const otherBasketOptions = allAvailableBaskets.filter(basket => 
+    !sourceBasketOptions.includes(basket) && 
+    !sameFlupsyBasketOptions.includes(basket)
+  );
+  
+  // Combiniamo le categorie nell'ordine desiderato
+  const availableBasketOptions = [
+    ...sourceBasketOptions.map(basket => ({ ...basket, category: 'source' })),
+    ...sameFlupsyBasketOptions.map(basket => ({ ...basket, category: 'same-flupsy' })),
+    ...otherBasketOptions.map(basket => ({ ...basket, category: 'other' }))
+  ];
 
   return (
     <div className="container mx-auto p-4">
@@ -361,12 +398,25 @@ export default function ScreeningAddDestination() {
                             // Usa i dettagli del FLUPSY incorporati
                             const flupsyName = basket.flupsyDetails ? basket.flupsyDetails.name : `Flupsy ${basket.flupsyId}`;
                             
+                            // Definisci la classe CSS in base alla categoria
+                            let className = '';
+                            let prefixLabel = '';
+                            
+                            if (basket.category === 'source') {
+                              className = 'bg-green-100 hover:bg-green-200';
+                              prefixLabel = '⭐ '; // Stella per ceste di origine
+                            } else if (basket.category === 'same-flupsy') {
+                              className = 'bg-blue-50 hover:bg-blue-100';
+                              prefixLabel = '🔄 '; // Simbolo per ceste dello stesso FLUPSY
+                            }
+                            
                             return (
                               <SelectItem 
                                 key={basket.id} 
                                 value={basket.id.toString()}
+                                className={className}
                               >
-                                #{basket.physicalNumber} {flupsyName ? `(${flupsyName})` : ''} {basket.cycleCode ? `- ${basket.cycleCode}` : ''}
+                                {prefixLabel}#{basket.physicalNumber} {flupsyName ? `(${flupsyName})` : ''} {basket.cycleCode ? `- ${basket.cycleCode}` : ''}
                               </SelectItem>
                             );
                           })}
@@ -375,6 +425,20 @@ export default function ScreeningAddDestination() {
                       <FormDescription>
                         Seleziona una cesta disponibile come destinazione
                       </FormDescription>
+                      <div className="mt-2 text-xs text-muted-foreground">
+                        <div className="flex items-center gap-1 mb-1">
+                          <div className="w-3 h-3 rounded-sm bg-green-100"></div>
+                          <span>⭐ Ceste di origine della vagliatura</span>
+                        </div>
+                        <div className="flex items-center gap-1 mb-1">
+                          <div className="w-3 h-3 rounded-sm bg-blue-50"></div>
+                          <span>🔄 Ceste dello stesso FLUPSY delle ceste di origine</span>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <div className="w-3 h-3 rounded-sm bg-white"></div>
+                          <span>Altre ceste disponibili</span>
+                        </div>
+                      </div>
                       <FormMessage />
                     </FormItem>
                   )}
