@@ -84,7 +84,11 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
   // Fetch baskets - Utilizziamo l'endpoint standard con il flag includeAll
   // per garantire che tutti i dati vengano recuperati correttamente per la visualizzazione FLUPSY
   const { data: baskets, isLoading: isLoadingBaskets } = useQuery<Basket[]>({
-    queryKey: ['/api/baskets', { includeAll: true }],
+    queryKey: ['/api/baskets', { 
+      includeAll: true,
+      // Passiamo esplicitamente l'array dei FLUPSY selezionati se disponibile
+      flupsyId: effectiveSelectedFlupsyIds?.length > 0 ? effectiveSelectedFlupsyIds : undefined
+    }],
   });
   
   // Fetch operations con includeAll per avere tutti i dati

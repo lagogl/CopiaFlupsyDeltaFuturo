@@ -143,8 +143,18 @@ export async function getBasketsOptimized(options = {}) {
       whereConditions.push(eq(baskets.state, state));
     }
     
+    // Per la visualizzazione nei FLUPSY, il flupsyId è un parametro critico
+    // e deve essere gestito con attenzione per garantire che tutti i cestelli vengano mostrati
     if (flupsyId) {
-      whereConditions.push(eq(baskets.flupsyId, flupsyId));
+      // Quando flupsyId è un numero, cerchiamo quel FLUPSY specifico
+      if (typeof flupsyId === 'number') {
+        whereConditions.push(eq(baskets.flupsyId, flupsyId));
+      } 
+      // Se flupsyId è un array, cerchiamo tutti i cestelli in quei FLUPSY
+      else if (Array.isArray(flupsyId) && flupsyId.length > 0) {
+        const flupsyConditions = flupsyId.map(id => eq(baskets.flupsyId, id));
+        whereConditions.push(or(...flupsyConditions));
+      }
     }
     
     if (cycleId) {
