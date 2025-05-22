@@ -3,7 +3,7 @@
  * Implementa caching, paginazione e query ottimizzate per migliorare le prestazioni
  */
 
-import { sql, eq, and, asc, desc, inArray, isNull } from 'drizzle-orm';
+import { sql, eq, and, asc, desc, inArray, isNull, or } from 'drizzle-orm';
 import { db } from "../db";
 import { cycles, baskets, operations, sizes, flupsys, lots, mortalityRates, sgr } from "../../shared/schema";
 
@@ -155,7 +155,13 @@ export async function getCycles(options = {}) {
         };
       }
       
-      filters.push(inArray(cycles.basketId, flupysBasketIds));
+      // Sostituiamo l'inArray con una serie di condizioni OR per evitare problemi con parametri multipli
+      if (flupysBasketIds.length === 1) {
+        filters.push(eq(cycles.basketId, flupysBasketIds[0]));
+      } else {
+        const conditions = flupysBasketIds.map(id => eq(cycles.basketId, id));
+        filters.push(or(...conditions));
+      }
     }
     
     // Calcola l'offset per la paginazione

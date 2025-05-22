@@ -2605,41 +2605,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/cycles/active", async (req, res) => {
     try {
-      const cycles = await storage.getActiveCycles();
+      const startTime = Date.now();
       
-      // Fetch baskets and latest operation for each cycle
-      const activeCyclesWithDetails = await Promise.all(
-        cycles.map(async (cycle) => {
-          const basket = await storage.getBasket(cycle.basketId);
-          const operations = await storage.getOperationsByCycle(cycle.id);
-          
-          // Sort operations by date (newest first) and get the latest one
-          operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          const latestOperation = operations.length > 0 ? operations[0] : null;
-          
-          // Get the size from the latest operation
-          let currentSize = null;
-          if (latestOperation && latestOperation.sizeId) {
-            currentSize = await storage.getSize(latestOperation.sizeId);
-          }
-          
-          // Get the SGR from the latest operation
-          let currentSgr = null;
-          if (latestOperation && latestOperation.sgrId) {
-            currentSgr = await storage.getSgr(latestOperation.sgrId);
-          }
-          
-          return { 
-            ...cycle, 
-            basket, 
-            latestOperation, 
-            currentSize,
-            currentSgr
-          };
-        })
-      );
+      // Utilizzo del controller ottimizzato
+      const cyclesController = await import('./controllers/cycles-controller-optimized.js');
       
-      res.json(activeCyclesWithDetails);
+      // Richiama la funzione ottimizzata con cache
+      const result = await cyclesController.getActiveCyclesWithDetails();
+      
+      const duration = Date.now() - startTime;
+      if (duration > 200) {
+        console.log(`Cicli attivi recuperati in ${duration}ms`);
+      }
+      
+      res.json(result);
     } catch (error) {
       console.error("Error fetching active cycles:", error);
       res.status(500).json({ message: "Failed to fetch active cycles" });
