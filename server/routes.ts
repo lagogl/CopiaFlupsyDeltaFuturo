@@ -3266,8 +3266,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Imposta l'header di cache per il browser
       res.setHeader('Cache-Control', 'public, max-age=30'); // 30 secondi
       
-      // Usa il servizio ottimizzato con accesso diretto al database
-      const statistics = await dbStorage.getLotStatistics();
+      // Usa il servizio statistiche ottimizzato con cache interna
+      const lotStatisticsService = new LotStatisticsService(db);
+      const statistics = await lotStatisticsService.getGlobalStatistics();
       
       console.timeEnd('lots-statistics-api');
       
