@@ -394,7 +394,20 @@ export default function Flupsys() {
             variant="outline" 
             size="sm" 
             className="flex items-center h-9"
-            onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] })}
+            onClick={() => {
+              // Mostriamo un piccolo feedback che stiamo aggiornando
+              toast({
+                title: "Aggiornamento in corso...",
+                description: "Recupero dei dati più recenti",
+              });
+              
+              // Forziamo il refetch invece di solo invalidare
+              queryClient.refetchQueries({ 
+                queryKey: ['/api/flupsys'],
+                exact: true,
+                type: 'active'
+              });
+            }}
             title="Aggiorna dati"
           >
             <RefreshCw className="h-4 w-4 mr-1" />
