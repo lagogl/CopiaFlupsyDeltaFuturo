@@ -28,12 +28,17 @@ interface FlupsyVisualizerProps {
   selectedFlupsyIds?: number[];
 }
 
-export default function FlupsyVisualizer({ selectedFlupsyIds: propSelectedFlupsyIds }: FlupsyVisualizerProps) {
+export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizerProps) {
   const isMobile = useIsMobile();
   const [, navigate] = useLocation();
-  const [selectedFlupsyIds, setSelectedFlupsyIds] = useState<number[]>(propSelectedFlupsyIds || []);
+  // Utilizziamo direttamente i prop senza sovrascriverli con uno stato locale
+  // in modo che il componente reagisca ai cambiamenti dalla dashboard
+  const [selectedFlupsyIdsLocal, setSelectedFlupsyIdsLocal] = useState<number[]>([]);
   const [selectedTab, setSelectedTab] = useState<string>("all");
   const [showFlupsySelector, setShowFlupsySelector] = useState<boolean>(false);
+  
+  // Array effettivamente usato per la visualizzazione (prop se forniti, altrimenti stato locale)
+  const effectiveSelectedFlupsyIds = selectedFlupsyIds || selectedFlupsyIdsLocal;
   
   // Tipi per i dati
   interface Flupsy {
