@@ -150,10 +150,32 @@ export async function getBasketsOptimized(options = {}) {
       if (typeof flupsyId === 'number') {
         whereConditions.push(eq(baskets.flupsyId, flupsyId));
       } 
+      // Se flupsyId è una stringa, potrebbe essere un singolo ID o una lista di ID separati da virgola
+      else if (typeof flupsyId === 'string') {
+        // Verifica se contiene virgole (formato: "id1,id2,id3")
+        if (flupsyId.includes(',')) {
+          // Split string e converti in array di numeri
+          const flupsyIds = flupsyId.split(',').map(id => parseInt(id, 10)).filter(id => !isNaN(id));
+          const flupsyConditions = flupsyIds.map(id => eq(baskets.flupsyId, id));
+          if (flupsyConditions.length > 0) {
+            whereConditions.push(or(...flupsyConditions));
+          }
+        } else {
+          // Singolo ID come stringa
+          const parsedId = parseInt(flupsyId, 10);
+          if (!isNaN(parsedId)) {
+            whereConditions.push(eq(baskets.flupsyId, parsedId));
+          }
+        }
+      }
       // Se flupsyId è un array, cerchiamo tutti i cestelli in quei FLUPSY
       else if (Array.isArray(flupsyId) && flupsyId.length > 0) {
-        const flupsyConditions = flupsyId.map(id => eq(baskets.flupsyId, id));
-        whereConditions.push(or(...flupsyConditions));
+        // Converte ogni elemento in numero (potrebbero arrivare come stringhe)
+        const flupsyIds = flupsyId.map(id => typeof id === 'string' ? parseInt(id, 10) : id).filter(id => !isNaN(id));
+        const flupsyConditions = flupsyIds.map(id => eq(baskets.flupsyId, id));
+        if (flupsyConditions.length > 0) {
+          whereConditions.push(or(...flupsyConditions));
+        }
       }
     }
     
