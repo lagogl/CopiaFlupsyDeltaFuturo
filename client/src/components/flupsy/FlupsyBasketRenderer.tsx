@@ -135,10 +135,13 @@ const FlupsyBasketRenderer: React.FC<Props> = ({
   cycle, 
   operation, 
   size, 
-  width, 
-  height,
+  width = 'w-full', 
+  height = 'h-24',
   onClick
 }) => {
+  // Debug
+  console.log("Rendering del cestello:", basket?.id, basket?.physicalNumber);
+  
   // Se non c'è un cestello, mostriamo uno spazio vuoto
   if (!basket) {
     return (
@@ -146,7 +149,8 @@ const FlupsyBasketRenderer: React.FC<Props> = ({
         <Tooltip>
           <TooltipTrigger asChild>
             <div 
-              className={`basket-card p-2 rounded border-2 border-dashed border-gray-300 ${height} ${width} flex items-center justify-center text-gray-400 text-xs cursor-pointer`}
+              className="p-2 rounded border-2 border-dashed border-gray-300 flex items-center justify-center text-gray-400 text-xs cursor-pointer"
+              style={{minHeight: "90px", minWidth: "80px"}}
             >
               Vuoto
             </div>
@@ -235,59 +239,69 @@ const FlupsyBasketRenderer: React.FC<Props> = ({
   // Cestello con ciclo attivo e operazioni - renderizzazione completa
   const renderContent = () => {
     try {
+      // Valori di sicurezza per evitare errori
+      const basketNumber = basket?.physicalNumber || "?";
+      const basketId = basket?.id || 0;
+      const sizeCode = size?.code || 'N/D';
+      const animalsPerKg = operation?.animalsPerKg ? operation.animalsPerKg.toLocaleString('it-IT') : 'N/D';
+      const animalCount = operation?.animalCount ? operation.animalCount.toLocaleString('it-IT') : 'N/D';
+      const weightDisplay = currentWeight ? currentWeight.toLocaleString('it-IT') : 'N/D';
+      
+      let dateDisplay = 'N/D';
+      try {
+        dateDisplay = operation ? format(new Date(operation.date), 'dd/MM') : (cycle ? format(new Date(cycle.startDate), 'dd/MM') : 'N/D');
+      } catch (dateError) {
+        console.error("Errore nel formattare la data:", dateError);
+      }
+      
+      // Renderizzazione semplificata per migliore compatibilità
       return (
         <div 
-          className={`basket-card p-2 rounded border-2 border-solid ${colorClass} ${height} ${width} flex flex-col cursor-pointer`}
-          onClick={() => onClick && onClick(basket.id)}
-          data-basket-id={basket.id}
-          data-basket-number={basket.physicalNumber}
+          className={`basket-card p-2 rounded border-2 border-solid ${colorClass || 'border-blue-500 bg-blue-50'} ${height} ${width} flex flex-col cursor-pointer`}
+          onClick={() => onClick && onClick(basketId)}
+          data-basket-id={basketId}
+          data-basket-number={basketNumber}
+          style={{display: "flex", flexDirection: "column", minHeight: "90px"}}
         >
           <div className="flex justify-between items-start mb-1">
-            <div className="font-bold text-xs">CESTA #{basket.physicalNumber}</div>
+            <div className="font-bold text-xs">CESTA #{basketNumber}</div>
             <div className="text-[9px] bg-white px-1 rounded border border-current">
-              {size?.code || 'N/D'}
+              {sizeCode}
             </div>
           </div>
           
           {/* Informazioni animali/kg - mostrato sempre */}
           <div className="text-[9px] text-gray-600">
-            <span className="font-medium">
-              {operation?.animalsPerKg ? operation.animalsPerKg.toLocaleString('it-IT') : 'N/D'}/kg
-            </span>
+            <span className="font-medium">{animalsPerKg}/kg</span>
           </div>
           
           {/* Numero animali - mostrato sempre */}
           <div className="text-[9px] mt-auto text-gray-700">
-            <span className="font-medium">
-              {operation?.animalCount ? operation.animalCount.toLocaleString('it-IT') : 'N/D'}
-            </span> animali
+            <span className="font-medium">{animalCount}</span> animali
           </div>
           
           {/* Peso medio - mostrato sempre */}
           <div className="text-[9px] text-gray-700">
-            <span className="font-medium">
-              {currentWeight ? currentWeight.toLocaleString('it-IT') : 'N/D'} mg
-            </span>
+            <span className="font-medium">{weightDisplay} mg</span>
           </div>
           
           {/* Data operazione o ciclo - mostrato sempre */}
           <div className="text-[8px] mt-auto text-gray-500">
-            Op: {operation ? format(new Date(operation.date), 'dd/MM') : (cycle ? format(new Date(cycle.startDate), 'dd/MM') : 'N/D')} 
+            Op: {dateDisplay}
           </div>
         </div>
       );
     } catch (error) {
-      // Fallback in caso di errore nel rendering
+      // Fallback in caso di errore nel rendering - versione molto semplificata
       console.error("Errore nel rendering del cestello:", error, basket);
       return (
         <div 
-          className={`basket-card p-2 rounded border-2 border-dashed border-red-300 bg-red-50 ${height} ${width} flex flex-col cursor-pointer`}
-          onClick={() => onClick && onClick(basket.id)}
-          data-basket-id={basket.id}
-          data-basket-number={basket.physicalNumber}
+          className="p-2 rounded border-2 border-dashed border-red-300 bg-red-50 flex flex-col cursor-pointer"
+          style={{minHeight: "90px", minWidth: "80px"}}
+          onClick={() => onClick && onClick(basket?.id || 0)}
         >
-          <div className="font-bold text-xs">CESTA #{basket.physicalNumber}</div>
-          <div className="text-[9px] text-red-500 mt-1">Errore di visualizzazione</div>
+          <div className="font-bold text-xs">CESTA #{basket?.physicalNumber || "?"}</div>
+          <div className="text-[9px] text-red-500 mt-1">Errore</div>
         </div>
       );
     }
