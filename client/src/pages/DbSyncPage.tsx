@@ -51,7 +51,10 @@ export default function DbSyncPage() {
   // Mutation per creare un backup
   const createBackupMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/db-sync/backup', 'POST', {});
+      return apiRequest({
+        url: '/api/db-sync/backup',
+        method: 'POST'
+      });
     },
     onSuccess: () => {
       toast({
@@ -99,7 +102,11 @@ export default function DbSyncPage() {
   // Mutation per sincronizzare dal database locale al remoto
   const syncToRemoteMutation = useMutation({
     mutationFn: async () => {
-      return apiRequest('/api/db-sync/to-remote', 'POST', { remoteUrl });
+      return apiRequest({
+        url: '/api/db-sync/to-remote',
+        method: 'POST',
+        body: { remoteUrl }
+      });
     },
     onSuccess: () => {
       toast({

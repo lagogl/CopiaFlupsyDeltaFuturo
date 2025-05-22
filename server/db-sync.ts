@@ -80,38 +80,75 @@ export async function backupLocalDatabase() {
 export async function syncFromRemote(remoteUrl: string) {
   try {
     // Backup del database locale prima della sincronizzazione
-    await backupLocalDatabase();
+    const backupPath = await backupLocalDatabase();
+    console.log(`Backup creato con successo in: ${backupPath}`);
     
     // Inizializza connessione remota se non esistente
     if (!remoteDb) {
-      initRemoteDb(remoteUrl);
+      const { remoteDb: newRemoteDb } = initRemoteDb(remoteUrl);
+      remoteDb = newRemoteDb;
     }
     
     // Recupera tutte le tabelle dallo schema
-    const tables = Object.keys(schema)
-      .filter(key => typeof schema[key] === 'object' && 'name' in schema[key]);
+    const tables = Object.entries(schema)
+      .filter(([_, value]) => typeof value === 'object' && 'name' in value)
+      .map(([name, table]) => ({ 
+        name, 
+        table: table as any
+      }));
     
-    for (const tableName of tables) {
-      const table = schema[tableName];
-      
-      // Recupera tutti i record dalla tabella remota
-      const remoteRecords = await remoteDb.select().from(table);
-      
-      // Elimina tutti i record dalla tabella locale
-      await localDb.delete(table);
-      
-      // Inserisci i record remoti nella tabella locale
-      if (remoteRecords.length > 0) {
-        await localDb.insert(table).values(remoteRecords);
+    console.log(`Sincronizzazione in corso per ${tables.length} tabelle`);
+    
+    for (const { name, table } of tables) {
+      try {
+        console.log(`Sincronizzazione tabella: ${table.name}`);
+        
+        // Recupera tutti i record dalla tabella remota
+        const remoteRecords = await remoteDb.select().from(table);
+        
+        // Per ogni record, rimuovi eventuali proprietà problematiche (come oggetti date o bigint)
+        const sanitizedRecords = remoteRecords.map(record => {
+          const sanitized = { ...record };
+          // Converti date in ISO string
+          Object.keys(sanitized).forEach(key => {
+            if (sanitized[key] instanceof Date) {
+              sanitized[key] = sanitized[key].toISOString();
+            }
+            // Converti BigInt in string
+            if (typeof sanitized[key] === 'bigint') {
+              sanitized[key] = sanitized[key].toString();
+            }
+          });
+          return sanitized;
+        });
+        
+        // Elimina tutti i record dalla tabella locale
+        await localDb.delete(table);
+        
+        // Inserisci i record remoti nella tabella locale
+        if (sanitizedRecords.length > 0) {
+          // Inserisci a gruppi di 100 per evitare problemi con query troppo grandi
+          const chunkSize = 100;
+          for (let i = 0; i < sanitizedRecords.length; i += chunkSize) {
+            const chunk = sanitizedRecords.slice(i, i + chunkSize);
+            await localDb.insert(table).values(chunk);
+          }
+        }
+        
+        console.log(`Tabella ${name} sincronizzata: ${remoteRecords.length} record`);
+      } catch (err) {
+        console.error(`Errore durante la sincronizzazione della tabella ${name}:`, err);
+        // Continua con le altre tabelle
       }
-      
-      console.log(`Tabella ${tableName} sincronizzata: ${remoteRecords.length} record`);
     }
     
     return { success: true, message: 'Sincronizzazione dal remoto completata' };
   } catch (error) {
     console.error('Errore durante la sincronizzazione dal database remoto:', error);
-    throw error;
+    return { 
+      success: false, 
+      message: `Errore durante la sincronizzazione: ${error instanceof Error ? error.message : String(error)}` 
+    };
   } finally {
     // Chiudi la connessione al database remoto
     if (remotePool) {
@@ -127,34 +164,70 @@ export async function syncToRemote(remoteUrl: string) {
   try {
     // Inizializza connessione remota se non esistente
     if (!remoteDb) {
-      initRemoteDb(remoteUrl);
+      const { remoteDb: newRemoteDb } = initRemoteDb(remoteUrl);
+      remoteDb = newRemoteDb;
     }
     
     // Recupera tutte le tabelle dallo schema
-    const tables = Object.keys(schema)
-      .filter(key => typeof schema[key] === 'object' && 'name' in schema[key]);
+    const tables = Object.entries(schema)
+      .filter(([_, value]) => typeof value === 'object' && 'name' in value)
+      .map(([name, table]) => ({ 
+        name, 
+        table: table as any
+      }));
     
-    for (const tableName of tables) {
-      const table = schema[tableName];
-      
-      // Recupera tutti i record dalla tabella locale
-      const localRecords = await localDb.select().from(table);
-      
-      // Elimina tutti i record dalla tabella remota
-      await remoteDb.delete(table);
-      
-      // Inserisci i record locali nella tabella remota
-      if (localRecords.length > 0) {
-        await remoteDb.insert(table).values(localRecords);
+    console.log(`Sincronizzazione verso remoto in corso per ${tables.length} tabelle`);
+    
+    for (const { name, table } of tables) {
+      try {
+        console.log(`Sincronizzazione tabella remota: ${table.name}`);
+        
+        // Recupera tutti i record dalla tabella locale
+        const localRecords = await localDb.select().from(table);
+        
+        // Per ogni record, rimuovi eventuali proprietà problematiche (come oggetti date o bigint)
+        const sanitizedRecords = localRecords.map(record => {
+          const sanitized = { ...record };
+          // Converti date in ISO string
+          Object.keys(sanitized).forEach(key => {
+            if (sanitized[key] instanceof Date) {
+              sanitized[key] = sanitized[key].toISOString();
+            }
+            // Converti BigInt in string
+            if (typeof sanitized[key] === 'bigint') {
+              sanitized[key] = sanitized[key].toString();
+            }
+          });
+          return sanitized;
+        });
+        
+        // Elimina tutti i record dalla tabella remota
+        await remoteDb.delete(table);
+        
+        // Inserisci i record locali nella tabella remota
+        if (sanitizedRecords.length > 0) {
+          // Inserisci a gruppi di 100 per evitare problemi con query troppo grandi
+          const chunkSize = 100;
+          for (let i = 0; i < sanitizedRecords.length; i += chunkSize) {
+            const chunk = sanitizedRecords.slice(i, i + chunkSize);
+            await remoteDb.insert(table).values(chunk);
+          }
+        }
+        
+        console.log(`Tabella remota ${name} sincronizzata: ${localRecords.length} record`);
+      } catch (err) {
+        console.error(`Errore durante la sincronizzazione remota della tabella ${name}:`, err);
+        // Continua con le altre tabelle
       }
-      
-      console.log(`Tabella ${tableName} sincronizzata: ${localRecords.length} record`);
     }
     
     return { success: true, message: 'Sincronizzazione verso il remoto completata' };
   } catch (error) {
     console.error('Errore durante la sincronizzazione verso il database remoto:', error);
-    throw error;
+    return { 
+      success: false, 
+      message: `Errore durante la sincronizzazione: ${error instanceof Error ? error.message : String(error)}` 
+    };
   } finally {
     // Chiudi la connessione al database remoto
     if (remotePool) {
