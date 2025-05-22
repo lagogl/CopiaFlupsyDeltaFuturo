@@ -29,7 +29,7 @@ import * as ScreeningController from "./controllers/screening-controller";
 import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
-import { diarioController } from "./controllers/index";
+import { getDashboardStats } from "./controllers/dashboard-controller";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
@@ -288,6 +288,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sequences/info", SequenceController.getSequencesInfo);
   
   // === Basket routes ===
+  // Endpoint ottimizzato per la dashboard
+  app.get("/api/dashboard/stats", getDashboardStats);
+  
   app.get("/api/baskets", async (req, res) => {
     try {
       const baskets = await storage.getBaskets();
@@ -2004,12 +2007,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Diario di Bordo API routes ===
-  
+  // Temporaneamente disabilitato per fix
+  /* 
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
-  app.get("/api/diario/month-data", diarioController.getMonthData);
+  // app.get("/api/diario/month-data", diarioController.getMonthData);
   
   // API - Esporta il calendario in formato CSV
-  app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
+  // app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
+  */
   
   // API - [VECCHIO ENDPOINT - DA RIMUOVERE QUANDO IL NUOVO SARÀ TESTATO]
   app.get("/api/diario/month-data-old", async (req, res) => {

@@ -3,6 +3,7 @@ import { db } from "../db";
 import { eq, inArray, sql } from "drizzle-orm";
 import { format } from "date-fns";
 import { baskets, cycles, lots, operations } from "@shared/schema";
+import { storage } from "../storage";
 
 /**
  * Controller ottimizzato per la dashboard
@@ -27,11 +28,39 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       basketsQuery = basketsQuery.where(inArray(baskets.flupsyId, flupsyIds));
     }
     
+    // Costruisci la query SQL ottimizzata direttamente per recuperare le ultime operazioni per cestello
+    // Utilizzando SQL nativo per massimizzare le prestazioni
+    
+    // Query SQL per recuperare l'ultima operazione per ogni cestello
+    const latestOperationsSql = sql`
+      WITH ranked_operations AS (
+        SELECT 
+          o.*,
+          ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
+        FROM operations o
+        JOIN baskets b ON o.basket_id = b.id
+        WHERE b.state = 'active'
+        ${flupsyIds.length > 0 ? sql`AND b.flupsy_id IN (${flupsyIds})` : sql``}
+      )
+      SELECT * FROM ranked_operations WHERE rn = 1
+    `;
+    
+    // Query per recuperare le operazioni di oggi - ottimizzata
+    const today = format(new Date(), 'yyyy-MM-dd');
+    const todayOperationsSql = sql`
+      SELECT o.* FROM operations o
+      JOIN baskets b ON o.basket_id = b.id
+      WHERE b.state = 'active' AND o.date = ${today}
+      ${flupsyIds.length > 0 ? sql`AND b.flupsy_id IN (${flupsyIds})` : sql``}
+    `;
+
     // Esegue le query in parallelo per massimizzare la velocità
     const [
       activeBasketsData,
       activeCyclesData,
-      activeLotsData
+      activeLotsData,
+      recentOperations,
+      todayOperationsData
     ] = await Promise.all([
       // Query cestelli già definita sopra
       basketsQuery,
@@ -40,29 +69,14 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       db.select().from(cycles).where(eq(cycles.state, 'active')),
       
       // Query per recuperare solo i lotti attivi
-      db.select().from(lots).where(eq(lots.state, 'active'))
-    ]);
-    
-    // Recupera gli ID dei cestelli per filtrare le operazioni
-    const basketIds = activeBasketsData.map(b => b.id);
-    
-    let todayOperationsData: any[] = [];
-    let recentOperations: any[] = [];
-    
-    if (basketIds.length > 0) {
-      // Query per recuperare le operazioni di oggi
-      const today = format(new Date(), 'yyyy-MM-dd');
-      todayOperationsData = await db.select()
-        .from(operations)
-        .where(eq(operations.date, today))
-        .where(inArray(operations.basketId, basketIds));
+      db.select().from(lots).where(eq(lots.state, 'active')),
       
-      // Query per recuperare solo le operazioni più recenti per ogni cestello
-      recentOperations = await db.select()
-        .from(operations)
-        .where(inArray(operations.basketId, basketIds))
-        .orderBy(sql`${operations.date} DESC, ${operations.id} DESC`);
-    }
+      // Query ottimizzata per le operazioni più recenti
+      db.execute(latestOperationsSql),
+      
+      // Query ottimizzata per le operazioni di oggi
+      db.execute(todayOperationsSql)
+    ]);
     
     // Trova l'operazione più recente per ogni cestello
     const lastOperationByBasket = new Map();
