@@ -68,25 +68,23 @@ export default function Lots() {
   
   // Query che utilizza direttamente l'API del database per i dati reali
   const { data: lotsData, isLoading } = useQuery({
-    queryKey: ['/api/lots/paged', currentPage, pageSize, filterValues],
+    queryKey: ['/api/lots/optimized', currentPage, pageSize, filterValues],
     queryFn: async () => {
       try {
+        console.time('lots-fetch');
+        
         const queryParams = buildQueryParams();
         // Fai la richiesta all'endpoint ottimizzato di paginazione
-        const response = await fetch(`/api/lots?${queryParams}`);
+        const response = await fetch(`/api/lots/optimized?${queryParams}`);
         
         if (!response.ok) {
           throw new Error('Errore nel caricamento dei lotti');
         }
         
         // Ottieni i dati dei lotti
-        const lots = await response.json();
+        const lotsResponse = await response.json();
         
-        // Calcola il numero totale di pagine
-        const totalPages = Math.ceil(lots.length / pageSize);
-        const paginatedLots = lots.slice((currentPage - 1) * pageSize, currentPage * pageSize);
-        
-        // Fai una richiesta separata per le statistiche
+        // Fai una richiesta separata per le statistiche reali
         const statsResponse = await fetch('/api/lots/statistics');
         if (!statsResponse.ok) {
           throw new Error('Errore nel caricamento delle statistiche');
@@ -94,20 +92,19 @@ export default function Lots() {
         
         const statistics = await statsResponse.json();
         
+        console.timeEnd('lots-fetch');
+        console.log('Statistiche caricate:', statistics);
+        
         return {
-          lots: paginatedLots,
-          totalCount: lots.length,
-          currentPage: currentPage,
-          pageSize: pageSize,
-          totalPages: totalPages,
-          statistics: statistics
+          ...lotsResponse,
+          statistics: statistics // Usa i dati reali dalle statistiche
         };
       } catch (error) {
         console.error('Errore durante il recupero dei dati:', error);
         throw error;
       }
     },
-    staleTime: 60000 // Cache dei risultati per 1 minuto
+    staleTime: 30000 // Cache dei risultati per 30 secondi (ridotto per maggiore freschezza dei dati)
   });
   
   // Estrai i dati dai risultati
