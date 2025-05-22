@@ -1398,14 +1398,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/operations", async (req, res) => {
     try {
-      console.time('operations-api-cache');
-      
+      // Versione originale della API, per ripristinare la funzionalità
       // Controlla se è stata richiesta la versione ottimizzata
       const useOptimized = req.query.optimized === 'true';
       
       if (useOptimized) {
-        // Reindirizza alla versione ottimizzata con cache globale
-        console.log("Reindirizzamento alla versione ottimizzata delle operazioni con cache globale");
+        // Reindirizza alla versione ottimizzata
+        console.log("Reindirizzamento alla versione ottimizzata delle operazioni");
         
         // Estrai i parametri della query
         const page = req.query.page ? parseInt(req.query.page as string) : 1;
@@ -1421,92 +1420,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Tipo di operazione
         const type = req.query.type as string | undefined;
         
-        // Ottieni tutte le operazioni dalla cache globale
-        let operations = [];
-        if ((globalThis as any).globalCache) {
-          operations = (globalThis as any).globalCache.getOperations() || [];
-        } else {
-          // Fallback alla storage normale
-          const result = await storage.getOperationsOptimized({
-            page,
-            pageSize,
-            cycleId,
-            flupsyId,
-            basketId,
-            dateFrom,
-            dateTo,
-            type
-          });
-          
-          return res.json(result.operations);
-        }
-        
-        // Filtra le operazioni in memoria in base ai parametri
-        if (cycleId !== undefined) {
-          operations = operations.filter((op: any) => op.cycleId === cycleId);
-        }
-        
-        if (flupsyId !== undefined) {
-          operations = operations.filter((op: any) => op.flupsyId === flupsyId);
-        }
-        
-        if (basketId !== undefined) {
-          operations = operations.filter((op: any) => op.basketId === basketId);
-        }
-        
-        if (type !== undefined) {
-          operations = operations.filter((op: any) => op.type === type);
-        }
-        
-        if (dateFrom !== undefined) {
-          operations = operations.filter((op: any) => new Date(op.date) >= dateFrom);
-        }
-        
-        if (dateTo !== undefined) {
-          operations = operations.filter((op: any) => new Date(op.date) <= dateTo);
-        }
-        
-        // Conta il numero totale di operazioni dopo il filtraggio
-        const totalCount = operations.length;
-        
-        // Applica la paginazione in memoria
-        const startIndex = (page - 1) * pageSize;
-        const endIndex = startIndex + pageSize;
-        const paginatedOperations = operations.slice(startIndex, endIndex);
-        
-        console.timeEnd('operations-api-cache');
-        
-        // Imposta l'header di cache per il browser
-        res.setHeader('Cache-Control', 'public, max-age=60'); // 1 minuto
+        // Chiama la funzione ottimizzata
+        const result = await storage.getOperationsOptimized({
+          page,
+          pageSize,
+          cycleId,
+          flupsyId,
+          basketId,
+          dateFrom,
+          dateTo,
+          type
+        });
         
         // Restituisci solo le operazioni per mantenere la compatibilità con il frontend esistente
-        return res.json(paginatedOperations);
+        return res.json(result.operations);
       }
       
-      // Versione normale con cache globale
-      let operations;
-      
+      // Versione originale dell'endpoint
       // Controlla se c'è un filtro per cycleId
       const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : null;
       
-      // Recupera le operazioni dalla cache globale se disponibile
-      if ((globalThis as any).globalCache) {
-        // Ottieni tutte le operazioni dalla cache
-        operations = (globalThis as any).globalCache.getOperations() || [];
-        
-        // Filtra per cycleId se necessario
-        if (cycleId) {
-          console.log(`Filtraggio operazioni per ciclo ID: ${cycleId} (dalla cache)`);
-          operations = operations.filter((op: any) => op.cycleId === cycleId);
-        }
+      // Recupera le operazioni in base ai filtri
+      let operations;
+      if (cycleId) {
+        console.log(`Ricerca operazioni per ciclo ID: ${cycleId}`);
+        operations = await storage.getOperationsByCycle(cycleId);
       } else {
-        // Fallback alla storage normale
-        if (cycleId) {
-          console.log(`Ricerca operazioni per ciclo ID: ${cycleId} (dal database)`);
-          operations = await storage.getOperationsByCycle(cycleId);
-        } else {
-          operations = await storage.getOperations();
-        }
+        operations = await storage.getOperations();
       }
       
       // Importa le utilità di Drizzle e le tabelle dello schema
@@ -3306,35 +3246,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       console.time('lots-api-cache');
       
-      let lots = [];
-      let sizes = [];
+      // Ripristinato alla versione originale, senza cache globale
+      const lots = await storage.getLots();
       
-      // Verifica che la cache globale sia inizializzata
-      if ((globalThis as any).globalCache) {
-        console.log("Usando la cache globale per i lotti");
-        lots = (globalThis as any).globalCache.getLots() || [];
-        sizes = (globalThis as any).globalCache.getSizes() || [];
-      } else {
-        // Fallback alla storage normale
-        console.log("Cache globale non disponibile, usando storage standard");
-        lots = await storage.getLots();
-        sizes = await storage.getSizes();
-      }
-      
-      // Crea una mappa di taglie per lookup veloce
-      const sizeMap = new Map();
-      sizes.forEach((size: any) => {
-        sizeMap.set(size.id, size);
-      });
-      
-      // Combina i lotti con le loro taglie
-      const lotsWithSizes = lots.map((lot: any) => {
-        const size = lot.sizeId ? sizeMap.get(lot.sizeId) || null : null;
-        return { ...lot, size };
-      });
-      
-      // Imposta l'header di cache per il browser
-      res.setHeader('Cache-Control', 'public, max-age=60'); // 1 minuto
+      // Recupero delle taglie per ogni lotto
+      const lotsWithSizes = await Promise.all(
+        lots.map(async (lot) => {
+          let size = null;
+          if (lot.sizeId) {
+            size = await storage.getSize(lot.sizeId);
+          }
+          return { ...lot, size };
+        })
+      );
       
       console.timeEnd('lots-api-cache');
       res.json(lotsWithSizes);
