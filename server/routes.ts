@@ -4,7 +4,7 @@ import { storage } from "./storage";
 import path from 'path';
 import fs from 'fs';
 import { db } from "./db";
-import { eq, and, isNull, sql, count, inArray } from "drizzle-orm";
+import { eq, and, isNull, sql, count, inArray, desc } from "drizzle-orm";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, subDays } from "date-fns";
 import { 
   selections, 
@@ -12,7 +12,8 @@ import {
   selectionDestinationBaskets,
   insertUserSchema,
   cycles,
-  sizes
+  sizes,
+  operations
 } from "../shared/schema";
 import { 
   getNotificationSettings, 
