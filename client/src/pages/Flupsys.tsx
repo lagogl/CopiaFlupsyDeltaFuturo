@@ -74,9 +74,20 @@ export default function Flupsys() {
       if (!response.ok) {
         throw new Error('Errore nel caricamento dei FLUPSY');
       }
-      return response.json();
+      const data = await response.json();
+      console.log("Dati FLUPSY ricevuti:", data);
+      return data;
     },
-    select: (data: EnhancedFlupsy[]) => data || []
+    select: (data: EnhancedFlupsy[]) => {
+      console.log("Statistiche FLUPSY elaborate:", data.map(f => ({
+        id: f.id, 
+        name: f.name,
+        totalAnimals: f.totalAnimals,
+        activeBaskets: f.activeBaskets,
+        avgAnimalDensity: f.avgAnimalDensity
+      })));
+      return data || [];
+    }
   });
 
   // Create FLUPSY mutation
