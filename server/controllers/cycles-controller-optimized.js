@@ -104,7 +104,7 @@ export async function getCycles(options = {}) {
 
   // Genera una chiave di cache basata sui parametri di filtro
   const cacheKey = CyclesCache.generateCacheKey({ 
-    page, pageSize, state, flupsyId, startDateFrom, startDateTo, sortBy, sortOrder 
+    page, pageSize, state, flupsyId, startDateFrom, startDateTo, sortBy, sortOrder, includeAll 
   });
   
   // Verifica se i dati sono nella cache
@@ -165,9 +165,6 @@ export async function getCycles(options = {}) {
       }
     }
     
-    // Calcola l'offset per la paginazione
-    const offset = (page - 1) * pageSize;
-    
     // Preparazione della clausola di ordinamento
     let orderClause;
     if (sortOrder.toLowerCase() === 'asc') {
@@ -189,12 +186,20 @@ export async function getCycles(options = {}) {
     const countResult = await countQuery;
     const totalCount = Number(countResult[0].count);
     
-    // 2. Ottieni i cicli paginati
+    // 2. Ottieni i cicli (con o senza paginazione)
     const query = db.select()
       .from(cycles)
-      .orderBy(orderClause)
-      .limit(pageSize)
-      .offset(offset);
+      .orderBy(orderClause);
+    
+    // Se includeAll=true, non applica limit e offset (restituisce tutto)
+    if (!includeAll) {
+      // Calcola l'offset per la paginazione solo quando non includeAll
+      const offset = (page - 1) * pageSize;
+      query.limit(pageSize).offset(offset);
+      console.log(`Recupero cicli paginati: pagina ${page}, ${pageSize} per pagina`);
+    } else {
+      console.log("Recupero tutti i cicli senza paginazione (richiesto da dashboard)");
+    }
     
     if (whereClause) {
       query.where(whereClause);
@@ -301,17 +306,26 @@ export async function getCycles(options = {}) {
     const totalPages = Math.ceil(totalCount / pageSize);
     
     // Prepara il risultato completo con metadati di paginazione
-    const result = {
-      cycles: cyclesWithBasketDetails,
-      pagination: {
-        page,
-        pageSize,
-        totalCount,
-        totalPages,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1
-      }
-    };
+    let result;
+    
+    if (includeAll) {
+      // Se includeAll=true, restituisci direttamente l'array di cicli senza paginazione
+      result = cyclesWithBasketDetails;
+      console.log(`Restituiti tutti i ${cyclesWithBasketDetails.length} cicli (includeAll=true)`);
+    } else {
+      // Altrimenti, restituisci l'oggetto con i metadati di paginazione
+      result = {
+        cycles: cyclesWithBasketDetails,
+        pagination: {
+          page,
+          pageSize,
+          totalCount,
+          totalPages,
+          hasNextPage: page < totalPages,
+          hasPreviousPage: page > 1
+        }
+      };
+    }
     
     // Salva nella cache
     CyclesCache.set(cacheKey, result);
