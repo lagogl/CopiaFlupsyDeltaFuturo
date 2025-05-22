@@ -7,7 +7,8 @@
 import { Pool } from '@neondatabase/serverless';
 import { drizzle } from 'drizzle-orm/neon-serverless';
 import * as schema from '@shared/schema';
-import { db as localDb, pool as localPool } from './db';
+import { db as localDb, queryClient as localPool } from './db';
+import { sql } from 'drizzle-orm';
 import fs from 'fs';
 import path from 'path';
 
@@ -39,38 +40,34 @@ export async function backupLocalDatabase() {
     const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
     const backupFilePath = path.join(BACKUP_DIR, `local_backup_${timestamp}.sql`);
     
-    // Estrai informazioni di connessione da DATABASE_URL
-    const config = {
-      host: process.env.PGHOST,
-      port: Number(process.env.PGPORT),
-      user: process.env.PGUSER,
-      password: process.env.PGPASSWORD,
-      database: process.env.PGDATABASE
-    };
+    // Crea il backup in un formato più semplice
+    // Ottieni l'elenco delle tabelle
+    const tablesResult = await localDb.execute(sql`
+      SELECT table_name 
+      FROM information_schema.tables 
+      WHERE table_schema = 'public' 
+        AND table_type = 'BASE TABLE'
+    `);
     
-    // Genera un backup pg_dump usando l'API del pool
-    const query = `COPY (
-      SELECT 'COPY ' || tablename || ' FROM STDIN;' || E'\n' ||
-             string_agg(row_to_json(t)::text, E'\n') || E'\n\\.\n'
-      FROM (
-        SELECT tablename, 
-               array_agg(row_to_json(data_rows)) as rows
-        FROM (
-          SELECT table_name AS tablename
-          FROM information_schema.tables
-          WHERE table_schema = 'public'
-            AND table_type = 'BASE TABLE'
-        ) AS tables
-        LEFT JOIN LATERAL (
-          SELECT * FROM (SELECT * FROM ${schema}) AS data_rows
-        ) AS data ON true
-        GROUP BY tablename
-      ) t
-      GROUP BY tablename
-    ) TO '${backupFilePath}';`;
+    const tableNames = tablesResult.map((row: any) => row.table_name);
     
-    // Non esegue direttamente, ma attraverso l'API gestita del pool
-    await localPool.query(`SELECT pg_export_snapshot()`);
+    // Prepara il file di backup
+    let backupContent = `-- Database backup created on ${new Date().toISOString()}\n\n`;
+    
+    // Per ogni tabella, esegui un dump dei dati
+    for (const tableName of tableNames) {
+      const tableData = await localDb.execute(sql`SELECT * FROM ${sql.identifier(tableName)}`);
+      
+      if (tableData.length > 0) {
+        backupContent += `-- Table: ${tableName}\n`;
+        backupContent += JSON.stringify(tableData, null, 2);
+        backupContent += '\n\n';
+      }
+    }
+    
+    // Scrivi il backup su file
+    fs.writeFileSync(backupFilePath, backupContent);
+    
     console.log(`Backup creato: ${backupFilePath}`);
     return backupFilePath;
   } catch (error) {

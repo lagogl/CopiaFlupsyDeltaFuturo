@@ -6347,5 +6347,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint per ottenere le posizioni disponibili in un flupsy
   app.get("/api/flupsys/:id/available-positions", getFlupsyAvailablePositions);
   
+  // API per la sincronizzazione del database
+  app.get('/api/db-sync/backups', DbSyncController.getBackups);
+  app.post('/api/db-sync/backup', DbSyncController.createBackup);
+  app.post('/api/db-sync/from-remote', DbSyncController.syncFromRemote);
+  app.post('/api/db-sync/to-remote', DbSyncController.syncToRemote);
+  
   return httpServer;
 }

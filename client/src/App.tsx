@@ -49,6 +49,7 @@ import NewSelection from "@/pages/NewSelection";
 import SelectionDetail from "@/pages/SelectionDetail";
 import BackupPage from "@/pages/BackupPage";
 import AmministrazioneUtilita from "@/pages/AmministrazioneUtilita";
+import DbSyncPage from "@/pages/DbSyncPage";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -102,6 +103,7 @@ function Router() {
       <ProtectedRoute path="/diario-di-bordo" component={DiarioDiBordo}/>
       <ProtectedRoute path="/notification-settings" component={NotificationSettings} requiredRole="admin" />
       <ProtectedRoute path="/amministrazione-utilita" component={AmministrazioneUtilita} requiredRole="admin" />
+      <ProtectedRoute path="/db-sync" component={DbSyncPage} requiredRole="admin" />
       <ProtectedRoute path="/eco-impact" component={EcoImpact}/>
       
       {/* Redirezione per pagine rimosse */}
