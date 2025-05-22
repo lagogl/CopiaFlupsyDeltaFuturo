@@ -292,6 +292,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sequences/info", SequenceController.getSequencesInfo);
   
   // === Basket routes ===
+  // Endpoint ottimizzato e paginato per i cestelli
+  app.get("/api/baskets/optimized", async (req, res) => {
+    try {
+      // Parametri di paginazione
+      const page = parseInt(req.query.page as string) || 1;
+      const pageSize = parseInt(req.query.pageSize as string) || 20;
+      
+      // Parametri di filtro
+      const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
+      const withActiveCycle = req.query.withActiveCycle === 'true';
+      
+      // Utilizza il controller ottimizzato
+      const result = await getPaginatedBaskets(page, pageSize, flupsyId, withActiveCycle);
+      
+      res.json(result);
+    } catch (error) {
+      console.error("Error fetching paginated baskets:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch baskets", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
+  // Manteniamo l'endpoint originale per retrocompatibilità
   app.get("/api/baskets", async (req, res) => {
     try {
       const baskets = await storage.getBaskets();
@@ -3573,6 +3598,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Dashboard statistics optimized ===
+  app.get("/api/statistics/dashboard/optimized", async (req, res) => {
+    try {
+      const statistics = await getDashboardStatistics();
+      res.json(statistics);
+    } catch (error) {
+      console.error("Error fetching dashboard statistics:", error);
+      res.status(500).json({ 
+        message: "Failed to fetch dashboard statistics", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+  
   app.get("/api/statistics/cycles/comparison", async (req, res) => {
     try {
       // Get query parameters for cycle IDs to compare
