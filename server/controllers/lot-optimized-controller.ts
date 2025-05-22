@@ -1,12 +1,20 @@
-import { db } from "../db";
-import { 
-  lots,
-  baskets,
-  operations,
-  cycles, 
-  sizes
-} from "../../shared/schema";
-import { and, count, desc, eq, gt, gte, inArray, isNull, lte, not, sql } from "drizzle-orm";
+import { db } from '../db';
+import { and, count, eq, gte, ilike, inArray, like, lte, or, sql } from 'drizzle-orm';
+import { lots, sizes, cycles, baskets, operations, measurements } from '@shared/schema';
+
+/**
+ * Interfaccia per i filtri dei lotti
+ */
+export interface LotFilters {
+  id?: number;
+  supplierId?: number;
+  supplier?: string;
+  fromDate?: string;
+  toDate?: string;
+  quality?: string;
+  sizeId?: number;
+  state?: string;
+}
 
 /**
  * Ottiene i lotti paginati con filtri opzionali
@@ -16,151 +24,204 @@ import { and, count, desc, eq, gt, gte, inArray, isNull, lte, not, sql } from "d
  * @returns Dati lotti paginati con statistiche
  */
 export async function getPaginatedLots(
-  page = 1, 
-  pageSize = 20, 
-  filters: {
-    id?: number;
-    supplier?: string;
-    quality?: string;
-    dateFrom?: string;
-    dateTo?: string;
-    sizeId?: number;
-  } = {}
+  page = 1,
+  pageSize = 20,
+  filters: LotFilters = {}
 ) {
   try {
-    // Calcola offset per la paginazione
     const offset = (page - 1) * pageSize;
     
-    // Costruisci condizioni di filtro
-    const conditions = [];
+    // Costruisci le condizioni di filtro
+    const conditions = buildLotFilterConditions(filters);
     
-    if (filters.id) {
-      conditions.push(eq(lots.id, filters.id));
-    }
-    
-    if (filters.supplier) {
-      conditions.push(sql`${lots.supplier} ILIKE ${`%${filters.supplier}%`}`);
-    }
-    
-    if (filters.quality) {
-      conditions.push(eq(lots.quality, filters.quality));
-    }
-    
-    if (filters.dateFrom) {
-      conditions.push(gte(lots.arrivalDate, filters.dateFrom));
-    }
-    
-    if (filters.dateTo) {
-      conditions.push(lte(lots.arrivalDate, filters.dateTo));
-    }
-    
-    if (filters.sizeId) {
-      conditions.push(eq(lots.sizeId, filters.sizeId));
-    }
-    
-    // Costruisci la query base
-    let baseQuery = db.select().from(lots);
-    let countQuery = db.select({ count: count() }).from(lots);
-    
-    // Applica condizioni di filtro
-    if (conditions.length > 0) {
-      baseQuery = baseQuery.where(and(...conditions));
-      countQuery = countQuery.where(and(...conditions));
-    }
-    
-    // Esegui query per ottenere lotti paginati
-    const lotsList = await baseQuery
-      .orderBy(desc(lots.arrivalDate))
+    // Query principale per ottenere i lotti paginati
+    const lotsQuery = db
+      .select({
+        id: lots.id,
+        state: lots.state,
+        arrivalDate: lots.arrivalDate,
+        supplier: lots.supplier,
+        supplierLotNumber: lots.supplierLotNumber,
+        quality: lots.quality,
+        weight: lots.weight,
+        sizeId: lots.sizeId,
+        animalCount: lots.animalCount,
+        notes: lots.notes
+      })
+      .from(lots)
+      .where(and(...conditions))
+      .orderBy(lots.id)
       .limit(pageSize)
       .offset(offset);
     
-    // Ottieni conteggio totale
-    const totalCount = await countQuery;
-    const total = totalCount[0]?.count || 0;
+    // Ottieni il conteggio totale per la paginazione
+    const countQuery = db
+      .select({
+        count: count()
+      })
+      .from(lots)
+      .where(and(...conditions));
+      
+    // Esegui le query in parallelo
+    const [lotsData, countData] = await Promise.all([
+      lotsQuery,
+      countQuery
+    ]);
     
-    // Prepara array IDs dei lotti per query correlate
-    const lotIds = lotsList.map(lot => lot.id);
+    // Ottieni i dettagli delle taglie per i lotti
+    const sizeIds = lotsData.map(lot => lot.sizeId).filter(Boolean);
+    let sizesData: any[] = [];
     
-    // Se non ci sono lotti, restituisci risultato vuoto
-    if (lotIds.length === 0) {
-      return {
-        data: [],
-        pagination: {
-          page,
-          pageSize,
-          total: 0,
-          totalPages: 0
-        },
-        statistics: {
-          totalAnimals: 0,
-          qualityBreakdown: {}
-        }
-      };
-    }
-    
-    // Ottieni le taglie correlate
-    const sizeIds = lotsList
-      .map(lot => lot.sizeId)
-      .filter((id): id is number => id !== null);
-    
-    const sizeMap = new Map();
     if (sizeIds.length > 0) {
-      const sizesList = await db.select()
+      sizesData = await db
+        .select()
         .from(sizes)
-        .where(inArray(sizes.id, sizeIds));
-      
-      sizesList.forEach(size => {
-        sizeMap.set(size.id, size);
-      });
+        .where(inArray(sizes.id, sizeIds as number[]));
     }
     
-    // Ottieni statistiche sui cestelli per lotto
-    const basketsQuery = await db.select({
-      lotId: cycles.lotId,
-      basketCount: count()
-    })
-    .from(cycles)
-    .where(and(
-      inArray(cycles.lotId, lotIds),
-      isNull(cycles.endDate)
-    ))
-    .groupBy(cycles.lotId);
+    // Ottieni statistiche di inventario per ciascun lotto
+    const lotsWithInventory = await enhanceLotsWithInventoryData(lotsData);
     
-    const basketsMap = new Map();
-    basketsQuery.forEach(item => {
-      basketsMap.set(item.lotId, item.basketCount);
-    });
-    
-    // Arricchisci i dati dei lotti
-    const enhancedLots = lotsList.map(lot => {
-      const size = lot.sizeId !== null ? sizeMap.get(lot.sizeId) : null;
-      const basketCount = basketsMap.get(lot.id) || 0;
-      
-      return {
-        ...lot,
-        size,
-        basketCount,
-        formattedArrivalDate: new Date(lot.arrivalDate).toLocaleDateString('it-IT')
-      };
-    });
-    
-    // Calcola statistiche globali per i lotti filtrati
-    const statistics = await getLotStatistics(conditions);
+    // Statistiche aggiuntive filtrate
+    const lotStatistics = await getLotStatistics(conditions);
     
     return {
-      data: enhancedLots,
-      pagination: {
-        page,
+      data: lotsWithInventory,
+      sizes: sizesData,
+      meta: {
+        currentPage: page,
         pageSize,
-        total,
-        totalPages: Math.ceil(total / pageSize)
+        totalItems: countData[0]?.count || 0,
+        totalPages: Math.ceil((countData[0]?.count || 0) / pageSize)
       },
-      statistics
+      statistics: lotStatistics
     };
   } catch (error) {
-    console.error("Errore nell'ottenere i lotti paginati:", error);
-    throw error;
+    console.error('Error fetching paginated lots:', error);
+    throw new Error('Failed to fetch paginated lots data');
   }
+}
+
+/**
+ * Costruisce le condizioni di filtro per la query dei lotti
+ * @param filters Filtri da applicare
+ * @returns Array di condizioni di filtro
+ */
+function buildLotFilterConditions(filters: LotFilters) {
+  const conditions = [sql`1=1`]; // Base condition that's always true
+  
+  if (filters.id) {
+    conditions.push(eq(lots.id, filters.id));
+  }
+  
+  if (filters.supplier) {
+    conditions.push(ilike(lots.supplier, `%${filters.supplier}%`));
+  }
+  
+  if (filters.fromDate) {
+    conditions.push(gte(lots.arrivalDate, filters.fromDate));
+  }
+  
+  if (filters.toDate) {
+    conditions.push(lte(lots.arrivalDate, filters.toDate));
+  }
+  
+  if (filters.quality) {
+    conditions.push(eq(lots.quality, filters.quality));
+  }
+  
+  if (filters.sizeId) {
+    conditions.push(eq(lots.sizeId, filters.sizeId));
+  }
+  
+  if (filters.state) {
+    conditions.push(eq(lots.state, filters.state));
+  }
+  
+  return conditions;
+}
+
+/**
+ * Arricchisce i dati dei lotti con informazioni di inventario
+ * @param lotsData Array di dati dei lotti
+ * @returns Lotti arricchiti con dati di inventario
+ */
+async function enhanceLotsWithInventoryData(lotsData: any[]) {
+  if (lotsData.length === 0) return [];
+  
+  const lotIds = lotsData.map(lot => lot.id);
+  
+  // Ottieni tutti i cicli per questi lotti
+  const cyclesData = await db
+    .select({
+      id: cycles.id,
+      lotId: cycles.lotId,
+      state: cycles.state,
+      basketCount: count(baskets.id)
+    })
+    .from(cycles)
+    .leftJoin(baskets, eq(baskets.currentCycleId, cycles.id))
+    .where(inArray(cycles.lotId, lotIds))
+    .groupBy(cycles.id);
+    
+  // Ottieni le ultime operazioni per ogni ciclo
+  const cycleIds = cyclesData.map(cycle => cycle.id);
+  
+  let lastOperations: any[] = [];
+  if (cycleIds.length > 0) {
+    // Subquery per trovare l'ID dell'ultima operazione per ciascun ciclo
+    const lastOpIds = await db.execute(sql`
+      SELECT DISTINCT ON (cycle_id) id, cycle_id
+      FROM operations
+      WHERE cycle_id IN (${sql.join(cycleIds)})
+      ORDER BY cycle_id, date DESC
+    `);
+    
+    const lastOpIdArray = lastOpIds.rows.map((row: any) => row.id);
+    
+    if (lastOpIdArray.length > 0) {
+      lastOperations = await db
+        .select()
+        .from(operations)
+        .where(inArray(operations.id, lastOpIdArray));
+    }
+  }
+  
+  // Mappa i dati ai lotti
+  return lotsData.map(lot => {
+    const lotCycles = cyclesData.filter(cycle => cycle.lotId === lot.id);
+    
+    // Calcola informazioni di inventario
+    const activeCyclesCount = lotCycles.filter(cycle => cycle.state === 'active').length;
+    const totalBaskets = lotCycles.reduce((sum, cycle) => sum + Number(cycle.basketCount || 0), 0);
+    
+    // Trova le ultime operazioni per ciascun ciclo del lotto
+    const cycleOpMap = new Map();
+    lotCycles.forEach(cycle => {
+      const lastOp = lastOperations.find(op => op.cycleId === cycle.id);
+      if (lastOp) {
+        cycleOpMap.set(cycle.id, lastOp);
+      }
+    });
+    
+    // Calcola animali totali dalle ultime operazioni
+    let totalAnimals = 0;
+    cycleOpMap.forEach(op => {
+      if (op.animalCount !== null) {
+        totalAnimals += Number(op.animalCount);
+      }
+    });
+    
+    return {
+      ...lot,
+      inventory: {
+        totalCycles: lotCycles.length,
+        activeCycles: activeCyclesCount,
+        totalBaskets,
+        totalAnimals
+      }
+    };
+  });
 }
 
 /**
@@ -170,40 +231,79 @@ export async function getPaginatedLots(
  */
 export async function getLotStatistics(conditions: any[] = []) {
   try {
-    // Ottieni conteggio totale animali per qualità
-    let qualityQuery = db.select({
-      quality: lots.quality,
-      totalAnimals: sql<number>`sum(${lots.animalCount})`
-    })
-    .from(lots)
-    .groupBy(lots.quality);
+    // Query per ottenere il numero totale di lotti
+    const totalCountQuery = db
+      .select({
+        count: count()
+      })
+      .from(lots)
+      .where(and(...conditions));
+      
+    // Query per contare i lotti per qualità
+    const qualityStatsQuery = db
+      .select({
+        quality: lots.quality,
+        count: count()
+      })
+      .from(lots)
+      .where(and(...conditions))
+      .groupBy(lots.quality);
+      
+    // Query per contare i lotti per fornitore
+    const supplierStatsQuery = db
+      .select({
+        supplier: lots.supplier,
+        count: count()
+      })
+      .from(lots)
+      .where(and(...conditions))
+      .groupBy(lots.supplier);
+      
+    // Esegui tutte le query in parallelo
+    const [totalCount, qualityStats, supplierStats] = await Promise.all([
+      totalCountQuery,
+      qualityStatsQuery,
+      supplierStatsQuery
+    ]);
     
-    if (conditions.length > 0) {
-      qualityQuery = qualityQuery.where(and(...conditions));
-    }
-    
-    const qualityResults = await qualityQuery;
-    
-    // Organizza risultati in un oggetto
-    const qualityBreakdown: Record<string, number> = {};
+    // Calcola il totale degli animali per tutti i lotti filtrati
     let totalAnimals = 0;
     
-    qualityResults.forEach(result => {
-      const quality = result.quality || 'sconosciuta';
-      const count = Number(result.totalAnimals) || 0;
-      qualityBreakdown[quality] = count;
-      totalAnimals += count;
-    });
+    // Se ci sono lotti, conteggia gli animali
+    if (totalCount[0]?.count > 0) {
+      const lotsData = await db
+        .select({
+          id: lots.id,
+          animalCount: lots.animalCount
+        })
+        .from(lots)
+        .where(and(...conditions));
+        
+      // Calcola la somma degli animalCount, escludendo i null
+      totalAnimals = lotsData.reduce((sum, lot) => {
+        return sum + (lot.animalCount || 0);
+      }, 0);
+    }
     
     return {
+      totalLots: totalCount[0]?.count || 0,
       totalAnimals,
-      qualityBreakdown
+      byQuality: qualityStats.reduce((acc, stat) => {
+        acc[stat.quality || 'undefined'] = stat.count;
+        return acc;
+      }, {} as Record<string, number>),
+      bySupplier: supplierStats.reduce((acc, stat) => {
+        acc[stat.supplier || 'undefined'] = stat.count;
+        return acc;
+      }, {} as Record<string, number>)
     };
   } catch (error) {
-    console.error("Errore nel calcolo delle statistiche dei lotti:", error);
+    console.error('Error calculating lot statistics:', error);
     return {
+      totalLots: 0,
       totalAnimals: 0,
-      qualityBreakdown: {}
+      byQuality: {},
+      bySupplier: {}
     };
   }
 }
