@@ -1398,12 +1398,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/operations", async (req, res) => {
     try {
+      console.time('operations-api-cache');
+      
       // Controlla se è stata richiesta la versione ottimizzata
       const useOptimized = req.query.optimized === 'true';
       
       if (useOptimized) {
-        // Reindirizza alla versione ottimizzata
-        console.log("Reindirizzamento alla versione ottimizzata delle operazioni");
+        // Reindirizza alla versione ottimizzata con cache globale
+        console.log("Reindirizzamento alla versione ottimizzata delle operazioni con cache globale");
         
         // Estrai i parametri della query
         const page = req.query.page ? parseInt(req.query.page as string) : 1;
@@ -1419,33 +1421,92 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Tipo di operazione
         const type = req.query.type as string | undefined;
         
-        // Chiama la funzione ottimizzata
-        const result = await storage.getOperationsOptimized({
-          page,
-          pageSize,
-          cycleId,
-          flupsyId,
-          basketId,
-          dateFrom,
-          dateTo,
-          type
-        });
+        // Ottieni tutte le operazioni dalla cache globale
+        let operations = [];
+        if ((globalThis as any).globalCache) {
+          operations = (globalThis as any).globalCache.getOperations() || [];
+        } else {
+          // Fallback alla storage normale
+          const result = await storage.getOperationsOptimized({
+            page,
+            pageSize,
+            cycleId,
+            flupsyId,
+            basketId,
+            dateFrom,
+            dateTo,
+            type
+          });
+          
+          return res.json(result.operations);
+        }
+        
+        // Filtra le operazioni in memoria in base ai parametri
+        if (cycleId !== undefined) {
+          operations = operations.filter((op: any) => op.cycleId === cycleId);
+        }
+        
+        if (flupsyId !== undefined) {
+          operations = operations.filter((op: any) => op.flupsyId === flupsyId);
+        }
+        
+        if (basketId !== undefined) {
+          operations = operations.filter((op: any) => op.basketId === basketId);
+        }
+        
+        if (type !== undefined) {
+          operations = operations.filter((op: any) => op.type === type);
+        }
+        
+        if (dateFrom !== undefined) {
+          operations = operations.filter((op: any) => new Date(op.date) >= dateFrom);
+        }
+        
+        if (dateTo !== undefined) {
+          operations = operations.filter((op: any) => new Date(op.date) <= dateTo);
+        }
+        
+        // Conta il numero totale di operazioni dopo il filtraggio
+        const totalCount = operations.length;
+        
+        // Applica la paginazione in memoria
+        const startIndex = (page - 1) * pageSize;
+        const endIndex = startIndex + pageSize;
+        const paginatedOperations = operations.slice(startIndex, endIndex);
+        
+        console.timeEnd('operations-api-cache');
+        
+        // Imposta l'header di cache per il browser
+        res.setHeader('Cache-Control', 'public, max-age=60'); // 1 minuto
         
         // Restituisci solo le operazioni per mantenere la compatibilità con il frontend esistente
-        return res.json(result.operations);
+        return res.json(paginatedOperations);
       }
       
-      // Versione originale dell'endpoint
+      // Versione normale con cache globale
+      let operations;
+      
       // Controlla se c'è un filtro per cycleId
       const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : null;
       
-      // Recupera le operazioni in base ai filtri
-      let operations;
-      if (cycleId) {
-        console.log(`Ricerca operazioni per ciclo ID: ${cycleId}`);
-        operations = await storage.getOperationsByCycle(cycleId);
+      // Recupera le operazioni dalla cache globale se disponibile
+      if ((globalThis as any).globalCache) {
+        // Ottieni tutte le operazioni dalla cache
+        operations = (globalThis as any).globalCache.getOperations() || [];
+        
+        // Filtra per cycleId se necessario
+        if (cycleId) {
+          console.log(`Filtraggio operazioni per ciclo ID: ${cycleId} (dalla cache)`);
+          operations = operations.filter((op: any) => op.cycleId === cycleId);
+        }
       } else {
-        operations = await storage.getOperations();
+        // Fallback alla storage normale
+        if (cycleId) {
+          console.log(`Ricerca operazioni per ciclo ID: ${cycleId} (dal database)`);
+          operations = await storage.getOperationsByCycle(cycleId);
+        } else {
+          operations = await storage.getOperations();
+        }
       }
       
       // Importa le utilità di Drizzle e le tabelle dello schema
