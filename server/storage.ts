@@ -111,6 +111,7 @@ export interface IStorage {
   
   // Size methods
   getSizes(): Promise<Size[]>;
+  getAllSizes(): Promise<Size[]>; // Added this method for FLUPSY units view
   getSize(id: number): Promise<Size | undefined>;
   getSizeByCode(code: string): Promise<Size | undefined>;
   createSize(size: InsertSize): Promise<Size>;
