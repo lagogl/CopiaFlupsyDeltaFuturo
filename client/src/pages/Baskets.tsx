@@ -3,7 +3,7 @@ import { useQuery, useMutation } from '@tanstack/react-query';
 import { useLocation } from 'wouter';
 import { 
   Eye, Copy, Download, Plus, Filter, Upload, Pencil, Search, Waves,
-  Trash2, AlertTriangle, History, MapPin, Info, ChevronLeft, ChevronRight
+  Trash2, AlertTriangle, History, MapPin, Info
 } from 'lucide-react';
 import { getSizeBadgeStyle, getSizeColor } from '@/lib/sizeUtils';
 import { Button } from '@/components/ui/button';
@@ -41,25 +41,11 @@ export default function Baskets() {
   const sortConfig = filters.sortConfig as {key: string, direction: 'asc' | 'desc'};
   
   // Funzioni per aggiornare i filtri
-  const setSearchTerm = (value: string) => {
-    setFilters(prev => ({ ...prev, searchTerm: value }));
-    setPage(1); // Reset alla prima pagina quando cambia la ricerca
-  };
-  
-  const setStateFilter = (value: string) => {
-    setFilters(prev => ({ ...prev, stateFilter: value }));
-    setPage(1); // Reset alla prima pagina quando cambia il filtro stato
-  };
-  
-  const setFlupsyFilter = (value: string) => {
-    setFilters(prev => ({ ...prev, flupsyFilter: value }));
-    setPage(1); // Reset alla prima pagina quando cambia il filtro FLUPSY
-  };
-  
-  const setSortConfig = (value: {key: string, direction: 'asc' | 'desc'}) => {
+  const setSearchTerm = (value: string) => setFilters(prev => ({ ...prev, searchTerm: value }));
+  const setStateFilter = (value: string) => setFilters(prev => ({ ...prev, stateFilter: value }));
+  const setFlupsyFilter = (value: string) => setFilters(prev => ({ ...prev, flupsyFilter: value }));
+  const setSortConfig = (value: {key: string, direction: 'asc' | 'desc'}) => 
     setFilters(prev => ({ ...prev, sortConfig: value }));
-    setPage(1); // Reset alla prima pagina quando cambia l'ordinamento
-  };
   
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
@@ -102,44 +88,9 @@ export default function Baskets() {
     }
   }, [location]);
   
-  // Stati per la paginazione
-  const [page, setPage] = useState(1);
-  const [pageSize, setPageSize] = useState(50);
-  const [totalBaskets, setTotalBaskets] = useState(0);
-  
-  // Query baskets con paginazione
-  const { data: basketsData, isLoading } = useQuery({
-    queryKey: ['/api/baskets', page, pageSize, flupsyFilter, stateFilter, searchTerm, sortConfig],
-    queryFn: async () => {
-      const flupsyId = flupsyFilter !== 'all' ? flupsyFilter : undefined;
-      const stateParam = stateFilter !== 'all' ? stateFilter : undefined;
-      
-      const params = new URLSearchParams();
-      params.append('page', page.toString());
-      params.append('pageSize', pageSize.toString());
-      params.append('includePagination', 'true');
-      if (flupsyId) params.append('flupsyId', flupsyId);
-      if (stateParam) params.append('state', stateParam);
-      if (searchTerm) params.append('search', searchTerm);
-      
-      // Aggiunge il parametro di ordinamento
-      if (sortConfig.key) {
-        params.append('sortBy', sortConfig.key);
-        params.append('sortDir', sortConfig.direction);
-      }
-      
-      const response = await fetch(`/api/baskets?${params.toString()}`);
-      const data = await response.json();
-      
-      // Aggiorna il totale dei cestelli
-      if (data.totalCount !== undefined) {
-        setTotalBaskets(data.totalCount);
-      }
-      
-      return data.baskets || [];
-    },
-    // Aggiungiamo un piccolo ritardo per evitare troppe richieste quando si cerca del testo
-    refetchOnWindowFocus: false,
+  // Query baskets
+  const { data: baskets, isLoading } = useQuery({
+    queryKey: ['/api/baskets'],
   });
   
   // Query FLUPSY units for filter
@@ -155,8 +106,7 @@ export default function Baskets() {
       body: newBasket
     }),
     onSuccess: () => {
-      // Invalida la query con i parametri di paginazione correnti
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets', page, pageSize, flupsyFilter] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       setIsCreateDialogOpen(false);
       toast({
         title: "Operazione completata",
@@ -212,7 +162,7 @@ export default function Baskets() {
       body: data.basket
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets', page, pageSize, flupsyFilter] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       setIsEditDialogOpen(false);
       setSelectedBasket(null);
       toast({
@@ -237,7 +187,7 @@ export default function Baskets() {
       method: 'DELETE'
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets', page, pageSize, flupsyFilter] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       setIsDeleteDialogOpen(false);
       setSelectedBasket(null);
       toast({
@@ -256,7 +206,7 @@ export default function Baskets() {
   });
 
   // Prepare baskets array with additional data
-  const basketsArray = Array.isArray(basketsData) ? basketsData : [];
+  const basketsArray = Array.isArray(baskets) ? baskets : [];
   const flupsysArray = Array.isArray(flupsys) ? flupsys : [];
   
   // Debug - controlla quanti cestelli hanno la taglia impostata
@@ -419,8 +369,8 @@ export default function Baskets() {
     setSortConfig({ key, direction });
   };
 
-  // Prepariamo i dati per la visualizzazione
-  let processedBaskets = basketsArray.map((basket: any) => {
+  // Filter baskets
+  let filteredBaskets = [...basketsArray].filter((basket: any) => {
     // Aggiungiamo il nome del FLUPSY per ogni cesta
     const flupsy = flupsysArray.find((f: any) => f.id === basket.flupsyId);
     if (flupsy) {
@@ -432,8 +382,9 @@ export default function Baskets() {
       basket.animalCount = basket.lastOperation.animalCount;
     }
     
-    // Assicuriamoci che basket.size sia definito per la visualizzazione
+    // Assicuriamoci che basket.size sia definito per l'ordinamento
     if (!basket.size) {
+      // Per le ceste senza taglia, creiamo un oggetto size vuoto
       basket.size = {
         code: null,
         name: 'Non disponibile',
@@ -441,11 +392,26 @@ export default function Baskets() {
       };
     }
     
-    return basket;
+    // Filter by search term
+    const matchesSearch = searchTerm === '' || 
+      `${basket.physicalNumber}`.includes(searchTerm) || 
+      (basket.currentCycleId ? `${basket.currentCycleId}`.includes(searchTerm) : false) ||
+      (basket.flupsyName && basket.flupsyName.toLowerCase().includes(searchTerm.toLowerCase()));
+    
+    // Filter by state
+    const matchesState = stateFilter === 'all' || 
+      (stateFilter === 'active' && basket.state === 'active') ||
+      (stateFilter === 'available' && basket.state === 'available');
+    
+    // Filter by FLUPSY
+    const matchesFlupsy = flupsyFilter === 'all' || 
+      String(basket.flupsyId) === flupsyFilter;
+    
+    return matchesSearch && matchesState && matchesFlupsy;
   });
   
-  // I dati già filtrati dal server non richiedono ulteriore filtraggio client
-  const filteredBaskets = processedBaskets;
+  // Applichiamo l'ordinamento
+  filteredBaskets = sortData(filteredBaskets);
 
   return (
     <div>
@@ -944,7 +910,7 @@ export default function Baskets() {
                         Totale:
                       </td>
                       <td colSpan={1} className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className="text-xs text-muted-foreground">{filteredBaskets.length} ceste visualizzate (su {totalBaskets} totali)</span>
+                        <span className="text-xs text-muted-foreground">{filteredBaskets.length} ceste</span>
                       </td>
                       <td colSpan={1} className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                         {filteredBaskets.reduce((total, basket) => total + (basket.animalCount || 0), 0).toLocaleString('it-IT')}
@@ -952,95 +918,6 @@ export default function Baskets() {
                       <td colSpan={2}></td>
                     </tr>
                   )}
-                  
-                  {/* Controlli Paginazione */}
-                  <tr>
-                    <td colSpan={11} className="px-6 py-4">
-                      <div className="flex items-center justify-between">
-                        <div className="flex items-center space-x-2">
-                          <Select
-                            value={pageSize.toString()}
-                            onValueChange={(value) => {
-                              setPageSize(Number(value));
-                              setPage(1); // Reset alla prima pagina quando cambia la dimensione
-                            }}
-                          >
-                            <SelectTrigger className="w-[150px]">
-                              <SelectValue placeholder="Elementi per pagina" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              <SelectItem value="10">10 per pagina</SelectItem>
-                              <SelectItem value="25">25 per pagina</SelectItem>
-                              <SelectItem value="50">50 per pagina</SelectItem>
-                              <SelectItem value="100">100 per pagina</SelectItem>
-                            </SelectContent>
-                          </Select>
-                          <span className="text-sm text-gray-500">
-                            Mostrando <span className="font-medium">{totalBaskets > 0 ? (page - 1) * pageSize + 1 : 0}</span> a <span className="font-medium">{Math.min(page * pageSize, totalBaskets)}</span> di <span className="font-medium">{totalBaskets}</span> cestelli
-                          </span>
-                        </div>
-                        
-                        <div className="flex items-center space-x-2">
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
-                            disabled={page === 1}
-                          >
-                            <ChevronLeft className="h-4 w-4 mr-1" />
-                            Precedente
-                          </Button>
-                          
-                          {/* Visualizza i numeri di pagina se ci sono più pagine */}
-                          {totalBaskets > pageSize && (
-                            <div className="flex space-x-1">
-                              {Array.from({ length: Math.min(5, Math.ceil(totalBaskets / pageSize)) }).map((_, i) => {
-                                // Calcola quali pagine mostrare in base alla pagina corrente
-                                let pageNumber;
-                                const totalPages = Math.ceil(totalBaskets / pageSize);
-                                
-                                if (totalPages <= 5) {
-                                  // Se ci sono 5 o meno pagine, mostra tutte
-                                  pageNumber = i + 1;
-                                } else if (page <= 3) {
-                                  // Se siamo all'inizio, mostra pagine 1-5
-                                  pageNumber = i + 1;
-                                } else if (page >= totalPages - 2) {
-                                  // Se siamo alla fine, mostra le ultime 5 pagine
-                                  pageNumber = totalPages - 4 + i;
-                                } else {
-                                  // Altrimenti mostra 2 pagine prima e 2 dopo quella corrente
-                                  pageNumber = page - 2 + i;
-                                }
-                                
-                                return (
-                                  <Button
-                                    key={pageNumber}
-                                    variant={page === pageNumber ? "default" : "outline"}
-                                    size="sm"
-                                    onClick={() => setPage(pageNumber)}
-                                    className="w-10 h-9 p-0"
-                                  >
-                                    {pageNumber}
-                                  </Button>
-                                );
-                              })}
-                            </div>
-                          )}
-                          
-                          <Button 
-                            variant="outline" 
-                            size="sm" 
-                            onClick={() => setPage(prev => Math.min(prev + 1, Math.ceil(totalBaskets / pageSize)))}
-                            disabled={page >= Math.ceil(totalBaskets / pageSize)}
-                          >
-                            Successiva
-                            <ChevronRight className="h-4 w-4 ml-1" />
-                          </Button>
-                        </div>
-                      </div>
-                    </td>
-                  </tr>
                 </>
               )}
             </tbody>

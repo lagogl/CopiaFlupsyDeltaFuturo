@@ -52,7 +52,7 @@ export default function Dashboard() {
   const growthChartRef = useRef<HTMLDivElement>(null);
   const flupsyVisualizerRef = useRef<HTMLDivElement>(null);
 
-  // Dati completi per singole tabelle (potrebbero essere paginati)
+  // Query for active baskets and cycles
   const { data: baskets, isLoading: basketsLoading, dataUpdatedAt: basketsUpdatedAt } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
   });
@@ -62,16 +62,11 @@ export default function Dashboard() {
   });
 
   const { data: operations, isLoading: operationsLoading, dataUpdatedAt: operationsUpdatedAt } = useQuery<Operation[]>({
-    queryKey: ['/api/operations', { dashboard: true }],
+    queryKey: ['/api/operations'],
   });
 
   const { data: lots, isLoading: lotsLoading, dataUpdatedAt: lotsUpdatedAt } = useQuery<Lot[]>({
     queryKey: ['/api/lots'],
-  });
-  
-  // Query specifica per i dati aggregati della dashboard
-  const { data: dashboardData, isLoading: dashboardLoading, dataUpdatedAt: dashboardUpdatedAt } = useQuery({
-    queryKey: ['/api/dashboard-data'],
   });
   
   // Funzione per aggiornare i dati
@@ -84,8 +79,7 @@ export default function Dashboard() {
         queryClient.invalidateQueries({ queryKey: ['/api/operations'] }),
         queryClient.invalidateQueries({ queryKey: ['/api/lots'] }),
         queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/sizes'] }),
-        queryClient.invalidateQueries({ queryKey: ['/api/dashboard-data'] })
+        queryClient.invalidateQueries({ queryKey: ['/api/sizes'] })
       ]);
       setLastRefresh(new Date());
       setNeedsRefresh(false);
@@ -292,7 +286,7 @@ export default function Dashboard() {
           <div ref={basketsCardRef}>
             <StatCard 
               title="Ceste Attive" 
-              value={dashboardData?.activeBaskets || activeBaskets.length} 
+              value={activeBaskets.length} 
               icon={<div className="h-12 w-12 rounded-full bg-blue-500/20 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-blue-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M3 3h2l.4 2M7 13h10l4-8H5.4M7 13L5.4 5M7 13l-2.293 2.293c-.63.63-.184 1.707.707 1.707H17m0 0a2 2 0 100 4 2 2 0 000-4zm-8 2a2 2 0 11-4 0 2 2 0 014 0z" />
@@ -308,7 +302,7 @@ export default function Dashboard() {
               changeType={activeBasketsWithoutCycle.length > 0 ? 'warning' : lastMonthBaskets >= 0 ? 'success' : 'error'}
               linkTo="/baskets"
               cardColor="from-blue-50 to-blue-100 border-l-4 border-blue-500"
-              secondaryInfo={`${dashboardData?.totalAnimals.toLocaleString('it-IT') || totalAnimalsInActiveBaskets.toLocaleString('it-IT')} animali`}
+              secondaryInfo={`${totalAnimalsInActiveBaskets.toLocaleString('it-IT')} animali`}
             />
           </div>
         </TooltipTrigger>
@@ -325,7 +319,7 @@ export default function Dashboard() {
           <div ref={cyclesCardRef}>
             <StatCard 
               title="Cicli Attivi" 
-              value={dashboardData?.activeCycles || activeCycles.length} 
+              value={activeCycles.length} 
               icon={<div className="h-12 w-12 rounded-full bg-green-500/20 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-green-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
@@ -377,7 +371,7 @@ export default function Dashboard() {
           <div ref={lotsCardRef}>
             <StatCard 
               title="Lotti Attivi" 
-              value={dashboardData?.activeLots || activeLots.length} 
+              value={activeLots.length} 
               icon={<div className="h-12 w-12 rounded-full bg-orange-500/20 flex items-center justify-center">
                 <svg xmlns="http://www.w3.org/2000/svg" className="h-6 w-6 text-orange-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 11H5m14 0a2 2 0 012 2v6a2 2 0 01-2 2H5a2 2 0 01-2-2v-6a2 2 0 012-2m14 0V9a2 2 0 00-2-2M5 11V9a2 2 0 012-2m0 0V5a2 2 0 012-2h6a2 2 0 012 2v2M7 7h10" />
