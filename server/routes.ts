@@ -303,6 +303,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 100;
         const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
         const state = req.query.state as string | undefined;
+        const search = req.query.search as string | undefined;
+        const sortBy = req.query.sortBy as string | undefined;
+        const sortDir = req.query.sortDir as "asc" | "desc" | undefined;
         
         // Includi sempre i dettagli per mantenere la compatibilità con il frontend esistente
         const includeDetails = true;
@@ -313,6 +316,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           pageSize,
           flupsyId,
           state,
+          search,
+          sortBy,
+          sortDir,
           includeDetails
         });
         
