@@ -3,24 +3,34 @@ import cacheService from '../lib/cache-service';
 
 // Map of routes to their cache TTL in seconds
 const CACHE_TTL_MAP: Record<string, number> = {
-  // These routes can be cached for longer periods as they change less frequently
-  '/api/flupsys': 3600, // 1 hour
-  '/api/sizes': 3600,   // 1 hour
-  '/api/sgrs': 3600,    // 1 hour
+  // Questi endpoint cambiano raramente e possono essere cached per periodi più lunghi
+  '/api/flupsys': 3600,                // 1 ora
+  '/api/sizes': 3600,                  // 1 ora
+  '/api/sgrs': 3600,                   // 1 ora
+  '/api/mortality-rates': 3600,        // 1 ora
+  '/api/proxy/tide-data': 1800,        // 30 minuti
+  '/api/proxy/tide-forecast': 1800,    // 30 minuti
   
-  // These routes change more frequently but still benefit from short-term caching
-  '/api/baskets': 300,   // 5 minutes
-  '/api/operations': 300,
-  '/api/cycles': 300,
-  '/api/lots': 300,
-  '/api/dashboard-data': 300,
-  '/api/statistics/cycles/comparison': 300,
-  '/api/cycles/active': 300,
-  '/api/cycles/active-with-details': 300,
+  // Dati che cambiano occasionalmente ma beneficiano di caching a medio termine
+  '/api/lots': 900,                    // 15 minuti
+  '/api/lots/optimized': 900,          // 15 minuti
+  '/api/size-predictions': 900,        // 15 minuti
+  '/api/notifications': 600,           // 10 minuti
   
-  // Forecast data from external services can be cached
-  '/api/proxy/tide-data': 1800,   // 30 minutes
-  '/api/proxy/tide-forecast': 1800
+  // Dati operativi che cambiano più frequentemente ma comunque con cache breve
+  '/api/baskets': 300,                 // 5 minuti
+  '/api/operations': 300,              // 5 minuti
+  '/api/operations-optimized': 300,    // 5 minuti
+  '/api/cycles': 300,                  // 5 minuti
+  '/api/dashboard-data': 300,          // 5 minuti
+  '/api/statistics/cycles/comparison': 300, // 5 minuti
+  '/api/cycles/active': 300,           // 5 minuti
+  '/api/cycles/active-with-details': 300, // 5 minuti
+  '/api/diario/operations-by-date': 300, // 5 minuti
+  
+  // API di utilizzo frequente con TTL breve per garantire dati ragionevolmente aggiornati
+  '/api/sgr-giornalieri': 120,         // 2 minuti
+  '/api/quick-operations': 120,        // 2 minuti
 };
 
 /**

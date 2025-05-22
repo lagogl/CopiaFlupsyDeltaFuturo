@@ -157,6 +157,7 @@ export function configureWebSocketServer(httpServer: Server) {
       // Also invalidate basket-specific caches
       if (operation.basketId) {
         invalidateCache(`/api/baskets/${operation.basketId}`);
+        invalidateCache('/api/baskets');
       }
       
       // Also invalidate cycle-specific caches if applicable
@@ -164,6 +165,12 @@ export function configureWebSocketServer(httpServer: Server) {
         invalidateCache(`/api/cycles/${operation.cycleId}`);
         invalidateCache('/api/cycles/active');
         invalidateCache('/api/cycles/active-with-details');
+      }
+      
+      // Invalidate statistics if weight or measurement operations
+      if (operation.type === 'peso' || operation.type === 'misura') {
+        invalidateCache('/api/statistics/cycles/comparison');
+        invalidateCache('/api/size-predictions');
       }
     }
     
@@ -175,6 +182,13 @@ export function configureWebSocketServer(httpServer: Server) {
 
   // Function to handle basket position updates
   const broadcastPositionUpdate = (basketPosition: any) => {
+    // Invalidate relevant caches when positions are updated
+    invalidateCache('/api/baskets');
+    invalidateCache('/api/flupsys');
+    if (basketPosition.basketId) {
+      invalidateCache(`/api/baskets/${basketPosition.basketId}`);
+    }
+    
     return broadcastMessage(NOTIFICATION_TYPES.POSITION_UPDATED, {
       basketPosition,
       message: `Posizione aggiornata per la cesta #${basketPosition.basketId} in FLUPSY #${basketPosition.flupsyId}`
@@ -184,6 +198,20 @@ export function configureWebSocketServer(httpServer: Server) {
   // Function to handle cycle updates
   const broadcastCycleUpdate = (cycle: any, action: 'created' | 'updated' | 'closed' = 'created') => {
     const actionText = action === 'created' ? 'creato' : action === 'updated' ? 'aggiornato' : 'chiuso';
+    
+    // Invalidate relevant caches when cycles are updated
+    invalidateCache('/api/cycles');
+    invalidateCache('/api/cycles/active');
+    invalidateCache('/api/cycles/active-with-details');
+    invalidateCache('/api/dashboard-data');
+    invalidateCache('/api/statistics/cycles/comparison');
+    
+    // Also invalidate basket-specific caches
+    if (cycle.basketId) {
+      invalidateCache(`/api/baskets/${cycle.basketId}`);
+      invalidateCache('/api/baskets');
+    }
+    
     return broadcastMessage(NOTIFICATION_TYPES.CYCLE_UPDATED, {
       cycle,
       message: `Ciclo ${actionText} per la cesta #${cycle.basketId}`
