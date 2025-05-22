@@ -2619,64 +2619,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
-  // New endpoint for screening module
+  // Endpoint ottimizzato per il modulo di vagliatura
   app.get("/api/cycles/active-with-details", async (req, res) => {
     try {
-      const cycles = await storage.getActiveCycles();
+      // Utilizzo del nuovo controller ottimizzato con cache
+      const startTime = Date.now();
       
-      // Fetch complete details for each cycle including basket, flupsy, lot and size
-      const activeCyclesWithDetails = await Promise.all(
-        cycles.map(async (cycle) => {
-          // Get basket details
-          const basket = await storage.getBasket(cycle.basketId);
-          if (!basket) {
-            throw new Error(`Basket not found for cycle ${cycle.id}`);
-          }
-          
-          // Get operations for the cycle
-          const operations = await storage.getOperationsByCycle(cycle.id);
-          
-          // Sort operations by date (newest first) and get the latest one
-          operations.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-          const lastOperation = operations.length > 0 ? operations[0] : null;
-          
-          // Get flupsy details
-          let flupsy = null;
-          if (basket.flupsyId) {
-            flupsy = await storage.getFlupsy(basket.flupsyId);
-          }
-          
-          // Get size from the latest operation
-          let size = null;
-          if (lastOperation && lastOperation.sizeId) {
-            size = await storage.getSize(lastOperation.sizeId);
-          }
-          
-          // Get lot information if available
-          // Find the first operation (seeding or activation) that might have lot information
-          const firstOperation = operations
-            .filter(op => op.type === "prima-attivazione")
-            .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-          
-          let lot = null;
-          if (firstOperation && firstOperation.lotId) {
-            lot = await storage.getLot(firstOperation.lotId);
-          }
-          
-          return {
-            id: cycle.id,
-            basketId: cycle.basketId,
-            startDate: cycle.startDate,
-            endDate: cycle.endDate,
-            state: cycle.state,
-            basket,
-            flupsy,
-            size,
-            lot,
-            lastOperation
-          };
-        })
-      );
+      // Importa il controller solo una volta per evitare errori di dipendenza circolare
+      const { getActiveCyclesWithDetails } = require('./controllers/cycles-controller');
+      
+      // Ottieni i cicli attivi con dettagli in modo ottimizzato
+      const activeCyclesWithDetails = await getActiveCyclesWithDetails();
+      
+      const duration = Date.now() - startTime;
+      console.log(`Cicli attivi con dettagli recuperati in ${duration}ms`);
       
       res.json(activeCyclesWithDetails);
     } catch (error) {

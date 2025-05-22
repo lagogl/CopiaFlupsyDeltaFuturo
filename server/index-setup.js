@@ -1,13 +1,16 @@
 /**
  * Script per configurare e applicare gli indici strategici al database
+ * e impostare i sistemi di cache e ottimizzazione delle prestazioni
  * 
  * Questo script viene eseguito all'avvio dell'applicazione per assicurarsi
- * che tutti gli indici necessari siano presenti nel database.
+ * che tutti gli indici necessari siano presenti nel database e che i sistemi
+ * di ottimizzazione delle prestazioni siano correttamente inizializzati.
  */
 
 import { sql } from 'drizzle-orm';
 import { db } from './db.js';
 import { CacheService } from './cache-service.js';
+import { setupCyclesCacheInvalidation } from './controllers/cycles-controller.js';
 
 /**
  * Applica gli indici strategici al database
