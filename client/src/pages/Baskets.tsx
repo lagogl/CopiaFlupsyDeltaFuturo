@@ -88,9 +88,35 @@ export default function Baskets() {
     }
   }, [location]);
   
-  // Query baskets
-  const { data: baskets, isLoading } = useQuery({
-    queryKey: ['/api/baskets'],
+  // Stati per la paginazione
+  const [page, setPage] = useState(1);
+  const [pageSize, setPageSize] = useState(50);
+  const [totalBaskets, setTotalBaskets] = useState(0);
+  
+  // Query baskets con paginazione
+  const { data: basketsData, isLoading } = useQuery({
+    queryKey: ['/api/baskets', page, pageSize, flupsyFilter],
+    queryFn: async () => {
+      const flupsyId = flupsyFilter !== 'all' ? flupsyFilter : undefined;
+      const stateParam = stateFilter !== 'all' ? stateFilter : undefined;
+      
+      const params = new URLSearchParams();
+      params.append('page', page.toString());
+      params.append('pageSize', pageSize.toString());
+      params.append('includePagination', 'true');
+      if (flupsyId) params.append('flupsyId', flupsyId);
+      if (stateParam) params.append('state', stateParam);
+      
+      const response = await fetch(`/api/baskets?${params.toString()}`);
+      const data = await response.json();
+      
+      // Aggiorna il totale dei cestelli
+      if (data.totalCount !== undefined) {
+        setTotalBaskets(data.totalCount);
+      }
+      
+      return data.baskets || [];
+    }
   });
   
   // Query FLUPSY units for filter
@@ -106,7 +132,8 @@ export default function Baskets() {
       body: newBasket
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      // Invalida la query con i parametri di paginazione correnti
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets', page, pageSize, flupsyFilter] });
       setIsCreateDialogOpen(false);
       toast({
         title: "Operazione completata",
@@ -162,7 +189,7 @@ export default function Baskets() {
       body: data.basket
     }),
     onSuccess: () => {
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets', page, pageSize, flupsyFilter] });
       setIsEditDialogOpen(false);
       setSelectedBasket(null);
       toast({
@@ -206,7 +233,7 @@ export default function Baskets() {
   });
 
   // Prepare baskets array with additional data
-  const basketsArray = Array.isArray(baskets) ? baskets : [];
+  const basketsArray = Array.isArray(basketsData) ? basketsData : [];
   const flupsysArray = Array.isArray(flupsys) ? flupsys : [];
   
   // Debug - controlla quanti cestelli hanno la taglia impostata
@@ -910,7 +937,7 @@ export default function Baskets() {
                         Totale:
                       </td>
                       <td colSpan={1} className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className="text-xs text-muted-foreground">{filteredBaskets.length} ceste</span>
+                        <span className="text-xs text-muted-foreground">{filteredBaskets.length} ceste visualizzate (su {totalBaskets} totali)</span>
                       </td>
                       <td colSpan={1} className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
                         {filteredBaskets.reduce((total, basket) => total + (basket.animalCount || 0), 0).toLocaleString('it-IT')}
@@ -918,6 +945,49 @@ export default function Baskets() {
                       <td colSpan={2}></td>
                     </tr>
                   )}
+                  
+                  {/* Controlli Paginazione */}
+                  <tr>
+                    <td colSpan={11} className="px-6 py-4">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center space-x-2">
+                          <select 
+                            className="border rounded p-1 text-sm"
+                            value={pageSize}
+                            onChange={(e) => {
+                              setPageSize(Number(e.target.value));
+                              setPage(1); // Torna alla prima pagina quando cambia la dimensione
+                            }}
+                          >
+                            <option value={25}>25 per pagina</option>
+                            <option value={50}>50 per pagina</option>
+                            <option value={100}>100 per pagina</option>
+                          </select>
+                          <span className="text-sm text-gray-500">
+                            Pagina {page} di {Math.ceil(totalBaskets / pageSize)}
+                          </span>
+                        </div>
+                        <div className="flex space-x-2">
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setPage(prev => Math.max(prev - 1, 1))}
+                            disabled={page === 1}
+                          >
+                            Precedente
+                          </Button>
+                          <Button 
+                            variant="outline" 
+                            size="sm" 
+                            onClick={() => setPage(prev => prev + 1)}
+                            disabled={page >= Math.ceil(totalBaskets / pageSize)}
+                          >
+                            Successiva
+                          </Button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
                 </>
               )}
             </tbody>
