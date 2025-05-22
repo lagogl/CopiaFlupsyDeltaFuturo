@@ -388,7 +388,19 @@ export default function Flupsys() {
   return (
     <div className="container mx-auto py-8">
       <div className="flex items-center justify-between mb-6">
-        <h1 className="text-3xl font-bold">Unità FLUPSY</h1>
+        <div className="flex items-center gap-3">
+          <h1 className="text-3xl font-bold">Unità FLUPSY</h1>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center h-9"
+            onClick={() => queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] })}
+            title="Aggiorna dati"
+          >
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Aggiorna
+          </Button>
+        </div>
         <div className="flex items-center gap-2">
           <div className="flex items-center bg-muted rounded-md p-1 mr-2">
             <Button
