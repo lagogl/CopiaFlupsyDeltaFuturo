@@ -1435,12 +1435,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/operations", async (req, res) => {
     try {
-      // Controlla se è stata richiesta la versione ottimizzata
-      const useOptimized = req.query.optimized === 'true';
+      // Controlla se è stata richiesta la versione NON ottimizzata esplicitamente
+      const useOptimized = process.env.USE_OPTIMIZED_APIS === 'true' || req.query.optimized === 'true';
+      const useOriginal = req.query.original === 'true';
       
-      if (useOptimized) {
-        // Reindirizza alla versione ottimizzata
-        console.log("Reindirizzamento alla versione ottimizzata delle operazioni");
+      if (useOptimized && !useOriginal) {
+        // Utilizza la versione ottimizzata
+        console.log("Utilizzando endpoint ottimizzato per le operazioni");
         
         // Estrai i parametri della query
         const page = req.query.page ? parseInt(req.query.page as string) : 1;
@@ -1472,7 +1473,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.json(result.operations);
       }
       
-      // Versione originale dell'endpoint
+      // Versione originale dell'endpoint (utilizzata solo se richiesto esplicitamente)
       // Controlla se c'è un filtro per cycleId
       const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : null;
       
