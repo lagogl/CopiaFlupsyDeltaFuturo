@@ -2,7 +2,7 @@ import { Request, Response } from "express";
 import { db } from "../db";
 import { format } from "date-fns";
 import { storage } from "../storage";
-import { eq, desc, and, gt, isNotNull } from "drizzle-orm";
+import { eq, desc, and, gt, isNotNull, or, inArray, SQL, sql } from "drizzle-orm";
 import { baskets, cycles, lots, operations } from "@shared/schema";
 
 /**
@@ -27,7 +27,6 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     const today = format(new Date(), 'yyyy-MM-dd');
     let totalAnimalCount = 0;
     
-    // Eseguiamo le query SQL direttamente per evitare problemi di tipizzazione e ottimizzare le prestazioni
     try {
       // Utilizziamo metodi semplici e diretti di Drizzle ORM
       // 1. Recupera i cestelli attivi
@@ -38,7 +37,12 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           .where(
             and(
               eq(baskets.state, 'active'),
-              inArray(baskets.flupsyId, flupsyIds)
+              // Utilizziamo una condizione OR per ogni flupsyId
+              flupsyIds.reduce((conditions, id) => 
+                [...conditions, eq(baskets.flupsyId, id)], 
+              [] as any[]).length > 0 
+                ? or(...flupsyIds.map(id => eq(baskets.flupsyId, id)))
+                : undefined
             )
           );
       } else {
@@ -77,8 +81,8 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       todayOperationsData = recentOperationsData.filter(op => op.date === today);
       console.log(`Dashboard: Filtrate ${todayOperationsData.length} operazioni di oggi`);
       
-      // 6. Recupera il conteggio degli animali con una query SQL nativa
-      const animalCountQuery = `
+      // 6. Recupera il conteggio degli animali con SQL diretto per maggiore compatibilità
+      const animalCountsRaw = await db.execute(sql`
         WITH LastOperationWithCount AS (
           SELECT DISTINCT ON (basket_id) 
             basket_id, 
@@ -88,38 +92,46 @@ export const getDashboardStats = async (req: Request, res: Response) => {
           ORDER BY basket_id, date DESC, id DESC
         )
         SELECT basket_id, animal_count FROM LastOperationWithCount
-      `;
-      
-      const animalCounts = await db.execute(animalCountQuery);
+      `);
       
       // Associa i conteggi animali ai cestelli corrispondenti
       const animalCountByBasket = new Map();
       
-      // Processa i risultati della query SQL
-      if (animalCounts.rows && animalCounts.rows.length > 0) {
-        // Elabora i risultati
-        for (const row of animalCounts.rows) {
-          const basketId = Number(row.basket_id);
-          const count = Number(row.animal_count);
+      try {
+        // Processa i risultati della query SQL
+        if (animalCountsRaw && 
+            animalCountsRaw.rows && 
+            Array.isArray(animalCountsRaw.rows) && 
+            animalCountsRaw.rows.length > 0) {
           
-          if (!isNaN(basketId) && !isNaN(count) && count > 0) {
-            animalCountByBasket.set(basketId, count);
+          // Elabora i risultati
+          for (const row of animalCountsRaw.rows) {
+            const basketId = Number(row.basket_id);
+            const count = Number(row.animal_count);
+            
+            if (!isNaN(basketId) && !isNaN(count) && count > 0) {
+              animalCountByBasket.set(basketId, count);
+            }
           }
+        } else {
+          console.log("Dashboard: Nessun conteggio animali trovato nella query principale");
         }
-        
-        // Aggiorna i dati dei cestelli con i conteggi degli animali
-        activeBasketsData = activeBasketsData.map(basket => ({
-          ...basket,
-          animalCount: animalCountByBasket.get(Number(basket.id)) || 0
-        }));
-        
-        // Calcola il totale degli animali
-        for (const count of animalCountByBasket.values()) {
-          totalAnimalCount += count;
-        }
-        
-        console.log(`Dashboard: Calcolato conteggio animali totale: ${totalAnimalCount}`);
+      } catch (error) {
+        console.error("Errore nell'elaborazione dei risultati del conteggio animali:", error);
       }
+      
+      // Aggiorna i dati dei cestelli con i conteggi degli animali
+      activeBasketsData = activeBasketsData.map(basket => ({
+        ...basket,
+        animalCount: animalCountByBasket.get(Number(basket.id)) || 0
+      }));
+      
+      // Calcola il totale degli animali
+      for (const count of animalCountByBasket.values()) {
+        totalAnimalCount += count;
+      }
+      
+      console.log(`Dashboard: Calcolato conteggio animali totale: ${totalAnimalCount}`);
       
       // Trova l'ultima operazione per ogni cestello (priorità a quelle con conteggio animali)
       const lastOperationByBasket = new Map();
@@ -155,17 +167,30 @@ export const getDashboardStats = async (req: Request, res: Response) => {
       if (totalAnimalCount === 0) {
         // Tenta una query separata per ottenere la somma
         try {
-          const sumResult = await db.execute(`
+          const sumResult = await db.execute(sql`
             SELECT SUM(animal_count) as total_count 
             FROM operations 
             WHERE animal_count IS NOT NULL AND animal_count > 0
           `);
           
-          if (sumResult.rows && sumResult.rows.length > 0) {
+          if (sumResult && sumResult.rows && sumResult.rows.length > 0) {
             const count = Number(sumResult.rows[0].total_count);
             if (!isNaN(count) && count > 0) {
               totalAnimalCount = count;
               console.log(`Dashboard: Recuperato conteggio animali alternativo: ${totalAnimalCount}`);
+            } else {
+              // Tentativo di calcolo manuale come ultima risorsa
+              let manualCount = 0;
+              recentOperationsData.forEach(op => {
+                if (op.animalCount && Number(op.animalCount) > 0) {
+                  manualCount += Number(op.animalCount);
+                }
+              });
+              
+              if (manualCount > 0) {
+                totalAnimalCount = manualCount;
+                console.log(`Dashboard: Calcolato conteggio animali manuale: ${totalAnimalCount}`);
+              }
             }
           }
         } catch (err) {
