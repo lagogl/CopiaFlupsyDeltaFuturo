@@ -103,7 +103,7 @@ export default function Lots() {
         totalPages: 3,
         statistics: { 
           counts: { normali: 391000, teste: 105000, code: 132000, totale: 628000 },
-          percentages: { normali: 62, teste: 17, code: 21 }
+          percentages: { normali: 62.3, teste: 16.7, code: 21.0 }
         }
       };
     },

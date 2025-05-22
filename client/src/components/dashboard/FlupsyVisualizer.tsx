@@ -9,6 +9,7 @@ import { useIsMobile } from '@/hooks/use-mobile';
 import { useLocation } from 'wouter';
 import { format } from 'date-fns';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MapPin } from "lucide-react";
 import { 
   Tooltip, 
   TooltipContent, 
@@ -582,7 +583,7 @@ export default function FlupsyVisualizer() {
                                           handleBasketClick(basket);
                                         }}
                                       >
-                                        <MapPinIcon className="h-3 w-3 mr-1" />
+                                        <MapPin className="h-3 w-3 mr-1" />
                                         Assegna posizione
                                       </Button>
                                     </div>
