@@ -18,7 +18,8 @@ const CACHE_TTL_MAP: Record<string, number> = {
   '/api/notifications': 600,           // 10 minuti
   
   // Dati operativi che cambiano più frequentemente ma comunque con cache breve
-  '/api/baskets': 300,                 // 5 minuti
+  '/api/baskets': 600,                 // 10 minuti (aumentato per migliorare prestazioni)
+  '/api/baskets/detail': 600,          // 10 minuti
   '/api/operations': 300,              // 5 minuti
   '/api/operations-optimized': 300,    // 5 minuti
   '/api/cycles': 300,                  // 5 minuti

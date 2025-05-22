@@ -1,5 +1,6 @@
 import { Request, Response } from 'express';
 import { getStorage } from '../storage';
+import cacheService from '../lib/cache-service';
 
 /**
  * Controller ottimizzato per la gestione delle ceste

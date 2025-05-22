@@ -3,6 +3,7 @@ import { createServer, type Server } from "http";
 import { storage } from "./storage";
 import path from 'path';
 import fs from 'fs';
+import { getBasketsOptimized, getBasketDetailById } from './controllers/baskets-optimized-controller';
 import { db } from "./db";
 import { eq, and, isNull, sql, count, inArray } from "drizzle-orm";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, subDays } from "date-fns";
