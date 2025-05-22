@@ -116,8 +116,18 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     // Calcola la somma degli animali nelle operazioni più recenti
     let totalAnimalCount = 0;
     for (const op of latestOperations) {
-      if (op.animalCount) {
+      if (typeof op.animalCount === 'number') {
         totalAnimalCount += op.animalCount;
+      }
+    }
+    
+    // Se il conteggio è ancora 0, proviamo a sommare il numero di animali direttamente dall'ultima operazione per ogni cestello
+    if (totalAnimalCount === 0) {
+      for (const op of latestOperations) {
+        const count = Number(op.animalCount);
+        if (!isNaN(count) && count > 0) {
+          totalAnimalCount += count;
+        }
       }
     }
     
