@@ -15,6 +15,9 @@ export const NOTIFICATION_TYPES = {
   ERROR: 'error'
 };
 
+// Import cache service for cache invalidation
+import { invalidateCache } from './middleware/cache-middleware';
+
 // WebSocket server configuration
 export function configureWebSocketServer(httpServer: Server) {
   // Create WebSocket server on a different path to avoid conflicts with Vite HMR
@@ -145,6 +148,25 @@ export function configureWebSocketServer(httpServer: Server) {
   // Broadcast operation notification
   const broadcastOperationNotification = (operation: any, action: 'created' | 'updated' | 'deleted' = 'created') => {
     const notification = formatOperationNotification(operation, action);
+    
+    // Invalidate relevant caches based on operation type
+    if (action === 'created' || action === 'updated' || action === 'deleted') {
+      invalidateCache('/api/operations');
+      invalidateCache('/api/dashboard-data');
+      
+      // Also invalidate basket-specific caches
+      if (operation.basketId) {
+        invalidateCache(`/api/baskets/${operation.basketId}`);
+      }
+      
+      // Also invalidate cycle-specific caches if applicable
+      if (operation.cycleId) {
+        invalidateCache(`/api/cycles/${operation.cycleId}`);
+        invalidateCache('/api/cycles/active');
+        invalidateCache('/api/cycles/active-with-details');
+      }
+    }
+    
     return broadcastMessage(notification.type, {
       operation,
       message: notification.message

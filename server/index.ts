@@ -4,6 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { createSaleNotification } from "./sales-notification-handler";
 import { registerScreeningNotificationHandler } from "./screening-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
+import { cacheMiddleware } from "./middleware/cache-middleware";
 
 // Abilitiamo le API ottimizzate per migliorare le prestazioni del server
 process.env.USE_OPTIMIZED_APIS = "true";
@@ -14,6 +15,9 @@ app.use(express.urlencoded({ extended: false }));
 
 // Rendi disponibile globalmente per l'uso nei controller
 globalThis.app = app;
+
+// Abilita il middleware di cache per velocizzare le risposte API
+app.use(cacheMiddleware);
 
 app.use((req, res, next) => {
   const start = Date.now();
