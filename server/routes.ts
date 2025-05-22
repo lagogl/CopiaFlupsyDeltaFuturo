@@ -1393,29 +1393,34 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   app.get("/api/operations", async (req, res) => {
     try {
-      // Controlla se è stata richiesta la versione ottimizzata
-      const useOptimized = req.query.optimized === 'true';
+      const startTime = Date.now();
       
-      if (useOptimized) {
-        // Reindirizza alla versione ottimizzata
-        console.log("Reindirizzamento alla versione ottimizzata delle operazioni");
+      // Importa il controller ottimizzato delle operazioni
+      const { getOperationsOptimized } = await import('./controllers/operations-controller.js');
+      
+      // Estrai i parametri della query
+      const page = req.query.page ? parseInt(req.query.page as string) : 1;
+      const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 20;
+      const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : undefined;
+      const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
+      const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : undefined;
+      
+      // Gestione date
+      const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined;
+      const dateTo = req.query.dateTo ? new Date(req.query.dateTo as string) : undefined;
+      
+      // Tipo di operazione
+      const type = req.query.type as string | undefined;
+      
+      // Controlla se è stata richiesta la versione originale (non ottimizzata)
+      const useOriginal = req.query.original === 'true';
+      
+      if (!useOriginal) {
+        // Usa la nuova implementazione ottimizzata con cache
+        console.log("Utilizzo implementazione ottimizzata per le operazioni");
         
-        // Estrai i parametri della query
-        const page = req.query.page ? parseInt(req.query.page as string) : 1;
-        const pageSize = req.query.pageSize ? parseInt(req.query.pageSize as string) : 20;
-        const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : undefined;
-        const flupsyId = req.query.flupsyId ? parseInt(req.query.flupsyId as string) : undefined;
-        const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : undefined;
-        
-        // Gestione date
-        const dateFrom = req.query.dateFrom ? new Date(req.query.dateFrom as string) : undefined;
-        const dateTo = req.query.dateTo ? new Date(req.query.dateTo as string) : undefined;
-        
-        // Tipo di operazione
-        const type = req.query.type as string | undefined;
-        
-        // Chiama la funzione ottimizzata
-        const result = await storage.getOperationsOptimized({
+        // Chiama la funzione ottimizzata dal controller dedicato
+        const result = await getOperationsOptimized({
           page,
           pageSize,
           cycleId,
@@ -1426,19 +1431,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
           type
         });
         
+        const duration = Date.now() - startTime;
+        console.log(`Operazioni recuperate in ${duration}ms (ottimizzato)`);
+        
         // Restituisci solo le operazioni per mantenere la compatibilità con il frontend esistente
         return res.json(result.operations);
       }
       
-      // Versione originale dell'endpoint
+      // Versione originale dell'endpoint (legacy)
+      console.log("Utilizzo implementazione originale per le operazioni (legacy)");
+      
       // Controlla se c'è un filtro per cycleId
-      const cycleId = req.query.cycleId ? parseInt(req.query.cycleId as string) : null;
+      const cycleId_legacy = req.query.cycleId ? parseInt(req.query.cycleId as string) : null;
       
       // Recupera le operazioni in base ai filtri
       let operations;
-      if (cycleId) {
-        console.log(`Ricerca operazioni per ciclo ID: ${cycleId}`);
-        operations = await storage.getOperationsByCycle(cycleId);
+      if (cycleId_legacy) {
+        console.log(`Ricerca operazioni per ciclo ID: ${cycleId_legacy}`);
+        operations = await storage.getOperationsByCycle(cycleId_legacy);
       } else {
         operations = await storage.getOperations();
       }

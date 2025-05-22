@@ -115,6 +115,20 @@ export async function setupPerformanceOptimizations(app) {
   // Configurazione indici
   await setupDatabaseIndexes();
   
+  // Importa e configura gli indici per le operazioni
+  try {
+    const { setupOperationsIndexes, setupOperationsCacheInvalidation } = await import('./controllers/operations-controller.js');
+    await setupOperationsIndexes();
+    
+    // Configurazione invalidazione cache per operazioni
+    if (app) {
+      setupOperationsCacheInvalidation(app);
+      console.log('Configurazione cache e indici per le operazioni completata');
+    }
+  } catch (error) {
+    console.error('Errore durante la configurazione delle ottimizzazioni per operazioni:', error);
+  }
+  
   // Configurazione invalidazione cache
   if (app) {
     setupCacheInvalidation(app);
