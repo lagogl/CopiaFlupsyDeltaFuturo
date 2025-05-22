@@ -1,6 +1,6 @@
 import { Request, Response } from "express";
 import { db } from "../db";
-import { eq, inArray, sql } from "drizzle-orm";
+import { eq, inArray, sql, desc } from "drizzle-orm";
 import { format } from "date-fns";
 import { baskets, cycles, lots, operations } from "@shared/schema";
 import { storage } from "../storage";
@@ -40,51 +40,34 @@ export const getDashboardStats = async (req: Request, res: Response) => {
     let todayOperationsSql;
     const today = format(new Date(), 'yyyy-MM-dd');
     
+    // Usiamo normali query SQL per evitare problemi con Drizzle ORM
+    // Creiamo query più semplici ed efficienti
+    let basketsWithAnimalCount = db.select({
+      id: baskets.id,
+      animalCount: sql`MAX(o.animal_count)`.as('animal_count')
+    })
+    .from(baskets)
+    .leftJoin(operations, eq(operations.basketId, baskets.id))
+    .where(eq(baskets.state, 'active'))
+    .groupBy(baskets.id);
+    
+    // Aggiungiamo filtro FLUPSY se necessario
     if (flupsyIds.length > 0) {
-      // Costruisci query dinamica con parametri IN
-      let flupsyCondition = '';
-      flupsyIds.forEach((id, index) => {
-        if (index > 0) flupsyCondition += ' OR ';
-        flupsyCondition += `b.flupsy_id = ${id}`;
-      });
-      
-      latestOperationsSql = sql`
-        WITH ranked_operations AS (
-          SELECT 
-            o.*,
-            ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
-          FROM operations o
-          JOIN baskets b ON o.basket_id = b.id
-          WHERE b.state = 'active' AND (${sql.raw(flupsyCondition)})
-        )
-        SELECT * FROM ranked_operations WHERE rn = 1
-      `;
-      
-      todayOperationsSql = sql`
-        SELECT o.* FROM operations o
-        JOIN baskets b ON o.basket_id = b.id
-        WHERE b.state = 'active' AND o.date = ${today}
-        AND (${sql.raw(flupsyCondition)})
-      `;
-    } else {
-      latestOperationsSql = sql`
-        WITH ranked_operations AS (
-          SELECT 
-            o.*,
-            ROW_NUMBER() OVER (PARTITION BY o.basket_id ORDER BY o.date DESC, o.id DESC) as rn
-          FROM operations o
-          JOIN baskets b ON o.basket_id = b.id
-          WHERE b.state = 'active'
-        )
-        SELECT * FROM ranked_operations WHERE rn = 1
-      `;
-      
-      todayOperationsSql = sql`
-        SELECT o.* FROM operations o
-        JOIN baskets b ON o.basket_id = b.id
-        WHERE b.state = 'active' AND o.date = ${today}
-      `;
+      basketsWithAnimalCount = basketsWithAnimalCount.where(inArray(baskets.flupsyId, flupsyIds));
     }
+    
+    // Operazioni recenti - Query semplificata senza subquery complesse
+    let recentOperationsQuery = db.select()
+      .from(operations)
+      .orderBy(desc(operations.date), desc(operations.id))
+      .limit(20);
+    
+    // Operazioni di oggi - Query semplificata
+    let todayOperationsQuery = db.select()
+      .from(operations)
+      .where(eq(operations.date, today))
+      .orderBy(desc(operations.id))
+      .limit(20);
 
     // Esegue le query in parallelo per massimizzare la velocità
     // Usiamo try/catch individuali per prevenire che un errore in una query blocchi tutte le altre
