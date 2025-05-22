@@ -93,7 +93,8 @@ export async function getBasketsOptimized(options = {}) {
     cycleId,
     includeEmpty = false,
     sortBy = 'id',
-    sortOrder = 'asc'
+    sortOrder = 'asc',
+    includeAll = false
   } = options;
   
   // Genera la chiave di cache
@@ -105,7 +106,8 @@ export async function getBasketsOptimized(options = {}) {
     cycleId,
     includeEmpty,
     sortBy,
-    sortOrder
+    sortOrder,
+    includeAll
   });
   
   // Controlla se i dati sono in cache
