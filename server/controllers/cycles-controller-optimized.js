@@ -198,9 +198,30 @@ export async function getCycles(options = {}) {
     // 3. Ottieni i dettagli dei cestelli associati
     const cycleBasketIds = cyclesResult.map(cycle => cycle.basketId);
     
-    const basketsResult = await db.execute(sql`
-      SELECT * FROM baskets WHERE id IN (${cycleBasketIds.join(',')})
-    `);
+    // Assicuriamoci che ci siano ID prima di eseguire la query
+    let basketsResult = [];
+    if (cycleBasketIds.length > 0) {
+      // Utilizziamo il metodo corretto per query con IN
+      if (cycleBasketIds.length === 1) {
+        // Per un solo ID, usiamo eq
+        basketsResult = await db.select()
+          .from(baskets)
+          .where(eq(baskets.id, cycleBasketIds[0]));
+      } else {
+        // Per più ID, facciamo più query singole e combiniamo i risultati
+        // Questo evita problemi con l'operatore IN e array di parametri
+        basketsResult = [];
+        for (const basketId of cycleBasketIds) {
+          const result = await db.select()
+            .from(baskets)
+            .where(eq(baskets.id, basketId));
+          
+          if (result.length > 0) {
+            basketsResult.push(result[0]);
+          }
+        }
+      }
+    }
     
     // Mappa dei cestelli per ID
     const basketsMap = basketsResult.reduce((map, basket) => {
@@ -222,32 +243,35 @@ export async function getCycles(options = {}) {
     // 4. Ottieni i dettagli dei FLUPSY
     const flupsyIds = new Set();
     for (const basket of basketsResult) {
-      if (basket.flupsy_id) {
-        flupsyIds.add(basket.flupsy_id);
+      if (basket.flupsyId || basket.flupsy_id) {
+        flupsyIds.add(basket.flupsyId || basket.flupsy_id);
       }
     }
     
     let flupsysMap = {};
     if (flupsyIds.size > 0) {
       const flupsyIdsArray = Array.from(flupsyIds);
-      const flupsysResult = await db.execute(sql`
-        SELECT * FROM flupsys WHERE id IN (${flupsyIdsArray.join(',')})
-      `);
       
-      // Mappa dei FLUPSY per ID
-      flupsysMap = flupsysResult.reduce((map, flupsy) => {
-        // Converti i nomi delle colonne da snake_case a camelCase
-        map[flupsy.id] = {
-          id: flupsy.id,
-          name: flupsy.name,
-          location: flupsy.location,
-          description: flupsy.description,
-          active: flupsy.active,
-          maxPositions: flupsy.max_positions,
-          productionCenter: flupsy.production_center
-        };
-        return map;
-      }, {});
+      // Per evitare problemi con l'operatore IN, recuperiamo i FLUPSY uno alla volta
+      for (const flupsyId of flupsyIdsArray) {
+        const flupsysResult = await db.select()
+          .from(flupsys)
+          .where(eq(flupsys.id, flupsyId));
+        
+        if (flupsysResult.length > 0) {
+          const flupsy = flupsysResult[0];
+          // Mappa per ID
+          flupsysMap[flupsy.id] = {
+            id: flupsy.id,
+            name: flupsy.name,
+            location: flupsy.location,
+            description: flupsy.description,
+            active: flupsy.active,
+            maxPositions: flupsy.maxPositions,
+            productionCenter: flupsy.productionCenter
+          };
+        }
+      }
     }
     
     // Aggiungi informazioni di cestello e FLUPSY ai cicli
