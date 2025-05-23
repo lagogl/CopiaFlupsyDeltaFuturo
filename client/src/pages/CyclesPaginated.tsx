@@ -736,6 +736,9 @@ export default function CyclesPaginated() {
                 <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   SGR
                 </th>
+                <th className="h-10 px-3 text-right align-middle font-medium text-xs uppercase tracking-wider">
+                  Nr. Animali
+                </th>
                 <th className="h-10 px-3 text-center align-middle font-medium text-xs uppercase tracking-wider">
                   Azioni
                 </th>
@@ -761,17 +764,25 @@ export default function CyclesPaginated() {
                   // Trova il FLUPSY associato al cestello
                   const flupsy = basket ? flupsys.find(f => f.id === basket.flupsyId) : null;
                   
+                  // Trova le operazioni di questo ciclo
+                  const cycleOperations = operations.filter(op => op.cycleId === cycle.id);
+                  
+                  // Trova l'ultima operazione di peso per ottenere il numero di animali
+                  const lastWeightOp = cycleOperations
+                    .filter(op => op.type === 'peso')
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                  
                   return (
                     <tr 
                       key={cycle.id}
                       className={`border-b transition-colors hover:bg-muted/50 ${cycle.state === 'closed' ? 'bg-red-50' : ''}`}
                     >
                       <td className="py-2 px-3 align-middle">{cycle.id}</td>
-                      <td className="py-2 px-3 align-middle">
+                      <td className="py-2 px-3 align-middle font-medium">
                         #{cycle.basket?.physicalNumber || 'N/D'}
                       </td>
                       <td className="py-2 px-3 align-middle">
-                        {flupsy?.name || 'N/D'}
+                        {flupsy?.name?.startsWith('BINS') ? flupsy.name : 'N/D'}
                       </td>
                       <td className="py-2 px-3 align-middle">
                         {format(new Date(cycle.startDate), 'dd/MM/yyyy', { locale: it })}
