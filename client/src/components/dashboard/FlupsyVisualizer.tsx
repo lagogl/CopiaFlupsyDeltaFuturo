@@ -457,6 +457,9 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
                   
                   // Ottieni i cestelli per questo specifico FLUPSY
                   const flupsyBaskets = baskets.filter(b => b.flupsyId === flupsyId);
+                  
+                  // Log per debug
+                  console.log(`FLUPSY ${flupsyId} (${flupsy.name}): trovati ${flupsyBaskets.length} cestelli`);
                   const flupsyDxRow = flupsyBaskets.filter(b => b.row === 'DX');
                   const flupsySxRow = flupsyBaskets.filter(b => b.row === 'SX');
                   const flupsyNoRowAssigned = flupsyBaskets.filter(b => b.row === null || b.row === undefined);
