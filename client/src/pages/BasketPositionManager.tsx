@@ -312,60 +312,78 @@ export default function BasketPositionManager() {
       </Card>
       
       {selectedFlupsyId && (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-          {/* Pannello Cestello Sorgente */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Cestello da spostare</CardTitle>
-              <CardDescription>
-                Seleziona il cestello che vuoi spostare in un'altra posizione
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="sourceRow">Fila</Label>
-                    <Select 
-                      value={selectedSourceRow} 
-                      onValueChange={setSelectedSourceRow}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleziona fila" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableRows.map(row => (
-                          <SelectItem key={row} value={row}>
-                            {row}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
-                  
-                  <div>
-                    <Label htmlFor="sourcePosition">Posizione</Label>
-                    <Select 
-                      value={selectedSourcePosition?.toString() || ''} 
-                      onValueChange={(value) => {
-                        const position = parseInt(value, 10);
-                        handleSourcePositionChange(selectedSourceRow, position);
-                      }}
-                      disabled={!selectedSourceRow}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleziona posizione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {selectedSourceRow && getOccupiedPositions(selectedSourceRow).map(pos => (
-                          <SelectItem key={pos} value={pos.toString()}>
-                            {pos} - Cestello #{getBasketNumberAtPosition(selectedSourceRow, pos)}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                  </div>
+        <>
+          {/* Mostra avviso se il FLUPSY ha cestelli ma nessuno con posizione definita */}
+          {baskets.length > 0 && !baskets.some(b => b.row && b.position) && (
+            <div className="mb-6 p-4 bg-yellow-50 border border-yellow-200 rounded-md text-yellow-800">
+              <div className="flex items-start">
+                <AlertCircle className="w-5 h-5 mr-2 mt-0.5" />
+                <div>
+                  <h3 className="font-semibold mb-1">Cestelli senza posizione definita</h3>
+                  <p className="text-sm">
+                    Questo FLUPSY ha {baskets.length} cestelli, ma nessuno di essi ha una posizione assegnata.
+                    Puoi assegnare le posizioni usando la sezione "Tutti i cestelli disponibili" qui sotto.
+                  </p>
                 </div>
+              </div>
+            </div>
+          )}
+          
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            {/* Pannello Cestello Sorgente */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Cestello da spostare</CardTitle>
+                <CardDescription>
+                  Seleziona il cestello che vuoi spostare in un'altra posizione
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="sourceRow">Fila</Label>
+                      <Select 
+                        value={selectedSourceRow} 
+                        onValueChange={setSelectedSourceRow}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona fila" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableRows.map(row => (
+                            <SelectItem key={row} value={row}>
+                              {row}
+                            </SelectItem>
+                          ))}
+                          <SelectItem value="Non assegnata">Non assegnata</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="sourcePosition">Posizione</Label>
+                      <Select 
+                        value={selectedSourcePosition?.toString() || ''} 
+                        onValueChange={(value) => {
+                          const position = parseInt(value, 10);
+                          handleSourcePositionChange(selectedSourceRow, position);
+                        }}
+                        disabled={!selectedSourceRow}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona posizione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selectedSourceRow && getOccupiedPositions(selectedSourceRow).map(pos => (
+                            <SelectItem key={pos} value={pos.toString()}>
+                              {pos} - Cestello #{getBasketNumberAtPosition(selectedSourceRow, pos)}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                  </div>
                 
                 {sourceBasket && (
                   <div className="border rounded p-4 bg-muted/30">
@@ -509,6 +527,76 @@ export default function BasketPositionManager() {
             )}
           </Button>
         </div>
+      )}
+      </>
+      )}
+      
+      {/* Sezione per visualizzare tutti i cestelli disponibili */}
+      {selectedFlupsyId && baskets.length > 0 && (
+        <Card className="mt-6">
+          <CardHeader>
+            <CardTitle>Tutti i cestelli disponibili</CardTitle>
+            <CardDescription>
+              Elenco di tutti i cestelli presenti in questo FLUPSY, compresi quelli senza posizione assegnata
+            </CardDescription>
+          </CardHeader>
+          <CardContent>
+            <div className="grid gap-4">
+              <div className="rounded-md border">
+                <table className="w-full">
+                  <thead>
+                    <tr className="border-b bg-muted/50">
+                      <th className="px-4 py-3 text-left text-sm font-medium">ID Cestello</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Numero</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Fila</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Posizione</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Stato</th>
+                      <th className="px-4 py-3 text-left text-sm font-medium">Azioni</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {getAllBaskets().map((basket) => (
+                      <tr key={basket.id} className="border-b">
+                        <td className="px-4 py-3 text-sm">{basket.id}</td>
+                        <td className="px-4 py-3 text-sm font-medium">#{basket.physicalNumber}</td>
+                        <td className="px-4 py-3 text-sm">
+                          {basket.row || <span className="text-muted-foreground italic">Non assegnata</span>}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          {basket.position || <span className="text-muted-foreground italic">Non assegnata</span>}
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                            basket.state === 'active' ? 'bg-green-100 text-green-800' : 
+                            basket.state === 'empty' ? 'bg-gray-100 text-gray-800' : 
+                            'bg-blue-100 text-blue-800'
+                          }`}>
+                            {basket.state === 'active' ? 'Attivo' : 
+                             basket.state === 'empty' ? 'Vuoto' : 
+                             basket.state}
+                          </span>
+                        </td>
+                        <td className="px-4 py-3 text-sm">
+                          <Button 
+                            variant="outline" 
+                            size="sm"
+                            onClick={() => {
+                              setSourceBasket(basket);
+                              setSelectedSourceRow(basket.row || '');
+                              setSelectedSourcePosition(basket.position || 0);
+                            }}
+                          >
+                            Seleziona
+                          </Button>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+          </CardContent>
+        </Card>
       )}
     </div>
   );
