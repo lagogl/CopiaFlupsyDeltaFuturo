@@ -950,7 +950,32 @@ export default function DraggableFlupsyVisualizer() {
                 gridTemplateColumns: `repeat(${positionsPerRow}, minmax(0, 1fr))` 
               }}>
                 {positions.map(position => {
-                  const basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
+                  // Cerchiamo i cestelli nella posizione
+                  let basket = flupsyBaskets.find(b => b.row === 'SX' && b.position === position);
+                  
+                  // Per tutti i FLUPSY, se non c'è cestello nella posizione,
+                  // vediamo se possiamo assegnare temporaneamente un cestello senza posizione
+                  if (!basket) {
+                    // Cerca tra i cestelli di questo FLUPSY quelli senza posizione assegnata
+                    const unassignedBaskets = flupsyBaskets.filter(b => (!b.row || !b.position) && !b.tempAssigned);
+                    if (unassignedBaskets.length > 0) {
+                      // Prendi il primo cestello disponibile
+                      const unassignedBasket = unassignedBaskets[0];
+                      console.log(`Assegnando temporaneamente cestello #${unassignedBasket.physicalNumber} alla posizione SX-${position} in FLUPSY ${flupsy.name}`);
+                      // Lo marchiamo come assegnato temporaneamente
+                      unassignedBasket.tempAssigned = true;
+                      // Creiamo una copia del cestello con le proprietà temporanee per la visualizzazione
+                      basket = {
+                        ...unassignedBasket,
+                        row: 'SX',
+                        position: position,
+                        isTemporaryPosition: true,
+                        // Aggiungiamo una classe CSS speciale per evidenziare che è in una posizione temporanea
+                        _temporaryPositionClass: 'bg-yellow-50 border-yellow-300 border-dashed'
+                      };
+                    }
+                  }
+                  
                   return (
                     <div key={`SX-${position}-${flupsyId}`} className="contents">
                       {renderBasketBox(basket, position, 'SX', flupsyId)}
