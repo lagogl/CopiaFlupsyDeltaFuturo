@@ -212,6 +212,16 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
               {basket && (
                 <>
                   <div className="font-bold">#{basket.physicalNumber}</div>
+                  {basket.currentCycleId && (
+                    <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
+                      Ciclo {basket.currentCycleId}
+                    </div>
+                  )}
+                  {latestOperation && latestOperation.animalsPerKg && (
+                    <div className="text-[10px] bg-gray-100 rounded px-1 mt-1">
+                      {latestOperation.animalsPerKg.toLocaleString('it-IT')} an/kg
+                    </div>
+                  )}
                   {latestOperation && (
                     <div className="text-[10px] text-gray-500 mt-1 truncate">
                       {format(new Date(latestOperation.date), 'dd/MM/yy')}
