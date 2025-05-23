@@ -23,6 +23,8 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
     queryKey: ['/api/flupsys', { includeAll: true }],
   });
   
+  // Non serve fare query qui dato che è già presente più avanti
+  
   // Filtra i FLUPSY in base agli ID selezionati
   const flupsys = useMemo(() => {
     if (!allFlupsys) return [];
@@ -191,9 +193,18 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
     }
   };
 
-  // Handle basket click to navigate to basket detail
+  // Handle basket click to navigate to cycle detail for that basket
   const handleBasketClick = (basket: any) => {
-    navigate(`/baskets/${basket.id}`);
+    // Trova il ciclo associato a questo cestello
+    const cycle = cycles?.find((c: any) => c.basketId === basket.id);
+    
+    if (cycle) {
+      // Se esiste un ciclo, naviga alla sua pagina di dettaglio
+      navigate(`/cycles/${cycle.id}`);
+    } else {
+      // Altrimenti, vai alla pagina del cestello
+      navigate(`/baskets/${basket.id}`);
+    }
   };
 
   // Render a basket position within a FLUPSY

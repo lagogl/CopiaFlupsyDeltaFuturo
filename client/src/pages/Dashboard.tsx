@@ -400,11 +400,6 @@ export default function Dashboard() {
 
       {/* I riquadri "Operazioni recenti" e "Andamento crescita" sono stati rimossi per semplificare l'interfaccia */}
 
-      {/* Target Size Predictions */}
-      <div className="mb-8">
-        <TargetSizePredictions />
-      </div>
-      
       {/* FLUPSY Visualizer */}
       <div className="mb-8">
         <TooltipTrigger 
@@ -422,6 +417,11 @@ export default function Dashboard() {
             />
           </div>
         </TooltipTrigger>
+      </div>
+      
+      {/* Target Size Predictions (Ceste in arrivo) */}
+      <div className="mb-8">
+        <TargetSizePredictions />
       </div>
       
       {/* Il componente "Cicli Produttivi Attivi" è stato rimosso per semplificare l'interfaccia */}
