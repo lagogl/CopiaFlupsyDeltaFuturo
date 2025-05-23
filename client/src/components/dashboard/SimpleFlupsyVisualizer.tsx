@@ -367,14 +367,17 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     
     const flupsyBaskets = [...flupsyDxRow, ...flupsySxRow];
     
-    // Usa il campo max_positions dalla tabella flupsys
-    const maxPositions = flupsy.max_positions || Math.max(
+    // Estrai il valore max_positions dal database
+    // Poiché le proprietà dei dati dall'API potrebbero variare il formato, controlliamo tutte le possibili varianti
+    const maxPositionsFromDB = flupsy.max_positions || flupsy.maxPositions || flupsy.maxPosition || flupsy["max-positions"];
+    
+    // Se non riusciamo a trovare il valore dal database, usiamo un fallback
+    const maxPositions = maxPositionsFromDB || Math.max(
       ...flupsyBaskets.map((b: any) => b.position || 0),
       10
     );
     
-    // Log per debug - visualizza l'intero oggetto flupsy per analizzare i campi disponibili
-    console.log(`FLUPSY ${flupsy.id} - ${flupsy.name}:`, flupsy);
+    console.log(`FLUPSY ${flupsy.id} - ${flupsy.name}: max_positions = ${maxPositionsFromDB}`, flupsy);
     
     // Il numero di posizioni deve essere diviso equamente tra le due file (metà in fila DX, metà in fila SX)
     const positionsPerRow = Math.ceil(maxPositions / 2);
