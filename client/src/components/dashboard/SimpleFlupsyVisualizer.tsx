@@ -42,18 +42,21 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
   }, [allBaskets, selectedFlupsyIds]);
 
   // Fetch operations for tooltip data
-  const { data: operations } = useQuery({
-    queryKey: ['/api/operations', { includeAll: true }],
+  const { data: operations, isLoading: isLoadingOperations } = useQuery({
+    queryKey: ['/api/operations-optimized', { includeAll: true }],
+    staleTime: 30000, // 30 seconds
   });
 
   // Fetch cycles for tooltip data
-  const { data: cycles } = useQuery({
+  const { data: cycles, isLoading: isLoadingCycles } = useQuery({
     queryKey: ['/api/cycles', { includeAll: true }],
+    staleTime: 30000, // 30 seconds
   });
 
   // Fetch lots for tooltip data
-  const { data: lots } = useQuery({
+  const { data: lots, isLoading: isLoadingLots } = useQuery({
     queryKey: ['/api/lots', { includeAll: true }],
+    staleTime: 30000, // 30 seconds
   });
 
   // Debug logging
@@ -71,15 +74,29 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
 
   // Helper function to get the latest operation for a basket
   const getLatestOperation = (basketId: number) => {
-    if (!operations) return null;
+    // Per la versione ottimizzata, operations è un oggetto con una proprietà 'operations'
+    if (!operations || !operations.operations || !Array.isArray(operations.operations)) {
+      console.log('Operations not available or not properly formatted', operations);
+      return null;
+    }
 
-    const basketOperations = operations.filter((op: any) => op.basketId === basketId);
+    const operationsArray = operations.operations;
+    
+    // Add debugging output
+    console.log(`Looking for operations for basket ${basketId} among ${operationsArray.length} operations`);
+    
+    const basketOperations = operationsArray.filter((op: any) => op.basketId === basketId);
+    console.log(`Found ${basketOperations.length} operations for basket ${basketId}`);
+    
     if (basketOperations.length === 0) return null;
 
     // Sort by date descending and take the first one
-    return basketOperations.sort((a: any, b: any) => 
+    const latestOp = basketOperations.sort((a: any, b: any) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     )[0];
+    
+    console.log(`Latest operation for basket ${basketId}:`, latestOp);
+    return latestOp;
   };
 
   // Helper function to determine basket color based on size
@@ -104,6 +121,9 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
       sizeCode = size?.code || '';
     }
 
+    // Debug log to check what size code we have
+    console.log(`Basket ${basket.id} (${basket.physicalNumber}): Size code: ${sizeCode}, animalsPerKg: ${latestOperation.animalsPerKg}`);
+
     // Determine color based on size code
     if (sizeCode.startsWith('TP-')) {
       const numStr = sizeCode.substring(3);
@@ -124,6 +144,29 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
       } else if (num >= 500) {
         return 'bg-sky-50 border-sky-400 border-2';
       } else {
+        return 'bg-indigo-50 border-indigo-400 border-2';
+      }
+    }
+
+    // Use animalsPerKg directly when no size code is available
+    if (latestOperation.animalsPerKg) {
+      const apkg = latestOperation.animalsPerKg;
+      
+      if (apkg >= 6000) {
+        return 'bg-red-50 border-red-600 border-4';
+      } else if (apkg >= 4000) {
+        return 'bg-red-50 border-red-500 border-3';
+      } else if (apkg >= 3000) {
+        return 'bg-orange-50 border-orange-500 border-2';
+      } else if (apkg >= 2000) {
+        return 'bg-yellow-50 border-yellow-500 border-2';
+      } else if (apkg >= 1500) {
+        return 'bg-green-50 border-green-600 border-2';
+      } else if (apkg >= 1000) {
+        return 'bg-sky-50 border-sky-500 border-2';
+      } else if (apkg >= 500) {
+        return 'bg-sky-50 border-sky-400 border-2';
+      } else if (apkg > 0) {
         return 'bg-indigo-50 border-indigo-400 border-2';
       }
     }
@@ -309,7 +352,7 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     );
   };
 
-  if (isLoadingFlupsys || isLoadingBaskets) {
+  if (isLoadingFlupsys || isLoadingBaskets || isLoadingOperations || isLoadingCycles || isLoadingLots) {
     return (
       <Card>
         <CardHeader>
