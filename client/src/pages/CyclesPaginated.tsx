@@ -709,6 +709,14 @@ export default function CyclesPaginated() {
                 <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   <button 
                     className="flex items-center gap-1"
+                    onClick={() => handleSort('lot')}
+                  >
+                    Lotto {getSortIcon('lot')}
+                  </button>
+                </th>
+                <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
+                  <button 
+                    className="flex items-center gap-1"
                     onClick={() => handleSort('startDate')}
                   >
                     Data Inizio {getSortIcon('startDate')}
@@ -772,6 +780,10 @@ export default function CyclesPaginated() {
                     .filter(op => op.type === 'peso')
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
                   
+                  // Trova il lotto associato alle operazioni
+                  const lotId = cycleOperations.find(op => op.lotId)?.lotId;
+                  const lot = lotId ? lots.find(l => l.id === lotId) : null;
+                  
                   return (
                     <tr 
                       key={cycle.id}
@@ -783,6 +795,9 @@ export default function CyclesPaginated() {
                       </td>
                       <td className="py-2 px-3 align-middle">
                         {flupsy?.name?.startsWith('BINS') ? flupsy.name : 'N/D'}
+                      </td>
+                      <td className="py-2 px-3 align-middle">
+                        {lot ? lot.supplier : 'N/D'}
                       </td>
                       <td className="py-2 px-3 align-middle">
                         {format(new Date(cycle.startDate), 'dd/MM/yyyy', { locale: it })}
@@ -842,6 +857,11 @@ export default function CyclesPaginated() {
                         ) : (
                           '-'
                         )}
+                      </td>
+                      <td className="py-2 px-3 align-middle text-right">
+                        {lastWeightOp?.animalCount ? 
+                          new Intl.NumberFormat('it-IT').format(lastWeightOp.animalCount) 
+                          : '-'}
                       </td>
                       <td className="py-2 px-3 align-middle text-center">
                         <Button 
