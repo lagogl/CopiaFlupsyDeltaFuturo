@@ -562,6 +562,12 @@ export default function CycleDetail() {
     enabled: !!cycleId
   });
   
+  // Fetch flupsys data to get the flupsy name
+  const { data: flupsys } = useQuery({
+    queryKey: ['/api/flupsys'],
+    enabled: !!cycle
+  });
+  
   // Function to handle operation deletion
   const handleDeleteOperation = async (operationId: number) => {
     try {
@@ -687,7 +693,12 @@ export default function CycleDetail() {
             <div className="text-sm text-muted-foreground flex items-center">
               <span>Cesta #{cycle.basket?.physicalNumber}</span>
               <ChevronRight className="h-3 w-3 mx-1" />
-              <span>Flupsy #{cycle.basket?.flupsyId}</span>
+              <span>
+                Flupsy #{cycle.basket?.flupsyId}
+                {flupsys && cycle.basket?.flupsyId && (
+                  <> - {flupsys.find((f: any) => f.id === cycle.basket?.flupsyId)?.name || 'Sconosciuto'}</>
+                )}
+              </span>
               <ChevronRight className="h-3 w-3 mx-1" />
               <span>{cycle.cycleCode || `ID ${cycle.id}`}</span>
             </div>
