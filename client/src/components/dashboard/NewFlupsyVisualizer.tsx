@@ -214,9 +214,9 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
                       {latestOperation.totalWeight?.toFixed(3).replace('.', ',')}kg
                     </div>
                     
-                    <div className="text-[11px] text-gray-600">Ind:</div>
+                    <div className="text-[11px] text-gray-600">Nr.animali:</div>
                     <div className="text-[11px] text-right">
-                      {latestOperation.animalCount?.toLocaleString('it-IT')} animali
+                      {latestOperation.animalCount?.toLocaleString('it-IT')}
                     </div>
                     
                     <div className="text-[11px] text-gray-600">Op. per ID/PS:</div>
