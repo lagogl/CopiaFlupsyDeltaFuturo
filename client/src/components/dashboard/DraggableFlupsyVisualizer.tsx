@@ -290,8 +290,15 @@ export default function DraggableFlupsyVisualizer() {
     staleTime: 1000, // Considera i dati obsoleti dopo 1 secondo per avere dati più freschi
   });
 
+  // Aggiunta query specifica per i cicli con includeAll=true
+  const { data: cycles, isLoading: isLoadingCycles } = useQuery({
+    queryKey: ['/api/cycles?includeAll=true'],
+    queryFn: getQueryFn({ on401: "throw" }),
+    staleTime: 1000, // Considera i dati obsoleti dopo 1 secondo
+  });
+
   const { data: operations, isLoading: isLoadingOperations } = useQuery({
-    queryKey: ['/api/operations'],
+    queryKey: ['/api/operations?includeAll=true&pageSize=1000'],
     queryFn: getQueryFn({ on401: "throw" })
   });
 
@@ -705,12 +712,13 @@ export default function DraggableFlupsyVisualizer() {
         : [];
       latestOperation = basketOperations.length > 0 ? basketOperations[0] : null;
       
-      // Get cycle data
+      // Get cycle data - utilizziamo direttamente i cycles dalla query dedicata
       if (basket.currentCycleId) {
-        const cycles = queryClient.getQueryData(['/api/cycles?includeAll=true']);
+        // Utilizziamo direttamente i cycles dalla query anziché queryClient.getQueryData
         cycle = cycles && Array.isArray(cycles) ? 
           cycles.find((c: any) => c.id === basket.currentCycleId) : 
           null;
+        
         if (cycle) {
           startDate = new Date(cycle.startDate);
           
@@ -728,6 +736,11 @@ export default function DraggableFlupsyVisualizer() {
                 size = cycleSize.code;
               }
             }
+          }
+
+          // Anche senza taglia e senza conta degli animali, mostriamo il numero del ciclo
+          if (!size) {
+            size = `Ciclo ${cycle.id}`;
           }
         }
       }
@@ -786,10 +799,18 @@ export default function DraggableFlupsyVisualizer() {
             
             {/* Corpo con dati principali */}
             <div className="py-1 flex flex-col items-center">
-              {/* Taglia */}
-              {size && (
+              {/* Mostra sempre almeno il ciclo */}
+              {basket.currentCycleId && (
                 <div className="font-medium">
-                  <span className="text-gray-700">Taglia:</span> {size}
+                  {size ? (
+                    <>
+                      <span className="text-gray-700">Taglia:</span> {size}
+                    </>
+                  ) : (
+                    <>
+                      <span className="text-gray-700">Ciclo:</span> {basket.currentCycleId}
+                    </>
+                  )}
                 </div>
               )}
               
