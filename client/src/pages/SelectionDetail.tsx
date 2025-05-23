@@ -1661,83 +1661,106 @@ export default function VagliaturaDetailPage() {
                       // 1. Prima le ceste origine della stessa vagliatura
                       // 2. Poi le altre ceste disponibili, ordinate per FLUPSY
                       
-                      // Funzione per ottenere l'array di cestelli ordinato
+                      // Funzione più efficiente per ottenere l'array di cestelli ordinato
                       (() => {
-                        // Verifica se ci sono cestelli di origine
-                        const hasSourceBaskets = sourceBaskets && sourceBaskets.length > 0;
-                        
-                        // Ottieni gli ID dei cestelli di origine (con controllo di sicurezza)
-                        const sourceBasketIds = hasSourceBaskets && Array.isArray(sourceBaskets)
-                          ? sourceBaskets.map(sb => sb.basketId) 
-                          : [];
-                        
-                        // Ottieni gli ID dei FLUPSY delle ceste di origine (con controllo di sicurezza)
-                        const sourceFlupsyIds = hasSourceBaskets && Array.isArray(sourceBaskets)
-                          ? [...new Set(sourceBaskets
-                              .filter(sb => sb && sb.flupsyId)
-                              .map(sb => sb.flupsyId))]
-                          : [];
-                        
-                        // Filtro più inclusivo per le ceste disponibili - con controlli di sicurezza aggiuntivi
-                        // Includiamo sia le ceste con state=available, sia le ceste che sono origine
-                        const availableBasketsList = Array.isArray(availableBaskets) ? availableBaskets.filter(b => {
-                          if (!b || typeof b !== 'object') return false;
-                          
-                          // Se è una cesta origine la includiamo sempre
-                          const isSourceBasket = Array.isArray(sourceBasketIds) && sourceBasketIds.includes(b.basketId);
-                          
-                          // Altrimenti verifichiamo se è disponibile nel senso tradizionale
-                          const isStandardAvailable = (b.state === "available" && !b.cycleId);
-                          
-                          console.log(`Cesta ${b.physicalNumber}: state=${b.state}, cycleId=${b.cycleId}, basketId=${b.basketId}, isSourceBasket=${isSourceBasket}, isStandardAvailable=${isStandardAvailable}`);
-                          
-                          // Includiamo la cesta se è origine oppure è disponibile
-                          return isSourceBasket || isStandardAvailable;
-                        }) : [];
-                        
-                        // Otteniamo le ceste origine dalle ceste disponibili (con controllo di sicurezza)
-                        const sourceBasketList = availableBasketsList.filter(b => 
-                          Array.isArray(sourceBasketIds) && sourceBasketIds.includes(b.basketId)
-                        );
-                        
-                        // Ordiniamo le ceste origine per numero fisico
-                        sourceBasketList.sort((a, b) => a.physicalNumber - b.physicalNumber);
-                        
-                        // Otteniamo le altre ceste disponibili escludendo quelle origine (con controllo di sicurezza)
-                        const otherAvailableBaskets = availableBasketsList.filter(b => 
-                          !Array.isArray(sourceBasketIds) || !sourceBasketIds.includes(b.basketId)
-                        );
-                        
-                        // Ordina le altre ceste disponibili prima per FLUPSY (dando priorità ai FLUPSY origine)
-                        // e poi per numero fisico
-                        otherAvailableBaskets.sort((a, b) => {
-                          // Priorità 1: FLUPSY che sono nelle ceste origine
-                          const aIsInSourceFlupsy = a.flupsyId && sourceFlupsyIds.includes(a.flupsyId);
-                          const bIsInSourceFlupsy = b.flupsyId && sourceFlupsyIds.includes(b.flupsyId);
-                          
-                          if (aIsInSourceFlupsy && !bIsInSourceFlupsy) return -1;
-                          if (!aIsInSourceFlupsy && bIsInSourceFlupsy) return 1;
-                          
-                          // Priorità 2: ID FLUPSY (se entrambi hanno o non hanno un FLUPSY origine)
-                          if (a.flupsyId !== b.flupsyId) {
-                            return (a.flupsyId || 9999) - (b.flupsyId || 9999);
+                        try {
+                          // Verifiche iniziali per evitare accessi a proprietà di undefined
+                          if (!Array.isArray(availableBaskets)) {
+                            console.log("availableBaskets non è un array");
+                            return [];
                           }
                           
-                          // Priorità 3: Numero fisico della cesta
-                          return a.physicalNumber - b.physicalNumber;
-                        });
-                        
-                        // Preparazione array finale con i cestelli raggruppati e etichettati
-                        return sourceBasketList.length > 0 || otherAvailableBaskets.length > 0 ? [
-                          ...(sourceBasketList.length > 0 ? [
-                            { id: 'source-group-label', isLabel: true, label: 'Cestelli Origine della Vagliatura' },
-                            ...sourceBasketList
-                          ] : []),
-                          ...(otherAvailableBaskets.length > 0 ? [
-                            { id: 'other-group-label', isLabel: true, label: 'Altri Cestelli Disponibili' },
-                            ...otherAvailableBaskets
-                          ] : [])
-                        ] : [];
+                          // Arrays sicuri (mai undefined)
+                          const srcBaskets = Array.isArray(sourceBaskets) ? sourceBaskets : [];
+                          const destBaskets = Array.isArray(destinationBaskets) ? destinationBaskets : [];
+                          
+                          // Set per ricerche rapide (molto più veloce degli array)
+                          const sourceBasketIdSet = new Set(srcBaskets
+                            .filter(sb => sb && sb.basketId !== undefined)
+                            .map(sb => sb.basketId));
+                          
+                          const destBasketIdSet = new Set(destBaskets
+                            .filter(db => db && db.basketId !== undefined)
+                            .map(db => db.basketId));
+                            
+                          const pendingDestBasketIdSet = new Set(pendingDestinationBaskets
+                            .filter(pdb => pdb && pdb.basketId)
+                            .map(pdb => pdb.basketId));
+                          
+                          // Filtra ceste già utilizzate
+                          const usedBasketIdSet = new Set([...destBasketIdSet, ...pendingDestBasketIdSet]);
+                          
+                          // Set dei FLUPSY delle ceste origine per priorità
+                          const sourceFlupsyIdSet = new Set(srcBaskets
+                            .filter(sb => sb && sb.flupsyId)
+                            .map(sb => sb.flupsyId));
+                          
+                          // Filtra subito le ceste disponibili e origine non ancora utilizzate
+                          // (combina i due passaggi per essere più efficiente)
+                          const sourceBasketList = [];
+                          const otherAvailableBaskets = [];
+                          
+                          for (const basket of availableBaskets) {
+                            // Skip se basket è undefined o è già usato come destinazione
+                            if (!basket || usedBasketIdSet.has(basket.basketId)) continue;
+                            
+                            const isSourceBasket = sourceBasketIdSet.has(basket.basketId);
+                            const isStandardAvailable = basket.state === "available" && !basket.cycleId;
+                            
+                            // Se non è né origine né disponibile, skip
+                            if (!isSourceBasket && !isStandardAvailable) continue;
+                            
+                            // Aggiungi al gruppo corrispondente
+                            if (isSourceBasket) {
+                              sourceBasketList.push(basket);
+                            } else {
+                              otherAvailableBaskets.push(basket);
+                            }
+                          }
+                          
+                          // Ordina le ceste selezionate (solo quelle che useremo)
+                          if (sourceBasketList.length > 0) {
+                            sourceBasketList.sort((a, b) => (a.physicalNumber || 0) - (b.physicalNumber || 0));
+                          }
+                          
+                          if (otherAvailableBaskets.length > 0) {
+                            otherAvailableBaskets.sort((a, b) => {
+                              // Usa il Set per verifiche rapide
+                              const aInSourceFlupsy = a.flupsyId && sourceFlupsyIdSet.has(a.flupsyId);
+                              const bInSourceFlupsy = b.flupsyId && sourceFlupsyIdSet.has(b.flupsyId);
+                              
+                              // FLUPSY origine prima
+                              if (aInSourceFlupsy && !bInSourceFlupsy) return -1;
+                              if (!aInSourceFlupsy && bInSourceFlupsy) return 1;
+                              
+                              // Stesso FLUPSY per raggruppare
+                              if (a.flupsyId !== b.flupsyId) {
+                                return (a.flupsyId || 9999) - (b.flupsyId || 9999);
+                              }
+                              
+                              // Ordine per numero fisico
+                              return (a.physicalNumber || 0) - (b.physicalNumber || 0);
+                            });
+                          }
+                          
+                          // Crea array finale con etichette e cestelli
+                          const result = [];
+                          
+                          if (sourceBasketList.length > 0) {
+                            result.push({ id: 'source-group-label', isLabel: true, label: 'Cestelli Origine della Vagliatura' });
+                            result.push(...sourceBasketList);
+                          }
+                          
+                          if (otherAvailableBaskets.length > 0) {
+                            result.push({ id: 'other-group-label', isLabel: true, label: 'Altri Cestelli Disponibili' });
+                            result.push(...otherAvailableBaskets);
+                          }
+                          
+                          return result;
+                        } catch (error) {
+                          console.error("Errore nella preparazione cestelli:", error);
+                          return []; // In caso di errore, restituisci array vuoto
+                        }
                       })()
                         // Filtra le ceste che sono già state aggiunte come destinazione
                         .filter(basket => {

@@ -1233,6 +1233,18 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           // Usa il primo lotto disponibile (se presente) per l'operazione di vendita
           const primaryLotId = lotReferences.length > 0 ? lotReferences[0] : null;
           
+          // IMPORTANTE: Assicuriamoci che il ciclo sia stato effettivamente creato e salvato nel DB
+          // prima di usarlo in altre operazioni. Questo risolve l'errore FK constraint.
+          const cycleRecord = await tx.select()
+            .from(cycles)
+            .where(eq(cycles.id, cycle.id))
+            .limit(1);
+            
+          if (!cycleRecord || cycleRecord.length === 0) {
+            console.error(`Errore: ciclo ${cycle.id} non trovato nel database dopo la creazione`);
+            throw new Error(`Impossibile trovare il ciclo appena creato (ID: ${cycle.id})`);
+          }
+          
           // Crea operazione di vendita con il lotto associato
           const [saleOperation] = await tx.insert(operations).values({
             date: selection[0].date,
