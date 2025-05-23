@@ -794,10 +794,14 @@ export default function DraggableFlupsyVisualizer() {
           <>
             {/* Header con numero fisico cesta e taglia */}
             <div className="font-semibold w-full border-b pb-1 text-center">
-              <span className="text-base">#{basket.physicalNumber}</span>
-              {size && (
-                <span className="text-xs ml-1 text-gray-700">({size})</span>
-              )}
+              <div className="flex justify-center items-center">
+                <span className="text-base">#{basket.physicalNumber}</span>
+                {size && (
+                  <span className="text-xs ml-1 text-gray-600 font-normal">
+                    ({size})
+                  </span>
+                )}
+              </div>
             </div>
             
             {/* Corpo con dati principali */}
