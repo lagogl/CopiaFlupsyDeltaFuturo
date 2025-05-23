@@ -854,33 +854,72 @@ export default function DraggableFlupsyVisualizer() {
     const basketsWithPosition = flupsyBaskets.filter(b => b.row && b.position);
     let basketsWithoutPosition = flupsyBaskets.filter(b => !b.row || !b.position);
     
-    // Caso speciale per il Flupsy 2 piccolo 10 ceste (ID 570)
-    // Verifica anche se ci sono cestelli che dovrebbero essere visualizzati ma non hanno flupsyId corretto
+    // Verifica se ci sono cestelli che dovrebbero essere visualizzati ma non hanno posizione o flupsyId corretto
+    // Questa logica ora si applica a tutti i FLUPSY
+    
+    // Estrai il nome del FLUPSY in minuscolo per la ricerca
+    const flupsyNameLower = flupsy.name.toLowerCase();
+    
+    // Prima cerchiamo cestelli che hanno solo un riferimento testuale a questo FLUPSY nel nome
+    const allCestelli = Array.isArray(baskets) ? baskets : [];
+    
+    // Cerca cestelli dal ciclo generale che potrebbero appartenere a questo FLUPSY
+    // 1. Cerca per flupsyName (se contiene il nome di questo FLUPSY)
+    const cestelliByName = allCestelli.filter(b => 
+      b.state === 'active' && 
+      b.flupsyName && 
+      b.flupsyName.toLowerCase().includes(flupsyNameLower) &&
+      !flupsyBaskets.some(fb => fb.id === b.id)
+    );
+    
+    // 2. Cerca per lotto con lo stesso nome del FLUPSY, se il cestello ha un lotto associato
+    const cestelliByLot = allCestelli.filter(b => 
+      b.state === 'active' && 
+      b.currentCycleId && 
+      b.cycle && b.cycle.lot && 
+      b.cycle.lot.flupsyName && 
+      b.cycle.lot.flupsyName.toLowerCase().includes(flupsyNameLower) &&
+      !flupsyBaskets.some(fb => fb.id === b.id) &&
+      !cestelliByName.some(cb => cb.id === b.id)
+    );
+    
+    // 3. Se siamo nel Flupsy 2 piccolo 10 ceste, cerchiamo anche nei cicli
+    const cestelliFromCycles = [];
     if (flupsy.id === 570) {
-      // Cerca tutti i cestelli attivi che hanno il nome del FLUPSY nei dati anche se non hanno flupsyId
-      const allCestelli = Array.isArray(baskets) ? baskets : [];
-      const altriCestelliAttivi = allCestelli.filter(b => 
-        b.state === 'active' && 
-        b.flupsyName && 
-        b.flupsyName.toLowerCase().includes("piccolo 10 ceste") &&
-        !flupsyBaskets.some(fb => fb.id === b.id)
-      );
+      // Ottieni i cicli dei cestelli che già sappiamo appartenere a questo FLUPSY
+      const knownCycleIds = flupsyBaskets.map(b => b.currentCycleId).filter(Boolean);
       
-      console.log(`Flupsy 2 piccolo 10 ceste: aggiunti ${altriCestelliAttivi.length} cestelli attivi dalla ricerca per nome`);
+      // Cerca tutti i cestelli che hanno un ciclo con codice simile
+      // ma non sono ancora inclusi nel FLUPSY
+      allCestelli.forEach(b => {
+        if (b.state === 'active' && 
+            b.cycleCode && 
+            b.cycleCode.includes('-570-') && 
+            !flupsyBaskets.some(fb => fb.id === b.id) &&
+            !cestelliByName.some(cb => cb.id === b.id) &&
+            !cestelliByLot.some(cb => cb.id === b.id)) {
+          cestelliFromCycles.push(b);
+        }
+      });
+    }
+    
+    // Combiniamo tutti i cestelli trovati
+    const altriCestelliAttivi = [...cestelliByName, ...cestelliByLot, ...cestelliFromCycles];
+    
+    console.log(`${flupsy.name}: aggiunti ${altriCestelliAttivi.length} cestelli attivi da ricerca avanzata`);
+    
+    // Aggiungiamo questi cestelli all'elenco
+    if (altriCestelliAttivi.length > 0) {
+      // Assegna temporaneamente il flupsyId corretto per la visualizzazione
+      altriCestelliAttivi.forEach(b => {
+        b.flupsyId = flupsy.id;
+        b.needsVisualPosition = true;
+      });
       
-      // Aggiungiamo questi cestelli all'elenco
-      if (altriCestelliAttivi.length > 0) {
-        // Assegna temporaneamente il flupsyId corretto per la visualizzazione
-        altriCestelliAttivi.forEach(b => {
-          b.flupsyId = flupsy.id;
-          b.needsVisualPosition = true;
-        });
-        
-        // Aggiungiamo questi cestelli all'elenco di quelli senza posizione
-        basketsWithoutPosition = [...basketsWithoutPosition, ...altriCestelliAttivi];
-        // Aggiorniamo anche l'elenco completo
-        flupsyBaskets = [...flupsyBaskets, ...altriCestelliAttivi];
-      }
+      // Aggiungiamo questi cestelli all'elenco di quelli senza posizione
+      basketsWithoutPosition = [...basketsWithoutPosition, ...altriCestelliAttivi];
+      // Aggiorniamo anche l'elenco completo
+      flupsyBaskets = [...flupsyBaskets, ...altriCestelliAttivi];
     }
     
     // Caso speciale per l'assegnazione temporanea delle posizioni
