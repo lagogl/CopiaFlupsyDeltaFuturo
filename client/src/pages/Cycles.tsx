@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { getSizeColor } from '@/lib/sizeUtils';
-import { Eye, Search, Filter, InfoIcon, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
+import { Eye, Search, Filter, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
@@ -16,7 +16,6 @@ import {
   PopoverTrigger 
 } from '@/components/ui/popover';
 import { Calendar } from '@/components/ui/calendar';
-import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
 import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 
@@ -158,6 +157,11 @@ export default function Cycles() {
       }
     }
   }, [flupsys, dashboardFilters, flupsyFilter]);
+  
+  // Torna alla prima pagina quando i filtri cambiano
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchTerm, statusFilter, flupsyFilter, tagFilter, lotFilter, dateRangeFilter]);
 
   // Filtra i cicli in base ai criteri
   const filteredCycles = useMemo(() => {
@@ -443,60 +447,7 @@ export default function Cycles() {
     });
   };
   
-  // Filter cycles
-  const filteredCycles = cycles.filter((cycle: Cycle) => {
-    // Filter by search term
-    const matchesSearch = searchTerm === '' || 
-      `${cycle.id}`.includes(searchTerm) || 
-      `${cycle.basketId}`.includes(searchTerm);
-    
-    // Filter by status
-    const matchesStatus = statusFilter === 'all' || 
-      (statusFilter === 'active' && cycle.state === 'active') ||
-      (statusFilter === 'closed' && cycle.state === 'closed');
-    
-    // Filter by flupsy
-    const matchesFlupsy = flupsyFilter === null || (() => {
-      const basket = baskets.find(b => b.id === cycle.basketId);
-      return basket && basket.flupsyId === flupsyFilter;
-    })();
-    
-    // Filter by tag
-    const matchesTag = tagFilter === null || 
-      (cycle.currentSize && cycle.currentSize.code === tagFilter);
-    
-    // Filter by lot
-    const matchesLot = lotFilter === null || (() => {
-      const primaAttivazione = operations.find(
-        op => op.cycleId === cycle.id && op.type === 'prima-attivazione'
-      );
-      return primaAttivazione && primaAttivazione.lotId === lotFilter;
-    })();
-    
-    // Filter by date range
-    const matchesDateRange = (() => {
-      if (!dateRangeFilter.start && !dateRangeFilter.end) return true;
-      
-      const cycleStartDate = new Date(cycle.startDate);
-      
-      if (dateRangeFilter.start && dateRangeFilter.end) {
-        return cycleStartDate >= dateRangeFilter.start && cycleStartDate <= dateRangeFilter.end;
-      } else if (dateRangeFilter.start) {
-        return cycleStartDate >= dateRangeFilter.start;
-      } else if (dateRangeFilter.end) {
-        return cycleStartDate <= dateRangeFilter.end;
-      }
-      
-      return true;
-    })();
-    
-    return matchesSearch && matchesStatus && matchesFlupsy && matchesTag && matchesLot && matchesDateRange;
-  });
-  
-  // Apply sorting
-  const sortedFilteredCycles = useMemo(() => 
-    sortCycles(filteredCycles, sortConfig), 
-    [filteredCycles, sortConfig]);
+  // Queste funzioni sono già definite sopra tramite useMemo
 
   return (
     <div>
