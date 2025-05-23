@@ -3,7 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { DndProvider, useDrag, useDrop } from 'react-dnd';
 import { HTML5Backend } from 'react-dnd-html5-backend';
 import { getQueryFn, apiRequest } from "@/lib/queryClient";
-import { getBasketBorderClass, getBasketColorBySize, formatNumberWithCommas } from "@/lib/utils";
+import { getBasketBorderClass, getBasketColorBySize, formatNumberWithCommas, findSizeByAnimalsPerKg } from "@/lib/utils";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -293,6 +293,11 @@ export default function DraggableFlupsyVisualizer() {
   // Aggiunta query specifica per i cicli con includeAll=true
   const { data: cycles, isLoading: isLoadingCycles } = useQuery({
     queryKey: ['/api/cycles?includeAll=true'],
+  });
+  
+  // Aggiunta query per recuperare le taglie
+  const { data: sizes, isLoading: isLoadingSizes } = useQuery({
+    queryKey: ['/api/sizes'],
     queryFn: getQueryFn({ on401: "throw" }),
     staleTime: 1000, // Considera i dati obsoleti dopo 1 secondo
   });
@@ -747,15 +752,32 @@ export default function DraggableFlupsyVisualizer() {
       
       // Get size, average weight and animal count from latest operation
       if (latestOperation) {
-        // L'operazione ha la precedenza sui dati del ciclo
-        size = latestOperation.size?.code || size;
+        // Recuperiamo gli animali per kg
+        const animalsPerKgValue = latestOperation.animalsPerKg ? parseFloat(latestOperation.animalsPerKg) : null;
+        
+        // Recuperiamo tutte le taglie dal queryClient
+        const sizes = queryClient.getQueryData(['/api/sizes']);
+        
+        // Se abbiamo animalsPerKg e le taglie, troviamo la taglia corretta usando la funzione dedicata
+        if (animalsPerKgValue && sizes && Array.isArray(sizes) && sizes.length > 0) {
+          const matchingSize = findSizeByAnimalsPerKg(animalsPerKgValue, sizes);
+          if (matchingSize) {
+            // Prendiamo il campo name dalla taglia trovata, che rappresenta la taglia come 'Ciclo XXX'
+            size = matchingSize.name;
+          }
+        } else {
+          // Fallback: usiamo la taglia dell'operazione se disponibile
+          size = latestOperation.size?.code || size;
+        }
+        
+        // Gestiamo gli altri dati come prima
         animalCount = latestOperation.animalCount || animalCount;
+        
         // Utilizziamo il peso medio direttamente dal campo averageWeight se disponibile
         averageWeight = latestOperation.averageWeight ? parseFloat(latestOperation.averageWeight) : null;
         
         // Se averageWeight non è disponibile ma abbiamo animalsPerKg, lo calcoliamo
-        if ((!averageWeight || averageWeight === 0) && latestOperation.animalsPerKg) {
-          const animalsPerKgValue = parseFloat(latestOperation.animalsPerKg);
+        if ((!averageWeight || averageWeight === 0) && animalsPerKgValue) {
           if (animalsPerKgValue > 0) {
             averageWeight = Math.round(1000000 / animalsPerKgValue);
             console.log('Basket', basket.id, 'calcolato peso medio:', averageWeight, 'da animalsPerKg:', animalsPerKgValue);
@@ -765,12 +787,12 @@ export default function DraggableFlupsyVisualizer() {
         // Log di debug per verificare i valori
         console.log('Basket', basket.id, 'Peso medio:', averageWeight, 'AnimalsPerKg:', latestOperation.animalsPerKg);
         
-        if (!animalCount && latestOperation.animalsPerKg) {
+        if (!animalCount && animalsPerKgValue) {
           // Calcola il numero di animali solo se non è già presente nel campo animalCount
           const totalWeight = latestOperation.totalWeight || 0;
           if (totalWeight > 0) {
             // totalWeight è in grammi, convertiamo in kg e moltiplichiamo per animali/kg
-            animalCount = Math.round((totalWeight / 1000) * parseFloat(latestOperation.animalsPerKg));
+            animalCount = Math.round((totalWeight / 1000) * animalsPerKgValue);
           }
         }
       }
