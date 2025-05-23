@@ -278,12 +278,15 @@ export default function CyclesPaginated() {
           bValue = b.basket?.physicalNumber || 0;
           break;
         case 'flupsy':
+          // Correttamente trova i cestelli e i FLUPSY correlati
           const basketA = baskets.find(basket => basket.id === a.basketId);
           const flupsyA = basketA ? flupsys.find(f => f.id === basketA.flupsyId)?.name || '' : '';
+          
           const basketB = baskets.find(basket => basket.id === b.basketId);
           const flupsyB = basketB ? flupsys.find(f => f.id === basketB.flupsyId)?.name || '' : '';
-          aValue = flupsyA;
-          bValue = flupsyB;
+          
+          aValue = flupsyA.toLowerCase();
+          bValue = flupsyB.toLowerCase();
           break;
         case 'startDate':
           aValue = new Date(a.startDate).getTime();
@@ -679,7 +682,7 @@ export default function CyclesPaginated() {
           <table className="w-full caption-bottom text-sm">
             <thead className="[&_tr]:border-b bg-slate-100">
               <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
-                <th className="h-12 px-4 text-left align-middle font-medium">
+                <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   <button 
                     className="flex items-center gap-1"
                     onClick={() => handleSort('id')}
@@ -687,7 +690,7 @@ export default function CyclesPaginated() {
                     ID {getSortIcon('id')}
                   </button>
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
+                <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   <button 
                     className="flex items-center gap-1"
                     onClick={() => handleSort('basket')}
@@ -695,7 +698,7 @@ export default function CyclesPaginated() {
                     Cestello {getSortIcon('basket')}
                   </button>
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
+                <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   <button 
                     className="flex items-center gap-1"
                     onClick={() => handleSort('flupsy')}
@@ -703,7 +706,7 @@ export default function CyclesPaginated() {
                     FLUPSY {getSortIcon('flupsy')}
                   </button>
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
+                <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   <button 
                     className="flex items-center gap-1"
                     onClick={() => handleSort('startDate')}
@@ -711,7 +714,7 @@ export default function CyclesPaginated() {
                     Data Inizio {getSortIcon('startDate')}
                   </button>
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
+                <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   <button 
                     className="flex items-center gap-1"
                     onClick={() => handleSort('endDate')}
@@ -719,10 +722,10 @@ export default function CyclesPaginated() {
                     Data Fine {getSortIcon('endDate')}
                   </button>
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
+                <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   Stato
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
+                <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   <button 
                     className="flex items-center gap-1"
                     onClick={() => handleSort('size')}
@@ -730,10 +733,10 @@ export default function CyclesPaginated() {
                     Taglia {getSortIcon('size')}
                   </button>
                 </th>
-                <th className="h-12 px-4 text-left align-middle font-medium">
+                <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   SGR
                 </th>
-                <th className="h-12 px-4 text-center align-middle font-medium">
+                <th className="h-10 px-3 text-center align-middle font-medium text-xs uppercase tracking-wider">
                   Azioni
                 </th>
               </tr>
@@ -781,8 +784,10 @@ export default function CyclesPaginated() {
                       </td>
                       <td className="py-2 px-3 align-middle">
                         <Badge 
-                          variant={cycle.state === 'active' ? 'default' : 'secondary'}
-                          className={cycle.state === 'closed' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}
+                          variant={cycle.state === 'active' ? 'default' : 'outline'}
+                          className={cycle.state === 'active' 
+                            ? 'bg-blue-900 text-white hover:bg-blue-800' 
+                            : 'bg-transparent border border-red-600 text-red-600'}
                         >
                           {cycle.state === 'active' ? 'Attivo' : 'Chiuso'}
                         </Badge>
