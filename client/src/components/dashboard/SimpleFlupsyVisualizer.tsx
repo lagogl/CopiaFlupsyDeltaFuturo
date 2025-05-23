@@ -125,17 +125,26 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     return latestOperation.animalsPerKg <= 3000;
   };
   
-  // Helper function to get size code based on animalsPerKg
+  // Helper function to get size code from the sizes table based on animalsPerKg
   const getSizeCodeFromAnimalsPerKg = (animalsPerKg: number): string => {
-    if (animalsPerKg <= 500) return 'TP-500';
-    if (animalsPerKg <= 1000) return 'TP-1000';
-    if (animalsPerKg <= 1500) return 'TP-1500';
-    if (animalsPerKg <= 2000) return 'TP-2000';
-    if (animalsPerKg <= 3000) return 'TP-3000';
-    if (animalsPerKg <= 6000) return 'TP-6000';
-    if (animalsPerKg <= 10000) return 'TP-10000';
-    if (animalsPerKg <= 20000) return 'TP-20000';
-    return 'TP-' + animalsPerKg;
+    if (!sizes || !Array.isArray(sizes)) return 'N/D';
+    
+    // Trova la taglia corrispondente in base al range min_animals_per_kg e max_animals_per_kg
+    const matchingSize = sizes.find((size: any) => {
+      // Se il numero di animali per kg rientra nel range di questa taglia
+      return (
+        (!size.minAnimalsPerKg || animalsPerKg >= size.minAnimalsPerKg) &&
+        (!size.maxAnimalsPerKg || animalsPerKg <= size.maxAnimalsPerKg)
+      );
+    });
+    
+    // Se troviamo una taglia corrispondente, restituisci il suo codice
+    if (matchingSize) {
+      return matchingSize.code;
+    }
+    
+    // Fallback se non troviamo una taglia corrispondente
+    return `TP-${Math.round(animalsPerKg/1000)*1000}`;
   };
 
   // Helper function to determine basket color based on size - Usa esattamente la stessa logica del FlupsyVisualizer originale
