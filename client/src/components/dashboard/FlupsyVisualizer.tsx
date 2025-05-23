@@ -55,6 +55,9 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
     position: number | null;
     state: 'active' | 'available';
     currentCycleId: number | null;
+    cycle?: Cycle;
+    flupsyName?: string;
+    size?: any;
   }
   
   interface Operation {
@@ -66,6 +69,9 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
     animalsPerKg: number | null;
     deadCount: number | null;  // Numero di animali morti
     mortalityRate: number | null; // Percentuale di mortalità
+    lotId?: number;
+    sizeId?: number;
+    size?: any;
   }
   
   interface Cycle {
@@ -74,6 +80,12 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
     startDate: string;
     endDate: string | null;
     state: 'active' | 'closed';
+  }
+  
+  interface Lot {
+    id: number;
+    supplier: string;
+    arrivalDate: string;
   }
 
   // Fetch flupsys
