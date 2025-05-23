@@ -791,7 +791,7 @@ export default function CyclesPaginated() {
                     >
                       <td className="py-2 px-3 align-middle">{cycle.id}</td>
                       <td className="py-2 px-3 align-middle font-medium">
-                        #{cycle.basket?.physicalNumber || 'N/D'}
+                        #{basket?.physicalNumber || 'N/D'}
                       </td>
                       <td className="py-2 px-3 align-middle">
                         {flupsy?.name?.startsWith('BINS') ? flupsy.name : 'N/D'}
