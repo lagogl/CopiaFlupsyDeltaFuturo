@@ -6,6 +6,7 @@ import RecentOperations from '@/components/dashboard/RecentOperations';
 import GrowthChart from '@/components/dashboard/GrowthChart';
 import ActiveCycles from '@/components/dashboard/ActiveCycles';
 import FlupsyVisualizer from '@/components/dashboard/SimpleFlupsyVisualizer';
+import NewFlupsyVisualizer from '@/components/dashboard/NewFlupsyVisualizer';
 import FlupsyCenterFilter from '@/components/dashboard/FlupsyCenterFilter';
 import FlupsySelector from '@/components/dashboard/FlupsySelector';
 import { TargetSizePredictions } from '@/components/dashboard/TargetSizePredictions';
@@ -415,7 +416,7 @@ export default function Dashboard() {
           onlyFirstTime={true}
         >
           <div ref={flupsyVisualizerRef}>
-            <FlupsyVisualizer 
+            <NewFlupsyVisualizer 
               selectedFlupsyIds={selectedFlupsyIds}
             />
           </div>
