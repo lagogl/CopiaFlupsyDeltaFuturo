@@ -81,18 +81,31 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
     queryKey: ['/api/flupsys', { includeAll: true }],
   });
   
-  // Fetch baskets - Utilizziamo l'endpoint standard con il flag includeAll
-  // per garantire che tutti i dati vengano recuperati correttamente per la visualizzazione FLUPSY
-  const { data: baskets, isLoading: isLoadingBaskets } = useQuery<Basket[]>({
-    queryKey: ['/api/baskets', { 
-      includeAll: true,
-      // Passiamo esplicitamente l'array dei FLUPSY selezionati come stringa separata da virgole
-      // per migliorare la compatibilità con il backend
-      flupsyId: effectiveSelectedFlupsyIds?.length > 0 ? 
-        effectiveSelectedFlupsyIds.join(',') : 
-        undefined
-    }],
-  });
+  // Fetch baskets singolarmente per ogni FLUPSY selezionato e poi unisci i risultati
+  // Questo è più efficiente di un'unica grande query che può fallire con molti ID
+  const basketQueries = effectiveSelectedFlupsyIds.map(id => 
+    useQuery<Basket[]>({
+      queryKey: ['/api/baskets', { 
+        includeAll: true,
+        flupsyId: id 
+      }],
+      enabled: effectiveSelectedFlupsyIds.length > 0
+    })
+  );
+  
+  // Unisci i risultati di tutte le query
+  const baskets = React.useMemo(() => {
+    let allBaskets: Basket[] = [];
+    basketQueries.forEach(query => {
+      if (query.data) {
+        allBaskets = [...allBaskets, ...query.data];
+      }
+    });
+    return allBaskets;
+  }, [basketQueries]);
+  
+  // Verifica se è in caricamento
+  const isLoadingBaskets = basketQueries.some(query => query.isLoading);
   
   // Aggiungiamo log per debug
   React.useEffect(() => {
