@@ -373,10 +373,11 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
       10
     );
     
-    console.log(`FLUPSY ${flupsy.id} - ${flupsy.name}:`, JSON.stringify(flupsy));
+    // Log per debug - visualizza l'intero oggetto flupsy per analizzare i campi disponibili
+    console.log(`FLUPSY ${flupsy.id} - ${flupsy.name}:`, flupsy);
     
-    // Il numero di posizioni deve essere diviso equamente tra le due file
-    const positionsPerRow = maxPositions;
+    // Il numero di posizioni deve essere diviso equamente tra le due file (metà in fila DX, metà in fila SX)
+    const positionsPerRow = Math.ceil(maxPositions / 2);
 
     return (
       <div key={`flupsy-${flupsy.id}`} className="mb-8 border rounded-lg p-4">
