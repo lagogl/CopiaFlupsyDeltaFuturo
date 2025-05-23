@@ -780,8 +780,9 @@ export default function CyclesPaginated() {
                     .filter(op => op.type === 'peso')
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
                   
-                  // Trova il lotto associato alle operazioni
-                  const lotId = cycleOperations.find(op => op.lotId)?.lotId;
+                  // Trova il lotto associato alle operazioni - prima cerca nelle operazioni di prima attivazione
+                  const activationOp = cycleOperations.find(op => op.type === 'prima-attivazione');
+                  const lotId = activationOp?.lotId || cycleOperations.find(op => op.lotId)?.lotId;
                   const lot = lotId ? lots.find(l => l.id === lotId) : null;
                   
                   // Verifica se il cestello esiste e ha physicalNumber
