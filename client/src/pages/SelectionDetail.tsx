@@ -1700,6 +1700,9 @@ export default function VagliaturaDetailPage() {
                           Array.isArray(sourceBasketIds) && sourceBasketIds.includes(b.basketId)
                         );
                         
+                        // Ordiniamo le ceste origine per numero fisico
+                        sourceBasketList.sort((a, b) => a.physicalNumber - b.physicalNumber);
+                        
                         // Otteniamo le altre ceste disponibili escludendo quelle origine (con controllo di sicurezza)
                         const otherAvailableBaskets = availableBasketsList.filter(b => 
                           !Array.isArray(sourceBasketIds) || !sourceBasketIds.includes(b.basketId)
