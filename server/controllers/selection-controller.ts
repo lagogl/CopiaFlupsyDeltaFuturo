@@ -1640,6 +1640,33 @@ export async function completeSelection(req: Request, res: Response) {
         if (destBasket.destinationType === 'sold') {
           // Caso 1: Vendita immediata
           
+          // IMPORTANTE: Verifica che il ciclo esista effettivamente nel database
+          // prima di utilizzarlo come riferimento
+          const checkCycle = await tx.select()
+            .from(cycles)
+            .where(eq(cycles.id, cycleId))
+            .limit(1);
+            
+          // Se il ciclo non esiste (improbabile ma possibile), crea nuovo ciclo
+          if (!checkCycle || checkCycle.length === 0) {
+            console.error(`Errore critico: ciclo ${cycleId} non trovato nel database per cestello ${destBasket.basketId}`);
+            
+            // Crea un nuovo ciclo
+            const [newCycle] = await tx.insert(cycles).values({
+              basketId: destBasket.basketId,
+              startDate: selection[0].date,
+              state: 'active'
+            }).returning();
+            
+            if (!newCycle || !newCycle.id) {
+              throw new Error(`Impossibile creare ciclo di emergenza per cestello ${destBasket.basketId}`);
+            }
+            
+            cycleId = newCycle.id;
+            console.log(`Creato ciclo di emergenza ${cycleId} per cestello ${destBasket.basketId}`);
+          }
+          
+          // Ora che siamo sicuri che il ciclo esista, crea l'operazione di vendita
           // Crea operazione di vendita se non esiste già
           const existingOperation = await tx.select()
             .from(operations)
@@ -1650,20 +1677,28 @@ export async function completeSelection(req: Request, res: Response) {
             ));
           
           if (existingOperation.length === 0) {
-            const [saleOperation] = await tx.insert(operations).values({
-              date: selection[0].date,
-              type: 'vendita',
-              basketId: destBasket.basketId,
-              cycleId: cycleId,
-              animalCount: destBasket.animalCount,
-              totalWeight: destBasket.totalWeight,
-              animalsPerKg: destBasket.animalsPerKg,
-              notes: `Vendita immediata dopo selezione #${selection[0].selectionNumber}`
-            }).returning();
-            
-            // Se l'app ha la funzione di creazione notifiche, aggiungi questo ID operazione alla lista
-            if (req.app.locals.createSaleNotification && saleOperation) {
-              saleNotificationsToCreate.push(saleOperation.id);
+            // Usa un try/catch specifico per catturare eventuali errori durante la creazione dell'operazione
+            try {
+              const [saleOperation] = await tx.insert(operations).values({
+                date: selection[0].date,
+                type: 'vendita',
+                basketId: destBasket.basketId,
+                cycleId: cycleId,
+                animalCount: destBasket.animalCount,
+                totalWeight: destBasket.totalWeight,
+                animalsPerKg: destBasket.animalsPerKg,
+                notes: `Vendita immediata dopo selezione #${selection[0].selectionNumber}`
+              }).returning();
+              
+              // Se l'app ha la funzione di creazione notifiche, aggiungi questo ID operazione alla lista
+              if (req.app.locals.createSaleNotification && saleOperation) {
+                saleNotificationsToCreate.push(saleOperation.id);
+              }
+              
+              console.log(`Operazione di vendita creata con successo per cestello ${destBasket.basketId}, ciclo ${cycleId}`);
+            } catch (error) {
+              console.error(`Errore durante la creazione dell'operazione di vendita:`, error);
+              throw new Error(`Errore durante la creazione dell'operazione di vendita: ${error instanceof Error ? error.message : String(error)}`);
             }
           }
           
