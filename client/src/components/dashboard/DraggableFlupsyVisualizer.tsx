@@ -755,9 +755,7 @@ export default function DraggableFlupsyVisualizer() {
         // Recuperiamo gli animali per kg
         const animalsPerKgValue = latestOperation.animalsPerKg ? parseFloat(latestOperation.animalsPerKg) : null;
         
-        // Recuperiamo tutte le taglie dal queryClient
-        const sizes = queryClient.getQueryData(['/api/sizes']);
-        
+        // Utilizziamo i dati delle taglie dalla query specifica
         // Se abbiamo animalsPerKg e le taglie, troviamo la taglia corretta usando la funzione dedicata
         if (animalsPerKgValue && sizes && Array.isArray(sizes) && sizes.length > 0) {
           const matchingSize = findSizeByAnimalsPerKg(animalsPerKgValue, sizes);
