@@ -792,9 +792,12 @@ export default function DraggableFlupsyVisualizer() {
       >
         {isOccupied ? (
           <>
-            {/* Header con numero fisico cesta */}
+            {/* Header con numero fisico cesta e taglia */}
             <div className="font-semibold w-full border-b pb-1 text-center">
               <span className="text-base">#{basket.physicalNumber}</span>
+              {size && (
+                <span className="text-xs ml-1 text-gray-700">({size})</span>
+              )}
             </div>
             
             {/* Corpo con dati principali */}
