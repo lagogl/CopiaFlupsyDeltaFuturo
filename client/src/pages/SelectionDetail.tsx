@@ -1764,14 +1764,30 @@ export default function VagliaturaDetailPage() {
                           
                           // Funzione per verificare se un cestello è di origine
                         const isSourceBasket = (basketId) => {
-                          if (!hasSourceBaskets || !Array.isArray(sourceBasketIds)) return false;
+                          // Definizione più estesa di sourceBasketIds per sicurezza
+                          const sourceBasketIds = sourceBaskets && Array.isArray(sourceBaskets) 
+                            ? sourceBaskets.map(sb => sb && sb.basketId).filter(id => id !== undefined)
+                            : [];
+                          
+                          if (basketId === undefined) return false;
                           return sourceBasketIds.includes(basketId);
                         };
+                        
+                        // Aggiungiamo una protezione extra per gestire eventuali oggetti undefined
+                        if (!basket || basket.basketId === undefined) {
+                          console.log("Warning: basket o basket.basketId undefined");
+                          return null; // Non renderizzare nulla per questo elemento
+                        }
+                        
+                        // Calcola il valore in modo sicuro
+                        const basketIdStr = typeof basket.basketId === 'number' || typeof basket.basketId === 'string' 
+                          ? String(basket.basketId) 
+                          : '';
                         
                         return (
                             <SelectItem 
                               key={basket.basketId} 
-                              value={basket.basketId.toString()}
+                              value={basketIdStr}
                               // Evidenzia visivamente se è un cestello di origine
                               className={basket.isLabel ? '' : (isSourceBasket(basket.basketId)) ? 'bg-blue-50 dark:bg-blue-950' : ''}
                             >
