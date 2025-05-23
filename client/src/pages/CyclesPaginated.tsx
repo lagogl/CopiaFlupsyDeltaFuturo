@@ -269,8 +269,10 @@ export default function CyclesPaginated() {
       }
       
       // Filtro per taglia
-      if (tagFilter) {
-        if (!cycle.currentSize || cycle.currentSize.code !== tagFilter) {
+      if (tagFilter && tagFilter !== 'all') {
+        // Usiamo la stessa funzione che calcola la taglia visualizzata nella tabella
+        const displaySize = calculateDisplaySize(cycle);
+        if (displaySize === 'N/D' || displaySize !== tagFilter) {
           return false;
         }
       }
