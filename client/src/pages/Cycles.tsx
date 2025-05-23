@@ -101,6 +101,11 @@ export default function Cycles() {
     end: null
   });
   
+  // Paginazione
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(20);
+  const [totalCycles, setTotalCycles] = useState(0);
+  
   // Ordinamento
   const [sortConfig, setSortConfig] = useState<{
     key: string;
@@ -112,10 +117,46 @@ export default function Cycles() {
     multiSort: []
   });
   
-  // Query cycles with details
-  const { data: cycles = [], isLoading } = useQuery<Cycle[]>({
-    queryKey: ['/api/cycles'],
+  // Query cycles with details - add pagination
+  const { data: cyclesData, isLoading } = useQuery<{data: Cycle[], total: number}>({
+    queryKey: ['/api/cycles', currentPage, pageSize, statusFilter],
+    queryFn: async () => {
+      // Costruisci i parametri della query per la paginazione e i filtri
+      let queryParams = `page=${currentPage}&pageSize=${pageSize}`;
+      
+      // Aggiungi eventuali filtri alla query
+      if (statusFilter !== 'all') {
+        queryParams += `&state=${statusFilter}`;
+      }
+      
+      // Aggiungi altri parametri se necessario
+      if (flupsyFilter) {
+        const basket = baskets.find(b => b.flupsyId === flupsyFilter);
+        if (basket) {
+          queryParams += `&basketId=${basket.id}`;
+        }
+      }
+      
+      if (sortConfig.key) {
+        queryParams += `&sortBy=${sortConfig.key}&sortOrder=${sortConfig.direction === 'ascending' ? 'asc' : 'desc'}`;
+      }
+      
+      // Effettua la richiesta HTTP
+      const response = await fetch(`/api/cycles?${queryParams}`);
+      const data = await response.json();
+      
+      // Aggiorna il conteggio totale dei cicli
+      setTotalCycles(data.total || data.length);
+      
+      return {
+        data: Array.isArray(data) ? data : data.data || [],
+        total: data.total || data.length
+      };
+    },
   });
+  
+  // Estrai i cicli dai dati della risposta
+  const cycles = cyclesData?.data || [];
   
   // Query operations to check if any cycles were sold
   const { data: operations = [] } = useQuery<Operation[]>({
@@ -935,6 +976,110 @@ export default function Cycles() {
               )}
             </tbody>
           </table>
+        </div>
+        
+        {/* Paginazione */}
+        <div className="flex items-center justify-between mt-6">
+          <div className="flex items-center gap-2">
+            <span className="text-sm text-muted-foreground">
+              Mostrati {cycles.length} cicli su {totalCycles}
+            </span>
+            <Select 
+              value={String(pageSize)} 
+              onValueChange={(value) => {
+                setPageSize(Number(value));
+                setCurrentPage(1); // Reset alla prima pagina quando cambia la dimensione
+              }}
+            >
+              <SelectTrigger className="h-8 w-[100px]">
+                <SelectValue placeholder="10 per pagina" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="10">10 per pagina</SelectItem>
+                <SelectItem value="20">20 per pagina</SelectItem>
+                <SelectItem value="50">50 per pagina</SelectItem>
+                <SelectItem value="100">100 per pagina</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          
+          <div className="flex items-center gap-1">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(1)}
+              disabled={currentPage === 1}
+              className="h-8 w-8 p-0"
+            >
+              <span className="sr-only">Prima pagina</span>
+              <span>&laquo;</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.max(prev - 1, 1))}
+              disabled={currentPage === 1}
+              className="h-8 w-8 p-0"
+            >
+              <span className="sr-only">Pagina precedente</span>
+              <span>&lt;</span>
+            </Button>
+            
+            {/* Numeri di pagina */}
+            {Array.from({ length: Math.min(5, Math.ceil(totalCycles / pageSize)) }).map((_, i) => {
+              // Calcola il numero di pagina da mostrare
+              let pageNum;
+              const totalPages = Math.ceil(totalCycles / pageSize);
+              
+              if (totalPages <= 5) {
+                // Se ci sono 5 o meno pagine, mostra tutte le pagine
+                pageNum = i + 1;
+              } else if (currentPage <= 3) {
+                // Se siamo all'inizio, mostra le prime 5 pagine
+                pageNum = i + 1;
+              } else if (currentPage >= totalPages - 2) {
+                // Se siamo alla fine, mostra le ultime 5 pagine
+                pageNum = totalPages - 4 + i;
+              } else {
+                // Altrimenti, mostra 2 pagine prima e 2 dopo la pagina corrente
+                pageNum = currentPage - 2 + i;
+              }
+              
+              return (
+                <Button
+                  key={i}
+                  variant={currentPage === pageNum ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(pageNum)}
+                  className="h-8 w-8 p-0"
+                >
+                  <span className="sr-only">Pagina {pageNum}</span>
+                  <span>{pageNum}</span>
+                </Button>
+              );
+            })}
+            
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage((prev) => Math.min(prev + 1, Math.ceil(totalCycles / pageSize)))}
+              disabled={currentPage === Math.ceil(totalCycles / pageSize)}
+              className="h-8 w-8 p-0"
+            >
+              <span className="sr-only">Pagina successiva</span>
+              <span>&gt;</span>
+            </Button>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(Math.ceil(totalCycles / pageSize))}
+              disabled={currentPage === Math.ceil(totalCycles / pageSize)}
+              className="h-8 w-8 p-0"
+            >
+              <span className="sr-only">Ultima pagina</span>
+              <span>&raquo;</span>
+            </Button>
+          </div>
         </div>
       </div>
     </div>
