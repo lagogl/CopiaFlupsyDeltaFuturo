@@ -125,7 +125,7 @@ export default function CyclesPaginated() {
   });
   
   const { data: operations = [] } = useQuery<Operation[]>({
-    queryKey: ['/api/operations'],
+    queryKey: ['/api/operations?includeAll=true'],
   });
   
   const { data: flupsys = [] } = useQuery<Flupsy[]>({
@@ -133,11 +133,11 @@ export default function CyclesPaginated() {
   });
   
   const { data: baskets = [] } = useQuery<Basket[]>({
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets?includeAll=true'],
   });
   
   const { data: lots = [] } = useQuery<Lot[]>({
-    queryKey: ['/api/lots'],
+    queryKey: ['/api/lots?includeAll=true'],
   });
   
   const { data: sizes = [] } = useQuery<Size[]>({
@@ -797,7 +797,7 @@ export default function CyclesPaginated() {
                         #{physicalNumber || 'N/D'}
                       </td>
                       <td className="py-2 px-3 align-middle">
-                        {flupsy?.name?.startsWith('BINS') ? flupsy.name : 'N/D'}
+                        {flupsy?.name || 'N/D'}
                       </td>
                       <td className="py-2 px-3 align-middle">
                         {lot ? lot.supplier : 'N/D'}
