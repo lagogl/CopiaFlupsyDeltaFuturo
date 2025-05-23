@@ -125,7 +125,7 @@ export default function CyclesPaginated() {
   });
   
   const { data: operations = [] } = useQuery<Operation[]>({
-    queryKey: ['/api/operations?includeAll=true'],
+    queryKey: ['/api/operations?includeAll=true&pageSize=1000'],
   });
   
   const { data: flupsys = [] } = useQuery<Flupsy[]>({
@@ -808,18 +808,11 @@ export default function CyclesPaginated() {
                   // Trova le operazioni di questo ciclo
                   const cycleOperations = operations.filter(op => op.cycleId === cycle.id);
                   
-                  // Trova l'ultima operazione di peso per ottenere il numero di animali
-                  // Se non ci sono operazioni di peso, cerca altre operazioni con animalCount
-                  let lastWeightOp = cycleOperations
-                    .filter(op => op.type === 'peso')
+                  // Trova l'operazione più recente con conteggio animali (di qualsiasi tipo)
+                  // Prima cerchiamo operazioni di peso, che sono più affidabili
+                  const lastWeightOp = cycleOperations
+                    .filter(op => op.animalCount && op.animalCount > 0)
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-                    
-                  // Se non abbiamo trovato operazioni di peso, cerchiamo qualsiasi operazione con animalCount
-                  if (!lastWeightOp || !lastWeightOp.animalCount) {
-                    lastWeightOp = cycleOperations
-                      .filter(op => op.animalCount)
-                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
-                  }
                   
                   // Trova il lotto associato alle operazioni - prima cerca nelle operazioni di prima attivazione
                   const activationOp = cycleOperations.find(op => op.type === 'prima-attivazione');
