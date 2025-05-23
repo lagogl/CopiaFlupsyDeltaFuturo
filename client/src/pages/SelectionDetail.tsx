@@ -922,7 +922,7 @@ export default function VagliaturaDetailPage() {
   };
 
   // Mostra il loader se i dati sono in caricamento
-  if (isLoadingSelection) {
+  if (isLoadingSelection || isLoadingSourceBaskets || isLoadingDestinationBaskets) {
     return (
       <div className="flex justify-center items-center h-[50vh]">
         <Spinner size="lg" />
@@ -931,12 +931,12 @@ export default function VagliaturaDetailPage() {
   }
 
   // Se la vagliatura non esiste, mostra un messaggio di errore
-  if (!selection) {
+  if (!selection || !sourceBaskets || !destinationBaskets) {
     return (
       <EmptyState
         icon={<AlertCircle className="h-12 w-12 text-destructive" />}
-        title="Vagliatura non trovata"
-        description="La vagliatura richiesta non è stata trovata nel database"
+        title="Vagliatura non trovata o dati incompleti"
+        description="I dati della vagliatura richiesta non sono disponibili o sono incompleti"
         action={
           <Button onClick={() => navigate("/selection")}>
             <ArrowLeft className="h-4 w-4 mr-2" />
