@@ -465,41 +465,9 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
             <h2 className="text-lg font-bold mb-2">Visualizzazione FLUPSY</h2>
             <p className="text-sm text-gray-500 mb-2">Disposizione delle ceste attive con dati</p>
             
-            {/* Indicatori statistici */}
-            <div className="flex flex-wrap gap-3 mb-4">
-              <div className="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs">
-                <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                <span>Livello zoom: 1</span>
-              </div>
-              <div className="flex items-center bg-amber-100 text-amber-800 rounded-full px-3 py-1 text-xs">
-                <span className="w-3 h-3 bg-amber-500 rounded-full mr-2"></span>
-                <span>Top SCR: 3</span>
-              </div>
-              <div className="flex items-center bg-blue-100 text-blue-800 rounded-full px-3 py-1 text-xs">
-                <span className="w-3 h-3 bg-blue-500 rounded-full mr-2"></span>
-                <span>Top Popolazione: 3</span>
-              </div>
-              <div className="flex items-center bg-gray-100 text-gray-800 rounded-full px-3 py-1 text-xs">
-                <span className="w-3 h-3 bg-gray-500 rounded-full mr-2"></span>
-                <span>Cesti Attivati: 3</span>
-              </div>
-            </div>
+            {/* Spazio vuoto dove prima c'erano gli indicatori statistici */}
             
-            {/* Top 3 categorie */}
-            <div className="flex flex-wrap gap-3 mb-4">
-              <div className="flex items-center bg-yellow-100 text-yellow-800 rounded-full px-3 py-1 text-xs">
-                <span className="w-3 h-3 bg-yellow-500 rounded-full mr-2"></span>
-                <span>Top 3 ceste con miglior crescita</span>
-              </div>
-              <div className="flex items-center bg-green-100 text-green-800 rounded-full px-3 py-1 text-xs">
-                <span className="w-3 h-3 bg-green-500 rounded-full mr-2"></span>
-                <span>Top 3 ceste con maggiore popolazione</span>
-              </div>
-              <div className="flex items-center bg-purple-100 text-purple-800 rounded-full px-3 py-1 text-xs">
-                <span className="w-3 h-3 bg-purple-500 rounded-full mr-2"></span>
-                <span>Top 3 ceste con più giorni ascesa</span>
-              </div>
-            </div>
+
             
             {/* Legenda Colori Taglie */}
             <div className="flex flex-wrap gap-2 mb-2">
