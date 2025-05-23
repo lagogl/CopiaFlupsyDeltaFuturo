@@ -784,6 +784,9 @@ export default function CyclesPaginated() {
                   const lotId = cycleOperations.find(op => op.lotId)?.lotId;
                   const lot = lotId ? lots.find(l => l.id === lotId) : null;
                   
+                  // Verifica se il cestello esiste e ha physicalNumber
+                  const physicalNumber = basket?.physicalNumber;
+                  
                   return (
                     <tr 
                       key={cycle.id}
@@ -791,7 +794,7 @@ export default function CyclesPaginated() {
                     >
                       <td className="py-2 px-3 align-middle">{cycle.id}</td>
                       <td className="py-2 px-3 align-middle font-medium">
-                        #{basket?.physicalNumber || 'N/D'}
+                        #{physicalNumber || 'N/D'}
                       </td>
                       <td className="py-2 px-3 align-middle">
                         {flupsy?.name?.startsWith('BINS') ? flupsy.name : 'N/D'}
