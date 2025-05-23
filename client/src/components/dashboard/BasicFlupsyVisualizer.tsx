@@ -76,7 +76,9 @@ export default function BasicFlupsyVisualizer({ selectedFlupsyIds = [] }: BasicF
         // Convertiamo l'array in stringa separata da virgole per migliorare la compatibilità
         selectedFlupsyIds.join(',') : 
         undefined
-    }] 
+    }],
+    // Includiamo un refetchInterval per assicurarci che i dati vengano aggiornati periodicamente
+    refetchInterval: 60000 // aggiornamento ogni 60 secondi
   });
   
   // Aggiungiamo un log per debug
