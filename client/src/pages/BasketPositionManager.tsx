@@ -4,8 +4,7 @@ import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
-import { Input } from '@/components/ui/input';
-import { AlertCircle, ArrowRightLeft, Check, Loader2 } from 'lucide-react';
+import { AlertCircle, ArrowRightLeft, Loader2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
 
@@ -401,134 +400,133 @@ export default function BasketPositionManager() {
                     </div>
                   </div>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-          
-          {/* Pannello Posizione Destinazione */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Posizione destinazione</CardTitle>
-              <CardDescription>
-                Seleziona la posizione dove spostare il cestello
-              </CardDescription>
-            </CardHeader>
-            <CardContent>
-              <div className="grid gap-4">
-                <div className="grid grid-cols-2 gap-4">
-                  <div>
-                    <Label htmlFor="targetRow">Fila</Label>
-                    <Select 
-                      value={selectedTargetRow} 
-                      onValueChange={setSelectedTargetRow}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleziona fila" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {availableRows.map(row => (
-                          <SelectItem key={row} value={row}>
-                            {row}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
+                </div>
+              </CardContent>
+            </Card>
+            
+            {/* Pannello Posizione Destinazione */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Posizione destinazione</CardTitle>
+                <CardDescription>
+                  Seleziona la posizione dove spostare il cestello
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="grid gap-4">
+                  <div className="grid grid-cols-2 gap-4">
+                    <div>
+                      <Label htmlFor="targetRow">Fila</Label>
+                      <Select 
+                        value={selectedTargetRow} 
+                        onValueChange={setSelectedTargetRow}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona fila" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {availableRows.map(row => (
+                            <SelectItem key={row} value={row}>
+                              {row}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    <div>
+                      <Label htmlFor="targetPosition">Posizione</Label>
+                      <Select 
+                        value={selectedTargetPosition?.toString() || ''} 
+                        onValueChange={(value) => {
+                          const position = parseInt(value, 10);
+                          handleTargetPositionChange(selectedTargetRow, position);
+                        }}
+                        disabled={!selectedTargetRow}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona posizione" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {selectedTargetRow && [...getOccupiedPositions(selectedTargetRow), ...getFreePositions(selectedTargetRow)]
+                            .sort((a, b) => a - b)
+                            .map(pos => {
+                              const isOccupied = isPositionOccupied(selectedTargetRow, pos);
+                              const basketNumber = getBasketNumberAtPosition(selectedTargetRow, pos);
+                              return (
+                                <SelectItem key={pos} value={pos.toString()}>
+                                  {pos}{isOccupied ? ` - Cestello #${basketNumber}` : ' (libera)'}
+                                </SelectItem>
+                              );
+                            })
+                          }
+                        </SelectContent>
+                      </Select>
+                    </div>
                   </div>
                   
-                  <div>
-                    <Label htmlFor="targetPosition">Posizione</Label>
-                    <Select 
-                      value={selectedTargetPosition?.toString() || ''} 
-                      onValueChange={(value) => {
-                        const position = parseInt(value, 10);
-                        handleTargetPositionChange(selectedTargetRow, position);
-                      }}
-                      disabled={!selectedTargetRow}
-                    >
-                      <SelectTrigger>
-                        <SelectValue placeholder="Seleziona posizione" />
-                      </SelectTrigger>
-                      <SelectContent>
-                        {selectedTargetRow && [...getOccupiedPositions(selectedTargetRow), ...getFreePositions(selectedTargetRow)]
-                          .sort((a, b) => a - b)
-                          .map(pos => {
-                            const isOccupied = isPositionOccupied(selectedTargetRow, pos);
-                            const basketNumber = getBasketNumberAtPosition(selectedTargetRow, pos);
-                            return (
-                              <SelectItem key={pos} value={pos.toString()}>
-                                {pos}{isOccupied ? ` - Cestello #${basketNumber}` : ' (libera)'}
-                              </SelectItem>
-                            );
-                          })
-                        }
-                      </SelectContent>
-                    </Select>
-                  </div>
-                </div>
-                
-                {targetBasket ? (
-                  <div className="border rounded p-4 bg-muted/30">
-                    <div className="flex items-center justify-between mb-2">
-                      <span className="font-medium">Cestello nella posizione:</span>
-                      <span className="px-2 py-1 bg-primary/10 rounded-md font-semibold">
-                        #{targetBasket.physicalNumber}
-                      </span>
-                    </div>
-                    <div className="grid grid-cols-2 gap-2 text-sm">
-                      <div>ID: {targetBasket.id}</div>
-                      <div>Stato: {targetBasket.state}</div>
-                      <div>Fila: {targetBasket.row || '-'}</div>
-                      <div>Posizione: {targetBasket.position || '-'}</div>
-                    </div>
-                    <div className="mt-2 p-2 bg-yellow-100 text-yellow-800 rounded text-sm">
-                      <AlertCircle className="inline-block w-4 h-4 mr-1" />
-                      Le posizioni dei due cestelli verranno scambiate
-                    </div>
-                  </div>
-                ) : (
-                  selectedTargetRow && selectedTargetPosition ? (
+                  {targetBasket ? (
                     <div className="border rounded p-4 bg-muted/30">
                       <div className="flex items-center justify-between mb-2">
-                        <span className="font-medium">Posizione libera:</span>
+                        <span className="font-medium">Cestello nella posizione:</span>
                         <span className="px-2 py-1 bg-primary/10 rounded-md font-semibold">
-                          {selectedTargetRow}-{selectedTargetPosition}
+                          #{targetBasket.physicalNumber}
                         </span>
                       </div>
-                      <div className="mt-2 p-2 bg-green-100 text-green-800 rounded text-sm">
-                        <Check className="inline-block w-4 h-4 mr-1" />
-                        Il cestello verrà spostato in questa posizione libera
+                      <div className="grid grid-cols-2 gap-2 text-sm">
+                        <div>ID: {targetBasket.id}</div>
+                        <div>Stato: {targetBasket.state}</div>
+                        <div>Fila: {targetBasket.row || '-'}</div>
+                        <div>Posizione: {targetBasket.position || '-'}</div>
+                      </div>
+                      <div className="mt-2 p-2 bg-yellow-100 text-yellow-800 rounded text-sm">
+                        <AlertCircle className="inline-block w-4 h-4 mr-1" />
+                        Le posizioni dei due cestelli verranno scambiate
                       </div>
                     </div>
-                  ) : null
+                  ) : (
+                    selectedTargetRow && selectedTargetPosition ? (
+                      <div className="border rounded p-4 bg-muted/30">
+                        <div className="flex items-center justify-between mb-2">
+                          <span className="font-medium">Posizione libera:</span>
+                          <span className="px-2 py-1 bg-primary/10 rounded-md font-semibold">
+                            {selectedTargetRow}-{selectedTargetPosition}
+                          </span>
+                        </div>
+                        <div className="mt-2 p-2 bg-green-100 text-green-800 rounded text-sm">
+                          <AlertCircle className="inline-block w-4 h-4 mr-1" />
+                          Il cestello verrà spostato in questa posizione libera
+                        </div>
+                      </div>
+                    ) : null
+                  )}
+                </div>
+              </CardContent>
+            </Card>
+          </div>
+          
+          {sourceBasket && selectedTargetRow && selectedTargetPosition && (
+            <div className="mt-6 flex justify-center">
+              <Button 
+                size="lg" 
+                onClick={handleSwitchPositions}
+                disabled={isLoading}
+              >
+                {isLoading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Elaborazione...
+                  </>
+                ) : (
+                  <>
+                    <ArrowRightLeft className="mr-2 h-4 w-4" />
+                    {targetBasket ? 'Scambia posizioni' : 'Sposta cestello'}
+                  </>
                 )}
-              </div>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-      
-      {sourceBasket && selectedTargetRow && selectedTargetPosition && (
-        <div className="mt-6 flex justify-center">
-          <Button 
-            size="lg" 
-            onClick={handleSwitchPositions}
-            disabled={isLoading}
-          >
-            {isLoading ? (
-              <>
-                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                Elaborazione...
-              </>
-            ) : (
-              <>
-                <ArrowRightLeft className="mr-2 h-4 w-4" />
-                {targetBasket ? 'Scambia posizioni' : 'Sposta cestello'}
-              </>
-            )}
-          </Button>
-        </div>
-      )}
-      </>
+              </Button>
+            </div>
+          )}
+        </>
       )}
       
       {/* Sezione per visualizzare tutti i cestelli disponibili */}

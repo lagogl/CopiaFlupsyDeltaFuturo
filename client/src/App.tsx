@@ -48,8 +48,9 @@ import ScreeningAddDestination from "@/pages/ScreeningAddDestination";
 import Selection from "@/pages/Selection";
 import NewSelection from "@/pages/NewSelection";
 import SelectionDetail from "@/pages/SelectionDetail";
-// Importiamo la pagina per gestire le posizioni dei cestelli
+// Importiamo le pagine per gestire le posizioni dei cestelli
 import BasketPositionManager from "@/pages/BasketPositionManager";
+import BasketPositionManagerSimple from "@/pages/BasketPositionManagerSimple";
 import BackupPage from "@/pages/BackupPage";
 import AmministrazioneUtilita from "@/pages/AmministrazioneUtilita";
 import { initializeWebSocket } from "./lib/websocket";
@@ -76,7 +77,8 @@ function Router() {
       <ProtectedRoute path="/flupsys/:id/baskets" component={FlupsyBaskets}/>
       <ProtectedRoute path="/flupsy-positions" component={FlupsyDragDrop}/>
       <ProtectedRoute path="/flupsy-view" component={FlupsyFullView}/>
-      <ProtectedRoute path="/basket-positions" component={BasketPositionManager}/>
+      <ProtectedRoute path="/basket-positions" component={BasketPositionManagerSimple}/>
+      <ProtectedRoute path="/basket-positions-full" component={BasketPositionManager}/>
       <ProtectedRoute path="/flupsy-comparison" component={FlupsyComparison}/>
       <ProtectedRoute path="/flupsy-comparison-enhanced" component={FlupsyComparisonEnhanced}/>
       <ProtectedRoute path="/baskets" component={Baskets}/>
