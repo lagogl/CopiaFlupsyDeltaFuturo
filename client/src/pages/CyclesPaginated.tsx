@@ -416,7 +416,7 @@ export default function CyclesPaginated() {
                 <SelectValue placeholder="FLUPSY" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutti i FLUPSY</SelectItem>
+                <SelectItem value="0">Tutti i FLUPSY</SelectItem>
                 {flupsys.map(flupsy => (
                   <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
                     {flupsy.name}
@@ -436,7 +436,7 @@ export default function CyclesPaginated() {
                 <SelectValue placeholder="Taglia" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutte le taglie</SelectItem>
+                <SelectItem value="all">Tutte le taglie</SelectItem>
                 {sizes.map((size) => (
                   <SelectItem key={size.id} value={size.code}>
                     <div className="flex items-center">
@@ -462,7 +462,7 @@ export default function CyclesPaginated() {
                 <SelectValue placeholder="Lotto" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">Tutti i lotti</SelectItem>
+                <SelectItem value="0">Tutti i lotti</SelectItem>
                 {lots.map((lot) => (
                   <SelectItem key={lot.id} value={lot.id.toString()}>
                     {lot.supplier} - {format(new Date(lot.arrivalDate), 'dd/MM/yyyy', { locale: it })}
