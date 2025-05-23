@@ -281,8 +281,10 @@ export default function DraggableFlupsyVisualizer() {
     }
   }, [flupsys, selectedFlupsyIds.length, userDeselectedAll]);
 
+  // Modifica: utilizziamo il parametro includeAll=true per ottenere tutti i cestelli,
+  // inclusi quelli senza posizione assegnata
   const { data: baskets, isLoading: isLoadingBaskets, refetch: refetchBaskets } = useQuery({
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets?includeAll=true'],
     queryFn: getQueryFn({ on401: "throw" }),
     refetchOnWindowFocus: true,  // Riaggiorna i dati quando la finestra riprende il focus
     staleTime: 2000, // Considera i dati obsoleti dopo 2 secondi
