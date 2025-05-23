@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from '@tanstack/react-query';
 import { Separator } from "@/components/ui/separator";
@@ -86,10 +86,31 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
   const { data: baskets, isLoading: isLoadingBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets', { 
       includeAll: true,
-      // Passiamo esplicitamente l'array dei FLUPSY selezionati se disponibile
-      flupsyId: effectiveSelectedFlupsyIds?.length > 0 ? effectiveSelectedFlupsyIds : undefined
+      // Passiamo esplicitamente l'array dei FLUPSY selezionati come stringa separata da virgole
+      // per migliorare la compatibilità con il backend
+      flupsyId: effectiveSelectedFlupsyIds?.length > 0 ? 
+        effectiveSelectedFlupsyIds.join(',') : 
+        undefined
     }],
   });
+  
+  // Aggiungiamo log per debug
+  React.useEffect(() => {
+    if (baskets) {
+      console.log(`FlupsyVisualizer: Ricevuti ${baskets.length} cestelli`);
+      if (baskets.length > 0) {
+        // Creiamo un oggetto per tracciare il numero di cestelli per ogni FLUPSY
+        const distribution: Record<string, number> = {};
+        
+        baskets.forEach(basket => {
+          const flupsyId = String(basket.flupsyId);
+          distribution[flupsyId] = (distribution[flupsyId] || 0) + 1;
+        });
+        
+        console.log('Distribuzione cestelli per FLUPSY:', distribution);
+      }
+    }
+  }, [baskets]);
   
   // Fetch operations con includeAll per avere tutti i dati
   const { data: operations } = useQuery<Operation[]>({
