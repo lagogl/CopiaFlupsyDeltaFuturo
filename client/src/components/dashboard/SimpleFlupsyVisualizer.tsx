@@ -102,101 +102,78 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     return latestOp;
   };
 
-  // Helper function to determine basket color based on size
+  // Helper function to get operations for a basket
+  const getOperationsForBasket = (basketId: number): any[] => {
+    if (!operations || !Array.isArray(operations)) return [];
+    return operations.filter((op: any) => op.basketId === basketId);
+  };
+  
+  // Helper function to check if a basket has a large size (TP-3000 or higher)
+  const hasLargeSize = (basket: any): boolean => {
+    if (!basket || basket.state !== 'active') return false;
+    
+    const basketOperations = getOperationsForBasket(basket.id);
+    const sortedOperations = [...basketOperations].sort((a: any, b: any) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    const latestOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
+    if (!latestOperation?.animalsPerKg) return false;
+    
+    // Determina se è una taglia grande basandosi sul numero di animali per kg
+    // La taglia TP-3000 o superiore ha animalsPerKg <= 3000
+    return latestOperation.animalsPerKg <= 3000;
+  };
+  
+  // Helper function to determine basket color based on size - Usa esattamente la stessa logica del FlupsyVisualizer originale
   const getBasketColorClass = (basket: any) => {
     if (!basket) return 'bg-gray-50 border-dashed';
     
+    // If basket is not active, return a neutral color
     if (basket.state !== 'active') {
-      return 'bg-gray-50 border-dashed border-gray-300';
+      return 'bg-slate-100 border-slate-200';
     }
     
-    // Stile per cestelli attivi senza operazioni
-    if (basket.state === 'active' && !operations) {
-      return 'bg-white border-blue-300 border-2'; 
-    }
-
-    // Get latest operation for this basket
-    const latestOperation = getLatestOperation(basket.id);
+    const basketOperations = getOperationsForBasket(basket.id);
     
-    // If there's no operation associated with this basket
+    // Sort operations by date (newest first)
+    const sortedOperations = [...basketOperations].sort((a: any, b: any) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    // Get the most recent operation
+    const latestOperation = sortedOperations.length > 0 ? sortedOperations[0] : null;
+    
     if (!latestOperation) {
-      if (basket.currentCycleId) {
-        // Se c'è un ciclo attivo ma nessuna operazione, usiamo comunque un colore visibile
-        return 'bg-blue-50 border-blue-400 border-2';
-      }
-      return 'bg-white border-blue-300';
+      // Basket is active but has no operations
+      return 'bg-blue-50 border-blue-300';
     }
-
-    // Get size info either from sizeId or from animalsPerKg
-    let sizeCode = '';
     
-    // Prima prova a ottenere dalla proprietà size
-    if (latestOperation.size && latestOperation.size.code) {
-      sizeCode = latestOperation.size.code;
-    } 
-    // Poi dal sizeId, cercando nelle taglie
-    else if (latestOperation.sizeId) {
-      const size = Array.isArray(sizes) ? 
-        sizes.find((s: any) => s.id === latestOperation.sizeId) : null;
-      if (size) {
-        sizeCode = size.code;
-      }
+    // Check if we have a valid animalsPerKg value
+    if (!latestOperation.animalsPerKg) {
+      return 'bg-blue-50 border-blue-300';
     }
-    // Infine, deriva la taglia da animalsPerKg
-    else if (latestOperation.animalsPerKg) {
-      const size = getSizeFromAnimalsPerKg(latestOperation.animalsPerKg);
-      sizeCode = size?.code || '';
+    
+    const apkg = latestOperation.animalsPerKg;
+    
+    // Usa lo stesso schema di colori dell'originale
+    if (apkg <= 500) { // Taglia molto grande
+      return 'bg-red-50 border-red-500 border-2';
+    } else if (apkg <= 1000) {
+      return 'bg-orange-50 border-orange-500 border-2';
+    } else if (apkg <= 2000) {
+      return 'bg-yellow-50 border-yellow-500 border-2';
+    } else if (apkg <= 3000) {
+      return 'bg-green-50 border-green-500 border-2';
+    } else if (apkg <= 6000) {
+      return 'bg-teal-50 border-teal-500 border-2';
+    } else if (apkg <= 10000) {
+      return 'bg-sky-50 border-sky-500 border-2';
+    } else if (apkg <= 20000) {
+      return 'bg-blue-50 border-blue-500 border-2';
+    } else {
+      return 'bg-indigo-50 border-indigo-500 border-2';
     }
-
-    // Determine color based on size code (senza log per evitare spam nella console)
-    if (sizeCode.startsWith('TP-')) {
-      const numStr = sizeCode.substring(3);
-      const num = parseInt(numStr);
-      
-      if (num >= 6000) {
-        return 'bg-red-50 border-red-600 border-4';
-      } else if (num >= 4000) {
-        return 'bg-red-50 border-red-500 border-3';
-      } else if (num >= 3000) {
-        return 'bg-orange-50 border-orange-500 border-2';
-      } else if (num >= 2000) {
-        return 'bg-yellow-50 border-yellow-500 border-2';
-      } else if (num >= 1500) {
-        return 'bg-green-50 border-green-600 border-2';
-      } else if (num >= 1000) {
-        return 'bg-sky-50 border-sky-500 border-2';
-      } else if (num >= 500) {
-        return 'bg-sky-50 border-sky-400 border-2';
-      } else {
-        return 'bg-indigo-50 border-indigo-400 border-2';
-      }
-    }
-
-    // Use animalsPerKg directly when no size code is available
-    if (latestOperation.animalsPerKg) {
-      const apkg = latestOperation.animalsPerKg;
-      
-      if (apkg >= 6000) {
-        return 'bg-red-50 border-red-600 border-4';
-      } else if (apkg >= 4000) {
-        return 'bg-red-50 border-red-500 border-3';
-      } else if (apkg >= 3000) {
-        return 'bg-orange-50 border-orange-500 border-2';
-      } else if (apkg >= 2000) {
-        return 'bg-yellow-50 border-yellow-500 border-2';
-      } else if (apkg >= 1500) {
-        return 'bg-green-50 border-green-600 border-2';
-      } else if (apkg >= 1000) {
-        return 'bg-sky-50 border-sky-500 border-2';
-      } else if (apkg >= 500) {
-        return 'bg-sky-50 border-sky-400 border-2';
-      } else if (apkg > 0) {
-        return 'bg-indigo-50 border-indigo-400 border-2';
-      }
-    }
-
-    // Default style for active baskets without size or animals per kg info
-    return 'bg-white border-blue-400 border-2';
   };
 
   // Handle basket click to navigate to basket detail
