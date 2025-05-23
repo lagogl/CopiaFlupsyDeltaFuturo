@@ -2,7 +2,7 @@ import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
-import { getSizeColor } from '@/lib/sizeUtils';
+import { getSizeColor, getSizeBadgeStyle } from '@/lib/sizeUtils';
 import { Eye, Search, Filter, ChevronLeft, ChevronRight, ArrowUp, ArrowDown, ArrowUpDown } from 'lucide-react';
 import { Input } from '@/components/ui/input';
 import { Button } from '@/components/ui/button';
@@ -44,6 +44,8 @@ interface Size {
   id: number;
   code: string;
   name: string;
+  min_animals_per_kg?: number;
+  max_animals_per_kg?: number;
 }
 
 interface SGR {
@@ -152,6 +154,36 @@ export default function CyclesPaginated() {
     }
   }, [flupsys, dashboardFilters, flupsyFilter]);
   
+  // Calcola la taglia in base al peso e al numero di animali (come nella dashboard)
+  const calculateDisplaySize = (cycle: Cycle) => {
+    // Trova le operazioni di peso per questo ciclo
+    const weightOperations = operations
+      .filter(op => op.cycleId === cycle.id && op.type === 'peso')
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+    
+    // Se non ci sono operazioni di peso, usa la taglia corrente del ciclo
+    if (weightOperations.length === 0) {
+      return cycle.currentSize?.code || 'N/D';
+    }
+    
+    // Usa l'ultima operazione di peso
+    const lastOp = weightOperations[0];
+    if (!lastOp.totalWeight || !lastOp.animalCount) return cycle.currentSize?.code || 'N/D';
+    
+    // Calcola il peso medio in grammi
+    const avgWeight = (lastOp.totalWeight * 1000) / lastOp.animalCount;
+    
+    // Trova la taglia appropriata in base al peso medio
+    const size = sizes.find(s => {
+      if (!s.min_animals_per_kg || !s.max_animals_per_kg) return false;
+      const minWeight = 1000 / s.max_animals_per_kg; // peso minimo in grammi
+      const maxWeight = 1000 / s.min_animals_per_kg; // peso massimo in grammi
+      return avgWeight >= minWeight && avgWeight < maxWeight;
+    });
+    
+    return size?.code || cycle.currentSize?.code || 'N/D';
+  };
+  
   // Filtra i cicli in base ai criteri
   const filteredCycles = useMemo(() => {
     if (isAllCyclesLoading) return [];
@@ -246,9 +278,9 @@ export default function CyclesPaginated() {
           bValue = b.basket?.physicalNumber || 0;
           break;
         case 'flupsy':
-          const basketA = baskets.find(b => b.id === a.basketId);
+          const basketA = baskets.find(basket => basket.id === a.basketId);
           const flupsyA = basketA ? flupsys.find(f => f.id === basketA.flupsyId)?.name || '' : '';
-          const basketB = baskets.find(b => b.id === b.basketId);
+          const basketB = baskets.find(basket => basket.id === b.basketId);
           const flupsyB = basketB ? flupsys.find(f => f.id === basketB.flupsyId)?.name || '' : '';
           aValue = flupsyA;
           bValue = flupsyB;
@@ -731,75 +763,79 @@ export default function CyclesPaginated() {
                       key={cycle.id}
                       className={`border-b transition-colors hover:bg-muted/50 ${cycle.state === 'closed' ? 'bg-red-50' : ''}`}
                     >
-                      <td className="p-4 align-middle">{cycle.id}</td>
-                      <td className="p-4 align-middle">
+                      <td className="py-2 px-3 align-middle">{cycle.id}</td>
+                      <td className="py-2 px-3 align-middle">
                         #{cycle.basket?.physicalNumber || 'N/D'}
                       </td>
-                      <td className="p-4 align-middle">
+                      <td className="py-2 px-3 align-middle">
                         {flupsy?.name || 'N/D'}
                       </td>
-                      <td className="p-4 align-middle">
+                      <td className="py-2 px-3 align-middle">
                         {format(new Date(cycle.startDate), 'dd/MM/yyyy', { locale: it })}
                       </td>
-                      <td className="p-4 align-middle">
+                      <td className="py-2 px-3 align-middle">
                         {cycle.endDate 
                           ? format(new Date(cycle.endDate), 'dd/MM/yyyy', { locale: it })
                           : '-'
                         }
                       </td>
-                      <td className="p-4 align-middle">
+                      <td className="py-2 px-3 align-middle">
                         <Badge 
                           variant={cycle.state === 'active' ? 'default' : 'secondary'}
-                          className={cycle.state === 'closed' ? 'bg-red-100 text-red-800 hover:bg-red-200' : ''}
+                          className={cycle.state === 'closed' ? 'bg-red-100 text-red-800 hover:bg-red-200' : 'bg-blue-100 text-blue-800 hover:bg-blue-200'}
                         >
                           {cycle.state === 'active' ? 'Attivo' : 'Chiuso'}
                         </Badge>
                       </td>
-                      <td className="p-4 align-middle">
-                        {cycle.currentSize ? (
-                          <TooltipProvider>
-                            <Tooltip>
-                              <TooltipTrigger asChild>
-                                <Badge 
-                                  variant="outline" 
-                                  className="gap-1"
-                                  style={{ 
-                                    borderColor: getSizeColor(cycle.currentSize.code),
-                                    color: getSizeColor(cycle.currentSize.code)
-                                  }}
-                                >
-                                  <span 
-                                    className="w-2 h-2 rounded-full"
-                                    style={{ backgroundColor: getSizeColor(cycle.currentSize.code) }}
-                                  />
-                                  {cycle.currentSize.code}
-                                </Badge>
-                              </TooltipTrigger>
-                              <TooltipContent>
-                                <p>{cycle.currentSize.name}</p>
-                              </TooltipContent>
-                            </Tooltip>
-                          </TooltipProvider>
-                        ) : (
-                          '-'
-                        )}
+                      <td className="py-2 px-3 align-middle">
+                        {(() => {
+                          // Calcola la taglia corretta usando il metodo della dashboard
+                          const displaySize = calculateDisplaySize(cycle);
+                          if (!displaySize || displaySize === 'N/D') return '-';
+                          
+                          // Trova la taglia per ottenere il nome completo
+                          const size = sizes.find(s => s.code === displaySize);
+                          
+                          return (
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Badge 
+                                    variant="outline" 
+                                    className="gap-1"
+                                    style={{ 
+                                      backgroundColor: `${getSizeColor(displaySize)}20`,
+                                      borderColor: getSizeColor(displaySize),
+                                      color: getSizeColor(displaySize)
+                                    }}
+                                  >
+                                    {displaySize}
+                                  </Badge>
+                                </TooltipTrigger>
+                                <TooltipContent>
+                                  <p>{size?.name || displaySize}</p>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
+                          );
+                        })()}
                       </td>
-                      <td className="p-4 align-middle">
+                      <td className="py-2 px-3 align-middle">
                         {cycle.currentSgr ? (
                           `${cycle.currentSgr.percentage.toFixed(2)}%`
                         ) : (
                           '-'
                         )}
                       </td>
-                      <td className="p-4 align-middle text-center">
+                      <td className="py-2 px-3 align-middle text-center">
                         <Button 
-                          variant="ghost" 
                           size="sm"
+                          variant="ghost" 
+                          className="p-0 h-8 w-8" 
                           asChild
                         >
                           <Link href={`/cycles/${cycle.id}`}>
-                            <Eye className="h-4 w-4 mr-1" />
-                            Dettagli
+                            <Eye className="h-4 w-4" />
                           </Link>
                         </Button>
                       </td>
