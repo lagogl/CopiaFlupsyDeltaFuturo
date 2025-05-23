@@ -1767,7 +1767,7 @@ export default function VagliaturaDetailPage() {
                               key={basket.basketId} 
                               value={basket.basketId.toString()}
                               // Evidenzia visivamente se è un cestello di origine
-                              className={basket.isLabel ? '' : sourceBasketIds.includes(basket.basketId) ? 'bg-blue-50 dark:bg-blue-950' : ''}
+                              className={basket.isLabel ? '' : (hasSourceBaskets && Array.isArray(sourceBasketIds) && sourceBasketIds.includes(basket.basketId)) ? 'bg-blue-50 dark:bg-blue-950' : ''}
                             >
                               {basket.isLabel ? (
                                 // Se è un'etichetta, mostra solo il testo
@@ -1776,7 +1776,7 @@ export default function VagliaturaDetailPage() {
                                 <div className="grid grid-cols-12 w-full items-center gap-1">
                                   {/* Colonna 1-3: Numero cestello */}
                                   <div className="col-span-3 font-semibold flex items-center">
-                                    {sourceBasketIds.includes(basket.basketId) && (
+                                    {hasSourceBaskets && Array.isArray(sourceBasketIds) && sourceBasketIds.includes(basket.basketId) && (
                                       <span className="inline-flex items-center px-1.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800 dark:bg-blue-900 dark:text-blue-100 mr-1">
                                         Origine
                                       </span>
