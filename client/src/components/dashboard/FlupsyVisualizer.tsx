@@ -81,6 +81,12 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
     queryKey: ['/api/flupsys', { includeAll: true }],
   });
   
+  // Fetch di tutti i cestelli quando non ci sono FLUPSY selezionati
+  const { data: allBaskets, isLoading: isLoadingAllBaskets } = useQuery<Basket[]>({
+    queryKey: ['/api/baskets', { includeAll: true }],
+    enabled: effectiveSelectedFlupsyIds.length === 0
+  });
+  
   // Fetch baskets singolarmente per ogni FLUPSY selezionato e poi unisci i risultati
   // Questo è più efficiente di un'unica grande query che può fallire con molti ID
   const basketQueries = effectiveSelectedFlupsyIds.map(id => 
@@ -93,19 +99,26 @@ export default function FlupsyVisualizer({ selectedFlupsyIds }: FlupsyVisualizer
     })
   );
   
-  // Unisci i risultati di tutte le query
-  const baskets = React.useMemo(() => {
-    let allBaskets: Basket[] = [];
-    basketQueries.forEach(query => {
-      if (query.data) {
-        allBaskets = [...allBaskets, ...query.data];
-      }
-    });
-    return allBaskets;
+  // Unisci i risultati di tutte le query individuali dei FLUPSY
+  const selectedBaskets = React.useMemo(() => {
+    let result: Basket[] = [];
+    if (basketQueries.length > 0) {
+      basketQueries.forEach(query => {
+        if (query.data) {
+          result = [...result, ...query.data];
+        }
+      });
+    }
+    return result;
   }, [basketQueries]);
   
+  // Usa i cestelli corretti in base alla selezione
+  const baskets = effectiveSelectedFlupsyIds.length > 0 ? selectedBaskets : allBaskets;
+  
   // Verifica se è in caricamento
-  const isLoadingBaskets = basketQueries.some(query => query.isLoading);
+  const isLoadingBaskets = effectiveSelectedFlupsyIds.length > 0 
+    ? basketQueries.some(query => query.isLoading)
+    : isLoadingAllBaskets;
   
   // Aggiungiamo log per debug
   React.useEffect(() => {
