@@ -707,19 +707,36 @@ export default function DraggableFlupsyVisualizer() {
       
       // Get cycle data
       if (basket.currentCycleId) {
-        const cycles = queryClient.getQueryData(['api/cycles']);
+        const cycles = queryClient.getQueryData(['/api/cycles?includeAll=true']);
         cycle = cycles && Array.isArray(cycles) ? 
           cycles.find((c: any) => c.id === basket.currentCycleId) : 
           null;
         if (cycle) {
           startDate = new Date(cycle.startDate);
+          
+          // Se il ciclo ha informazioni sugli animali, le usiamo come fallback
+          if (!animalCount && cycle.initialAnimalCount) {
+            animalCount = cycle.initialAnimalCount;
+          }
+          
+          // Se il ciclo ha informazioni sulla taglia, le usiamo come fallback
+          if (!size && cycle.sizeId) {
+            const sizes = queryClient.getQueryData(['/api/sizes']);
+            if (sizes && Array.isArray(sizes)) {
+              const cycleSize = sizes.find((s: any) => s.id === cycle.sizeId);
+              if (cycleSize) {
+                size = cycleSize.code;
+              }
+            }
+          }
         }
       }
       
       // Get size, average weight and animal count from latest operation
       if (latestOperation) {
-        size = latestOperation.size?.code;
-        animalCount = latestOperation.animalCount;
+        // L'operazione ha la precedenza sui dati del ciclo
+        size = latestOperation.size?.code || size;
+        animalCount = latestOperation.animalCount || animalCount;
         // Utilizziamo il peso medio direttamente dal campo averageWeight se disponibile
         averageWeight = latestOperation.averageWeight ? parseFloat(latestOperation.averageWeight) : null;
         
