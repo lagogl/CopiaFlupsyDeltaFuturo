@@ -847,20 +847,47 @@ export default function DraggableFlupsyVisualizer() {
     const flupsy = flupsys.find(f => f.id === flupsyId);
     if (!flupsy) return null;
     
-    // Get baskets for this FLUPSY
-    const flupsyBaskets = baskets.filter(b => b.flupsyId === flupsyId);
+    // Get baskets for this FLUPSY - modificato per includere tutti i cestelli attivi associati a questo FLUPSY
+    let flupsyBaskets = baskets.filter(b => b.flupsyId === flupsyId);
     
     // Separa i cestelli con posizione e quelli senza posizione
     const basketsWithPosition = flupsyBaskets.filter(b => b.row && b.position);
     let basketsWithoutPosition = flupsyBaskets.filter(b => !b.row || !b.position);
     
     // Caso speciale per il Flupsy 2 piccolo 10 ceste (ID 570)
-    // Se siamo nel Flupsy 2 piccolo e ci sono cestelli senza posizione, li assegniamo temporaneamente
-    // per visualizzarli nella griglia (questa è solo una visualizzazione, non un cambiamento reale)
+    // Verifica anche se ci sono cestelli che dovrebbero essere visualizzati ma non hanno flupsyId corretto
+    if (flupsy.id === 570) {
+      // Cerca tutti i cestelli attivi che hanno il nome del FLUPSY nei dati anche se non hanno flupsyId
+      const allCestelli = Array.isArray(baskets) ? baskets : [];
+      const altriCestelliAttivi = allCestelli.filter(b => 
+        b.state === 'active' && 
+        b.flupsyName && 
+        b.flupsyName.toLowerCase().includes("piccolo 10 ceste") &&
+        !flupsyBaskets.some(fb => fb.id === b.id)
+      );
+      
+      console.log(`Flupsy 2 piccolo 10 ceste: aggiunti ${altriCestelliAttivi.length} cestelli attivi dalla ricerca per nome`);
+      
+      // Aggiungiamo questi cestelli all'elenco
+      if (altriCestelliAttivi.length > 0) {
+        // Assegna temporaneamente il flupsyId corretto per la visualizzazione
+        altriCestelliAttivi.forEach(b => {
+          b.flupsyId = flupsy.id;
+          b.needsVisualPosition = true;
+        });
+        
+        // Aggiungiamo questi cestelli all'elenco di quelli senza posizione
+        basketsWithoutPosition = [...basketsWithoutPosition, ...altriCestelliAttivi];
+        // Aggiorniamo anche l'elenco completo
+        flupsyBaskets = [...flupsyBaskets, ...altriCestelliAttivi];
+      }
+    }
+    
+    // Caso speciale per l'assegnazione temporanea delle posizioni
     let tempBasketPositions = [];
     
-    if (flupsy.id === 570 && basketsWithoutPosition.length > 0) {
-      console.log(`Flupsy 2 piccolo 10 ceste: trovati ${basketsWithoutPosition.length} cestelli senza posizione`);
+    if (basketsWithoutPosition.length > 0) {
+      console.log(`${flupsy.name}: trovati ${basketsWithoutPosition.length} cestelli senza posizione`);
       
       // Crea una copia per non modificare l'array originale
       const tempUnassignedBaskets = [...basketsWithoutPosition];
@@ -869,11 +896,11 @@ export default function DraggableFlupsyVisualizer() {
         basket.needsVisualPosition = true;
       });
       
-      // Conserviamo l'elenco originale dei cestelli senza posizione prima di svuotarlo
+      // Conserviamo l'elenco originale dei cestelli senza posizione
       tempBasketPositions = tempUnassignedBaskets;
       
-      // Svuotiamo l'array dei cestelli senza posizione poiché li gestiremo diversamente
-      basketsWithoutPosition = [];
+      // Nota: non svuotiamo più basketsWithoutPosition perché vogliamo mostrare
+      // questi cestelli nella sezione "Cestelli senza posizione" in fondo
     }
     
     // Utilizziamo maxPositions dal FLUPSY o default a 10 se non definito
