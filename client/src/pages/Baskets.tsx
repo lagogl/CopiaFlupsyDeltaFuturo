@@ -30,23 +30,23 @@ export default function Baskets() {
       direction: 'asc' as 'asc' | 'desc'
     }
   });
-  
+
   // Stato preferredSize viene mantenuto separato poiché era già salvato nel localStorage
   const [preferredSize, setPreferredSize] = useState(localStorage.getItem('preferredSizeCode') || 'TP-500');
-  
+
   // Utilizzo dei filtri salvati
   const searchTerm = filters.searchTerm;
   const stateFilter = filters.stateFilter;
   const flupsyFilter = filters.flupsyFilter;
   const sortConfig = filters.sortConfig as {key: string, direction: 'asc' | 'desc'};
-  
+
   // Funzioni per aggiornare i filtri
   const setSearchTerm = (value: string) => setFilters(prev => ({ ...prev, searchTerm: value }));
   const setStateFilter = (value: string) => setFilters(prev => ({ ...prev, stateFilter: value }));
   const setFlupsyFilter = (value: string) => setFilters(prev => ({ ...prev, flupsyFilter: value }));
   const setSortConfig = (value: {key: string, direction: 'asc' | 'desc'}) => 
     setFilters(prev => ({ ...prev, sortConfig: value }));
-  
+
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false);
@@ -54,7 +54,7 @@ export default function Baskets() {
   const [selectedBasket, setSelectedBasket] = useState<any>(null);
   const [location] = useLocation();
   const [urlParamsLoaded, setUrlParamsLoaded] = useState(false);
-  
+
   // Salva la taglia preferita nel localStorage ogni volta che cambia
   useEffect(() => {
     localStorage.setItem('preferredSizeCode', preferredSize);
@@ -66,11 +66,11 @@ export default function Baskets() {
       });
     }
   }, [preferredSize]);
-  
+
   // Carica il flupsyId dal localStorage (impostato dalla pagina Flupsys)
   useEffect(() => {
     const savedFlupsyId = localStorage.getItem('selectedFlupsyId');
-    
+
     if (savedFlupsyId) {
       console.log("Impostazione filtro FLUPSY da localStorage:", savedFlupsyId);
       setFlupsyFilter(savedFlupsyId);
@@ -80,19 +80,19 @@ export default function Baskets() {
       // Analizza i parametri dell'URL come fallback
       const params = new URLSearchParams(location.split('?')[1] || '');
       const flupsyIdParam = params.get('flupsyId');
-      
+
       if (flupsyIdParam) {
         console.log("Impostazione filtro FLUPSY da URL:", flupsyIdParam);
         setFlupsyFilter(flupsyIdParam);
       }
     }
   }, [location]);
-  
+
   // Query baskets
   const { data: baskets, isLoading } = useQuery({
     queryKey: ['/api/baskets'],
   });
-  
+
   // Query FLUPSY units for filter
   const { data: flupsys } = useQuery({
     queryKey: ['/api/flupsys'],
@@ -118,7 +118,7 @@ export default function Baskets() {
       // Gestione errori migliorata per messaggi specifici
       let errorMessage = "Si è verificato un errore durante la creazione della cesta";
       let errorTitle = "Errore";
-      
+
       // Estrai il messaggio di errore JSON se presente
       if (error.message) {
         try {
@@ -126,10 +126,10 @@ export default function Baskets() {
           if (error.message.includes('{')) {
             const jsonPart = error.message.substring(error.message.indexOf('{'));
             const parsedError = JSON.parse(jsonPart);
-            
+
             if (parsedError.message) {
               errorMessage = parsedError.message;
-              
+
               // Titoli specifici in base al tipo di errore
               if (errorMessage.includes("posizione") && errorMessage.includes("occupata")) {
                 errorTitle = "Posizione già occupata";
@@ -145,7 +145,7 @@ export default function Baskets() {
           errorMessage = error.message;
         }
       }
-      
+
       toast({
         title: errorTitle,
         description: errorMessage,
@@ -153,7 +153,7 @@ export default function Baskets() {
       });
     }
   });
-  
+
   // Update mutation
   const updateBasketMutation = useMutation({
     mutationFn: (data: any) => apiRequest({
@@ -169,6 +169,7 @@ export default function Baskets() {
         title: "Operazione completata",
         description: "La cesta è stata aggiornata con successo",
         variant: "success",
+        variant: "success",
       });
     },
     onError: (error: any) => {
@@ -179,7 +180,7 @@ export default function Baskets() {
       });
     }
   });
-  
+
   // Delete mutation
   const deleteBasketMutation = useMutation({
     mutationFn: (id: number) => apiRequest({
@@ -208,63 +209,63 @@ export default function Baskets() {
   // Prepare baskets array with additional data
   const basketsArray = Array.isArray(baskets) ? baskets : [];
   const flupsysArray = Array.isArray(flupsys) ? flupsys : [];
-  
+
   // Debug - controlla quanti cestelli hanno la taglia impostata
   useEffect(() => {
     if (basketsArray.length > 0) {
       const basketsWithSize = basketsArray.filter(basket => basket.size && basket.size.code);
       const basketsWithoutSize = basketsArray.filter(basket => !basket.size || !basket.size.code);
-      
+
       console.log(`Cestelli con taglia: ${basketsWithSize.length}/${basketsArray.length}`);
       console.log(`Cestelli senza taglia: ${basketsWithoutSize.length}/${basketsArray.length}`);
-      
+
       if (basketsWithoutSize.length > 0) {
         console.log('Esempio cestello senza taglia:', basketsWithoutSize[0]);
       }
-      
+
       if (basketsWithSize.length > 0) {
         console.log('Esempio cestello con taglia:', basketsWithSize[0]);
       }
     }
   }, [basketsArray]);
-  
+
   // Funzione che calcola la differenza numerica tra due taglie (per ordinamento per somiglianza)
   const getSizeNumberFromCode = (sizeCode: string | undefined): number => {
     if (!sizeCode || !sizeCode.startsWith('TP-')) return 0;
     return parseInt(sizeCode.replace('TP-', ''));
   };
-  
+
   // Funzione per determinare la priorità di una taglia rispetto a una taglia desiderata
   const getSizeDistance = (sizeCode: string | undefined, targetSizeCode?: string): number => {
     if (!sizeCode) return Number.MAX_SAFE_INTEGER; // Le voci senza taglia vanno in fondo
     if (!targetSizeCode) return 0; // Se non c'è taglia target, non c'è distanza
-    
+
     const sizeNum = getSizeNumberFromCode(sizeCode);
     const targetNum = getSizeNumberFromCode(targetSizeCode);
-    
+
     if (sizeNum === 0 || targetNum === 0) return Number.MAX_SAFE_INTEGER;
-    
+
     // Distanza numerica tra le taglie
     const distance = Math.abs(sizeNum - targetNum);
-    
+
     // Log per debug
     console.log(`Calcolo distanza taglia: ${sizeCode} -> ${targetSizeCode}, distanza: ${distance}`);
-    
+
     return distance;
   };
-  
+
   // Funzione per aggiornare la taglia preferita
   useEffect(() => {
     localStorage.setItem('preferredSizeCode', preferredSize);
   }, [preferredSize]);
-  
+
   // Funzione di ordinamento dei dati
   const sortData = (data: any[], config = sortConfig) => {
     if (!config.key) return data;
-    
+
     // Usa la taglia target dal nostro stato
     const targetSizeCode = preferredSize;
-    
+
     return [...data].sort((a, b) => {
       // Per campi numerici
       if (config.key === 'physicalNumber') {
@@ -273,12 +274,12 @@ export default function Baskets() {
         }
         return b.physicalNumber - a.physicalNumber;
       }
-      
+
       // Ordinamento speciale per taglia
       if (config.key === 'size.code') {
         const aCode = a.size?.code;
         const bCode = b.size?.code;
-        
+
         // Priorità 1: Le ceste con stato "active" vengono prima di quelle disponibili
         if (a.state !== b.state) {
           if (a.state === 'active' && b.state === 'available') {
@@ -288,35 +289,35 @@ export default function Baskets() {
             return 1;
           }
         }
-        
+
         // Priorità 2: Se entrambe hanno una taglia
         if (aCode && bCode) {
           // Prima priorità: la taglia esatta richiesta
           const aHasTargetSize = aCode === targetSizeCode;
           const bHasTargetSize = bCode === targetSizeCode;
-          
+
           if (aHasTargetSize && !bHasTargetSize) {
             return -1;
           }
           if (!aHasTargetSize && bHasTargetSize) {
             return 1;
           }
-          
+
           // Seconda priorità: somiglianza alla taglia target
           const aDistance = getSizeDistance(aCode, targetSizeCode);
           const bDistance = getSizeDistance(bCode, targetSizeCode);
-          
+
           if (aDistance !== bDistance) {
             // Ordina per distanza dalla taglia richiesta (più vicina prima)
             return config.direction === 'asc' ? aDistance - bDistance : bDistance - aDistance;
           }
-          
+
           // Se le distanze sono uguali, ordina numericamente per valore assoluto della taglia
           const aValue = getSizeNumberFromCode(aCode);
           const bValue = getSizeNumberFromCode(bCode);
           return config.direction === 'asc' ? aValue - bValue : bValue - aValue;
         }
-        
+
         // Priorità 3: Ceste con taglia vengono prima di quelle senza taglia
         if (aCode && !bCode) {
           return -1; 
@@ -324,11 +325,11 @@ export default function Baskets() {
         if (!aCode && bCode) {
           return 1;
         }
-        
+
         // Priorità 4: Se entrambe non hanno taglia, ordina per numero cesta (per mantenere un ordine coerente)
         return a.physicalNumber - b.physicalNumber;
       }
-      
+
       // Per campi stringa
       if (typeof a[config.key] === 'string' && typeof b[config.key] === 'string') {
         if (config.direction === 'asc') {
@@ -336,18 +337,18 @@ export default function Baskets() {
         }
         return b[config.key].localeCompare(a[config.key]);
       }
-      
+
       // Per campi annidati come 'size.code'
       if (config.key.includes('.')) {
         const keys = config.key.split('.');
         let aValue = a;
         let bValue = b;
-        
+
         for (const key of keys) {
           aValue = aValue?.[key];
           bValue = bValue?.[key];
         }
-        
+
         if (typeof aValue === 'string' && typeof bValue === 'string') {
           if (config.direction === 'asc') {
             return aValue.localeCompare(bValue);
@@ -355,11 +356,11 @@ export default function Baskets() {
           return bValue.localeCompare(aValue);
         }
       }
-      
+
       return 0;
     });
   };
-  
+
   // Funzione per cambiare l'ordinamento
   const requestSort = (key: string) => {
     let direction: 'asc' | 'desc' = 'asc';
@@ -376,12 +377,12 @@ export default function Baskets() {
     if (flupsy) {
       basket.flupsyName = flupsy.name;
     }
-    
+
     // Calcoliamo il numero di animali dall'ultima operazione
     if (basket.lastOperation && basket.lastOperation.animalCount) {
       basket.animalCount = basket.lastOperation.animalCount;
     }
-    
+
     // Assicuriamoci che basket.size sia definito per l'ordinamento
     if (!basket.size) {
       // Per le ceste senza taglia, creiamo un oggetto size vuoto
@@ -391,25 +392,25 @@ export default function Baskets() {
         color: '#e2e8f0'  // colore grigio chiaro per le ceste senza taglia
       };
     }
-    
+
     // Filter by search term
     const matchesSearch = searchTerm === '' || 
       `${basket.physicalNumber}`.includes(searchTerm) || 
       (basket.currentCycleId ? `${basket.currentCycleId}`.includes(searchTerm) : false) ||
       (basket.flupsyName && basket.flupsyName.toLowerCase().includes(searchTerm.toLowerCase()));
-    
+
     // Filter by state
     const matchesState = stateFilter === 'all' || 
       (stateFilter === 'active' && basket.state === 'active') ||
       (stateFilter === 'available' && basket.state === 'available');
-    
+
     // Filter by FLUPSY
     const matchesFlupsy = flupsyFilter === 'all' || 
       String(basket.flupsyId) === flupsyFilter;
-    
+
     return matchesSearch && matchesState && matchesFlupsy;
   });
-  
+
   // Applichiamo l'ordinamento
   filteredBaskets = sortData(filteredBaskets);
 
@@ -902,7 +903,7 @@ export default function Baskets() {
                       </tr>
                     );
                   })}
-                  
+
                   {/* Riga totale */}
                   {filteredBaskets.length > 0 && (
                     <tr className="bg-muted/30 font-medium border-t-2 border-gray-300">
@@ -940,7 +941,7 @@ export default function Baskets() {
           />
         </DialogContent>
       </Dialog>
-      
+
       {/* Edit Basket Dialog */}
       <Dialog open={isEditDialogOpen} onOpenChange={setIsEditDialogOpen}>
         <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto">
@@ -965,7 +966,7 @@ export default function Baskets() {
           )}
         </DialogContent>
       </Dialog>
-      
+
       {/* View Basket Details Dialog */}
       <Dialog open={isViewDialogOpen} onOpenChange={setIsViewDialogOpen}>
         <DialogContent className="sm:max-w-[700px] max-h-[80vh] overflow-y-auto">
@@ -987,7 +988,7 @@ export default function Baskets() {
                   <span>Cronologia Posizioni</span>
                 </TabsTrigger>
               </TabsList>
-              
+
               <TabsContent value="info" className="mt-4">
                 <div className="rounded-lg bg-card border">
                   <div className="p-4 border-b bg-muted/30">
@@ -1009,7 +1010,7 @@ export default function Baskets() {
                       </Badge>
                     </h3>
                   </div>
-                  
+
                   <div className="p-4 grid grid-cols-2 gap-4">
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">Unità FLUPSY</p>
@@ -1017,19 +1018,19 @@ export default function Baskets() {
                         {flupsysArray.find((f: any) => f.id === selectedBasket.flupsyId)?.name || `#${selectedBasket.flupsyId}`}
                       </p>
                     </div>
-                    
+
                     <div>
                       <p className="text-sm font-medium text-muted-foreground">ID Sistema</p>
                       <p className="font-medium">#{selectedBasket.id}</p>
                     </div>
-                    
+
                     {selectedBasket.row && selectedBasket.position && (
                       <div className="col-span-2">
                         <p className="text-sm font-medium text-muted-foreground">Posizione Attuale</p>
                         <p className="font-medium text-primary">Fila {selectedBasket.row}, Posizione {selectedBasket.position}</p>
                       </div>
                     )}
-                    
+
                     {selectedBasket.cycleCode && (
                       <div className="col-span-2">
                         <p className="text-sm font-medium text-muted-foreground">Codice Ciclo</p>
@@ -1043,7 +1044,7 @@ export default function Baskets() {
                         <p className="font-medium text-primary">#{selectedBasket.currentCycleId}</p>
                       </div>
                     )}
-                    
+
                     {(selectedBasket.currentCycle?.lotId || selectedBasket.lotId) && (
                       <div className="col-span-2">
                         <p className="text-sm font-medium text-muted-foreground">Lotto</p>
@@ -1062,7 +1063,7 @@ export default function Baskets() {
                         )}
                       </div>
                     )}
-                    
+
                     {selectedBasket.nfcData && (
                       <div className="col-span-2 border-t pt-3 mt-2">
                         <p className="text-sm font-medium text-muted-foreground">Dati NFC</p>
@@ -1074,25 +1075,25 @@ export default function Baskets() {
                   </div>
                 </div>
               </TabsContent>
-              
+
               <TabsContent value="positions" className="mt-4 space-y-4">
                 <div className="bg-muted/20 p-4 rounded-lg border">
                   <h3 className="text-sm font-semibold mb-2 flex items-center">
                     <MapPin className="h-4 w-4 mr-1" />
                     Cronologia degli spostamenti
                   </h3>
-                  
+
                   <p className="text-sm text-muted-foreground mb-4">
                     Questa sezione mostra tutti i movimenti e cambi di posizione della cesta nel corso del tempo.
                     Le posizioni sono ordinate cronologicamente dalla più recente alla più vecchia.
                   </p>
-                  
+
                   <BasketPositionHistory basketId={selectedBasket.id} />
                 </div>
               </TabsContent>
             </Tabs>
           )}
-          
+
           <DialogFooter>
             <Button onClick={() => setIsViewDialogOpen(false)}>
               Chiudi
@@ -1100,7 +1101,7 @@ export default function Baskets() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-      
+
       {/* Delete Basket Dialog */}
       <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
         <DialogContent className="sm:max-w-[425px] max-h-[80vh] overflow-y-auto">
@@ -1136,7 +1137,7 @@ export default function Baskets() {
                       <p className="font-medium">{selectedBasket.cycleCode}</p>
                     </div>
                   )}
-                  
+
                   {(selectedBasket.currentCycle?.lotId || selectedBasket.lotId) && (
                     <div className="col-span-2">
                       <p className="text-sm font-medium text-muted-foreground">Lotto</p>
@@ -1150,7 +1151,7 @@ export default function Baskets() {
                       </p>
                     </div>
                   )}
-                  
+
                   <div className="col-span-2">
                     <p className="text-sm font-medium text-muted-foreground">Stato</p>
                     <p className="font-medium flex items-center">
@@ -1165,7 +1166,7 @@ export default function Baskets() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="flex items-start space-x-2 p-4 rounded-md bg-amber-50 text-amber-900 border border-amber-200 mb-4">
                 <AlertTriangle className="h-5 w-5 flex-shrink-0 mt-0.5" />
                 <div className="text-sm">
