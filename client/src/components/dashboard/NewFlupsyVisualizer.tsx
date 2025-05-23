@@ -219,8 +219,16 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
                       {latestOperation.animalCount?.toLocaleString('it-IT')}
                     </div>
                     
-                    <div className="text-[11px] text-gray-600">Op. per ID/PS:</div>
-                    <div className="text-[11px] text-right">C{latestOperation.id.toString().padStart(3, '0')}</div>
+                    <div className="text-[11px] text-gray-600">Operazione:</div>
+                    <div className="text-[11px] text-right">
+                      {latestOperation.type === 'prima-attivazione' ? 'Prima Attivazione' : 
+                       latestOperation.type === 'misurazione' ? 'Misurazione' :
+                       latestOperation.type === 'misura' ? 'Misura' :
+                       latestOperation.type === 'peso' ? 'Peso' :
+                       latestOperation.type === 'vagliatura' ? 'Vagliatura' :
+                       latestOperation.type === 'mortalita' ? 'Mortalità' :
+                       latestOperation.type}
+                    </div>
                   </div>
                 </>
               )}
