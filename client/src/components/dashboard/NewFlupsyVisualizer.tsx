@@ -195,16 +195,37 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
 
   // Handle basket click to navigate to cycle detail for that basket
   const handleBasketClick = (basket: any) => {
-    // Trova il ciclo associato a questo cestello
-    const cycle = cycles?.find((c: any) => c.basketId === basket.id);
-    
-    if (cycle) {
-      // Se esiste un ciclo, naviga alla sua pagina di dettaglio
-      navigate(`/cycles/${cycle.id}`);
-    } else {
-      // Altrimenti, vai alla pagina del cestello
+    // Non possiamo procedere se non abbiamo i cicli
+    if (!cycles || !Array.isArray(cycles)) {
       navigate(`/baskets/${basket.id}`);
+      return;
     }
+
+    // Trova tutti i cicli associati a questo cestello
+    const basketCycles = cycles.filter((c: any) => c.basketId === basket.id);
+    
+    if (basketCycles.length === 0) {
+      // Se non ci sono cicli, vai alla pagina del cestello
+      navigate(`/baskets/${basket.id}`);
+      return;
+    }
+    
+    // Controlla prima se c'è un ciclo attivo
+    const activeCycle = basketCycles.find((c: any) => c.state === 'active');
+    
+    if (activeCycle) {
+      // Se c'è un ciclo attivo, usa quello
+      navigate(`/cycles/${activeCycle.id}`);
+      return;
+    }
+    
+    // Altrimenti, ordina i cicli per data di inizio (decrescente) e prendi il più recente
+    const sortedCycles = [...basketCycles].sort((a: any, b: any) => 
+      new Date(b.startDate).getTime() - new Date(a.startDate).getTime()
+    );
+    
+    // Usa il ciclo più recente
+    navigate(`/cycles/${sortedCycles[0].id}`);
   };
 
   // Render a basket position within a FLUPSY
