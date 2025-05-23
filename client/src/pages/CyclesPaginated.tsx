@@ -245,6 +245,14 @@ export default function CyclesPaginated() {
           aValue = a.basket?.physicalNumber || 0;
           bValue = b.basket?.physicalNumber || 0;
           break;
+        case 'flupsy':
+          const basketA = baskets.find(b => b.id === a.basketId);
+          const flupsyA = basketA ? flupsys.find(f => f.id === basketA.flupsyId)?.name || '' : '';
+          const basketB = baskets.find(b => b.id === b.basketId);
+          const flupsyB = basketB ? flupsys.find(f => f.id === basketB.flupsyId)?.name || '' : '';
+          aValue = flupsyA;
+          bValue = flupsyB;
+          break;
         case 'startDate':
           aValue = new Date(a.startDate).getTime();
           bValue = new Date(b.startDate).getTime();
@@ -280,7 +288,7 @@ export default function CyclesPaginated() {
         return aValue < bValue ? 1 : -1;
       }
     });
-  }, [filteredCycles, sortConfig]);
+  }, [filteredCycles, sortConfig, baskets, flupsys]);
   
   // Calcola i cicli da mostrare nella pagina corrente
   const paginatedCycles = useMemo(() => {
@@ -637,7 +645,7 @@ export default function CyclesPaginated() {
       <div className="rounded-md border">
         <div className="relative w-full overflow-auto">
           <table className="w-full caption-bottom text-sm">
-            <thead className="[&_tr]:border-b">
+            <thead className="[&_tr]:border-b bg-slate-100">
               <tr className="border-b transition-colors hover:bg-muted/50 data-[state=selected]:bg-muted">
                 <th className="h-12 px-4 text-left align-middle font-medium">
                   <button 
@@ -656,7 +664,12 @@ export default function CyclesPaginated() {
                   </button>
                 </th>
                 <th className="h-12 px-4 text-left align-middle font-medium">
-                  FLUPSY
+                  <button 
+                    className="flex items-center gap-1"
+                    onClick={() => handleSort('flupsy')}
+                  >
+                    FLUPSY {getSortIcon('flupsy')}
+                  </button>
                 </th>
                 <th className="h-12 px-4 text-left align-middle font-medium">
                   <button 
@@ -716,11 +729,11 @@ export default function CyclesPaginated() {
                   return (
                     <tr 
                       key={cycle.id}
-                      className="border-b transition-colors hover:bg-muted/50"
+                      className={`border-b transition-colors hover:bg-muted/50 ${cycle.state === 'closed' ? 'bg-red-50' : ''}`}
                     >
                       <td className="p-4 align-middle">{cycle.id}</td>
                       <td className="p-4 align-middle">
-                        {cycle.basket?.physicalNumber || 'N/D'}
+                        #{cycle.basket?.physicalNumber || 'N/D'}
                       </td>
                       <td className="p-4 align-middle">
                         {flupsy?.name || 'N/D'}
@@ -737,6 +750,7 @@ export default function CyclesPaginated() {
                       <td className="p-4 align-middle">
                         <Badge 
                           variant={cycle.state === 'active' ? 'default' : 'secondary'}
+                          className={cycle.state === 'closed' ? 'bg-red-100 text-red-800 hover:bg-red-200' : ''}
                         >
                           {cycle.state === 'active' ? 'Attivo' : 'Chiuso'}
                         </Badge>
