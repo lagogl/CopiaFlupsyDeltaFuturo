@@ -156,19 +156,52 @@ export default function CyclesPaginated() {
   
   // Calcola la taglia in base al peso e al numero di animali (come nella dashboard)
   const calculateDisplaySize = (cycle: Cycle) => {
+    // Cerca prima la taglia nel ciclo stesso
+    if (cycle.currentSize?.code) {
+      return cycle.currentSize.code;
+    }
+    
     // Trova le operazioni di peso per questo ciclo
     const weightOperations = operations
       .filter(op => op.cycleId === cycle.id && op.type === 'peso')
       .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
     
-    // Se non ci sono operazioni di peso, usa la taglia corrente del ciclo
+    // Se non ci sono operazioni di peso, cerca operazioni di prima attivazione o qualsiasi
+    // altra operazione che potrebbe avere una taglia associata
     if (weightOperations.length === 0) {
-      return cycle.currentSize?.code || 'N/D';
+      // Cerca le operazioni di prima attivazione
+      const activationOps = operations
+        .filter(op => op.cycleId === cycle.id && op.type === 'prima-attivazione')
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      if (activationOps.length > 0 && activationOps[0].size?.code) {
+        return activationOps[0].size.code;
+      }
+      
+      // Cerca qualsiasi operazione con taglia
+      const anyOpWithSize = operations
+        .filter(op => op.cycleId === cycle.id && op.size?.code)
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      
+      if (anyOpWithSize.length > 0) {
+        return anyOpWithSize[0].size.code;
+      }
+      
+      return 'N/D';
     }
     
     // Usa l'ultima operazione di peso
     const lastOp = weightOperations[0];
-    if (!lastOp.totalWeight || !lastOp.animalCount) return cycle.currentSize?.code || 'N/D';
+    
+    // Se l'operazione ha già una taglia, usala
+    if (lastOp.size?.code) {
+      return lastOp.size.code;
+    }
+    
+    // Se non c'è un peso totale o conteggio animali, non possiamo calcolare il peso medio
+    if (!lastOp.totalWeight || !lastOp.animalCount) {
+      return 'N/D';
+    }
     
     // Calcola il peso medio in grammi
     const avgWeight = (lastOp.totalWeight * 1000) / lastOp.animalCount;
@@ -181,7 +214,7 @@ export default function CyclesPaginated() {
       return avgWeight >= minWeight && avgWeight < maxWeight;
     });
     
-    return size?.code || cycle.currentSize?.code || 'N/D';
+    return size?.code || 'N/D';
   };
   
   // Filtra i cicli in base ai criteri
@@ -776,9 +809,17 @@ export default function CyclesPaginated() {
                   const cycleOperations = operations.filter(op => op.cycleId === cycle.id);
                   
                   // Trova l'ultima operazione di peso per ottenere il numero di animali
-                  const lastWeightOp = cycleOperations
+                  // Se non ci sono operazioni di peso, cerca altre operazioni con animalCount
+                  let lastWeightOp = cycleOperations
                     .filter(op => op.type === 'peso')
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                    
+                  // Se non abbiamo trovato operazioni di peso, cerchiamo qualsiasi operazione con animalCount
+                  if (!lastWeightOp || !lastWeightOp.animalCount) {
+                    lastWeightOp = cycleOperations
+                      .filter(op => op.animalCount)
+                      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                  }
                   
                   // Trova il lotto associato alle operazioni - prima cerca nelle operazioni di prima attivazione
                   const activationOp = cycleOperations.find(op => op.type === 'prima-attivazione');
