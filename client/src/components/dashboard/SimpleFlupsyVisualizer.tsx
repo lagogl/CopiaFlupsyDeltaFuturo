@@ -379,8 +379,12 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     
     console.log(`FLUPSY ${flupsy.id} - ${flupsy.name}: max_positions = ${maxPositionsFromDB}`, flupsy);
     
-    // Il numero di posizioni deve essere diviso equamente tra le due file (metà in fila DX, metà in fila SX)
-    const positionsPerRow = Math.ceil(maxPositions / 2);
+    // Il numero di posizioni deve essere esattamente la metà del valore max_positions per ogni fila
+    const positionsPerRow = Math.floor(maxPositions / 2);
+    
+    // Se il valore è dispari, aggiungiamo una posizione in più alla fila DX (per arrotondare)
+    const dxPositions = maxPositions % 2 === 0 ? positionsPerRow : positionsPerRow + 1;
+    const sxPositions = positionsPerRow;
 
     return (
       <div key={`flupsy-${flupsy.id}`} className="mb-8 border rounded-lg p-4">
@@ -406,7 +410,7 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
               </div>
               
               <div className="grid grid-cols-5 gap-2">
-                {Array.from({ length: positionsPerRow }).map((_, i) => 
+                {Array.from({ length: dxPositions }).map((_, i) => 
                   renderBasketPosition(flupsy.id, 'DX', i + 1)
                 )}
               </div>
@@ -420,7 +424,7 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
               </div>
               
               <div className="grid grid-cols-5 gap-2">
-                {Array.from({ length: positionsPerRow }).map((_, i) => 
+                {Array.from({ length: sxPositions }).map((_, i) => 
                   renderBasketPosition(flupsy.id, 'SX', i + 1)
                 )}
               </div>
