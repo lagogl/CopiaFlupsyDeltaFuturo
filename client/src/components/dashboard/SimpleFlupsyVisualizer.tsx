@@ -147,7 +147,7 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     return `TP-${Math.round(animalsPerKg/1000)*1000}`;
   };
 
-  // Helper function to determine basket color based on size - Usa esattamente la stessa logica del FlupsyVisualizer originale
+  // Helper function to get basket color class based on size
   const getBasketColorClass = (basket: any) => {
     if (!basket) return 'bg-gray-50 border-dashed';
     
@@ -157,8 +157,6 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     }
     
     const basketOperations = getOperationsForBasket(basket.id);
-    
-    // Sort operations by date (newest first)
     const sortedOperations = [...basketOperations].sort((a: any, b: any) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
@@ -176,25 +174,44 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
       return 'bg-blue-50 border-blue-300';
     }
     
+    // Get size from database if available
+    if (latestOperation.sizeId && sizes && Array.isArray(sizes)) {
+      const size = sizes.find((s: any) => s.id === latestOperation.sizeId);
+      if (size) {
+        // Personalizza i colori in base ai codici taglia dell'immagine di riferimento
+        if (size.code === 'TP-500') return 'bg-red-50 border-red-500 border-2';
+        if (size.code === 'TP-1000') return 'bg-orange-50 border-orange-500 border-2';
+        if (size.code === 'TP-1500') return 'bg-amber-50 border-amber-500 border-2';
+        if (size.code === 'TP-2000') return 'bg-yellow-50 border-yellow-500 border-2';
+        if (size.code === 'TP-3000') return 'bg-lime-50 border-lime-500 border-2';
+        if (size.code === 'TP-6000') return 'bg-green-50 border-green-500 border-2';
+        if (size.code === 'TP-10000') return 'bg-teal-50 border-teal-500 border-2';
+        if (size.code === 'TP-20000') return 'bg-sky-50 border-sky-500 border-2';
+      }
+    }
+    
+    // Fallback based on animalsPerKg if no size found
     const apkg = latestOperation.animalsPerKg;
     
-    // Usa lo stesso schema di colori dell'originale
-    if (apkg <= 500) { // Taglia molto grande
-      return 'bg-red-50 border-red-500 border-2';
+    // Colori specificati nell'immagine di riferimento
+    if (apkg <= 500) {
+      return 'bg-red-50 border-red-500 border-2'; // Taglia molto grande (pochi animali per kg)
     } else if (apkg <= 1000) {
       return 'bg-orange-50 border-orange-500 border-2';
+    } else if (apkg <= 1500) {
+      return 'bg-amber-50 border-amber-500 border-2';
     } else if (apkg <= 2000) {
       return 'bg-yellow-50 border-yellow-500 border-2';
     } else if (apkg <= 3000) {
-      return 'bg-green-50 border-green-500 border-2';
+      return 'bg-lime-50 border-lime-500 border-2';
     } else if (apkg <= 6000) {
-      return 'bg-teal-50 border-teal-500 border-2';
+      return 'bg-green-50 border-green-500 border-2';
     } else if (apkg <= 10000) {
-      return 'bg-sky-50 border-sky-500 border-2';
+      return 'bg-teal-50 border-teal-500 border-2';
     } else if (apkg <= 20000) {
-      return 'bg-blue-50 border-blue-500 border-2';
+      return 'bg-sky-50 border-sky-500 border-2';
     } else {
-      return 'bg-indigo-50 border-indigo-500 border-2';
+      return 'bg-blue-50 border-blue-500 border-2'; // Taglia molto piccola (molti animali per kg)
     }
   };
 
@@ -230,25 +247,37 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
                 basket ? getBasketColorClass(basket) : 'bg-gray-50 border-dashed'
               } ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : 'min-h-[3.5rem]'}`}
             >
-              <div>Pos. {position}</div>
-              {basket && (
+              <div className="text-[10px] text-gray-500">CESTA #{basket?.physicalNumber || position}</div>
+              {basket && latestOperation && (
                 <>
-                  <div className="font-bold">#{basket.physicalNumber}</div>
+                  {/* Taglia come nell'immagine di riferimento */}
+                  <div className="font-bold mt-1">
+                    {latestOperation.animalsPerKg && getSizeCodeFromAnimalsPerKg(latestOperation.animalsPerKg)}
+                  </div>
+                  
+                  {/* Ciclo attivo */}
                   {basket.currentCycleId && (
-                    <div className="text-[10px] bg-blue-100 rounded px-1 mt-1">
+                    <div className="text-[10px] text-gray-600 mt-1">
                       Ciclo {basket.currentCycleId}
                     </div>
                   )}
-                  {latestOperation && latestOperation.animalsPerKg && (
-                    <div className="text-[10px] bg-gray-100 rounded px-1 mt-1 font-semibold">
-                      {getSizeCodeFromAnimalsPerKg(latestOperation.animalsPerKg)}
-                    </div>
-                  )}
-                  {latestOperation && (
-                    <div className="text-[10px] text-gray-500 mt-1 truncate">
-                      {format(new Date(latestOperation.date), 'dd/MM/yy')}
-                    </div>
-                  )}
+                  
+                  {/* Peso totale */}
+                  <div className="text-[10px] text-gray-500 mt-1">
+                    {latestOperation.totalWeight && 
+                      `${latestOperation.totalWeight.toLocaleString('it-IT')}kg`}
+                  </div>
+                  
+                  {/* Numero animali */}
+                  <div className="text-[10px] text-gray-500">
+                    {latestOperation.animalCount && 
+                      `${latestOperation.animalCount.toLocaleString('it-IT')} animali`}
+                  </div>
+                  
+                  {/* Data dell'operazione */}
+                  <div className="text-[10px] text-gray-500 mt-1">
+                    {format(new Date(latestOperation.date), 'dd/MM/yy')}
+                  </div>
                 </>
               )}
             </div>
@@ -272,17 +301,19 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
                   <span>{format(new Date(latestOperation.date), 'dd/MM/yyyy')}</span>
                 </div>
                 
+                {/* Mostra sempre la taglia nel tooltip */}
+                <div className="flex justify-between">
+                  <span className="font-medium">Taglia:</span>
+                  <span className="font-semibold">
+                    {latestOperation.animalsPerKg ? 
+                      getSizeCodeFromAnimalsPerKg(latestOperation.animalsPerKg) : 'N/D'}
+                  </span>
+                </div>
+                
                 {latestOperation.animalsPerKg && (
                   <div className="flex justify-between">
                     <span className="font-medium">Densità:</span>
                     <span>{latestOperation.animalsPerKg.toLocaleString('it-IT')} animali/kg</span>
-                  </div>
-                )}
-                
-                {latestOperation.sizeId && (
-                  <div className="flex justify-between">
-                    <span className="font-medium">Taglia:</span>
-                    <span>{latestOperation.size?.code || getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}</span>
                   </div>
                 )}
                 
