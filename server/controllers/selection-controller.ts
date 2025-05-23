@@ -1595,39 +1595,45 @@ export async function completeSelection(req: Request, res: Response) {
         
         // Se non esiste un ciclo, lo creiamo ora
         if (existingCycles.length === 0) {
-          // Crea operazione di prima attivazione da vagliatura
-          const [operation] = await tx.insert(operations).values({
-            date: selection[0].date,
-            type: 'prima-attivazione-da-vagliatura',
-            basketId: destBasket.basketId,
-            cycleId: 0, // Placeholder, aggiornato dopo
-            animalCount: destBasket.animalCount,
-            totalWeight: destBasket.totalWeight,
-            animalsPerKg: destBasket.animalsPerKg,
-            averageWeight: destBasket.totalWeight && destBasket.animalCount 
-                            ? Math.round(destBasket.totalWeight / destBasket.animalCount) 
-                            : 0,
-            deadCount: destBasket.deadCount || 0,
-            mortalityRate: destBasket.mortalityRate || 0,
-            sizeId: actualSizeId,
-            notes: `Aperto ciclo da vagliatura #${selection[0].selectionNumber}`
-          }).returning();
+          // CORREZIONE: Prima creiamo il ciclo, poi l'operazione con il ciclo corretto
+          // Questo evita la violazione del vincolo di chiave esterna
           
-          // Crea nuovo ciclo per la cesta
+          // 1. Crea nuovo ciclo per la cesta
           const [cycle] = await tx.insert(cycles).values({
             basketId: destBasket.basketId,
             startDate: selection[0].date,
             state: 'active'
           }).returning();
           
+          // Protezione contro cicli non creati
+          if (!cycle || !cycle.id) {
+            throw new Error(`Errore critico: impossibile creare ciclo per cestello ${destBasket.basketId}`);
+          }
+          
           cycleId = cycle.id;
           
-          // Aggiorna l'operazione con l'ID del ciclo
-          await tx.update(operations)
-            .set({ cycleId: cycle.id })
-            .where(eq(operations.id, operation.id));
+          // 2. Crea operazione di prima attivazione con il cycleId corretto
+          await tx.insert(operations).values({
+            date: selection[0].date,
+            type: 'prima-attivazione-da-vagliatura',
+            basketId: destBasket.basketId,
+            cycleId: cycleId, // Usa direttamente l'ID del ciclo appena creato
+            animalCount: destBasket.animalCount,
+            totalWeight: destBasket.totalWeight,
+            animalsPerKg: destBasket.animalsPerKg,
+            averageWeight: destBasket.totalWeight && destBasket.animalCount 
+                          ? Math.round(destBasket.totalWeight / destBasket.animalCount) 
+                          : 0,
+            deadCount: destBasket.deadCount || 0,
+            mortalityRate: destBasket.mortalityRate || 0,
+            sizeId: actualSizeId,
+            notes: `Aperto ciclo da vagliatura #${selection[0].selectionNumber}`
+          });
+          
+          console.log(`Creato nuovo ciclo ${cycleId} per cestello ${destBasket.basketId} con successo`);
         } else {
           cycleId = existingCycles[0].id;
+          console.log(`Usato ciclo esistente ${cycleId} per cestello ${destBasket.basketId}`);
         }
         
         // Gestione in base al tipo di destinazione
