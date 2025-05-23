@@ -287,7 +287,7 @@ export default function DraggableFlupsyVisualizer() {
     queryKey: ['/api/baskets?includeAll=true'],
     queryFn: getQueryFn({ on401: "throw" }),
     refetchOnWindowFocus: true,  // Riaggiorna i dati quando la finestra riprende il focus
-    staleTime: 2000, // Considera i dati obsoleti dopo 2 secondi
+    staleTime: 1000, // Considera i dati obsoleti dopo 1 secondo per avere dati più freschi
   });
 
   const { data: operations, isLoading: isLoadingOperations } = useQuery({
@@ -884,7 +884,8 @@ export default function DraggableFlupsyVisualizer() {
     );
     
     // 3. Se siamo nel Flupsy 2 piccolo 10 ceste, cerchiamo anche nei cicli
-    const cestelliFromCycles = [];
+    // Utilizziamo un tipo esplicito per evitare errori di LSP
+    const cestelliFromCycles: typeof allCestelli = [];
     if (flupsy.id === 570) {
       // Ottieni i cicli dei cestelli che già sappiamo appartenere a questo FLUPSY
       const knownCycleIds = flupsyBaskets.map(b => b.currentCycleId).filter(Boolean);
@@ -893,8 +894,9 @@ export default function DraggableFlupsyVisualizer() {
       // ma non sono ancora inclusi nel FLUPSY
       allCestelli.forEach(b => {
         if (b.state === 'active' && 
-            b.cycleCode && 
-            b.cycleCode.includes('-570-') && 
+            ((b.cycleCode && b.cycleCode.includes('-570-')) || 
+             // Includiamo anche i cestelli che hanno baskets.flupsy_id = 570 direttamente nel database
+             (b.flupsyId === 570)) && 
             !flupsyBaskets.some(fb => fb.id === b.id) &&
             !cestelliByName.some(cb => cb.id === b.id) &&
             !cestelliByLot.some(cb => cb.id === b.id)) {
