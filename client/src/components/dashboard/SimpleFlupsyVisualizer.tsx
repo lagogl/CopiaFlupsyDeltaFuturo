@@ -409,7 +409,7 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
                 <Separator className="flex-grow" />
               </div>
               
-              <div className="grid grid-cols-5 gap-2">
+              <div className="flex flex-row flex-wrap gap-2 overflow-x-auto">
                 {Array.from({ length: dxPositions }).map((_, i) => 
                   renderBasketPosition(flupsy.id, 'DX', i + 1)
                 )}
@@ -423,7 +423,7 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
                 <Separator className="flex-grow" />
               </div>
               
-              <div className="grid grid-cols-5 gap-2">
+              <div className="flex flex-row flex-wrap gap-2 overflow-x-auto">
                 {Array.from({ length: sxPositions }).map((_, i) => 
                   renderBasketPosition(flupsy.id, 'SX', i + 1)
                 )}
