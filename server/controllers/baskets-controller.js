@@ -161,11 +161,11 @@ export async function getBasketsOptimized(options = {}) {
           // Usa SQL nativo per gestire una lista di ID
           console.log(`Ricerca cestelli per ${flupsyIds.length} FLUPSY`);
           
-          // Utilizziamo parametri SQL per evitare problemi di SQL injection e migliorare performance
+          // Utilizziamo una serie di condizioni OR per gestire correttamente multiple ID
           if (flupsyIds.length > 0) {
-            const placeholders = flupsyIds.map((_, i) => `$${i + 1}`).join(',');
-            whereConditions.push(sql`baskets.flupsy_id IN (${sql.raw(placeholders)})`.params(flupsyIds));
-            console.log(`Query SQL per FLUPSY multipli: baskets.flupsy_id IN (${placeholders})`, flupsyIds);
+            const orConditions = flupsyIds.map(id => eq(baskets.flupsyId, id));
+            whereConditions.push(or(...orConditions));
+            console.log(`Query con condizioni OR per ${flupsyIds.length} FLUPSY:`, flupsyIds);
           }
         } else {
           // Singolo ID come stringa
@@ -184,11 +184,11 @@ export async function getBasketsOptimized(options = {}) {
         // Usa SQL nativo per gestire una lista di ID
         console.log(`Ricerca cestelli per ${flupsyIds.length} FLUPSY (array)`);
         
-        // Utilizziamo parametri SQL per evitare problemi di SQL injection e migliorare performance
+        // Utilizziamo condizioni OR per gestire correttamente multiple ID
         if (flupsyIds.length > 0) {
-          const placeholders = flupsyIds.map((_, i) => `$${i + 1}`).join(',');
-          whereConditions.push(sql`baskets.flupsy_id IN (${sql.raw(placeholders)})`.params(flupsyIds));
-          console.log(`Query SQL per FLUPSY multipli (array): baskets.flupsy_id IN (${placeholders})`, flupsyIds);
+          const orConditions = flupsyIds.map(id => eq(baskets.flupsyId, id));
+          whereConditions.push(or(...orConditions));
+          console.log(`Query con condizioni OR per ${flupsyIds.length} FLUPSY (array):`, flupsyIds);
         }
       }
     }
