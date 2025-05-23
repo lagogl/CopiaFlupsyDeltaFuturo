@@ -19,9 +19,24 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
   const [selectedTab, setSelectedTab] = useState<string>("all");
 
   // Fetch flupsys
-  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
+  const { data: allFlupsys, isLoading: isLoadingFlupsys } = useQuery({
     queryKey: ['/api/flupsys', { includeAll: true }],
   });
+  
+  // Filtra i FLUPSY in base agli ID selezionati
+  const flupsys = useMemo(() => {
+    if (!allFlupsys) return [];
+    
+    // Se non ci sono ID selezionati, mostra tutti i FLUPSY
+    if (selectedFlupsyIds.length === 0) {
+      return allFlupsys;
+    }
+    
+    // Altrimenti, filtra i FLUPSY in base agli ID selezionati
+    return allFlupsys.filter((flupsy: any) => 
+      selectedFlupsyIds.includes(flupsy.id)
+    );
+  }, [allFlupsys, selectedFlupsyIds]);
 
   // Fetch ALL baskets without any filters
   const { data: allBaskets, isLoading: isLoadingBaskets } = useQuery({
