@@ -367,11 +367,11 @@ export default function CyclesPaginated() {
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold">Cicli Produttivi</h1>
         <div className="flex gap-2">
-          <Button variant="outline">
-            <Link href="/dashboard">
+          <Link href="/">
+            <Button variant="outline">
               Dashboard
-            </Link>
-          </Button>
+            </Button>
+          </Link>
         </div>
       </div>
       
