@@ -367,11 +367,16 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     
     const flupsyBaskets = [...flupsyDxRow, ...flupsySxRow];
     
-    // Calculate max positions for this FLUPSY
-    const maxPositions = Math.max(
+    // Usa il campo max_positions dalla tabella flupsys
+    const maxPositions = flupsy.max_positions || Math.max(
       ...flupsyBaskets.map((b: any) => b.position || 0),
-      flupsy.maxPositions || 10
+      10
     );
+    
+    console.log(`FLUPSY ${flupsy.id} - ${flupsy.name}:`, JSON.stringify(flupsy));
+    
+    // Il numero di posizioni deve essere diviso equamente tra le due file
+    const positionsPerRow = maxPositions;
 
     return (
       <div key={`flupsy-${flupsy.id}`} className="mb-8 border rounded-lg p-4">
@@ -396,8 +401,8 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
                 <Separator className="flex-grow" />
               </div>
               
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-                {Array.from({ length: maxPositions }).map((_, i) => 
+              <div className="grid grid-cols-5 gap-2">
+                {Array.from({ length: positionsPerRow }).map((_, i) => 
                   renderBasketPosition(flupsy.id, 'DX', i + 1)
                 )}
               </div>
@@ -410,8 +415,8 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
                 <Separator className="flex-grow" />
               </div>
               
-              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-                {Array.from({ length: maxPositions }).map((_, i) => 
+              <div className="grid grid-cols-5 gap-2">
+                {Array.from({ length: positionsPerRow }).map((_, i) => 
                   renderBasketPosition(flupsy.id, 'SX', i + 1)
                 )}
               </div>
