@@ -26,6 +26,7 @@ interface Operation {
   type: string;
   date: string;
   lotId?: number;
+  sizeId?: number;  // ID della taglia, che deve essere collegato alla tabella sizes
   animalCount?: number;
   totalWeight?: number;
   averageWeight?: number;
@@ -174,17 +175,32 @@ export default function CyclesPaginated() {
         .filter(op => op.cycleId === cycle.id && op.type === 'prima-attivazione')
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
-      if (activationOps.length > 0 && activationOps[0].size?.code) {
-        return activationOps[0].size.code;
+      if (activationOps.length > 0) {
+        if (activationOps[0].size?.code) {
+          return activationOps[0].size.code;
+        }
+        if (activationOps[0].sizeId) {
+          // Se abbiamo un sizeId, troviamo la taglia corrispondente
+          const size = sizes.find(s => s.id === activationOps[0].sizeId);
+          if (size) return size.code;
+        }
       }
       
-      // Cerca qualsiasi operazione con taglia
+      // Cerca qualsiasi operazione con taglia (usando sia size che sizeId)
       const anyOpWithSize = operations
-        .filter(op => op.cycleId === cycle.id && op.size?.code)
+        .filter(op => op.cycleId === cycle.id && (op.size?.code || op.sizeId))
         .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       
       if (anyOpWithSize.length > 0) {
-        return anyOpWithSize[0].size.code;
+        // Prima verifichiamo se l'operazione ha direttamente la taglia
+        if (anyOpWithSize[0].size?.code) {
+          return anyOpWithSize[0].size.code;
+        }
+        // Altrimenti cerchiamo la taglia usando sizeId
+        if (anyOpWithSize[0].sizeId) {
+          const size = sizes.find(s => s.id === anyOpWithSize[0].sizeId);
+          if (size) return size.code;
+        }
       }
       
       return 'N/D';
@@ -196,6 +212,12 @@ export default function CyclesPaginated() {
     // Se l'operazione ha già una taglia, usala
     if (lastOp.size?.code) {
       return lastOp.size.code;
+    }
+    
+    // Altrimenti proviamo a usare sizeId
+    if (lastOp.sizeId) {
+      const size = sizes.find(s => s.id === lastOp.sizeId);
+      if (size) return size.code;
     }
     
     // Se non c'è un peso totale o conteggio animali, non possiamo calcolare il peso medio
