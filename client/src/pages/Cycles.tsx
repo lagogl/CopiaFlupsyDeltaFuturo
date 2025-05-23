@@ -1,4 +1,4 @@
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { format } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -18,6 +18,7 @@ import {
 import { Calendar } from '@/components/ui/calendar';
 import { Checkbox } from '@/components/ui/checkbox';
 import { Label } from '@/components/ui/label';
+import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 
 // Definizione dell'interfaccia Operation per tipizzare i dati delle operazioni
 interface Operation {
@@ -93,7 +94,6 @@ export default function Cycles() {
   // Filtri
   const [searchTerm, setSearchTerm] = useState('');
   const [statusFilter, setStatusFilter] = useState('all');
-  const [flupsyFilter, setFlupsyFilter] = useState<number | null>(null);
   const [tagFilter, setTagFilter] = useState<string | null>(null);
   const [lotFilter, setLotFilter] = useState<number | null>(null);
   const [dateRangeFilter, setDateRangeFilter] = useState<{ start: Date | null; end: Date | null }>({
@@ -104,88 +104,182 @@ export default function Cycles() {
   // Paginazione
   const [currentPage, setCurrentPage] = useState(1);
   const [pageSize, setPageSize] = useState(20);
-  const [totalCycles, setTotalCycles] = useState(0);
+  
+  // Utilizza i filtri della dashboard per mantenere la coerenza
+  const [dashboardFilters] = useFilterPersistence('dashboard', {
+    selectedCenter: '',
+    selectedFlupsyIds: [] as number[]
+  });
+  
+  // Filtro FLUPSY
+  const [flupsyFilter, setFlupsyFilter] = useState<number | null>(null);
   
   // Ordinamento
   const [sortConfig, setSortConfig] = useState<{
     key: string;
     direction: 'ascending' | 'descending';
-    multiSort: { key: string; direction: 'ascending' | 'descending' }[];
   }>({
     key: 'id',
-    direction: 'descending',
-    multiSort: []
+    direction: 'descending'
   });
   
-  // Query cycles with details - add pagination
-  const { data: cyclesData, isLoading } = useQuery<{data: Cycle[], total: number}>({
-    queryKey: ['/api/cycles', currentPage, pageSize, statusFilter],
-    queryFn: async () => {
-      // Costruisci i parametri della query per la paginazione e i filtri
-      let queryParams = `page=${currentPage}&pageSize=${pageSize}`;
-      
-      // Aggiungi eventuali filtri alla query
-      if (statusFilter !== 'all') {
-        queryParams += `&state=${statusFilter}`;
-      }
-      
-      // Aggiungi altri parametri se necessario
-      if (flupsyFilter) {
-        const basket = baskets.find(b => b.flupsyId === flupsyFilter);
-        if (basket) {
-          queryParams += `&basketId=${basket.id}`;
-        }
-      }
-      
-      if (sortConfig.key) {
-        queryParams += `&sortBy=${sortConfig.key}&sortOrder=${sortConfig.direction === 'ascending' ? 'asc' : 'desc'}`;
-      }
-      
-      // Effettua la richiesta HTTP
-      const response = await fetch(`/api/cycles?${queryParams}`);
-      const data = await response.json();
-      
-      // Aggiorna il conteggio totale dei cicli
-      setTotalCycles(data.total || data.length);
-      
-      return {
-        data: Array.isArray(data) ? data : data.data || [],
-        total: data.total || data.length
-      };
-    },
+  // Query per i dati necessari
+  const { data: allCycles = [], isLoading: isAllCyclesLoading } = useQuery<Cycle[]>({
+    queryKey: ['/api/cycles', 'all'],
+    queryFn: () => fetch('/api/cycles?includeAll=true').then(res => res.json()),
   });
   
-  // Estrai i cicli dai dati della risposta
-  const cycles = cyclesData?.data || [];
-  
-  // Query operations to check if any cycles were sold
   const { data: operations = [] } = useQuery<Operation[]>({
     queryKey: ['/api/operations'],
   });
   
-  // Query FLUPSY data
   const { data: flupsys = [] } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
   });
   
-  // Query baskets data
   const { data: baskets = [] } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
   });
   
-  // Query lots data
   const { data: lots = [] } = useQuery<Lot[]>({
     queryKey: ['/api/lots'],
   });
   
-  // Query sizes data
   const { data: sizes = [] } = useQuery<Size[]>({
     queryKey: ['/api/sizes'],
   });
+  
+  // Inizializza il filtro FLUPSY dalla dashboard quando i dati sono pronti
+  useEffect(() => {
+    if (flupsys.length > 0 && !flupsyFilter) {
+      const dashboardSelectedFlupsys = dashboardFilters.selectedFlupsyIds as number[];
+      if (dashboardSelectedFlupsys && dashboardSelectedFlupsys.length > 0) {
+        setFlupsyFilter(dashboardSelectedFlupsys[0]);
+      }
+    }
+  }, [flupsys, dashboardFilters, flupsyFilter]);
 
-  // Funzione per ordinare i cicli
-  const sortCycles = (cycleList: Cycle[], sortConf: typeof sortConfig) => {
-    let sortedCycles = [...cycleList];
+  // Filtra i cicli in base ai criteri
+  const filteredCycles = useMemo(() => {
+    // Solo quando tutti i dati sono caricati
+    if (isAllCyclesLoading) return [];
+    
+    return allCycles.filter(cycle => {
+      // Filtro per status
+      if (statusFilter !== 'all' && cycle.state !== statusFilter) {
+        return false;
+      }
+      
+      // Filtro per FLUPSY
+      if (flupsyFilter) {
+        const basket = baskets.find(b => b.id === cycle.basketId);
+        if (!basket || basket.flupsyId !== flupsyFilter) {
+          return false;
+        }
+      }
+      
+      // Filtro per ricerca testuale
+      if (searchTerm) {
+        const lowerSearch = searchTerm.toLowerCase();
+        const cycleId = String(cycle.id).toLowerCase();
+        const basketId = String(cycle.basketId).toLowerCase();
+        
+        if (!cycleId.includes(lowerSearch) && !basketId.includes(lowerSearch)) {
+          return false;
+        }
+      }
+      
+      // Filtro per taglia
+      if (tagFilter) {
+        if (!cycle.currentSize || cycle.currentSize.code !== tagFilter) {
+          return false;
+        }
+      }
+      
+      // Filtro per lotto
+      if (lotFilter) {
+        const firstOp = operations.find(op => 
+          op.cycleId === cycle.id && op.type === 'prima-attivazione');
+          
+        if (!firstOp || firstOp.lotId !== lotFilter) {
+          return false;  
+        }
+      }
+      
+      // Filtro per date
+      if (dateRangeFilter.start || dateRangeFilter.end) {
+        const cycleDate = new Date(cycle.startDate);
+        
+        if (dateRangeFilter.start && cycleDate < dateRangeFilter.start) {
+          return false;
+        }
+        
+        if (dateRangeFilter.end) {
+          const endDate = new Date(dateRangeFilter.end);
+          endDate.setHours(23, 59, 59);
+          if (cycleDate > endDate) {
+            return false;
+          }
+        }
+      }
+      
+      return true;
+    });
+  }, [
+    allCycles, 
+    isAllCyclesLoading, 
+    statusFilter, 
+    flupsyFilter, 
+    searchTerm, 
+    tagFilter, 
+    lotFilter, 
+    dateRangeFilter,
+    baskets,
+    operations
+  ]);
+  
+  // Ordina i cicli filtrati
+  const sortedCycles = useMemo(() => {
+    return [...filteredCycles].sort((a, b) => {
+      let aValue, bValue;
+      
+      // Determina i valori da confrontare in base al campo di ordinamento
+      switch(sortConfig.key) {
+        case 'id':
+          aValue = a.id;
+          bValue = b.id;
+          break;
+        case 'startDate':
+          aValue = new Date(a.startDate).getTime();
+          bValue = new Date(b.startDate).getTime();
+          break;
+        // Aggiungi altri casi secondo necessità
+        default:
+          aValue = a.id;
+          bValue = b.id;
+      }
+      
+      // Determina la direzione di ordinamento
+      if (sortConfig.direction === 'ascending') {
+        return aValue > bValue ? 1 : -1;
+      } else {
+        return aValue < bValue ? 1 : -1;
+      }
+    });
+  }, [filteredCycles, sortConfig]);
+  
+  // Calcola i cicli da mostrare nella pagina corrente
+  const paginatedCycles = useMemo(() => {
+    const startIdx = (currentPage - 1) * pageSize;
+    const endIdx = startIdx + pageSize;
+    return sortedCycles.slice(startIdx, endIdx);
+  }, [sortedCycles, currentPage, pageSize]);
+  
+  // Totale dei cicli filtrati
+  const totalCycles = filteredCycles.length;
+  
+  // Cicli da visualizzare attualmente
+  const cycles = paginatedCycles;
     
     // Funzione per confrontare i valori in base al tipo di campo
     const compareValues = (a: any, b: any, key: string, direction: 'ascending' | 'descending') => {
