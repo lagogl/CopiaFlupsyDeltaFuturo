@@ -792,32 +792,19 @@ export default function DraggableFlupsyVisualizer() {
       >
         {isOccupied ? (
           <>
-            {/* Header con numero fisico cesta e taglia */}
+            {/* Header con numero fisico cesta */}
             <div className="font-semibold w-full border-b pb-1 text-center">
               <div className="flex justify-center items-center">
                 <span className="text-base">#{basket.physicalNumber}</span>
-                {size && (
-                  <span className="text-xs ml-1 text-gray-600 font-normal">
-                    ({size})
-                  </span>
-                )}
               </div>
             </div>
             
             {/* Corpo con dati principali */}
             <div className="py-1 flex flex-col items-center">
-              {/* Mostra sempre almeno il ciclo */}
+              {/* Mostra sempre la taglia oppure il ciclo */}
               {basket.currentCycleId && (
                 <div className="font-medium">
-                  {size ? (
-                    <>
-                      <span className="text-gray-700">Taglia:</span> {size}
-                    </>
-                  ) : (
-                    <>
-                      <span className="text-gray-700">Ciclo:</span> {basket.currentCycleId}
-                    </>
-                  )}
+                  <span className="text-gray-700">Taglia:</span> {size ? size : `Ciclo ${basket.currentCycleId}`}
                 </div>
               )}
               
