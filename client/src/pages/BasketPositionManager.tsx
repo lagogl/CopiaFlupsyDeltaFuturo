@@ -74,14 +74,33 @@ export default function BasketPositionManager() {
     queryKey: ['/api/flupsy-positions', selectedFlupsyId],
     enabled: !!selectedFlupsyId,
   });
+  
+  // Dettagli aggiuntivi sul FLUPSY selezionato
+  const { data: flupsyDetails } = useQuery<Flupsy>({
+    queryKey: ['/api/flupsys', selectedFlupsyId],
+    enabled: !!selectedFlupsyId,
+  });
 
   // Aggiorna le posizioni disponibili quando cambiano i dati
   useEffect(() => {
     if (positionsData) {
-      setAvailableRows(positionsData.availableRows);
-      setAvailablePositions(positionsData.availablePositions);
+      // Se non ci sono file disponibili ma abbiamo cestelli,
+      // creiamo le file standard SX e DX
+      if (positionsData.availableRows.length === 0 && baskets.length > 0) {
+        console.log("Nessuna fila disponibile ma abbiamo cestelli, creo file di default");
+        setAvailableRows(['SX', 'DX']);
+        
+        const defaultPositions: Record<string, number[]> = {
+          'SX': Array.from({ length: 5 }, (_, i) => i + 1),
+          'DX': Array.from({ length: 5 }, (_, i) => i + 1)
+        };
+        setAvailablePositions(defaultPositions);
+      } else {
+        setAvailableRows(positionsData.availableRows);
+        setAvailablePositions(positionsData.availablePositions);
+      }
     }
-  }, [positionsData]);
+  }, [positionsData, baskets]);
 
   // Gestione cambio FLUPSY
   const handleFlupsyChange = (value: string) => {
@@ -98,6 +117,21 @@ export default function BasketPositionManager() {
   // Trova cestello per una determinata posizione
   const findBasketAtPosition = (row: string, position: number): Basket | undefined => {
     return baskets.find(b => b.row === row && b.position === position);
+  };
+  
+  // Ottieni tutti i cestelli disponibili, inclusi quelli senza posizione definita
+  const getAllBaskets = () => {
+    return baskets.map(basket => {
+      // Se il cestello non ha fila o posizione assegnata, inizializziamo con valori di default
+      if (!basket.row || basket.position === null || basket.position === undefined) {
+        return {
+          ...basket,
+          row: basket.row || 'Non assegnata',
+          position: basket.position || 0
+        };
+      }
+      return basket;
+    });
   };
 
   // Aggiorna la selezione del cestello sorgente
