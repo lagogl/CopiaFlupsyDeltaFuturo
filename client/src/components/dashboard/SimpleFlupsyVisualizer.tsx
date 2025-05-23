@@ -41,9 +41,9 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     return allBaskets.filter((basket: any) => selectedFlupsyIds.includes(basket.flupsyId));
   }, [allBaskets, selectedFlupsyIds]);
 
-  // Fetch operations for tooltip data
+  // Fetch operations for tooltip data - usando /api/operations per ottenere tutti i dati
   const { data: operations, isLoading: isLoadingOperations } = useQuery({
-    queryKey: ['/api/operations-optimized', { includeAll: true }],
+    queryKey: ['/api/operations', { includeAll: true, pageSize: 1000 }],
     staleTime: 30000, // 30 seconds
   });
 
@@ -57,6 +57,12 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
   const { data: lots, isLoading: isLoadingLots } = useQuery({
     queryKey: ['/api/lots', { includeAll: true }],
     staleTime: 30000, // 30 seconds
+  });
+
+  // Fetch sizes for tooltip data
+  const { data: sizes } = useQuery({
+    queryKey: ['/api/sizes'],
+    staleTime: 3600000, // 1 hour - le taglie cambiano raramente
   });
 
   // Debug logging
@@ -74,18 +80,15 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
 
   // Helper function to get the latest operation for a basket
   const getLatestOperation = (basketId: number) => {
-    // Per la versione ottimizzata, operations è un oggetto con una proprietà 'operations'
-    if (!operations || !operations.operations || !Array.isArray(operations.operations)) {
-      console.log('Operations not available or not properly formatted', operations);
+    if (!operations || !Array.isArray(operations)) {
+      console.log('Operations not available or not an array', operations);
       return null;
     }
 
-    const operationsArray = operations.operations;
-    
     // Add debugging output
-    console.log(`Looking for operations for basket ${basketId} among ${operationsArray.length} operations`);
+    console.log(`Looking for operations for basket ${basketId} among ${operations.length} operations`);
     
-    const basketOperations = operationsArray.filter((op: any) => op.basketId === basketId);
+    const basketOperations = operations.filter((op: any) => op.basketId === basketId);
     console.log(`Found ${basketOperations.length} operations for basket ${basketId}`);
     
     if (basketOperations.length === 0) return null;
@@ -101,30 +104,51 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
 
   // Helper function to determine basket color based on size
   const getBasketColorClass = (basket: any) => {
+    if (!basket) return 'bg-gray-50 border-dashed';
+    
     if (basket.state !== 'active') {
       return 'bg-gray-50 border-dashed border-gray-300';
+    }
+    
+    // Stile per cestelli attivi senza operazioni
+    if (basket.state === 'active' && !operations) {
+      return 'bg-white border-blue-300 border-2'; 
     }
 
     // Get latest operation for this basket
     const latestOperation = getLatestOperation(basket.id);
     
+    // If there's no operation associated with this basket
     if (!latestOperation) {
+      if (basket.currentCycleId) {
+        // Se c'è un ciclo attivo ma nessuna operazione, usiamo comunque un colore visibile
+        return 'bg-blue-50 border-blue-400 border-2';
+      }
       return 'bg-white border-blue-300';
     }
 
-    // Get size from operation
+    // Get size info either from sizeId or from animalsPerKg
     let sizeCode = '';
-    if (latestOperation.size?.code) {
+    
+    // Prima prova a ottenere dalla proprietà size
+    if (latestOperation.size && latestOperation.size.code) {
       sizeCode = latestOperation.size.code;
-    } else if (latestOperation.animalsPerKg) {
+    } 
+    // Poi dal sizeId, cercando nelle taglie
+    else if (latestOperation.sizeId) {
+      const size = Array.isArray(sizes) ? 
+        sizes.find((s: any) => s.id === latestOperation.sizeId) : null;
+      if (size) {
+        sizeCode = size.code;
+      }
+    }
+    // Infine, deriva la taglia da animalsPerKg
+    else if (latestOperation.animalsPerKg) {
       const size = getSizeFromAnimalsPerKg(latestOperation.animalsPerKg);
       sizeCode = size?.code || '';
     }
 
-    // Debug log to check what size code we have
-    console.log(`Basket ${basket.id} (${basket.physicalNumber}): Size code: ${sizeCode}, animalsPerKg: ${latestOperation.animalsPerKg}`);
-
-    // Determine color based on size code
+    // Determine color based on size code (senza log per evitare spam nella console)
     if (sizeCode.startsWith('TP-')) {
       const numStr = sizeCode.substring(3);
       const num = parseInt(numStr);
@@ -171,7 +195,8 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
       }
     }
 
-    return 'bg-white border-blue-300';
+    // Default style for active baskets without size or animals per kg info
+    return 'bg-white border-blue-400 border-2';
   };
 
   // Handle basket click to navigate to basket detail
@@ -187,6 +212,11 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
       b.row === row && 
       b.position === position
     );
+
+    // Log per la diagnostica dei dati del cestello trovato
+    if (basket) {
+      console.log(`Found basket at ${flupsyId}:${row}-${position}:`, basket);
+    }
 
     // Get the latest operation for tooltip info
     const latestOperation = basket ? getLatestOperation(basket.id) : null;
