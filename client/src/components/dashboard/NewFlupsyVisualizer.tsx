@@ -27,9 +27,10 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
   const flupsys = useMemo(() => {
     if (!allFlupsys) return [];
     
-    // Se non ci sono ID selezionati, mostra tutti i FLUPSY
+    // Se non ci sono ID selezionati, non mostrare nessun FLUPSY nella dashboard all'avvio
     if (selectedFlupsyIds.length === 0) {
-      return allFlupsys;
+      // Ritorna un array vuoto per mostrare un messaggio che nessun FLUPSY è selezionato
+      return [];
     }
     
     // Altrimenti, filtra i FLUPSY in base agli ID selezionati
@@ -457,6 +458,16 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
         <div className="text-center p-4">
           <div className="animate-spin h-8 w-8 border-4 border-blue-500 rounded-full border-t-transparent mx-auto"></div>
           <p className="mt-2 text-sm text-gray-600">Caricamento dati in corso...</p>
+        </div>
+      ) : flupsys.length === 0 ? (
+        <div className="flex flex-col justify-center items-center h-48 bg-gray-50 rounded-lg border border-dashed border-gray-300 p-4">
+          <h3 className="text-lg font-medium text-gray-700 mb-2">Nessun FLUPSY selezionato</h3>
+          <p className="text-sm text-gray-500 text-center mb-4">
+            Seleziona uno o più FLUPSY dal selettore sopra per visualizzare i dati.
+          </p>
+          <p className="text-xs text-gray-400 text-center">
+            I FLUPSY vengono mostrati deselezionati all'avvio per ottimizzare il caricamento della dashboard.
+          </p>
         </div>
       ) : (
         <>
