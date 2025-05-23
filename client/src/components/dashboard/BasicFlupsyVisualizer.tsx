@@ -67,32 +67,41 @@ export default function BasicFlupsyVisualizer({ selectedFlupsyIds = [] }: BasicF
     queryKey: ['/api/flupsys'] 
   });
   
-  // Utilizziamo includeAll=true per recuperare tutti i cestelli senza paginazione
-  // e passiamo i flupsyId selezionati per filtrare i dati correttamente
+  // Utilizziamo includeAll=true per recuperare TUTTI i cestelli senza paginazione e senza filtro
+  // Filtreremo lato client in base ai FLUPSY selezionati
   const { data: baskets, isLoading: isLoadingBaskets } = useQuery({ 
     queryKey: ['/api/baskets', { 
-      includeAll: true,
-      flupsyId: selectedFlupsyIds?.length > 0 ? 
-        // Convertiamo l'array in stringa separata da virgole per migliorare la compatibilità
-        selectedFlupsyIds.join(',') : 
-        undefined
+      includeAll: true
     }],
     // Includiamo un refetchInterval per assicurarci che i dati vengano aggiornati periodicamente
     refetchInterval: 60000 // aggiornamento ogni 60 secondi
   });
   
+  // Filtriamo i cestelli sul lato client in base ai FLUPSY selezionati
+  const filteredBaskets = React.useMemo(() => {
+    if (!baskets) return [];
+    
+    if (selectedFlupsyIds.length === 0) {
+      // Se nessun FLUPSY è selezionato, mostriamo tutti i cestelli
+      return baskets as any[];
+    }
+    
+    // Altrimenti, filtriamo i cestelli per mostrare solo quelli nei FLUPSY selezionati
+    return (baskets as any[]).filter(basket => selectedFlupsyIds.includes(basket.flupsyId));
+  }, [baskets, selectedFlupsyIds]);
+  
   // Aggiungiamo un log per debug
   React.useEffect(() => {
-    if (baskets) {
-      console.log(`BasicFlupsyVisualizer: Ricevuti ${baskets.length} cestelli`);
+    if (filteredBaskets) {
+      console.log(`BasicFlupsyVisualizer: Ricevuti ${filteredBaskets.length} cestelli`);
       // Raggruppiamo per FLUPSY
-      const basketsByFlupsy = baskets.reduce((acc, basket) => {
+      const basketsByFlupsy = filteredBaskets.reduce((acc: any, basket: any) => {
         acc[basket.flupsyId] = (acc[basket.flupsyId] || 0) + 1;
         return acc;
       }, {});
       console.log('Distribuzione cestelli per FLUPSY:', basketsByFlupsy);
     }
-  }, [baskets]);
+  }, [filteredBaskets]);
   
   const { data: operations } = useQuery({ 
     queryKey: ['/api/operations', {

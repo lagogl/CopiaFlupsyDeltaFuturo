@@ -1,300 +1,385 @@
-import { useState } from 'react';
+import React, { useState, useMemo } from 'react';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { useQuery } from '@tanstack/react-query';
 import { Separator } from "@/components/ui/separator";
 import { Badge } from "@/components/ui/badge";
 import { useLocation } from 'wouter';
 import { format } from 'date-fns';
-import { 
-  Tooltip, 
-  TooltipContent, 
-  TooltipProvider, 
-  TooltipTrigger 
-} from "@/components/ui/tooltip";
-import { calculateAverageWeight } from '@/lib/utils';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
+import { Fan } from 'lucide-react';
+import { getOperationTypeLabel, getSizeFromAnimalsPerKg } from '@/lib/utils';
 
-export default function FlupsyVisualizer() {
+interface SimpleFlupsyVisualizerProps {
+  selectedFlupsyIds?: number[];
+}
+
+export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: SimpleFlupsyVisualizerProps) {
   const [, navigate] = useLocation();
-  
-  // Tipi per i dati
-  interface Flupsy {
-    id: number;
-    name: string;
-    location: string;
-  }
-  
-  interface Basket {
-    id: number;
-    physicalNumber: number;
-    flupsyId: number;
-    row: 'DX' | 'SX' | null;
-    position: number | null;
-    state: 'active' | 'available';
-    currentCycleId: number | null;
-  }
-  
-  interface Operation {
-    id: number;
-    basketId: number;
-    date: string;
-    type: string;
-    notes: string | null;
-    animalsPerKg: number | null;
-    deadCount: number | null;
-    mortalityRate: number | null;
-  }
-  
-  interface Cycle {
-    id: number;
-    basketId: number;
-    startDate: string;
-    endDate: string | null;
-    state: 'active' | 'closed';
-  }
+  const [selectedTab, setSelectedTab] = useState<string>("all");
 
-  // Fetch data
-  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
-    queryKey: ['/api/flupsys'],
+  // Fetch flupsys
+  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
+    queryKey: ['/api/flupsys', { includeAll: true }],
   });
-  
-  const { data: baskets, isLoading: isLoadingBaskets } = useQuery<Basket[]>({
-    queryKey: ['/api/baskets'],
+
+  // Fetch ALL baskets without any filters
+  const { data: allBaskets, isLoading: isLoadingBaskets } = useQuery({
+    queryKey: ['/api/baskets', { includeAll: true }],
   });
-  
-  const { data: operations } = useQuery<Operation[]>({
-    queryKey: ['/api/operations'],
+
+  // Filter baskets client-side based on selectedFlupsyIds
+  const filteredBaskets = useMemo(() => {
+    if (!allBaskets) return [];
+
+    // If no flupsyIds are selected, show all baskets
+    if (selectedFlupsyIds.length === 0) {
+      return allBaskets;
+    }
+
+    // Otherwise, filter baskets to only show those in the selected FLUPSYs
+    return allBaskets.filter((basket: any) => selectedFlupsyIds.includes(basket.flupsyId));
+  }, [allBaskets, selectedFlupsyIds]);
+
+  // Fetch operations for tooltip data
+  const { data: operations } = useQuery({
+    queryKey: ['/api/operations', { includeAll: true }],
   });
-  
-  const { data: cycles } = useQuery<Cycle[]>({
-    queryKey: ['/api/cycles'],
+
+  // Fetch cycles for tooltip data
+  const { data: cycles } = useQuery({
+    queryKey: ['/api/cycles', { includeAll: true }],
   });
-  
-  // Helper functions
-  const getBasketByPosition = (flupsyId: number, row: 'DX' | 'SX', position: number): Basket | undefined => {
-    if (!baskets) return undefined;
-    const flupsyBaskets = baskets.filter(b => b.flupsyId === flupsyId);
-    return flupsyBaskets.find(b => b.row === row && b.position === position);
-  };
-  
-  const getLatestOperation = (basketId: number): Operation | undefined => {
-    if (!operations) return undefined;
-    const basketOperations = operations.filter(op => op.basketId === basketId);
-    if (basketOperations.length === 0) return undefined;
-    
-    return basketOperations.sort((a, b) => 
+
+  // Fetch lots for tooltip data
+  const { data: lots } = useQuery({
+    queryKey: ['/api/lots', { includeAll: true }],
+  });
+
+  // Debug logging
+  React.useEffect(() => {
+    if (filteredBaskets) {
+      console.log(`SimpleFlupsyVisualizer: Filtered ${filteredBaskets.length} baskets`);
+      // Group by FLUPSY
+      const basketsByFlupsy = filteredBaskets.reduce((acc: any, basket: any) => {
+        acc[basket.flupsyId] = (acc[basket.flupsyId] || 0) + 1;
+        return acc;
+      }, {});
+      console.log('Distribution by FLUPSY:', basketsByFlupsy);
+    }
+  }, [filteredBaskets]);
+
+  // Helper function to get the latest operation for a basket
+  const getLatestOperation = (basketId: number) => {
+    if (!operations) return null;
+
+    const basketOperations = operations.filter((op: any) => op.basketId === basketId);
+    if (basketOperations.length === 0) return null;
+
+    // Sort by date descending and take the first one
+    return basketOperations.sort((a: any, b: any) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     )[0];
   };
-  
-  const hasMortalityData = (basket: Basket | undefined): boolean => {
-    if (!basket) return false;
-    const latestOp = getLatestOperation(basket.id);
-    return !!(latestOp?.deadCount && latestOp.deadCount > 0);
-  };
-  
-  const handleBasketClick = (basket: Basket | undefined) => {
-    if (!basket) return;
-    
-    if (basket.state === 'active' && basket.currentCycleId) {
-      navigate(`/cycles/${basket.currentCycleId}`);
-    } else {
-      navigate('/baskets');
+
+  // Helper function to determine basket color based on size
+  const getBasketColorClass = (basket: any) => {
+    if (basket.state !== 'active') {
+      return 'bg-gray-50 border-dashed border-gray-300';
     }
-  };
-  
-  // Render basket
-  const renderBasket = (flupsyId: number, row: 'DX' | 'SX', position: number) => {
-    const basket = getBasketByPosition(flupsyId, row, position);
-    const latestOperation = basket ? getLatestOperation(basket.id) : undefined;
+
+    // Get latest operation for this basket
+    const latestOperation = getLatestOperation(basket.id);
     
-    // Base styles
-    let borderStyle = 'border';
-    let bgStyle = 'bg-gray-50';
-    
-    // Style logic for active baskets
-    if (basket && basket.state === 'active') {
-      if (latestOperation?.animalsPerKg) {
-        const avgWeight = calculateAverageWeight(latestOperation.animalsPerKg);
-        
-        if (avgWeight) {
-          if (avgWeight >= 3000) {
-            borderStyle = 'border-red-500 border-4';
-            bgStyle = 'bg-red-50';
-          } else if (avgWeight >= 1000) {
-            borderStyle = 'border-orange-500 border-2';
-            bgStyle = 'bg-orange-50';
-          } else if (avgWeight >= 500) {
-            borderStyle = 'border-yellow-500 border-2';
-            bgStyle = 'bg-yellow-50';
-          } else {
-            borderStyle = 'border-green-500 border';
-            bgStyle = 'bg-green-50';
-          }
-        }
-      }
+    if (!latestOperation) {
+      return 'bg-white border-blue-300';
+    }
+
+    // Get size from operation
+    let sizeCode = '';
+    if (latestOperation.size?.code) {
+      sizeCode = latestOperation.size.code;
+    } else if (latestOperation.animalsPerKg) {
+      const size = getSizeFromAnimalsPerKg(latestOperation.animalsPerKg);
+      sizeCode = size?.code || '';
+    }
+
+    // Determine color based on size code
+    if (sizeCode.startsWith('TP-')) {
+      const numStr = sizeCode.substring(3);
+      const num = parseInt(numStr);
       
-      // Additional styling for mortality data
-      if (hasMortalityData(basket)) {
-        borderStyle += ' ring-1 ring-red-500';
-        bgStyle = 'bg-red-100';
+      if (num >= 6000) {
+        return 'bg-red-50 border-red-600 border-4';
+      } else if (num >= 4000) {
+        return 'bg-red-50 border-red-500 border-3';
+      } else if (num >= 3000) {
+        return 'bg-orange-50 border-orange-500 border-2';
+      } else if (num >= 2000) {
+        return 'bg-yellow-50 border-yellow-500 border-2';
+      } else if (num >= 1500) {
+        return 'bg-green-50 border-green-600 border-2';
+      } else if (num >= 1000) {
+        return 'bg-sky-50 border-sky-500 border-2';
+      } else if (num >= 500) {
+        return 'bg-sky-50 border-sky-400 border-2';
+      } else {
+        return 'bg-indigo-50 border-indigo-400 border-2';
       }
-    } else if (!basket) {
-      borderStyle = 'border border-dashed';
     }
-    
+
+    return 'bg-white border-blue-300';
+  };
+
+  // Handle basket click to navigate to basket detail
+  const handleBasketClick = (basket: any) => {
+    navigate(`/baskets/${basket.id}`);
+  };
+
+  // Render a basket position within a FLUPSY
+  const renderBasketPosition = (flupsyId: number, row: 'DX' | 'SX', position: number) => {
+    // Find the basket at this position in this FLUPSY
+    const basket = filteredBaskets?.find((b: any) => 
+      b.flupsyId === flupsyId && 
+      b.row === row && 
+      b.position === position
+    );
+
+    // Get the latest operation for tooltip info
+    const latestOperation = basket ? getLatestOperation(basket.id) : null;
+
     return (
-      <div key={`basket-${flupsyId}-${row}-${position}`}>
-        <TooltipProvider>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <div
-                onClick={() => basket && handleBasketClick(basket)}
-                className={`${borderStyle} rounded-md p-2 text-center text-xs ${bgStyle} 
-                  ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : 'min-h-[3.5rem]'}`}
-              >
-                {!basket ? (
-                  <div>Pos. {position}</div>
-                ) : (
+      <TooltipProvider key={`${flupsyId}-${row}-${position}`}>
+        <Tooltip>
+          <TooltipTrigger asChild>
+            <div 
+              onClick={basket ? () => handleBasketClick(basket) : undefined}
+              className={`border rounded-md p-2 text-center text-xs ${
+                basket ? getBasketColorClass(basket) : 'bg-gray-50 border-dashed'
+              } ${basket ? 'cursor-pointer hover:shadow-md transition-shadow' : 'min-h-[3.5rem]'}`}
+            >
+              <div>Pos. {position}</div>
+              {basket && (
+                <>
+                  <div className="font-bold">#{basket.physicalNumber}</div>
+                  {latestOperation && (
+                    <div className="text-[10px] text-gray-500 mt-1 truncate">
+                      {format(new Date(latestOperation.date), 'dd/MM/yy')}
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </TooltipTrigger>
+          
+          {basket && latestOperation && (
+            <TooltipContent side="top" className="w-64 p-3">
+              <div className="space-y-2">
+                <div className="flex justify-between font-bold">
+                  <span>Cesta #{basket.physicalNumber}</span>
+                  <span>ID: {basket.id}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="font-medium">Ultima operazione:</span>
+                  <span>{getOperationTypeLabel(latestOperation.type)}</span>
+                </div>
+                
+                <div className="flex justify-between">
+                  <span className="font-medium">Data:</span>
+                  <span>{format(new Date(latestOperation.date), 'dd/MM/yyyy')}</span>
+                </div>
+                
+                {latestOperation.animalsPerKg && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Densità:</span>
+                    <span>{latestOperation.animalsPerKg.toLocaleString('it-IT')} animali/kg</span>
+                  </div>
+                )}
+                
+                {latestOperation.sizeId && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Taglia:</span>
+                    <span>{latestOperation.size?.code || getSizeFromAnimalsPerKg(latestOperation.animalsPerKg)?.code || 'N/D'}</span>
+                  </div>
+                )}
+                
+                {latestOperation.lotId && (
                   <>
-                    <div className="font-semibold">#{basket.physicalNumber}</div>
-                    {latestOperation?.animalsPerKg && (
-                      <div className="mt-1 text-[10px]">
-                        {calculateAverageWeight(latestOperation.animalsPerKg)} mg
-                      </div>
-                    )}
-                    {hasMortalityData(basket) && (
-                      <div className="mt-1 bg-red-200 text-red-800 rounded px-1 py-0.5 text-[9px]">
-                        {latestOperation?.mortalityRate}% mort.
+                    <div className="flex justify-between">
+                      <span className="font-medium">Lotto:</span>
+                      <span>#{latestOperation.lotId}</span>
+                    </div>
+                    {lots && (
+                      <div className="flex justify-between">
+                        <span className="font-medium">Fornitore:</span>
+                        <span>{lots.find((l: any) => l.id === latestOperation.lotId)?.supplier || 'N/D'}</span>
                       </div>
                     )}
                   </>
                 )}
-              </div>
-            </TooltipTrigger>
-            <TooltipContent side="right">
-              {!basket ? (
-                <div>Posizione vuota</div>
-              ) : (
-                <div className="w-60 p-2">
-                  <div className="font-bold text-lg mb-1">Cestello #{basket.physicalNumber}</div>
-                  <div className="text-sm mb-2">
-                    <span className="text-muted-foreground">Stato: </span>
-                    <span className="font-medium">{basket.state === 'active' ? 'Attivo' : 'Disponibile'}</span>
+                
+                {latestOperation.deadCount !== null && (
+                  <div className="flex justify-between">
+                    <span className="font-medium">Mortalità:</span>
+                    <span>{latestOperation.deadCount} animali ({latestOperation.mortalityRate?.toFixed(1).replace('.', ',')}%)</span>
                   </div>
-                  
-                  {latestOperation && (
-                    <>
-                      <div className="text-sm mb-1">
-                        <span className="text-muted-foreground">Ultima operazione: </span>
-                        <span className="font-medium">{latestOperation.type}</span>
-                        <div className="text-xs text-muted-foreground">
-                          Data: {format(new Date(latestOperation.date), 'dd/MM/yyyy')}
-                        </div>
-                      </div>
-                      
-                      {latestOperation.animalsPerKg && (
-                        <div className="text-sm">
-                          <span className="text-muted-foreground">Peso medio: </span>
-                          <span className="font-medium">{calculateAverageWeight(latestOperation.animalsPerKg)} mg</span>
-                        </div>
-                      )}
-                      
-                      {latestOperation.deadCount !== null && latestOperation.deadCount > 0 && (
-                        <div className="text-sm mt-2 p-1 bg-red-50 border border-red-200 rounded">
-                          <div className="text-red-700 font-medium">Mortalità rilevata:</div>
-                          <div className="flex justify-between">
-                            <div className="text-xs text-red-600">Animali morti: <span className="font-bold">{latestOperation.deadCount}</span></div>
-                            <div className="text-xs text-red-600">Tasso: <span className="font-bold">{latestOperation.mortalityRate}%</span></div>
-                          </div>
-                        </div>
-                      )}
-                    </>
-                  )}
-                </div>
-              )}
+                )}
+                
+                {latestOperation.notes && (
+                  <div className="mt-1 pt-1 border-t">
+                    <span className="font-medium">Note:</span>
+                    <p className="text-xs mt-1">{latestOperation.notes}</p>
+                  </div>
+                )}
+              </div>
             </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
-      </div>
+          )}
+        </Tooltip>
+      </TooltipProvider>
     );
   };
-  
-  // Render FLUPSY
-  const renderFlupsy = (flupsy: Flupsy) => {
+
+  // Function to render a single FLUPSY
+  const renderFlupsy = (flupsy: any) => {
+    const flupsyDxRow = filteredBaskets?.filter((b: any) => 
+      b.flupsyId === flupsy.id && 
+      b.row === 'DX'
+    ) || [];
+    
+    const flupsySxRow = filteredBaskets?.filter((b: any) => 
+      b.flupsyId === flupsy.id && 
+      b.row === 'SX'
+    ) || [];
+    
+    const flupsyBaskets = [...flupsyDxRow, ...flupsySxRow];
+    
+    // Calculate max positions for this FLUPSY
+    const maxPositions = Math.max(
+      ...flupsyBaskets.map((b: any) => b.position || 0),
+      flupsy.maxPositions || 10
+    );
+
     return (
-      <div className="mb-8" key={`flupsy-${flupsy.id}`}>
+      <div key={`flupsy-${flupsy.id}`} className="mb-8 border rounded-lg p-4">
         <div className="flex items-center justify-between mb-4">
           <h3 className="text-lg font-bold">{flupsy.name}</h3>
           <Badge variant="outline">{flupsy.location}</Badge>
         </div>
         
-        <div className="grid grid-cols-1 gap-4">
-          {/* Fila DX */}
-          <div className="bg-white rounded-md p-3 shadow-sm">
-            <div className="flex items-center mb-2">
-              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
-                <span>DX</span>
-              </div>
-              <div className="text-sm font-medium">Fila DX</div>
-            </div>
-            
-            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(position => (
-                renderBasket(flupsy.id, 'DX', position)
-              ))}
+        <div className="relative pt-6">
+          {/* Propeller indicator */}
+          <div className="relative mb-4 flex justify-center">
+            <div className="bg-blue-100 w-16 h-16 rounded-full flex items-center justify-center text-blue-700 border-2 border-blue-300">
+              <Fan className="w-10 h-10 animate-spin-slow" />
             </div>
           </div>
           
-          {/* Fila SX */}
-          <div className="bg-white rounded-md p-3 shadow-sm">
-            <div className="flex items-center mb-2">
-              <div className="h-8 w-8 rounded-full bg-blue-100 flex items-center justify-center text-blue-600 mr-2">
-                <span>SX</span>
+          <div className="space-y-4 mt-4">
+            {/* DX row */}
+            <div>
+              <div className="flex items-center mb-1">
+                <Badge variant="secondary" className="mr-2">Fila DX</Badge>
+                <Separator className="flex-grow" />
               </div>
-              <div className="text-sm font-medium">Fila SX</div>
+              
+              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+                {Array.from({ length: maxPositions }).map((_, i) => 
+                  renderBasketPosition(flupsy.id, 'DX', i + 1)
+                )}
+              </div>
             </div>
             
-            <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map(position => (
-                renderBasket(flupsy.id, 'SX', position)
-              ))}
+            {/* SX row */}
+            <div>
+              <div className="flex items-center mb-1">
+                <Badge variant="secondary" className="mr-2">Fila SX</Badge>
+                <Separator className="flex-grow" />
+              </div>
+              
+              <div className="grid grid-cols-5 md:grid-cols-10 gap-2">
+                {Array.from({ length: maxPositions }).map((_, i) => 
+                  renderBasketPosition(flupsy.id, 'SX', i + 1)
+                )}
+              </div>
             </div>
           </div>
         </div>
       </div>
     );
   };
-  
-  // Loading state
+
   if (isLoadingFlupsys || isLoadingBaskets) {
     return (
       <Card>
         <CardHeader>
           <CardTitle>Visualizzazione FLUPSY</CardTitle>
-          <CardDescription>Caricamento in corso...</CardDescription>
+          <CardDescription>Caricamento dati in corso...</CardDescription>
         </CardHeader>
+        <CardContent>
+          <div className="py-8 text-center">
+            <div className="animate-pulse flex flex-col items-center">
+              <div className="h-10 w-1/2 bg-gray-200 rounded mb-4"></div>
+              <div className="h-40 w-full bg-gray-200 rounded"></div>
+            </div>
+          </div>
+        </CardContent>
       </Card>
     );
   }
-  
+
+  const effectiveFlupsys = flupsys?.filter((flupsy: any) => 
+    selectedFlupsyIds.length === 0 || selectedFlupsyIds.includes(flupsy.id)
+  );
+
   return (
     <Card>
       <CardHeader className="pb-2">
-        <CardTitle>Visualizzazione FLUPSY Avanzata</CardTitle>
+        <CardTitle>Visualizzazione FLUPSY</CardTitle>
         <CardDescription>
-          Disposizione delle ceste all'interno dell'unità FLUPSY con dati di mortalità
+          Disposizione delle ceste attive con cicli
         </CardDescription>
+        
+        <Tabs value={selectedTab} onValueChange={setSelectedTab} className="mb-4 mt-4">
+          <TabsList className="w-full">
+            <TabsTrigger value="all" className="flex-1">
+              Tutti i FLUPSY ({effectiveFlupsys?.length || 0})
+            </TabsTrigger>
+            
+            {effectiveFlupsys?.map((flupsy: any) => (
+              <TabsTrigger key={flupsy.id} value={flupsy.id.toString()} className="flex-1">
+                {flupsy.name}
+              </TabsTrigger>
+            ))}
+          </TabsList>
+        </Tabs>
       </CardHeader>
       
       <CardContent>
-        {flupsys && flupsys.map(flupsy => (
-          <div key={flupsy.id}>
-            {renderFlupsy(flupsy)}
-            {flupsy.id !== flupsys[flupsys.length - 1].id && (
-              <Separator className="my-4" />
-            )}
+        {selectedTab === "all" ? (
+          // Show all selected FLUPSYs
+          <div className="space-y-8">
+            {effectiveFlupsys?.map((flupsy: any) => (
+              <div key={flupsy.id}>
+                {renderFlupsy(flupsy)}
+                {flupsy.id !== effectiveFlupsys[effectiveFlupsys.length - 1].id && (
+                  <Separator className="my-4" />
+                )}
+              </div>
+            ))}
           </div>
-        ))}
+        ) : (
+          // Show only the selected tab's FLUPSY
+          <div>
+            {renderFlupsy(effectiveFlupsys?.find((f: any) => f.id === parseInt(selectedTab)))}
+          </div>
+        )}
+        
+        {effectiveFlupsys?.length === 0 && (
+          <div className="py-8 text-center">
+            <p className="text-gray-500">Nessun FLUPSY selezionato. Usa il filtro qui sopra per visualizzare alcuni FLUPSY.</p>
+          </div>
+        )}
       </CardContent>
     </Card>
   );
