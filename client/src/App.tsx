@@ -12,6 +12,7 @@ import EditOperation from "@/pages/EditOperation";
 import QuickOperations from "@/pages/QuickOperations";
 import OperationsDragDrop from "@/pages/OperationsDragDrop";
 import Cycles from "@/pages/Cycles";
+import CyclesPaginated from "@/pages/CyclesPaginated";
 import CycleDetail from "@/pages/CycleDetail";
 import Lots from "@/pages/Lots";
 import Statistics from "@/pages/Statistics";
@@ -83,7 +84,7 @@ function Router() {
       <ProtectedRoute path="/quick-operations" component={QuickOperations}/>
       <ProtectedRoute path="/quickoperations" component={QuickOperations}/>
       <ProtectedRoute path="/operations-drag-drop" component={OperationsDragDrop}/>
-      <ProtectedRoute path="/cycles" component={Cycles}/>
+      <ProtectedRoute path="/cycles" component={CyclesPaginated}/>
       <ProtectedRoute path="/cycles/:id" component={CycleDetail}/>
       <ProtectedRoute path="/lots" component={Lots}/>
       <ProtectedRoute path="/statistics" component={Statistics}/>
