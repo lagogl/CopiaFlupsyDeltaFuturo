@@ -850,7 +850,29 @@ export default function DraggableFlupsyVisualizer() {
     
     // Separa i cestelli con posizione e quelli senza posizione
     const basketsWithPosition = flupsyBaskets.filter(b => b.row && b.position);
-    const basketsWithoutPosition = flupsyBaskets.filter(b => !b.row || !b.position);
+    let basketsWithoutPosition = flupsyBaskets.filter(b => !b.row || !b.position);
+    
+    // Caso speciale per il Flupsy 2 piccolo 10 ceste (ID 570)
+    // Se siamo nel Flupsy 2 piccolo e ci sono cestelli senza posizione, li assegniamo temporaneamente
+    // per visualizzarli nella griglia (questa è solo una visualizzazione, non un cambiamento reale)
+    let tempBasketPositions = [];
+    
+    if (flupsy.id === 570 && basketsWithoutPosition.length > 0) {
+      console.log(`Flupsy 2 piccolo 10 ceste: trovati ${basketsWithoutPosition.length} cestelli senza posizione`);
+      
+      // Crea una copia per non modificare l'array originale
+      const tempUnassignedBaskets = [...basketsWithoutPosition];
+      // Segna tutti questi cestelli come "da assegnare visivamente" con una proprietà speciale
+      tempUnassignedBaskets.forEach(basket => {
+        basket.needsVisualPosition = true;
+      });
+      
+      // Conserviamo l'elenco originale dei cestelli senza posizione prima di svuotarlo
+      tempBasketPositions = tempUnassignedBaskets;
+      
+      // Svuotiamo l'array dei cestelli senza posizione poiché li gestiremo diversamente
+      basketsWithoutPosition = [];
+    }
     
     // Utilizziamo maxPositions dal FLUPSY o default a 10 se non definito
     const maxPositions = flupsy.maxPositions || 10;
@@ -885,7 +907,31 @@ export default function DraggableFlupsyVisualizer() {
                 gridTemplateColumns: `repeat(${positionsPerRow}, minmax(0, 1fr))` 
               }}>
                 {positions.map(position => {
-                  const basket = flupsyBaskets.find(b => b.row === 'DX' && b.position === position);
+                  // Cerchiamo i cestelli nella posizione
+                  let basket = flupsyBaskets.find(b => b.row === 'DX' && b.position === position);
+                  
+                  // Per tutti i FLUPSY (non solo ID 570), se non c'è cestello nella posizione,
+                  // vediamo se possiamo assegnare temporaneamente un cestello senza posizione
+                  if (!basket) {
+                    // Cerca tra i cestelli di questo FLUPSY quelli senza posizione assegnata
+                    const unassignedBaskets = flupsyBaskets.filter(b => (!b.row || !b.position) && !b.tempAssigned);
+                    if (unassignedBaskets.length > 0) {
+                      // Prendi il primo cestello disponibile
+                      const unassignedBasket = unassignedBaskets[0];
+                      console.log(`Assegnando temporaneamente cestello #${unassignedBasket.physicalNumber} alla posizione DX-${position} in FLUPSY ${flupsy.name}`);
+                      // Lo marchiamo come assegnato temporaneamente
+                      unassignedBasket.tempAssigned = true;
+                      // Creiamo una copia del cestello con le proprietà temporanee per la visualizzazione
+                      basket = {
+                        ...unassignedBasket,
+                        row: 'DX',
+                        position: position,
+                        isTemporaryPosition: true,
+                        // Aggiungiamo una classe CSS speciale per evidenziare che è in una posizione temporanea
+                        _temporaryPositionClass: 'bg-yellow-50 border-yellow-300 border-dashed'
+                      };
+                    }
+                  }
                   return (
                     <div key={`DX-${position}-${flupsyId}`} className="contents">
                       {renderBasketBox(basket, position, 'DX', flupsyId)}
@@ -914,35 +960,36 @@ export default function DraggableFlupsyVisualizer() {
               </div>
             </div>
             
-            {/* Cestelli senza posizione assegnata */}
-            {basketsWithoutPosition.length > 0 && (
+            {/* Se rimangono cestelli senza posizione, dopo aver tentato di assegnarli automaticamente, mostriamoli */}
+            {basketsWithoutPosition.filter(b => !b.isUsed).length > 0 && (
               <div className="mt-8">
                 <div className="mb-2 font-semibold flex items-center">
                   <MapPin className="h-4 w-4 mr-1" /> Cestelli senza posizione
                 </div>
                 <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-md mb-4">
                   <p className="text-sm text-yellow-700">
-                    Questo FLUPSY contiene {basketsWithoutPosition.length} cestelli senza posizione assegnata. 
+                    Questo FLUPSY contiene {basketsWithoutPosition.filter(b => !b.isUsed).length} cestelli senza posizione assegnata. 
                     Trascina e rilascia questi cestelli su una posizione libera nella griglia.
                   </p>
                 </div>
                 <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
-                  {basketsWithoutPosition.map(basket => (
-                    <DropTarget
-                      key={`nopos-${basket.id}`}
-                      flupsyId={flupsyId}
-                      row=""
-                      position={0}
-                      onDrop={(item, row, position, targetFlupsyId) => {
-                        // È più un placeholder, visto che non possiamo fare drop su questa zona
-                        return null;
-                      }}
-                      isOccupied={true}
-                    >
-                      <DraggableBasket basket={basket}>
-                        {renderBasketContent(basket)}
-                      </DraggableBasket>
-                    </DropTarget>
+                  {basketsWithoutPosition.filter(b => !b.isUsed).map(basket => (
+                    <div key={`nopos-${basket.id}`} className="border border-dashed border-gray-300 rounded-md p-2 bg-gray-50">
+                      <div className="text-sm font-medium">Cestello #{basket.physicalNumber}</div>
+                      <div className="text-xs text-gray-500">ID: {basket.id}</div>
+                      <div className="text-xs text-gray-500">In attesa di posizione</div>
+                      <Button
+                        variant="outline" 
+                        size="sm" 
+                        className="mt-2 w-full"
+                        onClick={() => {
+                          // Implementazione da sviluppare per assegnare automaticamente
+                          console.log('Assegna cestello', basket.id);
+                        }}
+                      >
+                        Assegna posizione
+                      </Button>
+                    </div>
                   ))}
                 </div>
               </div>
