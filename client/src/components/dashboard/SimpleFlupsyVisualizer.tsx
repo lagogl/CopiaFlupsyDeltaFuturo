@@ -125,6 +125,19 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
     return latestOperation.animalsPerKg <= 3000;
   };
   
+  // Helper function to get size code based on animalsPerKg
+  const getSizeCodeFromAnimalsPerKg = (animalsPerKg: number): string => {
+    if (animalsPerKg <= 500) return 'TP-500';
+    if (animalsPerKg <= 1000) return 'TP-1000';
+    if (animalsPerKg <= 1500) return 'TP-1500';
+    if (animalsPerKg <= 2000) return 'TP-2000';
+    if (animalsPerKg <= 3000) return 'TP-3000';
+    if (animalsPerKg <= 6000) return 'TP-6000';
+    if (animalsPerKg <= 10000) return 'TP-10000';
+    if (animalsPerKg <= 20000) return 'TP-20000';
+    return 'TP-' + animalsPerKg;
+  };
+
   // Helper function to determine basket color based on size - Usa esattamente la stessa logica del FlupsyVisualizer originale
   const getBasketColorClass = (basket: any) => {
     if (!basket) return 'bg-gray-50 border-dashed';
@@ -218,8 +231,8 @@ export default function SimpleFlupsyVisualizer({ selectedFlupsyIds = [] }: Simpl
                     </div>
                   )}
                   {latestOperation && latestOperation.animalsPerKg && (
-                    <div className="text-[10px] bg-gray-100 rounded px-1 mt-1">
-                      {latestOperation.animalsPerKg.toLocaleString('it-IT')} an/kg
+                    <div className="text-[10px] bg-gray-100 rounded px-1 mt-1 font-semibold">
+                      {getSizeCodeFromAnimalsPerKg(latestOperation.animalsPerKg)}
                     </div>
                   )}
                   {latestOperation && (
