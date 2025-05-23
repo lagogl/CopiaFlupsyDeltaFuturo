@@ -27,6 +27,7 @@ export default function Dashboard() {
   const [needsRefresh, setNeedsRefresh] = useState<boolean>(false);
   
   // Utilizzo del hook di persistenza per i filtri
+  // Inizializzazione con array vuoto per non caricare FLUPSY di default
   const [filters, setFilters] = useFilterPersistence('dashboard', {
     selectedCenter: '',
     selectedFlupsyIds: [] as number[]

@@ -14,14 +14,26 @@ export function useFilterPersistence(pageKey: string, defaultFilters: FilterStat
   // Genera chiave univoca per il localStorage
   const storageKey = `app_filters_${pageKey}`;
   
-  // Inizializza lo stato con i filtri salvati o default
+  // Inizializza lo stato con filtri vuoti per i FLUPSY nella dashboard
   const [filters, setFiltersState] = useState<FilterState>(() => {
     try {
       // Tenta di caricare i filtri dal localStorage
       const savedFilters = localStorage.getItem(storageKey);
       
+      // Per la dashboard, assicuriamoci che selectedFlupsyIds sia vuoto all'inizio
+      // per accelerare il caricamento iniziale
       if (savedFilters) {
-        return JSON.parse(savedFilters);
+        const parsedFilters = JSON.parse(savedFilters);
+        
+        // Se è la dashboard, resetta i FLUPSY selezionati
+        if (pageKey === 'dashboard' && parsedFilters.selectedFlupsyIds) {
+          return {
+            ...parsedFilters,
+            selectedFlupsyIds: []
+          };
+        }
+        
+        return parsedFilters;
       }
     } catch (err) {
       console.error("Errore nel caricamento dei filtri salvati:", err);
