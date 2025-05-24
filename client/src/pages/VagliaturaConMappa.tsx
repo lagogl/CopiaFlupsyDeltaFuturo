@@ -58,12 +58,12 @@ export default function VagliaturaConMappa() {
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<string | null>(null);
   
   // Query per i dati
-  const { data: flupsys, isLoading: isLoadingFlupsys } = useQuery({
+  const { data: flupsys = [], isLoading: isLoadingFlupsys } = useQuery({
     queryKey: ['/api/flupsys'],
     enabled: true
   });
   
-  const { data: baskets, isLoading: isLoadingBaskets } = useQuery({
+  const { data: baskets = [], isLoading: isLoadingBaskets } = useQuery({
     queryKey: ['/api/baskets'],
     enabled: true
   });
@@ -208,7 +208,7 @@ export default function VagliaturaConMappa() {
                       <div className="flex justify-center py-2">
                         <Spinner size="sm" />
                       </div>
-                    ) : flupsys?.map((flupsy: Flupsy) => (
+                    ) : flupsys.map((flupsy: Flupsy) => (
                       <SelectItem 
                         key={flupsy.id} 
                         value={flupsy.id.toString()}
@@ -228,15 +228,26 @@ export default function VagliaturaConMappa() {
                     : "Seleziona prima un FLUPSY"}
                 </p>
                 
-                {/* Placeholder per la mappa del FLUPSY */}
-                <div className="min-h-[400px] mt-4 bg-muted/20 rounded-md p-4 flex items-center justify-center">
+                {/* Visualizzatore della mappa del FLUPSY */}
+                <div className="min-h-[400px] mt-4 rounded-md">
                   {isLoadingFlupsys || isLoadingBaskets ? (
-                    <Spinner />
+                    <div className="flex justify-center items-center h-80 bg-muted/20">
+                      <Spinner />
+                    </div>
                   ) : !selectedFlupsyId ? (
-                    <p>Seleziona un FLUPSY per visualizzare la mappa</p>
+                    <div className="flex justify-center items-center h-80 bg-muted/20 rounded-md">
+                      <p>Seleziona un FLUPSY per visualizzare la mappa</p>
+                    </div>
                   ) : (
-                    <p>Qui verrà visualizzata la mappa del FLUPSY</p>
-                    // Qui implementeremo la mappa visuale
+                    <FlupsyMapVisualizer
+                      flupsy={(flupsys || []).find(f => f.id.toString() === selectedFlupsyId) || { id: 0, name: '', maxPositions: 0 }}
+                      baskets={(baskets || []).filter(b => b.flupsyId?.toString() === selectedFlupsyId)}
+                      sourceBaskets={sourceBaskets.map(sb => sb.basketId)}
+                      destinationBaskets={destinationBaskets.map(db => db.basketId)}
+                      onBasketClick={(basket, position) => toggleSourceBasket(basket)}
+                      mode="source"
+                      showTooltips={true}
+                    />
                   )}
                 </div>
               </div>
@@ -280,7 +291,7 @@ export default function VagliaturaConMappa() {
                       <div className="flex justify-center py-2">
                         <Spinner size="sm" />
                       </div>
-                    ) : flupsys?.map((flupsy: Flupsy) => (
+                    ) : flupsys.map((flupsy: Flupsy) => (
                       <SelectItem 
                         key={flupsy.id} 
                         value={flupsy.id.toString()}
@@ -300,15 +311,26 @@ export default function VagliaturaConMappa() {
                     : "Seleziona prima un FLUPSY"}
                 </p>
                 
-                {/* Placeholder per la mappa del FLUPSY */}
-                <div className="min-h-[400px] mt-4 bg-muted/20 rounded-md p-4 flex items-center justify-center">
+                {/* Visualizzatore della mappa del FLUPSY */}
+                <div className="min-h-[400px] mt-4 rounded-md">
                   {isLoadingFlupsys || isLoadingBaskets ? (
-                    <Spinner />
+                    <div className="flex justify-center items-center h-80 bg-muted/20">
+                      <Spinner />
+                    </div>
                   ) : !selectedFlupsyId ? (
-                    <p>Seleziona un FLUPSY per visualizzare la mappa</p>
+                    <div className="flex justify-center items-center h-80 bg-muted/20 rounded-md">
+                      <p>Seleziona un FLUPSY per visualizzare la mappa</p>
+                    </div>
                   ) : (
-                    <p>Qui verrà visualizzata la mappa del FLUPSY</p>
-                    // Qui implementeremo la mappa visuale
+                    <FlupsyMapVisualizer
+                      flupsy={(flupsys || []).find(f => f.id.toString() === selectedFlupsyId) || { id: 0, name: '', maxPositions: 0 }}
+                      baskets={(baskets || []).filter(b => b.flupsyId?.toString() === selectedFlupsyId)}
+                      sourceBaskets={sourceBaskets.map(sb => sb.basketId)}
+                      destinationBaskets={destinationBaskets.map(db => db.basketId)}
+                      onBasketClick={(basket, position) => toggleDestinationBasket(basket)}
+                      mode="destination"
+                      showTooltips={true}
+                    />
                   )}
                 </div>
               </div>
