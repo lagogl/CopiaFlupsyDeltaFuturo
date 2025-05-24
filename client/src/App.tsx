@@ -48,6 +48,8 @@ import ScreeningAddDestination from "@/pages/ScreeningAddDestination";
 import Selection from "@/pages/Selection";
 import NewSelection from "@/pages/NewSelection";
 import SelectionDetail from "@/pages/SelectionDetail";
+// Importazione per il nuovo modulo di Vagliatura con Mappa
+import VagliaturaConMappa from "@/pages/VagliaturaConMappa";
 // Importazioni per la gestione delle pagine di amministrazione
 import BackupPage from "@/pages/BackupPage";
 import AmministrazioneUtilita from "@/pages/AmministrazioneUtilita";
@@ -129,6 +131,9 @@ function Router() {
       <ProtectedRoute path="/selection" component={Selection}/>
       <ProtectedRoute path="/selection/new" component={NewSelection}/>
       <ProtectedRoute path="/selection/:id" component={SelectionDetail}/>
+      
+      {/* Vagliatura con Mappa routes */}
+      <ProtectedRoute path="/vagliatura-mappa" component={VagliaturaConMappa}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
