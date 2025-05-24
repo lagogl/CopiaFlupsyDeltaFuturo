@@ -3,7 +3,11 @@ import { Helmet } from 'react-helmet';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
 import { queryClient } from '@/lib/queryClient';
-import { useTranslation } from '@/hooks/use-translation';
+// Utilizziamo un hook di traduzione semplificato
+const useTranslation = () => {
+  const t = (key: string) => key;
+  return { t };
+};
 
 // UI Components
 import { Button } from '@/components/ui/button';
@@ -21,6 +25,9 @@ import { AlertTriangle, CheckCircle, Info, X } from 'lucide-react';
 
 // Types
 import { Flupsy, Basket, Selection, SourceBasket, DestinationBasket } from '@/types';
+
+// Componenti specifici per la vagliatura con mappa
+import FlupsyMapVisualizer from '@/components/vagliatura-mappa/FlupsyMapVisualizer';
 
 /**
  * Componente principale per la Vagliatura con Mappa

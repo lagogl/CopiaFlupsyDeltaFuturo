@@ -161,7 +161,7 @@ export default function FlupsyMapVisualizer({
             <TooltipProvider>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <InfoCircledIcon className="ml-1 inline-block h-4 w-4 text-muted-foreground" />
+                  <InfoIcon className="ml-1 inline-block h-4 w-4 text-muted-foreground" />
                 </TooltipTrigger>
                 <TooltipContent>
                   <p>{flupsy.notes}</p>
