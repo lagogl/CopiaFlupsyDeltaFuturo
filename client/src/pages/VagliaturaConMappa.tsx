@@ -546,44 +546,79 @@ export default function VagliaturaConMappa() {
                 Seleziona i cestelli origine dalla mappa del FLUPSY. I cestelli origine saranno evidenziati in blu.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Selettore FLUPSY */}
-                <div>
-                  <Label htmlFor="flupsy">Seleziona FLUPSY</Label>
-                  <Select 
-                    value={selectedFlupsyId || undefined} 
-                    onValueChange={setSelectedFlupsyId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona un FLUPSY" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {flupsys.map(flupsy => (
-                        <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
-                          {flupsy.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <CardContent className="space-y-4">
+              {/* Selettore FLUPSY */}
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-1">
+                  <div className="space-y-4 sticky top-4">
+                    <div>
+                      <Label htmlFor="flupsy">Seleziona FLUPSY</Label>
+                      <Select 
+                        value={selectedFlupsyId || undefined} 
+                        onValueChange={setSelectedFlupsyId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona un FLUPSY" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {flupsys.map(flupsy => (
+                            <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                              {flupsy.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {sourceBaskets.length > 0 && (
+                      <div className="border rounded-md p-3">
+                        <h3 className="text-sm font-semibold mb-2">Cestelli Selezionati ({sourceBaskets.length})</h3>
+                        <div className="max-h-[200px] overflow-y-auto">
+                          {sourceBaskets.map(basket => {
+                            const basketDetails = baskets.find(b => b.id === basket.basketId);
+                            return (
+                              <div key={basket.basketId} className="text-xs p-1 border-b last:border-b-0">
+                                Cestello #{basketDetails?.physicalNumber} 
+                                {basketDetails?.lastOperation?.animalCount && 
+                                  ` - ${basketDetails.lastOperation.animalCount.toLocaleString()} animali`
+                                }
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                    
+                    <div className="mt-4">
+                      <h3 className="text-sm font-semibold mb-2">Cestelli Totali</h3>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>Animali totali:</div>
+                        <div className="text-right font-semibold">{calculatedValues.totalAnimals.toLocaleString()}</div>
+                        <div>Animali/kg:</div>
+                        <div className="text-right font-semibold">{calculatedValues.animalsPerKg}</div>
+                      </div>
+                    </div>
+                  </div>
                 </div>
                 
-                {/* Visualizzatore FLUPSY */}
-                <div className="border rounded-lg p-4 bg-gray-50 min-h-[300px] flex items-center justify-center">
-                  {isLoadingFlupsys || isLoadingBaskets ? (
-                    <Spinner className="h-8 w-8" />
-                  ) : !selectedFlupsyId ? (
-                    <p className="text-muted-foreground">Seleziona un FLUPSY per visualizzare i cestelli</p>
-                  ) : (
-                    <FlupsyMapVisualizer 
-                      flupsyId={selectedFlupsyId}
-                      baskets={baskets}
-                      selectedBaskets={sourceBaskets.map(b => b.basketId)}
-                      onBasketClick={toggleSourceBasket}
-                      mode="source"
-                      showTooltips={true}
-                    />
-                  )}
+                {/* Visualizzatore FLUPSY - Sempre in primo piano */}
+                <div className="lg:col-span-3">
+                  <div className="border rounded-lg p-4 bg-gray-50 min-h-[400px] flex items-center justify-center">
+                    {isLoadingFlupsys || isLoadingBaskets ? (
+                      <Spinner className="h-8 w-8" />
+                    ) : !selectedFlupsyId ? (
+                      <p className="text-muted-foreground">Seleziona un FLUPSY per visualizzare i cestelli</p>
+                    ) : (
+                      <FlupsyMapVisualizer 
+                        flupsyId={selectedFlupsyId}
+                        baskets={baskets}
+                        selectedBaskets={sourceBaskets.map(b => b.basketId)}
+                        onBasketClick={toggleSourceBasket}
+                        mode="source"
+                        showTooltips={true}
+                      />
+                    )}
+                  </div>
                 </div>
               </div>
             </CardContent>
@@ -610,60 +645,84 @@ export default function VagliaturaConMappa() {
                 Seleziona i cestelli destinazione dalla mappa del FLUPSY o scegli l'opzione vendita. I cestelli destinazione saranno evidenziati in verde.
               </CardDescription>
             </CardHeader>
-            <CardContent>
-              <div className="space-y-6">
-                {/* Selettore FLUPSY */}
-                <div>
-                  <Label htmlFor="flupsy">Seleziona FLUPSY</Label>
-                  <Select 
-                    value={selectedFlupsyId || undefined} 
-                    onValueChange={setSelectedFlupsyId}
-                  >
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona un FLUPSY" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      {flupsys.map(flupsy => (
-                        <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
-                          {flupsy.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+                <div className="lg:col-span-1">
+                  <div className="space-y-4 sticky top-4">
+                    <div>
+                      <Label htmlFor="flupsy">Seleziona FLUPSY</Label>
+                      <Select 
+                        value={selectedFlupsyId || undefined} 
+                        onValueChange={setSelectedFlupsyId}
+                      >
+                        <SelectTrigger>
+                          <SelectValue placeholder="Seleziona un FLUPSY" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          {flupsys.map(flupsy => (
+                            <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                              {flupsy.name}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                    </div>
+                    
+                    {/* Opzione vendita diretta */}
+                    <div className="border rounded-md p-3">
+                      <h3 className="text-sm font-semibold mb-2">Vendita Diretta</h3>
+                      <p className="text-xs text-muted-foreground mb-2">
+                        Seleziona questa opzione se i cestelli devono essere venduti direttamente
+                      </p>
+                      <Button 
+                        variant="outline" 
+                        className="border-dashed border-2 w-full"
+                        onClick={handleAddDirectSale}
+                      >
+                        Aggiungi Vendita Diretta
+                      </Button>
+                    </div>
+                    
+                    {destinationBaskets.length > 0 && (
+                      <div className="border rounded-md p-3">
+                        <h3 className="text-sm font-semibold mb-2">Cestelli Selezionati ({destinationBaskets.length})</h3>
+                        <div className="max-h-[200px] overflow-y-auto">
+                          {destinationBaskets.map(basket => {
+                            const basketDetails = baskets.find(b => b.id === basket.basketId);
+                            return (
+                              <div key={basket.basketId} className="text-xs p-1 border-b last:border-b-0 flex justify-between">
+                                <span>Cestello #{basketDetails?.physicalNumber}</span>
+                                <Badge variant={basket.destinationType === 'sold' ? 'destructive' : 'outline'}>
+                                  {basket.destinationType === 'sold' ? 'Vendita' : 'Posizionamento'}
+                                </Badge>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                    )}
+                  </div>
                 </div>
                 
-                {/* Visualizzatore FLUPSY */}
-                <div className="border rounded-lg p-4 bg-gray-50 min-h-[300px] flex items-center justify-center">
-                  {isLoadingFlupsys || isLoadingBaskets ? (
-                    <Spinner className="h-8 w-8" />
-                  ) : !selectedFlupsyId ? (
-                    <p className="text-muted-foreground">Seleziona un FLUPSY per visualizzare i cestelli</p>
-                  ) : (
-                    <FlupsyMapVisualizer 
-                      flupsyId={selectedFlupsyId}
-                      baskets={baskets}
-                      selectedBaskets={destinationBaskets.map(b => b.basketId)}
-                      onBasketClick={(basket) => toggleDestinationBasket(basket)}
-                      mode="destination"
-                      showTooltips={true}
-                    />
-                  )}
+                {/* Visualizzatore FLUPSY - Sempre in primo piano */}
+                <div className="lg:col-span-3">
+                  <div className="border rounded-lg p-4 bg-gray-50 min-h-[400px] flex items-center justify-center">
+                    {isLoadingFlupsys || isLoadingBaskets ? (
+                      <Spinner className="h-8 w-8" />
+                    ) : !selectedFlupsyId ? (
+                      <p className="text-muted-foreground">Seleziona un FLUPSY per visualizzare i cestelli</p>
+                    ) : (
+                      <FlupsyMapVisualizer 
+                        flupsyId={selectedFlupsyId}
+                        baskets={baskets}
+                        selectedBaskets={destinationBaskets.map(b => b.basketId)}
+                        onBasketClick={(basket) => toggleDestinationBasket(basket)}
+                        mode="destination"
+                        showTooltips={true}
+                      />
+                    )}
+                  </div>
                 </div>
-              </div>
-              
-              {/* Opzione vendita diretta */}
-              <div className="mt-6">
-                <h3 className="text-lg font-medium">Vendita Diretta</h3>
-                <p className="text-sm text-muted-foreground mb-2">
-                  Seleziona questa opzione se i cestelli devono essere venduti direttamente
-                </p>
-                <Button 
-                  variant="outline" 
-                  className="border-dashed border-2"
-                  onClick={handleAddDirectSale}
-                >
-                  Aggiungi Vendita Diretta
-                </Button>
               </div>
             </CardContent>
             <CardFooter className="flex justify-between">

@@ -94,11 +94,23 @@ export default function FlupsyMapVisualizer({
       return 'bg-gray-100 dark:bg-gray-800'; // Posizione vuota
     }
     
-    if (isBasketSelected(basket.id)) {
+    // Verifica se il cestello è selezionato per vendita (gestito dalla pagina padre)
+    const isForSale = basket.state === 'for_sale' || basket.state === 'sold';
+    
+    // Verifica se il cestello è sia origine che destinazione
+    const isSourceAndDestination = isBasketSelected(basket.id) && 
+      selectedBaskets.some(id => id === basket.id) && 
+      mode === 'destination';
+    
+    if (isSourceAndDestination) {
+      return 'bg-purple-500 hover:bg-purple-600 text-white border-2 border-yellow-400'; // Cestello sia origine che destinazione
+    } else if (isBasketSelected(basket.id)) {
       if (mode === 'source') {
         return 'bg-blue-500 hover:bg-blue-600 text-white'; // Cestello origine
+      } else if (isForSale) {
+        return 'bg-red-500 hover:bg-red-600 text-white'; // Cestello destinazione per vendita
       } else {
-        return 'bg-green-500 hover:bg-green-600 text-white'; // Cestello destinazione
+        return 'bg-green-500 hover:bg-green-600 text-white'; // Cestello destinazione normale
       }
     } else if (mode === 'source') {
       return 'bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900 border-2 border-blue-500'; // Cestello selezionabile come origine
@@ -207,9 +219,17 @@ export default function FlupsyMapVisualizer({
                             {basket ? (
                               <div className="text-center">
                                 <div className="font-bold text-sm">#{basket.physicalNumber}</div>
-                                {basket.size?.code && (
-                                  <div className="text-xs">{basket.size.code}</div>
-                                )}
+                                <div className="flex flex-col gap-0.5 text-xs">
+                                  {basket.size?.code && <span>{basket.size.code}</span>}
+                                  {basket.lastOperation?.animalCount && (
+                                    <span>
+                                      {basket.lastOperation.animalCount.toLocaleString()} anim.
+                                    </span>
+                                  )}
+                                  {basket.currentCycleId && (
+                                    <span>Ciclo #{basket.currentCycleId}</span>
+                                  )}
+                                </div>
                               </div>
                             ) : (
                               <div className="text-xs text-gray-500 dark:text-gray-400">Vuoto</div>
