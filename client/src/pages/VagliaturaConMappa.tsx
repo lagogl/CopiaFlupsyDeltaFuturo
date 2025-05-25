@@ -447,24 +447,71 @@ export default function VagliaturaConMappa() {
   };
 
   // Funzione per selezionare/deselezionare un cestello destinazione
-  const toggleDestinationBasket = (basket: any, destinationType: 'placed' | 'sold' = 'placed') => {
+  const toggleDestinationBasket = (basket: any) => {
+    // Se siamo in modalità selezione vendita, gestiamo in modo diverso il click
+    if (isSaleSelectionMode) {
+      // Trova il cestello nella lista dei cestelli destinazione
+      const destBasketIndex = destinationBaskets.findIndex(db => db.basketId === basket.id);
+      
+      if (destBasketIndex >= 0) {
+        // Il cestello esiste già, togliamo o aggiungiamo il flag "sold"
+        setDestinationBaskets(prev => {
+          const newBaskets = [...prev];
+          const currentBasket = newBaskets[destBasketIndex];
+          
+          // Se già impostato come vendita, ripristina come normale posizionamento
+          // altrimenti imposta come vendita
+          newBaskets[destBasketIndex] = {
+            ...currentBasket,
+            destinationType: currentBasket.destinationType === 'sold' ? 'placed' : 'sold'
+          };
+          
+          return newBaskets;
+        });
+      }
+      return;
+    }
+    
     // Verifica se il cestello è già selezionato
     const isAlreadySelected = destinationBaskets.some(db => db.basketId === basket.id);
     
     if (isAlreadySelected) {
       // Rimuovi il cestello dalla selezione
-      setDestinationBaskets(prev => prev.filter(db => db.basketId !== basket.id));
+      setDestinationBaskets(prev => {
+        const updated = prev.filter(db => db.basketId !== basket.id);
+        
+        // Verifica se tutte le ceste selezionate sono state posizionate
+        // Una cesta è considerata posizionata se ha un conteggio di animali > 0
+        const allPositioned = updated.length > 0 && updated.every(b => (b.animalCount || 0) > 0);
+        setAllDestinationsAssigned(allPositioned);
+        
+        return updated;
+      });
     } else {
       // Verifica se questo cestello è anche un cestello origine
       const isAlsoSource = sourceBaskets.some(sb => sb.basketId === basket.id);
       
+      // Verifica se il cestello è valido per essere selezionato come destinazione:
+      // 1. Il cestello non ha un ciclo attivo (currentCycleId è null) OPPURE
+      // 2. Il cestello è già selezionato come origine
+      const isCycleInactive = !basket.currentCycleId;
+      
+      if (!isCycleInactive && !isAlsoSource) {
+        toast({
+          title: "Cestello non disponibile",
+          description: "Puoi selezionare solo cestelli senza cicli attivi o cestelli già selezionati come origine",
+          variant: "destructive"
+        });
+        return;
+      }
+      
       // Prepara i dati iniziali per il dialogo di misurazione
-      let initialMeasurementData = {
+      const initialMeasurementData = {
         basketId: basket.id,
         physicalNumber: basket.physicalNumber,
-        flupsyId: destinationType === 'sold' ? (basket.flupsyId || 0) : basket.flupsyId,
+        flupsyId: basket.flupsyId || 0,
         position: basket.position?.toString() || '',
-        destinationType: destinationType,
+        destinationType: 'placed' as 'placed' | 'sold',
         sampleWeight: 100, // grammi
         sampleCount: 0,
         totalWeight: 0, // kg
@@ -478,44 +525,9 @@ export default function VagliaturaConMappa() {
         sizeId: calculatedValues.sizeId || 0
       };
       
-      // Se è vendita diretta, calcola i valori in base ai cestelli origine
-      if (destinationType === 'sold' && calculatedValues.totalAnimals > 0) {
-        // Dividi gli animali equamente tra i cestelli venduti (considerando anche questo nuovo)
-        const existingSoldBaskets = destinationBaskets.filter(db => db.destinationType === 'sold').length;
-        const estimatedAnimalCount = Math.floor(calculatedValues.totalAnimals / (existingSoldBaskets + 1));
-        
-        // Stima del peso totale
-        let estimatedTotalWeight = 0;
-        if (calculatedValues.animalsPerKg > 0) {
-          estimatedTotalWeight = Math.round((estimatedAnimalCount / calculatedValues.animalsPerKg) * 1000) / 1000; // Arrotonda a 3 decimali
-        }
-        
-        // Aggiorna i dati iniziali
-        initialMeasurementData = {
-          ...initialMeasurementData,
-          animalCount: estimatedAnimalCount,
-          totalWeight: estimatedTotalWeight,
-          animalsPerKg: calculatedValues.animalsPerKg,
-          sizeId: calculatedValues.sizeId || 0
-        };
-        
-        // Apri il dialogo di vendita diretta
-        setMeasurementData(initialMeasurementData);
-        setDirectSaleData({
-          client: 'Cliente',
-          date: new Date().toISOString().split('T')[0],
-          animalCount: estimatedAnimalCount,
-          totalWeight: estimatedTotalWeight,
-          animalsPerKg: calculatedValues.animalsPerKg,
-          selectedBasketId: basket.id
-        });
-        
-        setIsDirectSaleDialogOpen(true);
-      } else {
-        // Per posizionamento normale, apri il dialogo di misurazione
-        setMeasurementData(initialMeasurementData);
-        setIsMeasurementDialogOpen(true);
-      }
+      // Apri il dialogo di misurazione per posizionamento
+      setMeasurementData(initialMeasurementData);
+      setIsMeasurementDialogOpen(true);
     }
   };
   
@@ -824,8 +836,18 @@ export default function VagliaturaConMappa() {
                     
                     {/* Opzione per selezionare ceste per vendita (visibile solo dopo aver posizionato tutte le ceste destinazione) */}
                     {allDestinationsAssigned && !isSaleSelectionMode && (
-                      <div className="border rounded-md p-3">
-                        <h3 className="text-sm font-semibold mb-2">Vendita Diretta</h3>
+                      <div className="border rounded-md p-3 bg-green-50 border-green-300">
+                        <h3 className="text-sm font-semibold mb-2 text-green-800">Vendita Diretta</h3>
+                        <p className="text-xs text-green-700 mb-2">
+                          Tutte le ceste sono state posizionate correttamente. Ora puoi selezionare quali destinare alla vendita.
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          className="w-full border-green-500 bg-white hover:bg-green-100"
+                          onClick={() => setIsSaleSelectionMode(true)}
+                        >
+                          Seleziona per Vendita
+                        </Button>
                         <p className="text-xs text-muted-foreground mb-2">
                           Ora puoi selezionare quali ceste destinazione andranno in vendita
                         </p>
