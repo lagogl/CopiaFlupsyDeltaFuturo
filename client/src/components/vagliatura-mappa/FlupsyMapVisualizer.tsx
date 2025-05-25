@@ -225,25 +225,32 @@ export default function FlupsyMapVisualizer({
         </div>
       </div>
       
-      {/* Contatore degli animali selezionati per taglia */}
-      {mode === 'source' && selectedBaskets.length > 0 && (
-        <div className="mb-4 p-3 border rounded-md bg-blue-50">
-          <h4 className="text-sm font-semibold mb-2 text-blue-800">
-            Cestelli selezionati: {selectedBaskets.length} | Totale animali: {grandTotal.toLocaleString()}
-          </h4>
+      {/* Contatore degli animali selezionati per taglia - SEMPRE VISIBILE */}
+      <div className="mb-4 p-3 border-2 rounded-md bg-blue-50 border-blue-300">
+        <h4 className="text-sm font-semibold mb-2 text-blue-800 flex justify-between">
+          <span>Cestelli selezionati: {selectedBaskets.length}</span>
+          <span className="font-bold">Totale animali: {grandTotal.toLocaleString()}</span>
+        </h4>
+        {mode === 'source' && selectedBaskets.length > 0 ? (
           <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
             {sizeTotals.map((size) => (
-              <div key={size.code} className="p-2 bg-white rounded border border-blue-200">
-                <div className="font-medium text-sm">{size.code}</div>
+              <div key={size.code} className="p-2 bg-white rounded border-2 border-blue-300">
+                <div className="font-medium text-sm text-center">{size.code}</div>
                 <div className="flex justify-between text-xs">
                   <span>{size.basketCount} cestelli</span>
-                  <span>{size.totalAnimals.toLocaleString()} animali</span>
+                  <span className="font-bold">{size.totalAnimals.toLocaleString()} animali</span>
                 </div>
               </div>
             ))}
           </div>
-        </div>
-      )}
+        ) : (
+          <div className="text-center text-blue-600 py-2 bg-white rounded border border-blue-200">
+            {mode === 'source' ? 
+              "Seleziona cestelli di origine per vedere i totali per taglia" :
+              "Conteggio disponibile nella fase di selezione origine"}
+          </div>
+        )}
+      </div>
       
       <div className="border rounded-lg p-4">
         {/* Contenitore principale del FLUPSY */}
