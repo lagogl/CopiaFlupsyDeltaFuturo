@@ -4,6 +4,16 @@ import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
 import { InfoIcon } from 'lucide-react';
 
+// Utility per formattare i numeri grandi in modo più compatto
+function formatNumber(num: number): string {
+  if (num >= 1000000) {
+    return (num / 1000000).toFixed(1) + 'M';
+  } else if (num >= 1000) {
+    return (num / 1000).toFixed(1) + 'K';
+  }
+  return num.toString();
+}
+
 // Tipi di dati
 interface Basket {
   id: number;
@@ -363,7 +373,7 @@ export default function FlupsyMapVisualizer({
               
               {/* Genera le posizioni per questa riga */}
               <div className={cn(
-                "grid gap-2",
+                "grid gap-1",
                 positionsPerRow <= 5 ? "grid-cols-5" : 
                 positionsPerRow <= 8 ? "grid-cols-8" : 
                 positionsPerRow <= 10 ? "grid-cols-10" : "grid-cols-12"
@@ -378,40 +388,63 @@ export default function FlupsyMapVisualizer({
                         <TooltipTrigger asChild>
                           <div
                             className={cn(
-                              "h-16 rounded-md p-2 flex flex-col items-center justify-center transition-colors cursor-pointer",
+                              "rounded-md p-1 flex flex-col items-center justify-center transition-colors cursor-pointer",
+                              positionsPerRow > 5 ? "h-auto" : "h-16",
                               getBasketClass(basket)
                             )}
                             onClick={() => handlePositionClick(row, position)}
                             role="button"
                             tabIndex={0}
                           >
-                            <div className="text-xs font-semibold mb-1">
+                            <div className="text-[10px] font-medium">
                               {row}{position}
                             </div>
                             {basket ? (
-                              <div className="text-center">
-                                <div className="font-bold text-sm">#{basket.physicalNumber}</div>
-                                <div className="flex flex-col gap-0.5 text-xs text-center">
-                                  <div className="font-medium">
-                                    {basket.size?.code || 
-                                     (basket.lastOperation?.animalsPerKg 
-                                      ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
-                                      : "Senza taglia")}
+                              <div className="text-center w-full">
+                                <div className="font-bold text-[10px]">#{basket.physicalNumber}</div>
+                                {positionsPerRow > 5 ? (
+                                  // Layout compatto per FLUPSY con tante posizioni
+                                  <div className="flex flex-col text-[9px] leading-tight">
+                                    <div className="font-semibold">
+                                      {basket.size?.code || 
+                                       (basket.lastOperation?.animalsPerKg 
+                                        ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
+                                        : "N/D")}
+                                    </div>
+                                    <div>
+                                      {basket.lastOperation?.animalCount 
+                                        ? (basket.lastOperation.animalCount >= 1000000 
+                                            ? (basket.lastOperation.animalCount / 1000000).toFixed(1) + 'M'
+                                            : basket.lastOperation.animalCount >= 1000
+                                            ? (basket.lastOperation.animalCount / 1000).toFixed(1) + 'K'
+                                            : basket.lastOperation.animalCount.toString())
+                                        : "0"}
+                                    </div>
                                   </div>
-                                  <div className="font-semibold">
-                                    {basket.lastOperation?.animalCount 
-                                      ? basket.lastOperation.animalCount.toLocaleString() 
-                                      : "0"} anim.
+                                ) : (
+                                  // Layout normale per FLUPSY con poche posizioni
+                                  <div className="flex flex-col gap-0.5 text-xs text-center">
+                                    <div className="font-medium">
+                                      {basket.size?.code || 
+                                       (basket.lastOperation?.animalsPerKg 
+                                        ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
+                                        : "Senza taglia")}
+                                    </div>
+                                    <div className="font-semibold">
+                                      {basket.lastOperation?.animalCount 
+                                        ? basket.lastOperation.animalCount.toLocaleString() 
+                                        : "0"} anim.
+                                    </div>
+                                    <div>
+                                      {basket.lastOperation?.animalsPerKg 
+                                        ? basket.lastOperation.animalsPerKg.toLocaleString() 
+                                        : "0"} per kg
+                                    </div>
                                   </div>
-                                  <div>
-                                    {basket.lastOperation?.animalsPerKg 
-                                      ? basket.lastOperation.animalsPerKg.toLocaleString() 
-                                      : "0"} per kg
-                                  </div>
-                                </div>
+                                )}
                               </div>
                             ) : (
-                              <div className="text-xs text-gray-500 dark:text-gray-400">Vuoto</div>
+                              <div className="text-[10px] text-gray-500 dark:text-gray-400">Vuoto</div>
                             )}
                           </div>
                         </TooltipTrigger>
