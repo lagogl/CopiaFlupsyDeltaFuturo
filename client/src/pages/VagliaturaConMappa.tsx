@@ -93,7 +93,7 @@ export default function VagliaturaConMappa() {
   
   // Query specifica per recuperare le operazioni più recenti
   const { data: operations = [], isLoading: isLoadingOperations } = useQuery({
-    queryKey: ['/api/operations', { includeAll: true }],
+    queryKey: ['/api/operations', { includeAll: true, pageSize: 1000 }],
     enabled: true
   });
   
