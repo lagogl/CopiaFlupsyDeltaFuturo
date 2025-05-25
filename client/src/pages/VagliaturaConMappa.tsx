@@ -161,44 +161,102 @@ export default function VagliaturaConMappa() {
     }
     
     try {
-      // Prepara i dati per l'invio
-      const selectionData = {
-        ...selection,
-        sourceBaskets,
-        destinationBaskets
-      };
+      // Passo 1: Creare la selezione (vagliatura) se non esiste già
+      let selectionId = selection.id;
       
-      // Invia i dati al server
-      const response = await fetch('/api/selections', {
+      if (!selectionId) {
+        // Preparazione dei dati per la creazione della selezione
+        const createSelectionData = {
+          date: selection.date,
+          notes: selection.notes || "",
+          purpose: "vagliatura",
+          screeningType: selection.screeningType || "standard"
+        };
+        
+        const createResponse = await fetch('/api/selections', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify(createSelectionData)
+        });
+        
+        const createData = await createResponse.json();
+        
+        if (!createResponse.ok) {
+          throw new Error(createData.message || 'Si è verificato un errore durante la creazione della vagliatura');
+        }
+        
+        selectionId = createData.id;
+        
+        // Aggiorna l'ID della selezione nel componente
+        setSelection(prev => ({
+          ...prev,
+          id: selectionId,
+          selectionNumber: createData.selectionNumber
+        }));
+      }
+      
+      // Passo 2: Aggiungere i cestelli origine
+      const sourceResponse = await fetch(`/api/selections/${selectionId}/source-baskets`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
         },
-        body: JSON.stringify(selectionData)
+        body: JSON.stringify({ 
+          sourceBaskets: sourceBaskets.map(sb => ({
+            ...sb,
+            selectionId
+          }))
+        })
       });
       
-      const data = await response.json();
-      
-      if (!response.ok) {
-        throw new Error(data.message || 'Si è verificato un errore durante il completamento della vagliatura');
+      if (!sourceResponse.ok) {
+        const sourceError = await sourceResponse.json();
+        throw new Error(sourceError.message || 'Si è verificato un errore durante l\'aggiunta dei cestelli origine');
       }
       
-      // Aggiorna l'ID della selezione
-      setSelection(prev => ({
-        ...prev,
-        id: data.id,
-        selectionNumber: data.selectionNumber,
-        status: data.status
-      }));
+      // Passo 3: Aggiungere i cestelli destinazione
+      const destinationResponse = await fetch(`/api/selections/${selectionId}/destination-baskets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({ 
+          destinationBaskets: destinationBaskets.map(db => ({
+            ...db,
+            selectionId
+          }))
+        })
+      });
+      
+      if (!destinationResponse.ok) {
+        const destError = await destinationResponse.json();
+        throw new Error(destError.message || 'Si è verificato un errore durante l\'aggiunta dei cestelli destinazione');
+      }
+      
+      // Passo 4: Completare la selezione (attiva le operazioni e chiude i cicli)
+      const completeResponse = await fetch(`/api/selections/${selectionId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
+      
+      const completeData = await completeResponse.json();
+      
+      if (!completeResponse.ok) {
+        throw new Error(completeData.message || 'Si è verificato un errore durante il completamento della vagliatura');
+      }
       
       toast({
         title: "Vagliatura completata",
-        description: `Vagliatura #${data.selectionNumber} completata con successo!`,
+        description: `Vagliatura #${selection.selectionNumber || completeData.selection?.selectionNumber} completata con successo!`,
         variant: "success"
       });
       
       // Reindirizza alla pagina di dettaglio della selezione
-      window.location.href = `/selections/${data.id}`;
+      window.location.href = `/selection/${selectionId}`;
     } catch (error) {
       console.error('Errore durante il completamento della vagliatura:', error);
       toast({
