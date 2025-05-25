@@ -238,6 +238,61 @@ export default function VagliaturaConMappa() {
     }
   };
   
+  // Stato per il dialogo di misurazione (sia posizionamento che vendita)
+  const [isMeasurementDialogOpen, setIsMeasurementDialogOpen] = useState(false);
+  const [measurementData, setMeasurementData] = useState({
+    basketId: 0,
+    physicalNumber: 0,
+    flupsyId: 0,
+    position: '',
+    destinationType: 'placed' as 'placed' | 'sold',
+    sampleWeight: 100, // grammi
+    sampleCount: 0,
+    totalWeight: 0, // kg
+    deadCount: 0,
+    animalCount: 0,
+    animalsPerKg: 0,
+    mortalityRate: 0,
+    saleDate: new Date().toISOString().split('T')[0],
+    saleClient: 'Cliente',
+    isAlsoSource: false,
+    sizeId: 0
+  });
+
+  // Funzione per calcolare i valori basati sui dati di misurazione
+  const calculateMeasurementValues = (data: any) => {
+    const newData = { ...data };
+    
+    // Calcola animali per kg
+    if (newData.sampleWeight > 0 && newData.sampleCount > 0) {
+      newData.animalsPerKg = Math.round((newData.sampleCount / newData.sampleWeight) * 1000);
+    }
+    
+    // Calcola numero totale di animali
+    if (newData.totalWeight > 0 && newData.animalsPerKg > 0) {
+      newData.animalCount = Math.round(newData.totalWeight * newData.animalsPerKg);
+    }
+    
+    // Calcola percentuale di mortalità
+    if (newData.animalCount > 0 && newData.deadCount > 0) {
+      newData.mortalityRate = Math.round((newData.deadCount / (newData.animalCount + newData.deadCount)) * 10000) / 100;
+    } else {
+      newData.mortalityRate = 0;
+    }
+    
+    // Determina la taglia in base agli animali per kg
+    if (newData.animalsPerKg > 0 && sizes) {
+      const matchingSize = sizes.find(size => 
+        newData.animalsPerKg >= size.min && newData.animalsPerKg <= size.max
+      );
+      if (matchingSize) {
+        newData.sizeId = matchingSize.id;
+      }
+    }
+    
+    return newData;
+  };
+
   // Funzione per selezionare/deselezionare un cestello destinazione
   const toggleDestinationBasket = (basket: any, destinationType: 'placed' | 'sold' = 'placed') => {
     // Verifica se il cestello è già selezionato
@@ -250,70 +305,64 @@ export default function VagliaturaConMappa() {
       // Verifica se questo cestello è anche un cestello origine
       const isAlsoSource = sourceBaskets.some(sb => sb.basketId === basket.id);
       
-      // Calcola i valori predefiniti in base al tipo di destinazione
-      let animalCount = 0;
-      let deadCount = 0;
-      let sampleWeight = 0;
-      let sampleCount = 0;
-      let totalWeight = 0;
-      let animalsPerKg = 0;
-      let sizeId = 0;
+      // Prepara i dati iniziali per il dialogo di misurazione
+      let initialMeasurementData = {
+        basketId: basket.id,
+        physicalNumber: basket.physicalNumber,
+        flupsyId: destinationType === 'sold' ? (basket.flupsyId || 0) : basket.flupsyId,
+        position: basket.position?.toString() || '',
+        destinationType: destinationType,
+        sampleWeight: 100, // grammi
+        sampleCount: 0,
+        totalWeight: 0, // kg
+        deadCount: 0,
+        animalCount: 0,
+        animalsPerKg: calculatedValues.animalsPerKg || 0,
+        mortalityRate: 0,
+        saleDate: new Date().toISOString().split('T')[0],
+        saleClient: 'Cliente',
+        isAlsoSource: isAlsoSource,
+        sizeId: calculatedValues.sizeId || 0
+      };
       
       // Se è vendita diretta, calcola i valori in base ai cestelli origine
       if (destinationType === 'sold' && calculatedValues.totalAnimals > 0) {
         // Dividi gli animali equamente tra i cestelli venduti (considerando anche questo nuovo)
         const existingSoldBaskets = destinationBaskets.filter(db => db.destinationType === 'sold').length;
-        animalCount = Math.floor(calculatedValues.totalAnimals / (existingSoldBaskets + 1));
-        animalsPerKg = calculatedValues.animalsPerKg;
-        sizeId = calculatedValues.sizeId || 0;
+        const estimatedAnimalCount = Math.floor(calculatedValues.totalAnimals / (existingSoldBaskets + 1));
         
         // Stima del peso totale
-        if (animalsPerKg > 0) {
-          totalWeight = Math.round((animalCount / animalsPerKg) * 1000) / 1000; // Arrotonda a 3 decimali
+        let estimatedTotalWeight = 0;
+        if (calculatedValues.animalsPerKg > 0) {
+          estimatedTotalWeight = Math.round((estimatedAnimalCount / calculatedValues.animalsPerKg) * 1000) / 1000; // Arrotonda a 3 decimali
         }
         
-        // Mostra un messaggio di conferma per la vendita
-        toast({
-          title: "Cestello per vendita",
-          description: `Cestello #${basket.physicalNumber} aggiunto come vendita diretta con ${animalCount} animali`,
-        });
+        // Aggiorna i dati iniziali
+        initialMeasurementData = {
+          ...initialMeasurementData,
+          animalCount: estimatedAnimalCount,
+          totalWeight: estimatedTotalWeight,
+          animalsPerKg: calculatedValues.animalsPerKg,
+          sizeId: calculatedValues.sizeId || 0
+        };
         
-        // Apri il dialogo per vendita diretta
+        // Apri il dialogo di vendita diretta
+        setMeasurementData(initialMeasurementData);
         setDirectSaleData({
           client: 'Cliente',
           date: new Date().toISOString().split('T')[0],
-          animalCount,
-          totalWeight,
-          animalsPerKg,
+          animalCount: estimatedAnimalCount,
+          totalWeight: estimatedTotalWeight,
+          animalsPerKg: calculatedValues.animalsPerKg,
           selectedBasketId: basket.id
         });
         
         setIsDirectSaleDialogOpen(true);
-        return; // Interruzione per aspettare la conferma dal dialogo
+      } else {
+        // Per posizionamento normale, apri il dialogo di misurazione
+        setMeasurementData(initialMeasurementData);
+        setIsMeasurementDialogOpen(true);
       }
-      
-      // Aggiungi il cestello alla selezione
-      const newDestinationBasket: DestinationBasket = {
-        basketId: basket.id,
-        physicalNumber: basket.physicalNumber,
-        // Per vendita, impostiamo flupsyId a un valore predefinito (non null)
-        flupsyId: destinationType === 'sold' ? (basket.flupsyId || 0) : basket.flupsyId,
-        position: basket.position?.toString() || '',
-        destinationType: destinationType,
-        animalCount: animalCount, 
-        deadCount: deadCount,
-        sampleWeight: sampleWeight,
-        sampleCount: sampleCount,
-        totalWeight: totalWeight,
-        animalsPerKg: animalsPerKg,
-        saleDate: destinationType === 'sold' ? new Date().toISOString().split('T')[0] : null,
-        saleClient: destinationType === 'sold' ? 'Cliente' : null,
-        selectionId: 0, // Sarà aggiornato quando la selezione viene salvata
-        sizeId: sizeId, // Usa la taglia calcolata o 0 come valore predefinito
-        isAlsoSource: isAlsoSource // Flag per riconoscere cestelli che sono anche origine
-      };
-      
-      setDestinationBaskets(prev => [...prev, newDestinationBasket]);
     }
   };
   
@@ -785,69 +834,354 @@ export default function VagliaturaConMappa() {
         </TabsContent>
       </Tabs>
       
+      {/* Dialogo per la misurazione (posizionamento) */}
+      <Dialog open={isMeasurementDialogOpen} onOpenChange={setIsMeasurementDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Aggiungi Cesta Destinazione</DialogTitle>
+            <DialogDescription>
+              Inserisci i dati di misurazione per questo cestello.
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium mb-2">Destinazione</h3>
+              <Select 
+                value="posiziona"
+                disabled={true}
+              >
+                <SelectTrigger>
+                  <SelectValue>Posiziona in FLUPSY</SelectValue>
+                </SelectTrigger>
+              </Select>
+            </div>
+            
+            <div className="bg-slate-50 p-4 rounded-md">
+              <h3 className="text-sm font-medium mb-3 text-center">Calcolatrice Misurazioni</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 bg-green-50 p-3 rounded-md">
+                  <Label htmlFor="sampleWeight" className="text-green-700">Peso Campione (g)</Label>
+                  <Input
+                    id="sampleWeight"
+                    type="number"
+                    value={measurementData.sampleWeight}
+                    className="border-green-200"
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      const updatedData = calculateMeasurementValues({
+                        ...measurementData,
+                        sampleWeight: value
+                      });
+                      setMeasurementData(updatedData);
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-2 bg-blue-50 p-3 rounded-md">
+                  <Label htmlFor="sampleCount" className="text-blue-700">N° Animali nel Campione</Label>
+                  <Input
+                    id="sampleCount"
+                    type="number"
+                    value={measurementData.sampleCount}
+                    className="border-blue-200"
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      const updatedData = calculateMeasurementValues({
+                        ...measurementData,
+                        sampleCount: value
+                      });
+                      setMeasurementData(updatedData);
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-2 bg-yellow-50 p-3 rounded-md">
+                  <Label htmlFor="totalWeight" className="text-yellow-700">Peso Totale Cesta (kg)</Label>
+                  <Input
+                    id="totalWeight"
+                    type="number"
+                    step="0.001"
+                    value={measurementData.totalWeight}
+                    className="border-yellow-200"
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      const updatedData = calculateMeasurementValues({
+                        ...measurementData,
+                        totalWeight: value
+                      });
+                      setMeasurementData(updatedData);
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-2 bg-red-50 p-3 rounded-md">
+                  <Label htmlFor="deadCount" className="text-red-700">Animali Morti</Label>
+                  <Input
+                    id="deadCount"
+                    type="number"
+                    value={measurementData.deadCount}
+                    className="border-red-200"
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      const updatedData = calculateMeasurementValues({
+                        ...measurementData,
+                        deadCount: value
+                      });
+                      setMeasurementData(updatedData);
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-2 bg-purple-50 p-3 rounded-md">
+                  <Label htmlFor="animalsPerKg" className="text-purple-700">Animali per Kg</Label>
+                  <Input
+                    id="animalsPerKg"
+                    type="number"
+                    value={measurementData.animalsPerKg}
+                    className="border-purple-200"
+                    readOnly
+                  />
+                </div>
+                
+                <div className="space-y-2 bg-cyan-50 p-3 rounded-md">
+                  <Label htmlFor="animalCount" className="text-cyan-700">Numero Totale Animali</Label>
+                  <Input
+                    id="animalCount"
+                    type="number"
+                    value={measurementData.animalCount}
+                    className="border-cyan-200"
+                    readOnly
+                  />
+                </div>
+              </div>
+              
+              <div className="mt-4 bg-orange-50 p-3 rounded-md">
+                <div className="flex justify-between items-center">
+                  <Label htmlFor="mortalityRate" className="text-orange-700">Percentuale Mortalità:</Label>
+                  <div className="text-right font-bold text-orange-700">{measurementData.mortalityRate}%</div>
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-medium mb-2">Posizione nel FLUPSY</h3>
+              <Select 
+                value={measurementData.position || undefined}
+                onValueChange={(value) => setMeasurementData({...measurementData, position: value})}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Seleziona una posizione disponibile" />
+                </SelectTrigger>
+                <SelectContent>
+                  {['DX1', 'DX2', 'DX3', 'DX4', 'DX5', 'SX1', 'SX2', 'SX3', 'SX4', 'SX5'].map(pos => (
+                    <SelectItem key={pos} value={pos}>
+                      {pos}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsMeasurementDialogOpen(false)}>Annulla</Button>
+            <Button onClick={() => {
+              // Crea un nuovo cestello destinazione con i dati inseriti
+              const newDestinationBasket: DestinationBasket = {
+                basketId: measurementData.basketId,
+                physicalNumber: measurementData.physicalNumber,
+                flupsyId: measurementData.flupsyId,
+                position: measurementData.position,
+                destinationType: 'placed',
+                animalCount: measurementData.animalCount,
+                deadCount: measurementData.deadCount,
+                sampleWeight: measurementData.sampleWeight,
+                sampleCount: measurementData.sampleCount,
+                totalWeight: measurementData.totalWeight,
+                animalsPerKg: measurementData.animalsPerKg,
+                saleDate: null,
+                saleClient: null,
+                selectionId: 0,
+                sizeId: measurementData.sizeId,
+                isAlsoSource: measurementData.isAlsoSource
+              };
+              
+              setDestinationBaskets(prev => [...prev, newDestinationBasket]);
+              
+              toast({
+                title: "Cestello aggiunto",
+                description: `Cestello #${measurementData.physicalNumber} aggiunto come destinazione`,
+              });
+              
+              setIsMeasurementDialogOpen(false);
+            }}>Conferma</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+      
       {/* Dialogo per la vendita diretta */}
       <Dialog open={isDirectSaleDialogOpen} onOpenChange={setIsDirectSaleDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>Dettagli Vendita Diretta</DialogTitle>
+            <DialogTitle>Aggiungi Cesta Destinazione</DialogTitle>
             <DialogDescription>
-              Inserisci i dettagli per la vendita diretta di questo cestello.
+              Inserisci i dati per la vendita diretta di questo cestello.
             </DialogDescription>
           </DialogHeader>
           
-          <div className="grid gap-4 py-4">
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="client" className="text-right">Cliente</Label>
-              <Input
-                id="client"
-                value={directSaleData.client}
-                className="col-span-3"
-                onChange={(e) => setDirectSaleData({...directSaleData, client: e.target.value})}
-              />
+          <div className="space-y-4">
+            <div>
+              <h3 className="text-sm font-medium mb-2">Destinazione</h3>
+              <Select 
+                value="vendita"
+                disabled={true}
+              >
+                <SelectTrigger>
+                  <SelectValue>Vendita Diretta</SelectValue>
+                </SelectTrigger>
+              </Select>
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="saleDate" className="text-right">Data Vendita</Label>
+            <div className="bg-slate-50 p-4 rounded-md">
+              <h3 className="text-sm font-medium mb-3 text-center">Calcolatrice Misurazioni</h3>
+              
+              <div className="grid grid-cols-2 gap-4">
+                <div className="space-y-2 bg-green-50 p-3 rounded-md">
+                  <Label htmlFor="sampleWeight" className="text-green-700">Peso Campione (g)</Label>
+                  <Input
+                    id="sampleWeight"
+                    type="number"
+                    value={measurementData.sampleWeight}
+                    className="border-green-200"
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      const updatedData = calculateMeasurementValues({
+                        ...measurementData,
+                        sampleWeight: value
+                      });
+                      setMeasurementData(updatedData);
+                      setDirectSaleData({
+                        ...directSaleData,
+                        animalCount: updatedData.animalCount,
+                        totalWeight: updatedData.totalWeight,
+                        animalsPerKg: updatedData.animalsPerKg
+                      });
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-2 bg-blue-50 p-3 rounded-md">
+                  <Label htmlFor="sampleCount" className="text-blue-700">N° Animali nel Campione</Label>
+                  <Input
+                    id="sampleCount"
+                    type="number"
+                    value={measurementData.sampleCount}
+                    className="border-blue-200"
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      const updatedData = calculateMeasurementValues({
+                        ...measurementData,
+                        sampleCount: value
+                      });
+                      setMeasurementData(updatedData);
+                      setDirectSaleData({
+                        ...directSaleData,
+                        animalCount: updatedData.animalCount,
+                        totalWeight: updatedData.totalWeight,
+                        animalsPerKg: updatedData.animalsPerKg
+                      });
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-2 bg-yellow-50 p-3 rounded-md">
+                  <Label htmlFor="totalWeight" className="text-yellow-700">Peso Totale Cesta (kg)</Label>
+                  <Input
+                    id="totalWeight"
+                    type="number"
+                    step="0.001"
+                    value={directSaleData.totalWeight}
+                    className="border-yellow-200"
+                    onChange={(e) => {
+                      const value = parseFloat(e.target.value) || 0;
+                      setDirectSaleData({
+                        ...directSaleData,
+                        totalWeight: value
+                      });
+                      const updatedData = calculateMeasurementValues({
+                        ...measurementData,
+                        totalWeight: value
+                      });
+                      setMeasurementData(updatedData);
+                      setDirectSaleData(prev => ({
+                        ...prev,
+                        animalCount: updatedData.animalCount
+                      }));
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-2 bg-purple-50 p-3 rounded-md">
+                  <Label htmlFor="animalsPerKg" className="text-purple-700">Animali per Kg</Label>
+                  <Input
+                    id="animalsPerKg"
+                    type="number"
+                    value={directSaleData.animalsPerKg}
+                    className="border-purple-200"
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setDirectSaleData({
+                        ...directSaleData,
+                        animalsPerKg: value
+                      });
+                      // Ricalcola il numero di animali
+                      if (value > 0 && directSaleData.totalWeight > 0) {
+                        setDirectSaleData(prev => ({
+                          ...prev,
+                          animalCount: Math.round(prev.totalWeight * value)
+                        }));
+                      }
+                    }}
+                  />
+                </div>
+                
+                <div className="space-y-2 bg-cyan-50 p-3 rounded-md">
+                  <Label htmlFor="animalCount" className="text-cyan-700">Numero Totale Animali</Label>
+                  <Input
+                    id="animalCount"
+                    type="number"
+                    value={directSaleData.animalCount}
+                    className="border-cyan-200"
+                    onChange={(e) => {
+                      const value = parseInt(e.target.value) || 0;
+                      setDirectSaleData({
+                        ...directSaleData,
+                        animalCount: value
+                      });
+                    }}
+                  />
+                </div>
+              </div>
+            </div>
+            
+            <div>
+              <h3 className="text-sm font-medium mb-2">Data Vendita</h3>
               <Input
                 id="saleDate"
                 type="date"
                 value={directSaleData.date}
-                className="col-span-3"
                 onChange={(e) => setDirectSaleData({...directSaleData, date: e.target.value})}
               />
             </div>
             
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="animalCount" className="text-right">Numero Animali</Label>
+            <div>
+              <h3 className="text-sm font-medium mb-2">Cliente</h3>
               <Input
-                id="animalCount"
-                type="number"
-                value={directSaleData.animalCount}
-                className="col-span-3"
-                onChange={(e) => setDirectSaleData({...directSaleData, animalCount: parseInt(e.target.value) || 0})}
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="totalWeight" className="text-right">Peso Totale (kg)</Label>
-              <Input
-                id="totalWeight"
-                type="number"
-                step="0.001"
-                value={directSaleData.totalWeight}
-                className="col-span-3"
-                onChange={(e) => setDirectSaleData({...directSaleData, totalWeight: parseFloat(e.target.value) || 0})}
-              />
-            </div>
-            
-            <div className="grid grid-cols-4 items-center gap-4">
-              <Label htmlFor="animalsPerKg" className="text-right">Animali/kg</Label>
-              <Input
-                id="animalsPerKg"
-                type="number"
-                value={directSaleData.animalsPerKg}
-                className="col-span-3"
-                onChange={(e) => setDirectSaleData({...directSaleData, animalsPerKg: parseInt(e.target.value) || 0})}
+                id="client"
+                value={directSaleData.client}
+                onChange={(e) => setDirectSaleData({...directSaleData, client: e.target.value})}
               />
             </div>
           </div>
@@ -873,14 +1207,14 @@ export default function VagliaturaConMappa() {
                 destinationType: 'sold',
                 animalCount: directSaleData.animalCount,
                 deadCount: 0,
-                sampleWeight: 0,
-                sampleCount: 0,
+                sampleWeight: measurementData.sampleWeight,
+                sampleCount: measurementData.sampleCount,
                 totalWeight: directSaleData.totalWeight,
                 animalsPerKg: directSaleData.animalsPerKg,
                 saleDate: directSaleData.date,
                 saleClient: directSaleData.client,
                 selectionId: 0,
-                sizeId: calculatedValues.sizeId || 0,
+                sizeId: measurementData.sizeId || 0,
                 isAlsoSource: sourceBaskets.some(sb => sb.basketId === selectedBasket.id)
               };
               
