@@ -34,6 +34,7 @@ interface FlupsyMapVisualizerProps {
   onBasketClick: (basket: Basket) => void;
   mode: 'source' | 'destination'; // Modalità di selezione
   showTooltips?: boolean;
+  maxPositions?: number; // Numero massimo di posizioni per FLUPSY
 }
 
 /**
@@ -45,13 +46,17 @@ export default function FlupsyMapVisualizer({
   selectedBaskets,
   onBasketClick,
   mode,
-  showTooltips = true
+  showTooltips = true,
+  maxPositions = 10
 }: FlupsyMapVisualizerProps) {
   // Trova i cestelli del FLUPSY selezionato
   const flupsyBaskets = baskets.filter(b => b.flupsyId === Number(flupsyId));
   
-  // Default: 10 posizioni per FLUPSY (5 per riga)
-  const positionsPerRow = 5;
+  // Calcola il numero di posizioni per riga (assumendo 2 file)
+  // Se maxPositions è 10, avremo 5 posizioni per riga
+  // Se maxPositions è 20, avremo 10 posizioni per riga, ecc.
+  const positionsPerRow = Math.ceil(maxPositions / 2);
+  console.log(`FLUPSY ${flupsyId} ha ${maxPositions} posizioni totali, ${positionsPerRow} per riga`);
   
   // Definizione delle file del FLUPSY (default: DX e SX)
   const rows = ['DX', 'SX'];
@@ -357,7 +362,12 @@ export default function FlupsyMapVisualizer({
               </div>
               
               {/* Genera le posizioni per questa riga */}
-              <div className="grid grid-cols-5 gap-2">
+              <div className={cn(
+                "grid gap-2",
+                positionsPerRow <= 5 ? "grid-cols-5" : 
+                positionsPerRow <= 8 ? "grid-cols-8" : 
+                positionsPerRow <= 10 ? "grid-cols-10" : "grid-cols-12"
+              )}>
                 {Array.from({ length: positionsPerRow }).map((_, posIndex) => {
                   const position = posIndex + 1;
                   const basket = getBasketAtPosition(row, position);

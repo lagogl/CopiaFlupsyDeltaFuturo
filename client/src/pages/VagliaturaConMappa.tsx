@@ -81,7 +81,7 @@ export default function VagliaturaConMappa() {
   
   // Query per i dati
   const { data: flupsys = [], isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
-    queryKey: ['/api/flupsys'],
+    queryKey: ['/api/flupsys', { includeAll: true }],
     enabled: true
   });
   
@@ -754,6 +754,7 @@ export default function VagliaturaConMappa() {
                         onBasketClick={toggleSourceBasket}
                         mode="source"
                         showTooltips={true}
+                        maxPositions={flupsys.find(f => f.id === Number(selectedFlupsyId))?.maxPositions || 10}
                       />
                     )}
                   </div>
