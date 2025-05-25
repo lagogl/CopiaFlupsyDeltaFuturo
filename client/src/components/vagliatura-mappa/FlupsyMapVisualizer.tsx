@@ -149,6 +149,48 @@ export default function FlupsyMapVisualizer({
     return tooltip;
   };
   
+  // Calcola il totale degli animali per taglia dai cestelli selezionati
+  const calculateTotalsBySize = () => {
+    // Ottieni i cestelli selezionati
+    const selectedBasketsDetails = baskets.filter(b => 
+      isBasketSelected(b.id) && b.flupsyId === Number(flupsyId)
+    );
+    
+    // Raggruppa per taglia
+    const sizeGroups: Record<string, {
+      code: string,
+      totalAnimals: number,
+      basketCount: number
+    }> = {};
+    
+    // Processa ogni cestello selezionato
+    selectedBasketsDetails.forEach(basket => {
+      if (basket.size?.code && basket.lastOperation?.animalCount) {
+        const sizeCode = basket.size.code;
+        
+        if (!sizeGroups[sizeCode]) {
+          sizeGroups[sizeCode] = {
+            code: sizeCode,
+            totalAnimals: 0,
+            basketCount: 0
+          };
+        }
+        
+        sizeGroups[sizeCode].totalAnimals += basket.lastOperation.animalCount;
+        sizeGroups[sizeCode].basketCount += 1;
+      }
+    });
+    
+    // Converti in array per facilitare il rendering
+    return Object.values(sizeGroups);
+  };
+  
+  // Ottiene i totali calcolati
+  const sizeTotals = calculateTotalsBySize();
+  
+  // Calcola il totale generale
+  const grandTotal = sizeTotals.reduce((sum, size) => sum + size.totalAnimals, 0);
+
   return (
     <div className="w-full">
       <div className="mb-4 flex justify-between items-center">
@@ -182,6 +224,26 @@ export default function FlupsyMapVisualizer({
           )}
         </div>
       </div>
+      
+      {/* Contatore degli animali selezionati per taglia */}
+      {mode === 'source' && selectedBaskets.length > 0 && (
+        <div className="mb-4 p-3 border rounded-md bg-blue-50">
+          <h4 className="text-sm font-semibold mb-2 text-blue-800">
+            Cestelli selezionati: {selectedBaskets.length} | Totale animali: {grandTotal.toLocaleString()}
+          </h4>
+          <div className="grid grid-cols-2 md:grid-cols-3 gap-2">
+            {sizeTotals.map((size) => (
+              <div key={size.code} className="p-2 bg-white rounded border border-blue-200">
+                <div className="font-medium text-sm">{size.code}</div>
+                <div className="flex justify-between text-xs">
+                  <span>{size.basketCount} cestelli</span>
+                  <span>{size.totalAnimals.toLocaleString()} animali</span>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
       
       <div className="border rounded-lg p-4">
         {/* Contenitore principale del FLUPSY */}
