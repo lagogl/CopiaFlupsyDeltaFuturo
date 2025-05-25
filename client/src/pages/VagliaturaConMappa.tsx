@@ -58,12 +58,12 @@ export default function VagliaturaConMappa() {
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<string | null>(null);
   
   // Query per i dati
-  const { data: flupsys = [], isLoading: isLoadingFlupsys } = useQuery({
+  const { data: flupsys = [], isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
     enabled: true
   });
   
-  const { data: baskets = [], isLoading: isLoadingBaskets } = useQuery({
+  const { data: baskets = [], isLoading: isLoadingBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets', { includeAll: true }],
     enabled: true
   });
@@ -142,11 +142,71 @@ export default function VagliaturaConMappa() {
   
   // Funzione per completare la vagliatura
   const handleCompleteScreening = async () => {
-    // Qui implementeremo la logica per completare la vagliatura
-    toast({
-      title: "Vagliatura completata",
-      description: "Tutti i cestelli sono stati processati correttamente"
-    });
+    if (sourceBaskets.length === 0) {
+      toast({
+        title: "Errore",
+        description: "Devi selezionare almeno un cestello origine",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    if (destinationBaskets.length === 0) {
+      toast({
+        title: "Errore",
+        description: "Devi selezionare almeno un cestello destinazione",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    try {
+      // Prepara i dati per l'invio
+      const selectionData = {
+        ...selection,
+        sourceBaskets,
+        destinationBaskets
+      };
+      
+      // Invia i dati al server
+      const response = await fetch('/api/selections', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify(selectionData)
+      });
+      
+      const data = await response.json();
+      
+      if (!response.ok) {
+        throw new Error(data.message || 'Si è verificato un errore durante il completamento della vagliatura');
+      }
+      
+      // Aggiorna l'ID della selezione
+      setSelection(prev => ({
+        ...prev,
+        id: data.id,
+        selectionNumber: data.selectionNumber,
+        status: data.status
+      }));
+      
+      toast({
+        title: "Vagliatura completata",
+        description: `Vagliatura #${data.selectionNumber} completata con successo!`,
+        variant: "success"
+      });
+      
+      // Reindirizza alla pagina di dettaglio della selezione
+      window.location.href = `/selections/${data.id}`;
+    } catch (error) {
+      console.error('Errore durante il completamento della vagliatura:', error);
+      toast({
+        title: "Errore",
+        description: error instanceof Error ? error.message : 'Si è verificato un errore sconosciuto',
+        variant: "destructive"
+      });
+    }
   };
   
   // Funzione per annullare la vagliatura
