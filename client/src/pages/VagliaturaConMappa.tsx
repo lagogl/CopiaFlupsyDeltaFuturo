@@ -97,6 +97,99 @@ export default function VagliaturaConMappa() {
     enabled: true
   });
   
+  // Funzione per arricchire i cestelli con i dati delle operazioni e taglie
+  function getEnhancedBaskets() {
+    if (!baskets || !Array.isArray(operations) || !Array.isArray(sizes)) return baskets;
+    
+    // Crea una mappa delle ultime operazioni per ogni cestello
+    const lastOperationsMap: Record<number, any> = {};
+    
+    // Popola la mappa con le operazioni più recenti per ogni cestello
+    operations.forEach((operation: any) => {
+      const basketId = operation.basketId;
+      
+      // Se non c'è già un'operazione per questo cestello o questa è più recente, la memorizziamo
+      if (!lastOperationsMap[basketId] || new Date(operation.date) > new Date(lastOperationsMap[basketId].date)) {
+        lastOperationsMap[basketId] = {
+          animalCount: operation.animalCount,
+          totalWeight: operation.totalWeight,
+          animalsPerKg: operation.animalsPerKg,
+          date: operation.date,
+          sizeId: operation.sizeId
+        };
+      }
+    });
+    
+    // Determina la taglia in base agli animali per kg
+    function findSizeByAnimalsPerKg(animalsPerKg: number) {
+      // Valori basati sulla tabella sizes
+      const sizeRanges = [
+        { id: 27, code: 'TP-10000', min: 801, max: 1200 },
+        { id: 26, code: 'TP-9000', min: 1201, max: 1800 },
+        { id: 25, code: 'TP-8000', min: 1801, max: 2300 },
+        { id: 24, code: 'TP-7000', min: 2301, max: 3000 },
+        { id: 23, code: 'TP-6000', min: 3001, max: 3900 },
+        { id: 22, code: 'TP-5000', min: 3901, max: 7500 },
+        { id: 21, code: 'TP-4000', min: 7501, max: 12500 },
+        { id: 20, code: 'TP-3500', min: 12501, max: 19000 },
+        { id: 19, code: 'TP-3000', min: 19001, max: 32000 },
+        { id: 18, code: 'TP-2800', min: 32001, max: 40000 },
+        { id: 17, code: 'TP-2500', min: 40001, max: 60000 },
+        { id: 16, code: 'TP-2200', min: 60001, max: 70000 },
+        { id: 15, code: 'TP-2000', min: 70001, max: 97000 },
+        { id: 14, code: 'TP-1900', min: 97001, max: 120000 },
+        { id: 13, code: 'TP-1800', min: 120001, max: 190000 },
+        { id: 12, code: 'TP-1500', min: 190001, max: 300000 },
+        { id: 11, code: 'TP-1260', min: 300001, max: 350000 },
+        { id: 10, code: 'TP-1140', min: 350001, max: 600000 },
+        { id: 9, code: 'TP-1000', min: 600001, max: 880000 },
+        { id: 8, code: 'TP-800', min: 880001, max: 1500000 },
+        { id: 7, code: 'TP-700', min: 1500001, max: 1800000 },
+        { id: 6, code: 'TP-600', min: 1800001, max: 3400000 },
+        { id: 1, code: 'TP-500', min: 3400001, max: 5000000 },
+        { id: 5, code: 'TP-450', min: 5000001, max: 7600000 },
+        { id: 4, code: 'TP-315', min: 7600001, max: 16000000 },
+        { id: 3, code: 'TP-200', min: 16000001, max: 42000000 },
+        { id: 2, code: 'TP-180', min: 42000001, max: 100000000 }
+      ];
+      
+      const sizeRange = sizeRanges.find(range => 
+        animalsPerKg >= range.min && animalsPerKg <= range.max
+      );
+      
+      if (sizeRange) {
+        return {
+          id: sizeRange.id,
+          code: sizeRange.code,
+          min: sizeRange.min,
+          max: sizeRange.max
+        };
+      }
+      
+      return undefined;
+    }
+    
+    // Arricchisci i cestelli con operazioni e taglie
+    return baskets.map(basket => {
+      const lastOperation = lastOperationsMap[basket.id];
+      let size;
+      
+      if (lastOperation?.sizeId) {
+        // Se l'operazione ha un ID taglia, usiamo quello
+        size = sizes.find((s: any) => s.id === lastOperation.sizeId);
+      } else if (lastOperation?.animalsPerKg) {
+        // Altrimenti proviamo a determinare la taglia dagli animali per kg
+        size = findSizeByAnimalsPerKg(lastOperation.animalsPerKg);
+      }
+      
+      return {
+        ...basket,
+        lastOperation: lastOperation || undefined,
+        size: size || undefined
+      };
+    });
+  };
+  
   // Query per le taglie
   const { data: sizes = [], isLoading: isLoadingSizes } = useQuery<Size[]>({
     queryKey: ['/api/sizes'],
@@ -617,8 +710,8 @@ export default function VagliaturaConMappa() {
                       <p className="text-muted-foreground">Seleziona un FLUPSY per visualizzare i cestelli</p>
                     ) : (
                       <FlupsyMapVisualizer 
-                        flupsyId={selectedFlupsyId}
-                        baskets={baskets}
+                        flupsyId={String(selectedFlupsyId)}
+                        baskets={getEnhancedBaskets()}
                         selectedBaskets={sourceBaskets.map(b => b.basketId)}
                         onBasketClick={toggleSourceBasket}
                         mode="source"
