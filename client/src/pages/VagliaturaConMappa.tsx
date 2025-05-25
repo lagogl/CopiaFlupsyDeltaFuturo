@@ -412,8 +412,11 @@ export default function VagliaturaConMappa() {
     }
     
     // Calcola percentuale di mortalità
-    if (newData.animalCount > 0 && newData.deadCount > 0) {
-      newData.mortalityRate = Math.round((newData.deadCount / (newData.animalCount + newData.deadCount)) * 10000) / 100;
+    if (newData.deadCount > 0) {
+      // La formula corretta è: (morti / (vivi + morti)) * 100
+      // dove vivi + morti = totale animali originali
+      const totalOriginalAnimals = newData.animalCount + newData.deadCount;
+      newData.mortalityRate = Math.round((newData.deadCount / totalOriginalAnimals) * 100);
     } else {
       newData.mortalityRate = 0;
     }
@@ -1170,21 +1173,10 @@ export default function VagliaturaConMappa() {
             
             <div>
               <h3 className="text-sm font-medium mb-2">Posizione nel FLUPSY</h3>
-              <Select 
-                value={measurementData.position || undefined}
-                onValueChange={(value) => setMeasurementData({...measurementData, position: value})}
-              >
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona una posizione disponibile" />
-                </SelectTrigger>
-                <SelectContent>
-                  {['DX1', 'DX2', 'DX3', 'DX4', 'DX5', 'SX1', 'SX2', 'SX3', 'SX4', 'SX5'].map(pos => (
-                    <SelectItem key={pos} value={pos}>
-                      {pos}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
+              <div className="px-3 py-2 border rounded-md flex items-center bg-slate-50">
+                <span>{measurementData.position}</span>
+                <span className="ml-2 text-xs text-slate-500">(Cestello #{measurementData.physicalNumber})</span>
+              </div>
             </div>
           </div>
           
