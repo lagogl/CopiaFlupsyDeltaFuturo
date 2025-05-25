@@ -945,6 +945,7 @@ export default function VagliaturaConMappa() {
                         mode="destination"
                         showTooltips={true}
                         maxPositions={flupsys.find(f => f.id === Number(selectedFlupsyId))?.maxPositions || 10}
+                        sourceBasketIds={sourceBaskets.map(sb => sb.basketId)}
                       />
                     )}
                   </div>

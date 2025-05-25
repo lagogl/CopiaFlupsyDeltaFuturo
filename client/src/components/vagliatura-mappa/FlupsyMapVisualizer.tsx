@@ -118,7 +118,7 @@ export default function FlupsyMapVisualizer({
     const isOriginBasket = sourceBasketIds.includes(basket.id);
     
     // Se ha un ciclo attivo ma non è un cestello origine, non è selezionabile
-    if (hasActiveCycle && !isSourceBasket) {
+    if (hasActiveCycle && !isOriginBasket) {
       return false;
     }
     
