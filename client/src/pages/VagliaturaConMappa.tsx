@@ -419,7 +419,12 @@ export default function VagliaturaConMappa() {
     if (newData.deadCount > 0) {
       // La formula corretta è: (morti / (vivi + morti)) * 100
       // dove vivi + morti = totale animali originali
+      
+      // Gli animali contati nella misurazione sono quelli ancora vivi
+      // dopo la mortalità, quindi il totale originale è la somma
       const totalOriginalAnimals = newData.animalCount + newData.deadCount;
+      
+      // Calcolo percentuale: (morti / totale originale) * 100
       newData.mortalityRate = Math.round((newData.deadCount / totalOriginalAnimals) * 100);
       
       // Verifica del calcolo per garantire che sia corretto
@@ -427,7 +432,15 @@ export default function VagliaturaConMappa() {
         morti: newData.deadCount,
         vivi: newData.animalCount,
         totale: totalOriginalAnimals,
-        percentuale: newData.mortalityRate
+        percentuale: newData.mortalityRate,
+        formula: `(${newData.deadCount} / ${totalOriginalAnimals}) * 100 = ${newData.mortalityRate}%`
+      });
+      
+      // Verifica ulteriore: in un esempio con 100 morti e 100 vivi
+      // dovremmo avere (100 / 200) * 100 = 50%
+      console.log('Esempio verifica 50%:', {
+        esempio: '100 morti, 100 vivi',
+        calcolo: `(100 / (100 + 100)) * 100 = ${Math.round((100 / 200) * 100)}%`
       });
     } else {
       newData.mortalityRate = 0;
