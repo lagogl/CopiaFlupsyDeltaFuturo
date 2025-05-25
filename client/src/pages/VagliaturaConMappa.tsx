@@ -852,12 +852,13 @@ export default function VagliaturaConMappa() {
                       <p className="text-muted-foreground">Seleziona un FLUPSY per visualizzare i cestelli</p>
                     ) : (
                       <FlupsyMapVisualizer 
-                        flupsyId={selectedFlupsyId}
-                        baskets={baskets}
+                        flupsyId={String(selectedFlupsyId)}
+                        baskets={getEnhancedBaskets()}
                         selectedBaskets={destinationBaskets.map(b => b.basketId)}
                         onBasketClick={(basket) => toggleDestinationBasket(basket)}
                         mode="destination"
                         showTooltips={true}
+                        maxPositions={flupsys.find(f => f.id === Number(selectedFlupsyId))?.maxPositions || 10}
                       />
                     )}
                   </div>
