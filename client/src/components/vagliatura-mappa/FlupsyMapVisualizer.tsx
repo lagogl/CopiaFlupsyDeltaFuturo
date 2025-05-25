@@ -235,7 +235,7 @@ export default function FlupsyMapVisualizer({
                             ) : (
                               <div className="text-xs text-gray-500 dark:text-gray-400">Vuoto</div>
                             )}
-                          </button>
+                          </div>
                         </TooltipTrigger>
                         <TooltipContent>
                           <p className="whitespace-pre-line">{getBasketTooltip(basket)}</p>
