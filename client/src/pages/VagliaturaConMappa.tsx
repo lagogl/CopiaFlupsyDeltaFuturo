@@ -101,7 +101,20 @@ export default function VagliaturaConMappa() {
   const completeScreeningMutation = useMutation({
     mutationFn: async (screeningData: any) => {
       // Prima completa la selezione
-      return await apiRequest(`/api/selections/${screeningData.selectionId}/complete`, 'POST', screeningData);
+      const response = await fetch(`/api/selections/${screeningData.selectionId}/complete`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(screeningData)
+      });
+      
+      if (!response.ok) {
+        const error = await response.json();
+        throw new Error(error.message || 'Errore durante il completamento della selezione');
+      }
+      
+      return await response.json();
     },
     onSuccess: () => {
       toast({
@@ -821,22 +834,73 @@ export default function VagliaturaConMappa() {
                   ) : (
                     <div className="border rounded-md divide-y">
                       {destinationBaskets.map(basket => (
-                        <div key={basket.basketId} className="p-3 flex justify-between items-center">
-                          <div>
-                            <span className="font-medium">Cestello #{basket.physicalNumber}</span>
-                            <span className="text-sm ml-2">
-                              {basket.destinationType === 'sold' ? (
-                                <Badge variant="destructive">Vendita</Badge>
-                              ) : (
-                                <Badge variant="outline">Posizionamento</Badge>
+                        <div key={basket.basketId} className="p-3">
+                          <div className="flex justify-between items-center mb-2">
+                            <div>
+                              <span className="font-medium">Cestello #{basket.physicalNumber}</span>
+                              <span className="text-sm ml-2">
+                                {basket.destinationType === 'sold' ? (
+                                  <Badge variant="destructive">Vendita</Badge>
+                                ) : (
+                                  <Badge variant="outline">Posizionamento</Badge>
+                                )}
+                              </span>
+                              {basket.isAlsoSource && (
+                                <Badge variant="secondary" className="ml-2">Anche origine</Badge>
                               )}
-                            </span>
-                            {basket.isAlsoSource && (
-                              <Badge variant="secondary" className="ml-2">Anche origine</Badge>
-                            )}
+                            </div>
+                            <Badge variant="outline">{basket.animalCount || 0} animali</Badge>
                           </div>
-                          <div className="text-right">
-                            <span className="text-sm">{basket.position || 'Posizione non specificata'}</span>
+                          
+                          {/* Dettagli aggiuntivi per tutti i cestelli */}
+                          <div className="grid grid-cols-2 gap-2 text-sm mt-2">
+                            <div>
+                              <span className="text-muted-foreground">Posizione: </span>
+                              <span>{basket.position || 'Non specificata'}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Animali/kg: </span>
+                              <span>{basket.animalsPerKg || 0}</span>
+                            </div>
+                            <div>
+                              <span className="text-muted-foreground">Peso totale: </span>
+                              <span>{basket.totalWeight || 0} kg</span>
+                            </div>
+                            
+                            {/* Dettagli specifici per i cestelli in vendita */}
+                            {basket.destinationType === 'sold' && (
+                              <>
+                                <div>
+                                  <span className="text-muted-foreground">Cliente: </span>
+                                  <span>{basket.saleClient || 'Non specificato'}</span>
+                                </div>
+                                <div>
+                                  <span className="text-muted-foreground">Data vendita: </span>
+                                  <span>{basket.saleDate || new Date().toISOString().split('T')[0]}</span>
+                                </div>
+                                <div className="col-span-2">
+                                  <Button 
+                                    variant="ghost" 
+                                    size="sm"
+                                    className="p-0 h-auto text-xs text-blue-600 hover:text-blue-800"
+                                    onClick={() => {
+                                      // Imposta i dati di vendita e apri il dialogo per modificarli
+                                      setDirectSaleData({
+                                        client: basket.saleClient || 'Cliente',
+                                        date: basket.saleDate || new Date().toISOString().split('T')[0],
+                                        animalCount: basket.animalCount || 0,
+                                        totalWeight: basket.totalWeight || 0,
+                                        animalsPerKg: basket.animalsPerKg || 0,
+                                        selectedBasketId: basket.basketId
+                                      });
+                                      setIsDirectSaleDialogOpen(true);
+                                    }}
+                                  >
+                                    Modifica dettagli vendita
+                                  </Button>
+                                </div>
+                              </>
+                            )}
                           </div>
                         </div>
                       ))}
@@ -860,5 +924,129 @@ export default function VagliaturaConMappa() {
         </TabsContent>
       </Tabs>
     </div>
+    {/* Dialogo per la vendita diretta */}
+    <Dialog open={isDirectSaleDialogOpen} onOpenChange={setIsDirectSaleDialogOpen}>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Dettagli Vendita Diretta</DialogTitle>
+          <DialogDescription>
+            Inserisci i dettagli per la vendita diretta di questo cestello.
+          </DialogDescription>
+        </DialogHeader>
+        
+        <div className="grid gap-4 py-4">
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="client" className="text-right">Cliente</Label>
+            <Input
+              id="client"
+              value={directSaleData.client}
+              className="col-span-3"
+              onChange={(e) => setDirectSaleData({...directSaleData, client: e.target.value})}
+            />
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="saleDate" className="text-right">Data Vendita</Label>
+            <Input
+              id="saleDate"
+              type="date"
+              value={directSaleData.date}
+              className="col-span-3"
+              onChange={(e) => setDirectSaleData({...directSaleData, date: e.target.value})}
+            />
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="animalCount" className="text-right">Numero Animali</Label>
+            <Input
+              id="animalCount"
+              type="number"
+              value={directSaleData.animalCount}
+              className="col-span-3"
+              onChange={(e) => setDirectSaleData({...directSaleData, animalCount: parseInt(e.target.value) || 0})}
+            />
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="totalWeight" className="text-right">Peso Totale (kg)</Label>
+            <Input
+              id="totalWeight"
+              type="number"
+              step="0.001"
+              value={directSaleData.totalWeight}
+              className="col-span-3"
+              onChange={(e) => setDirectSaleData({...directSaleData, totalWeight: parseFloat(e.target.value) || 0})}
+            />
+          </div>
+          
+          <div className="grid grid-cols-4 items-center gap-4">
+            <Label htmlFor="animalsPerKg" className="text-right">Animali/kg</Label>
+            <Input
+              id="animalsPerKg"
+              type="number"
+              value={directSaleData.animalsPerKg}
+              className="col-span-3"
+              onChange={(e) => setDirectSaleData({...directSaleData, animalsPerKg: parseInt(e.target.value) || 0})}
+            />
+          </div>
+        </div>
+        
+        <DialogFooter>
+          <Button variant="outline" onClick={() => setIsDirectSaleDialogOpen(false)}>Annulla</Button>
+          <Button onClick={() => {
+            if (!directSaleData.selectedBasketId) return;
+            
+            const selectedBasket = baskets.find(b => b.id === directSaleData.selectedBasketId);
+            if (!selectedBasket) return;
+            
+            // Verifica se il cestello è già nella lista delle destinazioni
+            const existingIndex = destinationBaskets.findIndex(db => db.basketId === directSaleData.selectedBasketId);
+            
+            // Crea un nuovo cestello destinazione di tipo vendita con i dati inseriti
+            const updatedDestinationBasket: DestinationBasket = {
+              basketId: selectedBasket.id,
+              physicalNumber: selectedBasket.physicalNumber,
+              // Mantieni il flupsyId per evitare errori di vincolo nel database
+              flupsyId: selectedBasket.flupsyId || 0,
+              position: selectedBasket.position?.toString() || '',
+              destinationType: 'sold',
+              animalCount: directSaleData.animalCount,
+              deadCount: 0,
+              sampleWeight: 0,
+              sampleCount: 0,
+              totalWeight: directSaleData.totalWeight,
+              animalsPerKg: directSaleData.animalsPerKg,
+              saleDate: directSaleData.date,
+              saleClient: directSaleData.client,
+              selectionId: 0,
+              sizeId: calculatedValues.sizeId || 0,
+              isAlsoSource: sourceBaskets.some(sb => sb.basketId === selectedBasket.id)
+            };
+            
+            if (existingIndex >= 0) {
+              // Aggiorna il cestello esistente
+              setDestinationBaskets(prev => prev.map((basket, index) => 
+                index === existingIndex ? updatedDestinationBasket : basket
+              ));
+              
+              toast({
+                title: "Vendita diretta aggiornata",
+                description: `Dettagli vendita aggiornati per il cestello #${selectedBasket.physicalNumber}`,
+              });
+            } else {
+              // Aggiungi il nuovo cestello
+              setDestinationBaskets(prev => [...prev, updatedDestinationBasket]);
+              
+              toast({
+                title: "Vendita diretta aggiunta",
+                description: `Cestello #${selectedBasket.physicalNumber} aggiunto come vendita diretta`,
+              });
+            }
+            
+            setIsDirectSaleDialogOpen(false);
+          }}>Conferma</Button>
+        </DialogFooter>
+      </DialogContent>
+    </Dialog>
   );
 }
