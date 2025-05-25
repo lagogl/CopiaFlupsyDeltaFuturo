@@ -64,7 +64,7 @@ export default function VagliaturaConMappa() {
   });
   
   const { data: baskets = [], isLoading: isLoadingBaskets } = useQuery({
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets', { includeAll: true }],
     enabled: true
   });
   
