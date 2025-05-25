@@ -46,6 +46,7 @@ interface FlupsyMapVisualizerProps {
   mode: 'source' | 'destination'; // Modalità di selezione
   showTooltips?: boolean;
   maxPositions?: number; // Numero massimo di posizioni per FLUPSY
+  sourceBasketIds?: number[]; // Array di ID dei cestelli selezionati come origine (per la modalità destinazione)
 }
 
 /**
@@ -58,7 +59,8 @@ export default function FlupsyMapVisualizer({
   onBasketClick,
   mode,
   showTooltips = true,
-  maxPositions = 10
+  maxPositions = 10,
+  sourceBasketIds = []
 }: FlupsyMapVisualizerProps) {
   // Trova i cestelli del FLUPSY selezionato
   const flupsyBaskets = baskets.filter(b => b.flupsyId === Number(flupsyId));
@@ -102,13 +104,40 @@ export default function FlupsyMapVisualizer({
     return selectedBaskets.includes(basketId);
   };
   
+  // Funzione per verificare se un cestello può essere selezionato
+  const isBasketSelectable = (basket: Basket | undefined): boolean => {
+    if (!basket) return false;
+    
+    // Se siamo in modalità origine, qualsiasi cestello è selezionabile
+    if (mode === 'source') return true;
+    
+    // In modalità destinazione, un cestello è selezionabile se:
+    // 1. Non ha un ciclo attivo, oppure
+    // 2. È già stato selezionato come cestello origine (è nell'array sourceBasketIds)
+    const hasActiveCycle = basket.currentCycleId !== null && basket.state === 'active';
+    const isOriginBasket = sourceBasketIds.includes(basket.id);
+    
+    // Se ha un ciclo attivo ma non è un cestello origine, non è selezionabile
+    if (hasActiveCycle && !isSourceBasket) {
+      return false;
+    }
+    
+    return true;
+  };
+  
   // Funzione per gestire il click su una posizione
   const handlePositionClick = (row: string, position: number) => {
     const basket = getBasketAtPosition(row, position);
     
     if (basket) {
-      // Se c'è un cestello in questa posizione, invia l'evento di click
-      onBasketClick(basket);
+      // Verifica se il cestello può essere selezionato
+      if (isBasketSelectable(basket)) {
+        // Se c'è un cestello in questa posizione e può essere selezionato, invia l'evento di click
+        onBasketClick(basket);
+      } else {
+        // Se il cestello non può essere selezionato, mostra un messaggio di avviso nel console
+        console.log(`Cestello #${basket.physicalNumber} non selezionabile: ha un ciclo attivo e non è un cestello origine`);
+      }
     } else {
       console.log(`Nessun cestello nella posizione ${row}${position}`);
     }
@@ -119,6 +148,9 @@ export default function FlupsyMapVisualizer({
     if (!basket) {
       return 'bg-gray-100 dark:bg-gray-800'; // Posizione vuota
     }
+    
+    // Verifica se il cestello può essere selezionato
+    const canBeSelected = isBasketSelectable(basket);
     
     // Verifica se il cestello è selezionato per vendita (gestito dalla pagina padre)
     const isForSale = basket.state === 'for_sale' || basket.state === 'sold';
@@ -144,6 +176,10 @@ export default function FlupsyMapVisualizer({
     } else if (mode === 'source') {
       return 'bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900 border-2 border-blue-500'; // Cestello selezionabile come origine
     } else if (mode === 'destination') {
+      // Se è in modalità destinazione ma non può essere selezionato (ha un ciclo attivo e non è un cestello origine)
+      if (!canBeSelected) {
+        return 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed opacity-60'; // Cestello non selezionabile
+      }
       return 'bg-white dark:bg-gray-700 hover:bg-green-100 dark:hover:bg-green-900 border-2 border-green-500'; // Cestello selezionabile come destinazione
     }
     
