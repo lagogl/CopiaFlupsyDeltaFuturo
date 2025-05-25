@@ -101,8 +101,25 @@ export default function VagliaturaConMappa() {
   function getEnhancedBaskets() {
     if (!baskets || !Array.isArray(operations) || !Array.isArray(sizes)) return baskets;
     
+    // Stampa informazioni di debug
+    console.log(`Arricchimento di ${baskets.length} cestelli con ${operations.length} operazioni`);
+    console.log(`FLUPSY selezionato: ${selectedFlupsyId}`);
+    
+    // Filtra i cestelli del FLUPSY selezionato
+    const filteredBaskets = baskets.filter(b => 
+      b.flupsyId === (selectedFlupsyId ? parseInt(selectedFlupsyId) : null) && 
+      b.state === 'active'
+    );
+    
+    console.log(`Cestelli filtrati per FLUPSY ${selectedFlupsyId}: ${filteredBaskets.length}`);
+    
     // Crea una mappa delle ultime operazioni per ogni cestello
     const lastOperationsMap: Record<number, any> = {};
+    
+    // Stampa alcune operazioni di esempio per debug
+    if (operations.length > 0) {
+      console.log("Esempio di operazione:", operations[0]);
+    }
     
     // Popola la mappa con le operazioni più recenti per ogni cestello
     operations.forEach((operation: any) => {
@@ -119,6 +136,9 @@ export default function VagliaturaConMappa() {
         };
       }
     });
+    
+    // Log del numero di operazioni trovate
+    console.log(`Operazioni uniche trovate: ${Object.keys(lastOperationsMap).length}`);
     
     // Determina la taglia in base agli animali per kg
     function findSizeByAnimalsPerKg(animalsPerKg: number) {
@@ -169,17 +189,30 @@ export default function VagliaturaConMappa() {
       return undefined;
     }
     
+    // Crea una mappa delle taglie per ID per lookup rapido
+    const sizesMap: Record<number, any> = {};
+    sizes.forEach((size: any) => {
+      sizesMap[size.id] = size;
+    });
+    
     // Arricchisci i cestelli con operazioni e taglie
-    return baskets.map(basket => {
+    const enhancedBaskets = filteredBaskets.map(basket => {
       const lastOperation = lastOperationsMap[basket.id];
       let size;
       
       if (lastOperation?.sizeId) {
         // Se l'operazione ha un ID taglia, usiamo quello
-        size = sizes.find((s: any) => s.id === lastOperation.sizeId);
+        size = sizesMap[lastOperation.sizeId] || sizes.find((s: any) => s.id === lastOperation.sizeId);
       } else if (lastOperation?.animalsPerKg) {
         // Altrimenti proviamo a determinare la taglia dagli animali per kg
         size = findSizeByAnimalsPerKg(lastOperation.animalsPerKg);
+      }
+      
+      // Registra informazioni di debug per cestello
+      if (lastOperation) {
+        console.log(`Cestello #${basket.physicalNumber} (${basket.row}-${basket.position}): ` +
+                    `${lastOperation.animalCount} animali, ${lastOperation.animalsPerKg} per kg, ` + 
+                    `Taglia: ${size?.code || 'Non determinata'}`);
       }
       
       return {
@@ -188,6 +221,11 @@ export default function VagliaturaConMappa() {
         size: size || undefined
       };
     });
+    
+    // Registra risultati complessivi
+    console.log(`Cestelli arricchiti: ${enhancedBaskets.length}`);
+    
+    return enhancedBaskets;
   };
   
   // Query per le taglie
