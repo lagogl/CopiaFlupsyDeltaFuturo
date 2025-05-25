@@ -63,11 +63,21 @@ export default function FlupsyMapVisualizer({
   
   // Funzione per ottenere un cestello in base alla posizione
   const getBasketAtPosition = (row: string, position: number): Basket | undefined => {
-    return baskets.find(b => 
+    // Cerca il cestello nella posizione specificata
+    const basket = baskets.find(b => 
       b.flupsyId === Number(flupsyId) && 
       b.row === row && 
       b.position === position
     );
+    
+    // Per debug, registra i dati del cestello trovato
+    if (basket) {
+      console.log('Cestello trovato in posizione', row, position, ':', basket);
+      console.log('Dati operazione:', basket.lastOperation);
+      console.log('Dati taglia:', basket.size);
+    }
+    
+    return basket;
   };
   
   // Funzione per verificare se un cestello è selezionato
@@ -288,16 +298,18 @@ export default function FlupsyMapVisualizer({
                             {basket ? (
                               <div className="text-center">
                                 <div className="font-bold text-sm">#{basket.physicalNumber}</div>
-                                <div className="flex flex-col gap-0.5 text-xs">
-                                  {basket.size?.code && <span>{basket.size.code}</span>}
-                                  {basket.lastOperation?.animalCount && (
-                                    <span>
-                                      {basket.lastOperation.animalCount.toLocaleString()} anim.
-                                    </span>
-                                  )}
-                                  {basket.currentCycleId && (
-                                    <span>Ciclo #{basket.currentCycleId}</span>
-                                  )}
+                                <div className="flex flex-col gap-0.5 text-xs text-center">
+                                  <div className="font-medium">{basket.size?.code || "Senza taglia"}</div>
+                                  <div className="font-semibold">
+                                    {basket.lastOperation?.animalCount 
+                                      ? basket.lastOperation.animalCount.toLocaleString() 
+                                      : "0"} anim.
+                                  </div>
+                                  <div>
+                                    {basket.lastOperation?.animalsPerKg 
+                                      ? basket.lastOperation.animalsPerKg.toLocaleString() 
+                                      : "0"} per kg
+                                  </div>
                                 </div>
                               </div>
                             ) : (
