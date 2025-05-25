@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { Helmet } from 'react-helmet';
+import { useLocation } from 'wouter';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { useToast } from '@/hooks/use-toast';
-import { queryClient } from '@/lib/queryClient';
+import { queryClient, apiRequest } from '@/lib/queryClient';
 // Utilizziamo un hook di traduzione semplificato
 const useTranslation = () => {
   const t = (key: string) => key;
@@ -36,6 +37,7 @@ import FlupsyMapVisualizer from '@/components/vagliatura-mappa/FlupsyMapVisualiz
  * che utilizza una rappresentazione visuale dei FLUPSY e dei cestelli.
  */
 export default function VagliaturaConMappa() {
+  const [location, setLocation] = useLocation();
   const { toast } = useToast();
   const { t } = useTranslation();
   
@@ -94,6 +96,113 @@ export default function VagliaturaConMappa() {
     queryKey: ['/api/sizes'],
     enabled: true
   });
+  
+  // Mutazione per completare la vagliatura
+  const completeScreeningMutation = useMutation({
+    mutationFn: async (screeningData: any) => {
+      // Prima completa la selezione
+      return await apiRequest(`/api/selections/${screeningData.selectionId}/complete`, 'POST', screeningData);
+    },
+    onSuccess: () => {
+      toast({
+        title: "Vagliatura completata",
+        description: "La vagliatura è stata completata con successo",
+        variant: "default"
+      });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/selections'] });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: `Si è verificato un errore: ${error.message || 'Errore sconosciuto'}`,
+        variant: "destructive"
+      });
+    }
+  });
+  
+  // Funzione per aggiungere vendita diretta
+  const handleAddDirectSale = () => {
+    // Ottieni tutti i cestelli disponibili che non sono già selezionati come destinazione
+    const availableBaskets = baskets.filter(basket => 
+      !destinationBaskets.some(db => db.basketId === basket.id)
+    );
+    
+    if (availableBaskets.length === 0) {
+      toast({
+        title: "Nessun cestello disponibile",
+        description: "Non ci sono cestelli disponibili per la vendita diretta",
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    // Calcola i valori predefiniti per la vendita
+    let animalCount = 0;
+    let animalsPerKg = 0;
+    let totalWeight = 0;
+    
+    if (sourceBaskets.length > 0) {
+      // Calcola il numero di animali dividendo equamente
+      const existingSoldBaskets = destinationBaskets.filter(db => db.destinationType === 'sold').length;
+      animalCount = Math.floor(calculatedValues.totalAnimals / (existingSoldBaskets + 1));
+      animalsPerKg = calculatedValues.animalsPerKg;
+      
+      // Stima del peso totale
+      if (animalsPerKg > 0) {
+        totalWeight = Math.round((animalCount / animalsPerKg) * 1000) / 1000;
+      }
+    }
+    
+    // Imposta i dati di vendita e apri il dialogo
+    setDirectSaleData({
+      client: 'Cliente',
+      date: new Date().toISOString().split('T')[0],
+      animalCount,
+      totalWeight,
+      animalsPerKg,
+      selectedBasketId: availableBaskets[0].id
+    });
+    
+    setIsDirectSaleDialogOpen(true);
+  };
+  
+  // Funzione per confermare l'aggiunta di un cestello vendita dopo la compilazione del form
+  const confirmDirectSale = () => {
+    if (!directSaleData.selectedBasketId) return;
+    
+    const selectedBasket = baskets.find(b => b.id === directSaleData.selectedBasketId);
+    if (!selectedBasket) return;
+    
+    // Crea un nuovo cestello destinazione di tipo vendita con i dati inseriti
+    const newDestinationBasket: DestinationBasket = {
+      basketId: selectedBasket.id,
+      physicalNumber: selectedBasket.physicalNumber,
+      // Mantieni il flupsyId per evitare errori di vincolo nel database
+      flupsyId: selectedBasket.flupsyId || 0,
+      position: selectedBasket.position?.toString() || '',
+      destinationType: 'sold',
+      animalCount: directSaleData.animalCount,
+      deadCount: 0,
+      sampleWeight: 0,
+      sampleCount: 0,
+      totalWeight: directSaleData.totalWeight,
+      animalsPerKg: directSaleData.animalsPerKg,
+      saleDate: directSaleData.date,
+      saleClient: directSaleData.client,
+      selectionId: 0,
+      sizeId: calculatedValues.sizeId || 0,
+      isAlsoSource: sourceBaskets.some(sb => sb.basketId === selectedBasket.id)
+    };
+    
+    setDestinationBaskets(prev => [...prev, newDestinationBasket]);
+    setIsDirectSaleDialogOpen(false);
+    
+    toast({
+      title: "Vendita diretta aggiunta",
+      description: `Cestello #${selectedBasket.physicalNumber} aggiunto come vendita diretta`,
+    });
+  };
   
   // Funzione per iniziare una nuova vagliatura
   const handleStartNewScreening = async () => {
@@ -585,7 +694,48 @@ export default function VagliaturaConMappa() {
                   variant="outline" 
                   className="border-dashed border-2"
                   onClick={() => {
-                    // Implementare la logica per la vendita diretta
+                    // Ottieni tutti i cestelli disponibili che non sono già selezionati come destinazione
+                    const availableBaskets = baskets.filter(basket => 
+                      !destinationBaskets.some(db => db.basketId === basket.id)
+                    );
+                    
+                    if (availableBaskets.length === 0) {
+                      toast({
+                        title: "Nessun cestello disponibile",
+                        description: "Non ci sono cestelli disponibili per la vendita diretta",
+                        variant: "destructive"
+                      });
+                      return;
+                    }
+                    
+                    // Calcola i valori predefiniti per la vendita
+                    let animalCount = 0;
+                    let animalsPerKg = 0;
+                    let totalWeight = 0;
+                    
+                    if (sourceBaskets.length > 0) {
+                      // Calcola il numero di animali dividendo equamente
+                      const existingSoldBaskets = destinationBaskets.filter(db => db.destinationType === 'sold').length;
+                      animalCount = Math.floor(calculatedValues.totalAnimals / (existingSoldBaskets + 1));
+                      animalsPerKg = calculatedValues.animalsPerKg;
+                      
+                      // Stima del peso totale
+                      if (animalsPerKg > 0) {
+                        totalWeight = Math.round((animalCount / animalsPerKg) * 1000) / 1000;
+                      }
+                    }
+                    
+                    // Imposta i dati di vendita e apri il dialogo
+                    setDirectSaleData({
+                      client: 'Cliente',
+                      date: new Date().toISOString().split('T')[0],
+                      animalCount,
+                      totalWeight,
+                      animalsPerKg,
+                      selectedBasketId: availableBaskets[0].id
+                    });
+                    
+                    setIsDirectSaleDialogOpen(true);
                   }}
                 >
                   Aggiungi Vendita Diretta
