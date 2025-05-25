@@ -23,6 +23,7 @@ interface Basket {
   row: string | null;
   state: string;
   currentCycleId: number | null;
+  isSourceBasket?: boolean; // Flag per indicare se il cestello è stato selezionato come origine
   lastOperation?: {
     animalCount: number;
     totalWeight: number | null;
@@ -123,12 +124,15 @@ export default function FlupsyMapVisualizer({
     const isForSale = basket.state === 'for_sale' || basket.state === 'sold';
     
     // Verifica se il cestello è sia origine che destinazione
-    const isSourceAndDestination = isBasketSelected(basket.id) && 
-      selectedBaskets.some(id => id === basket.id) && 
+    const isSourceAndDestination = basket.isSourceBasket && 
+      isBasketSelected(basket.id) && 
       mode === 'destination';
     
     if (isSourceAndDestination) {
       return 'bg-purple-500 hover:bg-purple-600 text-white border-2 border-yellow-400'; // Cestello sia origine che destinazione
+    } else if (basket.isSourceBasket && mode === 'destination') {
+      // Cestello selezionato come origine nella vista destinazione
+      return 'bg-blue-500 hover:bg-blue-600 text-white'; 
     } else if (isBasketSelected(basket.id)) {
       if (mode === 'source') {
         return 'bg-blue-500 hover:bg-blue-600 text-white'; // Cestello origine

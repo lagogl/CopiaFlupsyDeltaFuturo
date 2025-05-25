@@ -853,7 +853,11 @@ export default function VagliaturaConMappa() {
                     ) : (
                       <FlupsyMapVisualizer 
                         flupsyId={String(selectedFlupsyId)}
-                        baskets={getEnhancedBaskets()}
+                        baskets={getEnhancedBaskets().map(b => ({
+                          ...b,
+                          // Aggiungiamo un flag per indicare se è un cestello origine
+                          isSourceBasket: sourceBaskets.some(sb => sb.basketId === b.id)
+                        }))}
                         selectedBaskets={destinationBaskets.map(b => b.basketId)}
                         onBasketClick={(basket) => toggleDestinationBasket(basket)}
                         mode="destination"
