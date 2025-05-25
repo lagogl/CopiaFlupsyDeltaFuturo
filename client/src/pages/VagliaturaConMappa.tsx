@@ -85,8 +85,15 @@ export default function VagliaturaConMappa() {
     enabled: true
   });
   
+  // Query per recuperare i cestelli con i dati completi delle ultime operazioni
   const { data: baskets = [], isLoading: isLoadingBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets', { includeAll: true }],
+    enabled: true
+  });
+  
+  // Query specifica per recuperare le operazioni più recenti
+  const { data: operations = [], isLoading: isLoadingOperations } = useQuery({
+    queryKey: ['/api/operations', { includeAll: true }],
     enabled: true
   });
   
