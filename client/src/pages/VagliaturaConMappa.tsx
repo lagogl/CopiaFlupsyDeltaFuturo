@@ -24,7 +24,7 @@ import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { AlertTriangle, CheckCircle, Info, X } from 'lucide-react';
 
 // Types
-import { Flupsy, Basket, Selection, SourceBasket, DestinationBasket } from '@/types';
+import { Flupsy, Basket, Selection, SourceBasket, DestinationBasket, Size } from '@/types';
 
 // Componenti specifici per la vagliatura con mappa
 import FlupsyMapVisualizer from '@/components/vagliatura-mappa/FlupsyMapVisualizer';
@@ -47,7 +47,9 @@ export default function VagliaturaConMappa() {
     selectionNumber: 0,
     notes: '',
     purpose: 'vagliatura',
-    screeningType: 'standard'
+    screeningType: 'standard',
+    // Necessario per calcoli animali per taglia
+    referenceSizeId: null
   });
   
   // Cestelli selezionati
@@ -57,6 +59,14 @@ export default function VagliaturaConMappa() {
   // FLUPSY selezionato per la visualizzazione
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<string | null>(null);
   
+  // Valori calcolati per il numero di animali
+  const [calculatedValues, setCalculatedValues] = useState({
+    totalAnimals: 0,
+    animalsPerKg: 0,
+    mortalityRate: 0,
+    sizeId: null as number | null
+  });
+  
   // Query per i dati
   const { data: flupsys = [], isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
@@ -65,6 +75,12 @@ export default function VagliaturaConMappa() {
   
   const { data: baskets = [], isLoading: isLoadingBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets', { includeAll: true }],
+    enabled: true
+  });
+  
+  // Query per le taglie
+  const { data: sizes = [], isLoading: isLoadingSizes } = useQuery<Size[]>({
+    queryKey: ['/api/sizes'],
     enabled: true
   });
   
@@ -85,7 +101,12 @@ export default function VagliaturaConMappa() {
     
     if (isAlreadySelected) {
       // Rimuovi il cestello dalla selezione
-      setSourceBaskets(prev => prev.filter(sb => sb.basketId !== basket.id));
+      setSourceBaskets(prev => {
+        const newSourceBaskets = prev.filter(sb => sb.basketId !== basket.id);
+        // Ricalcola i valori totali
+        updateCalculatedValues(newSourceBaskets);
+        return newSourceBaskets;
+      });
     } else {
       // Aggiungi il cestello alla selezione
       const newSourceBasket: SourceBasket = {
@@ -100,8 +121,67 @@ export default function VagliaturaConMappa() {
         selectionId: 0 // Sarà aggiornato quando la selezione viene salvata
       };
       
-      setSourceBaskets(prev => [...prev, newSourceBasket]);
+      const newSourceBaskets = [...sourceBaskets, newSourceBasket];
+      setSourceBaskets(newSourceBaskets);
+      
+      // Ricalcola i valori totali
+      updateCalculatedValues(newSourceBaskets);
     }
+  };
+  
+  // Funzione per calcolare i valori aggregati dai cestelli origine
+  const updateCalculatedValues = (baskets: SourceBasket[]) => {
+    if (baskets.length === 0) {
+      setCalculatedValues({
+        totalAnimals: 0,
+        animalsPerKg: 0,
+        mortalityRate: 0,
+        sizeId: null
+      });
+      return;
+    }
+    
+    // Calcola il totale degli animali
+    const totalAnimals = baskets.reduce((sum, basket) => sum + (basket.animalCount || 0), 0);
+    
+    // Calcola animali per kg (media ponderata)
+    const totalWeightSum = baskets.reduce((sum, basket) => sum + (basket.totalWeight || 0), 0);
+    let animalsPerKg = 0;
+    
+    if (totalWeightSum > 0) {
+      const weightedSum = baskets.reduce((sum, basket) => {
+        if (basket.totalWeight && basket.totalWeight > 0 && basket.animalsPerKg) {
+          return sum + (basket.animalsPerKg * basket.totalWeight);
+        }
+        return sum;
+      }, 0);
+      animalsPerKg = Math.round(weightedSum / totalWeightSum);
+    }
+    
+    // Determina la taglia in base agli animali per kg
+    let sizeId = null;
+    if (animalsPerKg > 0 && sizes) {
+      const matchingSize = sizes.find(size => 
+        animalsPerKg >= size.min && animalsPerKg <= size.max
+      );
+      if (matchingSize) {
+        sizeId = matchingSize.id;
+      }
+    }
+    
+    // Aggiorna i valori calcolati
+    setCalculatedValues({
+      totalAnimals,
+      animalsPerKg,
+      mortalityRate: 0, // Per ora lo impostiamo a 0
+      sizeId
+    });
+    
+    // Aggiorna anche la taglia di riferimento nella selezione
+    setSelection(prev => ({
+      ...prev,
+      referenceSizeId: sizeId
+    }));
   };
   
   // Funzione per selezionare/deselezionare un cestello destinazione
@@ -116,23 +196,53 @@ export default function VagliaturaConMappa() {
       // Verifica se questo cestello è anche un cestello origine
       const isAlsoSource = sourceBaskets.some(sb => sb.basketId === basket.id);
       
+      // Calcola i valori predefiniti in base al tipo di destinazione
+      let animalCount = 0;
+      let deadCount = 0;
+      let sampleWeight = 0;
+      let sampleCount = 0;
+      let totalWeight = 0;
+      let animalsPerKg = 0;
+      let sizeId = null;
+      
+      // Se è vendita diretta, calcola i valori in base ai cestelli origine
+      if (destinationType === 'sold' && calculatedValues.totalAnimals > 0) {
+        // Dividi gli animali equamente tra i cestelli venduti (considerando anche questo nuovo)
+        const existingSoldBaskets = destinationBaskets.filter(db => db.destinationType === 'sold').length;
+        animalCount = Math.floor(calculatedValues.totalAnimals / (existingSoldBaskets + 1));
+        animalsPerKg = calculatedValues.animalsPerKg;
+        sizeId = calculatedValues.sizeId;
+        
+        // Stima del peso totale
+        if (animalsPerKg > 0) {
+          totalWeight = Math.round((animalCount / animalsPerKg) * 1000) / 1000; // Arrotonda a 3 decimali
+        }
+        
+        // Mostra un messaggio di conferma per la vendita
+        toast({
+          title: "Cestello per vendita",
+          description: `Cestello #${basket.physicalNumber} aggiunto come vendita diretta con ${animalCount} animali`,
+        });
+      }
+      
       // Aggiungi il cestello alla selezione
       const newDestinationBasket: DestinationBasket = {
         basketId: basket.id,
         physicalNumber: basket.physicalNumber,
-        flupsyId: basket.flupsyId,
+        // Per vendita, impostiamo flupsyId a un valore predefinito (non null)
+        flupsyId: destinationType === 'sold' ? (basket.flupsyId || 0) : basket.flupsyId,
         position: basket.position?.toString() || '',
         destinationType: destinationType,
-        animalCount: 0, // Sarà calcolato in base ai cestelli origine
-        deadCount: 0,
-        sampleWeight: 0,
-        sampleCount: 0,
-        totalWeight: 0,
-        animalsPerKg: 0,
+        animalCount: animalCount, 
+        deadCount: deadCount,
+        sampleWeight: sampleWeight,
+        sampleCount: sampleCount,
+        totalWeight: totalWeight,
+        animalsPerKg: animalsPerKg,
         saleDate: destinationType === 'sold' ? new Date().toISOString().split('T')[0] : null,
-        saleClient: destinationType === 'sold' ? '' : null,
+        saleClient: destinationType === 'sold' ? 'Cliente' : null,
         selectionId: 0, // Sarà aggiornato quando la selezione viene salvata
-        sizeId: 0, // Sarà determinato in base all'animalsPerKg
+        sizeId: sizeId || 0, // Usa la taglia calcolata o 0 come valore predefinito
         isAlsoSource: isAlsoSource // Flag per riconoscere cestelli che sono anche origine
       };
       
@@ -170,7 +280,8 @@ export default function VagliaturaConMappa() {
           date: selection.date,
           notes: selection.notes || "",
           purpose: "vagliatura",
-          screeningType: selection.screeningType || "standard"
+          screeningType: selection.screeningType || "standard",
+          referenceSizeId: selection.referenceSizeId
         };
         
         const createResponse = await fetch('/api/selections', {
