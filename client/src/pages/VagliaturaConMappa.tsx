@@ -416,32 +416,45 @@ export default function VagliaturaConMappa() {
     }
     
     // Calcola percentuale di mortalità
-    if (newData.deadCount > 0) {
-      // La formula corretta è: (morti / (vivi + morti)) * 100
-      // dove vivi + morti = totale animali originali
+    if (newData.deadCount > 0 && newData.sampleCount > 0) {
+      // La formula corretta è: (morti / totale animali nel campione) * 100
+      // dove totale animali nel campione include sia vivi che morti
       
-      // Gli animali contati nella misurazione sono quelli ancora vivi
-      // dopo la mortalità, quindi il totale originale è la somma
-      const totalOriginalAnimals = newData.animalCount + newData.deadCount;
-      
-      // Calcolo percentuale: (morti / totale originale) * 100
-      newData.mortalityRate = Math.round((newData.deadCount / totalOriginalAnimals) * 100);
+      // Calcolo percentuale: (morti / totale nel campione) * 100
+      newData.mortalityRate = Math.round((newData.deadCount / newData.sampleCount) * 100);
       
       // Verifica del calcolo per garantire che sia corretto
-      console.log('Calcolo mortalità:', {
-        morti: newData.deadCount,
-        vivi: newData.animalCount,
-        totale: totalOriginalAnimals,
-        percentuale: newData.mortalityRate,
-        formula: `(${newData.deadCount} / ${totalOriginalAnimals}) * 100 = ${newData.mortalityRate}%`
+      console.log('Calcolo mortalità CORRETTO:', {
+        'animali morti nel campione': newData.deadCount,
+        'totale animali nel campione': newData.sampleCount,
+        'percentuale mortalità': newData.mortalityRate,
+        formula: `(${newData.deadCount} / ${newData.sampleCount}) * 100 = ${newData.mortalityRate}%`
       });
       
-      // Verifica ulteriore: in un esempio con 100 morti e 100 vivi
-      // dovremmo avere (100 / 200) * 100 = 50%
+      // Esempio: in un campione di 100 animali, se 50 sono morti
+      // la mortalità sarà (50 / 100) * 100 = 50%
       console.log('Esempio verifica 50%:', {
-        esempio: '100 morti, 100 vivi',
-        calcolo: `(100 / (100 + 100)) * 100 = ${Math.round((100 / 200) * 100)}%`
+        esempio: '50 morti in un campione di 100',
+        calcolo: `(50 / 100) * 100 = ${Math.round((50 / 100) * 100)}%`
       });
+      
+      // Ora ricalcoliamo il numero totale di animali vivi considerando la mortalità
+      if (newData.totalWeight > 0 && newData.animalsPerKg > 0) {
+        // Calcola il totale teorico (se fossero tutti vivi)
+        const totalTheoretical = Math.round(newData.totalWeight * newData.animalsPerKg);
+        
+        // Applica la percentuale di mortalità per ottenere i vivi reali
+        const mortalityFactor = newData.mortalityRate / 100;
+        newData.animalCount = Math.round(totalTheoretical * (1 - mortalityFactor));
+        
+        console.log('Calcolo animali vivi con mortalità:', {
+          'peso totale (g)': newData.totalWeight,
+          'animali per kg': newData.animalsPerKg,
+          'totale teorico': totalTheoretical,
+          'fattore mortalità': mortalityFactor,
+          'animali vivi calcolati': newData.animalCount
+        });
+      }
     } else {
       newData.mortalityRate = 0;
     }
