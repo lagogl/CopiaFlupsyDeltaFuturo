@@ -848,16 +848,7 @@ export default function VagliaturaConMappa() {
                         >
                           Seleziona per Vendita
                         </Button>
-                        <p className="text-xs text-muted-foreground mb-2">
-                          Ora puoi selezionare quali ceste destinazione andranno in vendita
-                        </p>
-                        <Button 
-                          variant="outline" 
-                          className="border-dashed border-2 w-full"
-                          onClick={() => setIsSaleSelectionMode(true)}
-                        >
-                          Seleziona Ceste per Vendita
-                        </Button>
+
                       </div>
                     )}
                     
@@ -967,7 +958,7 @@ export default function VagliaturaConMappa() {
                       <Label htmlFor="notes">Note</Label>
                       <Input 
                         id="notes" 
-                        value={selection.notes} 
+                        value={selection.notes || ''} 
                         onChange={(e) => setSelection({...selection, notes: e.target.value})}
                       />
                     </div>
