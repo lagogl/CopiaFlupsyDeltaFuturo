@@ -57,6 +57,10 @@ export default function VagliaturaConMappa() {
   const [sourceBaskets, setSourceBaskets] = useState<SourceBasket[]>([]);
   const [destinationBaskets, setDestinationBaskets] = useState<DestinationBasket[]>([]);
   
+  // Stato per gestire la selezione delle ceste da vendere
+  const [isSaleSelectionMode, setIsSaleSelectionMode] = useState(false);
+  const [allDestinationsAssigned, setAllDestinationsAssigned] = useState(false);
+  
   // FLUPSY selezionato per la visualizzazione
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<string | null>(null);
   
@@ -417,6 +421,14 @@ export default function VagliaturaConMappa() {
       // dove vivi + morti = totale animali originali
       const totalOriginalAnimals = newData.animalCount + newData.deadCount;
       newData.mortalityRate = Math.round((newData.deadCount / totalOriginalAnimals) * 100);
+      
+      // Verifica del calcolo per garantire che sia corretto
+      console.log('Calcolo mortalità:', {
+        morti: newData.deadCount,
+        vivi: newData.animalCount,
+        totale: totalOriginalAnimals,
+        percentuale: newData.mortalityRate
+      });
     } else {
       newData.mortalityRate = 0;
     }
@@ -810,20 +822,39 @@ export default function VagliaturaConMappa() {
                       </Select>
                     </div>
                     
-                    {/* Opzione vendita diretta */}
-                    <div className="border rounded-md p-3">
-                      <h3 className="text-sm font-semibold mb-2">Vendita Diretta</h3>
-                      <p className="text-xs text-muted-foreground mb-2">
-                        Seleziona questa opzione se i cestelli devono essere venduti direttamente
-                      </p>
-                      <Button 
-                        variant="outline" 
-                        className="border-dashed border-2 w-full"
-                        onClick={handleAddDirectSale}
-                      >
-                        Aggiungi Vendita Diretta
-                      </Button>
-                    </div>
+                    {/* Opzione per selezionare ceste per vendita (visibile solo dopo aver posizionato tutte le ceste destinazione) */}
+                    {allDestinationsAssigned && !isSaleSelectionMode && (
+                      <div className="border rounded-md p-3">
+                        <h3 className="text-sm font-semibold mb-2">Vendita Diretta</h3>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Ora puoi selezionare quali ceste destinazione andranno in vendita
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          className="border-dashed border-2 w-full"
+                          onClick={() => setIsSaleSelectionMode(true)}
+                        >
+                          Seleziona Ceste per Vendita
+                        </Button>
+                      </div>
+                    )}
+                    
+                    {/* Indicatore modalità selezione vendita */}
+                    {isSaleSelectionMode && (
+                      <div className="border rounded-md p-3 border-red-300 bg-red-50">
+                        <h3 className="text-sm font-semibold mb-2">Modalità Vendita Attiva</h3>
+                        <p className="text-xs text-muted-foreground mb-2">
+                          Fai clic sulle ceste destinazione che vuoi destinare alla vendita
+                        </p>
+                        <Button 
+                          variant="outline" 
+                          className="w-full"
+                          onClick={() => setIsSaleSelectionMode(false)}
+                        >
+                          Termina Selezione Vendite
+                        </Button>
+                      </div>
+                    )}
                     
                     {destinationBaskets.length > 0 && (
                       <div className="border rounded-md p-3">
