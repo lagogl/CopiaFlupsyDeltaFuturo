@@ -397,11 +397,10 @@ export default function FlupsyMapVisualizer({
                             tabIndex={0}
                           >
                             <div className="text-[10px] font-medium">
-                              {row}{position}
+                              {row}{position} #{basket?.physicalNumber || ''}
                             </div>
                             {basket ? (
                               <div className="text-center w-full">
-                                <div className="font-bold text-[10px]">#{basket.physicalNumber}</div>
                                 {positionsPerRow > 5 ? (
                                   // Layout compatto per FLUPSY con tante posizioni
                                   <div className="flex flex-col text-[9px] leading-tight">
@@ -411,14 +410,14 @@ export default function FlupsyMapVisualizer({
                                         ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
                                         : "N/D")}
                                     </div>
-                                    <div>
+                                    <div className="text-[8px]">
                                       {basket.lastOperation?.animalCount 
                                         ? (basket.lastOperation.animalCount >= 1000000 
                                             ? (basket.lastOperation.animalCount / 1000000).toFixed(1) + 'M'
                                             : basket.lastOperation.animalCount >= 1000
                                             ? (basket.lastOperation.animalCount / 1000).toFixed(1) + 'K'
                                             : basket.lastOperation.animalCount.toString())
-                                        : "0"}
+                                        : "0"} anim.
                                     </div>
                                   </div>
                                 ) : (
@@ -448,7 +447,7 @@ export default function FlupsyMapVisualizer({
                             )}
                           </div>
                         </TooltipTrigger>
-                        <TooltipContent>
+                        <TooltipContent className="bg-black text-white border-0">
                           <p className="whitespace-pre-line">{getBasketTooltip(basket)}</p>
                         </TooltipContent>
                       </Tooltip>
