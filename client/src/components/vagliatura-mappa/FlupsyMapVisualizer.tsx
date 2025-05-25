@@ -213,13 +213,14 @@ export default function FlupsyMapVisualizer({
                     <TooltipProvider key={`${row}-${position}`}>
                       <Tooltip>
                         <TooltipTrigger asChild>
-                          <button
+                          <div
                             className={cn(
-                              "h-16 rounded-md p-2 flex flex-col items-center justify-center transition-colors",
+                              "h-16 rounded-md p-2 flex flex-col items-center justify-center transition-colors cursor-pointer",
                               getBasketClass(basket)
                             )}
                             onClick={() => handlePositionClick(row, position)}
-                            disabled={!basket}
+                            role="button"
+                            tabIndex={0}
                           >
                             <div className="text-xs font-semibold mb-1">
                               {row}{position}
