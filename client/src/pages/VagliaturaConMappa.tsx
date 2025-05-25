@@ -67,6 +67,17 @@ export default function VagliaturaConMappa() {
     sizeId: null as number | null
   });
   
+  // Stato per il dialogo di vendita diretta
+  const [isDirectSaleDialogOpen, setIsDirectSaleDialogOpen] = useState(false);
+  const [directSaleData, setDirectSaleData] = useState({
+    client: 'Cliente',
+    date: new Date().toISOString().split('T')[0],
+    animalCount: 0,
+    totalWeight: 0,
+    animalsPerKg: 0,
+    selectedBasketId: null as number | null
+  });
+  
   // Query per i dati
   const { data: flupsys = [], isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
