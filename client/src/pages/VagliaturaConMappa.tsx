@@ -1166,6 +1166,7 @@ export default function VagliaturaConMappa() {
                 
                 <div className="space-y-2 bg-blue-50 p-3 rounded-md">
                   <Label htmlFor="sampleCount" className="text-blue-700">N° Animali nel Campione</Label>
+                  <div className="text-xs text-blue-600 mb-1">Inserisci solo gli animali vivi contati nel campione</div>
                   <Input
                     id="sampleCount"
                     type="number"
@@ -1203,6 +1204,7 @@ export default function VagliaturaConMappa() {
                 
                 <div className="space-y-2 bg-red-50 p-3 rounded-md">
                   <Label htmlFor="deadCount" className="text-red-700">Animali Morti</Label>
+                  <div className="text-xs text-red-600 mb-1">Numero di animali morti nel campione</div>
                   <Input
                     id="deadCount"
                     type="number"
@@ -1210,10 +1212,13 @@ export default function VagliaturaConMappa() {
                     className="border-red-200"
                     onChange={(e) => {
                       const value = parseInt(e.target.value) || 0;
+                      // Chiamiamo direttamente il calcolo anche per gli animali morti
+                      // per assicurarci che la mortalità venga calcolata
                       const updatedData = calculateMeasurementValues({
                         ...measurementData,
                         deadCount: value
                       });
+                      console.log('Dati aggiornati dopo cambio animali morti:', updatedData);
                       setMeasurementData(updatedData);
                     }}
                   />
