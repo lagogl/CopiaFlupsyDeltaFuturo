@@ -68,8 +68,8 @@ export default function FlupsyMapVisualizer({
     return baskets.find(b => 
       b.flupsyId === flupsy.id && 
       b.row === row && 
-      b.position === position &&
-      b.state === 'active' // Solo cestelli attivi
+      b.position === position
+      // Rimuoviamo il filtro sullo stato per consentire la selezione di tutti i cestelli
     );
   };
   
@@ -110,9 +110,9 @@ export default function FlupsyMapVisualizer({
       return 'bg-blue-500 hover:bg-blue-600 text-white'; // Cestello origine
     } else if (isDestinationBasket(basket.id)) {
       return 'bg-green-500 hover:bg-green-600 text-white'; // Cestello destinazione
-    } else if (mode === 'source' && basket.state === 'active') {
+    } else if (mode === 'source') {
       return 'bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900 border-2 border-blue-500'; // Cestello selezionabile come origine
-    } else if (mode === 'destination' && basket.state === 'available') {
+    } else if (mode === 'destination') {
       return 'bg-white dark:bg-gray-700 hover:bg-green-100 dark:hover:bg-green-900 border-2 border-green-500'; // Cestello selezionabile come destinazione
     }
     
@@ -213,7 +213,7 @@ export default function FlupsyMapVisualizer({
                               getBasketClass(basket)
                             )}
                             onClick={() => handlePositionClick(row, position)}
-                            disabled={!basket || (mode === 'source' && basket.state !== 'active') || (mode === 'destination' && basket.state !== 'available')}
+                            disabled={!basket}
                           >
                             <div className="text-xs font-semibold mb-1">
                               {row}{position}
