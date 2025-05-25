@@ -89,8 +89,14 @@ export default function FlupsyMapVisualizer({
   const handlePositionClick = (row: string, position: number) => {
     const basket = getBasketAtPosition(row, position);
     
+    // Log per debug
+    console.log('Cliccato su posizione:', row, position);
+    console.log('Cestelli disponibili:', baskets);
+    console.log('Cestello trovato:', basket);
+    
     if (basket) {
       // Se c'è un cestello in questa posizione, invia l'evento di click
+      console.log('Invio evento di click per il cestello:', basket);
       onBasketClick(basket, `${row}${position}`);
     } else {
       // Nessun cestello in questa posizione
