@@ -148,23 +148,102 @@ export default function FlupsyMapVisualizer({
       tooltip += `\nAnimali: ${basket.lastOperation.animalCount.toLocaleString()}`;
     }
     
-    if (basket.size?.code) {
-      tooltip += `\nTaglia: ${basket.size.code}`;
+    // Determina la taglia mostrata
+    let sizeCode = basket.size?.code;
+    if (!sizeCode && basket.lastOperation?.animalsPerKg) {
+      // Se non c'è taglia ma ci sono animali per kg, calcoliamo la taglia
+      sizeCode = getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg);
+      tooltip += `\nTaglia calcolata: ${sizeCode}`;
+    } else if (sizeCode) {
+      tooltip += `\nTaglia: ${sizeCode}`;
     }
     
     if (basket.lastOperation?.animalsPerKg) {
       tooltip += `\nAnimali/kg: ${basket.lastOperation.animalsPerKg.toLocaleString()}`;
     }
     
+    if (basket.lastOperation?.totalWeight) {
+      tooltip += `\nPeso totale: ${basket.lastOperation.totalWeight.toLocaleString()} g`;
+    }
+    
+    if (basket.lastOperation?.date) {
+      tooltip += `\nData: ${new Date(basket.lastOperation.date).toLocaleDateString()}`;
+    }
+    
     return tooltip;
+  };
+  
+  // Funzione per determinare la taglia in base agli animali per kg
+  const getSizeCodeFromAnimalsPerKg = (animalsPerKg: number): string => {
+    // Valori basati sulla tabella sizes
+    const sizeRanges = [
+      { code: 'TP-10000', min: 801, max: 1200 },
+      { code: 'TP-9000', min: 1201, max: 1800 },
+      { code: 'TP-8000', min: 1801, max: 2300 },
+      { code: 'TP-7000', min: 2301, max: 3000 },
+      { code: 'TP-6000', min: 3001, max: 3900 },
+      { code: 'TP-5000', min: 3901, max: 7500 },
+      { code: 'TP-4000', min: 7501, max: 12500 },
+      { code: 'TP-3500', min: 12501, max: 19000 },
+      { code: 'TP-3000', min: 19001, max: 32000 },
+      { code: 'TP-2800', min: 32001, max: 40000 },
+      { code: 'TP-2500', min: 40001, max: 60000 },
+      { code: 'TP-2200', min: 60001, max: 70000 },
+      { code: 'TP-2000', min: 70001, max: 97000 },
+      { code: 'TP-1900', min: 97001, max: 120000 },
+      { code: 'TP-1800', min: 120001, max: 190000 },
+      { code: 'TP-1500', min: 190001, max: 300000 },
+      { code: 'TP-1260', min: 300001, max: 350000 },
+      { code: 'TP-1140', min: 350001, max: 600000 },
+      { code: 'TP-1000', min: 600001, max: 880000 },
+      { code: 'TP-800', min: 880001, max: 1500000 },
+      { code: 'TP-700', min: 1500001, max: 1800000 },
+      { code: 'TP-600', min: 1800001, max: 3400000 },
+      { code: 'TP-500', min: 3400001, max: 5000000 },
+      { code: 'TP-450', min: 5000001, max: 7600000 },
+      { code: 'TP-315', min: 7600001, max: 16000000 },
+      { code: 'TP-200', min: 16000001, max: 42000000 },
+      { code: 'TP-180', min: 42000001, max: 100000000 }
+    ];
+    
+    // Trova la taglia corrispondente
+    const matchingSize = sizeRanges.find(
+      range => animalsPerKg >= range.min && animalsPerKg <= range.max
+    );
+    
+    return matchingSize ? matchingSize.code : 'Sconosciuta';
+  };
+  
+  // Funzione per ottenere dati completi del cestello, inclusa l'ultima operazione
+  const getBasketCompleteData = (basket: Basket): Basket => {
+    // Se il cestello ha già tutti i dati necessari, lo restituiamo così com'è
+    if (basket.lastOperation?.animalCount && basket.size?.code) {
+      return basket;
+    }
+    
+    // Copia del cestello per le modifiche
+    const updatedBasket = { ...basket };
+    
+    // Se il cestello ha un'operazione ma non ha una taglia, cerchiamo di determinarla
+    if (basket.lastOperation?.animalsPerKg && !basket.size?.code) {
+      const sizeCode = getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg);
+      updatedBasket.size = {
+        id: 0, // ID placeholder
+        code: sizeCode,
+        min: 0,
+        max: 0
+      };
+    }
+    
+    return updatedBasket;
   };
   
   // Calcola il totale degli animali per taglia dai cestelli selezionati
   const calculateTotalsBySize = () => {
     // Ottieni i cestelli selezionati
-    const selectedBasketsDetails = baskets.filter(b => 
-      isBasketSelected(b.id) && b.flupsyId === Number(flupsyId)
-    );
+    const selectedBasketsDetails = baskets
+      .filter(b => isBasketSelected(b.id) && b.flupsyId === Number(flupsyId))
+      .map(getBasketCompleteData); // Aggiorna i dati mancanti
     
     // Raggruppa per taglia
     const sizeGroups: Record<string, {
@@ -175,20 +254,24 @@ export default function FlupsyMapVisualizer({
     
     // Processa ogni cestello selezionato
     selectedBasketsDetails.forEach(basket => {
-      if (basket.size?.code && basket.lastOperation?.animalCount) {
-        const sizeCode = basket.size.code;
-        
-        if (!sizeGroups[sizeCode]) {
-          sizeGroups[sizeCode] = {
-            code: sizeCode,
-            totalAnimals: 0,
-            basketCount: 0
-          };
-        }
-        
-        sizeGroups[sizeCode].totalAnimals += basket.lastOperation.animalCount;
-        sizeGroups[sizeCode].basketCount += 1;
+      // Determina la taglia e il numero di animali
+      const sizeCode = basket.size?.code || 
+                      (basket.lastOperation?.animalsPerKg ? 
+                        getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) : 
+                        'Sconosciuta');
+      
+      const animalCount = basket.lastOperation?.animalCount || 0;
+      
+      if (!sizeGroups[sizeCode]) {
+        sizeGroups[sizeCode] = {
+          code: sizeCode,
+          totalAnimals: 0,
+          basketCount: 0
+        };
       }
+      
+      sizeGroups[sizeCode].totalAnimals += animalCount;
+      sizeGroups[sizeCode].basketCount += 1;
     });
     
     // Converti in array per facilitare il rendering
@@ -299,7 +382,12 @@ export default function FlupsyMapVisualizer({
                               <div className="text-center">
                                 <div className="font-bold text-sm">#{basket.physicalNumber}</div>
                                 <div className="flex flex-col gap-0.5 text-xs text-center">
-                                  <div className="font-medium">{basket.size?.code || "Senza taglia"}</div>
+                                  <div className="font-medium">
+                                    {basket.size?.code || 
+                                     (basket.lastOperation?.animalsPerKg 
+                                      ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
+                                      : "Senza taglia")}
+                                  </div>
                                   <div className="font-semibold">
                                     {basket.lastOperation?.animalCount 
                                       ? basket.lastOperation.animalCount.toLocaleString() 
