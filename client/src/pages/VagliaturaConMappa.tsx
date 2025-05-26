@@ -1042,7 +1042,16 @@ export default function VagliaturaConMappa() {
                           // Aggiungiamo un flag per indicare se è un cestello origine
                           isSourceBasket: sourceBaskets.some(sb => sb.basketId === b.id)
                         }))}
-                        selectedBaskets={destinationBaskets.map(b => b.basketId)}
+                        selectedBaskets={destinationBaskets.map(b => {
+                          // Per le ceste virtuali (posizioni vuote), genera l'ID corretto
+                          if (b.basketId < 0) {
+                            // Usa la stessa formula del visualizzatore per generare l'ID virtuale
+                            const position = parseInt(b.position) || 0;
+                            const row = b.position?.charAt(0) === 'S' ? 'SX' : 'DX';
+                            return -(Number(selectedFlupsyId) * 1000 + position + (row === 'SX' ? 0 : 100));
+                          }
+                          return b.basketId;
+                        })}
                         onBasketClick={(basket) => toggleDestinationBasket(basket)}
                         mode="destination"
                         showTooltips={true}
