@@ -1159,9 +1159,16 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             positionStr = normalizePositionFormat(positionStr);
             console.log(`Posizione normalizzata: "${destBasket.position}" -> "${positionStr}"`);
             
-            const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
+            let rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
             if (!rowMatch) {
-              throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
+              // Tentativo di normalizzazione automatica se il formato non è valido
+              console.log(`Tentativo di normalizzazione automatica per: "${positionStr}"`);
+              positionStr = normalizePositionFormat(positionStr);
+              console.log(`Dopo normalizzazione: "${positionStr}"`);
+              rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
+              if (!rowMatch) {
+                throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
+              }
             }
             
             const row = rowMatch[1];
@@ -1427,10 +1434,17 @@ export async function addDestinationBaskets(req: Request, res: Response) {
               positionStr = normalizePositionFormat(positionStr);
               console.log(`Posizione normalizzata: "${destBasket.position}" -> "${positionStr}"`);
               
-              const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
+              let rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
               if (!rowMatch) {
-                console.error(`Errore formato posizione per cestello ${destBasket.basketId}: "${positionStr}" non rispetta il formato atteso`);
-                throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
+                // Tentativo di normalizzazione automatica se il formato non è valido
+                console.log(`Tentativo di normalizzazione automatica per: "${positionStr}"`);
+                positionStr = normalizePositionFormat(positionStr);
+                console.log(`Dopo normalizzazione: "${positionStr}"`);
+                rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
+                if (!rowMatch) {
+                  console.error(`Errore formato posizione per cestello ${destBasket.basketId}: "${positionStr}" non rispetta il formato atteso`);
+                  throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
+                }
               }
               
               // Estrae i valori all'interno del try per evitare errori di scope
@@ -1855,11 +1869,18 @@ export async function completeSelection(req: Request, res: Response) {
               positionStr = normalizePositionFormat(positionStr);
               console.log(`Posizione normalizzata: "${destBasket.position}" -> "${positionStr}"`);
               
-              const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
+              let rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
               
               if (!rowMatch) {
-                console.log(`Errore formato posizione: ricevuto "${positionStr}", tentativo conversione automatica fallito`);
-                throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
+                // Tentativo di normalizzazione automatica se il formato non è valido
+                console.log(`Tentativo di normalizzazione automatica per: "${positionStr}"`);
+                positionStr = normalizePositionFormat(positionStr);
+                console.log(`Dopo normalizzazione: "${positionStr}"`);
+                rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
+                if (!rowMatch) {
+                  console.log(`Errore formato posizione: ricevuto "${positionStr}", tentativo conversione automatica fallito`);
+                  throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
+                }
               }
               
               const row = rowMatch[1];
