@@ -117,7 +117,7 @@ function Router() {
       {/* Modulo selezione rimosso - ora si usa solo Vagliatura con Mappa */}
       
       {/* Vagliatura con Mappa routes */}
-      <ProtectedRoute path="/vagliatura-mappa" component={VagliaturaConMappa}/>
+      <ProtectedRoute path="/vagliatura-con-mappa" component={VagliaturaConMappa}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />
