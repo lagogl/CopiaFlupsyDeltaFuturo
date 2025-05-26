@@ -197,7 +197,13 @@ export default function FlupsyMapVisualizer({
       } else if (isForSale) {
         return 'bg-red-500 hover:bg-red-600 text-white'; // Cestello destinazione per vendita
       } else {
-        return 'bg-green-500 hover:bg-green-600 text-white'; // Cestello destinazione normale
+        // Cestello destinazione normale - verifica se è una cesta virtuale (da posizione vuota)
+        const isVirtualSelected = basket.id < 0 || (basket as any)._isEmpty;
+        if (isVirtualSelected) {
+          return 'bg-orange-500 hover:bg-orange-600 text-white border-2 border-yellow-400'; // Cestello destinazione da posizione vuota
+        } else {
+          return 'bg-green-500 hover:bg-green-600 text-white'; // Cestello destinazione normale
+        }
       }
     } else if (mode === 'source') {
       return 'bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900 border-2 border-blue-500'; // Cestello selezionabile come origine

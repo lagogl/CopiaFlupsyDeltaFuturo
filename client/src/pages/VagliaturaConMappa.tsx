@@ -1004,8 +1004,8 @@ export default function VagliaturaConMappa() {
                         <div className="max-h-[150px] overflow-y-auto">
                           {destinationBaskets.map((basket, index) => {
                             const basketDetails = baskets.find(b => b.id === basket.basketId);
-                            // Per le ceste virtuali, usa la posizione e la fila come identificatore univoco
-                            const uniqueKey = basket.basketId < 0 ? `virtual-${basket.row || 'X'}-${basket.position || 'N'}` : basket.basketId;
+                            // Per le ceste virtuali, usa la posizione come identificatore univoco
+                            const uniqueKey = basket.basketId < 0 ? `virtual-${basket.position || 'N'}` : basket.basketId;
                             const displayNumber = basketDetails?.physicalNumber || `Pos. ${basket.position}`;
                             
                             return (
