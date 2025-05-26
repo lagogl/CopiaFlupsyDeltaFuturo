@@ -491,7 +491,7 @@ export default function FlupsyMapVisualizer({
                                         ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
                                         : "N/D")}
                                     </div>
-                                    <div className="text-[8px]">
+                                    <div className={`text-[8px] ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-green-600 font-semibold' : ''}`}>
                                       {basket.lastOperation?.animalCount 
                                         ? (basket.lastOperation.animalCount >= 1000000 
                                             ? (basket.lastOperation.animalCount / 1000000).toFixed(1) + 'M'
@@ -510,7 +510,7 @@ export default function FlupsyMapVisualizer({
                                         ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
                                         : "Senza taglia")}
                                     </div>
-                                    <div className="font-semibold">
+                                    <div className={`font-semibold ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-green-600' : ''}`}>
                                       {basket.lastOperation?.animalCount 
                                         ? basket.lastOperation.animalCount.toLocaleString() 
                                         : "0"} anim.
