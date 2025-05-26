@@ -1358,19 +1358,27 @@ export default function VagliaturaConMappa() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsMeasurementDialogOpen(false)}>Annulla</Button>
             <Button onClick={() => {
-              // Calcola animalsPerKg se non è già calcolato
-              let finalAnimalsPerKg = measurementData.animalsPerKg;
-              if (!finalAnimalsPerKg || finalAnimalsPerKg === 0) {
-                if (measurementData.sampleWeight > 0 && measurementData.sampleCount > 0) {
-                  finalAnimalsPerKg = Math.round((measurementData.sampleCount / measurementData.sampleWeight) * 1000);
-                }
+              // FORZA sempre il ricalcolo per essere sicuri
+              let finalAnimalsPerKg = 0;
+              if (measurementData.sampleWeight > 0 && measurementData.sampleCount > 0) {
+                finalAnimalsPerKg = Math.round((measurementData.sampleCount / measurementData.sampleWeight) * 1000);
+                console.log(`CALCOLO FORZATO animalsPerKg: (${measurementData.sampleCount} / ${measurementData.sampleWeight}) * 1000 = ${finalAnimalsPerKg}`);
               }
               
-              // Calcola animalCount se non è già calcolato
+              // FORZA sempre il ricalcolo del conteggio animali
               let finalAnimalCount = measurementData.animalCount;
               if (measurementData.totalWeight > 0 && finalAnimalsPerKg > 0) {
                 finalAnimalCount = Math.round(measurementData.totalWeight * finalAnimalsPerKg);
+                console.log(`CALCOLO FORZATO animalCount: ${measurementData.totalWeight} * ${finalAnimalsPerKg} = ${finalAnimalCount}`);
               }
+              
+              console.log('DATI FINALI DA INVIARE:', {
+                sampleWeight: measurementData.sampleWeight,
+                sampleCount: measurementData.sampleCount,
+                totalWeight: measurementData.totalWeight,
+                animalsPerKg: finalAnimalsPerKg,
+                animalCount: finalAnimalCount
+              });
               
               // Crea un nuovo cestello destinazione con i dati inseriti
               const newDestinationBasket: DestinationBasket = {
