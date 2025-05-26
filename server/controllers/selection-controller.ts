@@ -1243,6 +1243,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
         
         // Usa il ciclo già creato in precedenza (eliminazione duplicazione)
         const cycleId = destinationCycleId; // Usa il ciclo già creato e validato
+        console.log(`[DEBUG CRITICO] Per cestello ${destBasket.basketId}: destinationCycleId=${destinationCycleId}, cycleId=${cycleId}`);
         
         // Ora crea l'operazione di prima attivazione con l'ID del ciclo valido
         console.log(`[DEBUG 1] Creazione operazione per cestello ${destBasket.basketId} con cycleId: ${cycleId}`);
