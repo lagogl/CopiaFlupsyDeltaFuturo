@@ -1487,14 +1487,9 @@ export async function addDestinationBaskets(req: Request, res: Response) {
  * Completa definitivamente una selezione e processa i cestelli
  */
 export async function completeSelection(req: Request, res: Response) {
-  // Variabile per tracciare errori post-commit per logging
-  let postCommitErrors: Error[] = [];
-  
   try {
     const { id } = req.params;
-    const saleNotificationsToCreate: number[] = [];
     
-    // Logging avanzato per tracciare l'operazione
     console.log(`Avvio completamento selezione ID: ${id}. Timestamp: ${new Date().toISOString()}`);
     
     if (!id) {
