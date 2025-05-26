@@ -72,6 +72,7 @@ export default function FlupsyMapVisualizer({
   // Se maxPositions è 20, avremo 10 posizioni per riga, ecc.
   const positionsPerRow = Math.ceil(maxPositions / 2);
   console.log(`FLUPSY ${flupsyId} ha ${maxPositions} posizioni totali, ${positionsPerRow} per riga`);
+  console.log(`Cestelli selezionati come destinazione:`, selectedBaskets);
   
   // Definizione delle file del FLUPSY (default: DX e SX)
   const rows = ['DX', 'SX'];
@@ -103,7 +104,11 @@ export default function FlupsyMapVisualizer({
   // Funzione per verificare se un cestello è selezionato
   const isBasketSelected = (basketId: number | undefined): boolean => {
     if (!basketId) return false;
-    return selectedBaskets.includes(basketId);
+    const isSelected = selectedBaskets.includes(basketId);
+    if (isSelected) {
+      console.log(`Cestello ${basketId} è selezionato come destinazione`);
+    }
+    return isSelected;
   };
   
   // Funzione per verificare se un cestello può essere selezionato
