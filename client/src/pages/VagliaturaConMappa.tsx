@@ -548,20 +548,6 @@ export default function VagliaturaConMappa() {
       // Verifica se questo cestello è anche un cestello origine
       const isAlsoSource = sourceBaskets.some(sb => sb.basketId === basket.id);
       
-      // Verifica se il cestello è valido per essere selezionato come destinazione:
-      // 1. Il cestello non ha un ciclo attivo (currentCycleId è null) OPPURE
-      // 2. Il cestello è già selezionato come origine
-      const isCycleInactive = !basket.currentCycleId;
-      
-      if (!isCycleInactive && !isAlsoSource) {
-        toast({
-          title: "Cestello non disponibile",
-          description: "Puoi selezionare solo cestelli senza cicli attivi o cestelli già selezionati come origine",
-          variant: "destructive"
-        });
-        return;
-      }
-      
       // Prepara i dati iniziali per il dialogo di misurazione
       const initialMeasurementData = {
         basketId: basket.id,
