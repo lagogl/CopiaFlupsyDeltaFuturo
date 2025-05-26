@@ -1595,8 +1595,10 @@ export async function completeSelection(req: Request, res: Response) {
           .where(eq(baskets.id, sourceBasket.basketId));
       }
       
-      // NOTA: Il processing dei cestelli destinazione è già stato fatto nella sezione precedente (righe 1200-1300)
-      // Questa sezione duplicata è stata rimossa perché causava l'errore cycle_id=0
+      // Processa le ceste di destinazione
+      for (const destBasket of processedDestinationBaskets) {
+        // Assicura che ogni cesta abbia un valore di sizeId basato su animalsPerKg
+        let actualSizeId = destBasket.sizeId;
         
         // Se non c'è sizeId oppure è 0 o null, tenta di determinarlo automaticamente
         if (!actualSizeId || actualSizeId === 0) {
