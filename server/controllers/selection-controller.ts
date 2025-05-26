@@ -1822,7 +1822,13 @@ export async function completeSelection(req: Request, res: Response) {
               
               if (!rowMatch) {
                 console.log(`Errore formato posizione: ricevuto "${positionStr}", tentativo conversione automatica fallito`);
-                throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
+                // Se anche qui non funziona, usa una riga di default
+                if (/^\d+$/.test(positionStr)) {
+                  positionStr = `DX${positionStr}`;
+                  console.log(`Applicato formato di default: ${positionStr}`);
+                } else {
+                  throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
+                }
               }
               
               const row = rowMatch[1];
