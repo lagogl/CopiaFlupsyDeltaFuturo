@@ -1557,50 +1557,37 @@ export async function addDestinationBaskets(req: Request, res: Response) {
       selectionId: Number(id)
     });
     
-  } catch (error) {
-    console.error("Errore durante il completamento della selezione:", error);
-    return res.status(500).json({
-      success: false,
-      error: `Errore durante il completamento della selezione: ${error instanceof Error ? error.message : String(error)}`
-    });
-  }
 }
 
 /**
- * Completa definitivamente una selezione e processa i cestelli
+ * Ottiene statistiche sulle selezioni
  */
-export async function completeSelection(req: Request, res: Response) {
-  // Variabile per tracciare errori post-commit per logging
-  let postCommitErrors: Error[] = [];
-  
+export async function getSelectionStats(req: Request, res: Response) {
   try {
-    const { id } = req.params;
-    const saleNotificationsToCreate: number[] = [];
-    
-    // Logging avanzato per tracciare l'operazione
-    console.log(`Avvio completamento selezione ID: ${id}. Timestamp: ${new Date().toISOString()}`);
-    
-    if (!id) {
-      return res.status(400).json({
-        success: false,
-        error: "ID selezione non fornito"
-      });
-    }
-    
-    // Verifica che la selezione esista
-    const selection = await db.select().from(selections)
-      .where(eq(selections.id, Number(id)))
-      .limit(1);
-      
-    if (!selection || selection.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: `Selezione con ID ${id} non trovata`
-      });
-    }
-    
-    // Verifica che la selezione sia in stato draft
-    if (selection[0].status !== 'draft') {
+    // Recupera statistiche generali sulle selezioni
+    const totalStats = await db.select({
+      totalSelections: sql<number>`COUNT(*)`.as('total_selections'),
+      completedSelections: sql<number>`COUNT(CASE WHEN status = 'completed' THEN 1 END)`.as('completed_selections')
+    }).from(selections);
+
+    // Recupera statistiche sui cestelli
+    const basketStats = await db.select({
+      totalBaskets: sql<number>`COUNT(DISTINCT ${selectionBasketHistory.sourceBasketId})`.as('total_baskets'),
+      processedBaskets: sql<number>`COUNT(*)`.as('processed_baskets')
+    }).from(selectionBasketHistory);
+
+    return res.status(200).json({
+      selections: totalStats[0],
+      baskets: basketStats[0]
+    });
+  } catch (error) {
+    console.error('Errore nel recupero delle statistiche:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Errore interno del server'
+    });
+  }
+}
       return res.status(400).json({
         success: false,
         error: `La selezione non può essere completata perché è in stato "${selection[0].status}"`
