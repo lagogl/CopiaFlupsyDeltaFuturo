@@ -1556,9 +1556,8 @@ export async function addDestinationBaskets(req: Request, res: Response) {
       message: "Selezione completata con successo",
       selectionId: Number(id)
     });
-    
   } catch (error) {
-    console.error('Errore durante il completamento della selezione:', error);
+    console.error('Errore durante l\'aggiunta dei cestelli di destinazione:', error);
     return res.status(500).json({
       success: false,
       error: 'Errore interno del server'
