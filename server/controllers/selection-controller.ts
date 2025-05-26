@@ -1176,6 +1176,13 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             .where(eq(baskets.id, destBasket.basketId));
         }
 
+        // CONTROLLO CRITICO: Assicurati che destinationCycleId sia valido
+        if (!destinationCycleId || destinationCycleId === 0) {
+          throw new Error(`ERRORE CRITICO: destinationCycleId non valido (${destinationCycleId}) per cestello ${destBasket.basketId}`);
+        }
+        
+        console.log(`Usando destinationCycleId ${destinationCycleId} per cestello ${destBasket.basketId}`);
+        
         // Registra nella tabella di relazione temporanea
         await tx.insert(selectionDestinationBaskets).values({
           selectionId: Number(id),
@@ -1616,7 +1623,7 @@ export async function completeSelection(req: Request, res: Response) {
             eq(cycles.startDate, selection[0].date)
           ));
         
-        let cycleId = 0;
+        let cycleId = null;
         
         // Se non esiste un ciclo, lo creiamo ora
         if (existingCycles.length === 0) {
