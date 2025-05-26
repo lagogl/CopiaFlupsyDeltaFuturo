@@ -1236,7 +1236,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           cycleId: destinationCycleId, // Usa il ciclo valido invece di 0
           destinationType: destBasket.destinationType,
           flupsyId: destBasket.flupsyId,
-          position: destBasket.position ? String(destBasket.position) : null,
+          position: destBasket.position ? normalizePositionFormat(destBasket.position) : null,
           animalCount: destBasket.animalCount,
           liveAnimals: destBasket.animalCount - (destBasket.deadCount || 0),
           totalWeight: destBasket.totalWeight,
@@ -1480,7 +1480,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             cycleId: cycle.id,
             destinationType: 'placed',
             flupsyId: destBasket.flupsyId,
-            position: destBasket.position,
+            position: normalizePositionFormat(destBasket.position),
             animalCount: destBasket.animalCount,
             liveAnimals: destBasket.animalCount - (destBasket.deadCount || 0),
             totalWeight: destBasket.totalWeight,
