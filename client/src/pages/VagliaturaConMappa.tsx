@@ -60,7 +60,24 @@ export default function VagliaturaConMappa() {
   
   // Stato per gestire la selezione delle ceste da vendere
   const [isSaleSelectionMode, setIsSaleSelectionMode] = useState(false);
-  const [allDestinationsAssigned, setAllDestinationsAssigned] = useState(false);
+  
+  // Calcola se tutti i cestelli destinazione sono stati posizionati
+  const allDestinationsAssigned = React.useMemo(() => {
+    if (destinationBaskets.length === 0) return false;
+    
+    // Verifica che tutti i cestelli destinazione abbiano una posizione assegnata
+    const allHavePosition = destinationBaskets.every(basket => 
+      basket.position && basket.position.trim() !== ''
+    );
+    
+    console.log('Controllo cestelli destinazione posizionati:', {
+      totalDestinations: destinationBaskets.length,
+      allHavePosition,
+      basketsWithPosition: destinationBaskets.filter(b => b.position && b.position.trim() !== '').length
+    });
+    
+    return allHavePosition;
+  }, [destinationBaskets]);
   
   // FLUPSY selezionato per la visualizzazione
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<string | null>(null);
