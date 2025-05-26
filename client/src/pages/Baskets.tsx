@@ -236,7 +236,7 @@ export default function Baskets() {
           'Fornitore': lot?.supplier || '-',
           'Codice Ciclo': basket.cycleCode || '-',
           'Taglia': basket.calculatedSize || '-',
-          'Numero Animali': basket.animalCount ? basket.animalCount.toLocaleString('it-IT') : '-',
+          'Numero Animali': basket.animalCount || 0,
           'Data Attivazione': basket.activationDate || '-',
           'Ultima Operazione': basket.lastOperationType || '-',
           'Data Ultima Operazione': basket.lastOperationDate || '-',
