@@ -143,7 +143,7 @@ export default function Sizes() {
               <tr>
                 <th 
                   scope="col" 
-                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${
+                  className={`px-3 py-2 text-left text-xs font-medium uppercase tracking-wide cursor-pointer hover:bg-gray-100 ${
                     sortConfig.key === 'code' ? 'text-blue-600' : 'text-gray-500'
                   }`}
                   onClick={() => requestSort('code')}
@@ -157,22 +157,22 @@ export default function Sizes() {
                     )}
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Nome
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Misura (mm)
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Min Animali/Kg
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Max Animali/Kg
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Note
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wide">
                   Azioni
                 </th>
               </tr>
@@ -180,13 +180,13 @@ export default function Sizes() {
             <tbody className="bg-white divide-y divide-gray-200">
               {isLoading ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                  <td colSpan={7} className="px-3 py-3 whitespace-nowrap text-center text-sm text-gray-500">
                     Caricamento taglie...
                   </td>
                 </tr>
               ) : filteredAndSortedSizes.length === 0 ? (
                 <tr>
-                  <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                  <td colSpan={7} className="px-3 py-3 whitespace-nowrap text-center text-sm text-gray-500">
                     Nessuna taglia trovata
                   </td>
                 </tr>
@@ -217,33 +217,34 @@ export default function Sizes() {
                   }
                   
                   return (
-                    <tr key={size.id}>
-                      <td className="px-6 py-4 whitespace-nowrap">
-                        <Badge className={badgeColor}>
+                    <tr key={size.id} className="hover:bg-gray-50">
+                      <td className="px-3 py-2 whitespace-nowrap">
+                        <Badge className={`${badgeColor} text-xs`}>
                           {size.code}
                         </Badge>
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-900">
                         {size.name}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                         {size.sizeMm}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                         {size.minAnimalsPerKg}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                         {size.maxAnimalsPerKg}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                         {size.notes || '-'}
                       </td>
-                      <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                      <td className="px-3 py-2 whitespace-nowrap text-sm font-medium">
                         <Button 
                           variant="ghost" 
-                          size="icon" 
+                          size="sm"
+                          className="h-8 w-8 p-0"
                           onClick={() => setEditingSize(size)}>
-                          <Pencil className="h-5 w-5 text-gray-600" />
+                          <Pencil className="h-3 w-3 text-gray-600" />
                         </Button>
                       </td>
                     </tr>
