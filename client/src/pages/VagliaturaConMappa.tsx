@@ -650,13 +650,46 @@ export default function VagliaturaConMappa() {
       });
       return;
     }
+
+    // Previeni multiple esecuzioni
+    if (isCompletionInProgress) {
+      return;
+    }
+    
+    // Definisci i passaggi per l'indicatore di avanzamento
+    const steps = [
+      { id: 'validate', label: 'Validazione dati', status: 'pending' as const, description: 'Controllo della correttezza dei dati inseriti' },
+      { id: 'create-selection', label: 'Creazione vagliatura', status: 'pending' as const, description: 'Creazione della nuova vagliatura nel sistema' },
+      { id: 'add-sources', label: 'Aggiunta cestelli origine', status: 'pending' as const, description: 'Registrazione dei cestelli di origine' },
+      { id: 'add-destinations', label: 'Aggiunta cestelli destinazione', status: 'pending' as const, description: 'Registrazione dei cestelli di destinazione' },
+      { id: 'complete', label: 'Completamento operazioni', status: 'pending' as const, description: 'Finalizzazione della vagliatura e creazione operazioni' }
+    ];
+
+    // Avvia l'indicatore di avanzamento
+    setCompletionSteps(steps);
+    setCurrentCompletionStep(0);
+    setIsCompletionInProgress(true);
+
+    const updateStep = (stepId: string, status: 'in-progress' | 'completed' | 'error', stepIndex: number) => {
+      setCompletionSteps(prev => prev.map(step => 
+        step.id === stepId ? { ...step, status } : step
+      ));
+      if (status === 'completed') {
+        setCurrentCompletionStep(stepIndex + 1);
+      }
+    };
     
     try {
-      // Passo 1: Creare la selezione (vagliatura) se non esiste già
+      // Passo 1: Validazione
+      updateStep('validate', 'in-progress', 0);
+      await new Promise(resolve => setTimeout(resolve, 500)); // Breve pausa per mostrare il progresso
+      updateStep('validate', 'completed', 0);
+
+      // Passo 2: Creare la selezione (vagliatura) se non esiste già
+      updateStep('create-selection', 'in-progress', 1);
       let selectionId = selection.id;
       
       if (!selectionId) {
-        // Preparazione dei dati per la creazione della selezione
         const createSelectionData = {
           date: selection.date,
           purpose: selection.purpose,
@@ -665,7 +698,6 @@ export default function VagliaturaConMappa() {
           referenceSizeId: selection.referenceSizeId
         };
         
-        // Crea la selezione
         const selectionResponse = await fetch('/api/selections', {
           method: 'POST',
           headers: {
@@ -682,100 +714,113 @@ export default function VagliaturaConMappa() {
         const newSelection = await selectionResponse.json();
         selectionId = newSelection.id;
         
-        // Aggiorna lo stato locale con l'ID della selezione creata
         setSelection(prev => ({
           ...prev,
           id: selectionId,
           selectionNumber: newSelection.selectionNumber
         }));
-        
-        // Passo 2: Aggiungere i cestelli origine
-        const sourceBasketData = sourceBaskets.map(basket => ({
-          ...basket,
-          selectionId
-        }));
-        
-        const sourceResponse = await fetch(`/api/selections/${selectionId}/source-baskets`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(sourceBasketData)
-        });
-        
-        if (!sourceResponse.ok) {
-          const error = await sourceResponse.json();
-          throw new Error(error.message || 'Errore durante l\'aggiunta dei cestelli origine');
-        }
-        
-        // Passo 3: Aggiungere i cestelli destinazione
-        const destinationBasketData = destinationBaskets.map(basket => {
-          // Trova il cestello originale per ottenere la fila (row)
-          const originalBasket = baskets?.find(b => b.id === basket.basketId);
-          const row = originalBasket?.row || 'DX';
-          
-          // Combina fila e posizione nel formato richiesto dal server (es. "DX1")
-          const formattedPosition = `${row}${basket.position}`;
-          
-          // FORZA IL CALCOLO di animalsPerKg se mancante
-          let finalAnimalsPerKg = basket.animalsPerKg || 0;
-          if ((!finalAnimalsPerKg || finalAnimalsPerKg === 0) && basket.sampleWeight > 0 && basket.sampleCount > 0) {
-            finalAnimalsPerKg = Math.round((basket.sampleCount / basket.sampleWeight) * 1000);
-            console.log(`CALCOLO FORZATO per cestello ${basket.basketId}: (${basket.sampleCount} / ${basket.sampleWeight}) * 1000 = ${finalAnimalsPerKg}`);
-          }
-          
-          // FORZA IL CALCOLO di animalCount se mancante
-          let finalAnimalCount = basket.animalCount || 0;
-          if (basket.totalWeight > 0 && finalAnimalsPerKg > 0) {
-            finalAnimalCount = Math.round(basket.totalWeight * finalAnimalsPerKg);
-            console.log(`CALCOLO FORZATO animalCount per cestello ${basket.basketId}: ${basket.totalWeight} * ${finalAnimalsPerKg} = ${finalAnimalCount}`);
-          }
-          
-          // Determina la taglia
-          let finalSizeId = basket.sizeId || 0;
-          if (finalAnimalsPerKg > 0 && sizes) {
-            const matchingSize = sizes.find(size => 
-              finalAnimalsPerKg >= size.min && finalAnimalsPerKg <= size.max
-            );
-            if (matchingSize) {
-              finalSizeId = matchingSize.id;
-              console.log(`TAGLIA DETERMINATA per cestello ${basket.basketId}: ${matchingSize.code} (ID: ${finalSizeId})`);
-            }
-          }
-          
-          return {
-            ...basket,
-            position: formattedPosition,
-            selectionId,
-            animalsPerKg: finalAnimalsPerKg,
-            animalCount: finalAnimalCount,
-            sizeId: finalSizeId
-          };
-        });
-        
-        const destinationResponse = await fetch(`/api/selections/${selectionId}/destination-baskets`, {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          body: JSON.stringify(destinationBasketData)
-        });
-        
-        if (!destinationResponse.ok) {
-          const error = await destinationResponse.json();
-          throw new Error(error.message || 'Errore durante l\'aggiunta dei cestelli destinazione');
-        }
       }
+      updateStep('create-selection', 'completed', 1);
+
+      // Passo 3: Aggiungere i cestelli origine
+      updateStep('add-sources', 'in-progress', 2);
+      const sourceBasketData = sourceBaskets.map(basket => ({
+        ...basket,
+        selectionId
+      }));
       
-      // Passo 4: Completare la selezione
+      const sourceResponse = await fetch(`/api/selections/${selectionId}/source-baskets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(sourceBasketData)
+      });
+      
+      if (!sourceResponse.ok) {
+        const error = await sourceResponse.json();
+        throw new Error(error.message || 'Errore durante l\'aggiunta dei cestelli origine');
+      }
+      updateStep('add-sources', 'completed', 2);
+      
+      // Passo 4: Aggiungere i cestelli destinazione
+      updateStep('add-destinations', 'in-progress', 3);
+      const destinationBasketData = destinationBaskets.map(basket => {
+        const originalBasket = baskets?.find(b => b.id === basket.basketId);
+        const row = originalBasket?.row || 'DX';
+        const formattedPosition = `${row}${basket.position}`;
+        
+        let finalAnimalsPerKg = basket.animalsPerKg || 0;
+        if ((!finalAnimalsPerKg || finalAnimalsPerKg === 0) && basket.sampleWeight && basket.sampleCount && basket.sampleWeight > 0 && basket.sampleCount > 0) {
+          finalAnimalsPerKg = Math.round((basket.sampleCount / basket.sampleWeight) * 1000);
+        }
+        
+        let finalAnimalCount = basket.animalCount || 0;
+        if (basket.totalWeight && basket.totalWeight > 0 && finalAnimalsPerKg > 0) {
+          finalAnimalCount = Math.round(basket.totalWeight * finalAnimalsPerKg);
+        }
+        
+        let finalSizeId = basket.sizeId || 0;
+        if (finalAnimalsPerKg > 0 && sizes) {
+          const matchingSize = sizes.find(size => 
+            finalAnimalsPerKg >= size.min && finalAnimalsPerKg <= size.max
+          );
+          if (matchingSize) {
+            finalSizeId = matchingSize.id;
+          }
+        }
+        
+        return {
+          ...basket,
+          position: formattedPosition,
+          selectionId,
+          animalsPerKg: finalAnimalsPerKg,
+          animalCount: finalAnimalCount,
+          sizeId: finalSizeId
+        };
+      });
+      
+      const destinationResponse = await fetch(`/api/selections/${selectionId}/destination-baskets`, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify(destinationBasketData)
+      });
+      
+      if (!destinationResponse.ok) {
+        const error = await destinationResponse.json();
+        throw new Error(error.message || 'Errore durante l\'aggiunta dei cestelli destinazione');
+      }
+      updateStep('add-destinations', 'completed', 3);
+      
+      // Passo 5: Completare la selezione
+      updateStep('complete', 'in-progress', 4);
       completeScreeningMutation.mutate({ selectionId });
+      updateStep('complete', 'completed', 4);
+      
+      // Chiudi il dialogo di progresso dopo un breve ritardo
+      setTimeout(() => {
+        setIsCompletionInProgress(false);
+      }, 1500);
       
     } catch (error: any) {
+      // In caso di errore, aggiorna lo step corrente come errore
+      const currentStep = completionSteps.find(step => step.status === 'in-progress');
+      if (currentStep) {
+        updateStep(currentStep.id, 'error', completionSteps.findIndex(s => s.id === currentStep.id));
+      }
+      
       toast({
         title: "Errore",
         description: `Si è verificato un errore: ${error.message || 'Errore sconosciuto'}`,
         variant: "destructive"
       });
+      
+      // Chiudi il dialogo di progresso in caso di errore
+      setTimeout(() => {
+        setIsCompletionInProgress(false);
+      }, 3000);
     }
   };
 
@@ -1242,8 +1287,16 @@ export default function VagliaturaConMappa() {
               <Button 
                 variant="default" 
                 onClick={handleCompleteScreening}
+                disabled={isCompletionInProgress}
               >
-                Completa Vagliatura
+                {isCompletionInProgress ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white mr-2"></div>
+                    Completamento in corso...
+                  </>
+                ) : (
+                  'Completa Vagliatura'
+                )}
               </Button>
             </CardFooter>
           </Card>
@@ -1725,6 +1778,15 @@ export default function VagliaturaConMappa() {
           animalsPerKg: measurementData.animalsPerKg,
           position: parseInt(measurementData.position) || 1
         }}
+      />
+
+      {/* Dialogo di progresso per il completamento vagliatura */}
+      <CompletionProgressDialog
+        isOpen={isCompletionInProgress}
+        steps={completionSteps}
+        currentStep={currentCompletionStep}
+        totalSteps={completionSteps.length}
+        onClose={() => setIsCompletionInProgress(false)}
       />
     </div>
   );
