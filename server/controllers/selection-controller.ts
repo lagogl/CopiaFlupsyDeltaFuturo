@@ -1575,6 +1575,10 @@ export async function completeSelection(req: Request, res: Response) {
       // Chiudi i cicli delle ceste di origine
       for (const sourceBasket of sourceBaskets) {
         // Crea operazione di chiusura per il ciclo di origine
+        console.log(`[DEBUG 3] Creazione operazione chiusura per cestello ${sourceBasket.basketId} con cycleId: ${sourceBasket.cycleId}`);
+        if (!sourceBasket.cycleId || sourceBasket.cycleId === 0) {
+          throw new Error(`[ERRORE CRITICO 3] Tentativo di creare operazione chiusura con cycleId non valido: ${sourceBasket.cycleId} per cestello ${sourceBasket.basketId}`);
+        }
         await tx.insert(operations).values({
           date: selection[0].date,
           type: 'selezione-origine',
