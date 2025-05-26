@@ -1588,213 +1588,62 @@ export async function getSelectionStats(req: Request, res: Response) {
     });
   }
 }
-      return res.status(400).json({
-        success: false,
-        error: `La selezione non può essere completata perché è in stato "${selection[0].status}"`
-      });
-    }
-    
-    // Verifica la presenza di cestelli di destinazione
-    const destinationCount = await db.select({ count: sql`count(*)` })
-      .from(selectionDestinationBaskets)
-      .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
-    
-    if (!destinationCount[0] || destinationCount[0].count === 0) {
-      return res.status(400).json({
-        success: false,
-        error: "La selezione non ha ceste di destinazione. Aggiungi prima le ceste di destinazione."
-      });
-    }
-    
-    // Ottieni tutte le ceste di destinazione
-    const destinationBaskets = await db.select()
-      .from(selectionDestinationBaskets)
-      .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
-    
-    // Assicurati che tutti i cestelli venduti abbiano un FLUPSY ID valido
-    const processedDestinationBaskets = destinationBaskets.map(basket => {
-      if (basket.destinationType === 'sold' && !basket.flupsyId) {
-        // Se è un cestello venduto senza FLUPSY, assegna il FLUPSY ID 1 come predefinito
-        console.log('Assegnazione flupsyId predefinito (1) per cestello venduto in fase di completamento');
-        return {
-          ...basket,
-          flupsyId: 1 // Usa il primo FLUPSY come predefinito per i cestelli venduti
-        };
-      }
-      return basket;
+
+/**
+ * Rimuove una cesta di origine dalla selezione
+ */
+export async function removeSourceBasket(req: Request, res: Response) {
+  try {
+    const { id, basketId } = req.params;
+
+    await db.delete(selectionSourceBaskets)
+      .where(
+        and(
+          eq(selectionSourceBaskets.selectionId, Number(id)),
+          eq(selectionSourceBaskets.basketId, Number(basketId))
+        )
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cestello di origine rimosso con successo'
     });
-    
-    // Ottieni le ceste di origine per il tracciamento delle relazioni
-    const sourceBaskets = await db.select()
-      .from(selectionSourceBaskets)
-      .where(eq(selectionSourceBaskets.selectionId, Number(id)));
-    
-    // Esecuzione in una transazione
-    await db.transaction(async (tx) => {
-      // Salva la transazione per le notifiche post-commit
-      const operationsWithNotifications: number[] = [];
-      
-      // Chiudi i cicli delle ceste di origine
-      for (const sourceBasket of sourceBaskets) {
-        // Crea operazione di chiusura per il ciclo di origine
-        console.log(`[DEBUG 3] Creazione operazione chiusura per cestello ${sourceBasket.basketId} con cycleId: ${sourceBasket.cycleId}`);
-        if (!sourceBasket.cycleId || sourceBasket.cycleId === 0) {
-          throw new Error(`[ERRORE CRITICO 3] Tentativo di creare operazione chiusura con cycleId non valido: ${sourceBasket.cycleId} per cestello ${sourceBasket.basketId}`);
-        }
-        await tx.insert(operations).values({
-          date: selection[0].date,
-          type: 'selezione-origine',
-          basketId: sourceBasket.basketId,
-          cycleId: sourceBasket.cycleId,
-          animalCount: sourceBasket.animalCount,
-          totalWeight: sourceBasket.totalWeight,
-          animalsPerKg: sourceBasket.animalsPerKg,
-          notes: `Chiuso per selezione #${selection[0].selectionNumber}`
-        });
-        
-        // Chiudi il ciclo di origine
-        await tx.update(cycles)
-          .set({ 
-            state: 'closed', 
-            endDate: selection[0].date 
-          })
-          .where(eq(cycles.id, sourceBasket.cycleId));
-        
-        // Aggiorna lo stato del cestello origine a disponibile
-        await tx.update(baskets)
-          .set({ 
-            state: 'available',
-            currentCycleId: null 
-          })
-          .where(eq(baskets.id, sourceBasket.basketId));
-      }
-      
-      // NOTA: Il processing dei cestelli destinazione è già stato fatto nella sezione precedente (righe 1200-1300)
-      // Questa sezione duplicata è stata rimossa perché causava l'errore cycle_id=0
-        
-        // Se non c'è sizeId oppure è 0 o null, tenta di determinarlo automaticamente
-        if (!actualSizeId || actualSizeId === 0) {
-          if (destBasket.animalsPerKg) {
-            const calculatedSizeId = await determineSizeId(destBasket.animalsPerKg);
-            if (calculatedSizeId) {
-              console.log(`Taglia determinata automaticamente per cesta ${destBasket.basketId}: ID ${calculatedSizeId}`);
-              actualSizeId = calculatedSizeId;
-            } else {
-              console.log(`Impossibile determinare la taglia automaticamente per cesta ${destBasket.basketId}`);
-            }
-          } else {
-            console.log(`Manca animalsPerKg per cesta ${destBasket.basketId}, impossibile determinare la taglia`);
-          }
-        }
-        
-        // Verifica se il cestello ha già un ciclo creato nell'aggiunta cestelli destinazione
-        const existingCycles = await tx.select()
-          .from(cycles)
-          .where(and(
-            eq(cycles.basketId, destBasket.basketId),
-            eq(cycles.startDate, selection[0].date)
-          ));
-        
-        // CORREZIONE: Usa il destinationCycleId già creato invece di creare un nuovo ciclo
-        // Questo evita la duplicazione e assicura che usiamo sempre lo stesso ciclo valido
-        let cycleId = destinationCycleId;
-        
-        // Verifica che il ciclo sia valido
-        if (!cycleId || cycleId === 0) {
-          throw new Error(`ERRORE CRITICO: destinationCycleId non valido (${cycleId}) per cestello ${destBasket.basketId}`);
-        }
-        
-        console.log(`Usando cycleId ${cycleId} per cestello ${destBasket.basketId}`);
-        
-        // Crea operazione di prima attivazione con il cycleId corretto
-        console.log(`[DEBUG] Creazione operazione per cestello ${destBasket.basketId} con cycleId: ${cycleId}`);
-        if (!cycleId || cycleId === 0) {
-          throw new Error(`[ERRORE CRITICO] Tentativo di creare operazione con cycleId non valido: ${cycleId} per cestello ${destBasket.basketId}`);
-        }
-        await tx.insert(operations).values({
-          date: selection[0].date,
-          type: 'prima-attivazione',
-          basketId: destBasket.basketId,
-          cycleId: cycleId, // Usa direttamente l'ID del ciclo già creato
-          animalCount: destBasket.animalCount,
-          totalWeight: destBasket.totalWeight,
-          animalsPerKg: destBasket.animalsPerKg,
-          averageWeight: destBasket.totalWeight && destBasket.animalCount 
-                        ? Math.round(destBasket.totalWeight / destBasket.animalCount) 
-                        : 0,
-          deadCount: destBasket.deadCount || 0,
-          mortalityRate: destBasket.mortalityRate || 0,
-          sizeId: actualSizeId,
-          notes: `Aperto ciclo da vagliatura #${selection[0].selectionNumber}`
-        });
-        
-        console.log(`Operazione creata con successo per cestello ${destBasket.basketId} usando cycleId ${cycleId}`);
-        
-        // Gestione in base al tipo di destinazione
-        if (destBasket.destinationType === 'sold') {
-          // Caso 1: Vendita immediata
-          
-          // IMPORTANTE: Verifica che il ciclo esista effettivamente nel database
-          // prima di utilizzarlo come riferimento
-          const checkCycle = await tx.select()
-            .from(cycles)
-            .where(eq(cycles.id, cycleId))
-            .limit(1);
-            
-          // Se il ciclo non esiste (improbabile ma possibile), crea nuovo ciclo
-          if (!checkCycle || checkCycle.length === 0) {
-            console.error(`Errore critico: ciclo ${cycleId} non trovato nel database per cestello ${destBasket.basketId}`);
-            
-            // Crea un nuovo ciclo
-            const [newCycle] = await tx.insert(cycles).values({
-              basketId: destBasket.basketId,
-              startDate: selection[0].date,
-              state: 'active'
-            }).returning();
-            
-            if (!newCycle || !newCycle.id) {
-              throw new Error(`Impossibile creare ciclo di emergenza per cestello ${destBasket.basketId}`);
-            }
-            
-            cycleId = newCycle.id;
-            console.log(`Creato ciclo di emergenza ${cycleId} per cestello ${destBasket.basketId}`);
-          }
-          
-          // Ora che siamo sicuri che il ciclo esista, crea l'operazione di vendita
-          // Crea operazione di vendita se non esiste già
-          const existingOperation = await tx.select()
-            .from(operations)
-            .where(and(
-              eq(operations.type, 'vendita'),
-              eq(operations.basketId, destBasket.basketId),
-              eq(operations.cycleId, cycleId)
-            ));
-          
-          if (existingOperation.length === 0) {
-            // Verifica che il cycleId sia valido prima di creare l'operazione
-            console.log(`[DEBUG 4] Creazione operazione vendita per cestello ${destBasket.basketId} con cycleId: ${cycleId}`);
-            if (!cycleId || cycleId === 0) {
-              throw new Error(`[ERRORE CRITICO 4] Tentativo di creare operazione vendita con cycleId non valido: ${cycleId} per cestello ${destBasket.basketId}`);
-            }
-            // Usa un try/catch specifico per catturare eventuali errori durante la creazione dell'operazione
-            try {
-              const [saleOperation] = await tx.insert(operations).values({
-                date: selection[0].date,
-                type: 'vendita',
-                basketId: destBasket.basketId,
-                cycleId: cycleId,
-                animalCount: destBasket.animalCount,
-                totalWeight: destBasket.totalWeight,
-                animalsPerKg: destBasket.animalsPerKg,
-                notes: `Vendita immediata dopo selezione #${selection[0].selectionNumber}`
-              }).returning();
-              
-              // Se l'app ha la funzione di creazione notifiche, aggiungi questo ID operazione alla lista
-              if (req.app.locals.createSaleNotification && saleOperation) {
-                saleNotificationsToCreate.push(saleOperation.id);
-              }
-              
-              console.log(`Operazione di vendita creata con successo per cestello ${destBasket.basketId}, ciclo ${cycleId}`);
+  } catch (error) {
+    console.error('Errore nella rimozione del cestello di origine:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Errore interno del server'
+    });
+  }
+}
+
+/**
+ * Rimuove una cesta di destinazione dalla selezione
+ */
+export async function removeDestinationBasket(req: Request, res: Response) {
+  try {
+    const { id, basketId } = req.params;
+
+    await db.delete(selectionDestinationBaskets)
+      .where(
+        and(
+          eq(selectionDestinationBaskets.selectionId, Number(id)),
+          eq(selectionDestinationBaskets.basketId, Number(basketId))
+        )
+      );
+
+    return res.status(200).json({
+      success: true,
+      message: 'Cestello di destinazione rimosso con successo'
+    });
+  } catch (error) {
+    console.error('Errore nella rimozione del cestello di destinazione:', error);
+    return res.status(500).json({
+      success: false,
+      error: 'Errore interno del server'
+    });
+  }
+}
             } catch (error) {
               console.error(`Errore durante la creazione dell'operazione di vendita:`, error);
               throw new Error(`Errore durante la creazione dell'operazione di vendita: ${error instanceof Error ? error.message : String(error)}`);
