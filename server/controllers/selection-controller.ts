@@ -1868,68 +1868,22 @@ export async function completeSelection(req: Request, res: Response) {
         });
       }
       
-      // Prepara dati per la notifica di completamento vagliatura
-      const destinationBasketsWithDetails = [];
-      for (const destBasket of destinationBaskets) {
-        // Recupera i dettagli del cestello
-        const basketDetail = await tx.select({
-          id: baskets.id,
-          physicalNumber: baskets.physicalNumber,
-          flupsyId: baskets.flupsyId,
-          row: baskets.row,
-          position: baskets.position
-        })
-        .from(baskets)
-        .where(eq(baskets.id, destBasket.basketId))
-        .limit(1);
-        
-        // Recupera i dettagli del FLUPSY
-        let flupsyName = 'Nessun FLUPSY';
-        if (basketDetail.length > 0 && basketDetail[0].flupsyId) {
-          const flupsyData = await tx.select()
-            .from(flupsys)
-            .where(eq(flupsys.id, basketDetail[0].flupsyId))
-            .limit(1);
-            
-          if (flupsyData.length > 0) {
-            flupsyName = flupsyData[0].name;
-          }
-        }
-        
-        // Recupera i dettagli della taglia
-        let sizeName = 'Taglia non specificata';
-        if (destBasket.sizeId) {
-          const sizeData = await tx.select()
-            .from(sizes)
-            .where(eq(sizes.id, destBasket.sizeId))
-            .limit(1);
-            
-          if (sizeData.length > 0) {
-            sizeName = sizeData[0].code;
-          }
-        }
-        
-        destinationBasketsWithDetails.push({
-          id: destBasket.basketId,
-          physicalNumber: basketDetail.length > 0 ? basketDetail[0].physicalNumber : 0,
-          flupsyName,
-          row: basketDetail.length > 0 ? basketDetail[0].row : null,
-          position: basketDetail.length > 0 ? basketDetail[0].position : null,
-          animalCount: destBasket.animalCount,
-          sizeId: destBasket.sizeId,
-          sizeName,
-          destinationType: destBasket.destinationType,
-          sold: destBasket.destinationType === 'sold'
-        });
-      }
+      // Processing dei cestelli destinazione già completato nei loop precedenti
       
-      // Collezione dati da restituire
+      // Aggiorna lo stato della selezione a completato
+      await tx.update(selections)
+        .set({ 
+          status: 'completed',
+          updatedAt: new Date()
+        })
+        .where(eq(selections.id, Number(id)));
+
+      // Restituisce risultato di successo
       return {
         status: 'completed',
         selectionId: Number(id),
         selectionNumber: selection[0].selectionNumber,
-        destinationBaskets: destinationBasketsWithDetails,
-        date: selection[0].date
+        message: `Selezione #${selection[0].selectionNumber} completata con successo`
       };
     });
     
