@@ -1126,11 +1126,11 @@ export async function addDestinationBaskets(req: Request, res: Response) {
               throw new Error("Posizione non valida o non specificata");
             }
             
-            // Estrai la riga (DX, SX) e la posizione numerica
-            let positionStr = String(destBasket.position || '');
-            console.log(`Posizione in elaborazione: "${positionStr}" per cestello ${destBasket.basketId}`);
+            // Normalizza il formato posizione usando la funzione centralizzata
+            let positionStr = normalizePositionFormat(destBasket.position);
+            console.log(`Posizione normalizzata: "${destBasket.position}" -> "${positionStr}" per cestello ${destBasket.basketId}`);
             
-            // Se riceve solo un numero, usa la riga del cestello esistente
+            // Se la normalizzazione non ha funzionato e rimane solo un numero, usa la riga del cestello esistente
             if (/^\d+$/.test(positionStr)) {
               // Trova il cestello nel database per ottenere la riga attuale
               const currentBasket = await tx.select()
@@ -1394,12 +1394,11 @@ export async function addDestinationBaskets(req: Request, res: Response) {
                 throw new Error("Posizione non valida o non specificata");
               }
               
-              // Estrai la riga (DX, SX) e la posizione numerica
-              // Controllo aggiuntivo: Se position è null o undefined, gestisci appositamente
-              let positionStr = String(destBasket.position || ''); // Converti a stringa o usa stringa vuota
-              console.log(`Posizione in elaborazione: "${positionStr}" per cestello ${destBasket.basketId}`);
+              // Normalizza il formato posizione usando la funzione centralizzata
+              let positionStr = normalizePositionFormat(destBasket.position);
+              console.log(`Posizione normalizzata: "${destBasket.position}" -> "${positionStr}" per cestello ${destBasket.basketId}`);
               
-              // Se riceve solo un numero, usa la riga del cestello esistente
+              // Se la normalizzazione non ha funzionato e rimane solo un numero, usa la riga del cestello esistente
               if (/^\d+$/.test(positionStr)) {
                 // Trova il cestello nel database per ottenere la riga attuale
                 const currentBasket = await tx.select()
@@ -1823,11 +1822,11 @@ export async function completeSelection(req: Request, res: Response) {
           // Estrai la riga e la posizione numerica dalla stringa di posizione
           if (destBasket.position && typeof destBasket.position === 'string') {
             try {
-              // Estrai la riga (DX, SX) e la posizione numerica
-              let positionStr = String(destBasket.position || '');
-              console.log(`Posizione ricevuta: ${positionStr} per cestello ${destBasket.basketId}`);
+              // Normalizza il formato posizione usando la funzione centralizzata
+              let positionStr = normalizePositionFormat(destBasket.position);
+              console.log(`Posizione normalizzata: "${destBasket.position}" -> "${positionStr}" per cestello ${destBasket.basketId}`);
               
-              // Se riceve solo un numero, usa la riga del cestello esistente
+              // Se la normalizzazione non ha funzionato e rimane solo un numero, usa la riga del cestello esistente
               if (/^\d+$/.test(positionStr)) {
                 // Trova il cestello nel database per ottenere la riga attuale
                 const currentBasket = await tx.select()
