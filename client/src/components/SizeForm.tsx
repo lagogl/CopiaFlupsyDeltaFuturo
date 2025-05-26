@@ -112,10 +112,13 @@ export default function SizeForm({
                 <FormLabel>Min Animali per Kg</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
+                    type="text" 
                     placeholder="Minimo animali per kg"
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    value={field.value ? field.value.toLocaleString('it-IT') : ''}
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/\./g, '');
+                      field.onChange(parseInt(numericValue) || 0);
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
@@ -131,10 +134,13 @@ export default function SizeForm({
                 <FormLabel>Max Animali per Kg</FormLabel>
                 <FormControl>
                   <Input 
-                    type="number" 
+                    type="text" 
                     placeholder="Massimo animali per kg"
-                    {...field}
-                    onChange={(e) => field.onChange(parseInt(e.target.value))}
+                    value={field.value ? field.value.toLocaleString('it-IT') : ''}
+                    onChange={(e) => {
+                      const numericValue = e.target.value.replace(/\./g, '');
+                      field.onChange(parseInt(numericValue) || 0);
+                    }}
                   />
                 </FormControl>
                 <FormMessage />
