@@ -835,13 +835,10 @@ export default function Baskets() {
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
+                        <td className="px-4 py-4 text-sm font-medium text-primary">
                           {basket.cycleCode ? basket.cycleCode : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-primary">
-                          {basket.currentCycleId ? `#${basket.currentCycleId}` : '-'}
-                        </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-4 py-4">
                           {statusBadge}
                         </td>
                         <td className="px-4 py-4 text-sm text-gray-700">
@@ -856,53 +853,41 @@ export default function Baskets() {
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
-                          <div className="flex flex-col">
-                            {(basket.size && basket.size.code) ? (
-                              <Badge 
-                                className={`size-badge ${basket.size.code === preferredSize ? 'ring-2 ring-blue-500 shadow-md' : ''}`}
-                                style={{
-                                  ...getSizeBadgeStyle(basket.size.code),
-                                  transition: 'all 0.3s ease-in-out',
-                                  transform: basket.size.code === preferredSize ? 'scale(1.1)' : 'scale(1)',
-                                  fontWeight: basket.size.code === preferredSize ? 'bold' : 'normal'
-                                }}
-                              >
-                                {basket.size.code}
-                                {basket.size.code === preferredSize && (
-                                  <span className="ml-1 bg-blue-500 rounded-full p-0.5 inline-flex items-center justify-center">
-                                    <svg xmlns="http://www.w3.org/2000/svg" className="h-2 w-2 text-white" viewBox="0 0 20 20" fill="currentColor">
-                                      <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                                    </svg>
-                                  </span>
-                                )}
-                              </Badge>
-                            ) : (
-                              <Badge 
-                                className="bg-gray-100 text-gray-500 hover:bg-gray-200 opacity-70"
-                                title={basket.state === 'active' ? 'Cesta attiva senza taglia rilevata' : 'Cesta disponibile'}
-                              >
-                                {basket.state === 'active' ? 'Non rilevata' : 'Non disponibile'}
-                              </Badge>
-                            )}
-                          </div>
+                        <td className="px-4 py-4">
+                          {basket.calculatedSize ? (
+                            <Badge 
+                              className={`text-xs ${basket.calculatedSize === preferredSize ? 'ring-2 ring-blue-500 shadow-md' : ''}`}
+                              style={{
+                                ...getSizeBadgeStyle(basket.calculatedSize),
+                                transition: 'all 0.3s ease-in-out',
+                                transform: basket.calculatedSize === preferredSize ? 'scale(1.05)' : 'scale(1)',
+                                fontWeight: basket.calculatedSize === preferredSize ? 'bold' : 'normal'
+                              }}
+                            >
+                              {basket.calculatedSize}
+                            </Badge>
+                          ) : (
+                            <span className="text-gray-400 text-xs">N/D</span>
+                          )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
-                          {basket.animalCount ? (
-                            <span className="font-semibold">{basket.animalCount.toLocaleString('it-IT')}</span>
+                        <td className="px-4 py-4 text-sm text-gray-700">
+                          {basket.calculatedAnimalCount ? (
+                            <span className="font-medium">{basket.calculatedAnimalCount.toLocaleString('it-IT')}</span>
                           ) : (
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {basket.currentCycle?.startDate ? (
+                        <td className="px-4 py-4 text-sm text-gray-700">
+                          {basket.activationDate ? (
                             <div className="flex flex-col">
-                              <span>{new Date(basket.currentCycle.startDate).toLocaleDateString('it-IT')}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {Math.floor((new Date().getTime() - new Date(basket.currentCycle.startDate).getTime()) / (1000 * 60 * 60 * 24))} giorni
+                              <span className="font-medium">{new Date(basket.activationDate).toLocaleDateString('it-IT')}</span>
+                              <span className="text-xs text-gray-500">
+                                {Math.floor((new Date().getTime() - new Date(basket.activationDate).getTime()) / (1000 * 60 * 60 * 24))} giorni fa
                               </span>
                             </div>
-                          ) : '-'}
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
