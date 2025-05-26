@@ -191,21 +191,15 @@ export default function DraggableCalculator({
               </div>
               <div>
                 <Label className="text-xs text-purple-700">Animali/Kg</Label>
-                <Input
-                  type="number"
-                  value={animalsPerKg}
-                  onChange={(e) => setAnimalsPerKg(Number(e.target.value))}
-                  className="h-7 text-xs"
-                />
+                <div className="h-7 px-2 py-1 border rounded text-xs bg-gray-50 text-gray-700 flex items-center">
+                  {calculatedAnimalsPerKg.toLocaleString('it-IT')}
+                </div>
               </div>
               <div>
                 <Label className="text-xs text-gray-700">Posizione</Label>
-                <Input
-                  type="number"
-                  value={basketPosition}
-                  onChange={(e) => setBasketPosition(Number(e.target.value))}
-                  className="h-7 text-xs"
-                />
+                <div className="h-7 px-2 py-1 border rounded text-xs bg-gray-50 text-gray-700 flex items-center">
+                  {basketPosition}
+                </div>
               </div>
             </div>
             
