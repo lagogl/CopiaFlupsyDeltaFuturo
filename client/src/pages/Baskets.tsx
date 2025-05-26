@@ -108,6 +108,11 @@ export default function Baskets() {
     queryKey: ['/api/sizes'],
   });
 
+  // Query lots for supplier information
+  const { data: lots = [] } = useQuery({
+    queryKey: ['/api/lots'],
+  });
+
   // Create mutation
   const createBasketMutation = useMutation({
     mutationFn: (newBasket: any) => apiRequest({
@@ -848,6 +853,12 @@ export default function Baskets() {
                           {basket.lotId ? (
                             <div className="flex flex-col">
                               <span className="font-medium text-indigo-600">Lotto #{basket.lotId}</span>
+                              {(() => {
+                                const lot = lots.find(l => l.id === basket.lotId);
+                                return lot?.supplier ? (
+                                  <span className="text-xs text-gray-500">{lot.supplier}</span>
+                                ) : null;
+                              })()}
                             </div>
                           ) : (
                             <span className="text-gray-400">-</span>
