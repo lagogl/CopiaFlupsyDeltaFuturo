@@ -477,7 +477,7 @@ export default function FlupsyMapVisualizer({
                               {row}{position} #{basket?.physicalNumber || ''}
                               {/* Icona Euro per cestelli destinati alla vendita */}
                               {basket && soldBasketIds.includes(basket.id) && (
-                                <Euro className="w-3 h-3 text-yellow-400" />
+                                <Euro className="w-6 h-6 text-black font-bold drop-shadow-md" />
                               )}
                             </div>
                             {basket ? (
