@@ -913,13 +913,9 @@ export default function VagliaturaConMappa() {
                       <h3 className="text-sm font-semibold mb-3 text-blue-800">📊 Bilancio Vagliatura</h3>
                       
                       {(() => {
-                        // Calcola i totali in tempo reale
-                        console.log('Debug bilancio - sourceBaskets:', sourceBaskets);
-                        console.log('Debug bilancio - baskets disponibili:', baskets?.length);
-                        
+                        // Calcola i totali in tempo reale usando direttamente i dati salvati
                         const totalOriginAnimals = sourceBaskets.reduce((sum, basket) => {
-                          const basketDetails = baskets.find(b => b.id === basket.basketId);
-                          console.log(`Debug cestello origine ${basket.basketId}:`, basketDetails?.lastOperation?.animalCount);
+                          const basketDetails = baskets?.find(b => b.id === basket.basketId);
                           return sum + (basketDetails?.lastOperation?.animalCount || 0);
                         }, 0);
                         
