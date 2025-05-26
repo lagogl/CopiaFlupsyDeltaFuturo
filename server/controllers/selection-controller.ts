@@ -1830,566 +1830,6 @@ export async function completeSelection(req: Request, res: Response) {
       error: `Errore durante il completamento della selezione: ${error instanceof Error ? error.message : String(error)}`
     });
   }
-
-/**
- * Ottiene statistiche sulle selezioni
- */
-export async function getSelectionStats(req: Request, res: Response) {
-          cycleId: sourceBasket.cycleId,
-          animalCount: sourceBasket.animalCount,
-          totalWeight: sourceBasket.totalWeight,
-          animalsPerKg: sourceBasket.animalsPerKg,
-          notes: `Chiuso per selezione #${selection[0].selectionNumber}`
-        });
-        
-        // Chiudi il ciclo di origine
-        await tx.update(cycles)
-          .set({ 
-            state: 'closed', 
-            endDate: selection[0].date 
-          })
-          .where(eq(cycles.id, sourceBasket.cycleId));
-        
-        // Aggiorna lo stato del cestello origine a disponibile
-        await tx.update(baskets)
-          .set({ 
-            state: 'available',
-            currentCycleId: null 
-          })
-          .where(eq(baskets.id, sourceBasket.basketId));
-      }
-      
-      // Processa le ceste di destinazione
-      for (const destBasket of processedDestinationBaskets) {
-        // Assicura che ogni cesta abbia un valore di sizeId basato su animalsPerKg
-        let actualSizeId = destBasket.sizeId;
-        
-        // Se non c'è sizeId oppure è 0 o null, tenta di determinarlo automaticamente
-        if (!actualSizeId || actualSizeId === 0) {
-          if (destBasket.animalsPerKg) {
-            const calculatedSizeId = await determineSizeId(destBasket.animalsPerKg);
-            if (calculatedSizeId) {
-              console.log(`Taglia determinata automaticamente per cesta ${destBasket.basketId}: ID ${calculatedSizeId}`);
-              actualSizeId = calculatedSizeId;
-            } else {
-              console.log(`Impossibile determinare la taglia automaticamente per cesta ${destBasket.basketId}`);
-            }
-          } else {
-            console.log(`Manca animalsPerKg per cesta ${destBasket.basketId}, impossibile determinare la taglia`);
-          }
-        }
-        
-        // Verifica se il cestello ha già un ciclo creato nell'aggiunta cestelli destinazione
-        const existingCycles = await tx.select()
-          .from(cycles)
-          .where(and(
-            eq(cycles.basketId, destBasket.basketId),
-            eq(cycles.startDate, selection[0].date)
-          ));
-        
-        let cycleId = null;
-        
-        // Se non esiste un ciclo, lo creiamo ora
-        if (existingCycles.length === 0) {
-          // CORREZIONE: Prima creiamo il ciclo, poi l'operazione con il ciclo corretto
-          // Questo evita la violazione del vincolo di chiave esterna
-          
-          // 1. Crea nuovo ciclo per la cesta
-          const [cycle] = await tx.insert(cycles).values({
-            basketId: destBasket.basketId,
-            startDate: selection[0].date,
-            state: 'active'
-          }).returning();
-          
-          // Protezione contro cicli non creati
-          if (!cycle || !cycle.id) {
-            throw new Error(`Errore critico: impossibile creare ciclo per cestello ${destBasket.basketId}`);
-          }
-          
-          cycleId = cycle.id;
-          
-          // 2. Crea operazione di prima attivazione con il cycleId corretto
-          await tx.insert(operations).values({
-            date: selection[0].date,
-            type: 'prima-attivazione-da-vagliatura',
-            basketId: destBasket.basketId,
-            cycleId: cycleId, // Usa direttamente l'ID del ciclo appena creato
-            animalCount: destBasket.animalCount,
-            totalWeight: destBasket.totalWeight,
-            animalsPerKg: destBasket.animalsPerKg,
-            averageWeight: destBasket.totalWeight && destBasket.animalCount 
-                          ? Math.round(destBasket.totalWeight / destBasket.animalCount) 
-                          : 0,
-            deadCount: destBasket.deadCount || 0,
-            mortalityRate: destBasket.mortalityRate || 0,
-            sizeId: actualSizeId,
-            notes: `Aperto ciclo da vagliatura #${selection[0].selectionNumber}`
-          });
-          
-          console.log(`Creato nuovo ciclo ${cycleId} per cestello ${destBasket.basketId} con successo`);
-        } else {
-          cycleId = existingCycles[0].id;
-          console.log(`Usato ciclo esistente ${cycleId} per cestello ${destBasket.basketId}`);
-        }
-        
-        // Gestione in base al tipo di destinazione
-        if (destBasket.destinationType === 'sold') {
-          // Caso 1: Vendita immediata
-          
-          // IMPORTANTE: Verifica che il ciclo esista effettivamente nel database
-          // prima di utilizzarlo come riferimento
-          const checkCycle = await tx.select()
-            .from(cycles)
-            .where(eq(cycles.id, cycleId))
-            .limit(1);
-            
-          // Se il ciclo non esiste (improbabile ma possibile), crea nuovo ciclo
-          if (!checkCycle || checkCycle.length === 0) {
-            console.error(`Errore critico: ciclo ${cycleId} non trovato nel database per cestello ${destBasket.basketId}`);
-            
-            // Crea un nuovo ciclo
-            const [newCycle] = await tx.insert(cycles).values({
-              basketId: destBasket.basketId,
-              startDate: selection[0].date,
-              state: 'active'
-            }).returning();
-            
-            if (!newCycle || !newCycle.id) {
-              throw new Error(`Impossibile creare ciclo di emergenza per cestello ${destBasket.basketId}`);
-            }
-            
-            cycleId = newCycle.id;
-            console.log(`Creato ciclo di emergenza ${cycleId} per cestello ${destBasket.basketId}`);
-          }
-          
-          // Ora che siamo sicuri che il ciclo esista, crea l'operazione di vendita
-          // Crea operazione di vendita se non esiste già
-          const existingOperation = await tx.select()
-            .from(operations)
-            .where(and(
-              eq(operations.type, 'vendita'),
-              eq(operations.basketId, destBasket.basketId),
-              eq(operations.cycleId, cycleId)
-            ));
-          
-          if (existingOperation.length === 0) {
-            // Usa un try/catch specifico per catturare eventuali errori durante la creazione dell'operazione
-            try {
-              const [saleOperation] = await tx.insert(operations).values({
-                date: selection[0].date,
-                type: 'vendita',
-                basketId: destBasket.basketId,
-                cycleId: cycleId,
-                animalCount: destBasket.animalCount,
-                totalWeight: destBasket.totalWeight,
-                animalsPerKg: destBasket.animalsPerKg,
-                notes: `Vendita immediata dopo selezione #${selection[0].selectionNumber}`
-              }).returning();
-              
-              // Se l'app ha la funzione di creazione notifiche, aggiungi questo ID operazione alla lista
-              if (req.app.locals.createSaleNotification && saleOperation) {
-                saleNotificationsToCreate.push(saleOperation.id);
-              }
-              
-              console.log(`Operazione di vendita creata con successo per cestello ${destBasket.basketId}, ciclo ${cycleId}`);
-            } catch (error) {
-              console.error(`Errore durante la creazione dell'operazione di vendita:`, error);
-              throw new Error(`Errore durante la creazione dell'operazione di vendita: ${error instanceof Error ? error.message : String(error)}`);
-            }
-          }
-          
-          // Chiudi il ciclo se non è già chiuso
-          await tx.update(cycles)
-            .set({ 
-              state: 'closed', 
-              endDate: selection[0].date 
-            })
-            .where(and(
-              eq(cycles.id, cycleId),
-              eq(cycles.state, 'active') // Solo se è ancora attivo
-            ));
-          
-          // Aggiorna lo stato del cestello a disponibile
-          // IMPORTANTE: Manteniamo il flupsyId a un valore valido (quello attuale o 1 di default)
-          // per rispettare il vincolo not-null del database, ma impostiamo position a null
-          await tx.update(baskets)
-            .set({ 
-              state: 'available',
-              currentCycleId: null,
-              position: null,
-              row: null // La row può essere null
-              // NON impostiamo flupsyId: null qui, lo lasciamo invariato
-            })
-            .where(eq(baskets.id, destBasket.basketId));
-          
-        } else if (destBasket.destinationType === 'placed') {
-          // Caso 2: Collocazione in un FLUPSY
-          
-          // Estrai la riga e la posizione numerica dalla stringa di posizione
-          if (destBasket.position && typeof destBasket.position === 'string') {
-            try {
-              // Estrai la riga (DX, SX) e la posizione numerica
-              const positionStr = String(destBasket.position || '');
-              const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
-              
-              if (!rowMatch) {
-                throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
-              }
-              
-              const row = rowMatch[1];
-              const positionNumber = parseInt(rowMatch[2]);
-              
-              if (isNaN(positionNumber)) {
-                throw new Error(`Numero posizione non valido in: ${positionStr}`);
-              }
-              
-              // Verifica che la posizione sia disponibile prima di assegnarla
-              const basketInPosition = await tx.select()
-                .from(baskets)
-                .where(and(
-                  eq(baskets.flupsyId, destBasket.flupsyId),
-                  eq(baskets.row, row),
-                  eq(baskets.position, positionNumber),
-                  eq(baskets.state, 'active'),
-                  sql`${baskets.id} != ${destBasket.basketId}` // Esclude il cestello corrente
-                ));
-              
-              if (basketInPosition.length > 0) {
-                console.warn(`Posizione ${row}${positionNumber} nel FLUPSY ${destBasket.flupsyId} già occupata da cestello ${basketInPosition[0].id}. Verifica conflitto.`);
-                throw new Error(`La posizione ${row}${positionNumber} nel FLUPSY ${destBasket.flupsyId} è già occupata da un altro cestello`);
-              }
-              
-              // Aggiorna lo stato del cestello a active e setta la posizione
-              await tx.update(baskets)
-                .set({ 
-                  state: 'active',
-                  currentCycleId: cycleId,
-                  flupsyId: destBasket.flupsyId,
-                  position: positionNumber,
-                  row: row
-                })
-                .where(eq(baskets.id, destBasket.basketId));
-              
-              console.log(`Cestello ${destBasket.basketId} posizionato correttamente in ${row}${positionNumber} del FLUPSY ${destBasket.flupsyId}`);
-            } catch (error) {
-              console.error(`Errore nell'elaborazione della posizione per il cestello ${destBasket.basketId}:`, error);
-              throw new Error(`Errore durante il posizionamento del cestello ${destBasket.basketId}: ${error instanceof Error ? error.message : String(error)}`);
-            }
-          }
-        }
-        
-        // Traccia relazioni tra ceste di origine e destinazione
-        for (const sourceBasket of sourceBaskets) {
-          // Verifica se la relazione esiste già
-          const existingRelation = await tx.select()
-            .from(selectionBasketHistory)
-            .where(and(
-              eq(selectionBasketHistory.selectionId, Number(id)),
-              eq(selectionBasketHistory.sourceBasketId, sourceBasket.basketId),
-              eq(selectionBasketHistory.destinationBasketId, destBasket.basketId)
-            ));
-          
-          if (existingRelation.length === 0) {
-            await tx.insert(selectionBasketHistory).values({
-              selectionId: Number(id),
-              sourceBasketId: sourceBasket.basketId,
-              sourceCycleId: sourceBasket.cycleId,
-              destinationBasketId: destBasket.basketId,
-              destinationCycleId: cycleId
-            });
-          }
-          
-          // Se il lotto è specificato, traccia anche la relazione
-          if (sourceBasket.lotId) {
-            const existingLotRef = await tx.select()
-              .from(selectionLotReferences)
-              .where(and(
-                eq(selectionLotReferences.selectionId, Number(id)),
-                eq(selectionLotReferences.destinationBasketId, destBasket.basketId),
-                eq(selectionLotReferences.lotId, sourceBasket.lotId)
-              ));
-            
-            if (existingLotRef.length === 0) {
-              await tx.insert(selectionLotReferences).values({
-                selectionId: Number(id),
-                destinationBasketId: destBasket.basketId,
-                destinationCycleId: cycleId,
-                lotId: sourceBasket.lotId
-              });
-            }
-          }
-        }
-      }
-      
-      // Aggiorna lo stato della selezione a completato
-      await tx.update(selections)
-        .set({ status: 'completed' })
-        .where(eq(selections.id, Number(id)));
-      
-      // Invia notifiche WebSocket
-      if (typeof (global as any).broadcastUpdate === 'function') {
-        (global as any).broadcastUpdate('selection_completed', {
-          selectionId: Number(id),
-          message: `Selezione #${selection[0].selectionNumber} completata con successo`
-        });
-      }
-      
-      // Prepara dati per la notifica di completamento vagliatura
-      const destinationBasketsWithDetails = [];
-      for (const destBasket of destinationBaskets) {
-        // Recupera i dettagli del cestello
-        const basketDetail = await tx.select({
-          id: baskets.id,
-          physicalNumber: baskets.physicalNumber,
-          flupsyId: baskets.flupsyId,
-          row: baskets.row,
-          position: baskets.position
-        })
-        .from(baskets)
-        .where(eq(baskets.id, destBasket.basketId))
-        .limit(1);
-        
-        // Recupera i dettagli del FLUPSY
-        let flupsyName = 'Nessun FLUPSY';
-        if (basketDetail.length > 0 && basketDetail[0].flupsyId) {
-          const flupsyData = await tx.select()
-            .from(flupsys)
-            .where(eq(flupsys.id, basketDetail[0].flupsyId))
-            .limit(1);
-            
-          if (flupsyData.length > 0) {
-            flupsyName = flupsyData[0].name;
-          }
-        }
-        
-        // Recupera i dettagli della taglia
-        let sizeName = 'Taglia non specificata';
-        if (destBasket.sizeId) {
-          const sizeData = await tx.select()
-            .from(sizes)
-            .where(eq(sizes.id, destBasket.sizeId))
-            .limit(1);
-            
-          if (sizeData.length > 0) {
-            sizeName = sizeData[0].code;
-          }
-        }
-        
-        destinationBasketsWithDetails.push({
-          id: destBasket.basketId,
-          physicalNumber: basketDetail.length > 0 ? basketDetail[0].physicalNumber : 0,
-          flupsyName,
-          row: basketDetail.length > 0 ? basketDetail[0].row : null,
-          position: basketDetail.length > 0 ? basketDetail[0].position : null,
-          animalCount: destBasket.animalCount,
-          sizeId: destBasket.sizeId,
-          sizeName,
-          destinationType: destBasket.destinationType,
-          sold: destBasket.destinationType === 'sold'
-        });
-      }
-      
-      // Collezione dati da restituire
-      return {
-        status: 'completed',
-        selectionId: Number(id),
-        selectionNumber: selection[0].selectionNumber,
-        destinationBaskets: destinationBasketsWithDetails,
-        date: selection[0].date
-      };
-    });
-    
-    // Crea una notifica per informare gli operatori sulle ceste destinazione
-    try {
-      // Ottieni i risultati della transazione
-      const transactionResults = await db.transaction(async (tx) => {
-        // Recupera la selezione di nuovo
-        const selectionQuery = await tx.select().from(selections)
-          .where(eq(selections.id, Number(id)))
-          .limit(1);
-          
-        if (!selectionQuery || selectionQuery.length === 0) {
-          return null;
-        }
-        
-        // Recupera tutte le ceste di destinazione
-        const destBaskets = await tx.select({
-          id: selectionDestinationBaskets.id,
-          basketId: selectionDestinationBaskets.basketId,
-          destinationType: selectionDestinationBaskets.destinationType,
-          flupsyId: selectionDestinationBaskets.flupsyId,
-          position: selectionDestinationBaskets.position,
-          animalCount: selectionDestinationBaskets.animalCount,
-          sizeId: selectionDestinationBaskets.sizeId
-        })
-        .from(selectionDestinationBaskets)
-        .where(eq(selectionDestinationBaskets.selectionId, Number(id)));
-        
-        // Array per i dettagli completi
-        const basketsWithDetails = [];
-        
-        // Aggiungi dettagli ai cestelli
-        for (const destBasket of destBaskets) {
-          // Recupera i dettagli del cestello
-          const basketDetail = await tx.select({
-            id: baskets.id,
-            physicalNumber: baskets.physicalNumber,
-            flupsyId: baskets.flupsyId,
-            row: baskets.row,
-            position: baskets.position
-          })
-          .from(baskets)
-          .where(eq(baskets.id, destBasket.basketId))
-          .limit(1);
-          
-          // Recupera i dettagli del FLUPSY
-          let flupsyName = 'Nessun FLUPSY';
-          if (basketDetail.length > 0 && basketDetail[0].flupsyId) {
-            const flupsyData = await tx.select()
-              .from(flupsys)
-              .where(eq(flupsys.id, basketDetail[0].flupsyId))
-              .limit(1);
-              
-            if (flupsyData.length > 0) {
-              flupsyName = flupsyData[0].name;
-            }
-          }
-          
-          // Recupera i dettagli della taglia
-          let sizeName = 'Taglia non specificata';
-          if (destBasket.sizeId) {
-            const sizeData = await tx.select()
-              .from(sizes)
-              .where(eq(sizes.id, destBasket.sizeId))
-              .limit(1);
-              
-            if (sizeData.length > 0) {
-              sizeName = sizeData[0].code;
-            }
-          }
-          
-          basketsWithDetails.push({
-            id: destBasket.basketId,
-            physicalNumber: basketDetail.length > 0 ? basketDetail[0].physicalNumber : 0,
-            flupsyName,
-            row: basketDetail.length > 0 ? basketDetail[0].row : null,
-            position: basketDetail.length > 0 ? basketDetail[0].position : null,
-            animalCount: destBasket.animalCount,
-            sizeId: destBasket.sizeId,
-            sizeName,
-            destinationType: destBasket.destinationType,
-            sold: destBasket.destinationType === 'sold'
-          });
-        }
-        
-        return {
-          selection: selectionQuery[0], 
-          destinationBaskets: basketsWithDetails
-        };
-      });
-      
-      if (transactionResults && transactionResults.selection && req.app.locals.createScreeningNotification) {
-        // Separa i cestelli posizionati e venduti
-        const positionedBaskets = transactionResults.destinationBaskets.filter(b => b.destinationType === 'placed');
-        const soldBaskets = transactionResults.destinationBaskets.filter(b => b.destinationType === 'sold');
-        
-        // Formatta le informazioni sui cestelli
-        let formattedPositionedBaskets = '';
-        if (positionedBaskets.length > 0) {
-          formattedPositionedBaskets = positionedBaskets.map(b => {
-            let positionInfo = 'Posizione non specificata';
-            if (b.row && b.position) {
-              positionInfo = `${b.flupsyName} - ${b.row}-${b.position}`;
-            }
-            
-            return `• Cestello #${b.physicalNumber} (${positionInfo}): ${b.animalCount} animali - ${b.sizeName}`;
-          }).join('\n');
-        }
-        
-        let formattedSoldBaskets = '';
-        if (soldBaskets.length > 0) {
-          formattedSoldBaskets = soldBaskets.map(b => 
-            `• Cestello #${b.physicalNumber}: ${b.animalCount} animali - ${b.sizeName} (venduto)`
-          ).join('\n');
-        }
-        
-        // Messaggio completo
-        let message = `È stata completata una vagliatura (selezione #${transactionResults.selection.selectionNumber}) in data ${format(new Date(transactionResults.selection.date), 'dd/MM/yyyy')}.\n\n`;
-        
-        if (formattedPositionedBaskets) {
-          message += `Cestelli posizionati:\n${formattedPositionedBaskets}\n\n`;
-        }
-        
-        if (formattedSoldBaskets) {
-          message += `Cestelli venduti:\n${formattedSoldBaskets}\n\n`;
-        }
-        
-        // Calcolo del bilancio animali
-        // Recupera il totale animali nelle ceste origine
-        const sourceBaskets = await db.select().from(selectionSourceBaskets)
-          .where(eq(selectionSourceBaskets.selectionId, Number(id)));
-        
-        const totalSourceAnimals = sourceBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0);
-        const totalDestAnimals = transactionResults.destinationBaskets.reduce((sum: number, b: any) => sum + (b.animalCount || 0), 0);
-        const animalDifference = totalDestAnimals - totalSourceAnimals;
-        
-        // Aggiungi il bilancio animali al messaggio
-        message += `Totale animali: ${totalDestAnimals}\n\n`;
-        message += `Bilancio operazione:\n`;
-        message += `• Animali ceste origine: ${totalSourceAnimals}\n`;
-        message += `• Animali ceste destinazione: ${totalDestAnimals}\n`;
-        message += `• Differenza: ${animalDifference < 0 ? `${animalDifference}` : animalDifference}`;
-        
-        // Crea la notifica
-        await req.app.locals.createScreeningNotification({
-          type: 'vagliatura-destinazione',
-          title: `Vagliatura #${transactionResults.selection.selectionNumber} - Completata`,
-          message,
-          relatedEntityType: 'selection',
-          relatedEntityId: transactionResults.selection.id,
-          data: JSON.stringify({
-            selectionId: transactionResults.selection.id,
-            selectionNumber: transactionResults.selection.selectionNumber,
-            date: transactionResults.selection.date,
-            baskets: transactionResults.destinationBaskets,
-            totalSourceAnimals,
-            totalDestAnimals,
-            animalDifference
-          })
-        });
-      }
-    } catch (notificationError) {
-      console.error('Errore durante la creazione della notifica di vagliatura (destinazione):', notificationError);
-      // Non blocchiamo il flusso principale se la notifica fallisce
-    }
-    
-    // Processa le notifiche di vendita raccolte durante la transazione
-    if (saleNotificationsToCreate.length > 0 && req.app.locals.createSaleNotification) {
-      try {
-        console.log(`Elaborazione di ${saleNotificationsToCreate.length} notifiche di vendita`);
-        for (const operationId of saleNotificationsToCreate) {
-          await req.app.locals.createSaleNotification(operationId);
-        }
-        console.log(`Notifiche di vendita create con successo per ${saleNotificationsToCreate.length} operazioni`);
-      } catch (notificationError) {
-        console.error("Errore durante la creazione delle notifiche di vendita:", notificationError);
-        // Non bloccare il processo principale se fallisce la creazione di notifiche
-      }
-    }
-    
-    return res.status(200).json({
-      success: true,
-      message: "Selezione completata con successo",
-      selectionId: Number(id)
-    });
-    
-  } catch (error) {
-    console.error("Errore durante il completamento della selezione:", error);
-    return res.status(500).json({
-      success: false,
-      error: `Errore durante il completamento della selezione: ${error instanceof Error ? error.message : String(error)}`
-    });
-  }
 }
 
 /**
@@ -2397,31 +1837,30 @@ export async function getSelectionStats(req: Request, res: Response) {
  */
 export async function getSelectionStats(req: Request, res: Response) {
   try {
-    // 1. Conteggio totale selezioni
-    const totalStats = await db.select({
-      total: sql`COUNT(*)`.as("total"),
-      completed: sql`SUM(CASE WHEN status = 'completed' THEN 1 ELSE 0 END)`.as("completed"),
-      draft: sql`SUM(CASE WHEN status = 'draft' THEN 1 ELSE 0 END)`.as("draft"),
-      cancelled: sql`SUM(CASE WHEN status = 'cancelled' THEN 1 ELSE 0 END)`.as("cancelled")
-    }).from(selections);
+    const total = await db.select({ count: sql`count(*)` })
+      .from(selections);
     
-    // 2. Conteggio baskets per type
-    const basketStats = await db.select({
-      sold: sql`SUM(CASE WHEN destination_type = 'sold' THEN 1 ELSE 0 END)`.as("sold"),
-      placed: sql`SUM(CASE WHEN destination_type = 'placed' THEN 1 ELSE 0 END)`.as("placed"),
-      total: sql`COUNT(*)`.as("total")
-    }).from(selectionDestinationBaskets);
+    const completed = await db.select({ count: sql`count(*)` })
+      .from(selections)
+      .where(eq(selections.status, 'completed'));
+    
+    const pending = await db.select({ count: sql`count(*)` })
+      .from(selections)
+      .where(eq(selections.status, 'pending'));
     
     return res.status(200).json({
-      selections: totalStats[0],
-      baskets: basketStats[0]
+      success: true,
+      stats: {
+        total: total[0]?.count || 0,
+        completed: completed[0]?.count || 0,
+        pending: pending[0]?.count || 0
+      }
     });
-    
   } catch (error) {
-    console.error("ERRORE DURANTE RECUPERO STATISTICHE SELEZIONI:", error);
-    return res.status(500).json({ 
+    console.error('Errore durante il recupero delle statistiche:', error);
+    return res.status(500).json({
       success: false,
-      error: `Errore durante il recupero delle statistiche: ${error instanceof Error ? error.message : String(error)}`
+      error: 'Errore durante il recupero delle statistiche delle selezioni'
     });
   }
 }
@@ -2431,73 +1870,24 @@ export async function getSelectionStats(req: Request, res: Response) {
  */
 export async function removeSourceBasket(req: Request, res: Response) {
   try {
-    const { id, sourceBasketId } = req.params;
-    
-    if (!id || !sourceBasketId) {
-      return res.status(400).json({
-        success: false,
-        error: "ID selezione o ID cesta di origine non fornito"
-      });
-    }
-    
-    // Verifica che la selezione esista
-    const selection = await db.select().from(selections)
-      .where(eq(selections.id, Number(id)))
-      .limit(1);
-      
-    if (!selection || selection.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: `Selezione con ID ${id} non trovata`
-      });
-    }
-    
-    // Verifica che la selezione sia in stato modificabile (draft)
-    if (selection[0].status !== 'draft') {
-      return res.status(400).json({
-        success: false,
-        error: `La selezione con ID ${id} non è modificabile (stato corrente: ${selection[0].status})`
-      });
-    }
-    
-    // Verifica che la cesta di origine esista
-    const sourceBasket = await db.select().from(selectionSourceBaskets)
-      .where(and(
-        eq(selectionSourceBaskets.id, Number(sourceBasketId)),
-        eq(selectionSourceBaskets.selectionId, Number(id))
-      ))
-      .limit(1);
-      
-    if (!sourceBasket || sourceBasket.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: `Cesta di origine con ID ${sourceBasketId} non trovata per la selezione ${id}`
-      });
-    }
-    
-    // Elimina la cesta di origine
+    const { id } = req.params;
+    const { basketId } = req.body;
+
     await db.delete(selectionSourceBaskets)
-      .where(eq(selectionSourceBaskets.id, Number(sourceBasketId)));
-    
-    // Invia notifiche WebSocket
-    if (typeof (global as any).broadcastUpdate === 'function') {
-      (global as any).broadcastUpdate('selection_source_basket_removed', {
-        selectionId: Number(id),
-        sourceBasketId: Number(sourceBasketId),
-        message: `Cesta di origine rimossa dalla selezione #${selection[0].selectionNumber}`
-      });
-    }
-    
+      .where(and(
+        eq(selectionSourceBaskets.selectionId, Number(id)),
+        eq(selectionSourceBaskets.basketId, basketId)
+      ));
+
     return res.status(200).json({
       success: true,
-      message: "Cesta di origine rimossa con successo"
+      message: 'Cesta di origine rimossa dalla selezione'
     });
-    
   } catch (error) {
-    console.error("Errore durante la rimozione della cesta di origine:", error);
+    console.error('Errore durante la rimozione della cesta di origine:', error);
     return res.status(500).json({
       success: false,
-      error: `Errore durante la rimozione della cesta di origine: ${error instanceof Error ? error.message : String(error)}`
+      error: 'Errore durante la rimozione della cesta di origine'
     });
   }
 }
@@ -2507,77 +1897,24 @@ export async function removeSourceBasket(req: Request, res: Response) {
  */
 export async function removeDestinationBasket(req: Request, res: Response) {
   try {
-    const { id, destinationBasketId } = req.params;
-    
-    if (!id || !destinationBasketId) {
-      return res.status(400).json({
-        success: false,
-        error: "ID selezione o ID cesta di destinazione non fornito"
-      });
-    }
-    
-    // Verifica che la selezione esista
-    const selection = await db.select().from(selections)
-      .where(eq(selections.id, Number(id)))
-      .limit(1);
-      
-    if (!selection || selection.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: `Selezione con ID ${id} non trovata`
-      });
-    }
-    
-    // Verifica che la selezione sia in stato modificabile (draft)
-    if (selection[0].status !== 'draft') {
-      return res.status(400).json({
-        success: false,
-        error: `La selezione con ID ${id} non è modificabile (stato corrente: ${selection[0].status})`
-      });
-    }
-    
-    // Verifica che la cesta di destinazione esista
-    const destinationBasket = await db.select().from(selectionDestinationBaskets)
-      .where(and(
-        eq(selectionDestinationBaskets.id, Number(destinationBasketId)),
-        eq(selectionDestinationBaskets.selectionId, Number(id))
-      ))
-      .limit(1);
-      
-    if (!destinationBasket || destinationBasket.length === 0) {
-      return res.status(404).json({
-        success: false,
-        error: `Cesta di destinazione con ID ${destinationBasketId} non trovata per la selezione ${id}`
-      });
-    }
-    
-    // Elimina la cesta di destinazione
+    const { id } = req.params;
+    const { basketId } = req.body;
+
     await db.delete(selectionDestinationBaskets)
-      .where(eq(selectionDestinationBaskets.id, Number(destinationBasketId)));
-    
-    // Elimina anche le relazioni nella history
-    await db.delete(selectionBasketHistory)
-      .where(eq(selectionBasketHistory.destinationBasketId, Number(destinationBasketId)));
-    
-    // Invia notifiche WebSocket
-    if (typeof (global as any).broadcastUpdate === 'function') {
-      (global as any).broadcastUpdate('selection_destination_basket_removed', {
-        selectionId: Number(id),
-        destinationBasketId: Number(destinationBasketId),
-        message: `Cesta di destinazione rimossa dalla selezione #${selection[0].selectionNumber}`
-      });
-    }
-    
+      .where(and(
+        eq(selectionDestinationBaskets.selectionId, Number(id)),
+        eq(selectionDestinationBaskets.basketId, basketId)
+      ));
+
     return res.status(200).json({
       success: true,
-      message: "Cesta di destinazione rimossa con successo"
+      message: 'Cesta di destinazione rimossa dalla selezione'
     });
-    
   } catch (error) {
-    console.error("Errore durante la rimozione della cesta di destinazione:", error);
+    console.error('Errore durante la rimozione della cesta di destinazione:', error);
     return res.status(500).json({
       success: false,
-      error: `Errore durante la rimozione della cesta di destinazione: ${error instanceof Error ? error.message : String(error)}`
+      error: 'Errore durante la rimozione della cesta di destinazione'
     });
   }
 }
