@@ -113,3 +113,20 @@ export function getSizeBadgeClass(sizeCode: string): string {
     return 'bg-red-100 text-red-900 border-red-400';
   }
 }
+
+/**
+ * Determina il codice taglia in base agli animali per kg
+ * @param animalsPerKg - Numero di animali per chilogrammo
+ * @param sizes - Array delle taglie disponibili
+ * @returns Codice della taglia corrispondente o 'N/A' se non trovata
+ */
+export function getSizeCodeFromAnimalsPerKg(animalsPerKg: number, sizes: any[] = []): string {
+  if (!animalsPerKg || animalsPerKg <= 0 || sizes.length === 0) return 'N/A';
+  
+  // Trova la taglia che contiene il valore animalsPerKg nel suo range
+  const matchingSize = sizes.find(size => 
+    animalsPerKg >= size.minAnimalsPerKg && animalsPerKg <= size.maxAnimalsPerKg
+  );
+  
+  return matchingSize ? matchingSize.code : 'N/A';
+}

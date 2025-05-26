@@ -4,6 +4,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card } from '@/components/ui/card';
+import { useQuery } from '@tanstack/react-query';
+import { getSizeCodeFromAnimalsPerKg } from '@/lib/sizeUtils';
 
 interface DraggableCalculatorProps {
   isOpen: boolean;
@@ -49,6 +51,12 @@ export default function DraggableCalculator({
   
   const calculatorRef = useRef<HTMLDivElement>(null);
   
+  // Query per ottenere le taglie
+  const { data: sizes = [] } = useQuery({
+    queryKey: ['/api/sizes'],
+    enabled: isOpen
+  });
+  
   // Calcoli automatici
   const totalSample = sampleCount + deadCount;
   const mortalityRate = totalSample > 0 ? parseFloat(((deadCount / totalSample) * 100).toFixed(1)) : 0;
@@ -61,6 +69,9 @@ export default function DraggableCalculator({
   
   const theoreticalAnimals = totalWeight * calculatedAnimalsPerKg;
   const animalCount = Math.round(theoreticalAnimals * mortalityFactor);
+  
+  // Calcola la taglia in base agli animali per kg
+  const calculatedSize = getSizeCodeFromAnimalsPerKg(calculatedAnimalsPerKg, sizes as any[]);
   
   // Gestione drag
   const handleMouseDown = (e: React.MouseEvent) => {
@@ -199,6 +210,16 @@ export default function DraggableCalculator({
                 <Label className="text-xs text-gray-700">Posizione</Label>
                 <div className="h-7 px-2 py-1 border rounded text-xs bg-gray-50 text-gray-700 flex items-center">
                   {basketPosition}
+                </div>
+              </div>
+            </div>
+            
+            {/* Taglia calcolata */}
+            <div className="grid grid-cols-1 gap-2 text-xs">
+              <div>
+                <Label className="text-xs text-indigo-700">Taglia</Label>
+                <div className="h-7 px-2 py-1 border rounded text-xs bg-indigo-50 text-indigo-700 flex items-center font-medium">
+                  {calculatedSize}
                 </div>
               </div>
             </div>
