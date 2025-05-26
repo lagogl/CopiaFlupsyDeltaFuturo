@@ -1296,7 +1296,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           // Crea operazione di vendita con il lotto associato
           console.log(`[DEBUG 2] Creazione operazione vendita per cestello ${destBasket.basketId} con cycleId: ${cycleId}`);
           if (!cycleId || cycleId === 0) {
-            throw new Error(`[ERRORE CRITICO 2] Tentativo di creare operazione vendita con cycleId non valido: ${cycleId}`);
+            throw new Error(`[ERRORE CRITICO 2] Tentativo di creare operazione vendita con cycleId non valido: ${cycleId} per cestello ${destBasket.basketId}`);
           }
           const [saleOperation] = await tx.insert(operations).values({
             date: selection[0].date,
@@ -1737,6 +1737,11 @@ export async function completeSelection(req: Request, res: Response) {
             ));
           
           if (existingOperation.length === 0) {
+            // Verifica che il cycleId sia valido prima di creare l'operazione
+            console.log(`[DEBUG 4] Creazione operazione vendita per cestello ${destBasket.basketId} con cycleId: ${cycleId}`);
+            if (!cycleId || cycleId === 0) {
+              throw new Error(`[ERRORE CRITICO 4] Tentativo di creare operazione vendita con cycleId non valido: ${cycleId} per cestello ${destBasket.basketId}`);
+            }
             // Usa un try/catch specifico per catturare eventuali errori durante la creazione dell'operazione
             try {
               const [saleOperation] = await tx.insert(operations).values({
