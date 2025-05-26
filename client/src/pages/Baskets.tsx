@@ -98,6 +98,16 @@ export default function Baskets() {
     queryKey: ['/api/flupsys'],
   }) as { data: any[] };
 
+  // Query operations for calculating missing data
+  const { data: operations = [] } = useQuery({
+    queryKey: ['/api/operations?includeAll=true&pageSize=1000'],
+  });
+
+  // Query sizes for size calculation
+  const { data: sizes = [] } = useQuery({
+    queryKey: ['/api/sizes'],
+  });
+
   // Create mutation
   const createBasketMutation = useMutation({
     mutationFn: (newBasket: any) => apiRequest({
@@ -206,8 +216,80 @@ export default function Baskets() {
     }
   });
 
+  // Funzione per calcolare la taglia basandosi sugli animali per kg
+  const getSizeCodeFromAnimalsPerKg = (animalsPerKg: number): string => {
+    if (!sizes || !Array.isArray(sizes) || !animalsPerKg) return 'N/D';
+    
+    // Trova la taglia corrispondente in base al range min_animals_per_kg e max_animals_per_kg
+    const matchingSize = sizes.find((size: any) => {
+      return (
+        (!size.minAnimalsPerKg || animalsPerKg >= size.minAnimalsPerKg) &&
+        (!size.maxAnimalsPerKg || animalsPerKg <= size.maxAnimalsPerKg)
+      );
+    });
+    
+    if (matchingSize) {
+      return matchingSize.code;
+    }
+    
+    // Fallback se non troviamo una taglia corrispondente
+    return `TP-${Math.round(animalsPerKg/1000)*1000}`;
+  };
+
+  // Funzione per calcolare i dati aggiuntivi basandosi sulle operazioni
+  const calculateBasketData = (basket: any) => {
+    if (!operations || !Array.isArray(operations)) {
+      return {
+        ...basket,
+        calculatedSize: null,
+        calculatedAnimalCount: null,
+        activationDate: null,
+        lotId: null
+      };
+    }
+
+    // Trova tutte le operazioni per questo cestello, ordinate per data (più recente prima)
+    const basketOperations = operations
+      .filter(op => op.basketId === basket.id)
+      .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    if (basketOperations.length === 0) {
+      return {
+        ...basket,
+        calculatedSize: null,
+        calculatedAnimalCount: null,
+        activationDate: null,
+        lotId: null
+      };
+    }
+
+    // Prendi l'operazione più recente per i dati principali
+    const latestOperation = basketOperations[0];
+    
+    // Calcola la taglia se abbiamo peso e numero animali
+    let calculatedSize = null;
+    if (latestOperation.weight && latestOperation.animalCount) {
+      const animalsPerKg = latestOperation.animalCount / latestOperation.weight;
+      calculatedSize = getSizeCodeFromAnimalsPerKg(animalsPerKg);
+    }
+
+    // Data di attivazione: prima operazione
+    const firstOperation = basketOperations[basketOperations.length - 1];
+    const activationDate = firstOperation?.date || null;
+
+    return {
+      ...basket,
+      calculatedSize,
+      calculatedAnimalCount: latestOperation.animalCount || null,
+      activationDate,
+      lotId: latestOperation.lotId || null,
+      lastOperationDate: latestOperation.date,
+      lastOperationType: latestOperation.type
+    };
+  };
+
   // Prepare baskets array with additional data
-  const basketsArray = Array.isArray(baskets) ? baskets : [];
+  const basketsArray = Array.isArray(baskets) ? baskets.map(calculateBasketData) : [];
   const flupsysArray = Array.isArray(flupsys) ? flupsys : [];
 
   // Debug - controlla quanti cestelli hanno la taglia impostata
@@ -744,37 +826,13 @@ export default function Baskets() {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
-                          {basket.currentCycle?.lotId ? (
+                        <td className="px-4 py-4 text-sm text-gray-700">
+                          {basket.lotId ? (
                             <div className="flex flex-col">
-                              <span className="font-medium text-indigo-600">Lotto #{basket.currentCycle.lotId}</span>
-                              {basket.currentCycle.lotName && (
-                                <span className="text-xs text-muted-foreground">
-                                  {basket.currentCycle.lotName}
-                                </span>
-                              )}
-                              {basket.currentCycle.lotSupplier && (
-                                <span className="text-xs text-muted-foreground">
-                                  {basket.currentCycle.lotSupplier}
-                                </span>
-                              )}
+                              <span className="font-medium text-indigo-600">Lotto #{basket.lotId}</span>
                             </div>
                           ) : (
-                            basket.lotId ? (
-                              <div className="flex flex-col">
-                                <span className="font-medium text-indigo-600">Lotto #{basket.lotId}</span>
-                                {basket.lotName && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {basket.lotName}
-                                  </span>
-                                )}
-                                {basket.lotSupplier && (
-                                  <span className="text-xs text-muted-foreground">
-                                    {basket.lotSupplier}
-                                  </span>
-                                )}
-                              </div>
-                            ) : '-'
+                            <span className="text-gray-400">-</span>
                           )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-primary">
@@ -786,15 +844,17 @@ export default function Baskets() {
                         <td className="px-6 py-4 whitespace-nowrap">
                           {statusBadge}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {basket.lastOperation ? (
+                        <td className="px-4 py-4 text-sm text-gray-700">
+                          {basket.lastOperationType ? (
                             <div className="flex flex-col">
-                              <span>{basket.lastOperation.type}</span>
-                              <span className="text-xs text-muted-foreground">
-                                {new Date(basket.lastOperation.date).toLocaleDateString('it-IT')}
+                              <span className="font-medium capitalize">{basket.lastOperationType}</span>
+                              <span className="text-xs text-gray-500">
+                                {basket.lastOperationDate ? new Date(basket.lastOperationDate).toLocaleDateString('it-IT') : '-'}
                               </span>
                             </div>
-                          ) : '-'}
+                          ) : (
+                            <span className="text-gray-400">-</span>
+                          )}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap">
                           <div className="flex flex-col">
