@@ -50,7 +50,7 @@ export default function VagliaturaConMappa() {
     selectionNumber: 0,
     notes: '',
     purpose: 'vagliatura',
-    screeningType: 'standard',
+    screeningType: 'sopra_vaglio',
     referenceSizeId: null
   });
   
@@ -356,7 +356,7 @@ export default function VagliaturaConMappa() {
       selectionNumber: 0,
       notes: '',
       purpose: 'vagliatura',
-      screeningType: 'standard',
+      screeningType: 'sopra_vaglio',
       referenceSizeId: null
     });
     setCurrentTab('selezione-origine');
