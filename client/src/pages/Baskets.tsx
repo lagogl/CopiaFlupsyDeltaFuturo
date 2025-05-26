@@ -185,7 +185,6 @@ export default function Baskets() {
         title: "Operazione completata",
         description: "La cesta è stata aggiornata con successo",
         variant: "success",
-        variant: "success",
       });
     },
     onError: (error: any) => {
