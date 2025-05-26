@@ -1830,11 +1830,11 @@ export async function completeSelection(req: Request, res: Response) {
       error: `Errore durante il completamento della selezione: ${error instanceof Error ? error.message : String(error)}`
     });
   }
-        // Crea operazione di chiusura per il ciclo di origine
-        await tx.insert(operations).values({
-          date: selection[0].date,
-          type: 'selezione-origine',
-          basketId: sourceBasket.basketId,
+
+/**
+ * Ottiene statistiche sulle selezioni
+ */
+export async function getSelectionStats(req: Request, res: Response) {
           cycleId: sourceBasket.cycleId,
           animalCount: sourceBasket.animalCount,
           totalWeight: sourceBasket.totalWeight,
