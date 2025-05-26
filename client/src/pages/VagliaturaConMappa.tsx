@@ -1358,6 +1358,20 @@ export default function VagliaturaConMappa() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsMeasurementDialogOpen(false)}>Annulla</Button>
             <Button onClick={() => {
+              // Calcola animalsPerKg se non è già calcolato
+              let finalAnimalsPerKg = measurementData.animalsPerKg;
+              if (!finalAnimalsPerKg || finalAnimalsPerKg === 0) {
+                if (measurementData.sampleWeight > 0 && measurementData.sampleCount > 0) {
+                  finalAnimalsPerKg = Math.round((measurementData.sampleCount / measurementData.sampleWeight) * 1000);
+                }
+              }
+              
+              // Calcola animalCount se non è già calcolato
+              let finalAnimalCount = measurementData.animalCount;
+              if (measurementData.totalWeight > 0 && finalAnimalsPerKg > 0) {
+                finalAnimalCount = Math.round(measurementData.totalWeight * finalAnimalsPerKg);
+              }
+              
               // Crea un nuovo cestello destinazione con i dati inseriti
               const newDestinationBasket: DestinationBasket = {
                 basketId: measurementData.basketId,
@@ -1365,12 +1379,12 @@ export default function VagliaturaConMappa() {
                 flupsyId: measurementData.flupsyId,
                 position: measurementData.position,
                 destinationType: 'placed',
-                animalCount: measurementData.animalCount,
+                animalCount: finalAnimalCount,
                 deadCount: measurementData.deadCount,
                 sampleWeight: measurementData.sampleWeight,
                 sampleCount: measurementData.sampleCount,
                 totalWeight: measurementData.totalWeight,
-                animalsPerKg: measurementData.animalsPerKg,
+                animalsPerKg: finalAnimalsPerKg,
                 saleDate: null,
                 saleClient: null,
                 selectionId: 0,

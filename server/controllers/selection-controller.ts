@@ -1159,12 +1159,9 @@ export async function addDestinationBaskets(req: Request, res: Response) {
         } else {
           // Crea un nuovo ciclo per questo cestello
           const newCycle = await tx.insert(cycles).values({
-            flupsyId: destBasket.flupsyId,
-            lotId: 1, // Usa un lotto default o quello della selezione
-            code: `VAG-${Date.now()}`,
+            basketId: destBasket.basketId,
             startDate: new Date().toISOString().split('T')[0],
-            status: 'active',
-            targetSize: actualSizeId || 1
+            state: 'active'
           }).returning();
           
           destinationCycleId = newCycle[0].id;
