@@ -12,6 +12,28 @@ export default function Sizes() {
   const [searchTerm, setSearchTerm] = useState('');
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const [editingSize, setEditingSize] = useState<any>(null);
+  const [sortConfig, setSortConfig] = useState<{
+    key: string;
+    direction: 'asc' | 'desc';
+  }>({
+    key: 'code',
+    direction: 'asc'
+  });
+
+  // Function to extract numeric value from size code (e.g., 'TP-500' → 500)
+  const getSizeNumber = (sizeCode: string): number => {
+    if (!sizeCode || !sizeCode.startsWith('TP-')) return 0;
+    return parseInt(sizeCode.replace('TP-', '')) || 0;
+  };
+
+  // Sort function
+  const requestSort = (key: string) => {
+    let direction: 'asc' | 'desc' = 'asc';
+    if (sortConfig.key === key && sortConfig.direction === 'asc') {
+      direction = 'desc';
+    }
+    setSortConfig({ key, direction });
+  };
   
   // Query sizes
   const { data: sizes, isLoading } = useQuery({
@@ -44,12 +66,42 @@ export default function Sizes() {
     }
   });
 
-  // Filter sizes
-  const filteredSizes = sizes?.filter(size => {
-    return searchTerm === '' || 
-      size.code.toLowerCase().includes(searchTerm.toLowerCase()) || 
-      size.name.toLowerCase().includes(searchTerm.toLowerCase());
-  }) || [];
+  // Filter and sort sizes
+  const filteredAndSortedSizes = (() => {
+    // First filter
+    const filtered = (sizes as any[])?.filter((size: any) => {
+      return searchTerm === '' || 
+        size.code.toLowerCase().includes(searchTerm.toLowerCase()) || 
+        size.name.toLowerCase().includes(searchTerm.toLowerCase());
+    }) || [];
+
+    // Then sort
+    const sorted = [...filtered].sort((a: any, b: any) => {
+      if (sortConfig.key === 'code') {
+        // Numeric sorting for size codes (TP-100 < TP-10000)
+        const numA = getSizeNumber(a.code);
+        const numB = getSizeNumber(b.code);
+        
+        if (sortConfig.direction === 'asc') {
+          return numA - numB;
+        } else {
+          return numB - numA;
+        }
+      } else {
+        // Standard string sorting for other fields
+        const aValue = a[sortConfig.key] || '';
+        const bValue = b[sortConfig.key] || '';
+        
+        if (sortConfig.direction === 'asc') {
+          return aValue.toString().localeCompare(bValue.toString());
+        } else {
+          return bValue.toString().localeCompare(aValue.toString());
+        }
+      }
+    });
+
+    return sorted;
+  })();
 
   return (
     <div>
@@ -89,8 +141,21 @@ export default function Sizes() {
           <table className="min-w-full divide-y divide-gray-200">
             <thead className="bg-gray-50">
               <tr>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Codice
+                <th 
+                  scope="col" 
+                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${
+                    sortConfig.key === 'code' ? 'text-blue-600' : 'text-gray-500'
+                  }`}
+                  onClick={() => requestSort('code')}
+                >
+                  <div className="flex items-center">
+                    <span>Codice</span>
+                    {sortConfig.key === 'code' && (
+                      <span className="ml-1">
+                        {sortConfig.direction === 'asc' ? '↑' : '↓'}
+                      </span>
+                    )}
+                  </div>
                 </th>
                 <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                   Nome
@@ -119,14 +184,14 @@ export default function Sizes() {
                     Caricamento taglie...
                   </td>
                 </tr>
-              ) : filteredSizes.length === 0 ? (
+              ) : filteredAndSortedSizes.length === 0 ? (
                 <tr>
                   <td colSpan={7} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                     Nessuna taglia trovata
                   </td>
                 </tr>
               ) : (
-                filteredSizes.map((size) => {
+                filteredAndSortedSizes.map((size: any) => {
                   // Determine badge color based on size code
                   let badgeColor = 'bg-blue-100 text-blue-800';
                   
