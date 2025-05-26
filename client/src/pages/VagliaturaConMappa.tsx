@@ -29,6 +29,7 @@ import { Flupsy, Basket, Selection, SourceBasket, DestinationBasket, Size } from
 
 // Componenti specifici per la vagliatura con mappa
 import FlupsyMapVisualizer from '@/components/vagliatura-mappa/FlupsyMapVisualizer';
+import DraggableCalculator from '@/components/DraggableCalculator';
 
 /**
  * Componente principale per la Vagliatura con Mappa
@@ -382,6 +383,9 @@ export default function VagliaturaConMappa() {
   
   // Stato per il dialogo di misurazione (sia posizionamento che vendita)
   const [isMeasurementDialogOpen, setIsMeasurementDialogOpen] = useState(false);
+  
+  // Stato per il calcolatore draggable
+  const [isCalculatorOpen, setIsCalculatorOpen] = useState(false);
   const [measurementData, setMeasurementData] = useState({
     basketId: 0,
     physicalNumber: 0,
@@ -560,9 +564,9 @@ export default function VagliaturaConMappa() {
         sizeId: calculatedValues.sizeId || 0
       };
       
-      // Apri il dialogo di misurazione per posizionamento
+      // Apri il calcolatore draggable per posizionamento
       setMeasurementData(initialMeasurementData);
-      setIsMeasurementDialogOpen(true);
+      setIsCalculatorOpen(true);
     }
   };
   
@@ -1523,6 +1527,50 @@ export default function VagliaturaConMappa() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+      
+      {/* Calcolatore Draggable */}
+      <DraggableCalculator
+        isOpen={isCalculatorOpen}
+        onClose={() => setIsCalculatorOpen(false)}
+        onConfirm={(data) => {
+          // Crea un nuovo cestello destinazione con i dati calcolati
+          const newDestinationBasket: DestinationBasket = {
+            basketId: measurementData.basketId,
+            physicalNumber: measurementData.physicalNumber,
+            flupsyId: measurementData.flupsyId,
+            position: measurementData.position,
+            destinationType: 'placed',
+            animalCount: data.animalCount,
+            deadCount: data.deadCount,
+            sampleWeight: data.sampleWeight,
+            sampleCount: data.sampleCount,
+            totalWeight: data.totalWeight,
+            animalsPerKg: data.animalsPerKg,
+            saleDate: null,
+            saleClient: null,
+            selectionId: 0,
+            sizeId: measurementData.sizeId,
+            isAlsoSource: measurementData.isAlsoSource
+          };
+          
+          setDestinationBaskets(prev => [...prev, newDestinationBasket]);
+          
+          toast({
+            title: "Cestello aggiunto",
+            description: `Cestello #${measurementData.physicalNumber} aggiunto come destinazione`,
+          });
+          
+          setIsCalculatorOpen(false);
+        }}
+        initialData={{
+          sampleWeight: measurementData.sampleWeight,
+          sampleCount: measurementData.sampleCount,
+          totalWeight: measurementData.totalWeight,
+          deadCount: measurementData.deadCount,
+          animalsPerKg: measurementData.animalsPerKg,
+          position: parseInt(measurementData.position) || 1
+        }}
+      />
     </div>
   );
 }
