@@ -1146,11 +1146,44 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           }
         }
         
+        // Per cestelli destinazione, dobbiamo assicurarci che abbiano un ciclo valido
+        // Se il cestello non ha un ciclo attivo, ne creiamo uno nuovo
+        let destinationCycleId = null;
+        
+        const existingBasket = await tx.select().from(baskets)
+          .where(eq(baskets.id, destBasket.basketId))
+          .limit(1);
+        
+        if (existingBasket.length > 0 && existingBasket[0].currentCycleId) {
+          destinationCycleId = existingBasket[0].currentCycleId;
+        } else {
+          // Crea un nuovo ciclo per questo cestello
+          const newCycle = await tx.insert(cycles).values({
+            flupsyId: destBasket.flupsyId,
+            lotId: 1, // Usa un lotto default o quello della selezione
+            code: `VAG-${Date.now()}`,
+            startDate: new Date().toISOString().split('T')[0],
+            status: 'active',
+            targetSize: actualSizeId || 1
+          }).returning();
+          
+          destinationCycleId = newCycle[0].id;
+          console.log(`Creato nuovo ciclo ${destinationCycleId} per cestello ${destBasket.basketId} con successo`);
+          
+          // Aggiorna il cestello con il nuovo ciclo
+          await tx.update(baskets)
+            .set({ 
+              currentCycleId: destinationCycleId,
+              state: 'active'
+            })
+            .where(eq(baskets.id, destBasket.basketId));
+        }
+
         // Registra nella tabella di relazione temporanea
         await tx.insert(selectionDestinationBaskets).values({
           selectionId: Number(id),
           basketId: destBasket.basketId,
-          cycleId: 0, // Temporaneo, sarà aggiornato durante il completamento
+          cycleId: destinationCycleId, // Usa il ciclo valido invece di 0
           destinationType: destBasket.destinationType,
           flupsyId: destBasket.flupsyId,
           position: destBasket.position ? String(destBasket.position) : null,

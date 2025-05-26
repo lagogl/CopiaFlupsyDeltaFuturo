@@ -408,9 +408,9 @@ export default function VagliaturaConMappa() {
     flupsyId: 0,
     position: '',
     destinationType: 'placed' as 'placed' | 'sold',
-    sampleWeight: 100, // grammi
-    sampleCount: 0,
-    totalWeight: 0, // kg
+    sampleWeight: 1, // grammi
+    sampleCount: 100, // numero di animali vivi nel campione
+    totalWeight: 1, // kg
     deadCount: 0,
     animalCount: 0,
     animalsPerKg: 0,
