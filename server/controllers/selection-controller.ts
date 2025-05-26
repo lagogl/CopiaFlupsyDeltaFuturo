@@ -1596,8 +1596,8 @@ export async function completeSelection(req: Request, res: Response) {
       }
       
       // NOTA: Il processing dei cestelli destinazione è già stato fatto nella sezione precedente (righe 1200-1300)
-      // Questa sezione duplicata è stata rimossa perché causava l'errore cycle_id=0
-        
+      // La sezione duplicata è stata disabilitata per evitare l'errore cycle_id=0
+      /*
         // Se non c'è sizeId oppure è 0 o null, tenta di determinarlo automaticamente
         if (!actualSizeId || actualSizeId === 0) {
           if (destBasket.animalsPerKg) {
@@ -1645,7 +1645,7 @@ export async function completeSelection(req: Request, res: Response) {
           // 2. Crea operazione di prima attivazione con il cycleId corretto
           await tx.insert(operations).values({
             date: selection[0].date,
-            type: 'prima-attivazione',
+            type: 'prima-attivazione-da-vagliatura',
             basketId: destBasket.basketId,
             cycleId: cycleId, // Usa direttamente l'ID del ciclo appena creato
             animalCount: destBasket.animalCount,
@@ -1854,6 +1854,7 @@ export async function completeSelection(req: Request, res: Response) {
           }
         }
       }
+      */
       
       // Aggiorna lo stato della selezione a completato
       await tx.update(selections)
