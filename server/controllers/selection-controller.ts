@@ -1539,23 +1539,25 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           }
         }
       }
+    });
       
-      // Non aggiorniamo lo stato qui, in quanto verrà fatto in un passaggio successivo
-      // esplicito al termine del processo di aggiunta dei cestelli di destinazione
+    // Non aggiorniamo lo stato qui, in quanto verrà fatto in un passaggio successivo
+    // esplicito al termine del processo di aggiunta dei cestelli di destinazione
       
-      // Invia notifiche WebSocket
-      if (typeof (global as any).broadcastUpdate === 'function') {
-        (global as any).broadcastUpdate('destination_baskets_added', {
-          selectionId: Number(id),
-          message: `Cestelli di destinazione aggiunti alla selezione #${selection[0].selectionNumber}`
-        });
-      }
+    // Invia notifiche WebSocket
+    if (typeof (global as any).broadcastUpdate === 'function') {
+      (global as any).broadcastUpdate('destination_baskets_added', {
+        selectionId: Number(id),
+        message: `Cestelli di destinazione aggiunti alla selezione #${selection[0].selectionNumber}`
+      });
+    }
     
     return res.status(200).json({
       success: true,
       message: "Selezione completata con successo",
       selectionId: Number(id)
     });
+    
   } catch (error) {
     console.error('Errore durante l\'aggiunta dei cestelli di destinazione:', error);
     return res.status(500).json({
