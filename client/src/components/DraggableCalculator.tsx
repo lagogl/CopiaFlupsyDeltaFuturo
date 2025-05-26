@@ -53,7 +53,13 @@ export default function DraggableCalculator({
   const totalSample = sampleCount + deadCount;
   const mortalityRate = totalSample > 0 ? Math.round((deadCount / totalSample) * 100) : 0;
   const mortalityFactor = 1 - (mortalityRate / 100);
-  const theoreticalAnimals = totalWeight * animalsPerKg;
+  
+  // Calcola animali per kg dal campione (peso campione in grammi / numero animali vivi * 1000)
+  const calculatedAnimalsPerKg = sampleWeight > 0 && sampleCount > 0 
+    ? Math.round((sampleCount / sampleWeight) * 1000) 
+    : animalsPerKg;
+  
+  const theoreticalAnimals = totalWeight * calculatedAnimalsPerKg;
   const animalCount = Math.round(theoreticalAnimals * mortalityFactor);
   
   // Gestione drag
