@@ -1110,8 +1110,24 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             }
             
             // Estrai la riga (DX, SX) e la posizione numerica
-            const positionStr = String(destBasket.position || '');
+            let positionStr = String(destBasket.position || '');
             console.log(`Posizione in elaborazione: "${positionStr}" per cestello ${destBasket.basketId}`);
+            
+            // Se riceve solo un numero, usa la riga del cestello esistente
+            if (/^\d+$/.test(positionStr)) {
+              // Trova il cestello nel database per ottenere la riga attuale
+              const currentBasket = await tx.select()
+                .from(baskets)
+                .where(eq(baskets.id, destBasket.basketId))
+                .limit(1);
+              
+              if (currentBasket.length > 0 && currentBasket[0].row) {
+                positionStr = `${currentBasket[0].row}${positionStr}`;
+                console.log(`Posizione corretta con riga esistente: ${positionStr}`);
+              } else {
+                throw new Error(`Impossibile determinare la riga per cestello ${destBasket.basketId}. Posizione ricevuta: ${destBasket.position}`);
+              }
+            }
             
             const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
             if (!rowMatch) {
@@ -1362,8 +1378,24 @@ export async function addDestinationBaskets(req: Request, res: Response) {
               
               // Estrai la riga (DX, SX) e la posizione numerica
               // Controllo aggiuntivo: Se position è null o undefined, gestisci appositamente
-              const positionStr = String(destBasket.position || ''); // Converti a stringa o usa stringa vuota
+              let positionStr = String(destBasket.position || ''); // Converti a stringa o usa stringa vuota
               console.log(`Posizione in elaborazione: "${positionStr}" per cestello ${destBasket.basketId}`);
+              
+              // Se riceve solo un numero, usa la riga del cestello esistente
+              if (/^\d+$/.test(positionStr)) {
+                // Trova il cestello nel database per ottenere la riga attuale
+                const currentBasket = await tx.select()
+                  .from(baskets)
+                  .where(eq(baskets.id, destBasket.basketId))
+                  .limit(1);
+                
+                if (currentBasket.length > 0 && currentBasket[0].row) {
+                  positionStr = `${currentBasket[0].row}${positionStr}`;
+                  console.log(`Posizione corretta con riga esistente: ${positionStr}`);
+                } else {
+                  throw new Error(`Impossibile determinare la riga per cestello ${destBasket.basketId}. Posizione ricevuta: ${destBasket.position}`);
+                }
+              }
               
               const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
               if (!rowMatch) {
