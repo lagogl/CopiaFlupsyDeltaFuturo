@@ -1516,6 +1516,9 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             startDate: selection[0].date,
             operationId: operation.id
           });
+        } catch (error) {
+          console.error(`Errore nell'elaborazione della posizione per il cestello ${destBasket.basketId}:`, error);
+          throw new Error(`Errore durante il posizionamento del cestello ${destBasket.basketId}: ${error instanceof Error ? error.message : String(error)}`);
         }
         
         // Traccia relazioni tra ceste di origine e destinazione
