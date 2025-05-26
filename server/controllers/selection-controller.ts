@@ -1241,23 +1241,19 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           }
         }
         
-        // Prima crea il ciclo per la cesta
-        const [cycle] = await tx.insert(cycles).values({
-          basketId: destBasket.basketId,
-          startDate: selection[0].date,
-          state: 'active'
-        }).returning();
+        // Usa il ciclo già creato in precedenza (eliminazione duplicazione)
+        const cycleId = destinationCycleId; // Usa il ciclo già creato e validato
         
         // Ora crea l'operazione di prima attivazione con l'ID del ciclo valido
-        console.log(`[DEBUG 1] Creazione operazione per cestello ${destBasket.basketId} con cycleId: ${cycle.id}`);
-        if (!cycle.id || cycle.id === 0) {
-          throw new Error(`[ERRORE CRITICO 1] Tentativo di creare operazione con cycleId non valido: ${cycle.id} per cestello ${destBasket.basketId}`);
+        console.log(`[DEBUG 1] Creazione operazione per cestello ${destBasket.basketId} con cycleId: ${cycleId}`);
+        if (!cycleId || cycleId === 0) {
+          throw new Error(`[ERRORE CRITICO 1] Tentativo di creare operazione con cycleId non valido: ${cycleId} per cestello ${destBasket.basketId}`);
         }
         const [operation] = await tx.insert(operations).values({
           date: selection[0].date,
           type: 'prima-attivazione',
           basketId: destBasket.basketId,
-          cycleId: cycle.id, // Usa l'ID del ciclo appena creato
+          cycleId: cycleId, // Usa l'ID del ciclo già creato e validato
           animalCount: destBasket.animalCount,
           totalWeight: destBasket.totalWeight,
           animalsPerKg: destBasket.animalsPerKg,
@@ -1289,24 +1285,24 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           // prima di usarlo in altre operazioni. Questo risolve l'errore FK constraint.
           const cycleRecord = await tx.select()
             .from(cycles)
-            .where(eq(cycles.id, cycle.id))
+            .where(eq(cycles.id, cycleId))
             .limit(1);
             
           if (!cycleRecord || cycleRecord.length === 0) {
-            console.error(`Errore: ciclo ${cycle.id} non trovato nel database dopo la creazione`);
-            throw new Error(`Impossibile trovare il ciclo appena creato (ID: ${cycle.id})`);
+            console.error(`Errore: ciclo ${cycleId} non trovato nel database dopo la creazione`);
+            throw new Error(`Impossibile trovare il ciclo appena creato (ID: ${cycleId})`);
           }
           
           // Crea operazione di vendita con il lotto associato
-          console.log(`[DEBUG 2] Creazione operazione vendita per cestello ${destBasket.basketId} con cycleId: ${cycle.id}`);
-          if (!cycle.id || cycle.id === 0) {
-            throw new Error(`[ERRORE CRITICO 2] Tentativo di creare operazione vendita con cycleId non valido: ${cycle.id}`);
+          console.log(`[DEBUG 2] Creazione operazione vendita per cestello ${destBasket.basketId} con cycleId: ${cycleId}`);
+          if (!cycleId || cycleId === 0) {
+            throw new Error(`[ERRORE CRITICO 2] Tentativo di creare operazione vendita con cycleId non valido: ${cycleId}`);
           }
           const [saleOperation] = await tx.insert(operations).values({
             date: selection[0].date,
             type: 'vendita',
             basketId: destBasket.basketId,
-            cycleId: cycle.id,
+            cycleId: cycleId,
             animalCount: destBasket.animalCount,
             totalWeight: destBasket.totalWeight,
             animalsPerKg: destBasket.animalsPerKg,
@@ -1325,7 +1321,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
               state: 'closed', 
               endDate: selection[0].date 
             })
-            .where(eq(cycles.id, cycle.id));
+            .where(eq(cycles.id, cycleId));
           
           // Aggiorna lo stato del cestello a disponibile
           // IMPORTANTE: Manteniamo il flupsyId a un valore valido (quello attuale o 1 di default)
