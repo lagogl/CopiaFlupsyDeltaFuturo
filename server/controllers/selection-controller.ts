@@ -7,15 +7,24 @@
  * Converte automaticamente "1" in "DX1" se necessario
  */
 function normalizePositionFormat(position: string | number | null | undefined): string {
-  if (!position) return '';
+  console.log(`[DEBUG] normalizePositionFormat chiamata con:`, position, `tipo:`, typeof position);
+  
+  if (!position) {
+    console.log(`[DEBUG] Posizione vuota, ritorno stringa vuota`);
+    return '';
+  }
   
   const positionStr = String(position);
+  console.log(`[DEBUG] Posizione convertita a stringa:`, positionStr);
   
   // Se è solo un numero, aggiungi "DX" come prefisso di default
   if (/^\d+$/.test(positionStr)) {
-    return `DX${positionStr}`;
+    const result = `DX${positionStr}`;
+    console.log(`[DEBUG] Conversione automatica: "${positionStr}" -> "${result}"`);
+    return result;
   }
   
+  console.log(`[DEBUG] Posizione già nel formato corretto:`, positionStr);
   return positionStr;
 }
 import { Request, Response } from "express";
