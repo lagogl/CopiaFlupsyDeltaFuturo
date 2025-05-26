@@ -698,10 +698,20 @@ export default function VagliaturaConMappa() {
         }
         
         // Passo 3: Aggiungere i cestelli destinazione
-        const destinationBasketData = destinationBaskets.map(basket => ({
-          ...basket,
-          selectionId
-        }));
+        const destinationBasketData = destinationBaskets.map(basket => {
+          // Trova il cestello originale per ottenere la fila (row)
+          const originalBasket = baskets?.find(b => b.id === basket.basketId);
+          const row = originalBasket?.row || 'DX';
+          
+          // Combina fila e posizione nel formato richiesto dal server (es. "DX1")
+          const formattedPosition = `${row}${basket.position}`;
+          
+          return {
+            ...basket,
+            position: formattedPosition,
+            selectionId
+          };
+        });
         
         const destinationResponse = await fetch(`/api/selections/${selectionId}/destination-baskets`, {
           method: 'POST',
