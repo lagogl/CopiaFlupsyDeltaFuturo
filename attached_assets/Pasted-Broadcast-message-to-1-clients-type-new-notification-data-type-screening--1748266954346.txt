@@ -1,0 +1,82 @@
+Broadcast message to 1 clients: {
+  type: 'new_notification',
+  data: {
+    type: 'screening',
+    notification: {
+      id: 57,
+      type: 'vagliatura-origine',
+      title: 'Vagliatura #6 - Cestelli Origine'
+    },
+    _brief: 'data object'
+  }
+}
+1:42:04 PM [express] POST /api/selections/14/source-baskets 200 in 3836ms :: {"success":true,"messag…
+[SLOW API] POST /api/selections/14/source-baskets - 3837ms
+Ricevuta richiesta di aggiunta cestelli di destinazione per selezione 14:
+Payload ricevuto: [
+  {
+    "basketId": 60,
+    "physicalNumber": 1,
+    "flupsyId": 737,
+    "position": "DX1",
+    "destinationType": "sold",
+    "animalCount": 243397,
+    "deadCount": 9,
+    "sampleWeight": 1,
+    "sampleCount": 29,
+    "totalWeight": 11,
+    "animalsPerKg": 0,
+    "saleDate": null,
+    "saleClient": null,
+    "selectionId": 14,
+    "sizeId": 0,
+    "isAlsoSource": true
+  },
+  {
+    "basketId": 51,
+    "physicalNumber": 7,
+    "flupsyId": 737,
+    "position": "DX3",
+    "destinationType": "placed",
+    "animalCount": 162840,
+    "deadCount": 6,
+    "sampleWeight": 1,
+    "sampleCount": 46,
+    "totalWeight": 4,
+    "animalsPerKg": 0,
+    "saleDate": null,
+    "saleClient": null,
+    "selectionId": 14,
+    "sizeId": 0,
+    "isAlsoSource": false
+  }
+]
+Posizione ricevuta: DX3
+Posizione in elaborazione: "DX3" per cestello 51
+Riga estratta: DX
+Numero posizione estratto: 3
+Manca animalsPerKg per cesta 60, impossibile determinare la taglia
+Errore durante il completamento della selezione: PostgresError: insert or update on table "operations" violates foreign key constraint "fk_operations_cycle_id"
+    at ErrorResponse (file:///home/runner/workspace/node_modules/postgres/src/connection.js:788:26)
+    at handle (file:///home/runner/workspace/node_modules/postgres/src/connection.js:474:6)
+    at TLSSocket.data (file:///home/runner/workspace/node_modules/postgres/src/connection.js:315:9)
+    at TLSSocket.emit (node:events:518:28)
+    at addChunk (node:internal/streams/readable:561:12)
+    at readableAddChunkPushByteMode (node:internal/streams/readable:512:3)
+    at Readable.push (node:internal/streams/readable:392:5)
+    at TLSWrap.onStreamRead (node:internal/stream_base_commons:191:23) {
+  severity_local: 'ERROR',
+  severity: 'ERROR',
+  code: '23503',
+  detail: 'Key (cycle_id)=(0) is not present in table "cycles".',
+  schema_name: 'public',
+  table_name: 'operations',
+  constraint_name: 'fk_operations_cycle_id',
+  file: 'ri_triggers.c',
+  line: '2608',
+  routine: 'ri_ReportViolation'
+}
+1:42:08 PM [express] POST /api/selections/14/destination-baskets 500 in 3419ms :: {"success":false,"…
+[SLOW API] POST /api/selections/14/destination-baskets - 3419ms
+Cache notifiche: dati recuperati dalla cache per chiave "notifications_page_1_pageSize_20_type_null_unreadOnly_true"
+1:42:27 PM [express] GET /api/notifications 304 in 1ms :: {"success":true,"notifications":[{"id":56,…

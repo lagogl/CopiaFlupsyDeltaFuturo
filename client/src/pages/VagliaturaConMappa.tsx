@@ -1358,11 +1358,18 @@ export default function VagliaturaConMappa() {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsMeasurementDialogOpen(false)}>Annulla</Button>
             <Button onClick={() => {
+              console.log('=== INIZIO CALCOLO FORZATO ===');
+              console.log('Dati misurazione prima del calcolo:', measurementData);
+              
               // FORZA sempre il ricalcolo per essere sicuri
               let finalAnimalsPerKg = 0;
               if (measurementData.sampleWeight > 0 && measurementData.sampleCount > 0) {
                 finalAnimalsPerKg = Math.round((measurementData.sampleCount / measurementData.sampleWeight) * 1000);
                 console.log(`CALCOLO FORZATO animalsPerKg: (${measurementData.sampleCount} / ${measurementData.sampleWeight}) * 1000 = ${finalAnimalsPerKg}`);
+              } else {
+                console.log('ERRORE: Non posso calcolare animalsPerKg perché:');
+                console.log(`- sampleWeight: ${measurementData.sampleWeight}`);
+                console.log(`- sampleCount: ${measurementData.sampleCount}`);
               }
               
               // FORZA sempre il ricalcolo del conteggio animali
