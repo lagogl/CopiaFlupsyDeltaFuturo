@@ -472,7 +472,9 @@ export default function Baskets() {
     }
 
     // Calcoliamo il numero di animali dall'ultima operazione
-    if (basket.lastOperation && basket.lastOperation.animalCount) {
+    if (basket.calculatedAnimalCount) {
+      basket.animalCount = basket.calculatedAnimalCount;
+    } else if (basket.lastOperation && basket.lastOperation.animalCount) {
       basket.animalCount = basket.lastOperation.animalCount;
     }
 
