@@ -39,12 +39,12 @@ export default function DraggableCalculator({
   const [dragStart, setDragStart] = useState({ x: 0, y: 0 });
   const [isMinimized, setIsMinimized] = useState(false);
   
-  // Dati del calcolatore
-  const [sampleWeight, setSampleWeight] = useState(initialData.sampleWeight || 1);
-  const [sampleCount, setSampleCount] = useState(initialData.sampleCount || 100);
-  const [totalWeight, setTotalWeight] = useState(initialData.totalWeight || 10);
-  const [deadCount, setDeadCount] = useState(initialData.deadCount || 0);
-  const [animalsPerKg, setAnimalsPerKg] = useState(initialData.animalsPerKg || 100000);
+  // Dati del calcolatore - inizializzati a 0 per nuove misurazioni
+  const [sampleWeight, setSampleWeight] = useState(0);
+  const [sampleCount, setSampleCount] = useState(0);
+  const [totalWeight, setTotalWeight] = useState(0);
+  const [deadCount, setDeadCount] = useState(0);
+  const [animalsPerKg, setAnimalsPerKg] = useState(initialData.animalsPerKg || 0);
   const [basketPosition, setBasketPosition] = useState(initialData.position || 1);
   
   const calculatorRef = useRef<HTMLDivElement>(null);
