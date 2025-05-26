@@ -1815,6 +1815,7 @@ export async function completeSelection(req: Request, res: Response) {
               const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
               
               if (!rowMatch) {
+                console.log(`Errore formato posizione: ricevuto "${positionStr}", tentativo conversione automatica fallito`);
                 throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
               }
               
