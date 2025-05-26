@@ -908,17 +908,80 @@ export default function VagliaturaConMappa() {
                       </div>
                     )}
                     
+                    {/* Pannello Bilancio in Tempo Reale */}
+                    <div className="border rounded-md p-3 bg-blue-50 border-blue-300">
+                      <h3 className="text-sm font-semibold mb-3 text-blue-800">📊 Bilancio Vagliatura</h3>
+                      
+                      {(() => {
+                        // Calcola i totali in tempo reale
+                        const totalOriginAnimals = sourceBaskets.reduce((sum, basket) => {
+                          const basketDetails = baskets.find(b => b.id === basket.basketId);
+                          return sum + (basketDetails?.lastOperation?.animalCount || 0);
+                        }, 0);
+                        
+                        const totalDestinationAnimals = destinationBaskets.reduce((sum, basket) => {
+                          return sum + (basket.animalCount || 0);
+                        }, 0);
+                        
+                        const difference = totalOriginAnimals - totalDestinationAnimals;
+                        const completionPercentage = totalOriginAnimals > 0 
+                          ? Math.round((totalDestinationAnimals / totalOriginAnimals) * 100) 
+                          : 0;
+                        
+                        return (
+                          <div className="space-y-2 text-xs">
+                            <div className="flex justify-between">
+                              <span className="text-blue-700">Animali Origine:</span>
+                              <span className="font-semibold">{totalOriginAnimals.toLocaleString('it-IT')}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-green-700">Animali Destinazione:</span>
+                              <span className="font-semibold">{totalDestinationAnimals.toLocaleString('it-IT')}</span>
+                            </div>
+                            <hr className="border-blue-200"/>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Differenza:</span>
+                              <span className={`font-bold ${difference > 0 ? 'text-orange-600' : difference < 0 ? 'text-red-600' : 'text-green-600'}`}>
+                                {difference > 0 ? '+' : ''}{difference.toLocaleString('it-IT')}
+                              </span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-gray-700">Completamento:</span>
+                              <span className={`font-bold ${completionPercentage >= 100 ? 'text-green-600' : 'text-blue-600'}`}>
+                                {completionPercentage}%
+                              </span>
+                            </div>
+                            
+                            {/* Barra di progresso */}
+                            <div className="w-full bg-gray-200 rounded-full h-2 mt-2">
+                              <div 
+                                className={`h-2 rounded-full transition-all duration-300 ${
+                                  completionPercentage >= 100 ? 'bg-green-500' : 
+                                  completionPercentage >= 80 ? 'bg-blue-500' : 'bg-orange-400'
+                                }`}
+                                style={{ width: `${Math.min(completionPercentage, 100)}%` }}
+                              ></div>
+                            </div>
+                          </div>
+                        );
+                      })()}
+                    </div>
+
                     {destinationBaskets.length > 0 && (
                       <div className="border rounded-md p-3">
-                        <h3 className="text-sm font-semibold mb-2">Cestelli Selezionati ({destinationBaskets.length})</h3>
-                        <div className="max-h-[200px] overflow-y-auto">
+                        <h3 className="text-sm font-semibold mb-2">Cestelli Destinazione ({destinationBaskets.length})</h3>
+                        <div className="max-h-[150px] overflow-y-auto">
                           {destinationBaskets.map(basket => {
                             const basketDetails = baskets.find(b => b.id === basket.basketId);
                             return (
-                              <div key={basket.basketId} className="text-xs p-1 border-b last:border-b-0 flex justify-between">
-                                <span>Cestello #{basketDetails?.physicalNumber}</span>
+                              <div key={basket.basketId} className="text-xs p-1 border-b last:border-b-0 flex justify-between items-center">
+                                <div>
+                                  <span>Cestello #{basketDetails?.physicalNumber}</span>
+                                  <br/>
+                                  <span className="text-gray-500">{(basket.animalCount || 0).toLocaleString('it-IT')} animali</span>
+                                </div>
                                 <Badge variant={basket.destinationType === 'sold' ? 'destructive' : 'outline'}>
-                                  {basket.destinationType === 'sold' ? 'Vendita' : 'Posizionamento'}
+                                  {basket.destinationType === 'sold' ? 'Vendita' : 'Posto'}
                                 </Badge>
                               </div>
                             );
