@@ -90,7 +90,7 @@ export default function Baskets() {
 
   // Query baskets
   const { data: baskets, isLoading } = useQuery({
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets?includeAll=true'],
   });
 
   // Query FLUPSY units for filter
@@ -500,6 +500,11 @@ export default function Baskets() {
     // Filter by FLUPSY
     const matchesFlupsy = flupsyFilter === 'all' || 
       String(basket.flupsyId) === flupsyFilter;
+
+    // Debug per il filtro FLUPSY
+    if (flupsyFilter !== 'all' && basket.physicalNumber === 1) {
+      console.log(`Debug filtro FLUPSY: flupsyFilter=${flupsyFilter}, basket.flupsyId=${basket.flupsyId}, String(basket.flupsyId)=${String(basket.flupsyId)}, matchesFlupsy=${matchesFlupsy}`);
+    }
 
     return matchesSearch && matchesState && matchesFlupsy;
   });
