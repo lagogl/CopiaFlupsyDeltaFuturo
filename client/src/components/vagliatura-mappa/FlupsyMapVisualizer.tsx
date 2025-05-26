@@ -110,21 +110,21 @@ export default function FlupsyMapVisualizer({
   const isBasketSelectable = (basket: Basket | undefined): boolean => {
     if (!basket) return false;
     
-    // Se siamo in modalità origine, qualsiasi cestello è selezionabile
-    if (mode === 'source') return true;
+    // Se siamo in modalità origine, qualsiasi cestello con ciclo attivo è selezionabile
+    if (mode === 'source') {
+      return basket.currentCycleId !== null && basket.state === 'active';
+    }
     
     // In modalità destinazione, un cestello è selezionabile se:
-    // 1. Non ha un ciclo attivo, oppure
+    // 1. Non ha un ciclo attivo (cesta vuota/disponibile), oppure
     // 2. È già stato selezionato come cestello origine (è nell'array sourceBasketIds)
     const hasActiveCycle = basket.currentCycleId !== null && basket.state === 'active';
     const isOriginBasket = sourceBasketIds.includes(basket.id);
     
-    // Se ha un ciclo attivo ma non è un cestello origine, non è selezionabile
-    if (hasActiveCycle && !isOriginBasket) {
-      return false;
-    }
-    
-    return true;
+    // Selezionabile se:
+    // - Non ha ciclo attivo (cesta vuota/disponibile) OPPURE
+    // - È un cestello origine (può essere sia origine che destinazione)
+    return !hasActiveCycle || isOriginBasket;
   };
   
   // Funzione per gestire il click su una posizione
