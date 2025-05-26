@@ -528,51 +528,44 @@ export default function VagliaturaConMappa() {
       return;
     }
     
-    // Gestione speciale per le posizioni vuote (cestelli virtuali)
-    const isVirtualBasket = basket.id === -1 || (basket as any)._isEmpty;
+    // Solo cestelli fisicamente esistenti possono essere selezionati come destinazione
+    if (!basket || basket.id < 0) {
+      toast({
+        title: "Posizione non valida",
+        description: "Puoi selezionare solo cestelli fisicamente esistenti, non posizioni vuote",
+        variant: "destructive"
+      });
+      return;
+    }
     
-    // Verifica se il cestello è già selezionato (per le posizioni vuote usiamo la posizione invece dell'ID)
-    const isAlreadySelected = isVirtualBasket 
-      ? destinationBaskets.some(db => db.position === `${basket.row}${basket.position}`)
-      : destinationBaskets.some(db => db.basketId === basket.id);
+    // Verifica se il cestello è già selezionato
+    const isAlreadySelected = destinationBaskets.some(db => db.basketId === basket.id);
     
     if (isAlreadySelected) {
       // Rimuovi il cestello dalla selezione
-      setDestinationBaskets(prev => {
-        const updated = isVirtualBasket
-          ? prev.filter(db => db.position !== `${basket.row}${basket.position}`)
-          : prev.filter(db => db.basketId !== basket.id);
-        
-        return updated;
-      });
+      setDestinationBaskets(prev => prev.filter(db => db.basketId !== basket.id));
     } else {
-      // Per le posizioni vuote, saltiamo la verifica del ciclo attivo
-      if (!isVirtualBasket) {
-        // Verifica se questo cestello è anche un cestello origine
-        const isAlsoSource = sourceBaskets.some(sb => sb.basketId === basket.id);
-        
-        // Verifica se il cestello è valido per essere selezionato come destinazione:
-        // 1. Il cestello non ha un ciclo attivo (currentCycleId è null) OPPURE
-        // 2. Il cestello è già selezionato come origine
-        const isCycleInactive = !basket.currentCycleId;
-        
-        if (!isCycleInactive && !isAlsoSource) {
-          toast({
-            title: "Cestello non disponibile",
-            description: "Puoi selezionare solo cestelli senza cicli attivi o cestelli già selezionati come origine",
-            variant: "destructive"
-          });
-          return;
-        }
-      }
+      // Verifica se questo cestello è anche un cestello origine
+      const isAlsoSource = sourceBaskets.some(sb => sb.basketId === basket.id);
       
-      // Determina se è un cestello origine
-      const isAlsoSource = !isVirtualBasket && sourceBaskets.some(sb => sb.basketId === basket.id);
+      // Verifica se il cestello è valido per essere selezionato come destinazione:
+      // 1. Il cestello non ha un ciclo attivo (currentCycleId è null) OPPURE
+      // 2. Il cestello è già selezionato come origine
+      const isCycleInactive = !basket.currentCycleId;
+      
+      if (!isCycleInactive && !isAlsoSource) {
+        toast({
+          title: "Cestello non disponibile",
+          description: "Puoi selezionare solo cestelli senza cicli attivi o cestelli già selezionati come origine",
+          variant: "destructive"
+        });
+        return;
+      }
       
       // Prepara i dati iniziali per il dialogo di misurazione
       const initialMeasurementData = {
-        basketId: basket.id, // Usa sempre l'ID del basket (anche per quelli virtuali che ora hanno ID unici)
-        physicalNumber: isVirtualBasket ? 0 : basket.physicalNumber,
+        basketId: basket.id,
+        physicalNumber: basket.physicalNumber,
         flupsyId: basket.flupsyId || 0,
         position: basket.position?.toString() || '',
         row: basket.row || '',
@@ -587,7 +580,6 @@ export default function VagliaturaConMappa() {
         saleDate: new Date().toISOString().split('T')[0],
         saleClient: 'Cliente',
         isAlsoSource: isAlsoSource,
-        isVirtualBasket: isVirtualBasket,
         sizeId: calculatedValues.sizeId || 0
       };
       
@@ -1042,16 +1034,7 @@ export default function VagliaturaConMappa() {
                           // Aggiungiamo un flag per indicare se è un cestello origine
                           isSourceBasket: sourceBaskets.some(sb => sb.basketId === b.id)
                         }))}
-                        selectedBaskets={destinationBaskets.map(b => {
-                          // Per le ceste virtuali (posizioni vuote), genera l'ID corretto
-                          if (b.basketId < 0) {
-                            // Usa la stessa formula del visualizzatore per generare l'ID virtuale
-                            const position = parseInt(b.position) || 0;
-                            const row = b.position?.charAt(0) === 'S' ? 'SX' : 'DX';
-                            return -(Number(selectedFlupsyId) * 1000 + position + (row === 'SX' ? 0 : 100));
-                          }
-                          return b.basketId;
-                        })}
+                        selectedBaskets={destinationBaskets.map(b => b.basketId)}
                         onBasketClick={(basket) => toggleDestinationBasket(basket)}
                         mode="destination"
                         showTooltips={true}
