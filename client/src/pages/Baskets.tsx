@@ -13,6 +13,7 @@ import { toast } from '@/hooks/use-toast';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { Input } from '@/components/ui/input';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import * as XLSX from 'xlsx';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import BasketForm from '@/components/BasketForm';
 import NFCReader from '@/components/NFCReader';
@@ -220,6 +221,79 @@ export default function Baskets() {
       });
     }
   });
+
+  // Export to Excel function
+  const exportToExcel = () => {
+    try {
+      // Prepara i dati per l'esportazione
+      const exportData = filteredBaskets.map(basket => {
+        const lot = lots.find((l: any) => l.id === basket.lotId);
+        
+        return {
+          'Numero Cestello': `#${basket.physicalNumber}`,
+          'FLUPSY': basket.flupsyName || `FLUPSY #${basket.flupsyId}`,
+          'Posizione': basket.row && basket.position ? `${basket.row}-${basket.position}` : '-',
+          'Lotto': basket.lotId ? `Lotto #${basket.lotId}` : '-',
+          'Fornitore': lot?.supplier || '-',
+          'Codice Ciclo': basket.cycleCode || '-',
+          'Taglia': basket.calculatedSize || '-',
+          'Numero Animali': basket.animalCount ? basket.animalCount.toLocaleString('it-IT') : '-',
+          'Data Attivazione': basket.activationDate || '-',
+          'Ultima Operazione': basket.lastOperationType || '-',
+          'Data Ultima Operazione': basket.lastOperationDate || '-',
+          'Stato': basket.state === 'active' ? 'Attivo' : basket.state === 'inactive' ? 'Inattivo' : basket.state || '-',
+          'NFC': basket.nfcData || '-'
+        };
+      });
+
+      // Crea il workbook
+      const wb = XLSX.utils.book_new();
+      const ws = XLSX.utils.json_to_sheet(exportData);
+
+      // Imposta la larghezza delle colonne
+      const colWidths = [
+        { wch: 15 }, // Numero Cestello
+        { wch: 25 }, // FLUPSY
+        { wch: 12 }, // Posizione
+        { wch: 12 }, // Lotto
+        { wch: 20 }, // Fornitore
+        { wch: 15 }, // Codice Ciclo
+        { wch: 12 }, // Taglia
+        { wch: 15 }, // Numero Animali
+        { wch: 15 }, // Data Attivazione
+        { wch: 18 }, // Ultima Operazione
+        { wch: 18 }, // Data Ultima Operazione
+        { wch: 10 }, // Stato
+        { wch: 20 }  // NFC
+      ];
+      ws['!cols'] = colWidths;
+
+      // Aggiungi il foglio al workbook
+      XLSX.utils.book_append_sheet(wb, ws, 'Gestione Ceste');
+
+      // Genera il nome del file con data e ora
+      const now = new Date();
+      const dateStr = now.toLocaleDateString('it-IT').replace(/\//g, '-');
+      const timeStr = now.toLocaleTimeString('it-IT').replace(/:/g, '-');
+      const filename = `gestione-ceste_${dateStr}_${timeStr}.xlsx`;
+
+      // Scarica il file
+      XLSX.writeFile(wb, filename);
+
+      toast({
+        title: "Esportazione completata",
+        description: `File Excel scaricato: ${filename}`,
+        variant: "success",
+      });
+    } catch (error) {
+      console.error('Errore durante l\'esportazione:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'esportazione del file Excel",
+        variant: "destructive",
+      });
+    }
+  };
 
   // Funzione per calcolare la taglia basandosi sugli animali per kg
   const getSizeCodeFromAnimalsPerKg = (animalsPerKg: number): string => {
@@ -524,7 +598,7 @@ export default function Baskets() {
       <div className="flex justify-between items-center mb-6">
         <h2 className="text-2xl font-condensed font-bold text-gray-800">Gestione Ceste</h2>
         <div className="flex space-x-3">
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={exportToExcel}>
             <Download className="h-4 w-4 mr-1" />
             Esporta
           </Button>
