@@ -927,7 +927,7 @@ export default function VagliaturaConMappa() {
                           return sum + (basket.animalCount || 0);
                         }, 0);
                         
-                        const difference = totalOriginAnimals - totalDestinationAnimals;
+                        const difference = totalDestinationAnimals - totalOriginAnimals;
                         const completionPercentage = totalOriginAnimals > 0 
                           ? Math.round((totalDestinationAnimals / totalOriginAnimals) * 100) 
                           : 0;
