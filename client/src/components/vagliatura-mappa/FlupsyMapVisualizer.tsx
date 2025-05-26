@@ -141,14 +141,38 @@ export default function FlupsyMapVisualizer({
         console.log(`Cestello #${basket.physicalNumber} non selezionabile: ha un ciclo attivo e non è un cestello origine`);
       }
     } else {
-      console.log(`Nessun cestello nella posizione ${row}${position}`);
+      // Se non c'è cestello e siamo in modalità destinazione, permettiamo di selezionare la posizione vuota
+      if (mode === 'destination') {
+        // Crea un oggetto cestello virtuale per la posizione vuota
+        const virtualBasket = {
+          id: -1, // ID temporaneo negativo per identificare le posizioni vuote
+          physicalNumber: 0, // Numero fisico placeholder
+          flupsyId: Number(flupsyId),
+          position: position,
+          row: row,
+          state: 'empty' as const,
+          currentCycleId: null,
+          // Dati aggiuntivi per la posizione vuota
+          _isEmpty: true,
+          _virtualPosition: `${row}${position}`
+        };
+        
+        console.log(`Posizione vuota selezionabile: ${row}${position}`);
+        onBasketClick(virtualBasket as any);
+      } else {
+        console.log(`Nessun cestello nella posizione ${row}${position}`);
+      }
     }
   };
   
   // Funzione per ottenere la classe CSS appropriata per un cestello
   const getBasketClass = (basket: Basket | undefined) => {
     if (!basket) {
-      return 'bg-gray-100 dark:bg-gray-800'; // Posizione vuota
+      // Se siamo in modalità destinazione, le posizioni vuote dovrebbero essere selezionabili
+      if (mode === 'destination') {
+        return 'bg-gray-100 dark:bg-gray-800 hover:bg-green-100 dark:hover:bg-green-900 border-2 border-dashed border-green-500 cursor-pointer'; // Posizione vuota selezionabile
+      }
+      return 'bg-gray-100 dark:bg-gray-800'; // Posizione vuota non selezionabile
     }
     
     // Verifica se il cestello può essere selezionato
