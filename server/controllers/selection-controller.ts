@@ -1,6 +1,23 @@
 /**
  * Controller per la gestione delle operazioni di Selezione
  */
+
+/**
+ * Funzione di utilità per normalizzare il formato posizione
+ * Converte automaticamente "1" in "DX1" se necessario
+ */
+function normalizePositionFormat(position: string | number | null | undefined): string {
+  if (!position) return '';
+  
+  const positionStr = String(position);
+  
+  // Se è solo un numero, aggiungi "DX" come prefisso di default
+  if (/^\d+$/.test(positionStr)) {
+    return `DX${positionStr}`;
+  }
+  
+  return positionStr;
+}
 import { Request, Response } from "express";
 import { db } from "../db";
 import { eq, and, or, isNull, isNotNull, sql } from "drizzle-orm";
@@ -1129,11 +1146,9 @@ export async function addDestinationBaskets(req: Request, res: Response) {
               }
             }
             
-            // Conversione automatica: se riceve solo un numero, aggiungi "DX" come prefisso di default
-            if (/^\d+$/.test(positionStr)) {
-              positionStr = `DX${positionStr}`;
-              console.log(`Conversione automatica posizione: "${destBasket.position}" -> "${positionStr}"`);
-            }
+            // Normalizza il formato posizione
+            positionStr = normalizePositionFormat(positionStr);
+            console.log(`Posizione normalizzata: "${destBasket.position}" -> "${positionStr}"`);
             
             const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
             if (!rowMatch) {
@@ -1400,11 +1415,9 @@ export async function addDestinationBaskets(req: Request, res: Response) {
                 }
               }
               
-              // Conversione automatica: se riceve solo un numero, aggiungi "DX" come prefisso di default
-              if (/^\d+$/.test(positionStr)) {
-                positionStr = `DX${positionStr}`;
-                console.log(`Conversione automatica posizione: "${destBasket.position}" -> "${positionStr}"`);
-              }
+              // Normalizza il formato posizione
+              positionStr = normalizePositionFormat(positionStr);
+              console.log(`Posizione normalizzata: "${destBasket.position}" -> "${positionStr}"`);
               
               const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
               if (!rowMatch) {
@@ -1830,11 +1843,9 @@ export async function completeSelection(req: Request, res: Response) {
                 }
               }
               
-              // Conversione automatica: se riceve solo un numero, aggiungi "DX" come prefisso di default
-              if (/^\d+$/.test(positionStr)) {
-                positionStr = `DX${positionStr}`;
-                console.log(`Conversione automatica posizione: "${destBasket.position}" -> "${positionStr}"`);
-              }
+              // Normalizza il formato posizione
+              positionStr = normalizePositionFormat(positionStr);
+              console.log(`Posizione normalizzata: "${destBasket.position}" -> "${positionStr}"`);
               
               const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
               
