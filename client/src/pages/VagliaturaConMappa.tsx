@@ -931,7 +931,7 @@ export default function VagliaturaConMappa() {
                         return (
                           <div className="space-y-2 text-xs">
                             <div className="flex justify-between">
-                              <span className="text-blue-700">Animali Origine:</span>
+                              <span className="text-blue-700">Animali Origine Selezionati:</span>
                               <span className="font-semibold">{totalOriginAnimals.toLocaleString('it-IT')}</span>
                             </div>
                             <div className="flex justify-between">
