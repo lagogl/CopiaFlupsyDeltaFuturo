@@ -106,12 +106,12 @@ export default function Baskets() {
   // Query sizes for size calculation
   const { data: sizes = [] } = useQuery({
     queryKey: ['/api/sizes'],
-  });
+  }) as { data: any[] };
 
   // Query lots for supplier information
   const { data: lots = [] } = useQuery({
     queryKey: ['/api/lots'],
-  });
+  }) as { data: any[] };
 
   // Create mutation
   const createBasketMutation = useMutation({
@@ -601,96 +601,14 @@ export default function Baskets() {
                   </div>
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="TP-180">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-180')}}></div>
-                      <span>Taglia TP-180</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-200">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-200')}}></div>
-                      <span>Taglia TP-200</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-315">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-315')}}></div>
-                      <span>Taglia TP-315</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-450">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-450')}}></div>
-                      <span>Taglia TP-450</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-500">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-500')}}></div>
-                      <span>Taglia TP-500</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-600">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-600')}}></div>
-                      <span>Taglia TP-600</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-700">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-700')}}></div>
-                      <span>Taglia TP-700</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-800">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-800')}}></div>
-                      <span>Taglia TP-800</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-1000">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-1000')}}></div>
-                      <span>Taglia TP-1000</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-1500">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-1500')}}></div>
-                      <span>Taglia TP-1500</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-2000">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-2000')}}></div>
-                      <span>Taglia TP-2000</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-3000">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-3000')}}></div>
-                      <span>Taglia TP-3000</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-5000">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-5000')}}></div>
-                      <span>Taglia TP-5000</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-8000">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-8000')}}></div>
-                      <span>Taglia TP-8000</span>
-                    </div>
-                  </SelectItem>
-                  <SelectItem value="TP-10000">
-                    <div className="flex items-center">
-                      <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: getSizeColor('TP-10000')}}></div>
-                      <span>Taglia TP-10000</span>
-                    </div>
-                  </SelectItem>
+                  {sizes && Array.isArray(sizes) && sizes.map((size: any) => (
+                    <SelectItem key={size.code} value={size.code}>
+                      <div className="flex items-center">
+                        <div className="h-3 w-3 rounded-full mr-2" style={{backgroundColor: size.color || getSizeColor(size.code)}}></div>
+                        <span>Taglia {size.code}</span>
+                      </div>
+                    </SelectItem>
+                  ))}
                 </SelectContent>
               </Select>
           </div>
