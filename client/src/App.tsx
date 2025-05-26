@@ -38,16 +38,8 @@ import DiarioDiBordo from "@/pages/DiarioDiBordo";
 import NotificationSettings from "@/pages/NotificationSettings";
 import EcoImpact from "@/pages/EcoImpact";
 import AuthPage from "@/pages/AuthPage";
-// Importiamo le pagine per il modulo di vagliatura
-import Screening from "@/pages/Screening";
-import NewScreening from "@/pages/NewScreening";
-import ScreeningDetail from "@/pages/ScreeningDetail";
-import ScreeningAddSource from "@/pages/ScreeningAddSource";
-import ScreeningAddDestination from "@/pages/ScreeningAddDestination";
-// Importiamo le pagine per il modulo di selezione
-import Selection from "@/pages/Selection";
-import NewSelection from "@/pages/NewSelection";
-import SelectionDetail from "@/pages/SelectionDetail";
+// Modulo screening rimosso - ora si usa solo Vagliatura con Mappa
+// Modulo selezione rimosso - ora si usa solo Vagliatura con Mappa
 // Importazione per il nuovo modulo di Vagliatura con Mappa
 import VagliaturaConMappa from "@/pages/VagliaturaConMappa";
 // Importazioni per la gestione delle pagine di amministrazione
@@ -120,17 +112,9 @@ function Router() {
         {() => <Redirect to="/" />}
       </Route>
       
-      {/* Screening (Vagliatura) routes */}
-      <ProtectedRoute path="/screening" component={Screening}/>
-      <ProtectedRoute path="/screening/new" component={NewScreening}/>
-      <ProtectedRoute path="/screening/:id" component={ScreeningDetail}/>
-      <ProtectedRoute path="/screening/:id/add-source" component={ScreeningAddSource}/>
-      <ProtectedRoute path="/screening/:id/add-destination" component={ScreeningAddDestination}/>
+      {/* Modulo screening rimosso - ora si usa solo Vagliatura con Mappa */}
       
-      {/* Selection (Selezione) routes */}
-      <ProtectedRoute path="/selection" component={Selection}/>
-      <ProtectedRoute path="/selection/new" component={NewSelection}/>
-      <ProtectedRoute path="/selection/:id" component={SelectionDetail}/>
+      {/* Modulo selezione rimosso - ora si usa solo Vagliatura con Mappa */}
       
       {/* Vagliatura con Mappa routes */}
       <ProtectedRoute path="/vagliatura-mappa" component={VagliaturaConMappa}/>
