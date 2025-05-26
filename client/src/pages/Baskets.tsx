@@ -266,11 +266,28 @@ export default function Baskets() {
     // Prendi l'operazione più recente per i dati principali
     const latestOperation = basketOperations[0];
     
-    // Calcola la taglia se abbiamo peso e numero animali
+    // Calcola la taglia cercando operazioni di peso per questo cestello
     let calculatedSize = null;
-    if (latestOperation.weight && latestOperation.animalCount) {
+    
+    // Cerca operazioni di peso per questo cestello
+    const weightOperations = basketOperations.filter(op => op.type === 'peso' && op.weight && op.animalCount);
+    
+    if (weightOperations.length > 0) {
+      // Usa l'operazione di peso più recente
+      const weightOp = weightOperations[0];
+      const animalsPerKg = weightOp.animalCount / weightOp.weight;
+      calculatedSize = getSizeCodeFromAnimalsPerKg(animalsPerKg);
+      console.log(`Cestello #${basket.physicalNumber}: peso=${weightOp.weight}kg, animali=${weightOp.animalCount}, animali/kg=${animalsPerKg}, taglia=${calculatedSize}`);
+    } else if (latestOperation.weight && latestOperation.animalCount) {
+      // Fallback: usa l'operazione più recente se ha peso e animali
       const animalsPerKg = latestOperation.animalCount / latestOperation.weight;
       calculatedSize = getSizeCodeFromAnimalsPerKg(animalsPerKg);
+      console.log(`Cestello #${basket.physicalNumber}: peso=${latestOperation.weight}kg, animali=${latestOperation.animalCount}, animali/kg=${animalsPerKg}, taglia=${calculatedSize}`);
+    } else {
+      console.log(`Cestello #${basket.physicalNumber}: nessuna operazione di peso trovata, operazioni totali: ${basketOperations.length}`);
+      if (basketOperations.length > 0) {
+        console.log('Prima operazione:', basketOperations[0]);
+      }
     }
 
     // Data di attivazione: prima operazione
