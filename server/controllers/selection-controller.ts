@@ -1645,7 +1645,7 @@ export async function completeSelection(req: Request, res: Response) {
           // 2. Crea operazione di prima attivazione con il cycleId corretto
           await tx.insert(operations).values({
             date: selection[0].date,
-            type: 'prima-attivazione',
+            type: 'prima-attivazione-da-vagliatura',
             basketId: destBasket.basketId,
             cycleId: cycleId, // Usa direttamente l'ID del ciclo appena creato
             animalCount: destBasket.animalCount,
