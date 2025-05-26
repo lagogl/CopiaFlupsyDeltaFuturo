@@ -2,7 +2,7 @@ import React from 'react';
 import { cn } from '@/lib/utils';
 import { Badge } from '@/components/ui/badge';
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip';
-import { InfoIcon } from 'lucide-react';
+import { InfoIcon, Euro } from 'lucide-react';
 
 // Utility per formattare i numeri grandi in modo più compatto
 function formatNumber(num: number): string {
@@ -47,6 +47,7 @@ interface FlupsyMapVisualizerProps {
   showTooltips?: boolean;
   maxPositions?: number; // Numero massimo di posizioni per FLUPSY
   sourceBasketIds?: number[]; // Array di ID dei cestelli selezionati come origine (per la modalità destinazione)
+  soldBasketIds?: number[]; // Array di ID dei cestelli destinati alla vendita
 }
 
 /**
@@ -60,7 +61,8 @@ export default function FlupsyMapVisualizer({
   mode,
   showTooltips = true,
   maxPositions = 10,
-  sourceBasketIds = []
+  sourceBasketIds = [],
+  soldBasketIds = []
 }: FlupsyMapVisualizerProps) {
   // Trova i cestelli del FLUPSY selezionato
   const flupsyBaskets = baskets.filter(b => b.flupsyId === Number(flupsyId));
@@ -436,8 +438,12 @@ export default function FlupsyMapVisualizer({
                             role="button"
                             tabIndex={0}
                           >
-                            <div className="text-[10px] font-medium">
+                            <div className="text-[10px] font-medium flex items-center justify-center gap-1">
                               {row}{position} #{basket?.physicalNumber || ''}
+                              {/* Icona Euro per cestelli destinati alla vendita */}
+                              {basket && soldBasketIds.includes(basket.id) && (
+                                <Euro className="w-3 h-3 text-yellow-400" />
+                              )}
                             </div>
                             {basket ? (
                               <div className="text-center w-full">
