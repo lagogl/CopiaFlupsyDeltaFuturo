@@ -1129,6 +1129,12 @@ export async function addDestinationBaskets(req: Request, res: Response) {
               }
             }
             
+            // Conversione automatica: se riceve solo un numero, aggiungi "DX" come prefisso di default
+            if (/^\d+$/.test(positionStr)) {
+              positionStr = `DX${positionStr}`;
+              console.log(`Conversione automatica posizione: "${destBasket.position}" -> "${positionStr}"`);
+            }
+            
             const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
             if (!rowMatch) {
               throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
@@ -1392,6 +1398,12 @@ export async function addDestinationBaskets(req: Request, res: Response) {
                 } else {
                   throw new Error(`Impossibile determinare la riga per cestello ${destBasket.basketId}. Posizione ricevuta: ${destBasket.position}`);
                 }
+              }
+              
+              // Conversione automatica: se riceve solo un numero, aggiungi "DX" come prefisso di default
+              if (/^\d+$/.test(positionStr)) {
+                positionStr = `DX${positionStr}`;
+                console.log(`Conversione automatica posizione: "${destBasket.position}" -> "${positionStr}"`);
               }
               
               const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
