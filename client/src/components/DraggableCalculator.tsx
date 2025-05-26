@@ -51,7 +51,7 @@ export default function DraggableCalculator({
   
   // Calcoli automatici
   const totalSample = sampleCount + deadCount;
-  const mortalityRate = totalSample > 0 ? Math.round((deadCount / totalSample) * 100) : 0;
+  const mortalityRate = totalSample > 0 ? parseFloat(((deadCount / totalSample) * 100).toFixed(1)) : 0;
   const mortalityFactor = 1 - (mortalityRate / 100);
   
   // Calcola animali per kg dal campione (peso campione in grammi / numero animali vivi * 1000)
