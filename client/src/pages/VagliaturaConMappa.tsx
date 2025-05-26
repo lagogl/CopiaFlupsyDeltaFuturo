@@ -30,6 +30,7 @@ import { Flupsy, Basket, Selection, SourceBasket, DestinationBasket, Size } from
 // Componenti specifici per la vagliatura con mappa
 import FlupsyMapVisualizer from '@/components/vagliatura-mappa/FlupsyMapVisualizer';
 import DraggableCalculator from '@/components/DraggableCalculator';
+import CompletionProgressDialog from '@/components/CompletionProgressDialog';
 
 /**
  * Componente principale per la Vagliatura con Mappa
@@ -100,6 +101,16 @@ export default function VagliaturaConMappa() {
     animalsPerKg: 0,
     selectedBasketId: null as number | null
   });
+
+  // Stato per l'indicatore di avanzamento del completamento
+  const [isCompletionInProgress, setIsCompletionInProgress] = useState(false);
+  const [completionSteps, setCompletionSteps] = useState<Array<{
+    id: string;
+    label: string;
+    status: 'pending' | 'in-progress' | 'completed' | 'error';
+    description?: string;
+  }>>([]);
+  const [currentCompletionStep, setCurrentCompletionStep] = useState(0);
   
   // Query per i dati
   const { data: flupsys = [], isLoading: isLoadingFlupsys } = useQuery<Flupsy[]>({
