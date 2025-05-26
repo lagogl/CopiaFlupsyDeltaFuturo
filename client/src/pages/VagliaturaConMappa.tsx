@@ -571,7 +571,7 @@ export default function VagliaturaConMappa() {
       
       // Prepara i dati iniziali per il dialogo di misurazione
       const initialMeasurementData = {
-        basketId: isVirtualBasket ? -1 : basket.id,
+        basketId: basket.id, // Usa sempre l'ID del basket (anche per quelli virtuali che ora hanno ID unici)
         physicalNumber: isVirtualBasket ? 0 : basket.physicalNumber,
         flupsyId: basket.flupsyId || 0,
         position: basket.position?.toString() || '',
@@ -1002,12 +1002,16 @@ export default function VagliaturaConMappa() {
                       <div className="border rounded-md p-3">
                         <h3 className="text-sm font-semibold mb-2">Cestelli Destinazione ({destinationBaskets.length})</h3>
                         <div className="max-h-[150px] overflow-y-auto">
-                          {destinationBaskets.map(basket => {
+                          {destinationBaskets.map((basket, index) => {
                             const basketDetails = baskets.find(b => b.id === basket.basketId);
+                            // Per le ceste virtuali, usa la posizione come identificatore univoco
+                            const uniqueKey = basket.basketId < 0 ? `virtual-${basket.position || basket.row + basket.position}` : basket.basketId;
+                            const displayNumber = basketDetails?.physicalNumber || `Pos. ${basket.position}`;
+                            
                             return (
-                              <div key={basket.basketId} className="text-xs p-1 border-b last:border-b-0 flex justify-between items-center">
+                              <div key={uniqueKey} className="text-xs p-1 border-b last:border-b-0 flex justify-between items-center">
                                 <div>
-                                  <span>Cestello #{basketDetails?.physicalNumber}</span>
+                                  <span>Cestello #{displayNumber}</span>
                                   <br/>
                                   <span className="text-gray-500">{(basket.animalCount || 0).toLocaleString('it-IT')} animali</span>
                                 </div>

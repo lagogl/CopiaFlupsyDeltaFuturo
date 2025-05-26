@@ -143,9 +143,9 @@ export default function FlupsyMapVisualizer({
     } else {
       // Se non c'è cestello e siamo in modalità destinazione, permettiamo di selezionare la posizione vuota
       if (mode === 'destination') {
-        // Crea un oggetto cestello virtuale per la posizione vuota
+        // Crea un oggetto cestello virtuale per la posizione vuota con ID unico
         const virtualBasket = {
-          id: -1, // ID temporaneo negativo per identificare le posizioni vuote
+          id: -(Number(flupsyId) * 1000 + position + (row === 'SX' ? 0 : 100)), // ID unico negativo basato su flupsyId, posizione e fila
           physicalNumber: 0, // Numero fisico placeholder
           flupsyId: Number(flupsyId),
           position: position,
