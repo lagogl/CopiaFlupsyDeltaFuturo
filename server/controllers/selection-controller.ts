@@ -1830,17 +1830,17 @@ export async function completeSelection(req: Request, res: Response) {
                 }
               }
               
+              // Conversione automatica: se riceve solo un numero, aggiungi "DX" come prefisso di default
+              if (/^\d+$/.test(positionStr)) {
+                positionStr = `DX${positionStr}`;
+                console.log(`Conversione automatica posizione: "${destBasket.position}" -> "${positionStr}"`);
+              }
+              
               const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
               
               if (!rowMatch) {
                 console.log(`Errore formato posizione: ricevuto "${positionStr}", tentativo conversione automatica fallito`);
-                // Se anche qui non funziona, usa una riga di default
-                if (/^\d+$/.test(positionStr)) {
-                  positionStr = `DX${positionStr}`;
-                  console.log(`Applicato formato di default: ${positionStr}`);
-                } else {
-                  throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
-                }
+                throw new Error(`Formato posizione non valido: ${positionStr}. Formato atteso: FILA+NUMERO (es. DX2)`);
               }
               
               const row = rowMatch[1];
