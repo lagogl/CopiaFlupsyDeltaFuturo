@@ -966,7 +966,15 @@ export default function Baskets() {
                         <span className="text-xs text-muted-foreground">{filteredBaskets.length} ceste</span>
                       </td>
                       <td colSpan={1} className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                        {filteredBaskets.reduce((total, basket) => total + (basket.calculatedAnimalCount || basket.animalCount || 0), 0).toLocaleString('it-IT')}
+                        {(() => {
+                          const totalAnimals = filteredBaskets.reduce((total, basket) => {
+                            const animalCount = basket.calculatedAnimalCount || basket.animalCount || 0;
+                            console.log(`Totale: cestello #${basket.physicalNumber}, calculatedAnimalCount=${basket.calculatedAnimalCount}, animalCount=${basket.animalCount}, usando=${animalCount}`);
+                            return total + animalCount;
+                          }, 0);
+                          console.log(`Totale finale animali: ${totalAnimals}`);
+                          return totalAnimals.toLocaleString('it-IT');
+                        })()}
                       </td>
                       <td colSpan={2}></td>
                     </tr>
