@@ -706,10 +706,39 @@ export default function VagliaturaConMappa() {
           // Combina fila e posizione nel formato richiesto dal server (es. "DX1")
           const formattedPosition = `${row}${basket.position}`;
           
+          // FORZA IL CALCOLO di animalsPerKg se mancante
+          let finalAnimalsPerKg = basket.animalsPerKg || 0;
+          if ((!finalAnimalsPerKg || finalAnimalsPerKg === 0) && basket.sampleWeight > 0 && basket.sampleCount > 0) {
+            finalAnimalsPerKg = Math.round((basket.sampleCount / basket.sampleWeight) * 1000);
+            console.log(`CALCOLO FORZATO per cestello ${basket.basketId}: (${basket.sampleCount} / ${basket.sampleWeight}) * 1000 = ${finalAnimalsPerKg}`);
+          }
+          
+          // FORZA IL CALCOLO di animalCount se mancante
+          let finalAnimalCount = basket.animalCount || 0;
+          if (basket.totalWeight > 0 && finalAnimalsPerKg > 0) {
+            finalAnimalCount = Math.round(basket.totalWeight * finalAnimalsPerKg);
+            console.log(`CALCOLO FORZATO animalCount per cestello ${basket.basketId}: ${basket.totalWeight} * ${finalAnimalsPerKg} = ${finalAnimalCount}`);
+          }
+          
+          // Determina la taglia
+          let finalSizeId = basket.sizeId || 0;
+          if (finalAnimalsPerKg > 0 && sizes) {
+            const matchingSize = sizes.find(size => 
+              finalAnimalsPerKg >= size.min && finalAnimalsPerKg <= size.max
+            );
+            if (matchingSize) {
+              finalSizeId = matchingSize.id;
+              console.log(`TAGLIA DETERMINATA per cestello ${basket.basketId}: ${matchingSize.code} (ID: ${finalSizeId})`);
+            }
+          }
+          
           return {
             ...basket,
             position: formattedPosition,
-            selectionId
+            selectionId,
+            animalsPerKg: finalAnimalsPerKg,
+            animalCount: finalAnimalCount,
+            sizeId: finalSizeId
           };
         });
         
