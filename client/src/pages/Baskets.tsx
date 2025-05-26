@@ -593,22 +593,22 @@ export default function Baskets() {
       </div>
 
       {/* Baskets Table */}
-      <div className="bg-white rounded-lg shadow overflow-hidden">
+      <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
-          <table className="min-w-full divide-y divide-gray-200">
-            <thead className="bg-gray-50">
+          <table className="min-w-full">
+            <thead className="bg-gray-50 border-b border-gray-200">
               <tr>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => requestSort('physicalNumber')}
                 >
                   <div className="flex items-center">
-                    ID Cesta
-                    {sortConfig.key === 'physicalNumber' ? (
+                    ID<br/>CESTA
+                    {sortConfig.key === 'physicalNumber' && (
                       <svg 
                         xmlns="http://www.w3.org/2000/svg" 
-                        className="h-4 w-4 ml-1" 
+                        className="h-3 w-3 ml-1" 
                         fill="none" 
                         viewBox="0 0 24 24" 
                         stroke="currentColor"
@@ -619,34 +619,27 @@ export default function Baskets() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                         )}
                       </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
                     )}
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
                   FLUPSY
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Lotto
+                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  LOTTO
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Codice Ciclo
+                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  CODICE<br/>CICLO ATTUALE
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ciclo Attuale
+                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  STATO
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Stato
-                </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Ultima Operazione
+                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  ULTIMA<br/>OPERAZIONE
                 </th>
                 <th 
                   scope="col" 
-                  className={`px-6 py-3 text-left text-xs font-medium uppercase tracking-wider cursor-pointer relative ${sortConfig.key === 'size.code' ? 'text-blue-600' : 'text-gray-500'}`}
+                  className={`px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-100 ${sortConfig.key === 'size.code' ? 'text-blue-600' : 'text-gray-600'}`}
                   onClick={() => requestSort('size.code')}
                 >
                   <div className="flex items-center">
@@ -681,15 +674,15 @@ export default function Baskets() {
                 </th>
                 <th 
                   scope="col" 
-                  className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer"
+                  className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                   onClick={() => requestSort('animalCount')}
                 >
                   <div className="flex items-center">
-                    N° Animali
-                    {sortConfig.key === 'animalCount' ? (
+                    N°<br/>ANIMALI
+                    {sortConfig.key === 'animalCount' && (
                       <svg 
                         xmlns="http://www.w3.org/2000/svg" 
-                        className="h-4 w-4 ml-1" 
+                        className="h-3 w-3 ml-1" 
                         fill="none" 
                         viewBox="0 0 24 24" 
                         stroke="currentColor"
@@ -700,56 +693,52 @@ export default function Baskets() {
                           <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
                         )}
                       </svg>
-                    ) : (
-                      <svg xmlns="http://www.w3.org/2000/svg" className="h-4 w-4 ml-1 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M7 16V4m0 0L3 8m4-4l4 4m6 0v12m0 0l4-4m-4 4l-4-4" />
-                      </svg>
                     )}
                   </div>
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Data Attivazione
+                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  DATA<br/>ATTIVAZIONE
                 </th>
-                <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  Azioni
+                <th scope="col" className="px-4 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider">
+                  AZIONI
                 </th>
               </tr>
             </thead>
-            <tbody className="bg-white divide-y divide-gray-200">
+            <tbody className="bg-white">
               {isLoading ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                     Caricamento ceste...
                   </td>
                 </tr>
               ) : filteredBaskets.length === 0 ? (
                 <tr>
-                  <td colSpan={11} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                  <td colSpan={9} className="px-4 py-8 text-center text-gray-500">
                     Nessuna cesta trovata
                   </td>
                 </tr>
               ) : (
                 <>
-                  {filteredBaskets.map((basket) => {
+                  {filteredBaskets.map((basket, index) => {
                     let statusBadge;
                     if (basket.state === 'active' && basket.currentCycleId) {
-                      statusBadge = <Badge className="bg-green-100 text-green-800 hover:bg-green-200">Ciclo attivo</Badge>;
+                      statusBadge = <Badge className="bg-green-100 text-green-700 border-green-200 text-xs">Ciclo attivo</Badge>;
                     } else if (basket.state === 'active' && !basket.currentCycleId) {
-                      statusBadge = <Badge className="bg-amber-100 text-amber-800 hover:bg-amber-200">Attiva, senza ciclo</Badge>;
+                      statusBadge = <Badge className="bg-orange-100 text-orange-700 border-orange-200 text-xs">prima-attivazione</Badge>;
                     } else {
-                      statusBadge = <Badge className="bg-gray-100 text-gray-800 hover:bg-gray-200">Disponibile</Badge>;
+                      statusBadge = <Badge className="bg-gray-100 text-gray-700 border-gray-200 text-xs">Disponibile</Badge>;
                     }
 
                     return (
-                      <tr key={basket.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium text-gray-900">
+                      <tr key={basket.id} className={`border-b border-gray-100 hover:bg-gray-50 ${index % 2 === 0 ? 'bg-white' : 'bg-gray-50/30'}`}>
+                        <td className="px-4 py-4 text-sm font-semibold text-gray-900">
                           #{basket.physicalNumber}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-600">
+                        <td className="px-4 py-4 text-sm text-gray-700">
                           <div className="flex flex-col">
-                            <span>{basket.flupsyName || `FLUPSY #${basket.flupsyId}`}</span>
+                            <span className="font-medium">{basket.flupsyName || `FLUPSY #${basket.flupsyId}`}</span>
                             {basket.row && basket.position && (
-                              <span className="text-xs text-muted-foreground">
+                              <span className="text-xs text-gray-500">
                                 Pos: {basket.row}-{basket.position}
                               </span>
                             )}
