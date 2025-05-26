@@ -230,10 +230,10 @@ export default function Sizes() {
                         {size.sizeMm}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                        {size.minAnimalsPerKg}
+                        {size.minAnimalsPerKg ? size.minAnimalsPerKg.toLocaleString('it-IT') : '-'}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                        {size.maxAnimalsPerKg}
+                        {size.maxAnimalsPerKg ? size.maxAnimalsPerKg.toLocaleString('it-IT') : '-'}
                       </td>
                       <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                         {size.notes || '-'}
