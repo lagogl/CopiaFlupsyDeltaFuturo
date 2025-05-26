@@ -1110,8 +1110,24 @@ export async function addDestinationBaskets(req: Request, res: Response) {
             }
             
             // Estrai la riga (DX, SX) e la posizione numerica
-            const positionStr = String(destBasket.position || '');
+            let positionStr = String(destBasket.position || '');
             console.log(`Posizione in elaborazione: "${positionStr}" per cestello ${destBasket.basketId}`);
+            
+            // Se riceve solo un numero, usa la riga del cestello esistente
+            if (/^\d+$/.test(positionStr)) {
+              // Trova il cestello nel database per ottenere la riga attuale
+              const currentBasket = await tx.select()
+                .from(baskets)
+                .where(eq(baskets.id, destBasket.basketId))
+                .limit(1);
+              
+              if (currentBasket.length > 0 && currentBasket[0].row) {
+                positionStr = `${currentBasket[0].row}${positionStr}`;
+                console.log(`Posizione corretta con riga esistente: ${positionStr}`);
+              } else {
+                throw new Error(`Impossibile determinare la riga per cestello ${destBasket.basketId}. Posizione ricevuta: ${destBasket.position}`);
+              }
+            }
             
             const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
             if (!rowMatch) {
@@ -1225,19 +1241,19 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           }
         }
         
-        // Prima crea il ciclo per la cesta
-        const [cycle] = await tx.insert(cycles).values({
-          basketId: destBasket.basketId,
-          startDate: selection[0].date,
-          state: 'active'
-        }).returning();
+        // Usa il ciclo già creato in precedenza (eliminazione duplicazione)
+        const cycleId = destinationCycleId; // Usa il ciclo già creato e validato
         
         // Ora crea l'operazione di prima attivazione con l'ID del ciclo valido
+        console.log(`[DEBUG 1] Creazione operazione per cestello ${destBasket.basketId} con cycleId: ${cycleId}`);
+        if (!cycleId || cycleId === 0) {
+          throw new Error(`[ERRORE CRITICO 1] Tentativo di creare operazione con cycleId non valido: ${cycleId} per cestello ${destBasket.basketId}`);
+        }
         const [operation] = await tx.insert(operations).values({
           date: selection[0].date,
           type: 'prima-attivazione',
           basketId: destBasket.basketId,
-          cycleId: cycle.id, // Usa l'ID del ciclo appena creato
+          cycleId: cycleId, // Usa l'ID del ciclo già creato e validato
           animalCount: destBasket.animalCount,
           totalWeight: destBasket.totalWeight,
           animalsPerKg: destBasket.animalsPerKg,
@@ -1269,20 +1285,24 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           // prima di usarlo in altre operazioni. Questo risolve l'errore FK constraint.
           const cycleRecord = await tx.select()
             .from(cycles)
-            .where(eq(cycles.id, cycle.id))
+            .where(eq(cycles.id, cycleId))
             .limit(1);
             
           if (!cycleRecord || cycleRecord.length === 0) {
-            console.error(`Errore: ciclo ${cycle.id} non trovato nel database dopo la creazione`);
-            throw new Error(`Impossibile trovare il ciclo appena creato (ID: ${cycle.id})`);
+            console.error(`Errore: ciclo ${cycleId} non trovato nel database dopo la creazione`);
+            throw new Error(`Impossibile trovare il ciclo appena creato (ID: ${cycleId})`);
           }
           
           // Crea operazione di vendita con il lotto associato
+          console.log(`[DEBUG 2] Creazione operazione vendita per cestello ${destBasket.basketId} con cycleId: ${cycleId}`);
+          if (!cycleId || cycleId === 0) {
+            throw new Error(`[ERRORE CRITICO 2] Tentativo di creare operazione vendita con cycleId non valido: ${cycleId}`);
+          }
           const [saleOperation] = await tx.insert(operations).values({
             date: selection[0].date,
             type: 'vendita',
             basketId: destBasket.basketId,
-            cycleId: cycle.id,
+            cycleId: cycleId,
             animalCount: destBasket.animalCount,
             totalWeight: destBasket.totalWeight,
             animalsPerKg: destBasket.animalsPerKg,
@@ -1301,7 +1321,7 @@ export async function addDestinationBaskets(req: Request, res: Response) {
               state: 'closed', 
               endDate: selection[0].date 
             })
-            .where(eq(cycles.id, cycle.id));
+            .where(eq(cycles.id, cycleId));
           
           // Aggiorna lo stato del cestello a disponibile
           // IMPORTANTE: Manteniamo il flupsyId a un valore valido (quello attuale o 1 di default)
@@ -1354,8 +1374,24 @@ export async function addDestinationBaskets(req: Request, res: Response) {
               
               // Estrai la riga (DX, SX) e la posizione numerica
               // Controllo aggiuntivo: Se position è null o undefined, gestisci appositamente
-              const positionStr = String(destBasket.position || ''); // Converti a stringa o usa stringa vuota
+              let positionStr = String(destBasket.position || ''); // Converti a stringa o usa stringa vuota
               console.log(`Posizione in elaborazione: "${positionStr}" per cestello ${destBasket.basketId}`);
+              
+              // Se riceve solo un numero, usa la riga del cestello esistente
+              if (/^\d+$/.test(positionStr)) {
+                // Trova il cestello nel database per ottenere la riga attuale
+                const currentBasket = await tx.select()
+                  .from(baskets)
+                  .where(eq(baskets.id, destBasket.basketId))
+                  .limit(1);
+                
+                if (currentBasket.length > 0 && currentBasket[0].row) {
+                  positionStr = `${currentBasket[0].row}${positionStr}`;
+                  console.log(`Posizione corretta con riga esistente: ${positionStr}`);
+                } else {
+                  throw new Error(`Impossibile determinare la riga per cestello ${destBasket.basketId}. Posizione ricevuta: ${destBasket.position}`);
+                }
+              }
               
               const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
               if (!rowMatch) {
@@ -1567,6 +1603,10 @@ export async function completeSelection(req: Request, res: Response) {
       // Chiudi i cicli delle ceste di origine
       for (const sourceBasket of sourceBaskets) {
         // Crea operazione di chiusura per il ciclo di origine
+        console.log(`[DEBUG 3] Creazione operazione chiusura per cestello ${sourceBasket.basketId} con cycleId: ${sourceBasket.cycleId}`);
+        if (!sourceBasket.cycleId || sourceBasket.cycleId === 0) {
+          throw new Error(`[ERRORE CRITICO 3] Tentativo di creare operazione chiusura con cycleId non valido: ${sourceBasket.cycleId} per cestello ${sourceBasket.basketId}`);
+        }
         await tx.insert(operations).values({
           date: selection[0].date,
           type: 'selezione-origine',
@@ -1621,50 +1661,40 @@ export async function completeSelection(req: Request, res: Response) {
             eq(cycles.startDate, selection[0].date)
           ));
         
-        let cycleId = null;
+        // CORREZIONE: Usa il destinationCycleId già creato invece di creare un nuovo ciclo
+        // Questo evita la duplicazione e assicura che usiamo sempre lo stesso ciclo valido
+        let cycleId = destinationCycleId;
         
-        // Se non esiste un ciclo, lo creiamo ora
-        if (existingCycles.length === 0) {
-          // CORREZIONE: Prima creiamo il ciclo, poi l'operazione con il ciclo corretto
-          // Questo evita la violazione del vincolo di chiave esterna
-          
-          // 1. Crea nuovo ciclo per la cesta
-          const [cycle] = await tx.insert(cycles).values({
-            basketId: destBasket.basketId,
-            startDate: selection[0].date,
-            state: 'active'
-          }).returning();
-          
-          // Protezione contro cicli non creati
-          if (!cycle || !cycle.id) {
-            throw new Error(`Errore critico: impossibile creare ciclo per cestello ${destBasket.basketId}`);
-          }
-          
-          cycleId = cycle.id;
-          
-          // 2. Crea operazione di prima attivazione con il cycleId corretto
-          await tx.insert(operations).values({
-            date: selection[0].date,
-            type: 'prima-attivazione-da-vagliatura',
-            basketId: destBasket.basketId,
-            cycleId: cycleId, // Usa direttamente l'ID del ciclo appena creato
-            animalCount: destBasket.animalCount,
-            totalWeight: destBasket.totalWeight,
-            animalsPerKg: destBasket.animalsPerKg,
-            averageWeight: destBasket.totalWeight && destBasket.animalCount 
-                          ? Math.round(destBasket.totalWeight / destBasket.animalCount) 
-                          : 0,
-            deadCount: destBasket.deadCount || 0,
-            mortalityRate: destBasket.mortalityRate || 0,
-            sizeId: actualSizeId,
-            notes: `Aperto ciclo da vagliatura #${selection[0].selectionNumber}`
-          });
-          
-          console.log(`Creato nuovo ciclo ${cycleId} per cestello ${destBasket.basketId} con successo`);
-        } else {
-          cycleId = existingCycles[0].id;
-          console.log(`Usato ciclo esistente ${cycleId} per cestello ${destBasket.basketId}`);
+        // Verifica che il ciclo sia valido
+        if (!cycleId || cycleId === 0) {
+          throw new Error(`ERRORE CRITICO: destinationCycleId non valido (${cycleId}) per cestello ${destBasket.basketId}`);
         }
+        
+        console.log(`Usando cycleId ${cycleId} per cestello ${destBasket.basketId}`);
+        
+        // Crea operazione di prima attivazione con il cycleId corretto
+        console.log(`[DEBUG] Creazione operazione per cestello ${destBasket.basketId} con cycleId: ${cycleId}`);
+        if (!cycleId || cycleId === 0) {
+          throw new Error(`[ERRORE CRITICO] Tentativo di creare operazione con cycleId non valido: ${cycleId} per cestello ${destBasket.basketId}`);
+        }
+        await tx.insert(operations).values({
+          date: selection[0].date,
+          type: 'prima-attivazione',
+          basketId: destBasket.basketId,
+          cycleId: cycleId, // Usa direttamente l'ID del ciclo già creato
+          animalCount: destBasket.animalCount,
+          totalWeight: destBasket.totalWeight,
+          animalsPerKg: destBasket.animalsPerKg,
+          averageWeight: destBasket.totalWeight && destBasket.animalCount 
+                        ? Math.round(destBasket.totalWeight / destBasket.animalCount) 
+                        : 0,
+          deadCount: destBasket.deadCount || 0,
+          mortalityRate: destBasket.mortalityRate || 0,
+          sizeId: actualSizeId,
+          notes: `Aperto ciclo da vagliatura #${selection[0].selectionNumber}`
+        });
+        
+        console.log(`Operazione creata con successo per cestello ${destBasket.basketId} usando cycleId ${cycleId}`);
         
         // Gestione in base al tipo di destinazione
         if (destBasket.destinationType === 'sold') {
@@ -1763,7 +1793,25 @@ export async function completeSelection(req: Request, res: Response) {
           if (destBasket.position && typeof destBasket.position === 'string') {
             try {
               // Estrai la riga (DX, SX) e la posizione numerica
-              const positionStr = String(destBasket.position || '');
+              let positionStr = String(destBasket.position || '');
+              console.log(`Posizione ricevuta: ${positionStr} per cestello ${destBasket.basketId}`);
+              
+              // Se riceve solo un numero, usa la riga del cestello esistente
+              if (/^\d+$/.test(positionStr)) {
+                // Trova il cestello nel database per ottenere la riga attuale
+                const currentBasket = await tx.select()
+                  .from(baskets)
+                  .where(eq(baskets.id, destBasket.basketId))
+                  .limit(1);
+                
+                if (currentBasket.length > 0 && currentBasket[0].row) {
+                  positionStr = `${currentBasket[0].row}${positionStr}`;
+                  console.log(`Posizione corretta con riga esistente: ${positionStr}`);
+                } else {
+                  throw new Error(`Impossibile determinare la riga per cestello ${destBasket.basketId}. Posizione ricevuta: ${destBasket.position}`);
+                }
+              }
+              
               const rowMatch = positionStr.match(/^([A-Za-z]+)(\d+)$/);
               
               if (!rowMatch) {
