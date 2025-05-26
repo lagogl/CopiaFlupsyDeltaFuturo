@@ -11,7 +11,6 @@ import {
   selectionSourceBaskets,
   selectionDestinationBaskets,
   insertUserSchema,
-  insertSelectionSchema,
   cycles,
   sizes
 } from "../shared/schema";

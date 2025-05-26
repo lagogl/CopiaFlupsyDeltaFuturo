@@ -491,7 +491,7 @@ export default function FlupsyMapVisualizer({
                                         ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
                                         : "N/D")}
                                     </div>
-                                    <div className={`text-[8px] ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-green-600 font-semibold' : ''}`}>
+                                    <div className={`text-[8px] ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-600 font-bold' : ''}`}>
                                       {basket.lastOperation?.animalCount 
                                         ? (basket.lastOperation.animalCount >= 1000000 
                                             ? (basket.lastOperation.animalCount / 1000000).toFixed(1) + 'M'
@@ -504,13 +504,13 @@ export default function FlupsyMapVisualizer({
                                 ) : (
                                   // Layout normale per FLUPSY con poche posizioni
                                   <div className="flex flex-col gap-0.5 text-xs text-center">
-                                    <div className="font-medium">
+                                    <div className={`font-medium ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-600 font-bold' : ''}`}>
                                       {basket.size?.code || 
                                        (basket.lastOperation?.animalsPerKg 
                                         ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
                                         : "Senza taglia")}
                                     </div>
-                                    <div className={`font-semibold ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-green-600' : ''}`}>
+                                    <div className={`font-semibold ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-600 font-bold' : ''}`}>
                                       {basket.lastOperation?.animalCount 
                                         ? basket.lastOperation.animalCount.toLocaleString() 
                                         : "0"} anim.
