@@ -1218,12 +1218,19 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           }
         }
         
-        // Crea operazione di prima attivazione
+        // Prima crea il ciclo per la cesta
+        const [cycle] = await tx.insert(cycles).values({
+          basketId: destBasket.basketId,
+          startDate: selection[0].date,
+          state: 'active'
+        }).returning();
+        
+        // Ora crea l'operazione di prima attivazione con l'ID del ciclo valido
         const [operation] = await tx.insert(operations).values({
           date: selection[0].date,
           type: 'prima-attivazione',
           basketId: destBasket.basketId,
-          cycleId: 0, // Placeholder, aggiornato dopo
+          cycleId: cycle.id, // Usa l'ID del ciclo appena creato
           animalCount: destBasket.animalCount,
           totalWeight: destBasket.totalWeight,
           animalsPerKg: destBasket.animalsPerKg,
@@ -1235,18 +1242,6 @@ export async function addDestinationBaskets(req: Request, res: Response) {
           // Aggiungi il riferimento al lotto (il primo disponibile dalle ceste di origine)
           lotId: sourceBaskets.find(sb => sb.lotId)?.lotId || null
         }).returning();
-        
-        // Crea nuovo ciclo per la cesta
-        const [cycle] = await tx.insert(cycles).values({
-          basketId: destBasket.basketId,
-          startDate: selection[0].date,
-          state: 'active'
-        }).returning();
-        
-        // Aggiorna l'operazione con l'ID del ciclo
-        await tx.update(operations)
-          .set({ cycleId: cycle.id })
-          .where(eq(operations.id, operation.id));
         
         // Gestione in base al tipo di destinazione
         if (destBasket.destinationType === 'sold') {
