@@ -204,14 +204,24 @@ export default function OperationFormCompact({
   const selectedBasket = baskets?.find(b => b.id === watchBasketId);
   const isBasketAvailable = selectedBasket?.state === 'available';
   
+  // Debug per capire lo stato del cestello
+  console.log("🔍 OPERATION MENU DEBUG:", {
+    basketId: watchBasketId,
+    selectedBasket: selectedBasket ? {
+      id: selectedBasket.id,
+      state: selectedBasket.state,
+      currentCycleId: selectedBasket.currentCycleId
+    } : null,
+    isBasketAvailable
+  });
+  
   const basketOperations = isBasketAvailable 
     ? [{ value: 'prima-attivazione', label: 'Prima Attivazione' }] // Solo Prima Attivazione per ceste disponibili
     : [
-        { value: 'prima-attivazione', label: 'Prima Attivazione' },
         { value: 'misura', label: 'Misura' },
         { value: 'peso', label: 'Peso' },
         { value: 'vendita', label: 'Vendita' }
-      ];
+      ]; // NON Prima Attivazione per ceste già attive
 
   // Imposta valori iniziali se forniti come props
   useEffect(() => {
