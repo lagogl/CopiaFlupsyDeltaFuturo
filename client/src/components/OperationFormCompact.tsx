@@ -418,12 +418,22 @@ export default function OperationFormCompact({
       // Validazione aggiuntiva per campi obbligatori basati sul tipo
       if (values.type !== 'prima-attivazione' && !values.cycleId) {
         console.error('Campo cycleId mancante per operazione diversa da prima-attivazione');
+        toast({
+          title: "Errore di validazione",
+          description: "Seleziona un ciclo valido per questo tipo di operazione.",
+          variant: "destructive",
+        });
         return;
       }
       
       // Verifica se lotId è richiesto per Prima Attivazione
       if (values.type === 'prima-attivazione' && !values.lotId) {
         console.error('Campo lotId mancante per operazione di Prima Attivazione');
+        toast({
+          title: "Lotto mancante",
+          description: "Seleziona un lotto per l'operazione di Prima Attivazione.",
+          variant: "destructive",
+        });
         return;
       }
       
@@ -432,6 +442,11 @@ export default function OperationFormCompact({
       onSubmit(values);
     } catch (error) {
       console.error('Errore durante il submit del form:', error);
+      toast({
+        title: "Errore",
+        description: "Si è verificato un errore durante l'invio del form.",
+        variant: "destructive",
+      });
     }
   };
   
