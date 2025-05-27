@@ -206,8 +206,8 @@ export default function Dashboard() {
     return total;
   }, 0);
 
-  // Previous month comparison for baskets
-  const lastMonthBaskets = activeBaskets.length - 3; // Mocked diff (+3 from last month)
+  // Previous month comparison for baskets - removed hardcoded values
+  const lastMonthBaskets = 0; // No comparison data available
 
   // Loading state
   if (basketsLoading || cyclesLoading || operationsLoading || lotsLoading) {
@@ -337,7 +337,7 @@ export default function Dashboard() {
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
                 </svg>
               </div>}
-              changeText="+2 dall'ultimo mese"
+              changeText="Nessun dato storico"
               changeType="success"
               linkTo="/cycles"
               cardColor="from-green-50 to-green-100 border-l-4 border-green-500"
