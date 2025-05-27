@@ -68,6 +68,42 @@ async function findSizeIdByAnimalsPerKg(animalsPerKg: number): Promise<number | 
 export function implementDirectOperationRoute(app: Express) {
   console.log("Registrazione della route diretta per le operazioni (/api/direct-operations)");
   
+  // ===== ROUTE DI ELIMINAZIONE DIRETTA =====
+  app.post('/api/operations/:id/delete', async (req, res) => {
+    console.log("🚨🚨🚨 DIRECT DELETE ROUTE CHIAMATA! 🚨🚨🚨");
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`🚨 DIRECT DELETE: Eliminazione operazione ID: ${id}`);
+
+      if (isNaN(id)) {
+        console.log("❌ ID non valido");
+        return res.status(400).json({ message: "Invalid operation ID" });
+      }
+
+      // Elimina direttamente dal database
+      console.log("🗑️ Eliminazione diretta dal database...");
+      const deletedOperations = await db.delete(operations).where(eq(operations.id, id)).returning();
+      
+      if (deletedOperations && deletedOperations.length > 0) {
+        console.log(`✅ Operazione ${id} eliminata con successo via DIRECT ROUTE`);
+        return res.status(200).json({ 
+          message: "Operation deleted successfully via direct route",
+          operationId: id,
+          deletedOperation: deletedOperations[0]
+        });
+      } else {
+        console.log(`❌ Nessuna operazione trovata con ID ${id}`);
+        return res.status(404).json({ message: "Operation not found" });
+      }
+    } catch (error) {
+      console.error("❌ Error in direct delete:", error);
+      return res.status(500).json({ 
+        message: "Failed to delete operation", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+  
   // Bypass completo della route esistente con una versione specializzata
   app.post('/api/direct-operations', async (req, res) => {
     console.log("============= DIRECT OPERATION ROUTE START =============");
