@@ -216,8 +216,8 @@ export default function OperationFormCompact({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[95vh] flex flex-col">
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
+      <div className="bg-white rounded-lg shadow-xl w-[90vw] max-w-6xl h-[85vh] flex flex-col">
         {/* Header */}
         <div className="flex items-center justify-between p-4 border-b">
           <h2 className="text-xl font-semibold flex items-center text-blue-700">
@@ -230,7 +230,7 @@ export default function OperationFormCompact({
         </div>
 
         {/* Contenuto principale */}
-        <div className="flex-1 p-4 overflow-y-auto">
+        <div className="flex-1 p-6 overflow-y-auto min-h-0">
           <Form {...form}>
             <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               
