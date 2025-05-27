@@ -1697,35 +1697,42 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("Validazione prima-attivazione completata per cesta:", basketId);
 
         // Check if the basket exists
+        console.log("🔍 STEP 1: Recupero cestello con ID:", basketId);
         const basket = await storage.getBasket(basketId);
+        console.log("🔍 STEP 1 COMPLETATO: Cestello trovato:", basket ? "Sì" : "No");
         if (!basket) {
           return res.status(404).json({ message: "Cestello non trovato" });
         }
 
         // Verifica che il cestello sia disponibile
+        console.log("🔍 STEP 2: Verifica stato cestello:", basket.state);
         if (basket.state !== 'available') {
           return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
         }
         
         // Verifica che il cestello non abbia già un ciclo in corso
+        console.log("🔍 STEP 3: Verifica currentCycleId:", basket.currentCycleId);
         if (basket.currentCycleId !== null) {
           return res.status(400).json({ message: "Il cestello ha già un ciclo in corso. Non è possibile registrare una nuova Prima Attivazione." });
         }
         
         // Crea un nuovo ciclo per questa cesta
-        console.log("Creazione nuovo ciclo per prima-attivazione");
+        console.log("🔍 STEP 4: Creazione nuovo ciclo per prima-attivazione");
         
         // Formatta il codice del ciclo secondo le specifiche: cesta+flupsy+YYMM
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear().toString().substring(2);
         const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`;
-        console.log("Generato cycleCode:", cycleCode);
+        console.log("🔍 STEP 5: Generato cycleCode:", cycleCode);
         
         const formattedDate = format(date, 'yyyy-MM-dd');
+        console.log("🔍 STEP 6: Data formattata:", formattedDate);
+        console.log("🔍 STEP 7: Chiamata storage.createCycle in corso...");
         const newCycle = await storage.createCycle({
           basketId: basketId,
           startDate: formattedDate,
         });
+        console.log("🔍 STEP 7 COMPLETATO: Nuovo ciclo creato:", newCycle);
         
         console.log("Ciclo creato:", newCycle);
         
