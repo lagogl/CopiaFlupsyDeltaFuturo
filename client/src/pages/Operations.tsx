@@ -110,7 +110,7 @@ import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSepara
 import { Tooltip, TooltipContent, TooltipTrigger, TooltipProvider } from "@/components/ui/tooltip";
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { monthlyToDaily } from '@/lib/utils';
-import OperationForm from '@/components/OperationFormCompact';
+import OperationForm from '@/components/OperationFormCompactNew';
 import GrowthPerformanceIndicator from '@/components/GrowthPerformanceIndicator';
 import { useLocation, useSearch } from 'wouter';
 import { useFilterPersistence } from '@/hooks/useFilterPersistence';
