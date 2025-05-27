@@ -204,16 +204,7 @@ export default function OperationFormCompact({
   const selectedBasket = baskets?.find(b => b.id === watchBasketId);
   const isBasketAvailable = selectedBasket?.state === 'available';
   
-  // Debug per capire lo stato del cestello
-  console.log("🔍 OPERATION MENU DEBUG:", {
-    basketId: watchBasketId,
-    selectedBasket: selectedBasket ? {
-      id: selectedBasket.id,
-      state: selectedBasket.state,
-      currentCycleId: selectedBasket.currentCycleId
-    } : null,
-    isBasketAvailable
-  });
+
   
   const basketOperations = isBasketAvailable 
     ? [{ value: 'prima-attivazione', label: 'Prima Attivazione' }] // Solo Prima Attivazione per ceste disponibili
@@ -756,39 +747,60 @@ export default function OperationFormCompact({
                                       const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
                                       if (!selectedBasket) return null;
                                       
-                                      // Recupera numero animali
-                                      const animalCount = selectedBasket.animalCount || 
-                                                         (selectedBasket.lastOperation?.animalCount);
+                                      // Se il cestello è attivo, cerca informazioni dall'ultima operazione
+                                      if (selectedBasket.state === 'active' && operations && operations.length > 0) {
+                                        // Trova l'ultima operazione per questo cestello
+                                        const basketOperations = operations.filter((op: any) => 
+                                          op.basketId === selectedBasket.id && 
+                                          op.cycleId === selectedBasket.currentCycleId
+                                        ).sort((a: any, b: any) => 
+                                          new Date(b.date).getTime() - new Date(a.date).getTime()
+                                        );
+                                        
+                                        const lastOperation = basketOperations[0];
+                                        
+                                        if (lastOperation) {
+                                          // Trova la taglia dall'ultima operazione
+                                          const operationSize = sizes?.find((s: any) => s.id === lastOperation.sizeId);
+                                          
+                                          return (
+                                            <div className="flex flex-col gap-1 w-full">
+                                              <div className="flex items-center gap-2">
+                                                <span className="font-medium text-green-700">
+                                                  {lastOperation.animalCount ? 
+                                                    `${lastOperation.animalCount.toLocaleString('it-IT')} animali` : 
+                                                    "N° animali non disponibile"}
+                                                </span>
+                                                
+                                                {operationSize?.code ? 
+                                                  <span className="px-1.5 py-0.5 rounded-md text-xs font-medium" style={{
+                                                    backgroundColor: operationSize.color || '#6b7280',
+                                                    color: '#fff'
+                                                  }}>{operationSize.code}</span> : null}
+                                              </div>
+                                              
+                                              <div className="text-muted-foreground">
+                                                Ciclo: {selectedBasket.cycleCode} • Ultima op: {format(new Date(lastOperation.date), 'dd/MM/yyyy')}
+                                              </div>
+                                            </div>
+                                          );
+                                        }
+                                      }
                                       
+                                      // Fallback per cestelli senza operazioni
                                       return (
                                         <div className="flex flex-col gap-1 w-full">
                                           <div className="flex items-center gap-2">
-                                            <span className="font-medium">
-                                              {animalCount ? 
-                                                `${animalCount.toLocaleString('it-IT')} animali` : 
+                                            <span className="font-medium text-gray-500">
+                                              {selectedBasket.state === 'available' ? 
+                                                "Cestello disponibile" : 
                                                 "N° animali non disponibile"}
                                             </span>
-                                            
-                                            {selectedBasket.size?.code ? 
-                                              <span className="px-1.5 py-0.5 rounded-md" style={{
-                                                backgroundColor: selectedBasket.size?.color || '#e5e7eb',
-                                                color: '#fff'
-                                              }}>{selectedBasket.size?.code}</span> : null}
                                           </div>
                                           
-                                          {/* Informazioni su lotto */}
-                                          <div className="text-muted-foreground">
-                                            {selectedBasket.lastOperation?.lotId 
-                                              ? `Lotto #${selectedBasket.lastOperation.lotId}` 
-                                              : ""}
-                                          </div>
-
-                                          {/* Informazione ultima operazione */}
-                                          {selectedBasket.lastOperation?.date && (
+                                          {selectedBasket.state === 'active' && (
                                             <div className="text-muted-foreground">
-                                              Ultima op: {new Date(selectedBasket.lastOperation.date).toLocaleDateString('it-IT')} 
-                                              {selectedBasket.lastOperation.type ? 
-                                                ` (${selectedBasket.lastOperation.type})` : ''}
+                                              Ciclo: {selectedBasket.cycleCode} • Nessuna operazione trovata
                                             </div>
                                           )}
                                         </div>
