@@ -690,6 +690,13 @@ export default function OperationFormCompact({
                             } else {
                               console.log("Cestello senza ciclo attivo");
                               form.setValue('cycleId', null);
+                              
+                              // 🚀 AUTO-IMPOSTAZIONE: Se il cestello è disponibile, imposta automaticamente "Prima Attivazione"
+                              if (selectedBasket.state === 'available') {
+                                console.log("🚀 CESTELLO DISPONIBILE - Auto-impostazione Prima Attivazione");
+                                form.setValue('type', 'prima-attivazione');
+                                console.log("✅ Tipo operazione impostato automaticamente a 'Prima Attivazione'");
+                              }
                             }
                           }
                         }}
