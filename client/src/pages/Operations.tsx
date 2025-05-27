@@ -551,8 +551,8 @@ export default function Operations() {
   // Delete mutation
   const deleteOperationMutation = useMutation({
     mutationFn: (id: number) => apiRequest({
-      url: `/api/operations/${id}`,
-      method: 'DELETE'
+      url: `/api/operations/${id}/delete`,
+      method: 'POST'
     }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });

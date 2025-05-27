@@ -2135,6 +2135,49 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // ROUTE DI EMERGENZA PER ELIMINAZIONE OPERAZIONI
+  app.post("/api/operations/:id/delete", async (req, res) => {
+    console.log("🚨 EMERGENCY DELETE ROUTE - INIZIO");
+    try {
+      const id = parseInt(req.params.id);
+      if (isNaN(id)) {
+        return res.status(400).json({ message: "Invalid operation ID" });
+      }
+
+      console.log(`🚨 Eliminazione di emergenza operazione ID: ${id}`);
+
+      // Check if the operation exists
+      const operation = await storage.getOperation(id);
+      if (!operation) {
+        console.log(`❌ Operazione ${id} non trovata`);
+        return res.status(404).json({ message: "Operation not found" });
+      }
+
+      console.log(`✅ Operazione trovata: ID ${id}, tipo: ${operation.type}`);
+      
+      // Delete the operation con cascade handling
+      const success = await storage.deleteOperation(id);
+      console.log(`🔄 Risultato eliminazione: ${success}`);
+      
+      if (success) {
+        console.log(`✅ Operazione ${id} eliminata con successo`);
+        return res.status(200).json({ 
+          message: "Operation deleted successfully",
+          operationId: id
+        });
+      } else {
+        console.log(`❌ Eliminazione operazione ${id} fallita`);
+        return res.status(500).json({ message: "Failed to delete operation" });
+      }
+    } catch (error) {
+      console.error("❌ Error in emergency delete:", error);
+      return res.status(500).json({ 
+        message: "Failed to delete operation", 
+        error: error instanceof Error ? error.message : String(error)
+      });
+    }
+  });
+
   // === Diario di Bordo API routes ===
   
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
