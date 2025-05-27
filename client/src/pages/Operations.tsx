@@ -405,7 +405,7 @@ export default function Operations() {
         // Crea direttamente l'operazione di prima attivazione
         // Il backend si occuperà di creare il ciclo e aggiornare lo stato della cesta
         createdOperation = await apiRequest({
-          url: '/api/operations',
+          url: '/api/direct-operations',
           method: 'POST',
           body: newOperation
         });
