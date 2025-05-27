@@ -70,8 +70,8 @@ export function implementDirectOperationRoute(app: Express) {
   console.log("Registrazione della route diretta per le operazioni (/api/direct-operations)");
   
   // ===== ROUTE DI ELIMINAZIONE DIRETTA =====
-  console.log("🗑️ Registrazione route DELETE: /api/operations/:id/delete");
-  app.post('/api/operations/:id/delete', async (req, res) => {
+  console.log("🗑️ Registrazione route DELETE: /api/emergency-delete/:id");
+  app.post('/api/emergency-delete/:id', async (req, res) => {
     console.log("🚨🚨🚨 DIRECT DELETE ROUTE CHIAMATA! 🚨🚨🚨");
     try {
       const id = parseInt(req.params.id);

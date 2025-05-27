@@ -551,7 +551,7 @@ export default function Operations() {
   // Delete mutation
   const deleteOperationMutation = useMutation({
     mutationFn: (id: number) => apiRequest({
-      url: `/api/operations/${id}/delete`,
+      url: `/api/emergency-delete/${id}`,
       method: 'POST'
     }),
     onSuccess: () => {
