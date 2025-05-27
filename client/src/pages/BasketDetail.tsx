@@ -1,14 +1,13 @@
-import { useLocation, useRouter } from "wouter";
+import { useLocation } from "wouter";
 import { useQuery } from "@tanstack/react-query";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
-import { ArrowLeft, MapPin, Calendar, Fish, Weight, Ruler, Activity } from "lucide-react";
+import { ArrowLeft, MapPin, Calendar, Fish, Activity } from "lucide-react";
 import { formatDate } from "@/lib/utils";
 
 export default function BasketDetail() {
-  const navigate = useRouter()[1];
-  const [location] = useLocation();
+  const [location, setLocation] = useLocation();
   const basketId = parseInt(location.split('/').pop() || '0');
 
   const { data: basket, isLoading, error } = useQuery({
@@ -36,7 +35,7 @@ export default function BasketDetail() {
         <div className="text-center py-12">
           <h2 className="text-2xl font-bold text-gray-900 mb-4">Cestello non trovato</h2>
           <p className="text-gray-600 mb-6">Il cestello richiesto non esiste o non è accessibile.</p>
-          <Button onClick={() => navigate('/baskets')}>
+          <Button onClick={() => setLocation('/baskets')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Torna ai cestelli
           </Button>
@@ -68,13 +67,13 @@ export default function BasketDetail() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center space-x-4">
-          <Button variant="outline" onClick={() => navigate('/baskets')}>
+          <Button variant="outline" onClick={() => setLocation('/baskets')}>
             <ArrowLeft className="h-4 w-4 mr-2" />
             Indietro
           </Button>
           <div>
             <h1 className="text-3xl font-bold">Cestello #{basket.physicalNumber}</h1>
-            <p className="text-gray-600">{basket.flupsyName}</p>
+            <p className="text-gray-600">{basket.flupsyName || 'FLUPSY non specificato'}</p>
           </div>
         </div>
         <Badge className={getStateColor(basket.state)}>
@@ -92,10 +91,10 @@ export default function BasketDetail() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {basket.currentPosition ? `${basket.currentPosition.row}-${basket.currentPosition.position}` : 'Non assegnata'}
+              {basket.row && basket.position ? `${basket.row}-${basket.position}` : 'Non assegnata'}
             </div>
             <p className="text-xs text-muted-foreground">
-              {basket.flupsyName}
+              {basket.flupsyName || 'FLUPSY non specificato'}
             </p>
           </CardContent>
         </Card>
@@ -108,81 +107,43 @@ export default function BasketDetail() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {basket.currentCycle ? `#${basket.currentCycle.id}` : 'Nessun ciclo'}
+              {basket.currentCycleId ? `#${basket.currentCycleId}` : 'Nessun ciclo'}
             </div>
             <p className="text-xs text-muted-foreground">
-              {basket.currentCycle ? `Iniziato ${formatDate(basket.currentCycle.startDate)}` : 'Cestello disponibile'}
+              {basket.state === 'active' ? 'Ciclo attivo' : 'Cestello disponibile'}
             </p>
           </CardContent>
         </Card>
 
-        {/* Ultima operazione */}
+        {/* Stato */}
         <Card>
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ultima operazione</CardTitle>
+            <CardTitle className="text-sm font-medium">Stato</CardTitle>
             <Calendar className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold">
-              {basket.lastOperation ? basket.lastOperation.type : 'Nessuna'}
+              {getStateLabel(basket.state)}
             </div>
             <p className="text-xs text-muted-foreground">
-              {basket.lastOperation ? formatDate(basket.lastOperation.date) : 'Mai utilizzato'}
+              Cestello #{basket.physicalNumber}
             </p>
           </CardContent>
         </Card>
       </div>
 
-      {/* Dettagli operativi */}
-      {basket.lastOperation && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center">
-              <Fish className="h-5 w-5 mr-2" />
-              Dati operativi
-            </CardTitle>
-          </CardHeader>
-          <CardContent className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {basket.lastOperation.animalCount && (
-              <div>
-                <p className="text-sm text-muted-foreground">Numero animali</p>
-                <p className="text-lg font-semibold">{basket.lastOperation.animalCount.toLocaleString()}</p>
-              </div>
-            )}
-            {basket.lastOperation.totalWeight && (
-              <div>
-                <p className="text-sm text-muted-foreground">Peso totale</p>
-                <p className="text-lg font-semibold">{formatWeight(basket.lastOperation.totalWeight)}</p>
-              </div>
-            )}
-            {basket.lastOperation.averageWeight && (
-              <div>
-                <p className="text-sm text-muted-foreground">Peso medio</p>
-                <p className="text-lg font-semibold">{basket.lastOperation.averageWeight.toFixed(2)} g</p>
-              </div>
-            )}
-            {basket.lastOperation.animalsPerKg && (
-              <div>
-                <p className="text-sm text-muted-foreground">Animali/kg</p>
-                <p className="text-lg font-semibold">{basket.lastOperation.animalsPerKg.toLocaleString()}</p>
-              </div>
-            )}
-          </CardContent>
-        </Card>
-      )}
-
       {/* Azioni */}
       <div className="flex flex-wrap gap-4">
-        {basket.currentCycle && (
-          <Button onClick={() => navigate(`/cycles/${basket.currentCycle.id}`)}>
+        {basket.currentCycleId && (
+          <Button onClick={() => setLocation(`/cycles/${basket.currentCycleId}`)}>
             Vedi ciclo completo
           </Button>
         )}
-        <Button variant="outline" onClick={() => navigate(`/operations?basketId=${basket.id}`)}>
+        <Button variant="outline" onClick={() => setLocation(`/operations?basketId=${basket.id}`)}>
           Vedi operazioni
         </Button>
         {basket.state === 'available' && (
-          <Button variant="outline" onClick={() => navigate(`/operations/new?basketId=${basket.id}`)}>
+          <Button variant="outline" onClick={() => setLocation(`/operations/new?basketId=${basket.id}`)}>
             Nuova operazione
           </Button>
         )}
