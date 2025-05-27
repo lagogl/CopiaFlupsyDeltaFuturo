@@ -402,6 +402,12 @@ export default function Operations() {
       
       // 1. Se la cesta è disponibile e l'operazione è di prima attivazione
       if (isBasketAvailable && isPrimaAttivazione) {
+        // Mostra feedback all'operatore
+        toast({
+          title: "Inizializzazione in corso...",
+          description: "Creazione del nuovo ciclo e registrazione della prima attivazione",
+        });
+        
         // Crea direttamente l'operazione di prima attivazione
         // Il backend si occuperà di creare il ciclo e aggiornare lo stato della cesta
         createdOperation = await apiRequest({
@@ -416,6 +422,12 @@ export default function Operations() {
       }
       // 2. Se la cesta è attiva e l'operazione è di vendita
       else if (isBasketActive && isVendita) {
+        // Mostra feedback all'operatore
+        toast({
+          title: "Registrazione vendita...",
+          description: "Chiusura del ciclo e registrazione dell'operazione di vendita",
+        });
+        
         // Crea direttamente l'operazione di vendita
         // Il backend si occuperà di chiudere il ciclo e aggiornare lo stato della cesta
         createdOperation = await apiRequest({
@@ -430,6 +442,22 @@ export default function Operations() {
       }
       // 3. Operazioni normali
       else {
+        // Mostra feedback per operazioni standard
+        const operationTypeNames = {
+          'misura': 'misurazione',
+          'peso': 'pesatura', 
+          'mortalita': 'registrazione mortalità',
+          'trasferimento': 'trasferimento',
+          'controllo': 'controllo qualità'
+        };
+        
+        const operationName = operationTypeNames[newOperation.type] || newOperation.type;
+        
+        toast({
+          title: `Registrazione ${operationName}...`,
+          description: "Salvataggio dei dati dell'operazione in corso",
+        });
+        
         // Utilizziamo la route diretta per tutte le operazioni normali
         // Questa è più resiliente e gestisce meglio i casi in cui cycleId manca
         createdOperation = await apiRequest({
@@ -441,16 +469,34 @@ export default function Operations() {
       
       return createdOperation;
     },
-    onSuccess: () => {
+    onSuccess: (createdOperation) => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       setIsCreateDialogOpen(false);
+      
+      // Mostra notifica di successo
+      const operationTypeNames = {
+        'prima-attivazione': 'Prima Attivazione',
+        'vendita': 'Vendita',
+        'misura': 'Misurazione',
+        'peso': 'Pesatura',
+        'mortalita': 'Registrazione Mortalità',
+        'trasferimento': 'Trasferimento',
+        'controllo': 'Controllo Qualità'
+      };
+      
+      const operationName = operationTypeNames[createdOperation.type] || createdOperation.type;
+      
+      toast({
+        title: "✅ Operazione salvata con successo!",
+        description: `${operationName} registrata correttamente per il cestello ${createdOperation.basketId}`,
+      });
       
       // Se c'è un ID di cesta da reindirizzare, naviga alla filtrazione per quella cesta
       if (redirectToBasketAfterCreate) {
         // Navigazione alle operazioni filtrate per la cesta specifica
         toast({
-          title: "Operazione completata",
-          description: "Reindirizzamento alle operazioni della cesta...",
+          title: "Reindirizzamento...",
+          description: "Caricamento delle operazioni della cesta selezionata",
         });
         
         // Resetta lo stato di reindirizzamento
