@@ -821,37 +821,59 @@ export default function OperationFormCompact({
                         <SelectContent>
                           {flupsyBaskets.length > 0 ? (
                             flupsyBaskets.map((basket) => {
-                              // Estrai l'ultima operazione per informazioni aggiuntive
-                              const lastOp = basket.lastOperation || {};
-                              const lotInfo = lastOp.lotId ? 
-                                `Lotto #${lastOp.lotId}${lastOp.lot?.supplier ? ` (${lastOp.lot?.supplier})` : ''}` : '';
+                              // Trova l'ultima operazione per questo cestello dalle operazioni caricate
+                              const basketOperations = operations?.filter((op: any) => 
+                                op.basketId === basket.id && 
+                                op.cycleId === basket.currentCycleId
+                              ).sort((a: any, b: any) => 
+                                new Date(b.date).getTime() - new Date(a.date).getTime()
+                              ) || [];
+                              
+                              const lastOperation = basketOperations[0];
+                              
+                              // Trova la taglia dall'ultima operazione
+                              const operationSize = lastOperation ? 
+                                sizes?.find((s: any) => s.id === lastOperation.sizeId) : null;
                               
                               return (
-                                <SelectItem key={basket.id} value={basket.id.toString()} className="py-2 px-1">
-                                  <div className="flex flex-col gap-0.5">
-                                    <div className="font-semibold">
+                                <SelectItem key={basket.id} value={basket.id.toString()} className="py-3 px-3">
+                                  <div className="flex flex-col gap-1 w-full">
+                                    <div className="font-semibold flex items-center gap-2">
                                       #{basket.physicalNumber} {basket.row && basket.position ? `(${basket.row}-${basket.position})` : ''} 
-                                      {basket.state === 'active' ? '✅' : basket.state === 'inactive' ? '⚪️' : ''}
+                                      {basket.state === 'active' ? '✅' : ''}
                                     </div>
-                                    <div className="text-xs text-muted-foreground">
-                                      <span className="font-medium">
-                                        {basket.animalCount 
-                                          ? `${basket.animalCount.toLocaleString('it-IT')} animali` 
-                                          : basket.lastOperation?.animalCount 
-                                            ? `${basket.lastOperation.animalCount.toLocaleString('it-IT')} animali` 
-                                            : `N° animali non disponibile`}
-                                      </span>
-                                      {basket.size?.code ? 
-                                        <span className="ml-2 px-1.5 py-0.5 rounded-md" style={{
-                                          backgroundColor: basket.size?.color || '#e5e7eb',
-                                          color: '#fff'
-                                        }}>{basket.size?.code}</span> : ''}
-                                    </div>
-                                    {(lotInfo || lastOp.date) && (
+                                    
+                                    {basket.state === 'active' && lastOperation ? (
+                                      <div className="flex items-center gap-2 text-xs">
+                                        <span className="font-medium text-green-700">
+                                          {lastOperation.animalCount ? 
+                                            `${lastOperation.animalCount.toLocaleString('it-IT')} animali` : 
+                                            "N° animali non disponibile"}
+                                        </span>
+                                        
+                                        {operationSize?.code && (
+                                          <span className="px-1.5 py-0.5 rounded-md text-xs font-medium" style={{
+                                            backgroundColor: operationSize.color || '#6b7280',
+                                            color: '#fff'
+                                          }}>
+                                            {operationSize.code}
+                                          </span>
+                                        )}
+                                      </div>
+                                    ) : basket.state === 'available' ? (
+                                      <div className="text-xs text-gray-500">
+                                        Cestello disponibile
+                                      </div>
+                                    ) : (
+                                      <div className="text-xs text-gray-500">
+                                        N° animali non disponibile
+                                      </div>
+                                    )}
+                                    
+                                    {basket.state === 'active' && (
                                       <div className="text-xs text-muted-foreground">
-                                        {lotInfo}
-                                        {lastOp.date && lotInfo ? ' - ' : ''}
-                                        {lastOp.date ? `Ultima op: ${new Date(lastOp.date).toLocaleDateString('it-IT')} (${lastOp.type})` : ''}
+                                        Ciclo: {basket.cycleCode}
+                                        {lastOperation && ` • Ultima op: ${format(new Date(lastOperation.date), 'dd/MM/yyyy')}`}
                                       </div>
                                     )}
                                   </div>
