@@ -779,6 +779,22 @@ export default function OperationFormCompact({
                                                   }}>{operationSize.code}</span> : null}
                                               </div>
                                               
+                                              <div className="flex items-center gap-2 text-xs text-blue-600">
+                                                {lastOperation.totalWeight && (
+                                                  <span className="font-medium">
+                                                    {lastOperation.totalWeight.toLocaleString('it-IT')}g peso totale
+                                                  </span>
+                                                )}
+                                                
+                                                <span className="px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 font-medium">
+                                                  {lastOperation.type === 'prima-attivazione' ? 'Prima Attivazione' :
+                                                   lastOperation.type === 'misura' ? 'Misura' :
+                                                   lastOperation.type === 'peso' ? 'Peso' :
+                                                   lastOperation.type === 'vendita' ? 'Vendita' :
+                                                   lastOperation.type}
+                                                </span>
+                                              </div>
+                                              
                                               <div className="text-muted-foreground">
                                                 Ciclo: {selectedBasket.cycleCode} • Ultima op: {format(new Date(lastOperation.date), 'dd/MM/yyyy')}
                                               </div>
