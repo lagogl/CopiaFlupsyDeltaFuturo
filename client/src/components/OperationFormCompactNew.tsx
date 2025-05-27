@@ -216,39 +216,40 @@ export default function OperationFormCompact({
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-4 z-50">
-      <div className="bg-white rounded-lg shadow-xl max-w-6xl w-full h-[95vh] flex flex-col">
-        {/* Header fisso */}
-        <div className="flex items-center justify-between p-3 border-b">
-          <h2 className="text-lg font-semibold flex items-center">
-            <PlusCircle className="h-4 w-4 mr-2" />
+    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center p-3 z-50">
+      <div className="bg-white rounded-lg shadow-xl max-w-5xl w-full max-h-[95vh] flex flex-col">
+        {/* Header */}
+        <div className="flex items-center justify-between p-4 border-b">
+          <h2 className="text-xl font-semibold flex items-center text-blue-700">
+            <PlusCircle className="h-5 w-5 mr-2" />
             Registra Nuova Operazione
           </h2>
           <Button type="button" variant="ghost" size="sm" onClick={onClose}>
-            <X className="h-4 w-4" />
+            <X className="h-5 w-5" />
           </Button>
         </div>
 
-        {/* Contenuto principale - senza scroll */}
-        <div className="flex-1 p-4 overflow-hidden">
+        {/* Contenuto principale */}
+        <div className="flex-1 p-4 overflow-y-auto">
           <Form {...form}>
-            <form onSubmit={form.handleSubmit(onSubmit)} className="h-full flex flex-col">
+            <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
               
-              {/* Sezione principale - griglia compatta */}
-              <div className="grid grid-cols-12 gap-3 mb-4">
-                
-                {/* Prima riga: dati base */}
-                <div className="col-span-2">
+              {/* Sezione dati base */}
+              <div className="bg-blue-50 p-4 rounded-lg border border-blue-200">
+                <h3 className="text-sm font-semibold mb-3 text-blue-700">Dati Base</h3>
+                <div className="grid grid-cols-4 gap-4">
+                  
+                  {/* Tipo operazione */}
                   <FormField
                     control={form.control}
                     name="type"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs">Tipo *</FormLabel>
+                        <FormLabel className="text-sm font-medium">Tipo operazione *</FormLabel>
                         <Select disabled={isDisabledOperationType} value={field.value} onValueChange={field.onChange}>
                           <FormControl>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Tipo" />
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Seleziona tipo" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -263,15 +264,14 @@ export default function OperationFormCompact({
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="col-span-2">
+                  {/* Data */}
                   <FormField
                     control={form.control}
                     name="date"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs">Data *</FormLabel>
+                        <FormLabel className="text-sm font-medium">Data *</FormLabel>
                         <FormControl>
                           <DatePicker date={field.value} setDate={field.onChange} />
                         </FormControl>
@@ -279,23 +279,22 @@ export default function OperationFormCompact({
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="col-span-3">
+                  {/* FLUPSY */}
                   <FormField
                     control={form.control}
                     name="flupsyId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs">FLUPSY *</FormLabel>
+                        <FormLabel className="text-sm font-medium">FLUPSY *</FormLabel>
                         <Select 
                           disabled={!!preSelectedFlupsyId}
                           value={field.value?.toString() || ''} 
                           onValueChange={(value) => field.onChange(Number(value))}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="FLUPSY" />
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Seleziona FLUPSY" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -310,23 +309,22 @@ export default function OperationFormCompact({
                       </FormItem>
                     )}
                   />
-                </div>
 
-                <div className="col-span-3">
+                  {/* Cestello */}
                   <FormField
                     control={form.control}
                     name="basketId"
                     render={({ field }) => (
                       <FormItem>
-                        <FormLabel className="text-xs">Cestello *</FormLabel>
+                        <FormLabel className="text-sm font-medium">Cestello *</FormLabel>
                         <Select
                           disabled={!watchFlupsyId}
                           value={field.value?.toString() || ''}
                           onValueChange={(value) => field.onChange(Number(value))}
                         >
                           <FormControl>
-                            <SelectTrigger className="h-8 text-xs">
-                              <SelectValue placeholder="Cestello" />
+                            <SelectTrigger className="h-10">
+                              <SelectValue placeholder="Seleziona cestello" />
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
@@ -344,24 +342,25 @@ export default function OperationFormCompact({
                   />
                 </div>
 
-                <div className="col-span-2">
-                  {watchType === 'prima-attivazione' && (
+                {/* Seconda riga per Prima Attivazione */}
+                {watchType === 'prima-attivazione' && (
+                  <div className="grid grid-cols-2 gap-4 mt-4">
                     <FormField
                       control={form.control}
                       name="lotId"
                       render={({ field }) => (
                         <FormItem>
-                          <FormLabel className="text-xs">Lotto *</FormLabel>
+                          <FormLabel className="text-sm font-medium">Lotto *</FormLabel>
                           <Select value={field.value?.toString() || ''} onValueChange={(value) => field.onChange(Number(value))}>
                             <FormControl>
-                              <SelectTrigger className="h-8 text-xs">
-                                <SelectValue placeholder="Lotto" />
+                              <SelectTrigger className="h-10">
+                                <SelectValue placeholder="Seleziona lotto" />
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
                               {lots?.slice().sort((a: any, b: any) => b.id - a.id).map((lot: any) => (
                                 <SelectItem key={lot.id} value={lot.id.toString()}>
-                                  #{lot.id} - {lot.supplier}
+                                  #{lot.id} - {lot.supplier} ({format(new Date(lot.arrivalDate), 'dd/MM/yyyy')})
                                 </SelectItem>
                               ))}
                             </SelectContent>
@@ -370,109 +369,118 @@ export default function OperationFormCompact({
                         </FormItem>
                       )}
                     />
-                  )}
-                </div>
+
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Taglia (calcolata automaticamente)</FormLabel>
+                      <Input 
+                        className="h-10 bg-amber-50" 
+                        readOnly 
+                        value={(() => {
+                          if (!form.watch('sizeId') || !sizes) return '';
+                          const size = sizes.find((s: any) => s.id === form.watch('sizeId'));
+                          return size ? `${size.code} (${size.minAnimalsPerKg?.toLocaleString('it-IT')}-${size.maxAnimalsPerKg?.toLocaleString('it-IT')} animali/kg)` : '';
+                        })()} 
+                      />
+                    </FormItem>
+                  </div>
+                )}
               </div>
 
               {/* Sezione misurazione - solo se necessaria */}
               {(watchType === 'misura' || watchType === 'prima-attivazione') && (
-                <div className="bg-purple-50 p-3 rounded mb-4">
-                  <h3 className="text-sm font-semibold mb-2 text-purple-700 flex items-center">
-                    <Calculator className="h-4 w-4 mr-1" /> Calcolatrice
+                <div className="bg-purple-50 p-4 rounded-lg border border-purple-200">
+                  <h3 className="text-sm font-semibold mb-3 text-purple-700 flex items-center">
+                    <Calculator className="h-4 w-4 mr-2" /> Dati Misurazione
                   </h3>
                   
-                  <div className="grid grid-cols-12 gap-2">
-                    {/* Input campione */}
-                    <div className="col-span-2">
-                      <FormField
-                        control={form.control}
-                        name="sampleWeight"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Peso campione (g)</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number" 
-                                step="0.001"
-                                className="h-8 text-xs"
-                                placeholder="1.0"
-                                value={field.value || ''} 
-                                onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                  <div className="grid grid-cols-3 gap-4 mb-4">
+                    {/* Input dati */}
+                    <FormField
+                      control={form.control}
+                      name="sampleWeight"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">Peso campione (grammi)</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number" 
+                              step="0.001"
+                              className="h-10"
+                              placeholder="Es. 1.500"
+                              value={field.value || ''} 
+                              onChange={(e) => field.onChange(e.target.value ? parseFloat(e.target.value) : null)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                    <div className="col-span-2">
-                      <FormField
-                        control={form.control}
-                        name="liveAnimals"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Animali vivi</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number"
-                                className="h-8 text-xs"
-                                placeholder="1500"
-                                value={field.value || ''} 
-                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="liveAnimals"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">Numero animali vivi</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              className="h-10"
+                              placeholder="Es. 1500"
+                              value={field.value || ''} 
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : null)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
 
-                    <div className="col-span-2">
-                      <FormField
-                        control={form.control}
-                        name="deadCount"
-                        render={({ field }) => (
-                          <FormItem>
-                            <FormLabel className="text-xs">Animali morti</FormLabel>
-                            <FormControl>
-                              <Input 
-                                type="number"
-                                className="h-8 text-xs"
-                                placeholder="0"
-                                value={field.value || ''} 
-                                onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
-                              />
-                            </FormControl>
-                            <FormMessage />
-                          </FormItem>
-                        )}
-                      />
-                    </div>
+                    <FormField
+                      control={form.control}
+                      name="deadCount"
+                      render={({ field }) => (
+                        <FormItem>
+                          <FormLabel className="text-sm font-medium">Numero animali morti</FormLabel>
+                          <FormControl>
+                            <Input 
+                              type="number"
+                              className="h-10"
+                              placeholder="Es. 0"
+                              value={field.value || ''} 
+                              onChange={(e) => field.onChange(e.target.value ? parseInt(e.target.value) : 0)}
+                            />
+                          </FormControl>
+                          <FormMessage />
+                        </FormItem>
+                      )}
+                    />
+                  </div>
 
-                    {/* Risultati automatici */}
-                    <div className="col-span-2">
-                      <FormLabel className="text-xs">Mortalità (%)</FormLabel>
+                  {/* Risultati calcolati */}
+                  <div className="grid grid-cols-3 gap-4">
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Mortalità (%)</FormLabel>
                       <Input 
-                        className="h-8 text-xs bg-amber-50" 
+                        className="h-10 bg-amber-50" 
                         readOnly 
                         value={form.watch('mortalityRate')?.toFixed(2) || '0.00'} 
                       />
-                    </div>
+                    </FormItem>
 
-                    <div className="col-span-2">
-                      <FormLabel className="text-xs">Animali/kg</FormLabel>
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Animali per kg</FormLabel>
                       <Input 
-                        className="h-8 text-xs bg-amber-50" 
+                        className="h-10 bg-amber-50" 
                         readOnly 
                         value={watchAnimalsPerKg?.toLocaleString('it-IT') || ''} 
                       />
-                    </div>
+                    </FormItem>
 
-                    <div className="col-span-2">
-                      <FormLabel className="text-xs">Taglia</FormLabel>
+                    <FormItem>
+                      <FormLabel className="text-sm font-medium">Taglia calcolata</FormLabel>
                       <Input 
-                        className="h-8 text-xs bg-amber-50" 
+                        className="h-10 bg-amber-50" 
                         readOnly 
                         value={(() => {
                           if (!form.watch('sizeId') || !sizes) return '';
@@ -480,23 +488,23 @@ export default function OperationFormCompact({
                           return size ? size.code : '';
                         })()} 
                       />
-                    </div>
+                    </FormItem>
                   </div>
                 </div>
               )}
 
               {/* Note */}
-              <div className="mb-4">
+              <div className="bg-gray-50 p-4 rounded-lg border border-gray-200">
                 <FormField
                   control={form.control}
                   name="notes"
                   render={({ field }) => (
                     <FormItem>
-                      <FormLabel className="text-xs">Note</FormLabel>
+                      <FormLabel className="text-sm font-medium">Note aggiuntive</FormLabel>
                       <FormControl>
                         <Textarea 
                           placeholder="Inserisci eventuali note sull'operazione..."
-                          className="h-16 text-xs resize-none"
+                          className="h-20 resize-none"
                           {...field}
                         />
                       </FormControl>
@@ -506,19 +514,24 @@ export default function OperationFormCompact({
                 />
               </div>
 
-              {/* Footer con pulsanti */}
-              <div className="flex justify-end space-x-2 mt-auto pt-3 border-t">
-                <Button type="button" variant="outline" onClick={onClose}>
-                  Annulla
-                </Button>
-                <Button type="submit" disabled={isLoading}>
-                  {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-                  Registra Operazione
-                </Button>
-              </div>
-
             </form>
           </Form>
+        </div>
+
+        {/* Footer con pulsanti */}
+        <div className="flex justify-end space-x-3 p-4 border-t bg-gray-50">
+          <Button type="button" variant="outline" onClick={onClose}>
+            Annulla
+          </Button>
+          <Button 
+            type="submit" 
+            disabled={isLoading}
+            onClick={form.handleSubmit(onSubmit)}
+            className="bg-blue-600 hover:bg-blue-700"
+          >
+            {isLoading && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
+            Registra Operazione
+          </Button>
         </div>
       </div>
     </div>
