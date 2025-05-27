@@ -200,8 +200,9 @@ export default function OperationFormCompact({
     }
   }, [watchFlupsyId, baskets]);
 
-  // Le operazioni disponibili sono misura, peso e vendita
+  // Le operazioni disponibili
   const basketOperations = [
+    { value: 'prima-attivazione', label: 'Prima Attivazione' },
     { value: 'misura', label: 'Misura' },
     { value: 'peso', label: 'Peso' },
     { value: 'vendita', label: 'Vendita' }
@@ -255,6 +256,25 @@ export default function OperationFormCompact({
       }
     }
   }, [initialCycleId, initialFlupsyId, initialBasketId, cycles, baskets, flupsys, form, defaultValues, flupsyBaskets, isLoadingFlupsyBaskets]);
+
+  // Auto-set "Prima Attivazione" when basket is available
+  useEffect(() => {
+    const selectedBasket = baskets?.find(b => b.id === watchBasketId);
+    
+    console.log('🔍 Debug auto-set OperationFormCompact:', {
+      watchBasketId,
+      selectedBasket: selectedBasket ? {id: selectedBasket.id, state: selectedBasket.state} : null,
+      shouldAutoSet: watchBasketId && selectedBasket?.state === 'available',
+      currentType: watchType
+    });
+    
+    if (watchBasketId && selectedBasket?.state === 'available') {
+      // Forza il tipo a "prima-attivazione" per ceste disponibili
+      console.log('🚀 FORZANDO auto-impostazione di Prima Attivazione per cesta disponibile nel form compatto');
+      form.setValue('type', 'prima-attivazione');
+      console.log('✅ Tipo operazione impostato automaticamente a "Prima Attivazione" per cesta disponibile');
+    }
+  }, [watchBasketId, baskets, watchType, form]);
 
   // Calculate average weight and set size when animals per kg changes
   useEffect(() => {
