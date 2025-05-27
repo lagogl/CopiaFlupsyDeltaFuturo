@@ -385,9 +385,9 @@ export default function OperationFormCompact({
     handlePesoOperation();
   }, [watchType, watchBasketId, form, operations, prevOperationData]);
 
-  // Calcola valori derivati per misurazione
+  // Calcola valori derivati per misurazione e prima attivazione
   useEffect(() => {
-    if (watchType === 'misura') {
+    if (watchType === 'misura' || watchType === 'prima-attivazione') {
       // Calcola il totale del campione (vivi + morti)
       if (watchLiveAnimals !== null && deadCount !== null) {
         const totalSample = watchLiveAnimals + deadCount;
@@ -1152,8 +1152,8 @@ export default function OperationFormCompact({
               </div>
             )}
 
-            {/* Sezione Misurazione */}
-            {watchType === 'misura' && (
+            {/* Sezione Misurazione - abilitata per 'misura' e 'prima-attivazione' */}
+            {(watchType === 'misura' || watchType === 'prima-attivazione') && (
               <div className="bg-purple-50 p-4 rounded-md border border-purple-200">
                 <h3 className="text-sm font-semibold mb-3 text-purple-700 flex items-center">
                   <Ruler className="h-4 w-4 mr-1" /> Dati Misurazione
@@ -1375,8 +1375,8 @@ export default function OperationFormCompact({
                       />
                     )}
                     
-                    {/* Size based on animals per kg per misura */}
-                    {watchAnimalsPerKg > 0 && sizes && sizes.length > 0 && watchType === 'misura' && (
+                    {/* Size based on animals per kg per misura e prima-attivazione */}
+                    {watchAnimalsPerKg > 0 && sizes && sizes.length > 0 && (watchType === 'misura' || watchType === 'prima-attivazione') && (
                       <div className="col-span-2 mb-1">
                         <div className="text-xs font-medium mb-1">Taglia calcolata</div>
                         <Input 
