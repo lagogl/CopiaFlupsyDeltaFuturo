@@ -200,13 +200,18 @@ export default function OperationFormCompact({
     }
   }, [watchFlupsyId, baskets]);
 
-  // Le operazioni disponibili
-  const basketOperations = [
-    { value: 'prima-attivazione', label: 'Prima Attivazione' },
-    { value: 'misura', label: 'Misura' },
-    { value: 'peso', label: 'Peso' },
-    { value: 'vendita', label: 'Vendita' }
-  ];
+  // Determina le operazioni disponibili in base al cestello selezionato
+  const selectedBasket = baskets?.find(b => b.id === watchBasketId);
+  const isBasketAvailable = selectedBasket?.state === 'available';
+  
+  const basketOperations = isBasketAvailable 
+    ? [{ value: 'prima-attivazione', label: 'Prima Attivazione' }] // Solo Prima Attivazione per ceste disponibili
+    : [
+        { value: 'prima-attivazione', label: 'Prima Attivazione' },
+        { value: 'misura', label: 'Misura' },
+        { value: 'peso', label: 'Peso' },
+        { value: 'vendita', label: 'Vendita' }
+      ];
 
   // Imposta valori iniziali se forniti come props
   useEffect(() => {
