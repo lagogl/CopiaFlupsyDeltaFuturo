@@ -1662,6 +1662,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/operations", async (req, res) => {
+    console.log("🚀 POST /api/operations - RICEVUTA RICHIESTA");
     try {
       console.log("===== INIZIO ENDPOINT POST /api/operations =====");
       console.log("POST /api/operations - Request Body:", JSON.stringify(req.body, null, 2));
@@ -1672,7 +1673,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Per prima-attivazione utilizziamo un validator senza controllo su cycleId
         const primaAttivSchema = z.object({
-          date: z.coerce.date(),
+          date: z.string().or(z.date()).transform(val => typeof val === 'string' ? new Date(val) : val),
           type: z.literal('prima-attivazione'),
           basketId: z.number(),
           sizeId: z.number().nullable().optional(),
@@ -1682,7 +1683,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalWeight: z.number().nullable().optional(),
           animalsPerKg: z.number().nullable().optional(),
           averageWeight: z.number().nullable().optional(),
-          notes: z.string().nullable().optional()
+          notes: z.string().optional().default("")
         }).safeParse(req.body);
         
         console.log("VALIDAZIONE PRIMA ATTIVAZIONE - parsed:", JSON.stringify(primaAttivSchema, null, 2));
