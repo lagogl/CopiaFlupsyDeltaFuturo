@@ -549,10 +549,16 @@ export default function OperationForm({
   
   // Auto-set "Prima Attivazione" when basket is available
   useEffect(() => {
+    console.log('🔍 Debug auto-set:', {
+      watchBasketId,
+      selectedBasket: selectedBasket ? {id: selectedBasket.id, state: selectedBasket.state} : null,
+      shouldAutoSet: watchBasketId && selectedBasket?.state === 'available'
+    });
+    
     if (watchBasketId && selectedBasket?.state === 'available') {
       // Forza il tipo a "prima-attivazione" per ceste disponibili
       form.setValue('type', 'prima-attivazione');
-      console.log('Tipo operazione impostato automaticamente a "Prima Attivazione" per cesta disponibile');
+      console.log('✅ Tipo operazione impostato automaticamente a "Prima Attivazione" per cesta disponibile');
     }
   }, [watchBasketId, selectedBasket, form]);
   
