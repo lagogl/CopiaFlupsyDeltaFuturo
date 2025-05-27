@@ -134,6 +134,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
     });
   });
   
+  // ===== ROUTE DI ELIMINAZIONE DI EMERGENZA =====
+  console.log("🗑️ Registrazione route di eliminazione di emergenza");
+  app.post('/api/emergency-delete/:id', async (req, res) => {
+    console.log("🚨🚨🚨 EMERGENCY DELETE ROUTE CHIAMATA! 🚨🚨🚨");
+    try {
+      const id = parseInt(req.params.id);
+      console.log(`🚨 EMERGENCY DELETE: Eliminazione operazione ID: ${id}`);
+      
+      if (isNaN(id)) {
+        console.log("🚨 EMERGENCY DELETE: ID non valido");
+        return res.status(400).json({ message: "Invalid operation ID" });
+      }
+
+      // Eliminazione diretta dal database
+      console.log(`🚨 EMERGENCY DELETE: Inizio eliminazione operazione ${id}`);
+      const result = await storage.deleteOperation(id);
+      
+      if (result) {
+        console.log(`✅ EMERGENCY DELETE: Operazione ${id} eliminata con successo`);
+        return res.json({ 
+          success: true, 
+          message: "Operation deleted successfully",
+          id,
+          timestamp: new Date().toISOString()
+        });
+      } else {
+        console.log(`❌ EMERGENCY DELETE: Impossibile eliminare operazione ${id}`);
+        return res.status(404).json({ message: "Operation not found or could not be deleted" });
+      }
+    } catch (error) {
+      console.error("🚨 EMERGENCY DELETE ERROR:", error);
+      return res.status(500).json({ 
+        message: "Internal server error during operation deletion",
+        error: error instanceof Error ? error.message : "Unknown error"
+      });
+    }
+  });
+
+  // Route di test per verificare il routing
+  app.get('/api/test-delete/:id', async (req, res) => {
+    console.log("🧪🧪🧪 TEST ROUTE CHIAMATA! 🧪🧪🧪");
+    const id = req.params.id;
+    console.log(`🧪 TEST: ID ricevuto: ${id}`);
+    return res.json({ message: "Test route funziona!", id, timestamp: new Date().toISOString() });
+  });
+  
   // === Autenticazione routes ===
   app.post("/api/login", async (req, res) => {
     try {

@@ -69,6 +69,15 @@ export function implementDirectOperationRoute(app: Express) {
   console.log("🚀 REGISTRAZIONE ROUTE DIRETTE - INIZIO");
   console.log("Registrazione della route diretta per le operazioni (/api/direct-operations)");
   
+  // ===== ROUTE DI TEST =====
+  console.log("🧪 Registrazione route TEST: /api/test-delete/:id");
+  app.get('/api/test-delete/:id', async (req, res) => {
+    console.log("🧪🧪🧪 TEST ROUTE CHIAMATA! 🧪🧪🧪");
+    const id = req.params.id;
+    console.log(`🧪 TEST: ID ricevuto: ${id}`);
+    return res.json({ message: "Test route funziona!", id, timestamp: new Date().toISOString() });
+  });
+  
   // ===== ROUTE DI ELIMINAZIONE DIRETTA =====
   console.log("🗑️ Registrazione route DELETE: /api/emergency-delete/:id");
   app.post('/api/emergency-delete/:id', async (req, res) => {
