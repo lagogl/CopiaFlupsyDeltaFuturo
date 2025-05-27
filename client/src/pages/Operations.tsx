@@ -419,7 +419,7 @@ export default function Operations() {
         // Crea direttamente l'operazione di vendita
         // Il backend si occuperà di chiudere il ciclo e aggiornare lo stato della cesta
         createdOperation = await apiRequest({
-          url: '/api/operations',
+          url: '/api/direct-operations',
           method: 'POST',
           body: newOperation
         });
