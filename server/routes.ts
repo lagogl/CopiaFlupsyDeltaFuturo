@@ -4207,9 +4207,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
-      // Crea tutte le nuove ceste nel database
+      // Crea tutte le nuove ceste nel database con gestione completa delle posizioni
       for (const basketData of basketsToCreate) {
-        const newBasket = await storage.createBasket(basketData);
+        // 1. Crea il cestello con stato 'available' (non 'active' perché non ha ancora un ciclo)
+        const basketToCreate = {
+          ...basketData,
+          state: 'available' as const
+        };
+        
+        const newBasket = await storage.createBasket(basketToCreate);
+        
+        // 2. Crea il record nella tabella basket_position_history per tracciare la posizione
+        if (newBasket.row && newBasket.position) {
+          try {
+            await storage.createBasketPositionHistory({
+              basketId: newBasket.id,
+              flupsyId: newBasket.flupsyId,
+              row: newBasket.row,
+              position: newBasket.position,
+              startDate: new Date().toISOString().split('T')[0], // Data corrente
+              operationId: null // Null perché non è legato a un'operazione specifica
+            });
+            
+            console.log(`Creata posizione ${newBasket.row}-${newBasket.position} per cestello #${newBasket.physicalNumber}`);
+          } catch (positionError) {
+            console.error(`Errore nella creazione della posizione per cestello ${newBasket.id}:`, positionError);
+            // Continua comunque con gli altri cestelli
+          }
+        }
+        
         newBaskets.push(newBasket);
       }
       
