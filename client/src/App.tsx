@@ -6,6 +6,7 @@ import NotFound from "@/pages/not-found";
 import MainLayout from "@/layouts/MainLayout";
 import Dashboard from "@/pages/Dashboard";
 import Baskets from "@/pages/Baskets";
+import BasketDetail from "@/pages/BasketDetail";
 import Operations from "@/pages/Operations";
 import OperationDetail from "@/pages/OperationDetail";
 import EditOperation from "@/pages/EditOperation";
