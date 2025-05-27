@@ -2064,31 +2064,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.delete("/api/operations/:id", async (req, res) => {
+    console.log("🗑️ DELETE /api/operations/:id - INIZIO");
     try {
       const id = parseInt(req.params.id);
       if (isNaN(id)) {
         return res.status(400).json({ message: "Invalid operation ID" });
       }
 
+      console.log(`🗑️ Eliminazione operazione ID: ${id}`);
+
       // Check if the operation exists
       const operation = await storage.getOperation(id);
       if (!operation) {
+        console.log(`❌ Operazione ${id} non trovata`);
         return res.status(404).json({ message: "Operation not found" });
       }
 
-      console.log(`Richiesta eliminazione operazione ID: ${id}, tipo: ${operation.type}`);
+      console.log(`✅ Operazione trovata: ID ${id}, tipo: ${operation.type}`);
       
       // Verifica se è un'operazione di prima-attivazione
       if (operation.type === 'prima-attivazione') {
-        console.log(`ATTENZIONE: L'operazione ID: ${id} è una prima-attivazione`);
-        console.log(`La cancellazione di questa operazione comporterà l'eliminazione del ciclo associato ID: ${operation.cycleId}`);
-        console.log(`e di tutte le operazioni correlate a questo ciclo.`);
+        console.log(`⚠️ ATTENZIONE: L'operazione ID: ${id} è una prima-attivazione`);
+        console.log(`🔄 La cancellazione comporterà l'eliminazione del ciclo associato ID: ${operation.cycleId}`);
       }
 
+      console.log(`🔄 Avvio eliminazione operazione...`);
       // Delete the operation con cascade handling
       const success = await storage.deleteOperation(id);
+      console.log(`🔄 Risultato eliminazione: ${success}`);
       
       if (success) {
+        console.log(`✅ Operazione ${id} eliminata con successo`);
+        
         if (operation.type === 'prima-attivazione') {
           // Notifica il frontend che c'è stata una cancellazione a cascata
           if (req.app.locals.webSocketServer) {
@@ -2116,11 +2123,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(200).json({ message: "Operation deleted successfully" });
         }
       } else {
+        console.log(`❌ Eliminazione operazione ${id} fallita`);
         return res.status(500).json({ message: "Failed to delete operation" });
       }
     } catch (error) {
-      console.error("Error deleting operation:", error);
-      res.status(500).json({ 
+      console.error("❌ Error deleting operation:", error);
+      return res.status(500).json({ 
         message: "Failed to delete operation", 
         error: error instanceof Error ? error.message : String(error)
       });
