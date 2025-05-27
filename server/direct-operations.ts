@@ -66,9 +66,11 @@ async function findSizeIdByAnimalsPerKg(animalsPerKg: number): Promise<number | 
  * nel database, in particolare per le operazioni di prima attivazione.
  */
 export function implementDirectOperationRoute(app: Express) {
+  console.log("🚀 REGISTRAZIONE ROUTE DIRETTE - INIZIO");
   console.log("Registrazione della route diretta per le operazioni (/api/direct-operations)");
   
   // ===== ROUTE DI ELIMINAZIONE DIRETTA =====
+  console.log("🗑️ Registrazione route DELETE: /api/operations/:id/delete");
   app.post('/api/operations/:id/delete', async (req, res) => {
     console.log("🚨🚨🚨 DIRECT DELETE ROUTE CHIAMATA! 🚨🚨🚨");
     try {
