@@ -1667,6 +1667,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: "POST endpoint funziona!" });
   });
 
+  // Route temporaneo di emergenza per le operazioni
+  app.post("/api/operations-emergency", async (req, res) => {
+    console.log("🚨 EMERGENCY OPERATIONS ROUTE - Ricevuta richiesta");
+    console.log("Body:", req.body);
+    
+    try {
+      // Logica semplificata per creare operazioni
+      const operationData = req.body;
+      
+      // Validazione base
+      if (!operationData.type || !operationData.basketId) {
+        return res.status(400).json({ message: "Tipo operazione e ID cestello richiesti" });
+      }
+
+      const result = await storage.createOperation(operationData);
+      console.log("✅ Operazione creata con successo:", result);
+      
+      res.json({ success: true, operation: result });
+    } catch (error) {
+      console.error("❌ Errore nella creazione operazione:", error);
+      res.status(500).json({ 
+        message: "Errore nella creazione operazione", 
+        error: error instanceof Error ? error.message : String(error) 
+      });
+    }
+  });
+
   app.post("/api/operations", async (req, res) => {
     console.log("🚀 POST /api/operations - RICEVUTA RICHIESTA");
     
