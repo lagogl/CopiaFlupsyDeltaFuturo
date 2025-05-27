@@ -388,6 +388,16 @@ export default function Operations() {
       const isBasketActive = basket?.state === 'active';
       console.log('Basket state checks:', { isBasketAvailable, isBasketActive });
       
+      // Funzione helper per richieste con timeout
+      const apiRequestWithTimeout = async (options: any, timeoutMs = 30000) => {
+        const timeoutPromise = new Promise((_, reject) => 
+          setTimeout(() => reject(new Error('Timeout: Il server non ha risposto entro 30 secondi')), timeoutMs)
+        );
+        
+        const requestPromise = apiRequest(options);
+        return Promise.race([requestPromise, timeoutPromise]);
+      };
+      
       let createdOperation;
       
       // 1. Se la cesta è disponibile e l'operazione è di prima attivazione
