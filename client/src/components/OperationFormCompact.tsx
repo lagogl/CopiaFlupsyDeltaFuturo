@@ -259,17 +259,25 @@ export default function OperationFormCompact({
 
   // Auto-set "Prima Attivazione" when basket is available
   useEffect(() => {
+    console.log('🔍 Debug auto-set OperationFormCompact - ENTRY:', {
+      watchBasketId,
+      baskets: baskets ? `Array with ${baskets.length} items` : 'undefined/null',
+      currentType: watchType,
+      formValues: form.getValues()
+    });
+    
     const selectedBasket = baskets?.find(b => b.id === watchBasketId);
     
-    console.log('🔍 Debug auto-set OperationFormCompact:', {
+    console.log('🔍 Debug auto-set OperationFormCompact - DETAILS:', {
       watchBasketId,
       selectedBasket: selectedBasket ? {id: selectedBasket.id, state: selectedBasket.state} : null,
       shouldAutoSet: watchBasketId && selectedBasket?.state === 'available',
-      currentType: watchType
+      currentType: watchType,
+      basketsLoaded: !!baskets
     });
     
-    if (watchBasketId && selectedBasket?.state === 'available') {
-      // Forza il tipo a "prima-attivazione" per ceste disponibili
+    if (watchBasketId && selectedBasket?.state === 'available' && !watchType) {
+      // Forza il tipo a "prima-attivazione" per ceste disponibili solo se non è già impostato
       console.log('🚀 FORZANDO auto-impostazione di Prima Attivazione per cesta disponibile nel form compatto');
       form.setValue('type', 'prima-attivazione');
       console.log('✅ Tipo operazione impostato automaticamente a "Prima Attivazione" per cesta disponibile');
