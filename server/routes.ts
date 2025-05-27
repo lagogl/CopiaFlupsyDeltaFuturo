@@ -1661,8 +1661,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Test endpoint per verificare se POST funziona
+  app.post("/api/test-post", async (req, res) => {
+    console.log("🧪 TEST POST ENDPOINT - Ricevuta richiesta");
+    res.json({ success: true, message: "POST endpoint funziona!" });
+  });
+
   app.post("/api/operations", async (req, res) => {
     console.log("🚀 POST /api/operations - RICEVUTA RICHIESTA");
+    
+    // Aggiungo timeout per prevenire blocchi infiniti
+    const timeoutId = setTimeout(() => {
+      console.log("⚠️ TIMEOUT: Operazione scaduta dopo 30 secondi");
+      if (!res.headersSent) {
+        res.status(408).json({ message: "Timeout durante l'elaborazione dell'operazione" });
+      }
+    }, 30000);
+    
     try {
       console.log("===== INIZIO ENDPOINT POST /api/operations =====");
       console.log("POST /api/operations - Request Body:", JSON.stringify(req.body, null, 2));
@@ -1671,9 +1686,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (req.body.type === 'prima-attivazione') {
         console.log("Elaborazione prima-attivazione");
         
-        // Per prima-attivazione utilizziamo un validator senza controllo su cycleId
+        // Per prima-attivazione utilizziamo un validator semplificato
         const primaAttivSchema = z.object({
-          date: z.string().or(z.date()).transform(val => typeof val === 'string' ? new Date(val) : val),
+          date: z.coerce.date(),
           type: z.literal('prima-attivazione'),
           basketId: z.number(),
           sizeId: z.number().nullable().optional(),
@@ -1683,7 +1698,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           totalWeight: z.number().nullable().optional(),
           animalsPerKg: z.number().nullable().optional(),
           averageWeight: z.number().nullable().optional(),
-          notes: z.string().optional().default("")
+          notes: z.string().nullable().optional()
         }).safeParse(req.body);
         
         console.log("VALIDAZIONE PRIMA ATTIVAZIONE - parsed:", JSON.stringify(primaAttivSchema, null, 2));
@@ -1927,8 +1942,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
       }
     } catch (error) {
-      console.error("Error creating operation:", error);
-      res.status(500).json({ message: "Failed to create operation" });
+      console.error("❌ Error creating operation:", error);
+      clearTimeout(timeoutId);
+      if (!res.headersSent) {
+        res.status(500).json({ 
+          message: "Failed to create operation", 
+          error: error instanceof Error ? error.message : String(error)
+        });
+      }
     }
   });
 
