@@ -552,15 +552,17 @@ export default function OperationForm({
     console.log('🔍 Debug auto-set:', {
       watchBasketId,
       selectedBasket: selectedBasket ? {id: selectedBasket.id, state: selectedBasket.state} : null,
-      shouldAutoSet: watchBasketId && selectedBasket?.state === 'available'
+      shouldAutoSet: watchBasketId && selectedBasket?.state === 'available',
+      currentType: watchType
     });
     
     if (watchBasketId && selectedBasket?.state === 'available') {
       // Forza il tipo a "prima-attivazione" per ceste disponibili
+      console.log('🚀 FORZANDO auto-impostazione di Prima Attivazione per cesta disponibile');
       form.setValue('type', 'prima-attivazione');
       console.log('✅ Tipo operazione impostato automaticamente a "Prima Attivazione" per cesta disponibile');
     }
-  }, [watchBasketId, selectedBasket, form]);
+  }, [watchBasketId, selectedBasket, watchType, form]);
   
   // Auto-set cycleId when basket with active cycle is selected
   useEffect(() => {
