@@ -594,8 +594,11 @@ export default function OperationForm({
   
   // Filter operation types based on basket state and cycle availability
   // Filtro più restrittivo per le operazioni
-  console.log('Stato cestello selezionato:', selectedBasket?.state);
-  console.log('Cestello ha ciclo attivo?', selectedBasket?.currentCycleId ? 'Sì' : 'No');
+  console.log('🔍 DEBUG FILTRO OPERAZIONI:');
+  console.log('- selectedBasket:', selectedBasket);
+  console.log('- stato cestello:', selectedBasket?.state);
+  console.log('- ha ciclo attivo?', selectedBasket?.currentCycleId ? 'Sì' : 'No');
+  console.log('- operazioni disponibili:', allOperationTypes.map(op => op.value));
   
   // Implementazione restrittiva per cestelli disponibili
   let filteredOperationTypes;
@@ -603,19 +606,19 @@ export default function OperationForm({
     if (selectedBasket.state === 'available') {
       // Solo "Prima Attivazione" per cestelli disponibili
       filteredOperationTypes = allOperationTypes.filter(op => op.value === 'prima-attivazione');
-      console.log('Filtraggio per cestello DISPONIBILE - solo Prima Attivazione:', filteredOperationTypes);
+      console.log('✅ CESTELLO DISPONIBILE - mostro solo Prima Attivazione:', filteredOperationTypes.map(op => op.value));
     } else if (selectedBasket.state === 'active' && !selectedBasket.currentCycleId) {
       // Tutte le operazioni per cestelli attivi SENZA ciclo attivo
       filteredOperationTypes = allOperationTypes;
-      console.log('Filtraggio per cestello ATTIVO SENZA CICLO - tutte operazioni:', filteredOperationTypes);
+      console.log('✅ CESTELLO ATTIVO SENZA CICLO - mostro tutte operazioni:', filteredOperationTypes.map(op => op.value));
     } else {
       // Tutte le operazioni TRANNE 'Prima Attivazione' per cestelli con ciclo attivo
       filteredOperationTypes = allOperationTypes.filter(op => op.value !== 'prima-attivazione');
-      console.log('Filtraggio per cestello ATTIVO CON CICLO - no Prima Attivazione:', filteredOperationTypes);
+      console.log('✅ CESTELLO ATTIVO CON CICLO - nascondo Prima Attivazione:', filteredOperationTypes.map(op => op.value));
     }
   } else {
     filteredOperationTypes = allOperationTypes;
-    console.log('Nessun cestello selezionato - tutte operazioni:', filteredOperationTypes);
+    console.log('✅ NESSUN CESTELLO - mostro tutte operazioni:', filteredOperationTypes.map(op => op.value));
   }
   
   const operationTypes = filteredOperationTypes;
