@@ -951,17 +951,29 @@ export default function OperationFormCompact({
                     name="sizeId"
                     render={({ field }) => (
                       <FormItem className="mb-1">
-                        <FormLabel className="text-xs font-medium">Taglia</FormLabel>
+                        <FormLabel className="text-xs font-medium">Taglia {watchType === 'prima-attivazione' && <span className="text-amber-600">(calcolata automaticamente)</span>}</FormLabel>
                         <FormControl>
-                          <Select
-                            value={field.value?.toString() || ''}
-                            onValueChange={(value) => field.onChange(Number(value))}
-                          >
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Seleziona taglia" />
-                            </SelectTrigger>
-                            <SelectContent>
-                              {sizes?.map((size: any) => (
+                          {watchType === 'prima-attivazione' ? (
+                            <Input 
+                              type="text" 
+                              className="h-8 text-sm bg-amber-50"
+                              readOnly
+                              value={(() => {
+                                if (!field.value || !sizes) return '';
+                                const size = sizes.find(s => s.id === field.value);
+                                return size ? `${size.code} (${size.minAnimalsPerKg?.toLocaleString('it-IT')}-${size.maxAnimalsPerKg?.toLocaleString('it-IT')} animali/kg)` : '';
+                              })()}
+                            />
+                          ) : (
+                            <Select
+                              value={field.value?.toString() || ''}
+                              onValueChange={(value) => field.onChange(Number(value))}
+                            >
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Seleziona taglia" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {sizes?.map((size: any) => (
                                 <SelectItem key={size.id} value={size.id.toString()}>
                                   {size.name} {size.minAnimalsPerKg !== undefined ? 
                                   `(${size.minAnimalsPerKg}-${size.maxAnimalsPerKg})` : 
@@ -970,6 +982,7 @@ export default function OperationFormCompact({
                               ))}
                             </SelectContent>
                           </Select>
+                          )}
                         </FormControl>
                         <FormMessage />
                       </FormItem>
