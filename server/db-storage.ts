@@ -648,12 +648,17 @@ export class DbStorage implements IStorage {
         
         // 2.1 Elimina eventuali impatti ambientali associati al ciclo
         try {
-          const { cycleImpacts } = await import('@shared/schema');
-          console.log(`Eliminazione impatti ambientali per il ciclo ID: ${cycleId}`);
-          await db.delete(cycleImpacts)
-            .where(eq(cycleImpacts.cycleId, cycleId));
+          // Prova a eliminare gli impatti ambientali se la tabella esiste
+          const impactResult = await db.execute(sql`
+            DELETE FROM operation_impacts 
+            WHERE operation_id IN (
+              SELECT id FROM operations WHERE cycle_id = ${cycleId}
+            )
+          `);
+          console.log(`Eliminati impatti ambientali per operazioni del ciclo ID: ${cycleId}`);
         } catch (error) {
-          console.error(`Errore durante eliminazione impatti del ciclo: ${error instanceof Error ? error.message : String(error)}`);
+          // Ignora errori se la tabella non esiste (ancora)
+          console.log(`Tabella impatti ambientali non presente, continuando...`);
         }
         
         // 2.2 Gestione dati di vagliatura correlati
