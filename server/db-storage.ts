@@ -631,16 +631,19 @@ export class DbStorage implements IStorage {
           }
         }
         
-        // 1. Elimina tutte le operazioni associate al ciclo
+        // 1. Prima elimina l'operazione principale
+        console.log(`Eliminazione operazione principale ID: ${id}`);
+        await db.delete(operations)
+          .where(eq(operations.id, id));
+        
+        // 2. Poi elimina tutte le altre operazioni associate al ciclo
         const cycleOperations = await this.getOperationsByCycle(cycleId);
-        console.log(`Trovate ${cycleOperations.length} operazioni associate al ciclo ${cycleId}`);
+        console.log(`Trovate ${cycleOperations.length} operazioni rimanenti associate al ciclo ${cycleId}`);
         
         for (const op of cycleOperations) {
-          if (op.id !== id) { // Evita di eliminare due volte l'operazione corrente
-            console.log(`Eliminazione operazione correlata ID: ${op.id}`);
-            await db.delete(operations)
-              .where(eq(operations.id, op.id));
-          }
+          console.log(`Eliminazione operazione correlata ID: ${op.id}`);
+          await db.delete(operations)
+            .where(eq(operations.id, op.id));
         }
         
         // 2. Elimina i record correlati al ciclo in tutte le tabelle
@@ -768,9 +771,12 @@ export class DbStorage implements IStorage {
             position: null
           });
         }
+        
+        // Per le operazioni di prima attivazione, l'operazione è già stata eliminata sopra
+        return true;
       }
       
-      // Elimina l'operazione richiesta
+      // Per le operazioni normali, elimina solo l'operazione richiesta
       const deletedCount = await db.delete(operations)
         .where(eq(operations.id, id))
         .returning({ id: operations.id });
