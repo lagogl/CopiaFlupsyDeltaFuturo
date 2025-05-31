@@ -379,6 +379,9 @@ export default function DraggableFlupsyVisualizer() {
             targetBasketId: data.basketAtPosition.id
           });
           
+          // Apri automaticamente il dialogo di conferma per lo scambio
+          setConfirmDialogOpen(true);
+          
           toast({
             title: "Posizione occupata",
             description: `La posizione è già occupata dalla cesta #${data.basketAtPosition.physicalNumber}. Conferma per effettuare uno switch.`
