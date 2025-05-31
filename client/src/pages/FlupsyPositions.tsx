@@ -193,7 +193,7 @@ export default function FlupsyPositions() {
   }
   
   // Utilizziamo i dati delle posizioni se disponibili, altrimenti creiamo un array fittizio
-  const positions = positionsData?.positions || [];
+  const positions = (positionsData && Array.isArray(positionsData.positions)) ? positionsData.positions : [];
   
   // Organizziamo le posizioni per riga (DX/SX)
   const positionsByRow: Record<string, Position[]> = {};
@@ -206,13 +206,14 @@ export default function FlupsyPositions() {
   });
   
   // Se non abbiamo dati, creiamo un layout basato sul maxPositions
-  if (positions.length === 0 && flupsy.maxPositions) {
-    const positionsPerRow = Math.ceil(flupsy.maxPositions / 2);
+  if (positions.length === 0 && flupsy && typeof flupsy === 'object' && 'maxPositions' in flupsy) {
+    const maxPositions = (flupsy as any).maxPositions;
+    const positionsPerRow = Math.ceil(maxPositions / 2);
     
     ['DX', 'SX'].forEach(row => {
       positionsByRow[row] = [];
       for (let i = 1; i <= positionsPerRow; i++) {
-        if ((row === 'DX' ? i : i + positionsPerRow) <= flupsy.maxPositions) {
+        if ((row === 'DX' ? i : i + positionsPerRow) <= maxPositions) {
           positionsByRow[row].push({
             row,
             position: i,

@@ -20,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
 import { Info, Filter, MapPin, Fan, Wind, History } from "lucide-react";
+import QRCodeGenerator from "@/components/QRCodeGenerator";
 import { useToast } from "@/hooks/use-toast";
 import { format, differenceInDays } from "date-fns";
 import { it } from "date-fns/locale";
@@ -819,32 +820,46 @@ export default function DraggableFlupsyVisualizer() {
               </div>
             </div>
             
-            {/* Corpo con dati principali */}
+            {/* Corpo con dati principali e QR code */}
             <div className="py-1 flex flex-col items-center">
+              {/* QR Code centrale */}
+              <div className="mb-2">
+                <QRCodeGenerator
+                  data={{
+                    flupsyId: flupsyId,
+                    flupsyName: flupsys?.find(f => f.id === flupsyId)?.name || `FLUPSY ${flupsyId}`,
+                    row: row,
+                    position: position
+                  }}
+                  size={35}
+                  className="opacity-70"
+                />
+              </div>
+
               {/* Mostra sempre la taglia oppure il ciclo */}
               {basket.currentCycleId && (
-                <div className="font-medium">
+                <div className="font-medium text-[10px]">
                   <span className="text-gray-700">Taglia:</span> {size ? size : `Ciclo ${basket.currentCycleId}`}
                 </div>
               )}
               
               {/* Numero animali */}
               {animalCount && (
-                <div className="text-[10px]">
+                <div className="text-[9px]">
                   <span className="text-gray-700">Animali:</span> {formatNumberWithCommas(animalCount)}
                 </div>
               )}
               
               {/* Peso medio */}
               {averageWeight && (
-                <div className="text-[10px]">
+                <div className="text-[9px]">
                   <span className="text-gray-700">Peso medio:</span> {formatNumberWithCommas(Math.round(averageWeight * 1000))} mg
                 </div>
               )}
               
               {/* Data inizio ciclo */}
               {startDate && (
-                <div className="text-[10px]">
+                <div className="text-[9px]">
                   <span className="text-gray-700">Dal:</span> {startDate.toLocaleDateString()}
                 </div>
               )}
@@ -862,8 +877,17 @@ export default function DraggableFlupsyVisualizer() {
           </>
         ) : (
           <div className="text-gray-400 flex flex-col items-center justify-center h-full">
-            <MapPin className="h-4 w-4 mx-auto mb-1" />
-            <span>{row}-{position}</span>
+            <div className="text-xs mb-2">{row}-{position}</div>
+            <QRCodeGenerator
+              data={{
+                flupsyId: flupsyId,
+                flupsyName: flupsys?.find(f => f.id === flupsyId)?.name || `FLUPSY ${flupsyId}`,
+                row: row,
+                position: position
+              }}
+              size={40}
+              className="opacity-60"
+            />
           </div>
         )}
       </div>
