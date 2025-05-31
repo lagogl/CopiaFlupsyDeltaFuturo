@@ -455,6 +455,11 @@ export default function DraggableFlupsyVisualizer() {
     console.log("Cestello trascinato ID:", item.id);
     console.log("Da posizione:", item.sourceRow, item.sourcePosition);
     console.log("A posizione:", targetRow, targetPosition);
+    console.log("FLUPSY target:", dropFlupsyId);
+    console.log("Cestelli disponibili nella posizione target:", baskets.filter((b: any) => 
+      b.row === targetRow && b.position === targetPosition && b.flupsyId === dropFlupsyId
+    ));
+    console.log("targetBasket trovato:", targetBasket);
     
     if (targetBasket) {
       console.log("SCAMBIO con cestello ID:", targetBasket.id);
