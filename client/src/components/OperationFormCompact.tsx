@@ -8,7 +8,7 @@ import {
   AlertTriangle, Loader2, ClipboardList, 
   MapPin, Link, Scale, Ruler 
 } from "lucide-react";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -98,6 +98,7 @@ export default function OperationFormCompact({
   // Stato per la gestione dei dati e degli errori
   const [operationDateError, setOperationDateError] = useState<string | null>(null);
   const [showConfirmDialog, setShowConfirmDialog] = useState<boolean>(false);
+  const queryClient = useQueryClient();
   const [pendingValues, setPendingValues] = useState<any>(null);
   const [prevOperationData, setPrevOperationData] = useState<any>(null);
   const { toast } = useToast();
@@ -539,6 +540,25 @@ export default function OperationFormCompact({
     if (onSubmit) {
       console.log("Chiamata onSubmit con:", formattedValues);
       onSubmit(formattedValues);
+      
+      // Refresh automatico della pagina dopo la creazione dell'operazione
+      setTimeout(() => {
+        // Invalida tutte le query principali per aggiornare i dati
+        queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/operations-optimized'] });
+        
+        // Reset del form dopo invio riuscito
+        form.reset();
+        
+        // Mostra notifica di successo
+        toast({
+          title: "Operazione registrata",
+          description: "L'operazione è stata registrata con successo. I dati sono stati aggiornati.",
+          variant: "default",
+        });
+      }, 1000); // Attesa di 1 secondo per permettere al server di completare l'operazione
     }
   };
 
