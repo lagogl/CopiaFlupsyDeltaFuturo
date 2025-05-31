@@ -189,10 +189,22 @@ export default function OperationFormCompact({
       
       // Log per debug
       console.log("Cestelli filtrati per FLUPSY:", filtered);
+      console.log("TOTALE cestelli trovati:", filtered.length);
       if (filtered.length > 0) {
-        console.log("Esempio cestello:", filtered[0]);
-        console.log("Conteggio animali:", filtered[0].animalCount);
-        console.log("Ultima operazione:", filtered[0].lastOperation);
+        console.log("Esempio cestello #1:", filtered[0]);
+        console.log("- State:", filtered[0].state);
+        console.log("- CurrentCycleId:", filtered[0].currentCycleId);
+        console.log("- CycleCode:", filtered[0].cycleCode);
+        
+        // Mostra stato di tutti i cestelli
+        filtered.forEach((basket, index) => {
+          console.log(`Cestello #${basket.physicalNumber} (${index + 1}/${filtered.length}):`, {
+            id: basket.id,
+            state: basket.state,
+            currentCycleId: basket.currentCycleId,
+            cycleCode: basket.cycleCode
+          });
+        });
       }
       
       setFlupsyBaskets(filtered);
