@@ -3,6 +3,7 @@ import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import * as z from "zod";
 import { format } from "date-fns";
+import { it } from "date-fns/locale";
 import { 
   AlertTriangle, Loader2, ClipboardList, 
   MapPin, Link, Scale, Ruler 
@@ -852,11 +853,20 @@ export default function OperationFormCompact({
                                 sizes?.find((s: any) => s.id === lastOperation.sizeId) : null;
                               
                               return (
-                                <SelectItem key={basket.id} value={basket.id.toString()} className="py-3 px-3">
+                                <SelectItem key={basket.id} value={basket.id.toString()} className={`py-3 px-3 ${basket.state === 'active' ? 'bg-green-50 border-l-4 border-green-500' : 'bg-gray-50 border-l-4 border-orange-400'}`}>
                                   <div className="flex flex-col gap-1 w-full">
                                     <div className="font-semibold flex items-center gap-2">
+                                      {basket.state === 'active' ? (
+                                        <span className="text-green-600 text-lg">🟢</span>
+                                      ) : (
+                                        <span className="text-orange-500 text-lg">⚪</span>
+                                      )}
                                       #{basket.physicalNumber} {basket.row && basket.position ? `(${basket.row}-${basket.position})` : ''} 
-                                      {basket.state === 'active' ? '✅' : ''}
+                                      {basket.state === 'active' ? (
+                                        <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded-full font-medium">ATTIVO</span>
+                                      ) : (
+                                        <span className="text-xs bg-orange-100 text-orange-800 px-2 py-1 rounded-full font-medium">DISPONIBILE</span>
+                                      )}
                                     </div>
                                     
                                     {basket.state === 'active' && lastOperation ? (
@@ -886,17 +896,21 @@ export default function OperationFormCompact({
                                           )}
                                           
                                           <span className="px-1.5 py-0.5 rounded-md bg-blue-100 text-blue-700 font-medium">
-                                            {lastOperation.type === 'prima-attivazione' ? 'Prima Attivazione' :
+                                            Ultima: {lastOperation.type === 'prima-attivazione' ? 'Prima Attivazione' :
                                              lastOperation.type === 'misura' ? 'Misura' :
                                              lastOperation.type === 'peso' ? 'Peso' :
                                              lastOperation.type === 'vendita' ? 'Vendita' :
                                              lastOperation.type}
                                           </span>
                                         </div>
+                                        
+                                        <div className="text-xs text-gray-600">
+                                          Ciclo attivo dal: {format(new Date(lastOperation.date), 'dd/MM/yyyy', { locale: it })}
+                                        </div>
                                       </div>
                                     ) : basket.state === 'available' ? (
-                                      <div className="text-xs text-gray-500">
-                                        Cestello disponibile
+                                      <div className="text-xs text-orange-600 font-medium">
+                                        Pronto per nuova prima attivazione
                                       </div>
                                     ) : (
                                       <div className="text-xs text-gray-500">
