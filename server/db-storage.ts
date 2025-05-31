@@ -766,6 +766,7 @@ export class DbStorage implements IStorage {
           await this.updateBasket(basketId, {
             state: 'available',
             currentCycleId: null,
+            cycleCode: null,
             nfcData: null,
             row: null,
             position: null
