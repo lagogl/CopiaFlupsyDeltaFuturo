@@ -32,6 +32,7 @@ import Inventory from "@/pages/Inventory";
 import TestView from "@/pages/TestView";
 import NFCScan from "@/pages/NFCScan";
 import NFCTagManager from "@/pages/NFCTagManager";
+import NFCPrimaAttivazione from "@/pages/NFCPrimaAttivazione";
 import GrowJourney from "@/pages/GrowJourney";
 import BasketSelection from "@/pages/BasketSelection";
 import ExportPage from "@/pages/ExportPage";
@@ -94,6 +95,7 @@ function Router() {
       <ProtectedRoute path="/test" component={TestView}/>
       <ProtectedRoute path="/nfc-scan" component={NFCScan}/>
       <ProtectedRoute path="/nfc-scan/basket/:id" component={NFCScan}/>
+      <ProtectedRoute path="/nfc-prima-attivazione" component={NFCPrimaAttivazione}/>
       <ProtectedRoute path="/nfc-tags" component={NFCTagManager}/>
       <ProtectedRoute path="/grow-journey" component={GrowJourney}/>
       <ProtectedRoute path="/basket-selection" component={BasketSelection}/>

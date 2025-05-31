@@ -97,6 +97,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <Zap className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Rapide", path: "/quick-operations" },
         { icon: <GripHorizontal className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Drag&Drop", path: "/operations-drag-drop" },
         { icon: <LayoutGrid className="h-5 w-5 mr-2 text-blue-600" />, label: "Vagliatura con Mappa", path: "/vagliatura-con-mappa" },
+        { icon: <Smartphone className="h-5 w-5 mr-2 text-blue-600" />, label: "Prima Attivazione NFC", path: "/nfc-prima-attivazione" },
         { icon: <Scan className="h-5 w-5 mr-2 text-blue-600" />, label: "FlupsyScan Mobile", path: "/nfc-scan" }
       ]
     },
