@@ -777,9 +777,8 @@ export class MemStorage implements IStorage {
             ...basket,
             state: 'available',
             currentCycleId: null,
-            nfcData: null,
-            row: null,
-            position: null
+            nfcData: null
+            // NON resettiamo row e position perché il cestello rimane fisicamente nella stessa posizione
           });
         }
       }

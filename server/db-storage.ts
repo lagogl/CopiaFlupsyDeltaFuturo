@@ -763,13 +763,14 @@ export class DbStorage implements IStorage {
           }
           
           // 3.2. Aggiorna lo stato del cestello
+          // IMPORTANTE: Manteniamo la posizione fisica (row, position) del cestello
+          // perché eliminiamo solo il ciclo, non la posizione fisica del cestello
           await this.updateBasket(basketId, {
             state: 'available',
             currentCycleId: null,
             cycleCode: null,
-            nfcData: null,
-            row: null,
-            position: null
+            nfcData: null
+            // NON resettiamo row e position perché il cestello rimane fisicamente nella stessa posizione
           });
         }
         
