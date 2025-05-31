@@ -541,24 +541,30 @@ export default function OperationFormCompact({
       console.log("Chiamata onSubmit con:", formattedValues);
       onSubmit(formattedValues);
       
-      // Refresh automatico della pagina dopo la creazione dell'operazione
-      setTimeout(() => {
-        // Invalida tutte le query principali per aggiornare i dati
-        queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/operations-optimized'] });
-        
-        // Reset del form dopo invio riuscito
-        form.reset();
-        
-        // Mostra notifica di successo
-        toast({
-          title: "Operazione registrata",
-          description: "L'operazione è stata registrata con successo. I dati sono stati aggiornati.",
-          variant: "default",
-        });
-      }, 1000); // Attesa di 1 secondo per permettere al server di completare l'operazione
+      // Refresh ultra-ottimizzato: aggiorna solo ciò che è necessario
+      setTimeout(async () => {
+        try {
+          // Reset immediato del form per reattività
+          form.reset();
+          
+          // Mostra notifica immediata
+          toast({
+            title: "Operazione registrata",
+            description: "L'operazione è stata salvata con successo.",
+            variant: "default",
+          });
+          
+          // Invalida solo le operazioni (più veloce)
+          queryClient.invalidateQueries({ 
+            queryKey: ['/api/operations-optimized'],
+            exact: false,
+            refetchType: 'active'
+          });
+          
+        } catch (error) {
+          console.error("Errore durante l'aggiornamento:", error);
+        }
+      }, 200); // Ulteriormente ridotto per maggiore reattività
     }
   };
 
