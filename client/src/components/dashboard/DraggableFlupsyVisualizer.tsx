@@ -575,18 +575,13 @@ export default function DraggableFlupsyVisualizer() {
   const confirmBasketMove = async () => {
     if (!pendingBasketMove) return;
     
-    // Assicuriamoci di avere dati aggiornati prima di continuare
-    await refetchBaskets();
-    const freshBaskets = queryClient.getQueryData(['/api/baskets']) as any[];
+    // Usa i dati dei cestelli già disponibili nel componente
+    const currentBaskets = baskets && Array.isArray(baskets) ? baskets : [];
     
     if (pendingBasketMove.isSwitch && pendingBasketMove.targetBasketId) {
       // Caso di switch tra due cestelli
-      const basket1 = freshBaskets && Array.isArray(freshBaskets) ? 
-        freshBaskets.find((b: any) => b.id === pendingBasketMove.basketId) : 
-        null;
-      const basket2 = freshBaskets && Array.isArray(freshBaskets) ? 
-        freshBaskets.find((b: any) => b.id === pendingBasketMove.targetBasketId) : 
-        null;
+      const basket1 = currentBaskets.find((b: any) => b.id === pendingBasketMove.basketId);
+      const basket2 = currentBaskets.find((b: any) => b.id === pendingBasketMove.targetBasketId);
       
       console.log("Attempting to switch baskets:", basket1, basket2);
       
@@ -643,9 +638,7 @@ export default function DraggableFlupsyVisualizer() {
       });
     } else {
       // Caso normale: sposta un cestello in una posizione vuota
-      const basket = freshBaskets && Array.isArray(freshBaskets) ? 
-        freshBaskets.find((b: any) => b.id === pendingBasketMove.basketId) : 
-        null;
+      const basket = currentBaskets.find((b: any) => b.id === pendingBasketMove.basketId);
       if (!basket) {
         toast({
           title: "Errore",
