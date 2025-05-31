@@ -270,10 +270,12 @@ export default function NFCPrimaAttivazione() {
   };
 
   // Callback per ricevere i risultati dal calcolatore
-  const handleCalculatorResults = (results: any) => {
-    if (results.animalCount) form.setValue("animalCount", results.animalCount);
-    if (results.animalsPerKg) form.setValue("animalsPerKg", results.animalsPerKg);
-    if (results.sizeId) form.setValue("sizeId", results.sizeId.toString());
+  const handleCalculatorConfirm = (data: any) => {
+    if (data.animalCount) form.setValue("animalCount", data.animalCount);
+    if (data.animalsPerKg) form.setValue("animalsPerKg", data.animalsPerKg);
+    if (data.totalWeight) form.setValue("totalWeight", data.totalWeight);
+    if (data.sampleWeight) form.setValue("sampleWeight", data.sampleWeight);
+    if (data.sampleCount) form.setValue("liveAnimals", data.sampleCount);
     setCalculatorOpen(false);
   };
 
@@ -341,7 +343,7 @@ export default function NFCPrimaAttivazione() {
                               </SelectTrigger>
                             </FormControl>
                             <SelectContent>
-                              {flupsys?.map((flupsy: any) => (
+                              {Array.isArray(flupsys) && flupsys.map((flupsy: any) => (
                                 <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
                                   {flupsy.name}
                                 </SelectItem>
@@ -436,7 +438,7 @@ export default function NFCPrimaAttivazione() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {lots?.map((lot: any) => (
+                            {Array.isArray(lots) && lots.map((lot: any) => (
                               <SelectItem key={lot.id} value={lot.id.toString()}>
                                 Lotto #{lot.id} - {lot.supplier} ({lot.arrivalDate})
                               </SelectItem>
@@ -462,7 +464,7 @@ export default function NFCPrimaAttivazione() {
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            {sizes?.map((size: any) => (
+                            {Array.isArray(sizes) && sizes.map((size: any) => (
                               <SelectItem key={size.id} value={size.id.toString()}>
                                 {size.code} - {size.name}
                               </SelectItem>
@@ -689,9 +691,13 @@ export default function NFCPrimaAttivazione() {
         <DraggableCalculator
           isOpen={calculatorOpen}
           onClose={() => setCalculatorOpen(false)}
-          onResultsChange={handleCalculatorResults}
-          sampleWeight={form.watch("sampleWeight")}
-          liveAnimals={form.watch("liveAnimals")}
+          onConfirm={handleCalculatorConfirm}
+          initialData={{
+            sampleWeight: form.watch("sampleWeight"),
+            sampleCount: form.watch("liveAnimals"),
+            totalWeight: form.watch("totalWeight"),
+            animalsPerKg: form.watch("animalsPerKg")
+          }}
         />
       )}
     </div>
