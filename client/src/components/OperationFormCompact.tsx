@@ -156,7 +156,7 @@ export default function OperationFormCompact({
   });
   
   const { data: baskets } = useQuery({ 
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets?includeAll=true'],
     enabled: !isLoading,
   });
   
