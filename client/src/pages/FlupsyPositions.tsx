@@ -4,6 +4,7 @@ import { useQuery } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ArrowLeft, Loader2, CircleX, CheckCircle, Calendar, Box, Tag, Weight, Scale, Info } from "lucide-react";
+import QRCodeGenerator from "@/components/QRCodeGenerator";
 import { Badge } from "@/components/ui/badge";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { 
@@ -288,7 +289,7 @@ export default function FlupsyPositions() {
                             <div
                               key={`${pos.row}-${pos.position}`}
                               className={`
-                                aspect-square border rounded-md flex flex-col items-center justify-center cursor-pointer
+                                aspect-square border rounded-md flex flex-col items-center justify-between cursor-pointer p-2 relative
                                 ${pos.occupied 
                                   ? (pos.active 
                                     ? 'bg-green-50 border-green-200 dark:bg-green-950 dark:border-green-800 hover:bg-green-100 dark:hover:bg-green-900' 
@@ -298,19 +299,40 @@ export default function FlupsyPositions() {
                               onMouseEnter={() => pos.basketId ? setSelectedBasketId(pos.basketId) : null}
                               onMouseLeave={() => setSelectedBasketId(null)}
                             >
-                              <p className="text-xs text-muted-foreground">Pos. {pos.position}</p>
-                              {pos.occupied ? (
-                                <>
+                              {/* Header con numero posizione */}
+                              <div className="text-center w-full">
+                                <p className="text-xs text-muted-foreground">Pos. {pos.position}</p>
+                                {pos.occupied && (
                                   <p className="font-semibold">#{pos.basketNumber || '?'}</p>
-                                  {pos.active ? (
-                                    <CheckCircle className="h-4 w-4 text-green-500 mt-1" />
+                                )}
+                              </div>
+
+                              {/* QR Code centrale */}
+                              <div className="flex-1 flex items-center justify-center">
+                                <QRCodeGenerator
+                                  data={{
+                                    flupsyId: flupsy.id,
+                                    flupsyName: flupsy.name,
+                                    row: pos.row,
+                                    position: pos.position
+                                  }}
+                                  size={50}
+                                  className="opacity-80"
+                                />
+                              </div>
+
+                              {/* Footer con stato */}
+                              <div className="text-center w-full">
+                                {pos.occupied ? (
+                                  pos.active ? (
+                                    <CheckCircle className="h-4 w-4 text-green-500 mx-auto" />
                                   ) : (
-                                    <Badge variant="outline" className="mt-1 text-xs py-0">inattivo</Badge>
-                                  )}
-                                </>
-                              ) : (
-                                <CircleX className="h-6 w-6 text-slate-300 dark:text-slate-700 mt-1" />
-                              )}
+                                    <Badge variant="outline" className="text-xs py-0">inattivo</Badge>
+                                  )
+                                ) : (
+                                  <CircleX className="h-4 w-4 text-slate-300 dark:text-slate-700 mx-auto" />
+                                )}
+                              </div>
                             </div>
                           </TooltipTrigger>
                           {pos.basketId && pos.basketId === selectedBasketId && basketDetail && (
