@@ -427,25 +427,24 @@ export default function DraggableFlupsyVisualizer() {
       return; // No change in position
     }
     
-    // Recupera i dati freschi dopo il refetch
-    await refetchBaskets();
-    const freshBaskets = queryClient.getQueryData(['/api/baskets']) as any[];
-    if (!freshBaskets || !Array.isArray(freshBaskets)) {
-      console.error("Baskets data not available or not an array after refetch");
+    // Usa i dati attuali dei cestelli direttamente senza refetch
+    const currentBaskets = baskets && Array.isArray(baskets) ? baskets : [];
+    if (currentBaskets.length === 0) {
+      console.error("Baskets data not available");
       return;
     }
     
-    // Otteniamo il cestello che stiamo trascinando dai dati aggiornati
-    const sourceBasket = freshBaskets.find((b: any) => b.id === item.id);
+    // Otteniamo il cestello che stiamo trascinando dai dati attuali
+    const sourceBasket = currentBaskets.find((b: any) => b.id === item.id);
     if (!sourceBasket) {
-      console.error("Source basket not found in fresh data:", item.id);
+      console.error("Source basket not found:", item.id);
       return;
     }
     
     // Verifica attentamente se c'è già un cestello nella posizione target
     // Deve essere un cestello diverso da quello che stiamo trascinando nella posizione target
     // Il cestello deve essere nel FLUPSY target (dropFlupsyId) e nella posizione target
-    const targetBasket = freshBaskets.find((b: any) => 
+    const targetBasket = currentBaskets.find((b: any) => 
       b.id !== item.id && 
       b.row === targetRow && 
       b.position === targetPosition &&
