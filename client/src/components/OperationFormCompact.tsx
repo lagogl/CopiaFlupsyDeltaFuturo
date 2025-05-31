@@ -481,14 +481,22 @@ export default function OperationFormCompact({
         type: values.type, 
         date: values.date 
       });
-      alert("Compila tutti i campi obbligatori: FLUPSY, Cesta, Tipo operazione e Data");
+      toast({
+        title: "Campi mancanti",
+        description: "Compila tutti i campi obbligatori: FLUPSY, Cestello, Tipo operazione e Data.",
+        variant: "destructive",
+      });
       return;
     }
     
     // Verifica lotto per prima-attivazione
     if (values.type === 'prima-attivazione' && !values.lotId) {
       console.error("Manca il lotto per operazione di Prima Attivazione");
-      alert("Il lotto è obbligatorio per le operazioni di Prima Attivazione");
+      toast({
+        title: "Lotto mancante",
+        description: "Seleziona un lotto per procedere con la prima attivazione del cestello.",
+        variant: "destructive",
+      });
       return;
     }
     
