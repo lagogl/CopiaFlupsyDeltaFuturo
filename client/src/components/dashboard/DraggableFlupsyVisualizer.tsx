@@ -427,78 +427,62 @@ export default function DraggableFlupsyVisualizer() {
       return; // No change in position
     }
     
-    // Usa i dati attuali dei cestelli direttamente senza refetch
-    const currentBaskets = baskets && Array.isArray(baskets) ? baskets : [];
-    if (currentBaskets.length === 0) {
-      console.error("Baskets data not available");
+    // Controlla se i dati sono disponibili
+    if (isLoadingBaskets || !baskets || !Array.isArray(baskets) || baskets.length === 0) {
+      console.log("Dati cestelli non disponibili, mostro solo spostamento semplice");
+      // Per posizioni vuote, procedi con spostamento normale
+      setPendingBasketMove({
+        basketId: item.id,
+        targetRow,
+        targetPosition,
+        flupsyId: dropFlupsyId,
+        targetFlupsyId: dropFlupsyId,
+        isSwitch: false
+      });
+      setConfirmDialogOpen(true);
       return;
     }
     
-    // Otteniamo il cestello che stiamo trascinando dai dati attuali
-    const sourceBasket = currentBaskets.find((b: any) => b.id === item.id);
-    if (!sourceBasket) {
-      console.error("Source basket not found:", item.id);
-      return;
-    }
-    
-    // Verifica attentamente se c'è già un cestello nella posizione target
-    // Deve essere un cestello diverso da quello che stiamo trascinando nella posizione target
-    // Il cestello deve essere nel FLUPSY target (dropFlupsyId) e nella posizione target
-    const targetBasket = currentBaskets.find((b: any) => 
+    // Verifica se c'è già un cestello nella posizione target
+    const targetBasket = baskets.find((b: any) => 
       b.id !== item.id && 
       b.row === targetRow && 
       b.position === targetPosition &&
       b.flupsyId === dropFlupsyId
     );
     
-    // Determiniamo il FLUPSY target in base al cestello target o al FLUPSY dell'oggetto DropTarget
-    const targetFlupsyId = targetBasket ? targetBasket.flupsyId : dropFlupsyId;
-    
-    // Assicuriamoci di avere i flupsyId corretti
-    const sourceFlupsyId = sourceBasket.flupsyId;
-    
-    // Log dettagliato
     console.log("=== OPERAZIONE CESTELLO ===");
-    console.log("Cestello trascinato:", sourceBasket.physicalNumber, "(ID:", item.id, ")");
-    console.log("Da posizione:", item.sourceRow, item.sourcePosition, "FLUPSY:", sourceFlupsyId);
-    console.log("A posizione:", targetRow, targetPosition, "FLUPSY:", targetFlupsyId);
+    console.log("Cestello trascinato ID:", item.id);
+    console.log("Da posizione:", item.sourceRow, item.sourcePosition);
+    console.log("A posizione:", targetRow, targetPosition);
     
     if (targetBasket) {
-      console.log("Operazione: SCAMBIO con cestello", targetBasket.physicalNumber, "(ID:", targetBasket.id, ")");
-    } else {
-      console.log("Operazione: SPOSTAMENTO in posizione libera")
-    }
-    
-    if (targetBasket) {
-      // Se c'è già una cesta nella posizione target, è un'operazione di switch
-      console.log("Setting up switch with basket ID:", targetBasket.id);
-      
-      // Mostra conferma per lo switch
+      console.log("SCAMBIO con cestello ID:", targetBasket.id);
+      // Scambio tra due cestelli
       setPendingBasketMove({
         basketId: item.id,
         targetRow,
         targetPosition,
-        flupsyId: sourceFlupsyId,      // FLUPSY di origine
-        targetFlupsyId, // FLUPSY di destinazione (può essere diverso da quello di origine)
+        flupsyId: dropFlupsyId,
+        targetFlupsyId: dropFlupsyId,
         isSwitch: true,
         targetBasketId: targetBasket.id
       });
     } else {
-      // Spostamento normale in una posizione vuota
-      console.log("Setting up normal move for basket:", item.id);
-      
+      console.log("SPOSTAMENTO in posizione libera");
+      // Spostamento normale
       setPendingBasketMove({
         basketId: item.id,
         targetRow,
         targetPosition,
-        flupsyId: sourceFlupsyId,
-        targetFlupsyId, // Aggiungiamo anche per i movimenti normali
+        flupsyId: dropFlupsyId,
+        targetFlupsyId: dropFlupsyId,
         isSwitch: false
       });
     }
     
     setConfirmDialogOpen(true);
-  }, [queryClient, refetchBaskets]);
+  }, [baskets, isLoadingBaskets]);
 
   // Handle basket click
   const handleBasketClick = (basket: any) => {
