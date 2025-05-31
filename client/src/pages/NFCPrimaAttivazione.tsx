@@ -106,6 +106,19 @@ export default function NFCPrimaAttivazione() {
   // Mutazione per creare l'operazione
   const createOperationMutation = useMutation({
     mutationFn: async (data: PrimaAttivazioneFormData) => {
+      // Validazione dei dati obbligatori
+      if (!data.lotId) {
+        throw new Error('È necessario selezionare un lotto per procedere con la prima attivazione.');
+      }
+
+      if (!data.basketId) {
+        throw new Error('È necessario selezionare un cestello.');
+      }
+
+      if (!data.sizeId) {
+        throw new Error('È necessario selezionare una taglia.');
+      }
+
       // Prima crea il ciclo
       const cycleData = {
         basketId: parseInt(data.basketId),
@@ -120,7 +133,8 @@ export default function NFCPrimaAttivazione() {
       });
 
       if (!cycleResponse.ok) {
-        throw new Error('Errore nella creazione del ciclo');
+        const errorData = await cycleResponse.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Impossibile creare il nuovo ciclo. Verifica che il cestello sia disponibile.');
       }
 
       const cycle = await cycleResponse.json();
@@ -147,7 +161,8 @@ export default function NFCPrimaAttivazione() {
       });
 
       if (!operationResponse.ok) {
-        throw new Error('Errore nella creazione dell\'operazione');
+        const errorData = await operationResponse.json().catch(() => ({}));
+        throw new Error(errorData.message || 'Impossibile registrare l\'operazione. Riprova.');
       }
 
       // Aggiorna la posizione del cestello
