@@ -64,7 +64,9 @@ const operationSchema = z.object({
   cycleId: z.number().nullable().optional(),
   sizeId: z.number().nullable().optional(),
   sgrId: z.number().nullable().optional(),
-  lotId: z.number().nullable().optional(),
+  lotId: z.number({
+    required_error: "Il lotto è obbligatorio",
+  }),
   animalCount: z.number().nullable().optional(),
   totalWeight: z.number().nullable().optional(),
   animalsPerKg: z.number().nullable().optional(),
@@ -136,6 +138,7 @@ export default function OperationFormCompact({
   const watchBasketId = form.watch("basketId");
   const watchFlupsyId = form.watch("flupsyId");
   const watchDate = form.watch("date");
+  const watchLotId = form.watch("lotId");
   const watchTotalWeight = form.watch("totalWeight");
   const watchAnimalsPerKg = form.watch("animalsPerKg");
   const watchSampleWeight = form.watch("sampleWeight");
@@ -1070,8 +1073,8 @@ export default function OperationFormCompact({
                 <Link className="h-4 w-4 mr-1" /> Riferimenti
               </h3>
               <div className="grid grid-cols-1 gap-3">
-                {/* Lotto (solo per prima-attivazione) */}
-                {watchType === 'prima-attivazione' && (
+                {/* Lotto (obbligatorio per tutte le operazioni) */}
+                {watchType && (
                   <FormField
                     control={form.control}
                     name="lotId"
@@ -1710,7 +1713,7 @@ export default function OperationFormCompact({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isLoading || !watchBasketId || !watchFlupsyId || !watchType || !watchDate}
+                  disabled={isLoading || !watchBasketId || !watchFlupsyId || !watchType || !watchDate || !watchLotId}
                   size="sm"
                 >
                   {isLoading ? (
