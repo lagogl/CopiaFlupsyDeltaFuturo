@@ -22,7 +22,8 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLeg
     queryKey: ['/api/baskets', flupsyId],
     queryFn: () => fetch(`/api/baskets?flupsyId=${flupsyId}&includeAll=true`).then(res => res.json()),
     enabled: !!flupsyId,
-    staleTime: 30000, // Cache per 30 secondi
+    staleTime: 0, // Nessuna cache - aggiornamento immediato per visualizzazione real-time
+    refetchOnWindowFocus: true,
   });
 
   if (isLoading) {
