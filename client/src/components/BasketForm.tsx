@@ -25,6 +25,7 @@ import { toast } from "@/hooks/use-toast";
 import { Info } from "lucide-react";
 import BasketExistsCheck from "./BasketExistsCheck";
 import BasketPositionCheck from "./BasketPositionCheck";
+import FlupsyMiniMap from "./FlupsyMiniMap";
 
 // Create a schema for basket validation
 const basketFormSchema = z.object({
@@ -329,6 +330,19 @@ export default function BasketForm({
             </FormItem>
           )}
         />
+
+        {/* Mini-mappa del FLUPSY per visualizzare le posizioni occupate */}
+        {selectedFlupsyId && (
+          <div className="bg-gray-50 p-4 rounded-lg border">
+            <h4 className="text-sm font-medium text-gray-700 mb-3">
+              Mappa posizioni FLUPSY
+            </h4>
+            <FlupsyMiniMap
+              flupsyId={selectedFlupsyId}
+              showLegend={true}
+            />
+          </div>
+        )}
         
         <FormField
           control={form.control}
