@@ -11,6 +11,7 @@ import {
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 
 import FlupsyMiniMap from "./FlupsyMiniMap";
+import FlupsyMiniMapOptimized from "./FlupsyMiniMapOptimized";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -735,9 +736,35 @@ export default function OperationFormCompact({
                       {watchFlupsyId && flupsyBaskets.length > 0 && (
                         <div className="mt-2 p-2 bg-gray-50 rounded-md border">
                           <div className="text-xs font-medium text-gray-600 mb-1">Occupazione FLUPSY:</div>
-                          <FlupsyMiniMap 
+                          <FlupsyMiniMapOptimized 
                             flupsyId={parseInt(watchFlupsyId)}
+                            maxPositions={(() => {
+                              const selectedFlupsy = flupsys?.find((f: any) => f.id === parseInt(watchFlupsyId));
+                              return selectedFlupsy?.maxPositions || 10;
+                            })()}
                             showLegend={false}
+                            onPositionClick={(row, position) => {
+                              if (row === '' && position === 0) {
+                                // Deseleziona
+                                form.setValue('basketId', null);
+                              } else {
+                                // Trova il cestello in quella posizione
+                                const basket = flupsyBaskets.find((b: any) => 
+                                  b.row === row && b.position === position
+                                );
+                                if (basket) {
+                                  form.setValue('basketId', basket.id);
+                                }
+                              }
+                            }}
+                            selectedRow={(() => {
+                              const selectedBasket = flupsyBaskets.find((b: any) => b.id === watchBasketId);
+                              return selectedBasket?.row || null;
+                            })()}
+                            selectedPosition={(() => {
+                              const selectedBasket = flupsyBaskets.find((b: any) => b.id === watchBasketId);
+                              return selectedBasket?.position || null;
+                            })()}
                           />
                         </div>
                       )}
