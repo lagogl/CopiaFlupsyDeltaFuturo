@@ -254,15 +254,14 @@ export default function BasketForm({
     <Form {...form}>
       <form onSubmit={handleSubmit} className="space-y-6">
       
-        {/* Informazioni sul limite massimo di posizioni - Mostra solo quando c'è un FLUPSY selezionato */}
+        {/* Informazioni sul FLUPSY selezionato - versione compatta */}
         {selectedFlupsyId && selectedFlupsy && (
-          <div className="bg-blue-50 p-3 rounded-md flex items-start gap-3">
-            <Info className="h-5 w-5 text-blue-500 mt-0.5" />
-            <div className="text-sm text-blue-700">
-              <p className="font-medium">Informazioni sul FLUPSY selezionato</p>
-              <p>Nome: <span className="font-medium">{selectedFlupsy.name}</span></p>
-              <p>Posizioni massime per fila: <span className="font-medium">{Math.floor((selectedFlupsy.maxPositions || 10) / 2)}</span></p>
-              <p>Posizioni disponibili: <span className="font-medium">Destra {availablePositionsCount.DX}, Sinistra {availablePositionsCount.SX}</span></p>
+          <div className="bg-blue-50 p-2 rounded-md flex items-center gap-2">
+            <Info className="h-4 w-4 text-blue-500 flex-shrink-0" />
+            <div className="text-xs text-blue-700">
+              <span className="font-medium">{selectedFlupsy.name}</span>
+              <span className="ml-2">Posizioni massime per fila: {Math.floor((selectedFlupsy.maxPositions || 10) / 2)}</span>
+              <span className="ml-2">Disponibili: DX {availablePositionsCount.DX}, SX {availablePositionsCount.SX}</span>
             </div>
           </div>
         )}
@@ -333,8 +332,8 @@ export default function BasketForm({
 
         {/* Mini-mappa del FLUPSY per visualizzare le posizioni occupate */}
         {selectedFlupsyId && selectedFlupsy && (
-          <div className="bg-gray-50 p-4 rounded-lg border">
-            <h4 className="text-sm font-medium text-gray-700 mb-3">
+          <div className="bg-gray-50 p-2 rounded border">
+            <h4 className="text-xs font-medium text-gray-600 mb-2">
               Mappa posizioni FLUPSY
             </h4>
             <FlupsyMiniMapOptimized

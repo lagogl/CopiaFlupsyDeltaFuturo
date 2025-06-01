@@ -76,11 +76,11 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLeg
   };
 
   return (
-    <div className="space-y-1">
+    <div className="space-y-0.5">
       {/* Riga SX */}
       <div className="flex items-center gap-1">
-        <span className="text-xs font-medium text-gray-500 w-6">SX:</span>
-        <div className="flex gap-1">
+        <span className="text-xs font-medium text-gray-500 w-5">SX:</span>
+        <div className="flex gap-0.5">
           {Array.from({ length: positionsPerRow }, (_, i) => 
             renderPosition('SX', i + 1)
           )}
@@ -89,27 +89,27 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLeg
       
       {/* Riga DX */}
       <div className="flex items-center gap-1">
-        <span className="text-xs font-medium text-gray-500 w-6">DX:</span>
-        <div className="flex gap-1">
+        <span className="text-xs font-medium text-gray-500 w-5">DX:</span>
+        <div className="flex gap-0.5">
           {Array.from({ length: positionsPerRow }, (_, i) => 
             renderPosition('DX', i + 1)
           )}
         </div>
       </div>
       
-      {/* Legenda - mostra solo se richiesta */}
+      {/* Legenda - versione compatta */}
       {showLegend && (
-        <div className="flex items-center gap-3 mt-2 text-xs text-gray-600">
+        <div className="flex items-center gap-2 mt-1 text-xs text-gray-600">
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-green-100 border border-green-400"></div>
+            <div className="w-2 h-2 rounded bg-green-100 border border-green-400"></div>
             <span>Attivo</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-yellow-100 border border-yellow-400"></div>
+            <div className="w-2 h-2 rounded bg-yellow-100 border border-yellow-400"></div>
             <span>Disponibile</span>
           </div>
           <div className="flex items-center gap-1">
-            <div className="w-3 h-3 rounded bg-white border border-gray-300"></div>
+            <div className="w-2 h-2 rounded bg-white border border-gray-300"></div>
             <span>Libero</span>
           </div>
         </div>
