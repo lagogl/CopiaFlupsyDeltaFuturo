@@ -397,12 +397,11 @@ export class DbStorage implements IStorage {
       // 2. Poi esegui la query paginata con JOIN per includere i dati del cestello e FLUPSY
       let query = db
         .select({
-          // Seleziona tutti i campi delle operazioni
+          // Seleziona tutti i campi delle operazioni esistenti
           id: operations.id,
           date: operations.date,
           type: operations.type,
           basketId: operations.basketId,
-          flupsyId: operations.flupsyId,
           cycleId: operations.cycleId,
           sizeId: operations.sizeId,
           sgrId: operations.sgrId,
@@ -415,32 +414,13 @@ export class DbStorage implements IStorage {
           mortalityRate: operations.mortalityRate,
           notes: operations.notes,
           metadata: operations.metadata,
-          sampleWeight: operations.sampleWeight,
-          liveAnimals: operations.liveAnimals,
-          totalSample: operations.totalSample,
-          manualCountAdjustment: operations.manualCountAdjustment,
-          // Aggiungi i dati del cestello
-          basket: {
-            id: baskets.id,
-            physicalNumber: baskets.physicalNumber,
-            flupsyId: baskets.flupsyId,
-            cycleCode: baskets.cycleCode,
-            state: baskets.state,
-            currentCycleId: baskets.currentCycleId,
-            nfcData: baskets.nfcData,
-            row: baskets.row,
-            position: baskets.position,
-            // Aggiungi i dati del FLUPSY
-            flupsy: {
-              id: flupsys.id,
-              name: flupsys.name,
-              location: flupsys.location,
-              description: flupsys.description,
-              active: flupsys.active,
-              maxPositions: flupsys.maxPositions,
-              productionCenter: flupsys.productionCenter
-            }
-          }
+          // Aggiungi i campi necessari dal cestello e FLUPSY
+          basketPhysicalNumber: baskets.physicalNumber,
+          basketRow: baskets.row,
+          basketPosition: baskets.position,
+          flupsyName: flupsys.name,
+          flupsyLocation: flupsys.location,
+          flupsyId: baskets.flupsyId
         })
         .from(operations)
         .leftJoin(baskets, eq(operations.basketId, baskets.id))
