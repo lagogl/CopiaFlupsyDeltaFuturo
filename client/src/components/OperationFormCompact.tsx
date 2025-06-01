@@ -736,8 +736,8 @@ export default function OperationFormCompact({
                         <div className="mt-2 p-2 bg-gray-50 rounded-md border">
                           <div className="text-xs font-medium text-gray-600 mb-1">Occupazione FLUPSY:</div>
                           <FlupsyMiniMap 
-                            baskets={flupsyBaskets}
-                            maxPositions={flupsys?.find((f: any) => f.id === parseInt(watchFlupsyId))?.maxPositions || 10}
+                            flupsyId={parseInt(watchFlupsyId)}
+                            showLegend={false}
                           />
                         </div>
                       )}

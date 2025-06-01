@@ -1,6 +1,8 @@
+import { useQuery } from "@tanstack/react-query";
+
 interface FlupsyMiniMapProps {
-  baskets: any[];
-  maxPositions: number;
+  flupsyId: number;
+  showLegend?: boolean;
 }
 
 interface PositionInfo {
@@ -10,7 +12,30 @@ interface PositionInfo {
   isEmpty: boolean;
 }
 
-export default function FlupsyMiniMap({ baskets, maxPositions }: FlupsyMiniMapProps) {
+export default function FlupsyMiniMap({ flupsyId, showLegend = false }: FlupsyMiniMapProps) {
+  // Carica i cestelli per questo FLUPSY
+  const { data: baskets = [], isLoading } = useQuery({
+    queryKey: ['/api/baskets', flupsyId],
+    queryFn: () => fetch(`/api/baskets?flupsyId=${flupsyId}&includeAll=true`).then(res => res.json()),
+    enabled: !!flupsyId
+  });
+
+  // Carica i dati del FLUPSY per ottenere maxPositions
+  const { data: flupsy } = useQuery({
+    queryKey: ['/api/flupsys', flupsyId],
+    queryFn: () => fetch(`/api/flupsys/${flupsyId}`).then(res => res.json()),
+    enabled: !!flupsyId
+  });
+
+  if (isLoading) {
+    return <div className="text-sm text-gray-500">Caricamento mappa...</div>;
+  }
+
+  if (!flupsy || !baskets) {
+    return <div className="text-sm text-gray-500">Nessun dato disponibile</div>;
+  }
+
+  const maxPositions = flupsy.maxPositions || 10;
   // Calcola posizioni per riga (divide maxPositions per 2)
   const positionsPerRow = Math.ceil(maxPositions / 2);
   
@@ -81,21 +106,23 @@ export default function FlupsyMiniMap({ baskets, maxPositions }: FlupsyMiniMapPr
         </div>
       </div>
       
-      {/* Legenda */}
-      <div className="flex items-center gap-3 mt-2 text-xs text-gray-600">
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-green-100 border border-green-400"></div>
-          <span>Attivo</span>
+      {/* Legenda - mostra solo se richiesta */}
+      {showLegend && (
+        <div className="flex items-center gap-3 mt-2 text-xs text-gray-600">
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded bg-green-100 border border-green-400"></div>
+            <span>Attivo</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded bg-yellow-100 border border-yellow-400"></div>
+            <span>Disponibile</span>
+          </div>
+          <div className="flex items-center gap-1">
+            <div className="w-3 h-3 rounded bg-white border border-gray-300"></div>
+            <span>Libero</span>
+          </div>
         </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-yellow-100 border border-yellow-400"></div>
-          <span>Disponibile</span>
-        </div>
-        <div className="flex items-center gap-1">
-          <div className="w-3 h-3 rounded bg-white border border-gray-300"></div>
-          <span>Libero</span>
-        </div>
-      </div>
+      )}
     </div>
   );
 }
