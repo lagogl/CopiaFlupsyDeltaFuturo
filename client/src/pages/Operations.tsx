@@ -473,6 +473,7 @@ export default function Operations() {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
       queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
       setIsCreateDialogOpen(false);
       
       // Mostra notifica di successo
