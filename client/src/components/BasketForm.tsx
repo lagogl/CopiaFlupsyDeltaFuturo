@@ -344,13 +344,15 @@ export default function BasketForm({
               selectedPosition={form.watch('position')}
               onPositionClick={(row, position) => {
                 if (row === '' && position === 0) {
-                  // Annulla selezione
+                  // Annulla selezione - ripristina valori iniziali
                   form.setValue('row', '');
                   form.setValue('position', undefined);
+                  setSelectedRow(null);
                 } else {
                   // Imposta nuova selezione
                   form.setValue('row', row);
                   form.setValue('position', position);
+                  setSelectedRow(row);
                 }
               }}
             />
