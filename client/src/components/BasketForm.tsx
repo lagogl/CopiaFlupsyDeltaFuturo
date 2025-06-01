@@ -25,7 +25,7 @@ import { toast } from "@/hooks/use-toast";
 import { Info } from "lucide-react";
 import BasketExistsCheck from "./BasketExistsCheck";
 import BasketPositionCheck from "./BasketPositionCheck";
-import FlupsyMiniMap from "./FlupsyMiniMap";
+import FlupsyMiniMapOptimized from "./FlupsyMiniMapOptimized";
 
 // Create a schema for basket validation
 const basketFormSchema = z.object({
