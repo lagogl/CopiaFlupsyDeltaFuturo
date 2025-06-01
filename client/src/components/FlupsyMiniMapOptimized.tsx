@@ -67,16 +67,17 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLeg
     };
     
     if (posInfo.isEmpty) {
+      const selectedStyle = isSelected ? 'bg-blue-200 border-blue-500 text-blue-700' : 'bg-white text-gray-400';
       return (
         <div 
           key={`${row}-${position}`}
-          className={`w-8 h-6 rounded border border-gray-300 bg-white flex items-center justify-center text-xs text-gray-400 ${
+          className={`w-8 h-6 rounded border border-gray-300 ${selectedStyle} flex items-center justify-center text-xs ${
             onPositionClick ? 'cursor-pointer hover:bg-blue-50 hover:border-blue-300' : ''
-          }`}
-          title={`Posizione ${row}-${position} libera${onPositionClick ? ' (doppio click per selezionare)' : ''}`}
+          } ${isSelected ? 'ring-2 ring-blue-300' : ''}`}
+          title={`Posizione ${row}-${position} ${isSelected ? 'selezionata' : 'libera'}${onPositionClick ? ' (doppio click per selezionare/deselezionare)' : ''}`}
           onDoubleClick={handleDoubleClick}
         >
-          ⚪
+          {isSelected ? position : '⚪'}
         </div>
       );
     }

@@ -340,9 +340,18 @@ export default function BasketForm({
               flupsyId={selectedFlupsyId}
               maxPositions={selectedFlupsy.maxPositions || 10}
               showLegend={true}
+              selectedRow={form.watch('row')}
+              selectedPosition={form.watch('position')}
               onPositionClick={(row, position) => {
-                form.setValue('row', row);
-                form.setValue('position', position);
+                if (row === '' && position === 0) {
+                  // Annulla selezione
+                  form.setValue('row', '');
+                  form.setValue('position', null);
+                } else {
+                  // Imposta nuova selezione
+                  form.setValue('row', row);
+                  form.setValue('position', position);
+                }
               }}
             />
           </div>
