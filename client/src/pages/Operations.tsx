@@ -1349,6 +1349,9 @@ export default function Operations() {
                         )}
                       </div>
                     </th>
+                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                      Flupsy
+                    </th>
                     <th 
                       scope="col" 
                       className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
@@ -1430,7 +1433,7 @@ export default function Operations() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredOperations.length === 0 ? (
                     <tr>
-                      <td colSpan={10} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                      <td colSpan={11} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
                         Nessuna operazione trovata
                       </td>
                     </tr>
@@ -1446,17 +1449,21 @@ export default function Operations() {
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           <div>
                             #{op.basket?.physicalNumber || op.basketId}
-                            {op.basket?.flupsyId && flupsys?.find((f: any) => f.id === op.basket?.flupsyId) && (
-                              <span className="text-xs block text-blue-600 mt-1">
-                                FLUPSY: {flupsys.find((f: any) => f.id === op.basket?.flupsyId)?.name || `#${op.basket.flupsyId}`}
-                              </span>
-                            )}
                             {op.basket?.row && op.basket?.position && (
                               <span className="text-xs block text-indigo-600 mt-1">
                                 Posizione: {op.basket.row} - {op.basket.position}
                               </span>
                             )}
                           </div>
+                        </td>
+                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                          {op.basket?.flupsyId && flupsys?.find((f: any) => f.id === op.basket?.flupsyId) ? (
+                            <div>
+                              <span className="font-medium text-blue-600">
+                                {flupsys.find((f: any) => f.id === op.basket?.flupsyId)?.name || `#${op.basket.flupsyId}`}
+                              </span>
+                            </div>
+                          ) : '-'}
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
                           {op.cycleId ? `#${op.cycleId}` : '-'}
