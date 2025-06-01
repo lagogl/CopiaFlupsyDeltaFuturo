@@ -320,7 +320,7 @@ export default function OperationFormCompact({
     }
   }, [initialCycleId, initialFlupsyId, initialBasketId, cycles, baskets, flupsys, form, defaultValues, flupsyBaskets, isLoadingFlupsyBaskets]);
 
-  // Auto-set "Prima Attivazione" when basket is available
+  // Auto-set operation type and populate fields based on basket state
   useEffect(() => {
     console.log('🔍 Debug auto-set OperationFormCompact - ENTRY:', {
       watchBasketId,
@@ -339,13 +339,35 @@ export default function OperationFormCompact({
       basketsLoaded: !!baskets
     });
     
-    if (watchBasketId && selectedBasket?.state === 'available' && !watchType) {
-      // Forza il tipo a "prima-attivazione" per ceste disponibili solo se non è già impostato
-      console.log('🚀 FORZANDO auto-impostazione di Prima Attivazione per cesta disponibile nel form compatto');
-      form.setValue('type', 'prima-attivazione');
-      console.log('✅ Tipo operazione impostato automaticamente a "Prima Attivazione" per cesta disponibile');
+    if (watchBasketId && selectedBasket && !watchType) {
+      const isReallyAvailable = selectedBasket.state === 'available' && !basketHasActiveCycle;
+      const isActiveWithCycle = selectedBasket.state === 'active' || basketHasActiveCycle;
+      
+      if (isReallyAvailable) {
+        // Cestello disponibile: imposta "Prima Attivazione"
+        console.log('🚀 Cestello disponibile - impostando Prima Attivazione');
+        form.setValue('type', 'prima-attivazione');
+      } else if (isActiveWithCycle) {
+        // Cestello con ciclo attivo: imposta "Misura" e trova la prima attivazione
+        console.log('🚀 Cestello con ciclo attivo - impostando Misura e cercando Prima Attivazione');
+        form.setValue('type', 'misura');
+        
+        // Trova l'operazione di prima attivazione per questo ciclo
+        if (operations && operations.length > 0) {
+          const firstActivationOp = operations.find((op: any) => 
+            op.basketId === watchBasketId && 
+            op.type === 'prima-attivazione'
+          );
+          
+          if (firstActivationOp) {
+            console.log('✅ Trovata Prima Attivazione:', firstActivationOp);
+            // Imposta il lotto della prima attivazione (non modificabile)
+            form.setValue('lotId', firstActivationOp.lotId);
+          }
+        }
+      }
     }
-  }, [watchBasketId, baskets, watchType, form]);
+  }, [watchBasketId, baskets, watchType, form, basketHasActiveCycle, operations]);
 
   // Calculate average weight and set size when animals per kg changes
   useEffect(() => {
@@ -1115,66 +1137,132 @@ export default function OperationFormCompact({
                   <FormField
                     control={form.control}
                     name="lotId"
-                    render={({ field }) => (
-                      <FormItem className="mb-1">
-                        <FormLabel className="text-xs font-medium">Lotto <span className="text-red-500">*</span></FormLabel>
-                        <Select
-                          disabled={isLoading}
-                          value={field.value?.toString() || ''}
-                          onValueChange={(value) => field.onChange(Number(value))}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Seleziona lotto" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {lots?.slice().sort((a: any, b: any) => b.id - a.id).map((lot: any) => (
-                              <SelectItem key={lot.id} value={lot.id.toString()}>
-                                #{lot.id} - {lot.supplier} ({format(new Date(lot.arrivalDate), 'dd/MM/yyyy')})
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      const selectedBasket = baskets?.find(b => b.id === watchBasketId);
+                      const isActiveWithCycle = selectedBasket && (selectedBasket.state === 'active' || basketHasActiveCycle);
+                      const isLotFromFirstActivation = watchType !== 'prima-attivazione' && isActiveWithCycle;
+                      
+                      return (
+                        <FormItem className="mb-1">
+                          <FormLabel className="text-xs font-medium">Lotto <span className="text-red-500">*</span></FormLabel>
+                          <Select
+                            disabled={isLoading || isLotFromFirstActivation}
+                            value={field.value?.toString() || ''}
+                            onValueChange={(value) => field.onChange(Number(value))}
+                          >
+                            <FormControl>
+                              <SelectTrigger className="h-8 text-sm">
+                                <SelectValue placeholder="Seleziona lotto" />
+                              </SelectTrigger>
+                            </FormControl>
+                            <SelectContent>
+                              {lots?.slice().sort((a: any, b: any) => b.id - a.id).map((lot: any) => (
+                                <SelectItem key={lot.id} value={lot.id.toString()}>
+                                  #{lot.id} - {lot.supplier} ({format(new Date(lot.arrivalDate), 'dd/MM/yyyy')})
+                                </SelectItem>
+                              ))}
+                            </SelectContent>
+                          </Select>
+                          {isLotFromFirstActivation && (
+                            <FormDescription className="text-xs text-blue-600">
+                              Lotto ereditato dalla Prima Attivazione (non modificabile)
+                            </FormDescription>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
                 )}
 
-                {/* SGR Rate (condizionale) */}
+                {/* SGR Rate (calcolato automaticamente per operazioni su cicli attivi) */}
                 {watchType && watchType !== 'prima-attivazione' && watchType !== 'cessazione' && (
                   <FormField
                     control={form.control}
                     name="sgrId"
-                    render={({ field }) => (
-                      <FormItem className="mb-1">
-                        <FormLabel className="text-xs font-medium">Tasso SGR</FormLabel>
-                        <Select
-                          disabled={isLoading || !sgrs || sgrs.length === 0}
-                          value={field.value?.toString() || ''}
-                          onValueChange={(value) => field.onChange(Number(value))}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="h-8 text-sm">
-                              <SelectValue placeholder="Seleziona tasso SGR" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {sgrs?.length > 0 ? sgrs.map((sgr: any) => (
-                              <SelectItem key={sgr.id} value={sgr.id.toString()}>
-                                {sgr.month} ({sgr.percentage}% giornaliero)
-                              </SelectItem>
-                            )) : (
-                              <SelectItem value="loading" disabled>
-                                Caricamento SGR...
-                              </SelectItem>
-                            )}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      // Calcola l'SGR automaticamente per operazioni su cicli attivi
+                      const calculatedSGR = useMemo(() => {
+                        const selectedBasket = baskets?.find(b => b.id === watchBasketId);
+                        const isActiveWithCycle = selectedBasket && (selectedBasket.state === 'active' || basketHasActiveCycle);
+                        
+                        if (!isActiveWithCycle || !operations || !watchAnimalsPerKg) return null;
+                        
+                        // Trova l'operazione di prima attivazione per questo cestello
+                        const firstActivationOp = operations.find((op: any) => 
+                          op.basketId === watchBasketId && 
+                          op.type === 'prima-attivazione'
+                        );
+                        
+                        if (!firstActivationOp || !firstActivationOp.averageWeight) return null;
+                        
+                        // Calcola i giorni trascorsi
+                        const currentDate = new Date(form.getValues('date') || new Date());
+                        const firstActivationDate = new Date(firstActivationOp.date);
+                        const daysDiff = Math.max(1, Math.floor((currentDate.getTime() - firstActivationDate.getTime()) / (1000 * 3600 * 24)));
+                        
+                        // Calcola il peso medio attuale
+                        const currentAvgWeight = watchAnimalsPerKg ? 1000 / watchAnimalsPerKg : 0;
+                        const initialAvgWeight = firstActivationOp.averageWeight;
+                        
+                        if (currentAvgWeight <= initialAvgWeight) return null;
+                        
+                        // Formula SGR: ((Peso finale / Peso iniziale)^(1/giorni) - 1) * 100
+                        const sgrDaily = (Math.pow(currentAvgWeight / initialAvgWeight, 1 / daysDiff) - 1) * 100;
+                        
+                        console.log('🧮 Calcolo SGR automatico:', {
+                          initialWeight: initialAvgWeight,
+                          currentWeight: currentAvgWeight,
+                          days: daysDiff,
+                          sgrDaily: sgrDaily.toFixed(3)
+                        });
+                        
+                        return {
+                          value: sgrDaily,
+                          display: `${sgrDaily.toFixed(2)}% (calcolato)`
+                        };
+                      }, [baskets, watchBasketId, basketHasActiveCycle, operations, watchAnimalsPerKg, form]);
+                      
+                      return (
+                        <FormItem className="mb-1">
+                          <FormLabel className="text-xs font-medium">Tasso SGR</FormLabel>
+                          {calculatedSGR ? (
+                            <div className="h-8 px-3 py-2 border border-input bg-gray-50 rounded-md text-sm flex items-center">
+                              <span className="text-green-700 font-medium">{calculatedSGR.display}</span>
+                            </div>
+                          ) : (
+                            <Select
+                              disabled={isLoading || !sgrs || sgrs.length === 0}
+                              value={field.value?.toString() || ''}
+                              onValueChange={(value) => field.onChange(Number(value))}
+                            >
+                              <FormControl>
+                                <SelectTrigger className="h-8 text-sm">
+                                  <SelectValue placeholder="Seleziona tasso SGR" />
+                                </SelectTrigger>
+                              </FormControl>
+                              <SelectContent>
+                                {sgrs?.length > 0 ? sgrs.map((sgr: any) => (
+                                  <SelectItem key={sgr.id} value={sgr.id.toString()}>
+                                    {sgr.month} ({sgr.percentage}% giornaliero)
+                                  </SelectItem>
+                                )) : (
+                                  <SelectItem value="loading" disabled>
+                                    Caricamento SGR...
+                                  </SelectItem>
+                                )}
+                              </SelectContent>
+                            </Select>
+                          )}
+                          {calculatedSGR && (
+                            <FormDescription className="text-xs text-green-600">
+                              SGR calcolato automaticamente dal confronto con la Prima Attivazione
+                            </FormDescription>
+                          )}
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
                 )}
 
