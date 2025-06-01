@@ -137,6 +137,27 @@ export function implementDirectOperationRoute(app: Express) {
         throw new Error("La data è obbligatoria");
       }
       
+      if (!operationData.lotId) {
+        throw new Error("Il lotto è obbligatorio");
+      }
+      
+      // VALIDAZIONE CAMPI OBBLIGATORI
+      if (!operationData.animalCount || operationData.animalCount <= 0) {
+        throw new Error("Il numero animali vivi è obbligatorio e deve essere maggiore di 0");
+      }
+      
+      if (!operationData.totalWeight || operationData.totalWeight <= 0) {
+        throw new Error("Il peso totale grammi è obbligatorio e deve essere maggiore di 0");
+      }
+      
+      if (!operationData.sampleWeight || operationData.sampleWeight <= 0) {
+        throw new Error("I grammi sample sono obbligatori e devono essere maggiori di 0");
+      }
+      
+      if (operationData.deadCount === undefined || operationData.deadCount === null || operationData.deadCount < 0) {
+        throw new Error("Il numero animali morti è obbligatorio e deve essere maggiore o uguale a 0");
+      }
+      
       // Preserviamo esplicitamente animalCount quando viene fornito
       // Questo è particolarmente importante per le operazioni di tipo 'misura' o 'peso'
       const hasAnimalCount = operationData.animalCount !== undefined;
