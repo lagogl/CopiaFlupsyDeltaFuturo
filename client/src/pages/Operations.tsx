@@ -1457,7 +1457,13 @@ export default function Operations() {
                           </div>
                         </td>
                         <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
-                          {op.basket?.flupsyId && flupsys?.find((f: any) => f.id === op.basket?.flupsyId) ? (
+                          {op.flupsyName ? (
+                            <div>
+                              <span className="font-medium text-blue-600">
+                                {op.flupsyName}
+                              </span>
+                            </div>
+                          ) : op.basket?.flupsyId && flupsys?.find((f: any) => f.id === op.basket?.flupsyId) ? (
                             <div>
                               <span className="font-medium text-blue-600">
                                 {flupsys.find((f: any) => f.id === op.basket?.flupsyId)?.name || `#${op.basket.flupsyId}`}
