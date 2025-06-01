@@ -1309,7 +1309,7 @@ export default function Operations() {
                   <tr>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                       onClick={() => handleSortClick('date')}
                     >
                       <div className="flex items-center">
@@ -1323,11 +1323,11 @@ export default function Operations() {
                     </th>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                       onClick={() => handleSortClick('type')}
                     >
                       <div className="flex items-center">
-                        Tipologia
+                        Tipo
                         {sortConfig.key === 'type' && (
                           <span className="ml-2">
                             {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
@@ -1337,7 +1337,7 @@ export default function Operations() {
                     </th>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                       onClick={() => handleSortClick('basket')}
                     >
                       <div className="flex items-center">
@@ -1349,12 +1349,12 @@ export default function Operations() {
                         )}
                       </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Flupsy
                     </th>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                       onClick={() => handleSortClick('cycleId')}
                     >
                       <div className="flex items-center">
@@ -1368,7 +1368,7 @@ export default function Operations() {
                     </th>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                       onClick={() => handleSortClick('lot')}
                     >
                       <div className="flex items-center">
@@ -1380,16 +1380,16 @@ export default function Operations() {
                         )}
                       </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Taglia
                     </th>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                       onClick={() => handleSortClick('animalCount')}
                     >
                       <div className="flex items-center">
-                        # Animali
+                        # Anim.
                         {sortConfig.key === 'animalCount' && (
                           <span className="ml-2">
                             {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
@@ -1399,7 +1399,7 @@ export default function Operations() {
                     </th>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                       onClick={() => handleSortClick('totalWeight')}
                     >
                       <div className="flex items-center">
@@ -1413,11 +1413,11 @@ export default function Operations() {
                     </th>
                     <th 
                       scope="col" 
-                      className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
+                      className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider cursor-pointer hover:bg-gray-100"
                       onClick={() => handleSortClick('averageWeight')}
                     >
                       <div className="flex items-center">
-                        Peso Medio (mg)
+                        P.M. (mg)
                         {sortConfig.key === 'averageWeight' && (
                           <span className="ml-2">
                             {sortConfig.direction === 'ascending' ? <ArrowUp className="h-3 w-3" /> : <ArrowDown className="h-3 w-3" />}
@@ -1425,7 +1425,7 @@ export default function Operations() {
                         )}
                       </div>
                     </th>
-                    <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                    <th scope="col" className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                       Azioni
                     </th>
                   </tr>
@@ -1433,20 +1433,20 @@ export default function Operations() {
                 <tbody className="bg-white divide-y divide-gray-200">
                   {filteredOperations.length === 0 ? (
                     <tr>
-                      <td colSpan={11} className="px-6 py-4 whitespace-nowrap text-center text-gray-500">
+                      <td colSpan={11} className="px-3 py-2 whitespace-nowrap text-center text-gray-500">
                         Nessuna operazione trovata
                       </td>
                     </tr>
                   ) : (
                     filteredOperations.map((op) => (
                       <tr key={op.id}>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           {format(new Date(op.date), 'dd/MM/yyyy')}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-2 whitespace-nowrap">
                           {getOperationTypeBadge(op.type)}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           <div>
                             #{op.basket?.physicalNumber || op.basketId}
                             {op.basket?.row && op.basket?.position && (
@@ -1456,7 +1456,7 @@ export default function Operations() {
                             )}
                           </div>
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           {op.flupsyName ? (
                             <div>
                               <span className="font-medium text-blue-600">
@@ -1471,10 +1471,10 @@ export default function Operations() {
                             </div>
                           ) : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           {op.cycleId ? `#${op.cycleId}` : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           {(() => {
                             // Caso speciale: l'operazione ha lotti multipli
                             if (op.hasMultipleLots && op.additionalLots && Array.isArray(op.additionalLots) && op.additionalLots.length > 0) {
@@ -1597,7 +1597,7 @@ export default function Operations() {
                             return <span className="text-gray-400 italic">Nessun lotto</span>;
                           })()}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap">
+                        <td className="px-3 py-2 whitespace-nowrap">
                           {op.size ? (
                             getSizeBadge(op.size)
                           ) : op.sizeId ? (
@@ -1612,16 +1612,16 @@ export default function Operations() {
                             <span className="text-gray-400">-</span>
                           )}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           {op.animalCount ? op.animalCount.toLocaleString() : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           {op.totalWeight ? parseFloat(op.totalWeight).toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           {op.animalsPerKg && op.animalsPerKg > 0 ? (1000000 / op.animalsPerKg).toLocaleString('it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3}) : '-'}
                         </td>
-                        <td className="px-6 py-4 whitespace-nowrap text-sm font-medium">
+                        <td className="px-3 py-2 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
                             <Button variant="ghost" size="icon">
                               <Eye className="h-5 w-5 text-primary" />
