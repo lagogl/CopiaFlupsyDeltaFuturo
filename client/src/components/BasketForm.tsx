@@ -332,13 +332,14 @@ export default function BasketForm({
         />
 
         {/* Mini-mappa del FLUPSY per visualizzare le posizioni occupate */}
-        {selectedFlupsyId && (
+        {selectedFlupsyId && selectedFlupsy && (
           <div className="bg-gray-50 p-4 rounded-lg border">
             <h4 className="text-sm font-medium text-gray-700 mb-3">
               Mappa posizioni FLUPSY
             </h4>
-            <FlupsyMiniMap
+            <FlupsyMiniMapOptimized
               flupsyId={selectedFlupsyId}
+              maxPositions={selectedFlupsy.maxPositions || 10}
               showLegend={true}
             />
           </div>
