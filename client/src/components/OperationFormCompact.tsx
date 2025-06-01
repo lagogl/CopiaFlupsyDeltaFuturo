@@ -67,14 +67,24 @@ const operationSchema = z.object({
   lotId: z.number({
     required_error: "Il lotto è obbligatorio",
   }),
-  animalCount: z.number().nullable().optional(),
-  totalWeight: z.number().nullable().optional(),
+  // CAMPI OBBLIGATORI per tutte le operazioni
+  animalCount: z.number({
+    required_error: "Il numero animali vivi è obbligatorio",
+  }).min(0, "Il numero animali vivi deve essere maggiore o uguale a 0"),
+  totalWeight: z.number({
+    required_error: "Il peso totale grammi è obbligatorio",
+  }).min(0, "Il peso totale deve essere maggiore di 0"),
+  sampleWeight: z.number({
+    required_error: "I grammi sample sono obbligatori",
+  }).min(0, "Il peso del campione deve essere maggiore di 0"),
+  deadCount: z.number({
+    required_error: "Il numero animali morti è obbligatorio",
+  }).min(0, "Il numero animali morti deve essere maggiore o uguale a 0"),
+  // Campi calcolati automaticamente
   animalsPerKg: z.number().nullable().optional(),
   notes: z.string().nullable().optional(),
   // Campi specifici per l'operazione di misurazione
-  sampleWeight: z.number().nullable().optional(),
   liveAnimals: z.number().nullable().optional(),
-  deadCount: z.number().nullable().optional(),
   totalSample: z.number().nullable().optional(),
   mortalityRate: z.number().nullable().optional(),
   manualCountAdjustment: z.boolean().default(false).optional(),
@@ -120,13 +130,15 @@ export default function OperationFormCompact({
       sizeId: null,
       sgrId: null,
       lotId: null,
-      animalCount: null,
-      totalWeight: null,
+      // Valori di default per campi obbligatori
+      animalCount: 0,
+      totalWeight: 0,
+      sampleWeight: 0,
+      deadCount: 0,
+      // Campi calcolati automaticamente
       animalsPerKg: null,
       notes: "",
-      sampleWeight: null,
       liveAnimals: null,
-      deadCount: 0,
       totalSample: null,
       mortalityRate: null,
       manualCountAdjustment: false,
