@@ -5,9 +5,10 @@ import * as z from "zod";
 import { format } from "date-fns";
 import { 
   Smartphone, QrCode, Calculator, Save, AlertTriangle,
-  MapPin, Package, Waves, ScanLine, Camera
+  MapPin, Package, Waves, ScanLine, Camera, ArrowLeft, Settings
 } from "lucide-react";
 import { useQuery, useMutation } from "@tanstack/react-query";
+import { useLocation } from "wouter";
 
 import { Button } from "@/components/ui/button";
 import {
@@ -58,7 +59,9 @@ const primaAttivazioneSchema = z.object({
 
 type PrimaAttivazioneFormData = z.infer<typeof primaAttivazioneSchema>;
 
-export default function NFCPrimaAttivazione() {
+// NOTA: Questo componente è temporaneamente disabilitato e mostra una pagina "in lavorazione"
+// Tutto il codice originale è mantenuto per i futuri sviluppi
+function NFCPrimaAttivazioneOriginal() {
   const { toast } = useToast();
   const [isNFCSupported, setIsNFCSupported] = useState(false);
   const [isQRScannerOpen, setIsQRScannerOpen] = useState(false);
