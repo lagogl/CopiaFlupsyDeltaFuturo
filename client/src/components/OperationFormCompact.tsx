@@ -222,17 +222,54 @@ export default function OperationFormCompact({
 
   // Determina le operazioni disponibili in base al cestello selezionato
   const selectedBasket = baskets?.find(b => b.id === watchBasketId);
-  const isBasketAvailable = selectedBasket?.state === 'available';
   
-
+  // Verifica se esiste un ciclo attivo per questo cestello
+  const basketHasActiveCycle = useMemo(() => {
+    if (!watchBasketId || !cycles) return false;
+    return cycles.some((cycle: any) => 
+      cycle.basketId === watchBasketId && 
+      cycle.state === 'active'
+    );
+  }, [watchBasketId, cycles]);
   
-  const basketOperations = isBasketAvailable 
-    ? [{ value: 'prima-attivazione', label: 'Prima Attivazione' }] // Solo Prima Attivazione per ceste disponibili
-    : [
+  // Logica corretta per determinare le operazioni disponibili
+  const basketOperations = useMemo(() => {
+    if (!selectedBasket) return [];
+    
+    const isReallyAvailable = selectedBasket.state === 'available' && !basketHasActiveCycle;
+    const isActiveWithCycle = selectedBasket.state === 'active' || basketHasActiveCycle;
+    
+    console.log(`🔍 Cestello #${selectedBasket.physicalNumber}:`, {
+      state: selectedBasket.state,
+      currentCycleId: selectedBasket.currentCycleId,
+      hasActiveCycle: basketHasActiveCycle,
+      isReallyAvailable,
+      isActiveWithCycle
+    });
+    
+    if (isReallyAvailable) {
+      // Solo Prima Attivazione per cestelli veramente disponibili
+      console.log('✅ Cestello disponibile - mostro solo Prima Attivazione');
+      return [{ value: 'prima-attivazione', label: 'Prima Attivazione' }];
+    } else if (isActiveWithCycle) {
+      // Tutte le operazioni TRANNE Prima Attivazione per cestelli con ciclo attivo
+      console.log('✅ Cestello con ciclo attivo - mostro operazioni normali');
+      return [
         { value: 'misura', label: 'Misura' },
         { value: 'peso', label: 'Peso' },
         { value: 'vendita', label: 'Vendita' }
-      ]; // NON Prima Attivazione per ceste già attive
+      ];
+    } else {
+      // Fallback per stati inconsistenti
+      console.log('⚠️ Stato cestello inconsistente - mostro tutte le operazioni');
+      return [
+        { value: 'prima-attivazione', label: 'Prima Attivazione' },
+        { value: 'misura', label: 'Misura' },
+        { value: 'peso', label: 'Peso' },
+        { value: 'vendita', label: 'Vendita' }
+      ];
+    }
+  }, [selectedBasket, basketHasActiveCycle]);
 
   // Imposta valori iniziali se forniti come props
   useEffect(() => {
