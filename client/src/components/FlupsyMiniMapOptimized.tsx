@@ -86,12 +86,27 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLeg
 
     const bgColor = posInfo.state === 'active' ? 'bg-green-100 border-green-400' : 'bg-yellow-100 border-yellow-400';
     const textColor = posInfo.state === 'active' ? 'text-green-700' : 'text-yellow-700';
+    
+    const handleOccupiedClick = () => {
+      if (onPositionClick) {
+        if (isSelected) {
+          // Deseleziona se già selezionato
+          onPositionClick('', 0);
+        } else {
+          // Seleziona il cestello occupato
+          onPositionClick(row, position);
+        }
+      }
+    };
 
     return (
       <div 
         key={`${row}-${position}`}
-        className={`w-8 h-6 rounded border ${bgColor} ${textColor} flex items-center justify-center text-xs font-medium`}
-        title={`Cestello #${posInfo.physicalNumber} (${posInfo.state === 'active' ? 'Attivo' : 'Disponibile'})`}
+        className={`w-8 h-6 rounded border ${bgColor} ${textColor} flex items-center justify-center text-xs font-medium ${
+          onPositionClick ? 'cursor-pointer hover:opacity-80' : ''
+        } ${isSelected ? 'ring-2 ring-blue-300 bg-blue-200 border-blue-500 text-blue-700' : ''}`}
+        title={`Cestello #${posInfo.physicalNumber} (${posInfo.state === 'active' ? 'Attivo' : 'Disponibile'})${onPositionClick ? ' - doppio click per selezionare/deselezionare' : ''}`}
+        onDoubleClick={handleOccupiedClick}
       >
         {posInfo.physicalNumber}
       </div>
