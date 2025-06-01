@@ -340,6 +340,10 @@ export default function BasketForm({
               flupsyId={selectedFlupsyId}
               maxPositions={selectedFlupsy.maxPositions || 10}
               showLegend={true}
+              onPositionClick={(row, position) => {
+                form.setValue('row', row);
+                form.setValue('position', position);
+              }}
             />
           </div>
         )}

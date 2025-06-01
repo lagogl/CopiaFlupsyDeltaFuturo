@@ -4,6 +4,9 @@ interface FlupsyMiniMapOptimizedProps {
   flupsyId: number;
   maxPositions: number;
   showLegend?: boolean;
+  onPositionClick?: (row: string, position: number) => void;
+  selectedRow?: string;
+  selectedPosition?: number;
 }
 
 interface PositionInfo {
@@ -13,7 +16,7 @@ interface PositionInfo {
   isEmpty: boolean;
 }
 
-export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLegend = false }: FlupsyMiniMapOptimizedProps) {
+export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLegend = false, onPositionClick, selectedRow, selectedPosition }: FlupsyMiniMapOptimizedProps) {
   // Carica solo i cestelli per questo FLUPSY specifico (più veloce)
   const { data: basketsResponse, isLoading } = useQuery({
     queryKey: ['/api/baskets', flupsyId],
@@ -49,12 +52,29 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLeg
   const renderPosition = (row: string, position: number) => {
     const posInfo = getPositionInfo(row, position);
     
+    const isSelected = selectedRow === row && selectedPosition === position;
+    
+    const handleDoubleClick = () => {
+      if (onPositionClick) {
+        if (posInfo.isEmpty) {
+          // Seleziona la posizione libera
+          onPositionClick(row, position);
+        } else if (isSelected) {
+          // Annulla la selezione se è già selezionata
+          onPositionClick('', 0);
+        }
+      }
+    };
+    
     if (posInfo.isEmpty) {
       return (
         <div 
           key={`${row}-${position}`}
-          className="w-8 h-6 rounded border border-gray-300 bg-white flex items-center justify-center text-xs text-gray-400"
-          title={`Posizione ${row}-${position} libera`}
+          className={`w-8 h-6 rounded border border-gray-300 bg-white flex items-center justify-center text-xs text-gray-400 ${
+            onPositionClick ? 'cursor-pointer hover:bg-blue-50 hover:border-blue-300' : ''
+          }`}
+          title={`Posizione ${row}-${position} libera${onPositionClick ? ' (doppio click per selezionare)' : ''}`}
+          onDoubleClick={handleDoubleClick}
         >
           ⚪
         </div>
@@ -77,22 +97,22 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLeg
 
   return (
     <div className="space-y-0.5">
-      {/* Riga SX */}
-      <div className="flex items-center gap-1">
-        <span className="text-xs font-medium text-gray-500 w-5">SX:</span>
-        <div className="flex gap-0.5">
-          {Array.from({ length: positionsPerRow }, (_, i) => 
-            renderPosition('SX', i + 1)
-          )}
-        </div>
-      </div>
-      
-      {/* Riga DX */}
+      {/* Riga DX - in alto */}
       <div className="flex items-center gap-1">
         <span className="text-xs font-medium text-gray-500 w-5">DX:</span>
         <div className="flex gap-0.5">
           {Array.from({ length: positionsPerRow }, (_, i) => 
             renderPosition('DX', i + 1)
+          )}
+        </div>
+      </div>
+      
+      {/* Riga SX - in basso */}
+      <div className="flex items-center gap-1">
+        <span className="text-xs font-medium text-gray-500 w-5">SX:</span>
+        <div className="flex gap-0.5">
+          {Array.from({ length: positionsPerRow }, (_, i) => 
+            renderPosition('SX', i + 1)
           )}
         </div>
       </div>
