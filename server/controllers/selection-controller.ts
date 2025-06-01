@@ -1520,10 +1520,11 @@ export async function completeSelection(req: Request, res: Response) {
       });
     }
     
-    // Recupera i cestelli di origine e destinazione
+    // Recupera i cestelli di origine con i loro lotti
     const sourceBaskets = await db.select({
       basketId: selectionSourceBaskets.basketId,
-      animalCount: selectionSourceBaskets.animalCount
+      animalCount: selectionSourceBaskets.animalCount,
+      lotId: selectionSourceBaskets.lotId
     })
     .from(selectionSourceBaskets)
     .where(eq(selectionSourceBaskets.selectionId, Number(id)));
@@ -1564,7 +1565,12 @@ export async function completeSelection(req: Request, res: Response) {
       const destinationBasketIds = new Set(destinationBaskets.map(db => db.basketId));
       const originDestinationBaskets = new Set([...sourceBasketIds].filter(id => destinationBasketIds.has(id)));
       
+      // Raccoglie tutti i lotti dalle ceste di origine (escludendo null)
+      const sourceLots = [...new Set(sourceBaskets.map(sb => sb.lotId).filter(lotId => lotId !== null))];
+      const primaryLotId = sourceLots.length > 0 ? sourceLots[0] : null;
+      
       console.log(`Gestendo: ${sourceBaskets.length} origine, ${destinationBaskets.length} destinazione, ${originDestinationBaskets.size} origine+destinazione`);
+      console.log(`Lotti trovati dalle ceste di origine:`, sourceLots, `- Lotto primario:`, primaryLotId);
       
       // FASE 1: Gestisci cestelli ORIGINE+DESTINAZIONE 
       for (const destBasket of destinationBaskets) {
@@ -1606,7 +1612,7 @@ export async function completeSelection(req: Request, res: Response) {
             }
           }
           
-          // 4. Prima attivazione
+          // 4. Prima attivazione con lotto dalla cesta di origine
           await tx.insert(operations).values({
             date: selection[0].date,
             type: 'prima-attivazione',
@@ -1621,6 +1627,7 @@ export async function completeSelection(req: Request, res: Response) {
             deadCount: destBasket.deadCount || 0,
             mortalityRate: destBasket.mortalityRate || 0,
             sizeId: actualSizeId,
+            lotId: primaryLotId, // Assegna il lotto dalle ceste di origine
             notes: `Parte della vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
           });
           
@@ -1640,6 +1647,7 @@ export async function completeSelection(req: Request, res: Response) {
               deadCount: destBasket.deadCount || 0,
               mortalityRate: destBasket.mortalityRate || 0,
               sizeId: actualSizeId,
+              lotId: primaryLotId, // Assegna il lotto dalle ceste di origine
               notes: `Vendita da vagliatura nr.${selection[0].selectionNumber} del ${selection[0].date}`
             });
             
@@ -1711,6 +1719,7 @@ export async function completeSelection(req: Request, res: Response) {
             deadCount: destBasket.deadCount || 0,
             mortalityRate: destBasket.mortalityRate || 0,
             sizeId: actualSizeId,
+            lotId: primaryLotId, // Assegna il lotto dalle ceste di origine
             notes: `Parte della vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
           });
           
@@ -1729,6 +1738,7 @@ export async function completeSelection(req: Request, res: Response) {
               deadCount: destBasket.deadCount || 0,
               mortalityRate: destBasket.mortalityRate || 0,
               sizeId: actualSizeId,
+              lotId: primaryLotId, // Assegna il lotto dalle ceste di origine
               notes: `Vendita da vagliatura nr.${selection[0].selectionNumber} del ${selection[0].date}`
             });
             
