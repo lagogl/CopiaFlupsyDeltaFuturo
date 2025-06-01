@@ -721,3 +721,70 @@ function NFCPrimaAttivazioneOriginal() {
     </div>
   );
 }
+
+// Pagina temporanea "in lavorazione" - sostituisce il componente principale
+export default function NFCPrimaAttivazione() {
+  const [, setLocation] = useLocation();
+
+  const handleGoBack = () => {
+    setLocation("/");
+  };
+
+  return (
+    <div className="container mx-auto py-6">
+      <div className="max-w-2xl mx-auto">
+        <Card className="border-2 border-orange-200 bg-orange-50">
+          <CardHeader className="text-center">
+            <div className="flex justify-center mb-4">
+              <Settings className="h-16 w-16 text-orange-600" />
+            </div>
+            <CardTitle className="text-2xl text-orange-800">
+              Funzionalità in Lavorazione
+            </CardTitle>
+            <CardDescription className="text-orange-700">
+              Prima Attivazione NFC
+            </CardDescription>
+          </CardHeader>
+          <CardContent className="text-center space-y-6">
+            <Alert className="border-orange-300 bg-orange-100">
+              <AlertTriangle className="h-4 w-4 text-orange-600" />
+              <AlertTitle className="text-orange-800">
+                Sviluppo in Corso
+              </AlertTitle>
+              <AlertDescription className="text-orange-700">
+                Questa funzionalità è attualmente in fase di sviluppo e non è ancora disponibile. 
+                Il team sta lavorando per completare l'implementazione del sistema NFC per la prima attivazione dei cestelli.
+              </AlertDescription>
+            </Alert>
+
+            <div className="bg-white p-4 rounded-lg border border-orange-200">
+              <h3 className="font-semibold text-orange-800 mb-2">
+                Funzionalità Previste:
+              </h3>
+              <ul className="text-left text-orange-700 space-y-1">
+                <li>• Lettura tag NFC per identificazione cestelli</li>
+                <li>• Scansione QR code per posizioni</li>
+                <li>• Configurazione automatica parametri</li>
+                <li>• Integrazione con sistema FLUPSY</li>
+              </ul>
+            </div>
+
+            <div className="space-y-3">
+              <p className="text-orange-700">
+                Per ora, utilizza le altre funzionalità del sistema per gestire cestelli e operazioni.
+              </p>
+              
+              <Button 
+                onClick={handleGoBack}
+                className="bg-orange-600 hover:bg-orange-700 text-white"
+              >
+                <ArrowLeft className="h-4 w-4 mr-2" />
+                Torna alla Dashboard
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
+      </div>
+    </div>
+  );
+}

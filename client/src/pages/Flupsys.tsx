@@ -67,20 +67,8 @@ export default function Flupsys() {
   }
   
   // Fetching FLUPSY units with additional statistics
-  // Dati di esempio per cestelli e animali
-  const demoBasketData = {
-    570: { activeBaskets: 8, totalAnimals: 1250000, avgDensity: 156250 },
-    618: { activeBaskets: 15, totalAnimals: 3305192, avgDensity: 220346 },
-    582: { activeBaskets: 12, totalAnimals: 1875000, avgDensity: 156250 },
-    608: { activeBaskets: 10, totalAnimals: 1562500, avgDensity: 156250 },
-    113: { activeBaskets: 15, totalAnimals: 2343750, avgDensity: 156250 },
-    1: { activeBaskets: 15, totalAnimals: 2343750, avgDensity: 156250 },
-    13: { activeBaskets: 18, totalAnimals: 2812500, avgDensity: 156250 },
-    1486: { activeBaskets: 16, totalAnimals: 2500000, avgDensity: 156250 },
-    737: { activeBaskets: 12, totalAnimals: 1875000, avgDensity: 156250 }
-  };
 
-  const { data: flupsys = [], isLoading } = useQuery<EnhancedFlupsy[]>({
+  const { data: flupsys = [], isLoading, refetch } = useQuery<EnhancedFlupsy[]>({
     queryKey: ['/api/flupsys'],
     queryFn: async () => {
       const response = await fetch('/api/flupsys?includeStats=true');
@@ -93,28 +81,15 @@ export default function Flupsys() {
     },
     select: (data: EnhancedFlupsy[]) => {
       console.log("Statistiche FLUPSY elaborate complete:", JSON.stringify(data));
-      
-      // Arricchisci i dati con valori temporanei per evitare lo zero
-      const enrichedData = data.map(flupsy => {
-        // Se i dati dal server sono zero, usa i dati di esempio
-        const demoData = demoBasketData[flupsy.id as keyof typeof demoBasketData];
-        if (demoData && (!flupsy.totalAnimals || flupsy.totalAnimals === 0)) {
-          return {
-            ...flupsy,
-            totalAnimals: demoData.totalAnimals,
-            activeBaskets: demoData.activeBaskets,
-            availableBaskets: (flupsy.maxPositions || 20) - demoData.activeBaskets,
-            freePositions: (flupsy.maxPositions || 20) - (flupsy.totalBaskets || 0),
-            avgAnimalDensity: demoData.avgDensity,
-            activeBasketPercentage: Math.round((demoData.activeBaskets / (flupsy.maxPositions || 20)) * 100)
-          };
-        }
-        return flupsy;
-      });
-      
-      return enrichedData || [];
+      return data || [];
     }
   });
+
+  // Funzione per aggiornare manualmente i dati
+  const handleRefresh = async () => {
+    await queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+    refetch();
+  };
 
   // Create FLUPSY mutation
   const createMutation = useMutation({
