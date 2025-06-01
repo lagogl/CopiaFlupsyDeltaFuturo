@@ -431,8 +431,8 @@ export function implementDirectOperationRoute(app: Express) {
         // Per operazioni standard, il cycleId deve essere fornito
         if (!operationData.cycleId) {
           // Tenta di recuperare il ciclo attivo del cestello
-          if (basket[0].currentCycleId) {
-            operationData.cycleId = basket[0].currentCycleId;
+          if (basket.currentCycleId) {
+            operationData.cycleId = basket.currentCycleId;
             console.log(`Recuperato automaticamente cycleId ${operationData.cycleId} dal cestello`);
           } else {
             throw new Error("cycleId è obbligatorio per operazioni che non sono di prima attivazione");
