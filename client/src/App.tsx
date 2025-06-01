@@ -100,7 +100,7 @@ function Router() {
       <ProtectedRoute path="/grow-journey" component={GrowJourney}/>
       <ProtectedRoute path="/basket-selection" component={BasketSelection}/>
       <ProtectedRoute path="/backup" component={BackupPage} requiredRole="admin" />
-      <ProtectedRoute path="/diario-di-bordo" component={DiarioDiBordo}/>
+      <ProtectedRoute path="/diario-di-impianto" component={DiarioDiBordo}/>
       <ProtectedRoute path="/notification-settings" component={NotificationSettings} requiredRole="admin" />
       <ProtectedRoute path="/amministrazione-utilita" component={AmministrazioneUtilita} requiredRole="admin" />
       <ProtectedRoute path="/eco-impact" component={EcoImpact}/>

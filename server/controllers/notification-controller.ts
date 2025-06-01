@@ -214,6 +214,9 @@ export async function markNotificationAsRead(req: Request, res: Response) {
       return res.status(404).json({ success: false, message: "Notifica non trovata" });
     }
     
+    // Invalida la cache delle notifiche quando una notifica viene segnata come letta
+    NotificationsCache.clear();
+    
     res.json({ success: true, notification: notification[0] });
     
     // Notifica tramite WebSocket
@@ -237,6 +240,9 @@ export async function markAllNotificationsAsRead(req: Request, res: Response) {
     await db.update(notifications)
       .set({ isRead: true })
       .where(eq(notifications.isRead, false));
+    
+    // Invalida la cache delle notifiche quando tutte le notifiche vengono segnate come lette
+    NotificationsCache.clear();
     
     res.json({ success: true, message: "Tutte le notifiche sono state segnate come lette" });
     
