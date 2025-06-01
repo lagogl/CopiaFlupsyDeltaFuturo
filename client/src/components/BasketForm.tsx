@@ -395,7 +395,7 @@ export default function BasketForm({
                     field.onChange(value);
                     setSelectedRow(value);
                   }}
-                  defaultValue={field.value || ""}
+                  value={field.value || ""}
                 >
                   <FormControl>
                     <SelectTrigger>
@@ -434,7 +434,7 @@ export default function BasketForm({
                   <Input
                     type="number"
                     placeholder="Inserisci la posizione nella fila..."
-                    {...field}
+                    value={field.value || ""}
                     onChange={(e) => field.onChange(e.target.value === "" ? undefined : Number(e.target.value))}
                     className={!isPositionValid ? "border-amber-400 focus-visible:ring-amber-400" : ""}
                   />
