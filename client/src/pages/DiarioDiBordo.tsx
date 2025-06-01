@@ -739,7 +739,7 @@ export default function DiarioDiBordo() {
       <Dialog open={isEmailDialogOpen} onOpenChange={setIsEmailDialogOpen}>
         <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
-            <DialogTitle>Invia Diario di Bordo via Email</DialogTitle>
+            <DialogTitle>Invia Diario di Impianto via Email</DialogTitle>
             <DialogDescription>
               Inserisci gli indirizzi email dei destinatari e personalizza l'oggetto dell'email.
             </DialogDescription>

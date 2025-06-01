@@ -1193,7 +1193,7 @@ export async function autoSendEmailDiario(req?: Request, res?: Response) {
         body: {
           to: config.recipients,
           cc: config.cc,
-          subject: `Diario di Bordo FLUPSY - ${format(yesterday, 'dd/MM/yyyy', { locale: it })}`,
+          subject: `Diario di Impianto FLUPSY - ${format(yesterday, 'dd/MM/yyyy', { locale: it })}`,
           text: diarioData.emailText,
           html: diarioData.emailHtml
         }
