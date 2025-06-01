@@ -3860,17 +3860,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const occupiedPositions = totalBaskets;
           const freePositions = Math.max(0, maxPositions - occupiedPositions);
           
-          // Per ora mostra solo statistiche base reali (niente dati falsi)
-          const activeBaskets = totalBaskets; // Consideriamo tutti i cestelli presenti come attivi
-          const availableBaskets = Math.max(0, maxPositions - totalBaskets);
+          // Calcola statistiche corrette
+          const activeBaskets = baskets.filter(basket => basket.currentCycleId !== null).length;
+          const availableBaskets = baskets.filter(basket => basket.currentCycleId === null).length;
           
-          // Statistiche reali dal database (zero se non ci sono dati)
+          // Calcola statistiche sugli animali
           let totalAnimals = 0;
-          let sizeDistribution: Record<string, number> = {};
+          let basketsWithAnimals = 0;
+          const sizeDistribution: Record<string, number> = {};
           
-          // Calcola densità media e percentuale
-          const avgAnimalDensity = 0; // Nessun dato falso
-          const activeBasketPercentage = maxPositions > 0 ? Math.round((totalBaskets / maxPositions) * 100) : 0;
+          // Per ogni cestello attivo, ottieni l'ultima operazione e raccogli statistiche
+          for (const basket of baskets.filter(b => b.currentCycleId !== null)) {
+            if (basket.currentCycleId) {
+              // Ottieni tutte le operazioni per questo ciclo
+              const cycleOperations = await storage.getOperationsByCycle(basket.currentCycleId);
+              
+              // Filtra per ottenere solo le operazioni di questo cestello
+              const operations = cycleOperations.filter(op => op.basketId === basket.id);
+              
+              // Ordina per data discendente per ottenere l'operazione più recente per prima
+              const operationsWithCount = operations
+                .filter(op => op.animalCount !== null) // Considera solo operazioni con conteggio degli animali
+                .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+              
+              if (operationsWithCount.length > 0) {
+                const lastOperation = operationsWithCount[0];
+                if (lastOperation.animalCount) {
+                  totalAnimals += lastOperation.animalCount;
+                  basketsWithAnimals++; 
+                  
+                  // Aggiungi i dati di distribuzione per taglia
+                  if (lastOperation.sizeId) {
+                    const size = await storage.getSize(lastOperation.sizeId);
+                    if (size) {
+                      const sizeCode = size.code;
+                      if (!sizeDistribution[sizeCode]) {
+                        sizeDistribution[sizeCode] = 0;
+                      }
+                      sizeDistribution[sizeCode] += lastOperation.animalCount;
+                    }
+                  }
+                }
+              }
+            }
+          }
+          
+          // Calcola la densità media degli animali
+          const avgAnimalDensity = basketsWithAnimals > 0 ? Math.round(totalAnimals / basketsWithAnimals) : 0;
+          
+          // Calcola la percentuale di occupazione con cestelli attivi
+          const activeBasketPercentage = maxPositions > 0 ? Math.round((activeBaskets / maxPositions) * 100) : 0;
           
           return {
             ...flupsy,
