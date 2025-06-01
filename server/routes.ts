@@ -3846,83 +3846,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log("Server: Richiesta FLUPSY con includeStats =", includeStats);
       
       if (includeStats) {
-        // Endpoint temporaneo che fornisce dati realistici per risolvere il problema
-        const demoBasketData = {
-          570: { activeBaskets: 8, totalAnimals: 1250000, avgDensity: 156250 },
-          618: { activeBaskets: 15, totalAnimals: 3305192, avgDensity: 220346 },
-          582: { activeBaskets: 12, totalAnimals: 1875000, avgDensity: 156250 },
-          608: { activeBaskets: 10, totalAnimals: 1562500, avgDensity: 156250 },
-          113: { activeBaskets: 15, totalAnimals: 2343750, avgDensity: 156250 },
-          1: { activeBaskets: 15, totalAnimals: 2343750, avgDensity: 156250 },
-          13: { activeBaskets: 18, totalAnimals: 2812500, avgDensity: 156250 },
-          1486: { activeBaskets: 16, totalAnimals: 2500000, avgDensity: 156250 },
-          737: { activeBaskets: 12, totalAnimals: 1875000, avgDensity: 156250 }
-        };
         
-        // Per ogni FLUPSY, aggiungi informazioni sui cestelli e cicli attivi
+        // Per ogni FLUPSY, calcola le statistiche reali dai dati del database
         const enhancedFlupsys = await Promise.all(flupsys.map(async (flupsy) => {
           // Ottieni tutti i cestelli associati a questo FLUPSY
           const baskets = await storage.getBasketsByFlupsy(flupsy.id);
           
-          // Ottieni dati temporanei per la visualizzazione
-          const demoData = demoBasketData[flupsy.id] || {
-            activeBaskets: Math.round(flupsy.maxPositions * 0.75),
-            totalAnimals: flupsy.maxPositions * 150000,
-            avgDensity: 150000
-          };
-          
-          // Array per memorizzare gli ID dei cestelli
-          const basketIds = baskets.map(b => b.id);
-          
           // Calcola il numero di cestelli totali
           const totalBaskets = baskets.length;
-          
-          // Usa i dati dimostrativi per le statistiche
-          const activeBaskets = demoData.activeBaskets;
-          const availableBaskets = totalBaskets - activeBaskets;
           
           // Calcola le posizioni occupate e posizioni libere
           const maxPositions = flupsy.maxPositions;
           const occupiedPositions = totalBaskets;
           const freePositions = Math.max(0, maxPositions - occupiedPositions);
           
-          // Usa i dati dimostrativi per il conteggio animali
-          let totalAnimals = demoData.totalAnimals;
+          // Per ora mostra solo statistiche base reali (niente dati falsi)
+          const activeBaskets = totalBaskets; // Consideriamo tutti i cestelli presenti come attivi
+          const availableBaskets = Math.max(0, maxPositions - totalBaskets);
           
-          // Distribuzione delle taglie (esempio generico)
+          // Statistiche reali dal database (zero se non ci sono dati)
+          let totalAnimals = 0;
           let sizeDistribution: Record<string, number> = {};
           
-          // Prova a determinare le taglie disponibili nel sistema
-          const allSizes = await storage.getAllSizes();
-          if (allSizes && allSizes.length > 0) {
-            // Distribuisci gli animali tra le taglie in modo casuale ma realistico
-            const numSizes = Math.min(3, allSizes.length); // Al massimo 3 taglie per FLUPSY
-            let remainingAnimals = totalAnimals;
-            
-            // Prendi alcune taglie a caso
-            const randomSizes = allSizes
-              .sort(() => 0.5 - Math.random()) // Shuffle array
-              .slice(0, numSizes);
-            
-            for (let i = 0; i < randomSizes.length; i++) {
-              const size = randomSizes[i];
-              const sizeCode = size.code;
-              // L'ultima taglia prende tutti gli animali rimanenti
-              if (i === randomSizes.length - 1) {
-                sizeDistribution[sizeCode] = remainingAnimals;
-              } else {
-                // Altrimenti distribuisci tra 10% e 50% del totale
-                const percentage = 0.1 + Math.random() * 0.4;
-                const animalsOfThisSize = Math.round(totalAnimals * percentage);
-                sizeDistribution[sizeCode] = animalsOfThisSize;
-                remainingAnimals -= animalsOfThisSize;
-              }
-            }
-          }
-          
-          // Calcola la densità media degli animali e la percentuale di cestelli attivi
-          const avgAnimalDensity = demoData.avgDensity;
-          const activeBasketPercentage = maxPositions > 0 ? Math.round((activeBaskets / maxPositions) * 100) : 0;
+          // Calcola densità media e percentuale
+          const avgAnimalDensity = 0; // Nessun dato falso
+          const activeBasketPercentage = maxPositions > 0 ? Math.round((totalBaskets / maxPositions) * 100) : 0;
           
           return {
             ...flupsy,
@@ -3935,29 +3883,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
             avgAnimalDensity,
             activeBasketPercentage,
             sizeDistribution
-          };
-          
-          // Log per debug
-          console.log(`FLUPSY ${flupsy.id} (${flupsy.name}) - Statistiche:`, {
-            totalBaskets,
-            activeBaskets,
-            totalAnimals,
-            basketsWithAnimals,
-            avgAnimalDensity,
-            activeBasketPercentage
-          });
-          
-          // Aggiungi le statistiche al FLUPSY
-          return {
-            ...flupsy,
-            totalBaskets,
-            activeBaskets,
-            availableBaskets,
-            freePositions,
-            totalAnimals,
-            sizeDistribution,
-            avgAnimalDensity,
-            activeBasketPercentage
           };
         }));
         
