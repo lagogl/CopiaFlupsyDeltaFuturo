@@ -346,7 +346,7 @@ export default function BasketForm({
                 if (row === '' && position === 0) {
                   // Annulla selezione
                   form.setValue('row', '');
-                  form.setValue('position', null);
+                  form.setValue('position', undefined);
                 } else {
                   // Imposta nuova selezione
                   form.setValue('row', row);

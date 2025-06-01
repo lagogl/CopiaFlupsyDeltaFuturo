@@ -57,11 +57,13 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLeg
     const handleDoubleClick = () => {
       if (onPositionClick) {
         if (posInfo.isEmpty) {
-          // Seleziona la posizione libera
-          onPositionClick(row, position);
-        } else if (isSelected) {
-          // Annulla la selezione se è già selezionata
-          onPositionClick('', 0);
+          if (isSelected) {
+            // Annulla la selezione se è già selezionata
+            onPositionClick('', 0);
+          } else {
+            // Seleziona la posizione libera
+            onPositionClick(row, position);
+          }
         }
       }
     };
