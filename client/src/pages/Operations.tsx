@@ -471,6 +471,8 @@ export default function Operations() {
     },
     onSuccess: (createdOperation) => {
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
       setIsCreateDialogOpen(false);
       
       // Mostra notifica di successo
