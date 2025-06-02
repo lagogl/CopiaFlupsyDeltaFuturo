@@ -4571,29 +4571,44 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Importiamo il queryClient dal modulo db
       const { queryClient } = await import("./db.js");
       
+      // Importa la funzione di broadcast WebSocket
+      const { broadcastMessage } = await import("./websocket.js");
+      
       // Usiamo il metodo corretto per le transazioni
       await queryClient.begin(async sql => {
         try {
-          console.log("🗑️ INIZIO AZZERAMENTO DATABASE - Eliminazione di tutte le tabelle operative");
+          const startMessage = "🗑️ INIZIO AZZERAMENTO DATABASE - Eliminazione di tutte le tabelle operative";
+          console.log(startMessage);
+          broadcastMessage("database_reset_progress", { message: startMessage, step: "start" });
           
           // 1. Elimina le transazioni dell'inventario lotti (collegata alle operazioni)
-          console.log("📦 Eliminazione transazioni inventario lotti...");
+          const step1 = "📦 Eliminazione transazioni inventario lotti...";
+          console.log(step1);
+          broadcastMessage("database_reset_progress", { message: step1, step: 1 });
           await sql`DELETE FROM lot_inventory_transactions`;
           
           // 2. Elimina le misurazioni (collegate ai cestelli)
-          console.log("📏 Eliminazione misurazioni cestelli...");
+          const step2 = "📏 Eliminazione misurazioni cestelli...";
+          console.log(step2);
+          broadcastMessage("database_reset_progress", { message: step2, step: 2 });
           await sql`DELETE FROM measurements`;
           
           // 3. Elimina le annotazioni taglie target (collegate ai cestelli)
-          console.log("🏷️ Eliminazione annotazioni taglie target...");
+          const step3 = "🏷️ Eliminazione annotazioni taglie target...";
+          console.log(step3);
+          broadcastMessage("database_reset_progress", { message: step3, step: 3 });
           await sql`DELETE FROM target_size_annotations`;
           
           // 4. Elimina gli impatti sui cicli
-          console.log("📊 Eliminazione impatti sui cicli...");
+          const step4 = "📊 Eliminazione impatti sui cicli...";
+          console.log(step4);
+          broadcastMessage("database_reset_progress", { message: step4, step: 4 });
           await sql`DELETE FROM cycle_impacts`;
           
           // 5. Elimina i dati delle operazioni di vagliatura
-          console.log("🔍 Eliminazione dati operazioni di vagliatura...");
+          const step5 = "🔍 Eliminazione dati operazioni di vagliatura...";
+          console.log(step5);
+          broadcastMessage("database_reset_progress", { message: step5, step: 5 });
           await sql`DELETE FROM screening_lot_references`;
           await sql`DELETE FROM screening_basket_history`;
           await sql`DELETE FROM screening_destination_baskets`;
@@ -4601,7 +4616,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`DELETE FROM screening_operations`;
           
           // 6. Elimina i dati delle operazioni di selezione
-          console.log("✅ Eliminazione dati operazioni di selezione...");
+          const step6 = "✅ Eliminazione dati operazioni di selezione...";
+          console.log(step6);
+          broadcastMessage("database_reset_progress", { message: step6, step: 6 });
           await sql`DELETE FROM selection_lot_references`;
           await sql`DELETE FROM selection_basket_history`;
           await sql`DELETE FROM selection_destination_baskets`;
@@ -4609,23 +4626,33 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`DELETE FROM selections`;
           
           // 7. Elimina la cronologia delle posizioni dei cestelli
-          console.log("📍 Eliminazione cronologia posizioni cestelli...");
+          const step7 = "📍 Eliminazione cronologia posizioni cestelli...";
+          console.log(step7);
+          broadcastMessage("database_reset_progress", { message: step7, step: 7 });
           await sql`DELETE FROM basket_position_history`;
           
           // 8. Elimina le operazioni
-          console.log("⚙️ Eliminazione operazioni...");
+          const step8 = "⚙️ Eliminazione operazioni...";
+          console.log(step8);
+          broadcastMessage("database_reset_progress", { message: step8, step: 8 });
           await sql`DELETE FROM operations`;
           
           // 9. Elimina i cicli
-          console.log("🔄 Eliminazione cicli produttivi...");
+          const step9 = "🔄 Eliminazione cicli produttivi...";
+          console.log(step9);
+          broadcastMessage("database_reset_progress", { message: step9, step: 9 });
           await sql`DELETE FROM cycles`;
           
           // 10. Elimina i cestelli
-          console.log("🗑️ Eliminazione cestelli...");
+          const step10 = "🗑️ Eliminazione cestelli...";
+          console.log(step10);
+          broadcastMessage("database_reset_progress", { message: step10, step: 10 });
           await sql`DELETE FROM baskets`;
           
           // 11. Resettiamo le sequenze degli ID
-          console.log("🔢 Reset contatori ID di tutte le tabelle...");
+          const step11 = "🔢 Reset contatori ID di tutte le tabelle...";
+          console.log(step11);
+          broadcastMessage("database_reset_progress", { message: step11, step: 11 });
           await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`;
@@ -4645,7 +4672,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`;
           
-          console.log("✅ AZZERAMENTO COMPLETATO - Tutte le tabelle operative sono state eliminate e i contatori resettati");
+          const completeMessage = "✅ AZZERAMENTO COMPLETATO - Tutte le tabelle operative sono state eliminate e i contatori resettati";
+          console.log(completeMessage);
+          broadcastMessage("database_reset_progress", { message: completeMessage, step: "complete" });
           
           return true; // Successo - commit implicito
         } catch (error) {

@@ -154,8 +154,19 @@ function configureSocketHandlers() {
       // Registra il messaggio per debug
       console.log('Ricevuto messaggio WebSocket:', data);
       
-      // Mostra toast per notifiche
-      if (data.message && data.type !== 'connection') {
+      // Gestione speciale per i messaggi di azzeramento database
+      if (data.type === 'database_reset_progress') {
+        // Mostra toast persistente per i progressi dell'azzeramento
+        toast({
+          title: data.data?.step === 'start' ? 'Azzeramento Database' : 
+                 data.data?.step === 'complete' ? 'Azzeramento Completato' : 
+                 `Azzeramento Database - Passo ${data.data?.step}`,
+          description: data.data?.message || data.message,
+          variant: data.data?.step === 'complete' ? 'default' : 'destructive',
+          duration: data.data?.step === 'complete' ? 3000 : 2000,
+        });
+      } else if (data.message && data.type !== 'connection') {
+        // Toast standard per altri tipi di notifiche
         toast({
           title: 'Aggiornamento',
           description: data.message,
