@@ -158,6 +158,9 @@ function App() {
         {/* Integrazione tra WebSocket e React Query */}
         <WebSocketQueryIntegration />
         
+        {/* Listener specifico per invalidazione cache operazioni/cestelli */}
+        <OperationListener />
+        
         {/* Provider per i tooltip contestuali personalizzati */}
         <TooltipProvider>
           <MainLayout>
