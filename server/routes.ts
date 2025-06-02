@@ -4574,22 +4574,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Usiamo il metodo corretto per le transazioni
       await queryClient.begin(async sql => {
         try {
-          // 1. Elimina la cronologia delle posizioni dei cestelli
+          // 1. Elimina le transazioni dell'inventario lotti (collegata alle operazioni)
+          await sql`DELETE FROM lot_inventory_transactions`;
+          
+          // 2. Elimina la cronologia delle posizioni dei cestelli
           await sql`DELETE FROM basket_position_history`;
           
-          // 2. Elimina le operazioni
+          // 3. Elimina le operazioni
           await sql`DELETE FROM operations`;
           
-          // 3. Elimina i cicli
+          // 4. Elimina i cicli
           await sql`DELETE FROM cycles`;
           
-          // 4. Elimina i cestelli
+          // 5. Elimina i cestelli
           await sql`DELETE FROM baskets`;
           
-          // 5. Resettiamo le sequenze degli ID
+          // 6. Resettiamo le sequenze degli ID
+          await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS basket_position_history_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS basket_position_history_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`;
           
           return true; // Successo - commit implicito
