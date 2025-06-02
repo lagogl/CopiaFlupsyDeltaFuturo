@@ -239,13 +239,30 @@ export default function OperationFormCompact({
   const [flupsyBaskets, setFlupsyBaskets] = useState<any[]>([]);
   const [isLoadingFlupsyBaskets, setIsLoadingFlupsyBaskets] = useState<boolean>(false);
   
+  // Auto-seleziona FLUPSY se c'è solo un FLUPSY con cestelli disponibili
+  useEffect(() => {
+    if (!watchFlupsyId && baskets && flupsys) {
+      // Trova FLUPSY con cestelli disponibili
+      const flupsysWithBaskets = flupsys.filter((flupsy: any) => 
+        baskets.some((basket: any) => basket.flupsyId === flupsy.id)
+      );
+      
+      if (flupsysWithBaskets.length === 1) {
+        console.log("🚀 Auto-selezione FLUPSY:", flupsysWithBaskets[0].name);
+        form.setValue('flupsyId', flupsysWithBaskets[0].id);
+      }
+    }
+  }, [baskets, flupsys, watchFlupsyId, form]);
+
   // Aggiorna la lista di cestelli quando cambia il FLUPSY selezionato
   useEffect(() => {
     if (watchFlupsyId && baskets) {
       setIsLoadingFlupsyBaskets(true);
-      const filtered = baskets.filter((basket: any) => basket.flupsyId === watchFlupsyId);
+      const flupsyIdNum = parseInt(watchFlupsyId);
+      const filtered = baskets.filter((basket: any) => basket.flupsyId === flupsyIdNum);
       
       // Log per debug
+      console.log("🔍 Filtro cestelli per FLUPSY ID:", flupsyIdNum);
       console.log("Cestelli filtrati per FLUPSY:", filtered);
       console.log("TOTALE cestelli trovati:", filtered.length);
       if (filtered.length > 0) {
