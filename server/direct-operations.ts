@@ -5,6 +5,7 @@ import type { Express } from "express";
 import { db } from './db';
 import { operations, cycles, baskets, sizes } from '../shared/schema';
 import { sql, eq, and, between } from 'drizzle-orm';
+import { broadcastMessage } from './websocket';
 
 /**
  * Trova automaticamente il sizeId corretto in base al numero di animali per kg.
@@ -322,23 +323,16 @@ export function implementDirectOperationRoute(app: Express) {
           
           console.log("Cestello aggiornato:", updatedBasket[0]);
           
-          // 5. Notifica via WebSocket se disponibile
-          if (typeof (global as any).broadcastUpdate === 'function') {
-            try {
-              console.log("Invio notifica WebSocket per nuova operazione");
-              (global as any).broadcastUpdate('operation_created', {
-                operation: newOperation[0],
-                message: `Nuova operazione di tipo ${newOperation[0].type} registrata`
-              });
-              
-              (global as any).broadcastUpdate('cycle_created', {
-                cycle: newCycle[0],
-                basketId: operationData.basketId,
-                message: `Nuovo ciclo ${cycleId} creato per il cestello ${operationData.basketId}`
-              });
-            } catch (wsError) {
-              console.error("Errore nell'invio della notifica WebSocket:", wsError);
-            }
+          // 5. Notifica via WebSocket per invalidazione cache
+          try {
+            console.log("Invio notifica WebSocket per nuova operazione");
+            broadcastMessage('operation_created', {
+              operation: newOperation[0],
+              message: `Nuova operazione di tipo ${newOperation[0].type} registrata`
+            });
+            console.log("Notifica WebSocket inviata con successo");
+          } catch (wsError) {
+            console.error("Errore nell'invio della notifica WebSocket:", wsError);
           }
           
           return res.status(201).json(newOperation[0]);
