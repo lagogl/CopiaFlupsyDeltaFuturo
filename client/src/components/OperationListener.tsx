@@ -94,16 +94,26 @@ export function OperationListener() {
       if (lastOperationCount.current > 0 && currentCount > lastOperationCount.current) {
         console.log('🔄 POLLING: Rilevata nuova operazione, aggiornando cache...');
         
-        // Invalida le cache per forzare il refresh con query uniche
-        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
-        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
-        
-        // Forza l'invalidazione della cache del server
+        // Forza l'invalidazione della cache del server prima di tutto
         fetch('/api/cache/invalidate', { 
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ keys: ['baskets', 'flupsys', 'operations'] })
+        }).then(() => {
+          // Dopo aver invalidato la cache del server, invalida le cache client
+          queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+          
+          // Forza un refetch immediato con cache disabilitata
+          queryClient.refetchQueries({ 
+            queryKey: ['/api/baskets'],
+            type: 'all'
+          });
+          queryClient.refetchQueries({ 
+            queryKey: ['/api/flupsys'],
+            type: 'all'
+          });
         }).catch(console.error);
         
         toast({
