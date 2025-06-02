@@ -62,6 +62,17 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
   // Crea mappa delle posizioni occupate
   const getPositionInfo = (row: string, position: number): PositionInfo => {
     const basket = baskets.find((b: any) => b.row === row && b.position === position);
+    
+    // Debug per ogni posizione richiesta
+    if (position <= 3) { // Solo per le prime 3 posizioni per non intasare i log
+      console.log(`🗺️ Cerca posizione ${row}-${position}:`, {
+        found: !!basket,
+        basketId: basket?.id,
+        physicalNumber: basket?.physicalNumber,
+        state: basket?.state
+      });
+    }
+    
     if (basket) {
       return {
         basketId: basket.id,
