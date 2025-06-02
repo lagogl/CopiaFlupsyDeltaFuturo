@@ -6521,6 +6521,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
     NOTIFICATION_TYPES
   } = configureWebSocketServer(httpServer);
 
+  // Set up global broadcast function for use in other modules
+  const { setBroadcastFunction } = await import("./websocket.js");
+  setBroadcastFunction(broadcastMessage);
+
   // Set up global broadcast function for compatibility with existing code
   (global as any).broadcastUpdate = (type: string, data: any) => {
     broadcastMessage(type, data);
