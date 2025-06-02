@@ -4232,11 +4232,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         return res.status(400).json({ success: false, message: "ID FLUPSY non valido" });
       }
 
+      // Importa la funzione di broadcast WebSocket
+      const { broadcastMessage } = await import("./websocket.js");
+
       // Verifica che il FLUPSY esista
       const flupsy = await storage.getFlupsy(id);
       if (!flupsy) {
         return res.status(404).json({ success: false, message: "FLUPSY non trovato" });
       }
+
+      const startMessage = `🚀 INIZIO POPOLAMENTO FLUPSY "${flupsy.name}" - Creazione automatica cestelli`;
+      console.log(startMessage);
+      broadcastMessage("flupsy_populate_progress", { message: startMessage, step: "start", flupsyName: flupsy.name });
 
       // Ottieni le ceste esistenti per questo FLUPSY
       const existingBaskets = await storage.getBasketsByFlupsy(id);
@@ -4324,8 +4331,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
         });
       }
       
+      const analyzeMessage = `📋 Analisi posizioni: ${totalFreePositions} posizioni libere trovate (${freePositions['DX'].length} DX, ${freePositions['SX'].length} SX)`;
+      console.log(analyzeMessage);
+      broadcastMessage("flupsy_populate_progress", { message: analyzeMessage, step: "analyze", totalPositions: totalFreePositions });
+
       // Crea tutte le nuove ceste nel database con gestione completa delle posizioni
+      let createdCount = 0;
       for (const basketData of basketsToCreate) {
+        createdCount++;
+        
+        const progressMessage = `🔧 Creazione cestello ${createdCount}/${basketsToCreate.length} - Posizione ${basketData.row}-${basketData.position}`;
+        console.log(progressMessage);
+        broadcastMessage("flupsy_populate_progress", { 
+          message: progressMessage, 
+          step: createdCount, 
+          total: basketsToCreate.length,
+          position: `${basketData.row}-${basketData.position}`
+        });
+        
         // 1. Crea il cestello con stato 'available' (non 'active' perché non ha ancora un ciclo)
         const basketToCreate = {
           ...basketData,
@@ -4356,6 +4379,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
         newBaskets.push(newBasket);
       }
       
+      const completeMessage = `✅ POPOLAMENTO COMPLETATO - ${newBaskets.length} nuovi cestelli creati nel FLUPSY "${flupsy.name}"`;
+      console.log(completeMessage);
+      broadcastMessage("flupsy_populate_progress", { 
+        message: completeMessage, 
+        step: "complete", 
+        flupsyName: flupsy.name,
+        totalCreated: newBaskets.length
+      });
+
       // Restituisci il risultato
       return res.json({ 
         success: true,

@@ -193,3 +193,18 @@ export function configureWebSocketServer(httpServer: Server) {
 
 // Export the WebSocket server configuration
 export default configureWebSocketServer;
+
+// Export broadcastMessage for use in other modules
+let globalBroadcastMessage: ((type: string, data: any) => number) | null = null;
+
+export function setBroadcastFunction(broadcastFn: (type: string, data: any) => number) {
+  globalBroadcastMessage = broadcastFn;
+}
+
+export function broadcastMessage(type: string, data: any): number {
+  if (globalBroadcastMessage) {
+    return globalBroadcastMessage(type, data);
+  }
+  console.warn('WebSocket broadcast function not initialized');
+  return 0;
+}

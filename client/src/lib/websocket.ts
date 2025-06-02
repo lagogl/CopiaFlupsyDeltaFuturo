@@ -165,6 +165,17 @@ function configureSocketHandlers() {
           variant: data.data?.step === 'complete' ? 'default' : 'destructive',
           duration: data.data?.step === 'complete' ? 3000 : 2000,
         });
+      } else if (data.type === 'flupsy_populate_progress') {
+        // Mostra toast per i progressi del popolamento FLUPSY
+        toast({
+          title: data.data?.step === 'start' ? 'Popolamento FLUPSY' : 
+                 data.data?.step === 'analyze' ? 'Analisi Posizioni' :
+                 data.data?.step === 'complete' ? 'Popolamento Completato' : 
+                 `Popolamento FLUPSY - ${data.data?.step}/${data.data?.total}`,
+          description: data.data?.message || data.message,
+          variant: data.data?.step === 'complete' ? 'default' : 'default',
+          duration: data.data?.step === 'complete' ? 4000 : 1500,
+        });
       } else if (data.message && data.type !== 'connection') {
         // Toast standard per altri tipi di notifiche
         toast({
