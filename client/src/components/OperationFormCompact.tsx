@@ -159,6 +159,45 @@ export default function OperationFormCompact({
   const deadCount = form.watch("deadCount") || 0;
   const watchManualCountAdjustment = form.watch("manualCountAdjustment");
 
+  // Validazione completa campi obbligatori
+  const isFormValid = useMemo(() => {
+    // Campi base sempre obbligatori
+    if (!watchFlupsyId || !watchBasketId || !watchType || !watchDate || !watchLotId) {
+      return false;
+    }
+
+    // Validazione specifica per tipo operazione
+    switch (watchType) {
+      case 'prima-attivazione':
+        // Prima attivazione richiede: animali per kg, peso sample, animali vivi, peso totale
+        return !!(
+          watchAnimalsPerKg && watchAnimalsPerKg > 0 &&
+          watchSampleWeight && watchSampleWeight > 0 &&
+          watchLiveAnimals && watchLiveAnimals > 0 &&
+          watchTotalWeight && watchTotalWeight > 0
+        );
+      
+      case 'misura':
+        // Misura richiede: peso sample, animali vivi, peso totale
+        return !!(
+          watchSampleWeight && watchSampleWeight > 0 &&
+          watchLiveAnimals && watchLiveAnimals > 0 &&
+          watchTotalWeight && watchTotalWeight > 0
+        );
+      
+      case 'peso':
+        // Peso richiede: peso totale
+        return !!(watchTotalWeight && watchTotalWeight > 0);
+      
+      case 'vendita':
+        // Vendita richiede: peso totale
+        return !!(watchTotalWeight && watchTotalWeight > 0);
+      
+      default:
+        return false;
+    }
+  }, [watchFlupsyId, watchBasketId, watchType, watchDate, watchLotId, watchAnimalsPerKg, watchSampleWeight, watchLiveAnimals, watchTotalWeight]);
+
   // Query per ottenere dati da database
   const { data: flupsys } = useQuery({ 
     queryKey: ['/api/flupsys'],
@@ -1851,7 +1890,7 @@ export default function OperationFormCompact({
                 </Button>
                 <Button
                   type="submit"
-                  disabled={isLoading || !watchBasketId || !watchFlupsyId || !watchType || !watchDate || !watchLotId}
+                  disabled={isLoading || !isFormValid}
                   size="sm"
                 >
                   {isLoading ? (
