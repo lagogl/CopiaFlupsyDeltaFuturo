@@ -1,10 +1,12 @@
-import { useEffect } from 'react';
-import { useQueryClient } from '@tanstack/react-query';
+import { useEffect, useRef } from 'react';
+import { useQueryClient, useQuery } from '@tanstack/react-query';
 import { useWebSocketMessage } from '@/lib/websocket';
 import { toast } from '@/hooks/use-toast';
 
 export function OperationListener() {
   const queryClient = useQueryClient();
+  const lastOperationCount = useRef<number>(0);
+  const lastBasketStates = useRef<string>('');
   
   // Handler for operation created messages
   const handleOperationCreated = (data: any) => {
@@ -68,7 +70,68 @@ export function OperationListener() {
     queryClient.invalidateQueries({ queryKey: ['/api/basket-positions'] });
   };
   
-  // Use our websocket hook to listen for different message types
+  // Sistema di polling per rilevare cambiamenti nei dati
+  const { data: operationsData } = useQuery({
+    queryKey: ['/api/operations'],
+    refetchInterval: 3000, // Controlla ogni 3 secondi
+    refetchIntervalInBackground: true
+  });
+
+  const { data: basketsData } = useQuery({
+    queryKey: ['/api/baskets', { includeAll: true }],
+    refetchInterval: 3000, // Controlla ogni 3 secondi
+    refetchIntervalInBackground: true
+  });
+
+  // Controlla cambiamenti nel numero di operazioni
+  useEffect(() => {
+    if (operationsData && Array.isArray(operationsData)) {
+      const currentCount = operationsData.length;
+      if (lastOperationCount.current > 0 && currentCount > lastOperationCount.current) {
+        console.log('🔄 POLLING: Rilevata nuova operazione, aggiornando cache...');
+        
+        // Invalida le cache per forzare il refresh
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+        queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+        
+        toast({
+          title: 'Dati Aggiornati',
+          description: 'Nuova operazione rilevata, mini-mappa aggiornata',
+          variant: 'default',
+          duration: 2000
+        });
+      }
+      lastOperationCount.current = currentCount;
+    }
+  }, [operationsData, queryClient]);
+
+  // Controlla cambiamenti negli stati dei cestelli
+  useEffect(() => {
+    if (basketsData && Array.isArray(basketsData)) {
+      const currentStates = basketsData
+        .map((b: any) => `${b.id}:${b.state}`)
+        .sort()
+        .join(',');
+      
+      if (lastBasketStates.current && lastBasketStates.current !== currentStates) {
+        console.log('🔄 POLLING: Rilevati cambiamenti negli stati dei cestelli');
+        
+        // Invalida la cache per forzare il refresh della mini-mappa
+        queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+        
+        toast({
+          title: 'Mini-mappa Aggiornata',
+          description: 'Stati dei cestelli aggiornati',
+          variant: 'default',
+          duration: 1500
+        });
+      }
+      lastBasketStates.current = currentStates;
+    }
+  }, [basketsData, queryClient]);
+
+  // Use our websocket hook to listen for different message types (fallback)
   useWebSocketMessage('operation_created', handleOperationCreated);
   useWebSocketMessage('operation_updated', handleOperationUpdated);
   useWebSocketMessage('operation_deleted', handleOperationDeleted);

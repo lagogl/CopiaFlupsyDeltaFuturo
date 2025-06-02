@@ -1997,12 +1997,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("OPERAZIONE CREATA CON SUCCESSO:", JSON.stringify(newOperation, null, 2));
           
           // Broadcast operation created event via WebSockets
-          if (typeof (global as any).broadcastUpdate === 'function') {
-            console.log("Invio notifica WebSocket per nuova operazione");
-            (global as any).broadcastUpdate('operation_created', {
+          // Notifica WebSocket per invalidazione cache
+          try {
+            console.log("🚨 ROUTES.TS: Invio notifica WebSocket per nuova operazione");
+            const result = broadcastMessage('operation_created', {
               operation: newOperation,
               message: `Nuova operazione di tipo ${newOperation.type} registrata`
             });
+            console.log("🚨 ROUTES.TS: Notifica WebSocket inviata con successo, clienti raggiunti:", result);
+          } catch (wsError) {
+            console.error("❌ ROUTES.TS: Errore nell'invio della notifica WebSocket:", wsError);
           }
           
           console.log("===== FINE ENDPOINT POST /api/operations - SUCCESSO =====");
