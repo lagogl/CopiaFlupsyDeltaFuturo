@@ -35,24 +35,28 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
   const baskets = preloadedBaskets || basketsResponse || [];
   
   // Debug per verificare i cestelli ricevuti
+  const activeBaskets = baskets.filter((b: any) => b.state === 'active');
+  
   console.log("🗺️ MINI-MAPPA Debug:", {
     flupsyId,
     preloadedBaskets: preloadedBaskets ? preloadedBaskets.length : 'non forniti',
     basketsResponse: basketsResponse ? basketsResponse.length : 'non caricati',
     finalBaskets: baskets.length,
-    activeBaskets: baskets.filter((b: any) => b.state === 'active').length,
+    activeBaskets: activeBaskets.length,
     availableBaskets: baskets.filter((b: any) => b.state === 'available').length
   });
   
-  // Mostra i primi 3 cestelli per debug
-  baskets.slice(0, 3).forEach((basket: any, index: number) => {
-    console.log(`🗺️ Cestello ${index + 1}:`, {
+  // Mostra TUTTI i cestelli attivi per debug
+  console.log("🗺️ TUTTI I CESTELLI ATTIVI:");
+  activeBaskets.forEach((basket: any, index: number) => {
+    console.log(`🔴 Cestello attivo ${index + 1}:`, {
       id: basket.id,
       physicalNumber: basket.physicalNumber,
       state: basket.state,
       row: basket.row,
       position: basket.position,
-      currentCycleId: basket.currentCycleId
+      currentCycleId: basket.currentCycleId,
+      cycleCode: basket.cycleCode
     });
   });
   
