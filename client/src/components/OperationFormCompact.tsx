@@ -218,6 +218,9 @@ export default function OperationFormCompact({
     queryKey: ['/api/baskets'],
     queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
     enabled: !isLoading,
+    staleTime: 0, // Nessuna cache - sempre aggiornato per form operazioni
+    refetchOnMount: true,
+    refetchOnWindowFocus: true,
   });
   
   const { data: cycles } = useQuery({ 
