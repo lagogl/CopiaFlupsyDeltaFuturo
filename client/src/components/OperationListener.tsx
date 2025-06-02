@@ -8,23 +8,27 @@ export function OperationListener() {
   
   // Handler for operation created messages
   const handleOperationCreated = (data: any) => {
-    console.log('🔄 WebSocket: Operazione creata, invalidando cache...', data);
+    console.log('🚨 OPERATION LISTENER: Ricevuta notifica operation_created!', data);
     
-    // Invalida tutte le cache rilevanti
+    // Invalida tutte le cache rilevanti con forza
+    console.log('🚨 INVALIDATING CACHES...');
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
     queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
     queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
     
-    // Mostra toast solo se l'operazione non è stata creata dall'utente corrente
-    if (data && data.message) {
-      toast({
-        title: 'Nuova Operazione',
-        description: data.message,
-        variant: 'default',
-        duration: 3000
-      });
-    }
+    // Refetch immediato per forzare l'aggiornamento
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    
+    console.log('🚨 CACHE INVALIDATED - Showing toast');
+    
+    // Mostra toast di conferma
+    toast({
+      title: 'Cache Aggiornata',
+      description: 'I dati sono stati aggiornati in tempo reale',
+      variant: 'default',
+      duration: 2000
+    });
   };
   
   // Handler for operation updated messages
