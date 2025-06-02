@@ -4577,20 +4577,56 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 1. Elimina le transazioni dell'inventario lotti (collegata alle operazioni)
           await sql`DELETE FROM lot_inventory_transactions`;
           
-          // 2. Elimina la cronologia delle posizioni dei cestelli
+          // 2. Elimina le misurazioni (collegate ai cestelli)
+          await sql`DELETE FROM measurements`;
+          
+          // 3. Elimina le annotazioni taglie target (collegate ai cestelli)
+          await sql`DELETE FROM target_size_annotations`;
+          
+          // 4. Elimina gli impatti sui cicli
+          await sql`DELETE FROM cycle_impacts`;
+          
+          // 5. Elimina i dati delle operazioni di vagliatura
+          await sql`DELETE FROM screening_lot_references`;
+          await sql`DELETE FROM screening_basket_history`;
+          await sql`DELETE FROM screening_destination_baskets`;
+          await sql`DELETE FROM screening_source_baskets`;
+          await sql`DELETE FROM screening_operations`;
+          
+          // 6. Elimina i dati delle operazioni di selezione
+          await sql`DELETE FROM selection_lot_references`;
+          await sql`DELETE FROM selection_basket_history`;
+          await sql`DELETE FROM selection_destination_baskets`;
+          await sql`DELETE FROM selection_source_baskets`;
+          await sql`DELETE FROM selections`;
+          
+          // 7. Elimina la cronologia delle posizioni dei cestelli
           await sql`DELETE FROM basket_position_history`;
           
-          // 3. Elimina le operazioni
+          // 8. Elimina le operazioni
           await sql`DELETE FROM operations`;
           
-          // 4. Elimina i cicli
+          // 9. Elimina i cicli
           await sql`DELETE FROM cycles`;
           
-          // 5. Elimina i cestelli
+          // 10. Elimina i cestelli
           await sql`DELETE FROM baskets`;
           
-          // 6. Resettiamo le sequenze degli ID
+          // 11. Resettiamo le sequenze degli ID
           await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS cycle_impacts_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS screening_operations_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS screening_source_baskets_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS screening_destination_baskets_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS screening_basket_history_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS selections_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS selection_source_baskets_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS selection_destination_baskets_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS selection_basket_history_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS basket_position_history_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
