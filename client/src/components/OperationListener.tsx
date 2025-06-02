@@ -73,14 +73,18 @@ export function OperationListener() {
   // Sistema di polling per rilevare cambiamenti nei dati
   const { data: operationsData } = useQuery({
     queryKey: ['/api/operations'],
-    refetchInterval: 3000, // Controlla ogni 3 secondi
-    refetchIntervalInBackground: true
+    refetchInterval: 2000, // Controlla ogni 2 secondi
+    refetchIntervalInBackground: true,
+    staleTime: 0, // Considera sempre i dati obsoleti
+    gcTime: 0 // Non mantiene cache
   });
 
   const { data: basketsData } = useQuery({
     queryKey: ['/api/baskets', { includeAll: true }],
-    refetchInterval: 3000, // Controlla ogni 3 secondi
-    refetchIntervalInBackground: true
+    refetchInterval: 2000, // Controlla ogni 2 secondi
+    refetchIntervalInBackground: true,
+    staleTime: 0, // Considera sempre i dati obsoleti
+    gcTime: 0 // Non mantiene cache
   });
 
   // Controlla cambiamenti nel numero di operazioni
@@ -90,10 +94,21 @@ export function OperationListener() {
       if (lastOperationCount.current > 0 && currentCount > lastOperationCount.current) {
         console.log('🔄 POLLING: Rilevata nuova operazione, aggiornando cache...');
         
-        // Invalida le cache per forzare il refresh
+        // Invalida le cache per forzare il refresh con query uniche
         queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
         queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
         queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+        
+        // Forza refresh con parametri anti-cache
+        const timestamp = Date.now();
+        queryClient.refetchQueries({ 
+          queryKey: ['/api/baskets', { includeAll: true, _t: timestamp }],
+          type: 'all'
+        });
+        queryClient.refetchQueries({ 
+          queryKey: ['/api/flupsys', { _t: timestamp }],
+          type: 'all' 
+        });
         
         toast({
           title: 'Dati Aggiornati',
