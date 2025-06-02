@@ -34,6 +34,28 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
   // Usa cestelli precaricati se disponibili, altrimenti usa quelli dalla query
   const baskets = preloadedBaskets || basketsResponse || [];
   
+  // Debug per verificare i cestelli ricevuti
+  console.log("🗺️ MINI-MAPPA Debug:", {
+    flupsyId,
+    preloadedBaskets: preloadedBaskets ? preloadedBaskets.length : 'non forniti',
+    basketsResponse: basketsResponse ? basketsResponse.length : 'non caricati',
+    finalBaskets: baskets.length,
+    activeBaskets: baskets.filter((b: any) => b.state === 'active').length,
+    availableBaskets: baskets.filter((b: any) => b.state === 'available').length
+  });
+  
+  // Mostra i primi 3 cestelli per debug
+  baskets.slice(0, 3).forEach((basket: any, index: number) => {
+    console.log(`🗺️ Cestello ${index + 1}:`, {
+      id: basket.id,
+      physicalNumber: basket.physicalNumber,
+      state: basket.state,
+      row: basket.row,
+      position: basket.position,
+      currentCycleId: basket.currentCycleId
+    });
+  });
+  
   // Calcola posizioni per riga (divide maxPositions per 2)
   const positionsPerRow = Math.ceil(maxPositions / 2);
   
