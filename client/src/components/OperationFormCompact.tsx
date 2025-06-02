@@ -866,9 +866,10 @@ export default function OperationFormCompact({
                       {/* Mini-mappa occupazione FLUPSY */}
                       {watchFlupsyId && flupsyBaskets.length > 0 && (
                         <div className="mt-2 p-2 bg-gray-50 rounded-md border">
-                          <div className="text-xs font-medium text-gray-600 mb-1">Occupazione FLUPSY:</div>
+                          <div className="text-xs font-medium text-gray-600 mb-1">Occupazione FLUPSY ({flupsyBaskets.length} cestelli):</div>
                           <FlupsyMiniMapOptimized 
                             flupsyId={parseInt(watchFlupsyId)}
+                            baskets={flupsyBaskets}
                             maxPositions={(() => {
                               const selectedFlupsy = flupsys?.find((f: any) => f.id === parseInt(watchFlupsyId));
                               return selectedFlupsy?.maxPositions || 10;

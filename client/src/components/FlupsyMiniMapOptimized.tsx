@@ -3,6 +3,7 @@ import { useQuery } from "@tanstack/react-query";
 interface FlupsyMiniMapOptimizedProps {
   flupsyId: number;
   maxPositions: number;
+  baskets?: any[]; // Cestelli precaricati per evitare query duplicate
   showLegend?: boolean;
   onPositionClick?: (row: string, position: number) => void;
   selectedRow?: string;
@@ -16,21 +17,22 @@ interface PositionInfo {
   isEmpty: boolean;
 }
 
-export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, showLegend = false, onPositionClick, selectedRow, selectedPosition }: FlupsyMiniMapOptimizedProps) {
-  // Carica solo i cestelli per questo FLUPSY specifico (più veloce)
+export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets: preloadedBaskets, showLegend = false, onPositionClick, selectedRow, selectedPosition }: FlupsyMiniMapOptimizedProps) {
+  // Carica solo i cestelli per questo FLUPSY specifico se non sono già forniti
   const { data: basketsResponse, isLoading } = useQuery({
     queryKey: ['/api/baskets', flupsyId],
     queryFn: () => fetch(`/api/baskets?flupsyId=${flupsyId}&includeAll=true`).then(res => res.json()),
-    enabled: !!flupsyId,
+    enabled: !!flupsyId && !preloadedBaskets, // Disabilita query se cestelli già forniti
     staleTime: 0, // Nessuna cache - aggiornamento immediato per visualizzazione real-time
     refetchOnWindowFocus: true,
   });
 
-  if (isLoading) {
+  if (isLoading && !preloadedBaskets) {
     return <div className="text-sm text-gray-500">Caricamento mappa...</div>;
   }
 
-  const baskets = basketsResponse || [];
+  // Usa cestelli precaricati se disponibili, altrimenti usa quelli dalla query
+  const baskets = preloadedBaskets || basketsResponse || [];
   
   // Calcola posizioni per riga (divide maxPositions per 2)
   const positionsPerRow = Math.ceil(maxPositions / 2);
