@@ -325,14 +325,14 @@ export function implementDirectOperationRoute(app: Express) {
           
           // 5. Notifica via WebSocket per invalidazione cache
           try {
-            console.log("Invio notifica WebSocket per nuova operazione");
-            broadcastMessage('operation_created', {
+            console.log("🚨 DIRECT-OPERATIONS: Invio notifica WebSocket per nuova operazione");
+            const result = broadcastMessage('operation_created', {
               operation: newOperation[0],
               message: `Nuova operazione di tipo ${newOperation[0].type} registrata`
             });
-            console.log("Notifica WebSocket inviata con successo");
+            console.log("🚨 DIRECT-OPERATIONS: Notifica WebSocket inviata con successo, clienti raggiunti:", result);
           } catch (wsError) {
-            console.error("Errore nell'invio della notifica WebSocket:", wsError);
+            console.error("❌ DIRECT-OPERATIONS: Errore nell'invio della notifica WebSocket:", wsError);
           }
           
           return res.status(201).json(newOperation[0]);

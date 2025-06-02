@@ -17,17 +17,18 @@ export function OperationListener() {
     queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
     queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
     
-    // Refetch immediato per forzare l'aggiornamento
+    // Refetch immediato per forzare l'aggiornamento della mini-mappa
     queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/flupsys'] });
     
     console.log('🚨 CACHE INVALIDATED - Showing toast');
     
     // Mostra toast di conferma
     toast({
-      title: 'Cache Aggiornata',
-      description: 'I dati sono stati aggiornati in tempo reale',
+      title: '🔄 Cache Aggiornata',
+      description: 'La mini-mappa è stata aggiornata in tempo reale',
       variant: 'default',
-      duration: 2000
+      duration: 3000
     });
   };
   
