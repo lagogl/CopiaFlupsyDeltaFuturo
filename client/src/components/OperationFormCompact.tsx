@@ -176,7 +176,8 @@ export default function OperationFormCompact({
   });
   
   const { data: baskets } = useQuery({ 
-    queryKey: ['/api/baskets?includeAll=true'],
+    queryKey: ['/api/baskets'],
+    queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
     enabled: !isLoading,
   });
   
