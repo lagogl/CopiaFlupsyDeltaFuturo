@@ -145,6 +145,7 @@ function WebSocketListener() {
 
 // Importiamo il componente di integrazione WebSocket-Query
 import { WebSocketQueryIntegration } from './lib/websocketQueryIntegration';
+import { OperationListener } from '@/components/OperationListener';
 
 function App() {
   return (
