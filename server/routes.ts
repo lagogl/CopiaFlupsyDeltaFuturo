@@ -4574,19 +4574,26 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Usiamo il metodo corretto per le transazioni
       await queryClient.begin(async sql => {
         try {
+          console.log("🗑️ INIZIO AZZERAMENTO DATABASE - Eliminazione di tutte le tabelle operative");
+          
           // 1. Elimina le transazioni dell'inventario lotti (collegata alle operazioni)
+          console.log("📦 Eliminazione transazioni inventario lotti...");
           await sql`DELETE FROM lot_inventory_transactions`;
           
           // 2. Elimina le misurazioni (collegate ai cestelli)
+          console.log("📏 Eliminazione misurazioni cestelli...");
           await sql`DELETE FROM measurements`;
           
           // 3. Elimina le annotazioni taglie target (collegate ai cestelli)
+          console.log("🏷️ Eliminazione annotazioni taglie target...");
           await sql`DELETE FROM target_size_annotations`;
           
           // 4. Elimina gli impatti sui cicli
+          console.log("📊 Eliminazione impatti sui cicli...");
           await sql`DELETE FROM cycle_impacts`;
           
           // 5. Elimina i dati delle operazioni di vagliatura
+          console.log("🔍 Eliminazione dati operazioni di vagliatura...");
           await sql`DELETE FROM screening_lot_references`;
           await sql`DELETE FROM screening_basket_history`;
           await sql`DELETE FROM screening_destination_baskets`;
@@ -4594,6 +4601,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`DELETE FROM screening_operations`;
           
           // 6. Elimina i dati delle operazioni di selezione
+          console.log("✅ Eliminazione dati operazioni di selezione...");
           await sql`DELETE FROM selection_lot_references`;
           await sql`DELETE FROM selection_basket_history`;
           await sql`DELETE FROM selection_destination_baskets`;
@@ -4601,18 +4609,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`DELETE FROM selections`;
           
           // 7. Elimina la cronologia delle posizioni dei cestelli
+          console.log("📍 Eliminazione cronologia posizioni cestelli...");
           await sql`DELETE FROM basket_position_history`;
           
           // 8. Elimina le operazioni
+          console.log("⚙️ Eliminazione operazioni...");
           await sql`DELETE FROM operations`;
           
           // 9. Elimina i cicli
+          console.log("🔄 Eliminazione cicli produttivi...");
           await sql`DELETE FROM cycles`;
           
           // 10. Elimina i cestelli
+          console.log("🗑️ Eliminazione cestelli...");
           await sql`DELETE FROM baskets`;
           
           // 11. Resettiamo le sequenze degli ID
+          console.log("🔢 Reset contatori ID di tutte le tabelle...");
           await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`;
@@ -4631,6 +4644,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`ALTER SEQUENCE IF EXISTS operations_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`;
+          
+          console.log("✅ AZZERAMENTO COMPLETATO - Tutte le tabelle operative sono state eliminate e i contatori resettati");
           
           return true; // Successo - commit implicito
         } catch (error) {
