@@ -60,6 +60,18 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     });
   });
   
+  // Debug: mostra tutti i cestelli e le loro posizioni nella mappa
+  console.log("🗺️ DEBUG POSIZIONI COMPLETE:");
+  baskets.forEach((basket: any) => {
+    if (basket.state === 'active') {
+      console.log(`🔴 ATTIVO: Cestello #${basket.physicalNumber} -> ${basket.row}-${basket.position}`, {
+        id: basket.id,
+        state: basket.state,
+        cycleCode: basket.cycleCode
+      });
+    }
+  });
+  
   // Calcola posizioni per riga (divide maxPositions per 2)
   const positionsPerRow = Math.ceil(maxPositions / 2);
   
@@ -68,14 +80,12 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     const basket = baskets.find((b: any) => b.row === row && b.position === position);
     
     // Debug per ogni posizione richiesta
-    if (position <= 3) { // Solo per le prime 3 posizioni per non intasare i log
-      console.log(`🗺️ Cerca posizione ${row}-${position}:`, {
-        found: !!basket,
-        basketId: basket?.id,
-        physicalNumber: basket?.physicalNumber,
-        state: basket?.state
-      });
-    }
+    console.log(`🗺️ Cerca posizione ${row}-${position}:`, {
+      found: !!basket,
+      basketId: basket?.id,
+      physicalNumber: basket?.physicalNumber,
+      state: basket?.state
+    });
     
     if (basket) {
       return {
