@@ -6678,6 +6678,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Endpoint per ottenere le posizioni disponibili in un flupsy
   app.get("/api/flupsys/:id/available-positions", getFlupsyAvailablePositions);
+
+  // Endpoint per invalidare la cache del server
+  app.post('/api/cache/invalidate', (req, res) => {
+    const { keys } = req.body;
+    
+    // Invalida le cache specificate
+    if (keys && Array.isArray(keys)) {
+      keys.forEach(key => {
+        if (key === 'baskets' && storage.basketCache) {
+          storage.basketCache.clear();
+          console.log('🗑️ Cache cestelli invalidata');
+        }
+        if (key === 'operations' && storage.operationCache) {
+          storage.operationCache.clear();
+          console.log('🗑️ Cache operazioni invalidata');
+        }
+        if (key === 'flupsys' && storage.flupsyCache) {
+          storage.flupsyCache.clear();
+          console.log('🗑️ Cache FLUPSY invalidata');
+        }
+      });
+    }
+    
+    res.json({ success: true, invalidated: keys });
+  });
   
   return httpServer;
 }

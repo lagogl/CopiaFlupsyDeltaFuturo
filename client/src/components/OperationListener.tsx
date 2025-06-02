@@ -99,16 +99,12 @@ export function OperationListener() {
         queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
         queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
         
-        // Forza refresh con parametri anti-cache
-        const timestamp = Date.now();
-        queryClient.refetchQueries({ 
-          queryKey: ['/api/baskets', { includeAll: true, _t: timestamp }],
-          type: 'all'
-        });
-        queryClient.refetchQueries({ 
-          queryKey: ['/api/flupsys', { _t: timestamp }],
-          type: 'all' 
-        });
+        // Forza l'invalidazione della cache del server
+        fetch('/api/cache/invalidate', { 
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ keys: ['baskets', 'flupsys', 'operations'] })
+        }).catch(console.error);
         
         toast({
           title: 'Dati Aggiornati',
