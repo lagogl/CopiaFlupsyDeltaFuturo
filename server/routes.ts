@@ -1525,6 +1525,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Usa la nuova implementazione ottimizzata con cache
         console.log("Utilizzo implementazione ottimizzata per le operazioni");
         
+        // Applica headers anti-cache per forzare aggiornamenti
+        forceNoCacheHeaders(res);
+        
         // Chiama la funzione ottimizzata dal controller dedicato
         const result = await getOperationsOptimized({
           page,
@@ -2748,6 +2751,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (includeAll) {
         console.log("Richiesta di tutti i cicli con includeAll=true");
       }
+      
+      // Applica headers anti-cache per forzare aggiornamenti
+      forceNoCacheHeaders(res);
       
       // Utilizzo del controller ottimizzato
       const cyclesController = await import('./controllers/cycles-controller-optimized.js');
@@ -6685,14 +6691,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Middleware anti-cache per API critiche
   function forceNoCacheHeaders(res: any) {
     const timestamp = Date.now();
+    // Disabilita completamente il caching HTTP
     res.set({
-      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0',
+      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0, proxy-revalidate',
       'Pragma': 'no-cache',
       'Expires': '0',
       'Last-Modified': new Date(timestamp).toUTCString(),
-      'ETag': `"${timestamp}"`,
-      'Vary': '*'
+      'ETag': `"${timestamp}-${Math.random()}"`, // ETag sempre unico
+      'Vary': '*',
+      'X-Accel-Expires': '0', // Nginx
+      'Surrogate-Control': 'no-store' // CDN
     });
+    // Disabilita etag per questa risposta
+    res.removeHeader('etag');
   }
 
   // Endpoint per invalidare la cache del server
