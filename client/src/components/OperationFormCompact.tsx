@@ -265,6 +265,14 @@ export default function OperationFormCompact({
     refetchBaskets();
   });
 
+  // Forza il refresh dei cestelli all'apertura della form
+  useEffect(() => {
+    if (!isLoading) {
+      console.log('🔄 FORM: Apertura form - forzo refresh immediato cestelli');
+      refetchBaskets();
+    }
+  }, [isLoading, refetchBaskets]);
+
   // Filtra i cestelli per FLUPSY selezionato
   const [flupsyBaskets, setFlupsyBaskets] = useState<any[]>([]);
   const [isLoadingFlupsyBaskets, setIsLoadingFlupsyBaskets] = useState<boolean>(false);
@@ -907,10 +915,24 @@ export default function OperationFormCompact({
                       {/* Mini-mappa occupazione FLUPSY */}
                       {watchFlupsyId && flupsyBaskets.length > 0 && (
                         <div className="mt-2 p-2 bg-gray-50 rounded-md border">
-                          <div className="text-xs font-medium text-gray-600 mb-1">
-                            Occupazione FLUPSY ({flupsyBaskets.length} cestelli) - 
-                            Attivi: {flupsyBaskets.filter((b: any) => b.state === 'active').length}, 
-                            Disponibili: {flupsyBaskets.filter((b: any) => b.state === 'available').length}
+                          <div className="flex justify-between items-center mb-1">
+                            <div className="text-xs font-medium text-gray-600">
+                              Occupazione FLUPSY ({flupsyBaskets.length} cestelli) - 
+                              Attivi: {flupsyBaskets.filter((b: any) => b.state === 'active').length}, 
+                              Disponibili: {flupsyBaskets.filter((b: any) => b.state === 'available').length}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                console.log('🔄 FORM: Refresh manuale cestelli richiesto');
+                                await refetchBaskets();
+                              }}
+                              className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800"
+                            >
+                              ↻
+                            </Button>
                           </div>
                           <FlupsyMiniMapOptimized 
                             flupsyId={parseInt(watchFlupsyId)}
