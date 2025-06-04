@@ -1,4 +1,6 @@
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useWebSocketMessage } from "@/lib/websocket";
+import { useState, useEffect } from "react";
 
 interface FlupsyMiniMapOptimizedProps {
   flupsyId: number;
@@ -18,21 +20,51 @@ interface PositionInfo {
 }
 
 export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets: preloadedBaskets, showLegend = false, onPositionClick, selectedRow, selectedPosition }: FlupsyMiniMapOptimizedProps) {
-  // Carica solo i cestelli per questo FLUPSY specifico se non sono già forniti
-  const { data: basketsResponse, isLoading } = useQuery({
-    queryKey: ['/api/baskets', flupsyId],
-    queryFn: () => fetch(`/api/baskets?flupsyId=${flupsyId}&includeAll=true`).then(res => res.json()),
-    enabled: !!flupsyId && !preloadedBaskets, // Disabilita query se cestelli già forniti
-    staleTime: 0, // Nessuna cache - aggiornamento immediato per visualizzazione real-time
+  const queryClient = useQueryClient();
+  const [forceUpdate, setForceUpdate] = useState(0);
+  
+  // WebSocket listener per aggiornamenti real-time della mini-mappa
+  useWebSocketMessage('operation_created', () => {
+    console.log('🗺️ MINI-MAPPA: Operazione creata, aggiorno immediatamente');
+    // Invalidazione immediata delle query
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    // Forza re-render del componente
+    setForceUpdate(prev => prev + 1);
+  });
+  
+  useWebSocketMessage('basket_updated', () => {
+    console.log('🗺️ MINI-MAPPA: Cestello aggiornato, aggiorno immediatamente');
+    // Invalidazione immediata delle query
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    // Forza re-render del componente
+    setForceUpdate(prev => prev + 1);
+  });
+  
+  // Carica tutti i cestelli con aggiornamenti real-time FORZATI
+  const { data: basketsResponse, isLoading, refetch } = useQuery({
+    queryKey: ['/api/baskets', 'realtime', forceUpdate],
+    queryFn: () => fetch(`/api/baskets?includeAll=true`).then(res => res.json()),
+    enabled: !!flupsyId,
+    staleTime: 0, // Zero cache per aggiornamenti immediati
     refetchOnWindowFocus: true,
   });
+  
+  // Forza re-fetch quando WebSocket invia aggiornamenti
+  useEffect(() => {
+    if (forceUpdate > 0) {
+      refetch();
+    }
+  }, [forceUpdate, refetch]);
 
   if (isLoading && !preloadedBaskets) {
     return <div className="text-sm text-gray-500">Caricamento mappa...</div>;
   }
 
-  // Usa cestelli precaricati se disponibili, altrimenti usa quelli dalla query
-  const baskets = preloadedBaskets || basketsResponse || [];
+  // Filtra i cestelli per questo FLUPSY specifico dai dati real-time
+  const allBaskets = basketsResponse || preloadedBaskets || [];
+  const baskets = allBaskets.filter((basket: any) => basket.flupsyId === flupsyId);
   
   // Debug per verificare i cestelli ricevuti
   const activeBaskets = baskets.filter((b: any) => b.state === 'active');
