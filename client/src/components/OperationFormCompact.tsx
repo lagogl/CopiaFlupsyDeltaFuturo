@@ -926,31 +926,38 @@ export default function OperationFormCompact({
                               variant="ghost"
                               size="sm"
                               onClick={async () => {
-                                console.log('🔄 FORM: Refresh manuale cestelli richiesto');
-                                // Invalida tutte le cache dei cestelli
-                                queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-                                queryClient.invalidateQueries({ queryKey: ['/api/baskets', 'operation-form'] });
-                                queryClient.removeQueries({ queryKey: ['/api/baskets'] });
+                                console.log('🔄 FORM: Refresh manuale mini-mappa richiesto');
                                 
-                                // Bypass cache del server con timestamp
-                                const timestamp = Date.now();
-                                const freshData = await fetch(`/api/baskets?includeAll=true&_t=${timestamp}`, {
-                                  method: 'GET',
-                                  headers: { 'Cache-Control': 'no-cache' }
-                                }).then(res => res.json());
-                                
-                                console.log('🔄 FORM: Dati freschi dal server:', freshData?.length, 'cestelli');
-                                
-                                // Aggiorna immediatamente i cestelli FLUPSY filtrati
-                                if (watchFlupsyId && freshData) {
-                                  const flupsyIdNum = parseInt(watchFlupsyId);
-                                  const freshFiltered = freshData.filter((basket: any) => basket.flupsyId === flupsyIdNum);
-                                  console.log('🔄 FORM: Aggiornamento immediato flupsyBaskets:', freshFiltered.length, 'cestelli');
-                                  setFlupsyBaskets(freshFiltered);
+                                try {
+                                  // Ricarica immediatamente i dati bypassando tutte le cache
+                                  const timestamp = Date.now();
+                                  const response = await fetch(`/api/baskets?includeAll=true&nocache=${timestamp}`, {
+                                    headers: { 
+                                      'Cache-Control': 'no-cache, no-store, must-revalidate',
+                                      'Pragma': 'no-cache',
+                                      'Expires': '0'
+                                    }
+                                  });
+                                  
+                                  if (response.ok) {
+                                    const freshData = await response.json();
+                                    console.log('🔄 FORM: Dati freschi ricevuti:', freshData?.length, 'cestelli');
+                                    
+                                    // Aggiorna immediatamente lo state locale
+                                    if (watchFlupsyId && freshData) {
+                                      const flupsyIdNum = parseInt(watchFlupsyId);
+                                      const freshFiltered = freshData.filter((basket: any) => basket.flupsyId === flupsyIdNum);
+                                      
+                                      const activeCount = freshFiltered.filter((b: any) => b.state === 'active').length;
+                                      const availableCount = freshFiltered.filter((b: any) => b.state === 'available').length;
+                                      
+                                      console.log('🔄 FORM: Aggiornamento immediato - Attivi:', activeCount, 'Disponibili:', availableCount);
+                                      setFlupsyBaskets(freshFiltered);
+                                    }
+                                  }
+                                } catch (error) {
+                                  console.error('🔄 FORM: Errore refresh:', error);
                                 }
-                                
-                                // Forza il refresh della query
-                                await refetchBaskets();
                               }}
                               className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800"
                             >
