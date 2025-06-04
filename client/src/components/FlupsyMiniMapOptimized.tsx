@@ -42,12 +42,12 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     setForceUpdate(prev => prev + 1);
   });
   
-  // Carica tutti i cestelli solo una volta, aggiornamenti tramite WebSocket
+  // Carica tutti i cestelli con staleTime ridotto per aggiornamenti immediati
   const { data: basketsResponse, isLoading, refetch } = useQuery({
     queryKey: ['/api/baskets', 'minimap', flupsyId, forceUpdate],
     queryFn: () => fetch(`/api/baskets?includeAll=true`).then(res => res.json()),
     enabled: !!flupsyId,
-    staleTime: Infinity, // Cache infinita, aggiornamenti solo via WebSocket
+    staleTime: 0, // Nessuna cache - sempre dati freschi per mini-mappa
     refetchInterval: false, // Disabilita polling automatico
     refetchOnWindowFocus: false, // Disabilita refresh su focus
   });
@@ -69,6 +69,21 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
   
   // Debug per verificare i cestelli ricevuti
   const activeBaskets = baskets.filter((b: any) => b.state === 'active');
+  
+  // Debug dettagliato del basket #10 per capire il problema
+  const basket10 = baskets.find((b: any) => b.physicalNumber === 10);
+  if (basket10) {
+    console.log("🗺️ BASKET #10 DEBUG DETTAGLIATO:", {
+      id: basket10.id,
+      physicalNumber: basket10.physicalNumber,
+      state: basket10.state,
+      currentCycleId: basket10.currentCycleId,
+      cycleCode: basket10.cycleCode,
+      row: basket10.row,
+      position: basket10.position,
+      flupsyId: basket10.flupsyId
+    });
+  }
   
   console.log("🗺️ MINI-MAPPA Debug:", {
     flupsyId,

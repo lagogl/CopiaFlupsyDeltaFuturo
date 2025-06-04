@@ -151,13 +151,13 @@ export const queryClient = new QueryClient({
   defaultOptions: {
     queries: {
       queryFn: getQueryFn({ on401: "throw" }),
-      refetchInterval: false,
+      refetchInterval: false, // Disabilita polling automatico
       refetchIntervalInBackground: false,
       refetchOnMount: true, // Permetti caricamento iniziale
-      refetchOnReconnect: false,
-      refetchOnWindowFocus: false,
-      staleTime: Infinity,
-      gcTime: Infinity,
+      refetchOnReconnect: true, // Riconnetti quando torna online
+      refetchOnWindowFocus: false, // Evita refetch su focus finestra
+      staleTime: 30 * 1000, // 30 secondi - dati freschi per operazioni
+      gcTime: 5 * 60 * 1000, // 5 minuti garbage collection
       retry: false,
     },
     mutations: {

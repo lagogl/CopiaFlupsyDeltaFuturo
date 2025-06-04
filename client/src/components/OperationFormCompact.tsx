@@ -226,19 +226,20 @@ export default function OperationFormCompact({
     enabled: !isLoading,
   });
   
-  const { data: baskets } = useQuery({ 
+  const { data: baskets, refetch: refetchBaskets } = useQuery({ 
     queryKey: ['/api/baskets'],
     queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
     enabled: !isLoading,
-    staleTime: Infinity, // Cache infinita - aggiornamenti solo via WebSocket
+    staleTime: 0, // Nessuna cache - sempre dati freschi per operazioni
     refetchInterval: false, // Disabilita polling automatico
     refetchOnMount: true, // Permetti caricamento iniziale per form operazioni
     refetchOnWindowFocus: false, // Disabilita refetch su focus
   });
   
-  const { data: cycles } = useQuery({ 
+  const { data: cycles, refetch: refetchCycles } = useQuery({ 
     queryKey: ['/api/cycles'],
     enabled: !isLoading,
+    staleTime: 0, // Nessuna cache - sempre dati freschi per cicli
   });
   
   const { data: lots } = useQuery({ 
