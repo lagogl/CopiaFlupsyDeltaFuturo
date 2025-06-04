@@ -927,7 +927,13 @@ export default function OperationFormCompact({
                               size="sm"
                               onClick={async () => {
                                 console.log('🔄 FORM: Refresh manuale cestelli richiesto');
-                                await refetchBaskets();
+                                // Invalida tutte le cache dei cestelli
+                                queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+                                queryClient.invalidateQueries({ queryKey: ['/api/baskets', 'operation-form'] });
+                                queryClient.removeQueries({ queryKey: ['/api/baskets'] });
+                                // Forza il refresh
+                                const freshData = await refetchBaskets();
+                                console.log('🔄 FORM: Dati aggiornati:', freshData?.data?.length, 'cestelli');
                               }}
                               className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800"
                             >
