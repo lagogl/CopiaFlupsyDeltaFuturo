@@ -230,9 +230,10 @@ export default function OperationFormCompact({
     queryKey: ['/api/baskets'],
     queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
     enabled: !isLoading,
-    staleTime: 0, // Nessuna cache - sempre aggiornato per form operazioni
-    refetchOnMount: true,
-    refetchOnWindowFocus: true,
+    staleTime: Infinity, // Cache infinita - aggiornamenti solo via WebSocket
+    refetchInterval: false, // Disabilita polling automatico
+    refetchOnMount: false, // Disabilita refetch su mount
+    refetchOnWindowFocus: false, // Disabilita refetch su focus
   });
   
   const { data: cycles } = useQuery({ 

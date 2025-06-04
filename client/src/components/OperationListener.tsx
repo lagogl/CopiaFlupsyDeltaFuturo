@@ -70,21 +70,21 @@ export function OperationListener() {
     queryClient.invalidateQueries({ queryKey: ['/api/basket-positions'] });
   };
   
-  // Sistema di polling per rilevare cambiamenti nei dati
+  // Disabilitato polling - solo aggiornamenti WebSocket
   const { data: operationsData } = useQuery({
     queryKey: ['/api/operations'],
-    refetchInterval: 2000, // Controlla ogni 2 secondi
-    refetchIntervalInBackground: true,
-    staleTime: 0, // Considera sempre i dati obsoleti
-    gcTime: 0 // Non mantiene cache
+    refetchInterval: false, // DISABILITATO - solo WebSocket updates
+    refetchOnWindowFocus: false,
+    staleTime: Infinity, // Cache infinita - aggiornamenti solo via WebSocket
+    enabled: false // Completamente disabilitato - non più necessario con WebSocket
   });
 
   const { data: basketsData } = useQuery({
     queryKey: ['/api/baskets', { includeAll: true }],
-    refetchInterval: 2000, // Controlla ogni 2 secondi
-    refetchIntervalInBackground: true,
-    staleTime: 0, // Considera sempre i dati obsoleti
-    gcTime: 0 // Non mantiene cache
+    refetchInterval: false, // DISABILITATO - solo WebSocket updates  
+    refetchOnWindowFocus: false,
+    staleTime: Infinity, // Cache infinita - aggiornamenti solo via WebSocket
+    enabled: false // Completamente disabilitato - non più necessario con WebSocket
   });
 
   // Controlla cambiamenti nel numero di operazioni
