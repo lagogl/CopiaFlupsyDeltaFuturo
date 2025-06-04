@@ -370,6 +370,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
           finalPageSize = 1000; // Valore sufficientemente alto per includere tutti i cestelli
         }
         
+        // Applica headers anti-cache per forzare aggiornamenti
+        forceNoCacheHeaders(res);
+        
         const result = await getBasketsOptimized({
           page,
           pageSize: finalPageSize,
@@ -6679,6 +6682,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Endpoint per ottenere le posizioni disponibili in un flupsy
   app.get("/api/flupsys/:id/available-positions", getFlupsyAvailablePositions);
 
+  // Middleware anti-cache per API critiche
+  function forceNoCacheHeaders(res: any) {
+    const timestamp = Date.now();
+    res.set({
+      'Cache-Control': 'no-cache, no-store, must-revalidate, max-age=0, s-maxage=0',
+      'Pragma': 'no-cache',
+      'Expires': '0',
+      'Last-Modified': new Date(timestamp).toUTCString(),
+      'ETag': `"${timestamp}"`,
+      'Vary': '*'
+    });
+  }
+
   // Endpoint per invalidare la cache del server
   app.post('/api/cache/invalidate', (req, res) => {
     const { keys } = req.body;
@@ -6701,6 +6717,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
     
+    forceNoCacheHeaders(res);
     res.json({ success: true, invalidated: keys });
   });
   
