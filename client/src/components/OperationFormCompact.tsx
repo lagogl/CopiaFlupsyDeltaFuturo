@@ -227,13 +227,14 @@ export default function OperationFormCompact({
   });
   
   const { data: baskets, refetch: refetchBaskets } = useQuery({ 
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets', 'operation-form'],
     queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
     enabled: !isLoading,
     staleTime: 0, // Nessuna cache - sempre dati freschi per operazioni
     refetchInterval: false, // Disabilita polling automatico
     refetchOnMount: true, // Permetti caricamento iniziale per form operazioni
     refetchOnWindowFocus: false, // Disabilita refetch su focus
+    refetchOnReconnect: true, // Ricarica quando si riconnette
   });
   
   const { data: cycles, refetch: refetchCycles } = useQuery({ 
@@ -250,6 +251,18 @@ export default function OperationFormCompact({
   const { data: operations } = useQuery({ 
     queryKey: ['/api/operations'],
     enabled: !isLoading,
+  });
+
+  // WebSocket listener per aggiornamenti immediati dei cestelli quando si creano operazioni
+  useWebSocketMessage('operation_created', () => {
+    console.log('🔄 FORM: Operazione creata, aggiorno cestelli immediatamente');
+    refetchBaskets();
+    refetchCycles();
+  });
+
+  useWebSocketMessage('basket_updated', () => {
+    console.log('🔄 FORM: Cestello aggiornato, aggiorno dati immediatamente'); 
+    refetchBaskets();
   });
 
   // Filtra i cestelli per FLUPSY selezionato
@@ -278,10 +291,21 @@ export default function OperationFormCompact({
       const flupsyIdNum = parseInt(watchFlupsyId);
       const filtered = baskets.filter((basket: any) => basket.flupsyId === flupsyIdNum);
       
-      // Log per debug
+      // Log per debug - mostra stato attuale dei cestelli
       console.log("🔍 Filtro cestelli per FLUPSY ID:", flupsyIdNum);
       console.log("Cestelli filtrati per FLUPSY:", filtered);
       console.log("TOTALE cestelli trovati:", filtered.length);
+      
+      // Debug dettagliato degli stati
+      const activeBasketsCount = filtered.filter(b => b.state === 'active').length;
+      const availableBasketsCount = filtered.filter(b => b.state === 'available').length;
+      
+      console.log("🎯 STATI CESTELLI AGGIORNATI:", {
+        attivi: activeBasketsCount,
+        disponibili: availableBasketsCount,
+        totali: filtered.length
+      });
+      
       if (filtered.length > 0) {
         console.log("Esempio cestello #1:", filtered[0]);
         console.log("- State:", filtered[0].state);
