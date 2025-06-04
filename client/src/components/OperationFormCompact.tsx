@@ -941,6 +941,14 @@ export default function OperationFormCompact({
                                 
                                 console.log('🔄 FORM: Dati freschi dal server:', freshData?.length, 'cestelli');
                                 
+                                // Aggiorna immediatamente i cestelli FLUPSY filtrati
+                                if (watchFlupsyId && freshData) {
+                                  const flupsyIdNum = parseInt(watchFlupsyId);
+                                  const freshFiltered = freshData.filter((basket: any) => basket.flupsyId === flupsyIdNum);
+                                  console.log('🔄 FORM: Aggiornamento immediato flupsyBaskets:', freshFiltered.length, 'cestelli');
+                                  setFlupsyBaskets(freshFiltered);
+                                }
+                                
                                 // Forza il refresh della query
                                 await refetchBaskets();
                               }}
