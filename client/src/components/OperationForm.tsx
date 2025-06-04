@@ -3,7 +3,8 @@ import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { useWebSocketMessage } from "@/lib/websocket";
 import { Button } from "@/components/ui/button";
 import {
   Form,
@@ -157,8 +158,20 @@ export default function OperationForm({
 }: OperationFormProps) {
   // Stato per il dialogo di conferma delle operazioni misura che cambiano il numero di animali
   const { toast } = useToast();
+  const queryClient = useQueryClient();
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
   const [pendingValues, setPendingValues] = useState<any | null>(null);
+  
+  // WebSocket per aggiornamenti real-time della mini-mappa FLUPSY
+  useWebSocketMessage('operation_created', () => {
+    console.log('🔄 FORM REGISTRAZIONE: Operazione creata, invalidazione cache cestelli per mini-mappa');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+  });
+  
+  useWebSocketMessage('basket_updated', () => {
+    console.log('🔄 FORM REGISTRAZIONE: Cestello aggiornato, invalidazione cache cestelli per mini-mappa');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+  });
   
   // Fetch related data
   const { data: baskets } = useQuery({
