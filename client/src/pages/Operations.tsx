@@ -117,6 +117,26 @@ import { useLocation, useSearch } from 'wouter';
 import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 
 export default function Operations() {
+  const queryClient = useQueryClient();
+  
+  // WebSocket listeners per aggiornamenti real-time
+  useWebSocketMessage('operation_created', () => {
+    console.log('📋 OPERATIONS: Nuova operazione creata, aggiorno lista');
+    // Invalida tutte le query delle operazioni per forzare l'aggiornamento
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations-optimized'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+  });
+  
+  useWebSocketMessage('basket_updated', () => {
+    console.log('📋 OPERATIONS: Cestello aggiornato, aggiorno dati');
+    // Invalida le query correlate
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations-optimized'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+  });
+  
   // Filtri persistenti usando il nostro hook personalizzato
   const [filters, setFilters] = useFilterPersistence('operations', {
     searchTerm: '',
