@@ -232,7 +232,7 @@ export default function OperationFormCompact({
     enabled: !isLoading,
     staleTime: Infinity, // Cache infinita - aggiornamenti solo via WebSocket
     refetchInterval: false, // Disabilita polling automatico
-    refetchOnMount: false, // Disabilita refetch su mount
+    refetchOnMount: true, // Permetti caricamento iniziale per form operazioni
     refetchOnWindowFocus: false, // Disabilita refetch su focus
   });
   

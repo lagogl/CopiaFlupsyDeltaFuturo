@@ -153,13 +153,12 @@ export const queryClient = new QueryClient({
       queryFn: getQueryFn({ on401: "throw" }),
       refetchInterval: false,
       refetchIntervalInBackground: false,
-      refetchOnMount: false,
+      refetchOnMount: true, // Permetti caricamento iniziale
       refetchOnReconnect: false,
       refetchOnWindowFocus: false,
       staleTime: Infinity,
       gcTime: Infinity,
       retry: false,
-      notifyOnChangeProps: [],
     },
     mutations: {
       retry: false,
