@@ -2012,6 +2012,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const newOperation = await storage.createOperation(operationData);
           console.log("OPERAZIONE CREATA CON SUCCESSO:", JSON.stringify(newOperation, null, 2));
           
+          // Invalida la cache delle operazioni per aggiornamenti istantanei
+          const { OperationsCache } = await import('./operations-cache-service.js');
+          OperationsCache.clear();
+          console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
+          
           // Broadcast operation created event via WebSockets
           // Notifica WebSocket per invalidazione cache
           try {
