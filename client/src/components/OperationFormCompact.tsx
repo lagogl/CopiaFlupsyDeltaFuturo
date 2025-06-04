@@ -9,7 +9,7 @@ import {
   MapPin, Link, Scale, Ruler 
 } from "lucide-react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
-import { useWebSocket } from "@/lib/websocket";
+import { useWebSocketMessage } from "@/lib/websocket";
 
 import FlupsyMiniMap from "./FlupsyMiniMap";
 import FlupsyMiniMapOptimized from "./FlupsyMiniMapOptimized";
@@ -120,14 +120,14 @@ export default function OperationFormCompact({
   const { toast } = useToast();
   
   // WebSocket per aggiornamenti real-time della mini-mappa
-  useWebSocket({
-    onMessage: (message) => {
-      if (message.type === 'operation_created' || message.type === 'basket_updated') {
-        console.log('🔄 FORM OPERAZIONI: Aggiornamento WebSocket ricevuto, invalidazione cache cestelli per mini-mappa');
-        // Invalida cache cestelli per aggiornare immediatamente la mini-mappa
-        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-      }
-    }
+  useWebSocketMessage('operation_created', () => {
+    console.log('🔄 FORM OPERAZIONI: Operazione creata, invalidazione cache cestelli per mini-mappa');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+  });
+  
+  useWebSocketMessage('basket_updated', () => {
+    console.log('🔄 FORM OPERAZIONI: Cestello aggiornato, invalidazione cache cestelli per mini-mappa');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
   });
   
   // Definizione del form con validazione
