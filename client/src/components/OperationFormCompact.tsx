@@ -931,9 +931,18 @@ export default function OperationFormCompact({
                                 queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
                                 queryClient.invalidateQueries({ queryKey: ['/api/baskets', 'operation-form'] });
                                 queryClient.removeQueries({ queryKey: ['/api/baskets'] });
-                                // Forza il refresh
-                                const freshData = await refetchBaskets();
-                                console.log('🔄 FORM: Dati aggiornati:', freshData?.data?.length, 'cestelli');
+                                
+                                // Bypass cache del server con timestamp
+                                const timestamp = Date.now();
+                                const freshData = await fetch(`/api/baskets?includeAll=true&_t=${timestamp}`, {
+                                  method: 'GET',
+                                  headers: { 'Cache-Control': 'no-cache' }
+                                }).then(res => res.json());
+                                
+                                console.log('🔄 FORM: Dati freschi dal server:', freshData?.length, 'cestelli');
+                                
+                                // Forza il refresh della query
+                                await refetchBaskets();
                               }}
                               className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800"
                             >
