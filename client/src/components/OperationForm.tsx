@@ -165,12 +165,31 @@ export default function OperationForm({
   // WebSocket per aggiornamenti real-time della mini-mappa FLUPSY
   useWebSocketMessage('operation_created', () => {
     console.log('🔄 FORM REGISTRAZIONE: Operazione creata, invalidazione cache cestelli per mini-mappa');
+    // Invalida tutte le cache correlate
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
   });
   
   useWebSocketMessage('basket_updated', () => {
     console.log('🔄 FORM REGISTRAZIONE: Cestello aggiornato, invalidazione cache cestelli per mini-mappa');
+    // Invalida tutte le cache correlate
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+  });
+  
+  useWebSocketMessage('data_cleared', () => {
+    console.log('🔄 FORM REGISTRAZIONE: Dati eliminati, invalidazione totale cache');
+    // Invalida tutte le cache quando vengono eliminati dati
+    queryClient.invalidateQueries();
+  });
+  
+  useWebSocketMessage('basket_deleted', () => {
+    console.log('🔄 FORM REGISTRAZIONE: Cestello eliminato, invalidazione cache');
+    // Invalida tutte le cache correlate
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
   });
   
   // Fetch related data

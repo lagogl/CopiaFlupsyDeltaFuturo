@@ -197,13 +197,16 @@ export default function Operations() {
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
   
-  // Query operations utilizzando l'API ottimizzata con paginazione
+  // Query operations utilizzando l'API ottimizzata con paginazione - SOLO WebSocket updates
   const { 
     data: operationsData, 
     isLoading: isLoadingOperations, 
     refetch: refetchOperations 
   } = useQuery<{operations: Operation[], pagination: {page: number, pageSize: number, totalItems: number, totalPages: number}}>({
     queryKey: ['/api/operations-optimized', currentPage, pageSize, filters.typeFilter, filters.flupsyFilter, filters.cycleFilter, filters.dateFilter],
+    staleTime: Infinity, // Cache infinita - aggiornamenti solo via WebSocket
+    refetchInterval: false, // Disabilita polling automatico
+    refetchOnWindowFocus: false, // Disabilita refresh su focus
     queryFn: async () => {
       // Costruisci i parametri della query in base ai filtri
       const queryParams = new URLSearchParams();

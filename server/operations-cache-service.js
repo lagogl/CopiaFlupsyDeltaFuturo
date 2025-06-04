@@ -8,8 +8,8 @@
 class OperationsCacheService {
   constructor() {
     this.cache = new Map();
-    this.ttl = 10; // 10 secondi per aggiornamenti più rapidi del registro operazioni
-    console.log('Servizio cache operazioni inizializzato con TTL ridotto per aggiornamenti rapidi');
+    this.ttl = Infinity; // Cache infinita - aggiornamenti solo via WebSocket invalidation
+    console.log('Servizio cache operazioni inizializzato con cache infinita - aggiornamenti solo via WebSocket');
   }
 
   /**
@@ -38,12 +38,13 @@ class OperationsCacheService {
    * @param {Object} data - I dati da memorizzare
    */
   set(key, data) {
-    const expiresAt = Date.now() + (this.ttl * 1000);
+    const expiresAt = this.ttl === Infinity ? Infinity : Date.now() + (this.ttl * 1000);
     this.cache.set(key, {
       data,
       expiresAt
     });
-    console.log(`Cache: dati salvati con chiave "${key}", scadenza in ${this.ttl} secondi`);
+    const ttlMsg = this.ttl === Infinity ? 'infinita (solo WebSocket invalidation)' : `${this.ttl} secondi`;
+    console.log(`Cache: dati salvati con chiave "${key}", scadenza ${ttlMsg}`);
   }
 
   /**

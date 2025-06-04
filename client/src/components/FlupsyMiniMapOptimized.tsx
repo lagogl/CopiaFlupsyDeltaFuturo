@@ -42,13 +42,14 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     setForceUpdate(prev => prev + 1);
   });
   
-  // Carica tutti i cestelli con aggiornamenti real-time FORZATI
+  // Carica tutti i cestelli solo una volta, aggiornamenti tramite WebSocket
   const { data: basketsResponse, isLoading, refetch } = useQuery({
-    queryKey: ['/api/baskets', 'realtime', forceUpdate],
+    queryKey: ['/api/baskets', 'minimap', flupsyId, forceUpdate],
     queryFn: () => fetch(`/api/baskets?includeAll=true`).then(res => res.json()),
     enabled: !!flupsyId,
-    staleTime: 0, // Zero cache per aggiornamenti immediati
-    refetchOnWindowFocus: true,
+    staleTime: Infinity, // Cache infinita, aggiornamenti solo via WebSocket
+    refetchInterval: false, // Disabilita polling automatico
+    refetchOnWindowFocus: false, // Disabilita refresh su focus
   });
   
   // Forza re-fetch quando WebSocket invia aggiornamenti
