@@ -1852,6 +1852,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const operation = await storage.createOperation(operationData);
           console.log("OPERAZIONE PRIMA-ATTIVAZIONE CREATA CON SUCCESSO:", JSON.stringify(operation, null, 2));
           
+          // Invalida la cache delle operazioni per aggiornamenti istantanei
+          const { OperationsCache } = await import('./operations-cache-service.js');
+          OperationsCache.clear();
+          console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
+          
           // Broadcast operation created event via WebSockets
           if (typeof (global as any).broadcastUpdate === 'function') {
             console.log("Invio notifica WebSocket per nuova operazione");
@@ -1960,6 +1965,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
             animalCount: parsedData.data.animalCount
           };
           const newOperation = await storage.createOperation(operationData);
+          
+          // Invalida la cache delle operazioni per aggiornamenti istantanei
+          const { OperationsCache } = await import('./operations-cache-service.js');
+          OperationsCache.clear();
+          console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
           
           // Then close the cycle
           await storage.closeCycle(cycleId, format(date, 'yyyy-MM-dd'));

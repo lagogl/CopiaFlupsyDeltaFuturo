@@ -8,8 +8,8 @@
 class OperationsCacheService {
   constructor() {
     this.cache = new Map();
-    this.ttl = 120; // 2 minuti (in secondi)
-    console.log('Servizio cache operazioni inizializzato');
+    this.ttl = 10; // 10 secondi per aggiornamenti più rapidi del registro operazioni
+    console.log('Servizio cache operazioni inizializzato con TTL ridotto per aggiornamenti rapidi');
   }
 
   /**
