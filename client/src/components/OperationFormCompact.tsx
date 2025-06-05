@@ -929,9 +929,21 @@ export default function OperationFormCompact({
                                 console.log('🔄 FORM: Refresh manuale mini-mappa richiesto');
                                 
                                 try {
-                                  // Ricarica immediatamente i dati bypassando tutte le cache
+                                  // Prima invalida le cache client-side
+                                  queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+                                  queryClient.removeQueries({ queryKey: ['/api/baskets'] });
+                                  
+                                  // Poi invalida la cache del server
+                                  await fetch('/api/baskets/invalidate-cache', {
+                                    method: 'POST',
+                                    headers: { 'Content-Type': 'application/json' }
+                                  }).catch(() => {
+                                    console.log('🔄 FORM: Endpoint invalidazione cache non disponibile, procedo con bypass');
+                                  });
+                                  
+                                  // Ricarica immediatamente i dati con timestamp unico
                                   const timestamp = Date.now();
-                                  const response = await fetch(`/api/baskets?includeAll=true&nocache=${timestamp}`, {
+                                  const response = await fetch(`/api/baskets?includeAll=true&force_refresh=${timestamp}`, {
                                     headers: { 
                                       'Cache-Control': 'no-cache, no-store, must-revalidate',
                                       'Pragma': 'no-cache',
@@ -942,6 +954,11 @@ export default function OperationFormCompact({
                                   if (response.ok) {
                                     const freshData = await response.json();
                                     console.log('🔄 FORM: Dati freschi ricevuti:', freshData?.length, 'cestelli');
+                                    
+                                    // Debug: mostra stato di ogni cestello
+                                    freshData.forEach((basket: any) => {
+                                      console.log(`🔄 FORM: Cestello #${basket.physicalNumber} - State: ${basket.state}, CycleId: ${basket.currentCycleId}`);
+                                    });
                                     
                                     // Aggiorna immediatamente lo state locale
                                     if (watchFlupsyId && freshData) {
