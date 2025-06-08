@@ -110,12 +110,8 @@ export async function getBasketsOptimized(options = {}) {
     includeAll
   });
   
-  // Controlla se i dati sono in cache
-  const cachedData = BasketsCache.get(cacheKey);
-  if (cachedData) {
-    console.log(`Cestelli recuperati dalla cache in ${Date.now() - startTime}ms`);
-    return cachedData;
-  }
+  // DISABILITA CACHE - sempre dati freschi per sincronizzazione real-time
+  console.log('🔄 CESTELLI: Cache disabilitata, recupero dati freschi dal database');
   
   console.log(`Richiesta cestelli ottimizzata con opzioni:`, options);
   
@@ -330,8 +326,8 @@ export async function getBasketsOptimized(options = {}) {
       }
     };
     
-    // Salva in cache
-    BasketsCache.set(cacheKey, result);
+    // CACHE DISABILITATA - non salvare dati in cache per garantire sincronizzazione real-time
+    console.log('🔄 CESTELLI: Cache disabilitata, dati NON salvati in cache');
     
     const duration = Date.now() - startTime;
     console.log(`Query cestelli completata in ${duration}ms: ${enrichedBaskets.length} risultati su ${totalItems} totali`);
