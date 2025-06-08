@@ -300,10 +300,11 @@ export default function BasketForm({
                   field.onChange(numValue);
                   setSelectedFlupsyId(numValue);
                   
-                  // Reset position and row when changing FLUPSY
+                  // Reset position, row and basket number when changing FLUPSY
                   if (!basketId) {
                     form.setValue('position', undefined);
                     form.setValue('row', '');
+                    form.setValue('physicalNumber', undefined);
                     setSelectedRow(null);
                   }
                 }}
