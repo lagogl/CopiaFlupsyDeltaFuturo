@@ -339,10 +339,15 @@ export default function BasketForm({
 
         {/* Mini-mappa del FLUPSY per visualizzare le posizioni occupate */}
         {selectedFlupsyId && selectedFlupsy && (
-          <div className="bg-gray-50 p-2 rounded border">
-            <h4 className="text-xs font-medium text-gray-600 mb-2">
-              Mappa posizioni FLUPSY
+          <div className="bg-gray-50 p-3 rounded border">
+            <h4 className="text-sm font-medium text-gray-700 mb-2">
+              Selezione Posizione
             </h4>
+            <p className="text-xs text-gray-600 mb-3">
+              <strong>Due modalità alternative:</strong><br/>
+              • <strong>Doppio click sulla mappa:</strong> seleziona direttamente la posizione libera (cerchietto bianco)<br/>
+              • <strong>Inserimento manuale:</strong> utilizza i campi "Fila" e "Posizione" qui sotto
+            </p>
             <FlupsyMiniMapOptimized
               flupsyId={selectedFlupsyId}
               maxPositions={selectedFlupsy.maxPositions || 10}
@@ -355,12 +360,19 @@ export default function BasketForm({
                   // Annulla selezione - ripristina valori iniziali
                   form.setValue('row', '');
                   form.setValue('position', undefined);
+                  form.setValue('physicalNumber', undefined);
                   setSelectedRow(null);
                 } else {
-                  // Imposta nuova selezione
+                  // Imposta nuova selezione dalla mini-mappa
                   form.setValue('row', row);
                   form.setValue('position', position);
                   setSelectedRow(row);
+                  
+                  // Calcola il numero cestello basato sulla posizione
+                  // DX: posizioni 1-10 -> numeri 1-10
+                  // SX: posizioni 1-10 -> numeri 11-20
+                  const calculatedNumber = row === 'DX' ? position : (selectedFlupsy?.maxPositions || 10) + position;
+                  form.setValue('physicalNumber', calculatedNumber);
                 }
               }}
             />
