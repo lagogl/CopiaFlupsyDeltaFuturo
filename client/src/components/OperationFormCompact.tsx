@@ -292,7 +292,7 @@ export default function OperationFormCompact({
 
   // Aggiorna la lista di cestelli quando cambia il FLUPSY selezionato
   useEffect(() => {
-    if (watchFlupsyId && baskets) {
+    if (watchFlupsyId && baskets && baskets.length > 0) {
       setIsLoadingFlupsyBaskets(true);
       const flupsyIdNum = parseInt(watchFlupsyId);
       const filtered = baskets.filter((basket: any) => basket.flupsyId === flupsyIdNum);
@@ -329,10 +329,23 @@ export default function OperationFormCompact({
         });
       }
       
+      // Aggiorna immediatamente lo state
+      console.log("🔧 SETTING flupsyBaskets to:", filtered.length, "items");
       setFlupsyBaskets(filtered);
+      
+      // Piccolo delay per assicurarsi che il state sia aggiornato
+      setTimeout(() => {
+        setIsLoadingFlupsyBaskets(false);
+        console.log("🔧 LOADING COMPLETED for flupsyBaskets");
+      }, 50);
+    } else if (watchFlupsyId && (!baskets || baskets.length === 0)) {
+      console.log("🔧 FLUPSY selezionato ma nessun cestello disponibile");
+      setFlupsyBaskets([]);
       setIsLoadingFlupsyBaskets(false);
     } else {
+      console.log("🔧 RESET flupsyBaskets - nessun FLUPSY selezionato");
       setFlupsyBaskets([]);
+      setIsLoadingFlupsyBaskets(false);
     }
   }, [watchFlupsyId, baskets]);
 
@@ -910,7 +923,102 @@ export default function OperationFormCompact({
                         </SelectContent>
                       </Select>
                       
-                      {/* Mini-mappa occupazione FLUPSY */}
+                      {/* Debug: stato mini-mappa */}
+                      {console.log("🗺️ DEBUG MINI-MAPPA:", {
+                        watchFlupsyId,
+                        flupsyBasketsLength: flupsyBaskets.length,
+                        isLoadingFlupsyBaskets,
+                        basketsLength: baskets?.length || 0,
+                        filteredBaskets: baskets ? baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId || '0')).length : 0,
+                        timestamp: Date.now()
+                      })}
+                      
+                      {/* Mini-mappa occupazione FLUPSY - TEMPORANEAMENTE FORZA VISUALIZZAZIONE */}
+                      {watchFlupsyId && baskets && baskets.length > 0 && (
+                        <div className="mt-2 p-2 bg-gray-50 rounded-md border">
+                          <div className="flex justify-between items-center mb-1">
+                            <div className="text-xs font-medium text-gray-600">
+                              Occupazione FLUPSY (Test: {baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)).length} cestelli) - 
+                              Attivi: {baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId) && b.state === 'active').length}, 
+                              Disponibili: {baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId) && b.state === 'available').length}
+                            </div>
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={async () => {
+                                console.log('🔄 FORM: Refresh manuale mini-mappa richiesto');
+                                
+                                try {
+                                  // Prima invalida le cache client-side
+                                  await queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+                                  
+                                  // Poi ricarica i dati freschi dal server
+                                  const response = await fetch('/api/baskets?includeAll=true', {
+                                    headers: {
+                                      'Cache-Control': 'no-cache',
+                                      'Pragma': 'no-cache'
+                                    }
+                                  });
+                                  
+                                  if (response.ok) {
+                                    const freshData = await response.json();
+                                    console.log('🔄 FORM: Dati freschi ricevuti:', freshData?.length, 'cestelli');
+                                    
+                                    // Debug: mostra stato di ogni cestello
+                                    freshData.forEach((basket: any) => {
+                                      console.log(`🔄 FORM: Cestello #${basket.physicalNumber} - State: ${basket.state}, CycleId: ${basket.currentCycleId}`);
+                                    });
+                                    
+                                    // Aggiorna immediatamente lo state locale
+                                    if (watchFlupsyId && freshData) {
+                                      const flupsyIdNum = parseInt(watchFlupsyId);
+                                      const freshFiltered = freshData.filter((basket: any) => basket.flupsyId === flupsyIdNum);
+                                      
+                                      const activeCount = freshFiltered.filter((b: any) => b.state === 'active').length;
+                                      const availableCount = freshFiltered.filter((b: any) => b.state === 'available').length;
+                                      
+                                      console.log('🔄 FORM: Aggiornamento immediato - Attivi:', activeCount, 'Disponibili:', availableCount);
+                                      setFlupsyBaskets(freshFiltered);
+                                    }
+                                  }
+                                } catch (error) {
+                                  console.error('🔄 FORM: Errore refresh:', error);
+                                }
+                              }}
+                              className="h-6 px-2 text-xs text-blue-600 hover:text-blue-800"
+                            >
+                              ↻
+                            </Button>
+                          </div>
+                          <FlupsyMiniMapOptimized 
+                            flupsyId={parseInt(watchFlupsyId)}
+                            maxPositions={(() => {
+                              const selectedFlupsy = flupsys?.find((f: any) => f.id === parseInt(watchFlupsyId));
+                              return selectedFlupsy?.maxPositions || 10;
+                            })()}
+                            showLegend={false}
+                            preloadedBaskets={baskets ? baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)) : []}
+                            onPositionClick={(row, position) => {
+                              if (row === '' && position === 0) {
+                                // Deseleziona
+                                form.setValue('basketId', null);
+                              } else {
+                                // Trova il cestello in quella posizione
+                                const basket = baskets?.find((b: any) => 
+                                  b.flupsyId === parseInt(watchFlupsyId) && b.row === row && b.position === position
+                                );
+                                if (basket) {
+                                  form.setValue('basketId', basket.id);
+                                }
+                              }
+                            }}
+                            selectedBasketId={watchBasketId}
+                          />
+                        </div>
+                      )}
+                      
+                      {/* Mini-mappa occupazione FLUPSY - ORIGINALE */}
                       {watchFlupsyId && flupsyBaskets.length > 0 && (
                         <div className="mt-2 p-2 bg-gray-50 rounded-md border">
                           <div className="flex justify-between items-center mb-1">
@@ -1166,8 +1274,9 @@ export default function OperationFormCompact({
                           </SelectTrigger>
                         </FormControl>
                         <SelectContent>
-                          {flupsyBaskets.length > 0 ? (
-                            flupsyBaskets.map((basket) => {
+                          {/* TEMPORANEO: usa baskets direttamente invece di flupsyBaskets */}
+                          {(baskets && watchFlupsyId ? baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)) : []).length > 0 ? (
+                            (baskets ? baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)) : []).map((basket) => {
                               // Trova l'ultima operazione per questo cestello dalle operazioni caricate
                               const basketOperations = operations?.filter((op: any) => 
                                 op.basketId === basket.id && 
