@@ -40,9 +40,18 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
     queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    queryClient.invalidateQueries({ queryKey: ['mini-map-baskets'] });
     // Forza re-render del componente
     setForceUpdate(prev => prev + 1);
   });
+  
+  // Reset quando cambia il FLUPSY
+  useEffect(() => {
+    if (flupsyId) {
+      console.log('🗺️ MINI-MAPPA: Reset per FLUPSY', flupsyId);
+      setForceUpdate(prev => prev + 1);
+    }
+  }, [flupsyId]);
   
   useWebSocketMessage('cycle_created', () => {
     console.log('🗺️ MINI-MAPPA: Ciclo creato, aggiorno immediatamente');
@@ -84,11 +93,20 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     return <div className="text-sm text-gray-500">Caricamento mappa...</div>;
   }
 
+  // Debug dati ricevuti
+  console.log('🗺️ MINI-MAPPA FRESH DATA DEBUG:', {
+    basketsResponse: basketsResponse ? basketsResponse.length : 'null',
+    isArray: Array.isArray(basketsResponse),
+    preloadedBaskets: preloadedBaskets ? preloadedBaskets.length : 'null',
+    forceUpdate,
+    timestamp: Date.now()
+  });
+  
   // PRIORITÀ ASSOLUTA ai dati React Query per real-time updates
   // Mai usare preloadedBaskets se abbiamo basketsResponse, anche se vuoto
-  const finalBaskets = basketsResponse 
+  const finalBaskets = basketsResponse && Array.isArray(basketsResponse)
     ? basketsResponse.filter((basket: any) => basket.flupsyId === flupsyId)
-    : (preloadedBaskets ? preloadedBaskets.filter((basket: any) => basket.flupsyId === flupsyId) : []);
+    : [];
   
   // Debug per verificare i cestelli ricevuti
   const activeBaskets = finalBaskets.filter((b: any) => b.state === 'active');
