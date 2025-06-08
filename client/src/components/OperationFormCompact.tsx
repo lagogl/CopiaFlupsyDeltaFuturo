@@ -119,17 +119,6 @@ export default function OperationFormCompact({
   const [prevOperationData, setPrevOperationData] = useState<any>(null);
   const { toast } = useToast();
   
-  // WebSocket per aggiornamenti real-time della mini-mappa
-  useWebSocketMessage('operation_created', () => {
-    console.log('🔄 FORM OPERAZIONI: Operazione creata, invalidazione cache cestelli per mini-mappa');
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-  });
-  
-  useWebSocketMessage('basket_updated', () => {
-    console.log('🔄 FORM OPERAZIONI: Cestello aggiornato, invalidazione cache cestelli per mini-mappa');
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-  });
-  
   // Definizione del form con validazione
   const form = useForm<z.infer<typeof operationSchema>>({
     resolver: zodResolver(operationSchema),
@@ -227,7 +216,7 @@ export default function OperationFormCompact({
   });
   
   const { data: baskets, refetch: refetchBaskets } = useQuery({ 
-    queryKey: ['/api/baskets', 'operation-form'],
+    queryKey: ['/api/baskets'], // Usa la stessa query key della mini-mappa per sincronizzazione
     queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
     enabled: !isLoading,
     staleTime: 0, // Nessuna cache - sempre dati freschi per operazioni
@@ -253,25 +242,34 @@ export default function OperationFormCompact({
     enabled: !isLoading,
   });
 
+
+
   // WebSocket listener per aggiornamenti immediati dei cestelli quando si creano operazioni
   useWebSocketMessage('operation_created', () => {
     console.log('🔄 FORM: Operazione creata, aggiorno cestelli immediatamente');
-    refetchBaskets();
-    refetchCycles();
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
   });
 
   useWebSocketMessage('basket_updated', () => {
     console.log('🔄 FORM: Cestello aggiornato, aggiorno dati immediatamente'); 
-    refetchBaskets();
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+  });
+
+  useWebSocketMessage('cycle_created', () => {
+    console.log('🔄 FORM: Ciclo creato, aggiorno dati immediatamente');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
   });
 
   // Forza il refresh dei cestelli all'apertura della form
   useEffect(() => {
     if (!isLoading) {
       console.log('🔄 FORM: Apertura form - forzo refresh immediato cestelli');
-      refetchBaskets();
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
     }
-  }, [isLoading, refetchBaskets]);
+  }, [isLoading, queryClient]);
 
   // Filtra i cestelli per FLUPSY selezionato
   const [flupsyBaskets, setFlupsyBaskets] = useState<any[]>([]);
