@@ -53,13 +53,22 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     setForceUpdate(prev => prev + 1);
   });
   
-  // Query con timestamp per forzare bypass completo della cache
+  // Query completamente separata per mini-mappa con bypass cache
   const { data: basketsResponse, isLoading, refetch } = useQuery({
-    queryKey: ['/api/baskets', { includeAll: true }, forceUpdate],
-    queryFn: () => fetch(`/api/baskets?includeAll=true&t=${Date.now()}`).then(res => res.json()),
+    queryKey: ['mini-map-baskets', flupsyId, forceUpdate, Date.now()],
+    queryFn: async () => {
+      const timestamp = Date.now();
+      const response = await fetch(`/api/baskets?includeAll=true&nocache=${timestamp}`, {
+        headers: {
+          'Cache-Control': 'no-cache',
+          'Pragma': 'no-cache'
+        }
+      });
+      return response.json();
+    },
     enabled: !!flupsyId,
     staleTime: 0,
-    cacheTime: 0, // No cache
+    gcTime: 0,
     refetchInterval: false,
     refetchOnWindowFocus: false,
   });
