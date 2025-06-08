@@ -53,12 +53,13 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     setForceUpdate(prev => prev + 1);
   });
   
-  // Usa ESATTAMENTE la stessa query key della cache principale per sincronizzazione
+  // Query con timestamp per forzare bypass completo della cache
   const { data: basketsResponse, isLoading, refetch } = useQuery({
-    queryKey: ['/api/baskets', { includeAll: true }],
-    queryFn: () => fetch(`/api/baskets?includeAll=true`).then(res => res.json()),
+    queryKey: ['/api/baskets', { includeAll: true }, forceUpdate],
+    queryFn: () => fetch(`/api/baskets?includeAll=true&t=${Date.now()}`).then(res => res.json()),
     enabled: !!flupsyId,
-    staleTime: 0, // Sempre dati freschi
+    staleTime: 0,
+    cacheTime: 0, // No cache
     refetchInterval: false,
     refetchOnWindowFocus: false,
   });

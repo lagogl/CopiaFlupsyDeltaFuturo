@@ -4009,10 +4009,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Arricchisci il FLUPSY con statistiche aggiuntive
       const basketsInFlupsy = await storage.getBasketsByFlupsy(id);
       
-      // Calcola statistiche
+      // Calcola statistiche usando il campo 'state' per determinare lo stato attivo
       const totalBaskets = basketsInFlupsy.length;
-      const activeBaskets = basketsInFlupsy.filter(basket => basket.currentCycleId !== null).length;
-      const availableBaskets = basketsInFlupsy.filter(basket => basket.currentCycleId === null).length;
+      const activeBaskets = basketsInFlupsy.filter(basket => basket.state === 'active').length;
+      const availableBaskets = basketsInFlupsy.filter(basket => basket.state === 'available').length;
       const freePositions = flupsy.maxPositions - totalBaskets;
       
       // Calcola statistiche sugli animali
@@ -4021,7 +4021,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sizeDistribution: Record<string, number> = {};
       
       // Per ogni cestello attivo, ottieni l'ultima operazione e raccogli statistiche
-      for (const basket of basketsInFlupsy.filter(b => b.currentCycleId !== null)) {
+      for (const basket of basketsInFlupsy.filter(b => b.state === 'active')) {
         if (basket.currentCycleId) {
           // Ottieni tutte le operazioni per questo ciclo
           const cycleOperations = await storage.getOperationsByCycle(basket.currentCycleId);
