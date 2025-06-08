@@ -981,7 +981,6 @@ export default function OperationFormCompact({
                           </div>
                           <FlupsyMiniMapOptimized 
                             flupsyId={parseInt(watchFlupsyId)}
-                            baskets={flupsyBaskets}
                             maxPositions={(() => {
                               const selectedFlupsy = flupsys?.find((f: any) => f.id === parseInt(watchFlupsyId));
                               return selectedFlupsy?.maxPositions || 10;

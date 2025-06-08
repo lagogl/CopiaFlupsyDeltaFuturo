@@ -53,14 +53,14 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     setForceUpdate(prev => prev + 1);
   });
   
-  // Usa la stessa query key dei cestelli globali per sincronizzazione automatica
+  // Usa ESATTAMENTE la stessa query key della cache principale per sincronizzazione
   const { data: basketsResponse, isLoading, refetch } = useQuery({
-    queryKey: ['/api/baskets', forceUpdate], // Rimuovo 'minimap' per usare cache condivisa
+    queryKey: ['/api/baskets', { includeAll: true }],
     queryFn: () => fetch(`/api/baskets?includeAll=true`).then(res => res.json()),
     enabled: !!flupsyId,
-    staleTime: 0, // Nessuna cache - sempre dati freschi per mini-mappa
-    refetchInterval: false, // Disabilita polling automatico
-    refetchOnWindowFocus: false, // Disabilita refresh su focus
+    staleTime: 0, // Sempre dati freschi
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
   });
   
   // Forza re-fetch quando WebSocket invia aggiornamenti
@@ -74,18 +74,11 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     return <div className="text-sm text-gray-500">Caricamento mappa...</div>;
   }
 
-  // SEMPRE priorità ai dati React Query per aggiornamenti real-time
-  // Non usare mai preloadedBaskets se basketsResponse è disponibile
-  const allBaskets = basketsResponse || [];
-  const baskets = allBaskets.filter((basket: any) => basket.flupsyId === flupsyId);
-  
-  // Se non ci sono dati React Query E non stiamo caricando, usa preloadedBaskets
-  const fallbackBaskets = !basketsResponse && !isLoading && preloadedBaskets 
-    ? preloadedBaskets.filter((basket: any) => basket.flupsyId === flupsyId)
-    : [];
-  
-  // Usa i cestelli finali: React Query ha sempre precedenza
-  const finalBaskets = baskets.length > 0 ? baskets : fallbackBaskets;
+  // PRIORITÀ ASSOLUTA ai dati React Query per real-time updates
+  // Mai usare preloadedBaskets se abbiamo basketsResponse, anche se vuoto
+  const finalBaskets = basketsResponse 
+    ? basketsResponse.filter((basket: any) => basket.flupsyId === flupsyId)
+    : (preloadedBaskets ? preloadedBaskets.filter((basket: any) => basket.flupsyId === flupsyId) : []);
   
   // Debug per verificare i cestelli ricevuti
   const activeBaskets = finalBaskets.filter((b: any) => b.state === 'active');
