@@ -26,8 +26,9 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
   // WebSocket listener per aggiornamenti real-time della mini-mappa
   useWebSocketMessage('operation_created', () => {
     console.log('🗺️ MINI-MAPPA: Operazione creata, aggiorno immediatamente');
-    // Invalidazione immediata delle query
+    // Invalidazione immediata e refetch forzato
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
     // Forza re-render del componente
     setForceUpdate(prev => prev + 1);
@@ -35,8 +36,9 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
   
   useWebSocketMessage('basket_updated', () => {
     console.log('🗺️ MINI-MAPPA: Cestello aggiornato, aggiorno immediatamente');
-    // Invalidazione immediata delle query
+    // Invalidazione immediata e refetch forzato
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
     // Forza re-render del componente
     setForceUpdate(prev => prev + 1);
