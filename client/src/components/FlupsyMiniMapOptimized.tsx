@@ -128,7 +128,7 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
   
   // Debug: mostra tutti i cestelli e le loro posizioni nella mappa
   console.log("🗺️ DEBUG POSIZIONI COMPLETE:");
-  baskets.forEach((basket: any) => {
+  finalBaskets.forEach((basket: any) => {
     if (basket.state === 'active') {
       console.log(`🔴 ATTIVO: Cestello #${basket.physicalNumber} -> ${basket.row}-${basket.position}`, {
         id: basket.id,
@@ -143,7 +143,7 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
   
   // Crea mappa delle posizioni occupate
   const getPositionInfo = (row: string, position: number): PositionInfo => {
-    const basket = baskets.find((b: any) => b.row === row && b.position === position);
+    const basket = finalBaskets.find((b: any) => b.row === row && b.position === position);
     
     // Debug per ogni posizione richiesta
     console.log(`🗺️ Cerca posizione ${row}-${position}:`, {
