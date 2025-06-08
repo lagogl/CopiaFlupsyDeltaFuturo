@@ -42,9 +42,18 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     setForceUpdate(prev => prev + 1);
   });
   
-  // Carica tutti i cestelli con staleTime ridotto per aggiornamenti immediati
+  useWebSocketMessage('cycle_created', () => {
+    console.log('🗺️ MINI-MAPPA: Ciclo creato, aggiorno immediatamente');
+    // Invalidazione immediata delle query
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+    // Forza re-render del componente
+    setForceUpdate(prev => prev + 1);
+  });
+  
+  // Usa la stessa query key dei cestelli globali per sincronizzazione automatica
   const { data: basketsResponse, isLoading, refetch } = useQuery({
-    queryKey: ['/api/baskets', 'minimap', flupsyId, forceUpdate],
+    queryKey: ['/api/baskets', forceUpdate], // Rimuovo 'minimap' per usare cache condivisa
     queryFn: () => fetch(`/api/baskets?includeAll=true`).then(res => res.json()),
     enabled: !!flupsyId,
     staleTime: 0, // Nessuna cache - sempre dati freschi per mini-mappa
@@ -63,15 +72,24 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     return <div className="text-sm text-gray-500">Caricamento mappa...</div>;
   }
 
-  // Filtra i cestelli per questo FLUPSY specifico dai dati real-time
-  const allBaskets = basketsResponse || preloadedBaskets || [];
+  // SEMPRE priorità ai dati React Query per aggiornamenti real-time
+  // Non usare mai preloadedBaskets se basketsResponse è disponibile
+  const allBaskets = basketsResponse || [];
   const baskets = allBaskets.filter((basket: any) => basket.flupsyId === flupsyId);
   
+  // Se non ci sono dati React Query E non stiamo caricando, usa preloadedBaskets
+  const fallbackBaskets = !basketsResponse && !isLoading && preloadedBaskets 
+    ? preloadedBaskets.filter((basket: any) => basket.flupsyId === flupsyId)
+    : [];
+  
+  // Usa i cestelli finali: React Query ha sempre precedenza
+  const finalBaskets = baskets.length > 0 ? baskets : fallbackBaskets;
+  
   // Debug per verificare i cestelli ricevuti
-  const activeBaskets = baskets.filter((b: any) => b.state === 'active');
+  const activeBaskets = finalBaskets.filter((b: any) => b.state === 'active');
   
   // Debug dettagliato del basket #10 per capire il problema
-  const basket10 = baskets.find((b: any) => b.physicalNumber === 10);
+  const basket10 = finalBaskets.find((b: any) => b.physicalNumber === 10);
   if (basket10) {
     console.log("🗺️ BASKET #10 DEBUG DETTAGLIATO:", {
       id: basket10.id,
@@ -89,9 +107,9 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     flupsyId,
     preloadedBaskets: preloadedBaskets ? preloadedBaskets.length : 'non forniti',
     basketsResponse: basketsResponse ? basketsResponse.length : 'non caricati',
-    finalBaskets: baskets.length,
+    finalBaskets: finalBaskets.length,
     activeBaskets: activeBaskets.length,
-    availableBaskets: baskets.filter((b: any) => b.state === 'available').length
+    availableBaskets: finalBaskets.filter((b: any) => b.state === 'available').length
   });
   
   // Mostra TUTTI i cestelli attivi per debug
