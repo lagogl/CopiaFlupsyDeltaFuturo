@@ -1266,7 +1266,7 @@ export default function OperationFormCompact({
                               ) : (
                                 <span>
                                   {watchFlupsyId ? 
-                                    (flupsyBaskets.length > 0 ? "Seleziona cestello" : "Nessun cestello") : 
+                                    ((baskets && baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)).length > 0) ? "Seleziona cestello" : "Nessun cestello") : 
                                     "Seleziona prima FLUPSY"}
                                 </span>
                               )}
