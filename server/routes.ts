@@ -2026,6 +2026,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
               message: `Nuova operazione di tipo ${newOperation.type} registrata`
             });
             console.log("🚨 ROUTES.TS: Notifica WebSocket inviata con successo, clienti raggiunti:", result);
+            
+            // Broadcast anche basket_updated per sincronizzare mini-mappa e dropdown
+            console.log("🚨 ROUTES.TS: Invio notifica WebSocket per aggiornamento cestelli");
+            broadcastMessage('basket_updated', {
+              basketId: newOperation.basketId,
+              message: `Cestello aggiornato dopo operazione ${newOperation.type}`
+            });
+            console.log("🚨 ROUTES.TS: Notifica WebSocket cestelli inviata");
           } catch (wsError) {
             console.error("❌ ROUTES.TS: Errore nell'invio della notifica WebSocket:", wsError);
           }
@@ -2120,11 +2128,21 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const updatedOperation = await storage.updateOperation(id, updateData);
       
       // Broadcast operation update event via WebSockets
-      if (typeof (global as any).broadcastUpdate === 'function') {
-        (global as any).broadcastUpdate('operation_updated', {
+      try {
+        console.log("🚨 ROUTES.TS: Invio notifica WebSocket per operazione aggiornata");
+        broadcastMessage('operation_updated', {
           operation: updatedOperation,
           message: `Operazione ${id} aggiornata`
         });
+        
+        // Broadcast anche basket_updated per sincronizzare mini-mappa e dropdown
+        console.log("🚨 ROUTES.TS: Invio notifica WebSocket per aggiornamento cestelli");
+        broadcastMessage('basket_updated', {
+          basketId: updatedOperation.basketId,
+          message: `Cestello aggiornato dopo modifica operazione ${updatedOperation.type}`
+        });
+      } catch (wsError) {
+        console.error("❌ ROUTES.TS: Errore nell'invio della notifica WebSocket per update:", wsError);
       }
       
       res.json(updatedOperation);
@@ -2184,13 +2202,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
             cycleId: operation.cycleId
           });
         } else {
-          // Notifica il frontend che c'è stata una cancellazione
-          if (req.app.locals.webSocketServer) {
-            req.app.locals.webSocketServer.broadcastMessage('operation-delete', {
+          // Broadcast operation deleted event via WebSockets
+          try {
+            console.log("🚨 ROUTES.TS: Invio notifica WebSocket per operazione eliminata");
+            broadcastMessage('operation_deleted', {
               operationId: id,
-              type: operation.type
+              type: operation.type,
+              message: `Operazione ${id} eliminata`
             });
+            
+            // Broadcast anche basket_updated per sincronizzare mini-mappa e dropdown
+            console.log("🚨 ROUTES.TS: Invio notifica WebSocket per aggiornamento cestelli");
+            broadcastMessage('basket_updated', {
+              basketId: operation.basketId,
+              message: `Cestello aggiornato dopo eliminazione operazione ${operation.type}`
+            });
+          } catch (wsError) {
+            console.error("❌ ROUTES.TS: Errore nell'invio della notifica WebSocket per delete:", wsError);
           }
+          
           return res.status(200).json({ message: "Operation deleted successfully" });
         }
       } else {
