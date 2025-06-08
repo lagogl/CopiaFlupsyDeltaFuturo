@@ -344,9 +344,10 @@ export default function BasketForm({
               Selezione Posizione
             </h4>
             <p className="text-xs text-gray-600 mb-3">
-              <strong>Due modalità alternative:</strong><br/>
+              <strong>Due modalità alternative per la posizione:</strong><br/>
               • <strong>Doppio click sulla mappa:</strong> seleziona direttamente la posizione libera (cerchietto bianco)<br/>
-              • <strong>Inserimento manuale:</strong> utilizza i campi "Fila" e "Posizione" qui sotto
+              • <strong>Inserimento manuale:</strong> utilizza i campi "Fila" e "Posizione" qui sotto<br/>
+              <em>Il numero cestello è sempre progressivo e automatico per ogni FLUPSY.</em>
             </p>
             <FlupsyMiniMapOptimized
               flupsyId={selectedFlupsyId}
@@ -368,11 +369,8 @@ export default function BasketForm({
                   form.setValue('position', position);
                   setSelectedRow(row);
                   
-                  // Calcola il numero cestello basato sulla posizione
-                  // DX: posizioni 1-10 -> numeri 1-10
-                  // SX: posizioni 1-10 -> numeri 11-20
-                  const calculatedNumber = row === 'DX' ? position : (selectedFlupsy?.maxPositions || 10) + position;
-                  form.setValue('physicalNumber', calculatedNumber);
+                  // Il numero cestello rimane quello calcolato automaticamente dall'endpoint next-number
+                  // Non viene modificato in base alla posizione selezionata
                 }
               }}
             />
