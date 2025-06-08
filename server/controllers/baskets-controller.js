@@ -333,8 +333,8 @@ export async function getBasketsOptimized(options = {}) {
     };
     
     // Salva in cache con TTL corto - invalidazione immediata via WebSocket
-    BasketsCache.set(cacheKey, result, 60); // 60 secondi TTL
-    console.log(`Cache cestelli salvata con chiave "${cacheKey.substring(0,50)}..."`)
+    BasketsCache.set(cacheKey, result, 300); // 5 minuti TTL (invalidazione via WebSocket)
+    console.log(`🚀 CESTELLI: Cache SAVED (${enrichedBaskets.length} cestelli) - WebSocket sync attivo`)
     
     const duration = Date.now() - startTime;
     console.log(`Query cestelli completata in ${duration}ms: ${enrichedBaskets.length} risultati su ${totalItems} totali`);
