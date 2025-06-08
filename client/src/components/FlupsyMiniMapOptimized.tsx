@@ -102,11 +102,12 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     timestamp: Date.now()
   });
   
-  // PRIORITÀ ASSOLUTA ai dati React Query per real-time updates
-  // Mai usare preloadedBaskets se abbiamo basketsResponse, anche se vuoto
+  // Usa i dati React Query se disponibili, altrimenti usa i cestelli precaricati
   const finalBaskets = basketsResponse && Array.isArray(basketsResponse)
     ? basketsResponse.filter((basket: any) => basket.flupsyId === flupsyId)
-    : [];
+    : (preloadedBaskets && Array.isArray(preloadedBaskets)
+        ? preloadedBaskets.filter((basket: any) => basket.flupsyId === flupsyId)
+        : []);
   
   // Debug per verificare i cestelli ricevuti
   const activeBaskets = finalBaskets.filter((b: any) => b.state === 'active');

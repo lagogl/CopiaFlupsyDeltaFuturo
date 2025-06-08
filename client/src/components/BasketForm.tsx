@@ -88,6 +88,12 @@ export default function BasketForm({
   const { data: flupsys = [], isLoading: isFlupsysLoading } = useQuery<any[]>({
     queryKey: ['/api/flupsys'],
   });
+
+  // Fetch baskets for mini-map
+  const { data: allBaskets = [] } = useQuery<any[]>({
+    queryKey: ['/api/baskets'],
+    queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
+  });
   
   // Fetch next available basket number for selected FLUPSY
   const { data: nextBasketNumber, isLoading: isNextNumberLoading } = useQuery<{nextNumber: number}>({
@@ -339,6 +345,7 @@ export default function BasketForm({
             <FlupsyMiniMapOptimized
               flupsyId={selectedFlupsyId}
               maxPositions={selectedFlupsy.maxPositions || 10}
+              baskets={allBaskets}
               showLegend={true}
               selectedRow={form.watch('row')}
               selectedPosition={form.watch('position')}
