@@ -6588,13 +6588,6 @@ export async function registerRoutes(app: Express): Promise<Server> {
     broadcastMessage(type, data);
   };
 
-  // Configure WebSocket utils for cache services
-  const webSocketUtils = { broadcastMessage };
-  
-  // Connect WebSocket to cache services for system status notifications
-  const { BasketsCache } = await import("./baskets-cache-service.js");
-  BasketsCache.setWebSocketUtils(webSocketUtils);
-
   // === Route per invio email (WhatsApp rimosso) ===
   // Rotta WhatsApp rimossa: app.get("/api/whatsapp/diario")
   
