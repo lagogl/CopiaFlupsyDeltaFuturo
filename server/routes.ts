@@ -6788,6 +6788,38 @@ export async function registerRoutes(app: Express): Promise<Server> {
     forceNoCacheHeaders(res);
     res.json({ success: true, invalidated: keys });
   });
+
+  // Endpoint per forzare refresh completo dei cestelli
+  app.post('/api/admin/force-baskets-refresh', async (req, res) => {
+    try {
+      console.log('🔄 ADMIN: Forzando refresh completo cestelli...');
+      
+      // Clear all basket-related caches
+      if (storage.basketCache) {
+        storage.basketCache.clear();
+        console.log('🗑️ Cache cestelli server cleared');
+      }
+      
+      // Send WebSocket notification to refresh all clients
+      if (wss) {
+        wss.broadcast('baskets_refreshed', { 
+          message: 'Force refresh all baskets',
+          timestamp: Date.now() 
+        });
+        console.log('📡 WebSocket notification sent to all clients');
+      }
+      
+      forceNoCacheHeaders(res);
+      res.json({ 
+        success: true, 
+        message: 'Baskets cache cleared and clients notified',
+        timestamp: Date.now()
+      });
+    } catch (error) {
+      console.error('❌ Error forcing baskets refresh:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
   
   return httpServer;
 }
