@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { useQuery, useMutation } from '@tanstack/react-query';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { useWebSocketMessage } from '@/lib/websocket';
 import { format, addDays } from 'date-fns';
 import { it } from 'date-fns/locale';
 import { Zap, Filter, BarChart, Layers, AlertCircle, Calculator, Scale as ScaleIcon, TrendingUp, TrendingDown, Calendar } from 'lucide-react';
@@ -585,6 +586,23 @@ export default function QuickOperations() {
   
   const { data: sizes, isLoading: sizesLoading } = useQuery({
     queryKey: ['/api/sizes'],
+  });
+
+  // WebSocket listeners per aggiornamenti in tempo reale dei cestelli
+  useWebSocketMessage('baskets_bulk_created', (data: any) => {
+    console.log('🔄 QUICK_OPS: Cestelli creati in bulk durante popolazione FLUPSY');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+  });
+
+  useWebSocketMessage('basket_created', () => {
+    console.log('🔄 QUICK_OPS: Nuovo cestello creato');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+  });
+
+  useWebSocketMessage('basket_updated', () => {
+    console.log('🔄 QUICK_OPS: Cestello aggiornato');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
   });
   
   // Filtriamo solo le ceste con cicli attivi

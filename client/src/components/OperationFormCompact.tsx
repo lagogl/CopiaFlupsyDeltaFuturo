@@ -269,6 +269,42 @@ export default function OperationFormCompact({
     queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
   });
 
+  // Listener per popolazione FLUPSY completata
+  useWebSocketMessage('flupsy_populate_complete', (data: any) => {
+    console.log('🔄 FORM: FLUPSY popolato completamente, aggiorno cestelli immediatamente');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    
+    // Se stiamo visualizzando il FLUPSY appena popolato, aggiorna anche i dati FLUPSY
+    if (data?.flupsyId && watchFlupsyId && data.flupsyId === watchFlupsyId) {
+      console.log('🔄 FORM: FLUPSY attualmente selezionato è stato popolato, forzo refresh');
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+    }
+  });
+
+  // Listener per singolo cestello creato durante popolazione
+  useWebSocketMessage('basket_created', () => {
+    console.log('🔄 FORM: Nuovo cestello creato, aggiorno lista');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+  });
+
+  // Listener per cestelli creati in bulk durante popolazione FLUPSY
+  useWebSocketMessage('baskets_bulk_created', (data: any) => {
+    console.log('🔄 FORM: Cestelli creati in bulk durante popolazione FLUPSY, aggiorno immediatamente');
+    console.log('🔄 FORM: Cestelli creati:', data?.basketsCreated || 'N/A');
+    
+    // Forza refresh immediato e completo dei cestelli
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    
+    // Se stiamo visualizzando il FLUPSY appena popolato, aggiorna anche i dati FLUPSY
+    if (data?.flupsyId && watchFlupsyId && data.flupsyId === watchFlupsyId) {
+      console.log('🔄 FORM: FLUPSY attualmente selezionato è stato popolato, forzo refresh completo');
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+      queryClient.refetchQueries({ queryKey: ['/api/flupsys'] });
+    }
+  });
+
   // Forza il refresh dei cestelli all'apertura della form
   useEffect(() => {
     if (!isLoading) {
