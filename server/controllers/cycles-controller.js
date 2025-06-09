@@ -22,7 +22,7 @@ import {
 class CyclesCacheService {
   constructor() {
     this.cache = new Map();
-    this.ttl = 120; // 2 minuti (in secondi)
+    this.ttl = 600; // 10 minuti (in secondi) - esteso per ridurre query DB
   }
 
   /**

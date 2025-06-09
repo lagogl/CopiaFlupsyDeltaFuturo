@@ -13,7 +13,7 @@ import { and, eq, sql, desc, asc, isNull, ne } from "drizzle-orm";
 class NotificationsCacheService {
   constructor() {
     this.cache = new Map();
-    this.ttl = 60; // 1 minuto (in secondi)
+    this.ttl = 300; // 5 minuti (in secondi) - esteso per ridurre query DB
   }
 
   /**

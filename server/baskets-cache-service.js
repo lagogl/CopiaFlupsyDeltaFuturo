@@ -8,8 +8,8 @@
 class BasketsCacheService {
   constructor() {
     this.cache = new Map();
-    this.ttl = 120; // 2 minuti (in secondi)
-    console.log('Servizio cache cestelli inizializzato');
+    this.ttl = 600; // 10 minuti (in secondi) - esteso per ridurre query DB
+    console.log('Servizio cache cestelli inizializzato con cache estesa (10 minuti)');
   }
 
   /**

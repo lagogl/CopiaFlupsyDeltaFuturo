@@ -16,19 +16,26 @@ const obscuredDbUrl = dbUrlParts.length > 1
   
 console.log(`Tentativo di connessione a database: ${obscuredDbUrl}`);
 
-// Create a PostgreSQL connection with enhanced options
+// Create a PostgreSQL connection with optimized options for Neon
 export const queryClient = postgres(process.env.DATABASE_URL, {
-  max: 5, // Reduce max connections
+  max: 20, // Increase max connections for better concurrency
   prepare: false,
   debug: false, // Disable debug in production
-  idle_timeout: 20,
-  connect_timeout: 30,
-  max_lifetime: 60 * 30, // Connection TTL: 30 minutes
+  idle_timeout: 300, // 5 minutes - keep connections alive longer
+  connect_timeout: 10, // Reduce connection timeout
+  max_lifetime: 60 * 60, // Connection TTL: 1 hour
+  transform: {
+    // Optimize data transformation
+    undefined: null,
+  },
   connection: {
     application_name: 'flupsy-app',
   },
-  onnotice: (notice) => console.error('PostgreSQL Notice:', notice),
-  onparameter: (param) => console.error('PostgreSQL Parameter:', param),
+  // Reduce logging noise in production
+  onnotice: process.env.NODE_ENV === 'development' ? 
+    (notice) => console.log('PostgreSQL Notice:', notice.message) : undefined,
+  onparameter: process.env.NODE_ENV === 'development' ? 
+    (param, value) => console.log(`PostgreSQL Parameter: ${param} = ${value}`) : undefined,
 });
 
 // Log di conferma
