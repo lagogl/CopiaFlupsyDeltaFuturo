@@ -1501,7 +1501,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Unified operations endpoint - combines all data in single call
   app.get("/api/operations-unified", async (req, res) => {
     console.log('🚀 ENDPOINT UNIFICATO: Richiesta ricevuta');
-    await getOperationsUnified(req, res, db);
+    await getOperationsUnified(req, res);
   });
   
   app.get("/api/operations", async (req, res) => {
