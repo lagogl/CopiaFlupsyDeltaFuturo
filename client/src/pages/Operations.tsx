@@ -1,4 +1,4 @@
-import { useState, useMemo, useEffect } from 'react';
+import React, { useState, useMemo, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
@@ -224,45 +224,39 @@ export default function Operations() {
   
   // Extract all data from unified response
   const operations = unifiedData?.operations || [];
+  const baskets = unifiedData?.baskets || [];
+  const cycles = unifiedData?.cycles || [];
+  const flupsys = unifiedData?.flupsys || [];
+  const sizes = unifiedData?.sizes || [];
+  const lots = unifiedData?.lots || [];
+  const sgrData = unifiedData?.sgr || [];
   
-  // Query baskets for reference - load ALL baskets for proper filtering
-  const { data: baskets, isLoading: isLoadingBaskets, refetch: refetchBaskets } = useQuery<Basket[]>({
-    queryKey: ['/api/baskets'],
-    queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
-    staleTime: 60 * 1000, // 1 minute cache
-  });
+  // Update pagination state when data changes
+  React.useEffect(() => {
+    if (unifiedData?.pagination) {
+      setTotalOperations(unifiedData.pagination.totalOperations);
+      setTotalPages(Math.ceil(unifiedData.pagination.totalOperations / pageSize));
+    } else if (operations.length > 0) {
+      // Fallback pagination logic
+      setTotalOperations(operations.length);
+      setTotalPages(Math.ceil(operations.length / pageSize));
+    }
+  }, [unifiedData, operations, pageSize]);
   
-  // Query flupsys for filter
-  const { data: flupsys, isLoading: isLoadingFlupsys, refetch: refetchFlupsys } = useQuery<Flupsy[]>({
-    queryKey: ['/api/flupsys'],
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
-  });
+  // Loading states - all unified
+  const isLoadingOperations = isLoadingUnified;
+  const isLoadingBaskets = isLoadingUnified;
+  const isLoadingCycles = isLoadingUnified;
+  const isLoadingFlupsys = isLoadingUnified;
+  const isLoadingSizes = isLoadingUnified;
+  const isLoadingLots = isLoadingUnified;
+  const isLoadingSgr = isLoadingUnified;
   
-  // Query cycles for filter and grouping
-  const { data: cycles, isLoading: isLoadingCycles, refetch: refetchCycles } = useQuery<Cycle[]>({
-    queryKey: ['/api/cycles'],
-    staleTime: 60 * 1000, // 1 minute cache
-  });
-  
-  // Query sizes for operation size display - only load when needed
-  const { data: sizes, isLoading: isLoadingSizes } = useQuery<Size[]>({
-    queryKey: ['/api/sizes'],
-    staleTime: 5 * 60 * 1000, // 5 minutes cache
-  });
-  
-  // Query lots for operation lot display - only load when needed  
-  const { data: lots, isLoading: isLoadingLots } = useQuery<Lot[]>({
-    queryKey: ['/api/lots'],
-    staleTime: 2 * 60 * 1000, // 2 minutes cache
-    enabled: operations && operations.length > 0, // Only load if there are operations
-  });
-  
-  // Query SGR data for growth performance calculation - only load when needed
-  const { data: sgrData, isLoading: isLoadingSgr } = useQuery<Sgr[]>({
-    queryKey: ['/api/sgr'],
-    staleTime: 10 * 60 * 1000, // 10 minutes cache
-    enabled: operations && operations.length > 0, // Only load if there are operations
-  });
+  // Refetch functions - all unified
+  const refetchOperations = refetchUnified;
+  const refetchBaskets = refetchUnified;
+  const refetchCycles = refetchUnified;
+  const refetchFlupsys = refetchUnified;
   
   // Alias for SGR data (for consistency in naming)
   const sgrs = sgrData;
