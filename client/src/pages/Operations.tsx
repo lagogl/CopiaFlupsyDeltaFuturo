@@ -271,9 +271,10 @@ export default function Operations() {
   // Estrai le operazioni dal risultato
   const operations = operationsData?.operations || [];
   
-  // Query baskets for reference
+  // Query baskets for reference - load ALL baskets for proper filtering
   const { data: baskets, isLoading: isLoadingBaskets, refetch: refetchBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
+    queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
   });
   
   // Query flupsys for filter
