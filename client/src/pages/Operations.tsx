@@ -275,31 +275,39 @@ export default function Operations() {
   const { data: baskets, isLoading: isLoadingBaskets, refetch: refetchBaskets } = useQuery<Basket[]>({
     queryKey: ['/api/baskets'],
     queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
+    staleTime: 60 * 1000, // 1 minute cache
   });
   
   // Query flupsys for filter
   const { data: flupsys, isLoading: isLoadingFlupsys, refetch: refetchFlupsys } = useQuery<Flupsy[]>({
     queryKey: ['/api/flupsys'],
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
   
   // Query cycles for filter and grouping
   const { data: cycles, isLoading: isLoadingCycles, refetch: refetchCycles } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles'],
+    staleTime: 60 * 1000, // 1 minute cache
   });
   
-  // Query sizes for operation size display
+  // Query sizes for operation size display - only load when needed
   const { data: sizes, isLoading: isLoadingSizes } = useQuery<Size[]>({
     queryKey: ['/api/sizes'],
+    staleTime: 5 * 60 * 1000, // 5 minutes cache
   });
   
-  // Query lots for operation lot display
+  // Query lots for operation lot display - only load when needed  
   const { data: lots, isLoading: isLoadingLots } = useQuery<Lot[]>({
     queryKey: ['/api/lots'],
+    staleTime: 2 * 60 * 1000, // 2 minutes cache
+    enabled: operations && operations.length > 0, // Only load if there are operations
   });
   
-  // Query SGR data for growth performance calculation
+  // Query SGR data for growth performance calculation - only load when needed
   const { data: sgrData, isLoading: isLoadingSgr } = useQuery<Sgr[]>({
     queryKey: ['/api/sgr'],
+    staleTime: 10 * 60 * 1000, // 10 minutes cache
+    enabled: operations && operations.length > 0, // Only load if there are operations
   });
   
   // Alias for SGR data (for consistency in naming)
