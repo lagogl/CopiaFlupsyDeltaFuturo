@@ -197,79 +197,33 @@ export default function Operations() {
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
   
-  // Query operations utilizzando l'API ottimizzata con paginazione - SOLO WebSocket updates
+  // Unified query that loads all operations data in a single call
   const { 
-    data: operationsData, 
-    isLoading: isLoadingOperations, 
-    refetch: refetchOperations 
-  } = useQuery<{operations: Operation[], pagination: {page: number, pageSize: number, totalItems: number, totalPages: number}}>({
-    queryKey: ['/api/operations-optimized', currentPage, pageSize, filters.typeFilter, filters.flupsyFilter, filters.cycleFilter, filters.dateFilter],
-    staleTime: Infinity, // Cache infinita - aggiornamenti solo via WebSocket
-    refetchInterval: false, // Disabilita polling automatico
-    refetchOnWindowFocus: false, // Disabilita refresh su focus
+    data: unifiedData, 
+    isLoading: isLoadingUnified, 
+    refetch: refetchUnified 
+  } = useQuery({
+    queryKey: ['/api/operations-unified'],
+    staleTime: 30 * 1000, // 30 seconds cache - faster updates
+    refetchInterval: false,
+    refetchOnWindowFocus: false,
     queryFn: async () => {
-      // Costruisci i parametri della query in base ai filtri
-      const queryParams = new URLSearchParams();
-      queryParams.append('page', currentPage.toString());
-      queryParams.append('pageSize', pageSize.toString());
-      
-      // Applica i filtri selezionati
-      if (filters.typeFilter && filters.typeFilter !== 'all') {
-        queryParams.append('type', filters.typeFilter);
-      }
-      
-      if (filters.flupsyFilter && filters.flupsyFilter !== 'all') {
-        queryParams.append('flupsyId', filters.flupsyFilter);
-      }
-      
-      if (filters.cycleFilter && filters.cycleFilter !== 'all') {
-        queryParams.append('cycleId', filters.cycleFilter);
-      }
-      
-      if (filters.dateFilter) {
-        const today = new Date();
-        
-        if (filters.dateFilter === 'today') {
-          queryParams.append('dateFrom', today.toISOString().split('T')[0]);
-          queryParams.append('dateTo', today.toISOString().split('T')[0]);
-        } else if (filters.dateFilter === 'week') {
-          const weekAgo = new Date();
-          weekAgo.setDate(today.getDate() - 7);
-          queryParams.append('dateFrom', weekAgo.toISOString().split('T')[0]);
-          queryParams.append('dateTo', today.toISOString().split('T')[0]);
-        } else if (filters.dateFilter === 'month') {
-          const monthAgo = new Date();
-          monthAgo.setMonth(today.getMonth() - 1);
-          queryParams.append('dateFrom', monthAgo.toISOString().split('T')[0]);
-          queryParams.append('dateTo', today.toISOString().split('T')[0]);
-        }
-      }
-      
-      // Effettua la chiamata API
-      const response = await fetch(`/api/operations-optimized?${queryParams.toString()}`);
+      console.log('🚀 UNIFIED: Caricamento dati unificati...');
+      const response = await fetch('/api/operations-unified');
       if (!response.ok) {
-        throw new Error('Errore nel caricamento delle operazioni');
+        throw new Error('Errore nel caricamento dei dati unificati');
       }
-      
-      const data = await response.json();
-      
-      // Aggiorna lo stato della paginazione
-      if (data.pagination) {
-        setTotalOperations(data.pagination.totalItems);
-        setTotalPages(data.pagination.totalPages);
-      } else {
-        // Se la paginazione non è disponibile (ad es. errore o risposta non conforme)
-        console.warn("Dati di paginazione non trovati nella risposta:", data);
-        setTotalOperations(data.operations?.length || 0);
-        setTotalPages(1);
-      }
-      
-      return data;
+      const result = await response.json();
+      console.log('✅ UNIFIED: Dati caricati', { 
+        operations: result.data.operations.length, 
+        fromCache: result.fromCache 
+      });
+      return result.data;
     }
   });
   
-  // Estrai le operazioni dal risultato
-  const operations = operationsData?.operations || [];
+  // Extract all data from unified response
+  const operations = unifiedData?.operations || [];
   
   // Query baskets for reference - load ALL baskets for proper filtering
   const { data: baskets, isLoading: isLoadingBaskets, refetch: refetchBaskets } = useQuery<Basket[]>({

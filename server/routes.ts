@@ -33,6 +33,7 @@ import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
+import { getOperationsUnified, invalidateUnifiedCache } from "./controllers/operations-unified-controller";
 import { updateBasketPosition } from "./controllers/basket-position-controller";
 import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
@@ -1495,6 +1496,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         error: error instanceof Error ? error.message : 'Errore sconosciuto' 
       });
     }
+  });
+
+  // Unified operations endpoint - combines all data in single call
+  app.get("/api/operations-unified", async (req, res) => {
+    console.log('🚀 ENDPOINT UNIFICATO: Richiesta ricevuta');
+    await getOperationsUnified(req, res, db);
   });
   
   app.get("/api/operations", async (req, res) => {
