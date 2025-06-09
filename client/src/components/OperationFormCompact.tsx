@@ -263,6 +263,12 @@ export default function OperationFormCompact({
     queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
   });
 
+  useWebSocketMessage('baskets_refreshed', () => {
+    console.log('🔄 FORM: Cache cestelli invalidata, aggiorno immediatamente');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+  });
+
   // Forza il refresh dei cestelli all'apertura della form
   useEffect(() => {
     if (!isLoading) {
@@ -949,7 +955,7 @@ export default function OperationFormCompact({
                     <FormItem className="mb-1">
                       <FormLabel className="text-xs font-medium">Cestello <span className="text-red-500">*</span></FormLabel>
                       <Select
-                        disabled={!watchFlupsyId || isLoading || flupsyBaskets.length === 0}
+                        disabled={!watchFlupsyId || isLoading || (baskets && watchFlupsyId ? baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)).length === 0 : true)}
                         value={field.value?.toString() || ''}
                         onValueChange={(value) => {
                           const basketId = Number(value);
