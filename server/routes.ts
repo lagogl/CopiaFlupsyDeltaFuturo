@@ -4446,6 +4446,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
         totalCreated: newBaskets.length
       });
 
+      // Invia notifica WebSocket per invalidare immediatamente la cache dei cestelli
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('baskets_bulk_created', {
+          flupsyId: id,
+          flupsyName: flupsy.name,
+          basketsCreated: newBaskets.length,
+          newBaskets: newBaskets,
+          message: `${newBaskets.length} cestelli creati nel FLUPSY ${flupsy.name}`
+        });
+        console.log(`🚀 POBLAMENTO: Notifica WebSocket inviata per ${newBaskets.length} cestelli`);
+      }
+
       // Restituisci il risultato
       return res.json({ 
         success: true,

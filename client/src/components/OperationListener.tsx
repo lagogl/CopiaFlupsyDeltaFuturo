@@ -69,6 +69,30 @@ export function OperationListener() {
     queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
     queryClient.invalidateQueries({ queryKey: ['/api/basket-positions'] });
   };
+
+  // Handler for bulk baskets creation (FLUPSY population)
+  const handleBasketsBulkCreated = (data: any) => {
+    console.log('🚀 POPOLAMENTO: Ricevuta notifica baskets_bulk_created!', data);
+    
+    // Invalida immediatamente tutte le cache dei cestelli
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+    queryClient.invalidateQueries({ queryKey: ['mini-map-baskets'] });
+    
+    // Refetch immediato per mostrare i nuovi cestelli
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/flupsys'] });
+    
+    console.log('🚀 POPOLAMENTO: Cache invalidata, cestelli disponibili immediatamente');
+    
+    // Mostra toast di conferma
+    toast({
+      title: '🏗️ FLUPSY Popolato',
+      description: `${data.basketsCreated} cestelli aggiunti al ${data.flupsyName}`,
+      variant: 'default',
+      duration: 4000
+    });
+  };
   
   // Disabilitato polling - solo aggiornamenti WebSocket
   const { data: operationsData } = useQuery({
@@ -158,6 +182,7 @@ export function OperationListener() {
   useWebSocketMessage('operation_deleted', handleOperationDeleted);
   useWebSocketMessage('basket_updated', handleBasketUpdated);
   useWebSocketMessage('position_updated', handlePositionUpdated);
+  useWebSocketMessage('baskets_bulk_created', handleBasketsBulkCreated);
   
   // This component doesn't render anything
   return null;
