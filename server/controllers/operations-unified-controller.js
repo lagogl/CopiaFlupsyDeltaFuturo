@@ -3,8 +3,9 @@
  * Combina tutte le query necessarie in una singola chiamata API ottimizzata
  */
 
-import { eq, desc, and, or, gte, lte, sql, inArray } from 'drizzle-orm';
-import { operations, baskets, cycles, lots, sizes, flupsys, sgr } from '../../shared/schema.ts';
+import { db } from '../db.js';
+import { operations, baskets, cycles, lots, sizes, flupsys, sgr } from '../../shared/schema.js';
+import { sql, eq, and, or, between, desc, inArray } from 'drizzle-orm';
 
 let unifiedCache = {
   data: null,
@@ -12,7 +13,7 @@ let unifiedCache = {
   ttl: 30000, // 30 secondi
 };
 
-export async function getOperationsUnified(req, res, db) {
+export async function getOperationsUnified(req, res) {
   try {
     console.log('🚀 OPERAZIONI UNIFICATE: Richiesta ricevuta');
     
@@ -31,159 +32,88 @@ export async function getOperationsUnified(req, res, db) {
     console.log('🔄 CACHE MISS: Eseguendo query unificata...');
     const startTime = Date.now();
 
-    // Query unificata con tutti i join necessari
-    const unifiedResults = await db
-      .select({
-        // Operations fields
-        operationId: operations.id,
-        operationDate: operations.date,
-        operationType: operations.type,
-        operationBasketId: operations.basketId,
-        operationCycleId: operations.cycleId,
-        operationSizeId: operations.sizeId,
-        operationLotId: operations.lotId,
-        operationAnimalCount: operations.animalCount,
-        operationTotalWeight: operations.totalWeight,
-        operationAnimalsPerKg: operations.animalsPerKg,
-        operationAverageWeight: operations.averageWeight,
-        operationDeadCount: operations.deadCount,
-        operationMortalityRate: operations.mortalityRate,
-        operationNotes: operations.notes,
-        operationMetadata: operations.metadata,
-        
-        // Basket fields
-        basketPhysicalNumber: baskets.physicalNumber,
-        basketRow: baskets.row,
-        basketPosition: baskets.position,
-        basketState: baskets.state,
-        basketFlupsyId: baskets.flupsyId,
-        
-        // Cycle fields
-        cycleStartDate: cycles.startDate,
-        cycleEndDate: cycles.endDate,
-        cycleState: cycles.state,
-        
-        // FLUPSY fields
-        flupsyName: flupsys.name,
-        flupsyLocation: flupsys.location,
-        
-        // Size fields
-        sizeCode: sizes.code,
-        sizeName: sizes.name,
-        sizeColor: sizes.color,
-        
-        // Lot fields
-        lotName: lots.name,
-        lotSupplier: lots.supplier,
-        lotArrivalDate: lots.arrivalDate,
-      })
-      .from(operations)
-      .leftJoin(baskets, eq(operations.basketId, baskets.id))
-      .leftJoin(cycles, eq(operations.cycleId, cycles.id))
-      .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
-      .leftJoin(sizes, eq(operations.sizeId, sizes.id))
-      .leftJoin(lots, eq(operations.lotId, lots.id))
-      .orderBy(desc(operations.date), desc(operations.id))
-      .limit(1000); // Limite ragionevole
-
-    // Query separate per dati di supporto (cache più lunga)
-    const [allBaskets, allCycles, allFlupsys, allSizes, allLots, allSgr] = await Promise.all([
-      db.select().from(baskets).limit(500),
-      db.select().from(cycles).orderBy(desc(cycles.startDate)).limit(100),
-      db.select().from(flupsys).limit(50),
-      db.select().from(sizes).limit(50),
-      db.select().from(lots).orderBy(desc(lots.arrivalDate)).limit(200),
-      db.select().from(sgr).limit(20)
+    // Execute separate optimized queries in parallel
+    const [
+      operationsData,
+      basketsData,
+      cyclesData,
+      flupsysData,
+      sizesData,
+      lotsData,
+      sgrData
+    ] = await Promise.all([
+      // Operations query
+      db.select().from(operations).orderBy(desc(operations.date)),
+      
+      // Baskets query  
+      db.select().from(baskets),
+      
+      // Cycles query
+      db.select().from(cycles),
+      
+      // Flupsys query
+      db.select().from(flupsys),
+      
+      // Sizes query
+      db.select().from(sizes),
+      
+      // Lots query
+      db.select().from(lots),
+      
+      // SGR query
+      db.select().from(sgr)
     ]);
 
-    // Trasforma i risultati in formato ottimizzato
-    const operationsFormatted = unifiedResults.map(row => ({
-      id: row.operationId,
-      date: row.operationDate,
-      type: row.operationType,
-      basketId: row.operationBasketId,
-      cycleId: row.operationCycleId,
-      sizeId: row.operationSizeId,
-      lotId: row.operationLotId,
-      animalCount: row.operationAnimalCount,
-      totalWeight: row.operationTotalWeight,
-      animalsPerKg: row.operationAnimalsPerKg,
-      averageWeight: row.operationAverageWeight,
-      deadCount: row.operationDeadCount,
-      mortalityRate: row.operationMortalityRate,
-      notes: row.operationNotes,
-      metadata: row.operationMetadata,
-      
-      // Dati correlati denormalizzati
-      basketPhysicalNumber: row.basketPhysicalNumber,
-      basketRow: row.basketRow,
-      basketPosition: row.basketPosition,
-      basketState: row.basketState,
-      flupsyId: row.basketFlupsyId,
-      flupsyName: row.flupsyName,
-      flupsyLocation: row.flupsyLocation,
-      
-      cycleStartDate: row.cycleStartDate,
-      cycleEndDate: row.cycleEndDate,
-      cycleState: row.cycleState,
-      
-      sizeCode: row.sizeCode,
-      sizeName: row.sizeName,
-      sizeColor: row.sizeColor,
-      
-      lotName: row.lotName,
-      lotSupplier: row.lotSupplier,
-      lotArrivalDate: row.lotArrivalDate,
-      
-      // Calcoli derivati
-      lot: row.lotName ? {
-        id: row.operationLotId,
-        name: row.lotName,
-        supplier: row.lotSupplier,
-        arrivalDate: row.lotArrivalDate
-      } : null
-    }));
+    const queryTime = Date.now() - startTime;
+    console.log(`✅ Query unificate completate in ${queryTime}ms`);
 
+    // Prepare unified response
     const unifiedData = {
-      operations: operationsFormatted,
-      baskets: allBaskets,
-      cycles: allCycles,
-      flupsys: allFlupsys,
-      sizes: allSizes,
-      lots: allLots,
-      sgr: allSgr,
+      operations: operationsData,
+      baskets: basketsData,
+      cycles: cyclesData,
+      flupsys: flupsysData,
+      sizes: sizesData,
+      lots: lotsData,
+      sgr: sgrData,
       pagination: {
-        totalOperations: operationsFormatted.length,
-        page: 1,
-        pageSize: operationsFormatted.length
-      }
+        totalOperations: operationsData.length,
+        totalBaskets: basketsData.length,
+        totalCycles: cyclesData.length
+      },
+      queryTime
     };
 
-    // Salva in cache
-    unifiedCache.data = unifiedData;
-    unifiedCache.timestamp = now;
+    // Cache the results
+    unifiedCache = {
+      data: unifiedData,
+      timestamp: now,
+      ttl: 30000
+    };
 
-    const queryTime = Date.now() - startTime;
-    console.log(`✅ QUERY UNIFICATA COMPLETATA in ${queryTime}ms: ${operationsFormatted.length} operazioni`);
+    console.log(`🚀 UNIFIED: Dati salvati in cache - ${operationsData.length} operazioni, ${basketsData.length} cestelli`);
 
     res.json({
       success: true,
       data: unifiedData,
       fromCache: false,
-      queryTime: queryTime
+      queryTime
     });
 
   } catch (error) {
     console.error('❌ Errore nella query unificata:', error);
     res.status(500).json({
       success: false,
-      error: error.message
+      error: error.message || 'Errore interno del server'
     });
   }
 }
 
 export function invalidateUnifiedCache() {
-  unifiedCache.data = null;
-  unifiedCache.timestamp = null;
-  console.log('🗑️ CACHE UNIFICATA INVALIDATA');
+  unifiedCache = {
+    data: null,
+    timestamp: null,
+    ttl: 30000
+  };
+  console.log('🗑️ Cache unificata invalidata');
 }
