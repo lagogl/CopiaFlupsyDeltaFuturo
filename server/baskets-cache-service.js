@@ -6,9 +6,10 @@
  */
 
 class BasketsCacheService {
-  constructor() {
+  constructor(webSocketUtils = null) {
     this.cache = new Map();
     this.ttl = 120; // 2 minuti (in secondi)
+    this.webSocketUtils = webSocketUtils;
     console.log('Servizio cache cestelli inizializzato');
   }
 
@@ -44,6 +45,15 @@ class BasketsCacheService {
       expiresAt
     });
     console.log(`Cache cestelli: dati salvati con chiave "${key}", scadenza in ${this.ttl} secondi`);
+    
+    // Notifica WebSocket per aggiornamento cache
+    if (this.webSocketUtils) {
+      this.webSocketUtils.broadcastMessage('cache_invalidated', {
+        type: 'baskets',
+        action: 'saved',
+        key: key
+      });
+    }
   }
 
   /**
@@ -83,6 +93,16 @@ class BasketsCacheService {
       }
     }
     console.log(`Cache cestelli: eliminate ${count} chiavi con prefisso "${prefix}"`);
+    
+    // Notifica WebSocket per invalidazione cache
+    if (this.webSocketUtils && count > 0) {
+      this.webSocketUtils.broadcastMessage('cache_invalidated', {
+        type: 'baskets',
+        action: 'deleted_by_prefix',
+        prefix: prefix,
+        count: count
+      });
+    }
   }
 
   /**
@@ -125,6 +145,16 @@ class BasketsCacheService {
       validEntries,
       expiredEntries
     };
+  }
+}
+
+  /**
+   * Imposta il sistema WebSocket per le notifiche
+   * @param {Object} webSocketUtils - Utilità WebSocket
+   */
+  setWebSocketUtils(webSocketUtils) {
+    this.webSocketUtils = webSocketUtils;
+    console.log('WebSocket utils configurato per il servizio cache cestelli');
   }
 }
 

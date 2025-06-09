@@ -50,6 +50,7 @@ import AmministrazioneUtilita from "@/pages/AmministrazioneUtilita";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
+import SystemStatusIndicator from "@/components/SystemStatusIndicator";
 // Importiamo il sistema di tooltip contestuali
 import { TooltipProvider } from "@/contexts/TooltipContext";
 import { ContextualTooltip } from "@/components/ui/contextual-tooltip";
@@ -172,6 +173,9 @@ function App() {
           
           {/* Indicatore di stato della connessione WebSocket */}
           <WebSocketIndicator />
+          
+          {/* Indicatore discreto di stato sistema per operazioni cache/database */}
+          <SystemStatusIndicator />
           
           <Toaster />
         </TooltipProvider>
