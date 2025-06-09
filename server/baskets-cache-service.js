@@ -146,7 +146,6 @@ class BasketsCacheService {
       expiredEntries
     };
   }
-}
 
   /**
    * Imposta il sistema WebSocket per le notifiche
