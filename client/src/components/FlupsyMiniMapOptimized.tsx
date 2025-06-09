@@ -45,6 +45,16 @@ export default function FlupsyMiniMapOptimized({ flupsyId, maxPositions, baskets
     setForceUpdate(prev => prev + 1);
   });
   
+  useWebSocketMessage('basket_created', () => {
+    console.log('🗺️ MINI-MAPPA: Cestello creato, aggiorno immediatamente');
+    // Invalidazione immediata e refetch forzato
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['mini-map-baskets'] });
+    // Forza re-render del componente
+    setForceUpdate(prev => prev + 1);
+  });
+  
   // Reset quando cambia il FLUPSY
   useEffect(() => {
     if (flupsyId) {
