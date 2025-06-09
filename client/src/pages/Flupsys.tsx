@@ -15,6 +15,7 @@ import { Check, Plus, X, Edit, Trash2, AlertTriangle, Fish, LayoutGrid, Table2, 
 import { useAuth } from "@/hooks/use-auth";
 import { Link } from "wouter";
 import FlupsyTableView from "@/components/flupsy/FlupsyTableView";
+import { useEffect } from "react";
 
 // Definizione del tipo per un'unità Flupsy
 interface Flupsy {
@@ -731,11 +732,11 @@ export default function Flupsys() {
               <Card key={flupsy.id} className={`overflow-hidden ${!flupsy.active ? 'bg-muted/30 border-muted' : ''}`}>
                 <CardHeader className="pb-3">
                   <div className="flex justify-between items-start">
-                    <div>
-                      <CardTitle className="flex items-center">
-                        <span className="truncate">{flupsy.name}</span>
+                    <div className="flex-1 min-w-0">
+                      <CardTitle className="flex items-center gap-2">
+                        <span className="truncate font-semibold">{flupsy.name}</span>
                         {flupsy.totalAnimals && flupsy.totalAnimals > 0 && (
-                          <Badge variant="secondary" className="ml-2 flex items-center gap-1 bg-cyan-100 text-cyan-900 dark:bg-cyan-900 dark:text-cyan-100 flex-shrink-0">
+                          <Badge variant="secondary" className="flex items-center gap-1 bg-cyan-100 text-cyan-900 dark:bg-cyan-900 dark:text-cyan-100 flex-shrink-0">
                             <Fish className="h-3 w-3" /> 
                             {flupsy.totalAnimals.toLocaleString()}
                           </Badge>
