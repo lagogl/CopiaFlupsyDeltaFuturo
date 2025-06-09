@@ -191,6 +191,40 @@ export default function OperationForm({
     queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
   });
+
+  // Listener per popolazione FLUPSY - aggiorna cestelli quando vengono creati in bulk
+  useWebSocketMessage('baskets_bulk_created', (data: any) => {
+    console.log('🔄 FORM REGISTRAZIONE: Cestelli creati in bulk durante popolazione FLUPSY');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    
+    // Invalida anche la query specifica dei cestelli per FLUPSY
+    if (data?.flupsyId && watchFlupsyId && data.flupsyId === watchFlupsyId) {
+      console.log('🔄 FORM REGISTRAZIONE: Aggiorno cestelli specifici del FLUPSY', data.flupsyId);
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys', watchFlupsyId, 'baskets'] });
+      queryClient.refetchQueries({ queryKey: ['/api/flupsys', watchFlupsyId, 'baskets'] });
+    }
+  });
+
+  useWebSocketMessage('basket_created', () => {
+    console.log('🔄 FORM REGISTRAZIONE: Nuovo cestello creato');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    // Invalida anche tutte le query di cestelli per FLUPSY
+    queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+  });
+
+  useWebSocketMessage('flupsy_populate_complete', (data: any) => {
+    console.log('🔄 FORM REGISTRAZIONE: FLUPSY popolato completamente');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    
+    // Invalida anche la query specifica dei cestelli per FLUPSY
+    if (data?.flupsyId && watchFlupsyId && data.flupsyId === watchFlupsyId) {
+      console.log('🔄 FORM REGISTRAZIONE: Aggiorno cestelli specifici del FLUPSY popolato', data.flupsyId);
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys', watchFlupsyId, 'baskets'] });
+      queryClient.refetchQueries({ queryKey: ['/api/flupsys', watchFlupsyId, 'baskets'] });
+    }
+  });
   
   // Fetch related data
   const { data: baskets } = useQuery({
