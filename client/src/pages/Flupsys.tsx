@@ -733,9 +733,9 @@ export default function Flupsys() {
                   <div className="flex justify-between items-start">
                     <div>
                       <CardTitle className="flex items-center">
-                        <span>{flupsy.name}</span>
+                        <span className="truncate">{flupsy.name}</span>
                         {flupsy.totalAnimals && flupsy.totalAnimals > 0 && (
-                          <Badge variant="secondary" className="ml-2 flex items-center gap-1 bg-cyan-100 text-cyan-900 dark:bg-cyan-900 dark:text-cyan-100">
+                          <Badge variant="secondary" className="ml-2 flex items-center gap-1 bg-cyan-100 text-cyan-900 dark:bg-cyan-900 dark:text-cyan-100 flex-shrink-0">
                             <Fish className="h-3 w-3" /> 
                             {flupsy.totalAnimals.toLocaleString()}
                           </Badge>
