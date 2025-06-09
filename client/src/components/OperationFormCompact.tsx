@@ -217,7 +217,7 @@ export default function OperationFormCompact({
   
   const { data: baskets, refetch: refetchBaskets } = useQuery({ 
     queryKey: ['/api/baskets'], // Usa la stessa query key della mini-mappa per sincronizzazione
-    queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
+    queryFn: () => fetch('/api/baskets?includeAll=true&pageSize=1000').then(res => res.json()),
     enabled: !isLoading,
     staleTime: 0, // Nessuna cache - sempre dati freschi per operazioni
     refetchInterval: false, // Disabilita polling automatico
