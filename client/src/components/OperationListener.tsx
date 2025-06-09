@@ -93,6 +93,21 @@ export function OperationListener() {
       duration: 4000
     });
   };
+
+  // Handler for manual baskets refresh
+  const handleBasketsRefreshed = (data: any) => {
+    console.log('🔄 REFRESH: Ricevuta notifica baskets_refreshed!', data);
+    
+    // Invalida immediatamente tutte le cache dei cestelli
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+    
+    // Refetch immediato per aggiornare i dati
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/flupsys'] });
+    
+    console.log('🔄 REFRESH: Cache cestelli aggiornata forzatamente');
+  };
   
   // Disabilitato polling - solo aggiornamenti WebSocket
   const { data: operationsData } = useQuery({
@@ -183,6 +198,7 @@ export function OperationListener() {
   useWebSocketMessage('basket_updated', handleBasketUpdated);
   useWebSocketMessage('position_updated', handlePositionUpdated);
   useWebSocketMessage('baskets_bulk_created', handleBasketsBulkCreated);
+  useWebSocketMessage('baskets_refreshed', handleBasketsRefreshed);
   
   // This component doesn't render anything
   return null;
