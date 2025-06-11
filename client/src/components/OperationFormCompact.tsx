@@ -119,9 +119,7 @@ export default function OperationFormCompact({
   const [prevOperationData, setPrevOperationData] = useState<any>(null);
   const { toast } = useToast();
   
-  // Keys per forzare refresh dei dropdown
-  const [basketRefreshKey, setBasketsRefreshKey] = React.useState(0);
-  const [cycleRefreshKey, setCycleRefreshKey] = React.useState(0);
+  // Rimosso sistema refresh keys - uso la stessa logica della tabella operazioni
   
   // Definizione del form con validazione
   const form = useForm<z.infer<typeof operationSchema>>({
@@ -220,22 +218,8 @@ export default function OperationFormCompact({
   });
   
   const { data: baskets, refetch: refetchBaskets } = useQuery({ 
-    queryKey: ['/api/baskets', 'form-dropdown', basketRefreshKey], // Query key con refresh key
-    queryFn: async () => {
-      const timestamp = Date.now();
-      console.log('🔄 FORM: Fetching baskets con refresh key:', basketRefreshKey, 'timestamp:', timestamp);
-      const response = await fetch(`/api/baskets?includeAll=true&pageSize=1000&_t=${timestamp}`);
-      const data = await response.json();
-      console.log('🔄 FORM: Cestelli ricevuti:', data?.length || 0);
-      return data;
-    },
+    queryKey: ['/api/baskets'],
     enabled: !isLoading,
-    staleTime: 0, // Nessuna cache - sempre dati freschi
-    cacheTime: 0, // Non mantenere in cache - forza sempre refresh
-    refetchInterval: false, // Disabilita polling automatico
-    refetchOnMount: true, // Permetti caricamento iniziale
-    refetchOnWindowFocus: false, // Disabilita refetch su focus
-    refetchOnReconnect: true, // Ricarica quando si riconnette
   });
   
   const { data: cycles, refetch: refetchCycles } = useQuery({ 
@@ -256,76 +240,27 @@ export default function OperationFormCompact({
 
 
 
-  // WebSocket listener per aggiornamenti immediati dei cestelli quando si creano operazioni
-  useWebSocketMessage('operation_created', (data: any) => {
-    console.log('🔄 FORM: Operazione creata, forzo refresh dropdown con refresh key', data);
-    
-    // Incrementa i refresh keys per forzare re-render dei dropdown
-    setBasketsRefreshKey(prev => prev + 1);
-    setCycleRefreshKey(prev => prev + 1);
-    
-    // Rimuovi anche le cache esistenti per sicurezza
-    queryClient.removeQueries({ queryKey: ['/api/baskets'] });
-    queryClient.removeQueries({ queryKey: ['/api/cycles'] });
-    queryClient.removeQueries({ queryKey: ['/api/operations'] });
-    
-    console.log('🔄 FORM: Refresh keys incrementati, dropdown si aggiorneranno automaticamente');
-  });
-
-  useWebSocketMessage('basket_updated', () => {
-    console.log('🔄 FORM: Cestello aggiornato, aggiorno dropdown immediatamente'); 
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets', 'form-dropdown'] });
-    refetchBaskets();
-  });
-
-  useWebSocketMessage('cycle_created', () => {
-    console.log('🔄 FORM: Ciclo creato, aggiorno dati immediatamente');
+  // WebSocket listeners identici a quelli della tabella operazioni che funzionano perfettamente
+  useWebSocketMessage('operation_created', () => {
+    console.log('📋 FORM: Nuova operazione creata, aggiorno dropdown');
+    // Invalida tutte le query delle operazioni per forzare l'aggiornamento
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations-optimized'] });
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
     queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
   });
-
-  useWebSocketMessage('baskets_refreshed', () => {
-    console.log('🔄 FORM: Cache cestelli invalidata, aggiorno immediatamente');
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
-  });
-
-  // Listener per popolazione FLUPSY completata
-  useWebSocketMessage('flupsy_populate_complete', (data: any) => {
-    console.log('🔄 FORM: FLUPSY popolato completamente, aggiorno cestelli immediatamente');
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
-    
-    // Se stiamo visualizzando il FLUPSY appena popolato, aggiorna anche i dati FLUPSY
-    if (data?.flupsyId && watchFlupsyId && data.flupsyId === watchFlupsyId) {
-      console.log('🔄 FORM: FLUPSY attualmente selezionato è stato popolato, forzo refresh');
-      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
-    }
-  });
-
-  // Listener per singolo cestello creato durante popolazione
-  useWebSocketMessage('basket_created', () => {
-    console.log('🔄 FORM: Nuovo cestello creato, aggiorno lista');
+  
+  useWebSocketMessage('basket_updated', () => {
+    console.log('📋 FORM: Cestello aggiornato, aggiorno dati');
+    // Invalida le query correlate
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations-optimized'] });
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
   });
 
-  // Listener per cestelli creati in bulk durante popolazione FLUPSY
-  useWebSocketMessage('baskets_bulk_created', (data: any) => {
-    console.log('🔄 FORM: Cestelli creati in bulk durante popolazione FLUPSY, aggiorno immediatamente');
-    console.log('🔄 FORM: Cestelli creati:', data?.basketsCreated || 'N/A');
-    
-    // Forza refresh immediato e completo dei cestelli
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
-    
-    // Se stiamo visualizzando il FLUPSY appena popolato, aggiorna anche i dati FLUPSY
-    if (data?.flupsyId && watchFlupsyId && data.flupsyId === watchFlupsyId) {
-      console.log('🔄 FORM: FLUPSY attualmente selezionato è stato popolato, forzo refresh completo');
-      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
-      queryClient.refetchQueries({ queryKey: ['/api/flupsys'] });
-    }
-  });
+
+
+
 
   // Forza il refresh dei cestelli all'apertura della form
   useEffect(() => {
