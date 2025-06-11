@@ -216,10 +216,11 @@ export default function OperationFormCompact({
   });
   
   const { data: baskets, refetch: refetchBaskets } = useQuery({ 
-    queryKey: ['/api/baskets'], // Usa la stessa query key della mini-mappa per sincronizzazione
+    queryKey: ['/api/baskets', 'form-dropdown'], // Query key unica per il form per evitare conflitti di cache
     queryFn: () => fetch('/api/baskets?includeAll=true&pageSize=1000').then(res => res.json()),
     enabled: !isLoading,
     staleTime: 0, // Nessuna cache - sempre dati freschi per operazioni
+    cacheTime: 0, // Non mantenere in cache - forza sempre refresh
     refetchInterval: false, // Disabilita polling automatico
     refetchOnMount: true, // Permetti caricamento iniziale per form operazioni
     refetchOnWindowFocus: false, // Disabilita refetch su focus
@@ -248,14 +249,17 @@ export default function OperationFormCompact({
   useWebSocketMessage('operation_created', (data: any) => {
     console.log('🔄 FORM: Operazione creata, aggiorno cestelli e dropdown immediatamente', data);
     
-    // Invalida e ricarica immediatamente i cestelli per aggiornare i dropdown
+    // Invalida tutte le cache dei cestelli, inclusa quella specifica del form
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets', 'form-dropdown'] });
     queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
     
     // Forza il refetch immediato per aggiornare i dropdown del form
-    refetchBaskets();
-    refetchCycles();
+    setTimeout(() => {
+      refetchBaskets();
+      refetchCycles();
+    }, 100); // Piccolo delay per assicurare che il server abbia aggiornato i dati
     
     console.log('🔄 FORM: Dropdown cestelli aggiornati dopo operazione');
   });
