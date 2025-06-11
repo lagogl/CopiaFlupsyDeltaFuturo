@@ -1754,6 +1754,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   app.post("/api/operations", async (req, res) => {
+    console.log("🔍 STANDARD OPERATIONS ENDPOINT CHIAMATO - POST /api/operations");
+    console.log("🔍 VERIFICA WEBSOCKET: typeof global.broadcastUpdate =", typeof (global as any).broadcastUpdate);
+    if (typeof (global as any).broadcastUpdate === 'function') {
+      console.log("✅ WEBSOCKET: global.broadcastUpdate è definita correttamente");
+    } else {
+      console.log("❌ WEBSOCKET: global.broadcastUpdate NON è definita!");
+    }
     console.log("🚀 POST /api/operations - RICEVUTA RICHIESTA");
     
     // Aggiungo timeout per prevenire blocchi infiniti
