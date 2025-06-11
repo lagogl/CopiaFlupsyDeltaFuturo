@@ -1865,8 +1865,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
           
           // Broadcast operation created event via WebSockets
+          console.log("🔍 VERIFICA WEBSOCKET: Controllando se global.broadcastUpdate esiste...");
+          console.log("🔍 VERIFICA WEBSOCKET: typeof global.broadcastUpdate =", typeof (global as any).broadcastUpdate);
+          
           if (typeof (global as any).broadcastUpdate === 'function') {
-            console.log("Invio notifica WebSocket per nuova operazione");
+            console.log("✅ WEBSOCKET TROVATO: Invio notifica WebSocket per nuova operazione");
             (global as any).broadcastUpdate('operation_created', {
               operation: operation,
               message: `Nuova operazione di tipo ${operation.type} registrata`
@@ -1887,6 +1890,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
             // Invalida cache unificata per aggiornamento istantaneo
             invalidateUnifiedCache();
             console.log("🚨 Cache unificata invalidata dopo prima-attivazione");
+          } else {
+            console.error("❌ WEBSOCKET NON TROVATO: global.broadcastUpdate non è una funzione!");
+            console.error("❌ WEBSOCKET NON TROVATO: Questo significa che il WebSocket non è configurato correttamente");
           }
           
           console.log("===== FINE ENDPOINT POST /api/operations (prima-attivazione) - SUCCESSO =====");
