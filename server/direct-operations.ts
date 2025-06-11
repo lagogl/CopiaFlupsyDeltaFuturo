@@ -6,6 +6,8 @@ import { db } from './db';
 import { operations, cycles, baskets, sizes } from '../shared/schema';
 import { sql, eq, and, between } from 'drizzle-orm';
 import { broadcastMessage } from './websocket';
+import { BasketsCache } from './baskets-cache-service.js';
+import { OperationsCache } from './operations-cache-service.js';
 
 /**
  * Trova automaticamente il sizeId corretto in base al numero di animali per kg.
@@ -323,8 +325,14 @@ export function implementDirectOperationRoute(app: Express) {
           
           console.log("Cestello aggiornato:", updatedBasket[0]);
           
-          // 5. Notifica via WebSocket per invalidazione cache
+          // 5. Invalidazione cache del server e notifica WebSocket
           try {
+            // Invalida la cache cestelli e operazioni nel server
+            console.log("🗑️ DIRECT-OPERATIONS: Invalidando cache del server...");
+            BasketsCache.clear();
+            OperationsCache.clear();
+            console.log("✅ DIRECT-OPERATIONS: Cache cestelli e operazioni invalidate");
+            
             console.log("🚨 DIRECT-OPERATIONS: Invio notifica WebSocket per nuova operazione");
             const result = broadcastMessage('operation_created', {
               operation: newOperation[0],
