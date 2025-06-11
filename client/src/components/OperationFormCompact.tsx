@@ -119,6 +119,10 @@ export default function OperationFormCompact({
   const [prevOperationData, setPrevOperationData] = useState<any>(null);
   const { toast } = useToast();
   
+  // Keys per forzare refresh dei dropdown
+  const [basketRefreshKey, setBasketsRefreshKey] = React.useState(0);
+  const [cycleRefreshKey, setCycleRefreshKey] = React.useState(0);
+  
   // Definizione del form con validazione
   const form = useForm<z.infer<typeof operationSchema>>({
     resolver: zodResolver(operationSchema),
@@ -216,13 +220,20 @@ export default function OperationFormCompact({
   });
   
   const { data: baskets, refetch: refetchBaskets } = useQuery({ 
-    queryKey: ['/api/baskets', 'form-dropdown'], // Query key unica per il form per evitare conflitti di cache
-    queryFn: () => fetch('/api/baskets?includeAll=true&pageSize=1000').then(res => res.json()),
+    queryKey: ['/api/baskets', 'form-dropdown', basketRefreshKey], // Query key con refresh key
+    queryFn: async () => {
+      const timestamp = Date.now();
+      console.log('🔄 FORM: Fetching baskets con refresh key:', basketRefreshKey, 'timestamp:', timestamp);
+      const response = await fetch(`/api/baskets?includeAll=true&pageSize=1000&_t=${timestamp}`);
+      const data = await response.json();
+      console.log('🔄 FORM: Cestelli ricevuti:', data?.length || 0);
+      return data;
+    },
     enabled: !isLoading,
-    staleTime: 0, // Nessuna cache - sempre dati freschi per operazioni
+    staleTime: 0, // Nessuna cache - sempre dati freschi
     cacheTime: 0, // Non mantenere in cache - forza sempre refresh
     refetchInterval: false, // Disabilita polling automatico
-    refetchOnMount: true, // Permetti caricamento iniziale per form operazioni
+    refetchOnMount: true, // Permetti caricamento iniziale
     refetchOnWindowFocus: false, // Disabilita refetch su focus
     refetchOnReconnect: true, // Ricarica quando si riconnette
   });
@@ -247,26 +258,24 @@ export default function OperationFormCompact({
 
   // WebSocket listener per aggiornamenti immediati dei cestelli quando si creano operazioni
   useWebSocketMessage('operation_created', (data: any) => {
-    console.log('🔄 FORM: Operazione creata, aggiorno cestelli e dropdown immediatamente', data);
+    console.log('🔄 FORM: Operazione creata, forzo refresh dropdown con refresh key', data);
     
-    // Invalida tutte le cache dei cestelli, inclusa quella specifica del form
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/baskets', 'form-dropdown'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
-    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    // Incrementa i refresh keys per forzare re-render dei dropdown
+    setBasketsRefreshKey(prev => prev + 1);
+    setCycleRefreshKey(prev => prev + 1);
     
-    // Forza il refetch immediato per aggiornare i dropdown del form
-    setTimeout(() => {
-      refetchBaskets();
-      refetchCycles();
-    }, 100); // Piccolo delay per assicurare che il server abbia aggiornato i dati
+    // Rimuovi anche le cache esistenti per sicurezza
+    queryClient.removeQueries({ queryKey: ['/api/baskets'] });
+    queryClient.removeQueries({ queryKey: ['/api/cycles'] });
+    queryClient.removeQueries({ queryKey: ['/api/operations'] });
     
-    console.log('🔄 FORM: Dropdown cestelli aggiornati dopo operazione');
+    console.log('🔄 FORM: Refresh keys incrementati, dropdown si aggiorneranno automaticamente');
   });
 
   useWebSocketMessage('basket_updated', () => {
     console.log('🔄 FORM: Cestello aggiornato, aggiorno dropdown immediatamente'); 
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets', 'form-dropdown'] });
     refetchBaskets();
   });
 
