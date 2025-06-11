@@ -1877,6 +1877,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               basketId: basketId,
               message: `Nuovo ciclo ${newCycle.id} creato per il cestello ${basketId}`
             });
+            
+            // Broadcast basket update per aggiornare mini-mappa e dropdown
+            (global as any).broadcastUpdate('basket_updated', {
+              basketId: basketId,
+              message: `Cestello aggiornato dopo prima attivazione`
+            });
+            
+            // Invalida cache unificata per aggiornamento istantaneo
+            invalidateUnifiedCache();
+            console.log("🚨 Cache unificata invalidata dopo prima-attivazione");
           }
           
           console.log("===== FINE ENDPOINT POST /api/operations (prima-attivazione) - SUCCESSO =====");
@@ -2000,6 +2010,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
               basketId,
               message: `Ciclo ${cycleId} chiuso per il cestello ${basketId}`
             });
+            
+            // Broadcast basket update per aggiornare mini-mappa e dropdown
+            (global as any).broadcastUpdate('basket_updated', {
+              basketId: basketId,
+              message: `Cestello aggiornato dopo chiusura ciclo`
+            });
+            
+            // Invalida cache unificata per aggiornamento istantaneo
+            invalidateUnifiedCache();
+            console.log("🚨 Cache unificata invalidata dopo chiusura ciclo");
           }
           
           return res.status(201).json(newOperation);
@@ -2028,19 +2048,28 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // Notifica WebSocket per invalidazione cache
           try {
             console.log("🚨 ROUTES.TS: Invio notifica WebSocket per nuova operazione");
-            const result = broadcastMessage('operation_created', {
-              operation: newOperation,
-              message: `Nuova operazione di tipo ${newOperation.type} registrata`
-            });
-            console.log("🚨 ROUTES.TS: Notifica WebSocket inviata con successo, clienti raggiunti:", result);
-            
-            // Broadcast anche basket_updated per sincronizzare mini-mappa e dropdown
-            console.log("🚨 ROUTES.TS: Invio notifica WebSocket per aggiornamento cestelli");
-            broadcastMessage('basket_updated', {
-              basketId: newOperation.basketId,
-              message: `Cestello aggiornato dopo operazione ${newOperation.type}`
-            });
-            console.log("🚨 ROUTES.TS: Notifica WebSocket cestelli inviata");
+            if (typeof (global as any).broadcastUpdate === 'function') {
+              const result = (global as any).broadcastUpdate('operation_created', {
+                operation: newOperation,
+                message: `Nuova operazione di tipo ${newOperation.type} registrata`
+              });
+              console.log("🚨 ROUTES.TS: Notifica WebSocket inviata con successo");
+              
+              // Broadcast anche basket_updated per sincronizzare mini-mappa e dropdown
+              console.log("🚨 ROUTES.TS: Invio notifica WebSocket per aggiornamento cestelli");
+              (global as any).broadcastUpdate('basket_updated', {
+                basketId: newOperation.basketId,
+                message: `Cestello aggiornato dopo operazione ${newOperation.type}`
+              });
+              
+              // Invalida cache unificata per aggiornamento istantaneo
+              invalidateUnifiedCache();
+              console.log("🚨 ROUTES.TS: Cache unificata invalidata");
+              
+              console.log("🚨 ROUTES.TS: Notifica WebSocket cestelli inviata");
+            } else {
+              console.error("❌ broadcastUpdate function not available");
+            }
           } catch (wsError) {
             console.error("❌ ROUTES.TS: Errore nell'invio della notifica WebSocket:", wsError);
           }
