@@ -6633,7 +6633,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   // Set up global broadcast function for compatibility with existing code
   (global as any).broadcastUpdate = (type: string, data: any) => {
-    broadcastMessage(type, data);
+    try {
+      console.log(`🔔 GLOBAL BROADCAST: Invio ${type}`, data);
+      const result = broadcastMessage(type, data);
+      console.log(`🔔 GLOBAL BROADCAST: Risultato ${result} client raggianti`);
+      return result > 0;
+    } catch (error) {
+      console.error("🔔 GLOBAL BROADCAST: Errore", error);
+      return false;
+    }
   };
 
   // === Route per invio email (WhatsApp rimosso) ===
