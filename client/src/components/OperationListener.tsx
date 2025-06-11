@@ -15,11 +15,13 @@ export function OperationListener() {
     // Invalida tutte le cache rilevanti con forza
     console.log('🚨 INVALIDATING CACHES...');
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations-unified'] });
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
     queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
     queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
     
-    // Refetch immediato per forzare l'aggiornamento della mini-mappa
+    // Refetch immediato per forzare l'aggiornamento della mini-mappa e operazioni
+    queryClient.refetchQueries({ queryKey: ['/api/operations-unified'] });
     queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
     queryClient.refetchQueries({ queryKey: ['/api/flupsys'] });
     
@@ -27,10 +29,10 @@ export function OperationListener() {
     
     // Mostra toast di conferma
     toast({
-      title: '🔄 Cache Aggiornata',
-      description: 'La mini-mappa è stata aggiornata in tempo reale',
+      title: '🔄 Dati Aggiornati',
+      description: 'Operazioni e cestelli aggiornati in tempo reale',
       variant: 'default',
-      duration: 3000
+      duration: 2000
     });
   };
   
@@ -58,7 +60,12 @@ export function OperationListener() {
     console.log('🔄 WebSocket: Cestello aggiornato, invalidando cache...', data);
     
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations-unified'] });
     queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+    
+    // Refetch immediato per aggiornare dropdown e mini-mappa
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    queryClient.refetchQueries({ queryKey: ['/api/flupsys'] });
   };
   
   // Handler for position updated messages
