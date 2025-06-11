@@ -218,7 +218,8 @@ export default function OperationFormCompact({
   });
   
   const { data: baskets, refetch: refetchBaskets } = useQuery({ 
-    queryKey: ['/api/baskets'],
+    queryKey: ['/api/baskets', 'includeAll'],
+    queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
     enabled: !isLoading,
   });
   
@@ -247,6 +248,7 @@ export default function OperationFormCompact({
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
     queryClient.invalidateQueries({ queryKey: ['/api/operations-optimized'] });
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets', 'includeAll'] });
     queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
   });
   
@@ -256,6 +258,7 @@ export default function OperationFormCompact({
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
     queryClient.invalidateQueries({ queryKey: ['/api/operations-optimized'] });
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets', 'includeAll'] });
   });
 
 
