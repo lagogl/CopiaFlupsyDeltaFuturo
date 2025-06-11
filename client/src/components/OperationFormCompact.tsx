@@ -245,16 +245,25 @@ export default function OperationFormCompact({
 
 
   // WebSocket listener per aggiornamenti immediati dei cestelli quando si creano operazioni
-  useWebSocketMessage('operation_created', () => {
-    console.log('🔄 FORM: Operazione creata, aggiorno cestelli immediatamente');
+  useWebSocketMessage('operation_created', (data: any) => {
+    console.log('🔄 FORM: Operazione creata, aggiorno cestelli e dropdown immediatamente', data);
+    
+    // Invalida e ricarica immediatamente i cestelli per aggiornare i dropdown
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
     queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    
+    // Forza il refetch immediato per aggiornare i dropdown del form
+    refetchBaskets();
+    refetchCycles();
+    
+    console.log('🔄 FORM: Dropdown cestelli aggiornati dopo operazione');
   });
 
   useWebSocketMessage('basket_updated', () => {
-    console.log('🔄 FORM: Cestello aggiornato, aggiorno dati immediatamente'); 
+    console.log('🔄 FORM: Cestello aggiornato, aggiorno dropdown immediatamente'); 
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    refetchBaskets();
   });
 
   useWebSocketMessage('cycle_created', () => {
