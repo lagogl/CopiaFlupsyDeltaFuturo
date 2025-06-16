@@ -2862,6 +2862,7 @@ export default function Operations() {
             }}
             onCancel={() => setIsCreateDialogOpen(false)}
             isLoading={createOperationMutation.isPending}
+            isDuplication={!!selectedOperation}
             initialCycleId={selectedOperation ? null : initialCycleId}
             initialFlupsyId={selectedOperation ? null : initialFlupsyId}
             initialBasketId={selectedOperation ? null : initialBasketId}

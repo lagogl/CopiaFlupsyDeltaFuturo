@@ -100,6 +100,7 @@ type OperationFormProps = {
   initialBasketId?: number | null;
   initialFlupsyId?: number | null;
   initialCycleId?: number | null;
+  isDuplication?: boolean;
 };
 
 export default function OperationFormCompact({
@@ -110,6 +111,7 @@ export default function OperationFormCompact({
   initialBasketId = null,
   initialFlupsyId = null,
   initialCycleId = null,
+  isDuplication = false,
 }: OperationFormProps) {
   // Stato per la gestione dei dati e degli errori
   const [operationDateError, setOperationDateError] = useState<string | null>(null);
@@ -927,32 +929,39 @@ export default function OperationFormCompact({
                   render={({ field }) => (
                     <FormItem className="mb-1">
                       <FormLabel className="text-xs font-medium">FLUPSY <span className="text-red-500">*</span></FormLabel>
-                      <Select
-                        disabled={isLoading}
-                        value={field.value?.toString() || ''}
-                        onValueChange={(value) => {
-                          const flupsyId = Number(value);
-                          field.onChange(flupsyId);
-                          form.setValue('basketId', null);
-                        }}
-                      >
-                        <FormControl>
-                          <SelectTrigger className="h-8 text-sm">
-                            <SelectValue placeholder="Seleziona FLUPSY" />
-                          </SelectTrigger>
-                        </FormControl>
-                        <SelectContent>
-                          {flupsys?.length ? flupsys.map((flupsy: any) => (
-                            <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
-                              {flupsy.name}
-                            </SelectItem>
-                          )) : (
-                            <SelectItem value="loading" disabled>
-                              Caricamento FLUPSY...
-                            </SelectItem>
-                          )}
-                        </SelectContent>
-                      </Select>
+                      {isDuplication ? (
+                        <div className="h-8 px-3 py-1 text-sm border rounded-md bg-gray-50 text-gray-600 flex items-center">
+                          {flupsys?.find((f: any) => f.id === field.value)?.name || `FLUPSY #${field.value}`}
+                          <span className="ml-2 text-xs text-gray-500">(copiato dall'operazione originale)</span>
+                        </div>
+                      ) : (
+                        <Select
+                          disabled={isLoading}
+                          value={field.value?.toString() || ''}
+                          onValueChange={(value) => {
+                            const flupsyId = Number(value);
+                            field.onChange(flupsyId);
+                            form.setValue('basketId', null);
+                          }}
+                        >
+                          <FormControl>
+                            <SelectTrigger className="h-8 text-sm">
+                              <SelectValue placeholder="Seleziona FLUPSY" />
+                            </SelectTrigger>
+                          </FormControl>
+                          <SelectContent>
+                            {flupsys?.length ? flupsys.map((flupsy: any) => (
+                              <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                                {flupsy.name}
+                              </SelectItem>
+                            )) : (
+                              <SelectItem value="loading" disabled>
+                                Caricamento FLUPSY...
+                              </SelectItem>
+                            )}
+                          </SelectContent>
+                        </Select>
+                      )}
                       
                       {/* Status FLUPSY - Solo informativo */}
                       {watchFlupsyId && baskets && baskets.length > 0 && (
@@ -979,35 +988,55 @@ export default function OperationFormCompact({
                   render={({ field }) => (
                     <FormItem className="mb-1">
                       <FormLabel className="text-xs font-medium">Cestello <span className="text-red-500">*</span></FormLabel>
-                      <Select
-                        disabled={!watchFlupsyId || isLoading || (baskets && watchFlupsyId ? baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)).length === 0 : true)}
-                        value={field.value?.toString() || ''}
-                        onValueChange={(value) => {
-                          const basketId = Number(value);
-                          field.onChange(basketId);
-                          
-                          // Trova cestello selezionato e imposta ciclo
-                          const selectedBasket = baskets?.find((b: any) => b.id === basketId);
-                          console.log("Cestello selezionato:", selectedBasket);
-                          
-                          if (selectedBasket) {
-                            if (selectedBasket.currentCycleId) {
-                              console.log("Cestello con ciclo attivo:", selectedBasket.currentCycleId);
-                              form.setValue('cycleId', selectedBasket.currentCycleId);
-                            } else {
-                              console.log("Cestello senza ciclo attivo");
-                              form.setValue('cycleId', null);
+                      {isDuplication ? (
+                        <div className="min-h-[84px] p-2 text-sm border rounded-md bg-gray-50 text-gray-600 flex flex-col gap-1">
+                          <div className="font-semibold">
+                            {(() => {
+                              const selectedBasket = baskets?.find((b: any) => b.id === field.value);
+                              if (!selectedBasket) return `Cestello #${field.value}`;
                               
-                              // AUTO-IMPOSTAZIONE: Se il cestello è disponibile, imposta automaticamente "Prima Attivazione"
-                              if (selectedBasket.state === 'available') {
-                                console.log("CESTELLO DISPONIBILE - Auto-impostazione Prima Attivazione");
-                                form.setValue('type', 'prima-attivazione');
-                                console.log("Tipo operazione impostato automaticamente a 'Prima Attivazione'");
+                              return (
+                                <>
+                                  #{selectedBasket.physicalNumber} 
+                                  {selectedBasket.row && selectedBasket.position ? 
+                                    `(${selectedBasket.row}-${selectedBasket.position})` : ''}
+                                  {selectedBasket.state === 'active' ? ' ✅' : ''}
+                                </>
+                              );
+                            })()}
+                          </div>
+                          <span className="text-xs text-gray-500">(copiato dall'operazione originale)</span>
+                        </div>
+                      ) : (
+                        <Select
+                          disabled={!watchFlupsyId || isLoading || (baskets && watchFlupsyId ? baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)).length === 0 : true)}
+                          value={field.value?.toString() || ''}
+                          onValueChange={(value) => {
+                            const basketId = Number(value);
+                            field.onChange(basketId);
+                            
+                            // Trova cestello selezionato e imposta ciclo
+                            const selectedBasket = baskets?.find((b: any) => b.id === basketId);
+                            console.log("Cestello selezionato:", selectedBasket);
+                            
+                            if (selectedBasket) {
+                              if (selectedBasket.currentCycleId) {
+                                console.log("Cestello con ciclo attivo:", selectedBasket.currentCycleId);
+                                form.setValue('cycleId', selectedBasket.currentCycleId);
+                              } else {
+                                console.log("Cestello senza ciclo attivo");
+                                form.setValue('cycleId', null);
+                                
+                                // AUTO-IMPOSTAZIONE: Se il cestello è disponibile, imposta automaticamente "Prima Attivazione"
+                                if (selectedBasket.state === 'available') {
+                                  console.log("CESTELLO DISPONIBILE - Auto-impostazione Prima Attivazione");
+                                  form.setValue('type', 'prima-attivazione');
+                                  console.log("Tipo operazione impostato automaticamente a 'Prima Attivazione'");
+                                }
                               }
                             }
-                          }
-                        }}
-                      >
+                          }}
+                        >
                         <FormControl>
                           <SelectTrigger className="min-h-[84px] text-sm py-2">
                             <SelectValue>
