@@ -355,10 +355,18 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Controlla se è stata richiesta la versione originale (non ottimizzata)
       const useOriginal = req.query.original === 'true';
+      const forceRefresh = req.query.force_refresh === 'true';
       
       if (!useOriginal) {
         // Usa la nuova implementazione ottimizzata con cache
         console.log("Utilizzo implementazione ottimizzata per i cestelli");
+        
+        // Se è richiesto un refresh forzato, pulisci il cache
+        if (forceRefresh) {
+          const { BasketsCache } = await import('./baskets-cache-service.js');
+          BasketsCache.clear();
+          console.log("Cache cestelli pulito per force_refresh");
+        }
         
         // Verifica se stiamo richiedendo tutti i cestelli (tipicamente per la dashboard)
         const includeAll = req.query.includeAll === 'true';

@@ -219,7 +219,21 @@ export default function OperationFormCompact({
   
   const { data: baskets, refetch: refetchBaskets } = useQuery({ 
     queryKey: ['/api/baskets', 'includeAll'],
-    queryFn: () => fetch('/api/baskets?includeAll=true').then(res => res.json()),
+    queryFn: async () => {
+      // Prova prima la query normale
+      let response = await fetch('/api/baskets?includeAll=true');
+      let data = await response.json();
+      
+      // Se non ci sono cestelli ma dovrebbero esserci, forza il refresh del cache
+      if (!data || data.length === 0) {
+        console.log('🔄 Nessun cestello trovato, forzando refresh cache...');
+        response = await fetch('/api/baskets?includeAll=true&force_refresh=true');
+        data = await response.json();
+        console.log(`✅ Dopo refresh cache: ${data?.length || 0} cestelli trovati`);
+      }
+      
+      return data;
+    },
     enabled: !isLoading,
   });
   
