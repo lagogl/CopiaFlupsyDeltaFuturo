@@ -237,9 +237,11 @@ export async function getCycles(options = {}) {
     }
     
     // Mappa dei cestelli per ID
+    console.log("DEBUG CESTELLI: basketsResult raw =", basketsResult.map(b => ({id: b.id, flupsy_id: b.flupsy_id, row: b.row})));
+    
     const basketsMap = basketsResult.reduce((map, basket) => {
       // Converti i nomi delle colonne da snake_case a camelCase
-      map[basket.id] = {
+      const mappedBasket = {
         id: basket.id,
         flupsyId: basket.flupsy_id,
         physicalNumber: basket.physical_number,
@@ -250,16 +252,24 @@ export async function getCycles(options = {}) {
         row: basket.row,
         position: basket.position
       };
+      
+      console.log("DEBUG CESTELLI: Mappato cestello", basket.id, "->", mappedBasket);
+      map[basket.id] = mappedBasket;
       return map;
     }, {});
     
     // 4. Ottieni i dettagli dei FLUPSY
+    console.log("DEBUG FLUPSY: basketsResult =", basketsResult.map(b => ({id: b.id, flupsy_id: b.flupsy_id})));
+    
     const flupsyIds = new Set();
     for (const basket of basketsResult) {
-      if (basket.flupsyId || basket.flupsy_id) {
-        flupsyIds.add(basket.flupsyId || basket.flupsy_id);
+      if (basket.flupsy_id) {
+        console.log("DEBUG FLUPSY: Aggiunto flupsyId", basket.flupsy_id, "dal cestello", basket.id);
+        flupsyIds.add(basket.flupsy_id);
       }
     }
+    
+    console.log("DEBUG FLUPSY: flupsyIds Set =", Array.from(flupsyIds));
     
     let flupsysMap = {};
     if (flupsyIds.size > 0) {
@@ -280,8 +290,8 @@ export async function getCycles(options = {}) {
             location: flupsy.location,
             description: flupsy.description,
             active: flupsy.active,
-            maxPositions: flupsy.maxPositions,
-            productionCenter: flupsy.productionCenter
+            maxPositions: flupsy.max_positions,
+            productionCenter: flupsy.production_center
           };
         }
       }
