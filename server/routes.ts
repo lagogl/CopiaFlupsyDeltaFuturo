@@ -2849,9 +2849,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const sortOrder = req.query.sortOrder ? String(req.query.sortOrder) : 'desc';
       // Aggiungi supporto per includeAll per ottenere tutti i cicli senza paginazione
       const includeAll = req.query.includeAll === 'true';
+      const forceRefresh = req.query.force_refresh === 'true';
       
       if (includeAll) {
         console.log("Richiesta di tutti i cicli con includeAll=true");
+      }
+      
+      // Se è richiesto un refresh forzato, pulisci il cache
+      if (forceRefresh) {
+        const { CyclesCache } = await import('./controllers/cycles-controller.js');
+        CyclesCache.clear();
+        console.log("Cache cicli pulito per force_refresh");
       }
       
       // Applica headers anti-cache per forzare aggiornamenti

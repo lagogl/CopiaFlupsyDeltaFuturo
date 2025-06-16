@@ -239,6 +239,21 @@ export default function OperationFormCompact({
   
   const { data: cycles, refetch: refetchCycles } = useQuery({ 
     queryKey: ['/api/cycles'],
+    queryFn: async () => {
+      // Prova prima la query normale
+      let response = await fetch('/api/cycles?includeAll=true');
+      let data = await response.json();
+      
+      // Se non ci sono cicli o sono meno di quelli attesi, forza il refresh del cache
+      if (!data || data.length < 3) { // Sappiamo che dovrebbero esserci 3 cicli
+        console.log(`🔄 Cicli insufficienti trovati (${data?.length || 0}/3), forzando refresh cache...`);
+        response = await fetch('/api/cycles?includeAll=true&force_refresh=true');
+        data = await response.json();
+        console.log(`✅ Dopo refresh cache: ${data?.length || 0} cicli trovati`);
+      }
+      
+      return data;
+    },
     enabled: !isLoading,
     staleTime: 0, // Nessuna cache - sempre dati freschi per cicli
   });
