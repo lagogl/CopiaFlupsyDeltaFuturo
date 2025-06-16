@@ -2113,7 +2113,16 @@ export default function Operations() {
                                 {/* Prima riga - Informazioni di base */}
                                 <div>
                                   <span className="text-gray-500 block text-xs">FLUPSY:</span>
-                                  <span className="font-medium text-gray-700">{basket?.flupsy?.name || 'N/D'}</span>
+                                  <span className="font-medium text-gray-700">
+                                    {(() => {
+                                      // Trova il FLUPSY usando l'ID del cestello
+                                      if (basket?.flupsyId) {
+                                        const flupsy = flupsys?.find((f: any) => f.id === basket.flupsyId);
+                                        return flupsy?.name || `FLUPSY #${basket.flupsyId}`;
+                                      }
+                                      return 'N/D';
+                                    })()}
+                                  </span>
                                 </div>
                                 <div>
                                   <span className="text-gray-500 block text-xs">Lotto:</span>
