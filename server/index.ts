@@ -5,7 +5,7 @@ import { createSaleNotification } from "./sales-notification-handler";
 import { registerScreeningNotificationHandler } from "./screening-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
 import { setupPerformanceOptimizations } from "./index-setup";
-// Rimuovo import problematico e uso controllo integrato nelle route
+import { ensureDatabaseConsistency } from "./database-consistency-service";
 
 const app = express();
 app.use(express.json());

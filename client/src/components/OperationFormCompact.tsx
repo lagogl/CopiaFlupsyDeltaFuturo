@@ -308,10 +308,10 @@ export default function OperationFormCompact({
   
   // Auto-seleziona FLUPSY se c'è solo un FLUPSY con cestelli disponibili
   useEffect(() => {
-    if (!watchFlupsyId && baskets && flupsys) {
+    if (!watchFlupsyId && baskets && flupsys && Array.isArray(baskets) && Array.isArray(flupsys)) {
       // Trova FLUPSY con cestelli disponibili
-      const flupsysWithBaskets = flupsys.filter((flupsy: any) => 
-        baskets.some((basket: any) => basket.flupsyId === flupsy.id)
+      const flupsysWithBaskets = (flupsys as any[]).filter((flupsy: any) => 
+        (baskets as any[]).some((basket: any) => basket.flupsyId === flupsy.id)
       );
       
       if (flupsysWithBaskets.length === 1) {
