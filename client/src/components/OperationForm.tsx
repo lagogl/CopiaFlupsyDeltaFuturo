@@ -915,7 +915,10 @@ export default function OperationForm({
                 <FormLabel>FLUPSY</FormLabel>
                 {isDuplication ? (
                   <div className="px-3 py-2 border rounded-md bg-gray-50 text-gray-600">
-                    {flupsys?.find((f: any) => f.id === field.value)?.name || `FLUPSY #${field.value}`}
+                    {(() => {
+                      const flupsy = flupsys?.find((f: any) => f.id === field.value);
+                      return flupsy ? `${flupsy.name} - ${flupsy.location || 'N/D'}` : `FLUPSY #${field.value}`;
+                    })()}
                     <span className="ml-2 text-xs text-gray-500">(copiato dall'operazione originale)</span>
                   </div>
                 ) : (
