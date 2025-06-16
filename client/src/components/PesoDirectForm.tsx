@@ -98,7 +98,8 @@ export default function PesoDirectForm({
   const [formData, setFormData] = useState({
     date: format(today, 'yyyy-MM-dd'), // Default alla data odierna
     totalWeight: '',
-    sampleWeight: '', // Campo per i grammi sample
+    sampleWeight: '1', // Valore di default per le operazioni peso rapide
+    deadCount: '0', // Campo obbligatorio per numero animali morti
     notes: '',
     // Valori calcolati
     animalCount: defaultAnimalCount || 0,
@@ -170,9 +171,7 @@ export default function PesoDirectForm({
     setIsFormValid(
       !!updatedFormData.date && 
       !!updatedFormData.totalWeight && 
-      parseFloat(updatedFormData.totalWeight) > 0 &&
-      !!updatedFormData.sampleWeight &&
-      parseFloat(updatedFormData.sampleWeight) > 0
+      parseFloat(updatedFormData.totalWeight) > 0
     );
   };
   
@@ -224,6 +223,7 @@ export default function PesoDirectForm({
         animalCount: defaultAnimalCount, // Utilizziamo il conteggio precedente per mantenere la coerenza
         totalWeight: parseFloat(formData.totalWeight) * 1000, // Converti in grammi per il database
         sampleWeight: parseFloat(formData.sampleWeight), // Campo obbligatorio per le operazioni peso
+        deadCount: parseInt(formData.deadCount), // Campo obbligatorio per numero animali morti
         notes: formData.notes
       };
       
@@ -393,22 +393,7 @@ export default function PesoDirectForm({
           </p>
         </div>
         
-        {/* Grammi sample */}
-        <div>
-          <label className="block text-sm font-medium mb-1">Grammi sample *</label>
-          <Input
-            type="number"
-            step="0.01"
-            min="0.01"
-            placeholder="Inserisci i grammi sample"
-            value={formData.sampleWeight}
-            onChange={(e) => handleChange('sampleWeight', e.target.value)}
-            className="w-full"
-          />
-          <p className="text-xs text-slate-500 mt-1">
-            Campo obbligatorio: inserisci il peso del campione in grammi
-          </p>
-        </div>
+
         
         {/* Box informativo sulla taglia automatica */}
         <div className="p-3 border border-primary/20 bg-primary/5 rounded-md mb-4">
