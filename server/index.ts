@@ -5,6 +5,7 @@ import { createSaleNotification } from "./sales-notification-handler";
 import { registerScreeningNotificationHandler } from "./screening-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
 import { setupPerformanceOptimizations } from "./index-setup";
+// Rimuovo import problematico e uso controllo integrato nelle route
 
 const app = express();
 app.use(express.json());
@@ -51,6 +52,19 @@ app.use((req, res, next) => {
   
   // Configura le ottimizzazioni di prestazioni (indici, caching, monitoraggio)
   await setupPerformanceOptimizations(app);
+  
+  // Controllo automatico consistenza database
+  console.log("🔍 Controllo consistenza database...");
+  try {
+    const consistencyResult = await ensureDatabaseConsistency();
+    if (consistencyResult.consistent) {
+      console.log("✅ Database consistente - nessun problema rilevato");
+    } else {
+      console.log(`🔧 Database riparato automaticamente - risolte ${consistencyResult.fixedIssues} inconsistenze`);
+    }
+  } catch (error) {
+    console.error("⚠️ Errore durante il controllo consistenza:", error);
+  }
   
   const server = await registerRoutes(app);
   
