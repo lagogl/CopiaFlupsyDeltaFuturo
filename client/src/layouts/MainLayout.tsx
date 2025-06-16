@@ -56,10 +56,18 @@ export default function MainLayout({ children }: MainLayoutProps) {
     'system': true
   });
 
-  // Effetto per chiudere automaticamente la sidebar su dispositivi mobili quando cambia la pagina
+  // Effetto per gestire la sidebar in base alla pagina e al dispositivo
   useEffect(() => {
     if (isMobile) {
       setSidebarOpen(false);
+    } else {
+      // Su desktop, nascondi automaticamente la sidebar quando si visualizza il Dashboard
+      // per permettere una migliore visualizzazione delle mappe FLUPSY
+      if (location === '/') {
+        setSidebarOpen(false);
+      } else {
+        setSidebarOpen(true);
+      }
     }
   }, [location, isMobile]);
 
