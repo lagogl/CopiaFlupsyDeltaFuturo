@@ -1037,37 +1037,37 @@ export default function OperationFormCompact({
                             }
                           }}
                         >
-                        <FormControl>
-                          <SelectTrigger className="min-h-[84px] text-sm py-2">
-                            <SelectValue>
-                              {watchBasketId ? (
-                                <div className="flex flex-col gap-1 w-full">
-                                  <div className="font-semibold">
-                                    {(() => {
-                                      const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
-                                      if (!selectedBasket) return "Cestello selezionato";
-                                      
-                                      return (
-                                        <>
-                                          #{selectedBasket.physicalNumber} 
-                                          {selectedBasket.row && selectedBasket.position ? 
-                                            `(${selectedBasket.row}-${selectedBasket.position})` : ''}
-                                          {selectedBasket.state === 'active' ? ' ✅' : ''}
-                                        </>
-                                      );
-                                    })()}
-                                  </div>
-                                  <div className="text-xs flex flex-wrap items-center gap-1 mt-0.5">
-                                    {(() => {
-                                      const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
-                                      if (!selectedBasket) return null;
-                                      
-                                      // Se il cestello è attivo, cerca informazioni dall'ultima operazione
-                                      if (selectedBasket.state === 'active' && operations && operations.length > 0) {
-                                        // Trova l'ultima operazione per questo cestello
-                                        const basketOperations = operations.filter((op: any) => 
-                                          op.basketId === selectedBasket.id && 
-                                          op.cycleId === selectedBasket.currentCycleId
+                          <FormControl>
+                            <SelectTrigger className="min-h-[84px] text-sm py-2">
+                              <SelectValue>
+                                {watchBasketId ? (
+                                  <div className="flex flex-col gap-1 w-full">
+                                    <div className="font-semibold">
+                                      {(() => {
+                                        const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
+                                        if (!selectedBasket) return "Cestello selezionato";
+                                        
+                                        return (
+                                          <>
+                                            #{selectedBasket.physicalNumber} 
+                                            {selectedBasket.row && selectedBasket.position ? 
+                                              `(${selectedBasket.row}-${selectedBasket.position})` : ''}
+                                            {selectedBasket.state === 'active' ? ' ✅' : ''}
+                                          </>
+                                        );
+                                      })()}
+                                    </div>
+                                    <div className="text-xs flex flex-wrap items-center gap-1 mt-0.5">
+                                      {(() => {
+                                        const selectedBasket = baskets?.find((b: any) => b.id === watchBasketId);
+                                        if (!selectedBasket) return null;
+                                        
+                                        // Se il cestello è attivo, cerca informazioni dall'ultima operazione
+                                        if (selectedBasket.state === 'active' && operations && operations.length > 0) {
+                                          // Trova l'ultima operazione per questo cestello
+                                          const basketOperations = operations.filter((op: any) => 
+                                            op.basketId === selectedBasket.id && 
+                                            op.cycleId === selectedBasket.currentCycleId
                                         ).sort((a: any, b: any) => 
                                           new Date(b.date).getTime() - new Date(a.date).getTime()
                                         );
@@ -1249,7 +1249,8 @@ export default function OperationFormCompact({
                             </SelectItem>
                           )}
                         </SelectContent>
-                      </Select>
+                        </Select>
+                      )}
                       <FormMessage />
                     </FormItem>
                   )}

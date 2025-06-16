@@ -139,6 +139,7 @@ interface OperationFormProps {
   initialCycleId?: number | null; // Parametro aggiuntivo per preselezionare il ciclo
   initialFlupsyId?: number | null; // Parametro per preselezionare il FLUPSY
   initialBasketId?: number | null; // Parametro per preselezionare la cesta
+  isDuplication?: boolean; // Flag per indicare se si tratta di una duplicazione
 }
 
 export default function OperationForm({ 
@@ -154,7 +155,8 @@ export default function OperationForm({
   editMode = false,
   initialCycleId = null,
   initialFlupsyId = null,
-  initialBasketId = null
+  initialBasketId = null,
+  isDuplication = false
 }: OperationFormProps) {
   // Stato per il dialogo di conferma delle operazioni misura che cambiano il numero di animali
   const { toast } = useToast();
@@ -911,34 +913,41 @@ export default function OperationForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>FLUPSY</FormLabel>
-                <Select 
-                  onValueChange={(value) => {
-                    const flupsyId = Number(value);
-                    field.onChange(flupsyId);
-                    // Reset basket when FLUPSY changes
-                    form.setValue('basketId', undefined);
-                    form.setValue('cycleId', undefined);
-                    
-                    console.log('FLUPSY selezionato:', flupsyId);
-                  }}
-                  value={field.value?.toString()}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder="Seleziona un FLUPSY" />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {flupsys && flupsys.map(flupsy => (
-                      <SelectItem 
-                        key={flupsy.id} 
-                        value={flupsy.id.toString()}
-                      >
-                        {flupsy.name} - {flupsy.location || 'N/D'}
-                      </SelectItem>
-                    ))}
-                  </SelectContent>
-                </Select>
+                {isDuplication ? (
+                  <div className="px-3 py-2 border rounded-md bg-gray-50 text-gray-600">
+                    {flupsys?.find((f: any) => f.id === field.value)?.name || `FLUPSY #${field.value}`}
+                    <span className="ml-2 text-xs text-gray-500">(copiato dall'operazione originale)</span>
+                  </div>
+                ) : (
+                  <Select 
+                    onValueChange={(value) => {
+                      const flupsyId = Number(value);
+                      field.onChange(flupsyId);
+                      // Reset basket when FLUPSY changes
+                      form.setValue('basketId', undefined);
+                      form.setValue('cycleId', undefined);
+                      
+                      console.log('FLUPSY selezionato:', flupsyId);
+                    }}
+                    value={field.value?.toString()}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Seleziona un FLUPSY" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {flupsys && flupsys.map(flupsy => (
+                        <SelectItem 
+                          key={flupsy.id} 
+                          value={flupsy.id.toString()}
+                        >
+                          {flupsy.name} - {flupsy.location || 'N/D'}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                )}
                 <FormMessage />
               </FormItem>
             )}
