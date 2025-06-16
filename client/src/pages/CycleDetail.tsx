@@ -130,16 +130,16 @@ function LotInfo({ operations }: LotInfoProps) {
             </span>
           </div>
         )}
-        {lotDetails.totalQuantity && (
+        {lotDetails.animalCount && (
           <div className="flex justify-between">
-            <span className="text-sm font-medium text-muted-foreground">Quantità:</span>
-            <span className="font-medium">{new Intl.NumberFormat('it-IT').format(lotDetails.totalQuantity)}</span>
+            <span className="text-sm font-medium text-muted-foreground">Animali:</span>
+            <span className="font-medium">{new Intl.NumberFormat('it-IT').format(lotDetails.animalCount)}</span>
           </div>
         )}
-        {lotDetails.unitPrice && (
+        {lotDetails.weight && (
           <div className="flex justify-between">
-            <span className="text-sm font-medium text-muted-foreground">Prezzo:</span>
-            <span className="font-medium">€{lotDetails.unitPrice.toFixed(2)}</span>
+            <span className="text-sm font-medium text-muted-foreground">Peso (g):</span>
+            <span className="font-medium">{new Intl.NumberFormat('it-IT').format(lotDetails.weight)}</span>
           </div>
         )}
       </div>

@@ -298,9 +298,6 @@ export const lots = pgTable("lots", {
   description: text("description"),
   origin: text("origin"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
-  // Nuovi campi per gestire quantità e prezzi
-  totalQuantity: real("total_quantity"), // Quantità totale in kg
-  unitPrice: real("unit_price"), // Prezzo unitario per kg
 });
 
 // Position History (Cronologia delle posizioni delle ceste)

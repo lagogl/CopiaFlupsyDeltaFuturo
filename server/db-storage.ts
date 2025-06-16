@@ -948,8 +948,43 @@ export class DbStorage implements IStorage {
   }
 
   // LOTS
+  private lotsCache: Map<string, { data: any[], timestamp: number }> = new Map();
+  private lotsCacheExpiry = 5 * 60 * 1000; // 5 minuti
+
   async getLots(): Promise<Lot[]> {
-    return await db.select().from(lots);
+    const cacheKey = 'all_lots_ordered';
+    const cached = this.lotsCache.get(cacheKey);
+    
+    // Verifica se abbiamo dati in cache validi
+    if (cached && (Date.now() - cached.timestamp) < this.lotsCacheExpiry) {
+      console.log('🚀 LOTTI: Cache HIT - recuperati in 0ms');
+      return cached.data;
+    }
+
+    try {
+      console.log('🔄 LOTTI: Cache MISS - query al database...');
+      const startTime = Date.now();
+      const lots = await db.select().from(lots).orderBy(desc(lots.arrivalDate));
+      const duration = Date.now() - startTime;
+      
+      // Salva in cache
+      this.lotsCache.set(cacheKey, {
+        data: lots,
+        timestamp: Date.now()
+      });
+      
+      console.log(`🚀 LOTTI: Cache SAVED (${lots.length} lotti) - query completata in ${duration}ms`);
+      return lots;
+    } catch (error) {
+      console.error('Error in getLots:', error);
+      throw error;
+    }
+  }
+
+  // Metodo per invalidare la cache dei lotti
+  invalidateLotsCache(): void {
+    this.lotsCache.clear();
+    console.log('🧹 LOTTI: Cache invalidata');
   }
   
   /**
@@ -1060,6 +1095,9 @@ export class DbStorage implements IStorage {
       id: nextId,
       state: 'active'
     }).returning();
+    
+    // Invalida la cache dei lotti
+    this.invalidateLotsCache();
     
     return results[0];
   }
