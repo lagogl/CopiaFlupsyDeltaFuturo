@@ -14,6 +14,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getBasketColorBySize, getSizeFromAnimalsPerKg } from '@/lib/utils';
+import { getSizeColor } from '@/lib/sizeUtils';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
 import { type SampleCalculatorResult } from '@/components/SampleCalculator';
@@ -221,7 +222,19 @@ function BasketTableView({
                   {avgWeight ? formatNumberWithCommas(avgWeight) : "N/D"}
                 </TableCell>
                 <TableCell className="p-2">
-                  {size ? size.code : "N/D"}
+                  {size ? (
+                    <Badge 
+                      variant="outline" 
+                      className="font-medium border-2"
+                      style={{
+                        backgroundColor: `${getSizeColor(size.code)}20`,
+                        borderColor: getSizeColor(size.code),
+                        color: getSizeColor(size.code)
+                      }}
+                    >
+                      {size.code}
+                    </Badge>
+                  ) : "N/D"}
                 </TableCell>
                 <TableCell className="p-2">
                   {lot ? lot.supplier : "N/D"}
