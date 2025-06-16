@@ -605,12 +605,23 @@ export default function QuickOperations() {
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
   });
   
-  // Filtriamo solo le ceste con cicli attivi
+  // Filtriamo solo le ceste con cicli attivi e che hanno almeno un'operazione
   const activeCycles = cycles ? cycles.filter((c: Cycle) => c.state === 'active') : [];
   const basketsWithActiveCycles = baskets ? baskets.filter((b: Basket) => b.currentCycleId !== null) : [];
   
+  // Filtriamo solo cestelli che hanno almeno un'operazione nel ciclo attivo
+  const basketsWithOperations = basketsWithActiveCycles.filter((basket: Basket) => {
+    if (!operations) return false;
+    
+    const basketOperations = operations.filter((op: Operation) => 
+      op.basketId === basket.id && op.cycleId === basket.currentCycleId
+    );
+    
+    return basketOperations.length > 0;
+  });
+  
   // Gestisce basket filtrati in base ai criteri selezionati
-  const filteredBaskets = basketsWithActiveCycles.filter((basket: Basket) => {
+  const filteredBaskets = basketsWithOperations.filter((basket: Basket) => {
     // Filtra per FLUPSY
     if (selectedFlupsyId !== 'all' && basket.flupsyId !== parseInt(selectedFlupsyId)) {
       return false;
