@@ -1441,19 +1441,51 @@ export default function Operations() {
                           </div>
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                          {op.flupsyName ? (
-                            <div>
-                              <span className="font-medium text-blue-600">
-                                {op.flupsyName}
-                              </span>
-                            </div>
-                          ) : op.basket?.flupsyId && flupsys?.find((f: any) => f.id === op.basket?.flupsyId) ? (
-                            <div>
-                              <span className="font-medium text-blue-600">
-                                {flupsys.find((f: any) => f.id === op.basket?.flupsyId)?.name || `#${op.basket.flupsyId}`}
-                              </span>
-                            </div>
-                          ) : '-'}
+                          {(() => {
+                            // Prima controlla se l'operazione ha già il nome del FLUPSY
+                            if (op.flupsyName) {
+                              return (
+                                <div>
+                                  <span className="font-medium text-blue-600">
+                                    {op.flupsyName}
+                                  </span>
+                                </div>
+                              );
+                            }
+                            
+                            // Trova il cestello associato all'operazione
+                            const basket = baskets?.find((b: any) => b.id === op.basketId);
+                            
+                            // Se il cestello ha un flupsyId, trova il FLUPSY corrispondente
+                            if (basket?.flupsyId) {
+                              const flupsy = flupsys?.find((f: any) => f.id === basket.flupsyId);
+                              if (flupsy) {
+                                return (
+                                  <div>
+                                    <span className="font-medium text-blue-600">
+                                      {flupsy.name}
+                                    </span>
+                                  </div>
+                                );
+                              }
+                            }
+                            
+                            // Se il basket dell'operazione ha il flupsyId, usalo
+                            if (op.basket?.flupsyId) {
+                              const flupsy = flupsys?.find((f: any) => f.id === op.basket.flupsyId);
+                              if (flupsy) {
+                                return (
+                                  <div>
+                                    <span className="font-medium text-blue-600">
+                                      {flupsy.name}
+                                    </span>
+                                  </div>
+                                );
+                              }
+                            }
+                            
+                            return '-';
+                          })()}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
                           {op.cycleId ? `#${op.cycleId}` : '-'}
