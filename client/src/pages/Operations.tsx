@@ -2871,7 +2871,18 @@ export default function Operations() {
               date: new Date(), // Propone sempre la data odierna quando si duplica un'operazione
               basketId: selectedOperation.basketId,
               cycleId: selectedOperation.cycleId,
-              flupsyId: selectedOperation.basket?.flupsyId || selectedOperation.flupsyId,
+              flupsyId: (() => {
+                // Trova il FLUPSY ID dal cestello nell'operazione o cerca tra i cestelli disponibili
+                if (selectedOperation.basket?.flupsyId) {
+                  return selectedOperation.basket.flupsyId;
+                }
+                if (selectedOperation.flupsyId) {
+                  return selectedOperation.flupsyId;
+                }
+                // Fallback: cerca il cestello tra quelli disponibili
+                const basket = baskets?.find((b: any) => b.id === selectedOperation.basketId);
+                return basket?.flupsyId || null;
+              })(),
               sizeId: selectedOperation.sizeId,
               sgrId: selectedOperation.sgrId,
               lotId: selectedOperation.lotId,
