@@ -237,18 +237,18 @@ export async function getCycles(options = {}) {
     }
     
     // Mappa dei cestelli per ID
-    console.log("DEBUG CESTELLI: basketsResult raw =", basketsResult.map(b => ({id: b.id, flupsy_id: b.flupsy_id, row: b.row})));
+    console.log("DEBUG CESTELLI: basketsResult raw =", basketsResult.map(b => ({id: b.id, flupsyId: b.flupsyId, row: b.row})));
     
     const basketsMap = basketsResult.reduce((map, basket) => {
-      // Converti i nomi delle colonne da snake_case a camelCase
+      // I campi vengono già restituiti con i nomi corretti da Drizzle
       const mappedBasket = {
         id: basket.id,
-        flupsyId: basket.flupsy_id,
-        physicalNumber: basket.physical_number,
-        cycleCode: basket.cycle_code,
+        flupsyId: basket.flupsyId,
+        physicalNumber: basket.physicalNumber,
+        cycleCode: basket.cycleCode,
         state: basket.state,
-        currentCycleId: basket.current_cycle_id,
-        nfcData: basket.nfc_data,
+        currentCycleId: basket.currentCycleId,
+        nfcData: basket.nfcData,
         row: basket.row,
         position: basket.position
       };
@@ -259,7 +259,7 @@ export async function getCycles(options = {}) {
     }, {});
     
     // 4. Ottieni i dettagli dei FLUPSY
-    console.log("DEBUG FLUPSY: basketsResult =", basketsResult.map(b => ({id: b.id, flupsy_id: b.flupsy_id})));
+    console.log("DEBUG FLUPSY: basketsResult =", basketsResult.map(b => ({id: b.id, flupsyId: b.flupsyId})));
     
     const flupsyIds = new Set();
     for (const basket of basketsResult) {
