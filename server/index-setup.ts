@@ -8,9 +8,9 @@
  */
 
 import { sql } from 'drizzle-orm';
-import { db } from './db.js';
-import { CacheService } from './cache-service.js';
-import { setupCyclesCacheInvalidation } from './controllers/cycles-controller.js';
+import { db } from './db';
+import { CacheService } from './cache-service';
+import { setupCyclesCacheInvalidation } from './controllers/cycles-controller';
 
 /**
  * Applica gli indici strategici al database
@@ -120,7 +120,7 @@ export async function setupPerformanceOptimizations(app) {
   
   // Importa e configura gli indici per le operazioni
   try {
-    const { setupOperationsIndexes, setupOperationsCacheInvalidation } = await import('./controllers/operations-controller.js');
+    const { setupOperationsIndexes, setupOperationsCacheInvalidation } = await import('./controllers/operations-controller');
     await setupOperationsIndexes();
     
     // Configurazione invalidazione cache per operazioni
@@ -134,7 +134,7 @@ export async function setupPerformanceOptimizations(app) {
   
   // Importa e configura gli indici per i cestelli
   try {
-    const { setupBasketsIndexes, setupBasketsCacheInvalidation } = await import('./controllers/baskets-controller.js');
+    const { setupBasketsIndexes, setupBasketsCacheInvalidation } = await import('./controllers/baskets-controller');
     await setupBasketsIndexes();
     
     // Configurazione invalidazione cache per cestelli

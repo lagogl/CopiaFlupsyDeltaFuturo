@@ -4,7 +4,7 @@ import { setupVite, serveStatic, log } from "./vite";
 import { createSaleNotification } from "./sales-notification-handler";
 import { registerScreeningNotificationHandler } from "./screening-notification-handler";
 import { testDatabaseConnection } from "./debug-db";
-import { setupPerformanceOptimizations } from "./index-setup.js";
+import { setupPerformanceOptimizations } from "./index-setup";
 
 const app = express();
 app.use(express.json());
@@ -146,12 +146,23 @@ app.use((req, res, next) => {
   let port = parseInt(process.env.PORT || "5000");
   const maxPortAttempts = 10;
   
-  const startServer = () => {
-    server.listen(5000, "0.0.0.0", () => {
-      log(`${app.get("env")} server serving on port 5000`);
-    }).on('error', (err) => {
-      console.error('Server error:', err);
+  const startServer = (attemptPort: number, attempts: number = 0) => {
+    if (attempts >= maxPortAttempts) {
+      console.error(`Failed to start server after ${maxPortAttempts} attempts`);
       process.exit(1);
+      return;
+    }
+
+    server.listen(attemptPort, "0.0.0.0", () => {
+      log(`${app.get("env")} server serving on port ${attemptPort}`);
+    }).on('error', (err: any) => {
+      if (err.code === 'EADDRINUSE') {
+        console.log(`Port ${attemptPort} is busy, trying port ${attemptPort + 1}...`);
+        startServer(attemptPort + 1, attempts + 1);
+      } else {
+        console.error('Server error:', err);
+        process.exit(1);
+      }
     });
   };
 
@@ -164,5 +175,5 @@ app.use((req, res, next) => {
     });
   });
 
-  startServer();
+  startServer(port);
 })();
