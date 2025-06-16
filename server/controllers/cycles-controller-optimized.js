@@ -107,11 +107,12 @@ export async function getCycles(options = {}) {
     page, pageSize, state, flupsyId, startDateFrom, startDateTo, sortBy, sortOrder, includeAll 
   });
   
-  // Verifica se i dati sono nella cache
-  const cached = CyclesCache.get(cacheKey);
-  if (cached) {
-    return cached;
-  }
+  // TEMP: Cache disabilitata per debug problema FLUPSY
+  CyclesCache.clear(); // Forza pulizia cache
+  // const cached = CyclesCache.get(cacheKey);
+  // if (cached) {
+  //   return cached;
+  // }
 
   console.log(`Richiesta cicli con opzioni: ${JSON.stringify(options)}`);
   const startTime = Date.now();
