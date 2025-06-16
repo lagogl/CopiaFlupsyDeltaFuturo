@@ -762,6 +762,9 @@ export default function CyclesPaginated() {
                   </button>
                 </th>
                 <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
+                  Nr. Ciclo
+                </th>
+                <th className="h-10 px-3 text-left align-middle font-medium text-xs uppercase tracking-wider">
                   <button 
                     className="flex items-center gap-1"
                     onClick={() => handleSort('basket')}
@@ -826,13 +829,13 @@ export default function CyclesPaginated() {
             <tbody className="[&_tr:last-child]:border-0">
               {isAllCyclesLoading ? (
                 <tr>
-                  <td colSpan={9} className="p-4 text-center">
+                  <td colSpan={11} className="p-4 text-center">
                     Caricamento cicli...
                   </td>
                 </tr>
               ) : paginatedCycles.length === 0 ? (
                 <tr>
-                  <td colSpan={9} className="p-4 text-center">
+                  <td colSpan={11} className="p-4 text-center">
                     Nessun ciclo trovato
                   </td>
                 </tr>
@@ -867,6 +870,9 @@ export default function CyclesPaginated() {
                     >
                       <td className="py-2 px-3 align-middle">{cycle.id}</td>
                       <td className="py-2 px-3 align-middle font-medium">
+                        C-{cycle.id}
+                      </td>
+                      <td className="py-2 px-3 align-middle font-medium">
                         #{physicalNumber || 'N/D'}
                       </td>
                       <td className="py-2 px-3 align-middle">
@@ -896,12 +902,18 @@ export default function CyclesPaginated() {
                       </td>
                       <td className="py-2 px-3 align-middle">
                         {(() => {
-                          // Calcola la taglia corretta usando il metodo della dashboard
-                          const displaySize = calculateDisplaySize(cycle);
-                          if (!displaySize || displaySize === 'N/D') return '-';
+                          // Trova l'ultima operazione del ciclo per ottenere la taglia corretta
+                          const lastOperation = cycleOperations
+                            .filter(op => op.sizeId) // Solo operazioni con taglia
+                            .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
                           
-                          // Trova la taglia per ottenere il nome completo
-                          const size = sizes.find(s => s.code === displaySize);
+                          if (!lastOperation?.sizeId) return '-';
+                          
+                          // Trova la taglia per ottenere il codice e il nome completo
+                          const size = sizes.find(s => s.id === lastOperation.sizeId);
+                          const displaySize = size?.code || 'N/D';
+                          
+                          if (displaySize === 'N/D') return '-';
                           
                           return (
                             <TooltipProvider>
