@@ -19,6 +19,10 @@ import {
 import { IStorage } from './storage';
 
 export class DbStorage implements IStorage {
+  // Cache per i lotti
+  private lotsCache: Map<string, { data: any[], timestamp: number }> = new Map();
+  private lotsCacheExpiry = 5 * 60 * 1000; // 5 minuti
+
   // AUTH
   async getUsers(): Promise<User[]> {
     return await db.select().from(users);
@@ -948,9 +952,6 @@ export class DbStorage implements IStorage {
   }
 
   // LOTS
-  private lotsCache: Map<string, { data: any[], timestamp: number }> = new Map();
-  private lotsCacheExpiry = 5 * 60 * 1000; // 5 minuti
-
   async getLots(): Promise<Lot[]> {
     const cacheKey = 'all_lots_ordered';
     const cached = this.lotsCache.get(cacheKey);
@@ -964,17 +965,17 @@ export class DbStorage implements IStorage {
     try {
       console.log('🔄 LOTTI: Cache MISS - query al database...');
       const startTime = Date.now();
-      const lots = await db.select().from(lots).orderBy(desc(lots.arrivalDate));
+      const lotsData = await db.select().from(lots).orderBy(desc(lots.arrivalDate));
       const duration = Date.now() - startTime;
       
       // Salva in cache
       this.lotsCache.set(cacheKey, {
-        data: lots,
+        data: lotsData,
         timestamp: Date.now()
       });
       
-      console.log(`🚀 LOTTI: Cache SAVED (${lots.length} lotti) - query completata in ${duration}ms`);
-      return lots;
+      console.log(`🚀 LOTTI: Cache SAVED (${lotsData.length} lotti) - query completata in ${duration}ms`);
+      return lotsData;
     } catch (error) {
       console.error('Error in getLots:', error);
       throw error;
