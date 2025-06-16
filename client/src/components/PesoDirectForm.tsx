@@ -223,7 +223,6 @@ export default function PesoDirectForm({
         animalCount: defaultAnimalCount, // Utilizziamo il conteggio precedente per mantenere la coerenza
         totalWeight: parseFloat(formData.totalWeight) * 1000, // Converti in grammi per il database
         sampleWeight: parseFloat(formData.sampleWeight), // Campo obbligatorio per le operazioni peso
-        deadCount: parseInt(formData.deadCount), // Campo obbligatorio per numero animali morti
         notes: formData.notes
       };
       

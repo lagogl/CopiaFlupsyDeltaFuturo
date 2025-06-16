@@ -157,8 +157,14 @@ export function implementDirectOperationRoute(app: Express) {
         throw new Error("I grammi sample sono obbligatori e devono essere maggiori di 0");
       }
       
-      if (operationData.deadCount === undefined || operationData.deadCount === null || operationData.deadCount < 0) {
+      // Per le operazioni peso rapide, deadCount non è obbligatorio
+      if (operationData.type !== 'peso' && (operationData.deadCount === undefined || operationData.deadCount === null || operationData.deadCount < 0)) {
         throw new Error("Il numero animali morti è obbligatorio e deve essere maggiore o uguale a 0");
+      }
+      
+      // Imposta deadCount a 0 per le operazioni peso se non fornito
+      if (operationData.type === 'peso' && (operationData.deadCount === undefined || operationData.deadCount === null)) {
+        operationData.deadCount = 0;
       }
       
       // Preserviamo esplicitamente animalCount quando viene fornito
