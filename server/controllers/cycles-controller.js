@@ -72,6 +72,16 @@ class CyclesCacheService {
   }
 
   /**
+   * Forza la pulizia della cache e restituisce lo stato
+   */
+  forceClear() {
+    const sizeBefore = this.cache.size;
+    this.cache.clear();
+    console.log(`Cache cicli: forzata pulizia - rimosse ${sizeBefore} chiavi`);
+    return { cleared: sizeBefore };
+  }
+
+  /**
    * Invalida la cache quando i dati cambiano
    */
   invalidate() {
@@ -206,7 +216,7 @@ export async function getCycles(options = {}) {
     const cycleBasketIds = cyclesResult.map(cycle => cycle.basketId);
     
     const basketsResult = await db.execute(sql`
-      SELECT * FROM baskets WHERE id IN ${cycleBasketIds}
+      SELECT * FROM baskets WHERE id = ANY(${cycleBasketIds})
     `);
     
     // Mappa dei cestelli per ID
@@ -237,7 +247,7 @@ export async function getCycles(options = {}) {
     let flupsysMap = {};
     if (flupsyIds.size > 0) {
       const flupsysResult = await db.execute(sql`
-        SELECT * FROM flupsys WHERE id IN ${Array.from(flupsyIds)}
+        SELECT * FROM flupsys WHERE id = ANY(${Array.from(flupsyIds)})
       `);
       
       // Mappa dei FLUPSY per ID
