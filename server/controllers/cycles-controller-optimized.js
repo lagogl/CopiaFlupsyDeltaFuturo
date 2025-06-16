@@ -237,8 +237,6 @@ export async function getCycles(options = {}) {
     }
     
     // Mappa dei cestelli per ID
-    console.log("DEBUG CESTELLI: basketsResult raw =", basketsResult.map(b => ({id: b.id, flupsyId: b.flupsyId, row: b.row})));
-    
     const basketsMap = basketsResult.reduce((map, basket) => {
       // I campi vengono già restituiti con i nomi corretti da Drizzle
       const mappedBasket = {
@@ -253,23 +251,17 @@ export async function getCycles(options = {}) {
         position: basket.position
       };
       
-      console.log("DEBUG CESTELLI: Mappato cestello", basket.id, "->", mappedBasket);
       map[basket.id] = mappedBasket;
       return map;
     }, {});
     
     // 4. Ottieni i dettagli dei FLUPSY
-    console.log("DEBUG FLUPSY: basketsResult =", basketsResult.map(b => ({id: b.id, flupsyId: b.flupsyId})));
-    
     const flupsyIds = new Set();
     for (const basket of basketsResult) {
-      if (basket.flupsy_id) {
-        console.log("DEBUG FLUPSY: Aggiunto flupsyId", basket.flupsy_id, "dal cestello", basket.id);
-        flupsyIds.add(basket.flupsy_id);
+      if (basket.flupsyId) {
+        flupsyIds.add(basket.flupsyId);
       }
     }
-    
-    console.log("DEBUG FLUPSY: flupsyIds Set =", Array.from(flupsyIds));
     
     let flupsysMap = {};
     if (flupsyIds.size > 0) {
