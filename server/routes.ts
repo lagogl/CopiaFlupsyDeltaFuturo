@@ -3558,17 +3558,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Lot routes ===
   app.get("/api/lots", async (req, res) => {
     try {
+      // Il metodo getLots è già ottimizzato con JOIN per evitare query N+1
       const lots = await storage.getLots();
       
-      // Fetch size for each lot
-      const lotsWithSizes = await Promise.all(
-        lots.map(async (lot) => {
-          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
-          return { ...lot, size };
-        })
-      );
-      
-      res.json(lotsWithSizes);
+      res.json(lots);
     } catch (error) {
       console.error("Error fetching lots:", error);
       res.status(500).json({ message: "Failed to fetch lots" });
@@ -3666,17 +3659,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
   app.get("/api/lots/active", async (req, res) => {
     try {
+      // Ottimizzazione: uso il metodo getActiveLots che ora includerà automaticamente le taglie
       const lots = await storage.getActiveLots();
       
-      // Fetch size for each lot
-      const lotsWithSizes = await Promise.all(
-        lots.map(async (lot) => {
-          const size = lot.sizeId ? await storage.getSize(lot.sizeId) : null;
-          return { ...lot, size };
-        })
-      );
-      
-      res.json(lotsWithSizes);
+      res.json(lots);
     } catch (error) {
       console.error("Error fetching active lots:", error);
       res.status(500).json({ message: "Failed to fetch active lots" });

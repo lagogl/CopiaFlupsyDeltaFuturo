@@ -949,7 +949,54 @@ export class DbStorage implements IStorage {
 
   // LOTS
   async getLots(): Promise<Lot[]> {
-    return await db.select().from(lots);
+    // Utilizzare JOIN per ottimizzare le prestazioni evitando query N+1
+    const results = await db
+      .select({
+        id: lots.id,
+        arrivalDate: lots.arrivalDate,
+        supplier: lots.supplier,
+        supplierLotNumber: lots.supplierLotNumber,
+        quality: lots.quality,
+        totalQuantity: lots.totalQuantity,
+        unitPrice: lots.unitPrice,
+        state: lots.state,
+        notes: lots.notes,
+        sizeId: lots.sizeId,
+        animalCount: lots.animalCount,
+        // Campi della taglia (se presente)
+        sizeCode: sizes.code,
+        sizeName: sizes.name,
+        sizeMinAnimalsPerKg: sizes.minAnimalsPerKg,
+        sizeMaxAnimalsPerKg: sizes.maxAnimalsPerKg,
+        sizeColor: sizes.color
+      })
+      .from(lots)
+      .leftJoin(sizes, eq(lots.sizeId, sizes.id))
+      .orderBy(desc(lots.arrivalDate));
+
+    // Trasforma i risultati nel formato atteso
+    return results.map(row => ({
+      id: row.id,
+      arrivalDate: row.arrivalDate,
+      supplier: row.supplier,
+      supplierLotNumber: row.supplierLotNumber,
+      quality: row.quality,
+      totalQuantity: row.totalQuantity,
+      unitPrice: row.unitPrice,
+      state: row.state,
+      notes: row.notes,
+      sizeId: row.sizeId,
+      animalCount: row.animalCount,
+      // Aggiungi la taglia se presente
+      size: row.sizeCode ? {
+        id: row.sizeId!,
+        code: row.sizeCode,
+        name: row.sizeName!,
+        minAnimalsPerKg: row.sizeMinAnimalsPerKg!,
+        maxAnimalsPerKg: row.sizeMaxAnimalsPerKg!,
+        color: row.sizeColor
+      } : null
+    }));
   }
   
   /**
@@ -1031,12 +1078,108 @@ export class DbStorage implements IStorage {
   }
 
   async getActiveLots(): Promise<Lot[]> {
-    return await db.select().from(lots).where(eq(lots.state, 'active'));
+    // Utilizzare JOIN per ottimizzare le prestazioni evitando query N+1
+    const results = await db
+      .select({
+        id: lots.id,
+        arrivalDate: lots.arrivalDate,
+        supplier: lots.supplier,
+        supplierLotNumber: lots.supplierLotNumber,
+        quality: lots.quality,
+        totalQuantity: lots.totalQuantity,
+        unitPrice: lots.unitPrice,
+        state: lots.state,
+        notes: lots.notes,
+        sizeId: lots.sizeId,
+        animalCount: lots.animalCount,
+        // Campi della taglia (se presente)
+        sizeCode: sizes.code,
+        sizeName: sizes.name,
+        sizeMinAnimalsPerKg: sizes.minAnimalsPerKg,
+        sizeMaxAnimalsPerKg: sizes.maxAnimalsPerKg,
+        sizeColor: sizes.color
+      })
+      .from(lots)
+      .leftJoin(sizes, eq(lots.sizeId, sizes.id))
+      .where(eq(lots.state, 'active'))
+      .orderBy(desc(lots.arrivalDate));
+
+    // Trasforma i risultati nel formato atteso
+    return results.map(row => ({
+      id: row.id,
+      arrivalDate: row.arrivalDate,
+      supplier: row.supplier,
+      supplierLotNumber: row.supplierLotNumber,
+      quality: row.quality,
+      totalQuantity: row.totalQuantity,
+      unitPrice: row.unitPrice,
+      state: row.state,
+      notes: row.notes,
+      sizeId: row.sizeId,
+      animalCount: row.animalCount,
+      // Aggiungi la taglia se presente
+      size: row.sizeCode ? {
+        id: row.sizeId!,
+        code: row.sizeCode,
+        name: row.sizeName!,
+        minAnimalsPerKg: row.sizeMinAnimalsPerKg!,
+        maxAnimalsPerKg: row.sizeMaxAnimalsPerKg!,
+        color: row.sizeColor
+      } : null
+    }));
   }
 
   async getLot(id: number): Promise<Lot | undefined> {
-    const results = await db.select().from(lots).where(eq(lots.id, id));
-    return results[0];
+    // Utilizzare JOIN per ottimizzare le prestazioni evitando query N+1
+    const results = await db
+      .select({
+        id: lots.id,
+        arrivalDate: lots.arrivalDate,
+        supplier: lots.supplier,
+        supplierLotNumber: lots.supplierLotNumber,
+        quality: lots.quality,
+        totalQuantity: lots.totalQuantity,
+        unitPrice: lots.unitPrice,
+        state: lots.state,
+        notes: lots.notes,
+        sizeId: lots.sizeId,
+        animalCount: lots.animalCount,
+        // Campi della taglia (se presente)
+        sizeCode: sizes.code,
+        sizeName: sizes.name,
+        sizeMinAnimalsPerKg: sizes.minAnimalsPerKg,
+        sizeMaxAnimalsPerKg: sizes.maxAnimalsPerKg,
+        sizeColor: sizes.color
+      })
+      .from(lots)
+      .leftJoin(sizes, eq(lots.sizeId, sizes.id))
+      .where(eq(lots.id, id));
+
+    if (results.length === 0) return undefined;
+
+    const row = results[0];
+    return {
+      id: row.id,
+      arrivalDate: row.arrivalDate,
+      supplier: row.supplier,
+      supplierLotNumber: row.supplierLotNumber,
+      quality: row.quality,
+      totalQuantity: row.totalQuantity,
+      unitPrice: row.unitPrice,
+      state: row.state,
+      notes: row.notes,
+      sizeId: row.sizeId,
+      animalCount: row.animalCount,
+      // Aggiungi la taglia se presente
+      size: row.sizeCode ? {
+        id: row.sizeId!,
+        code: row.sizeCode,
+        name: row.sizeName!,
+        minAnimalsPerKg: row.sizeMinAnimalsPerKg!,
+        maxAnimalsPerKg: row.sizeMaxAnimalsPerKg!,
+        color: row.sizeColor
+      } : null
+    };
   }
 
   async createLot(lot: InsertLot): Promise<Lot> {
