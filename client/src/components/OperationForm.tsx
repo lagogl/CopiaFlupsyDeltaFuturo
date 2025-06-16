@@ -960,67 +960,82 @@ export default function OperationForm({
             render={({ field }) => (
               <FormItem>
                 <FormLabel>Cesta</FormLabel>
-                <Select 
-                  onValueChange={(value) => {
-                    field.onChange(Number(value));
-                    // Reset cycle when basket changes
-                    form.setValue('cycleId', undefined);
-                    
-                    // Verifica lo stato del cestello selezionato
-                    const selectedBasket = baskets?.find(b => b.id === Number(value));
-                    
-                    // Imposta "prima-attivazione" sia per ceste disponibili che per ceste attive senza ciclo
-                    if (selectedBasket?.state === 'available' || 
-                       (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) {
-                      console.log('Impostazione automatica operazione prima-attivazione per cesta:', selectedBasket);
-                      form.setValue('type', 'prima-attivazione');
-                    }
-                  }}
-                  value={field.value?.toString()}
-                  disabled={!watchFlupsyId}
-                >
-                  <FormControl>
-                    <SelectTrigger>
-                      <SelectValue placeholder={watchFlupsyId ? "Seleziona una cesta" : "Seleziona prima un FLUPSY"} />
-                    </SelectTrigger>
-                  </FormControl>
-                  <SelectContent>
-                    {flupsyBaskets?.map((basket) => {
-                      // Mostra le informazioni sul ciclo per le ceste attive
-                      const cycleInfo = basket.state === 'active' && basket.cycleCode ? 
-                        ` (${basket.cycleCode})` : '';
+                {isDuplication ? (
+                  <div className="px-3 py-2 border rounded-md bg-gray-50 text-gray-600">
+                    {(() => {
+                      const selectedBasket = baskets?.find((b: any) => b.id === field.value);
+                      if (selectedBasket) {
+                        const positionInfo = selectedBasket.row && selectedBasket.position ? 
+                          ` - Fila ${selectedBasket.row} Pos. ${selectedBasket.position}` : '';
+                        return `Cesta #${selectedBasket.physicalNumber}${positionInfo}`;
+                      }
+                      return `Cesta #${field.value}`;
+                    })()}
+                    <span className="ml-2 text-xs text-gray-500">(copiato dall'operazione originale)</span>
+                  </div>
+                ) : (
+                  <Select 
+                    onValueChange={(value) => {
+                      field.onChange(Number(value));
+                      // Reset cycle when basket changes
+                      form.setValue('cycleId', undefined);
                       
-                      // Informazioni sulla posizione
-                      const positionInfo = basket.row && basket.position ? 
-                        ` - Fila ${basket.row} Pos. ${basket.position}` : '';
+                      // Verifica lo stato del cestello selezionato
+                      const selectedBasket = baskets?.find(b => b.id === Number(value));
+                      
+                      // Imposta "prima-attivazione" sia per ceste disponibili che per ceste attive senza ciclo
+                      if (selectedBasket?.state === 'available' || 
+                         (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) {
+                        console.log('Impostazione automatica operazione prima-attivazione per cesta:', selectedBasket);
+                        form.setValue('type', 'prima-attivazione');
+                      }
+                    }}
+                    value={field.value?.toString()}
+                    disabled={!watchFlupsyId}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder={watchFlupsyId ? "Seleziona una cesta" : "Seleziona prima un FLUPSY"} />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {flupsyBaskets?.map((basket) => {
+                        // Mostra le informazioni sul ciclo per le ceste attive
+                        const cycleInfo = basket.state === 'active' && basket.cycleCode ? 
+                          ` (${basket.cycleCode})` : '';
                         
-                      // Stato visualizzato solo per ceste disponibili
-                      const stateInfo = basket.state === 'available' ? 
-                        ' - Disponibile' : '';
-                        
-                      return (
-                        <SelectItem 
-                          key={basket.id} 
-                          value={basket.id.toString()}
-                          className={
-                            basket.state === 'active' && basket.currentCycleId 
-                              ? "text-green-700 font-medium" 
+                        // Informazioni sulla posizione
+                        const positionInfo = basket.row && basket.position ? 
+                          ` - Fila ${basket.row} Pos. ${basket.position}` : '';
+                          
+                        // Stato visualizzato solo per ceste disponibili
+                        const stateInfo = basket.state === 'available' ? 
+                          ' - Disponibile' : '';
+                          
+                        return (
+                          <SelectItem 
+                            key={basket.id} 
+                            value={basket.id.toString()}
+                            className={
+                              basket.state === 'active' && basket.currentCycleId 
+                                ? "text-green-700 font-medium" 
+                                : (basket.state === 'available' || (basket.state === 'active' && !basket.currentCycleId))
+                                  ? "text-amber-600" 
+                                  : ""
+                            }
+                          >
+                            {basket.state === 'active' && basket.currentCycleId
+                              ? "🟢 " 
                               : (basket.state === 'available' || (basket.state === 'active' && !basket.currentCycleId))
-                                ? "text-amber-600" 
-                                : ""
-                          }
-                        >
-                          {basket.state === 'active' && basket.currentCycleId
-                            ? "🟢 " 
-                            : (basket.state === 'available' || (basket.state === 'active' && !basket.currentCycleId))
-                              ? "🟠 " 
-                              : ""}
-                          Cesta #{basket.physicalNumber}{positionInfo}{cycleInfo}{stateInfo}
-                        </SelectItem>
-                      );
-                    })}
-                  </SelectContent>
-                </Select>
+                                ? "🟠 " 
+                                : ""}
+                            Cesta #{basket.physicalNumber}{positionInfo}{cycleInfo}{stateInfo}
+                          </SelectItem>
+                        );
+                      })}
+                    </SelectContent>
+                  </Select>
+                )}
                 <FormMessage />
               </FormItem>
             )}
