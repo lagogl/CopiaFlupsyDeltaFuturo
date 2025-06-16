@@ -976,24 +976,11 @@ export default function OperationFormCompact({
                 <FormField
                   control={form.control}
                   name="basketId"
-                  render={({ field }) => {
-                    // Calcola cestelli disponibili per il FLUPSY selezionato
-                    const availableBaskets = baskets && watchFlupsyId ? 
-                      baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)) : [];
-                    
-                    // Debug - mostra sempre cosa stiamo filtrando
-                    console.log(`🔍 BASKET DROPDOWN - FLUPSY ${watchFlupsyId}:`, {
-                      totalBaskets: baskets?.length || 0,
-                      availableBaskets: availableBaskets.length,
-                      isLoading,
-                      watchFlupsyId
-                    });
-                    
-                    return (
+                  render={({ field }) => (
                     <FormItem className="mb-1">
                       <FormLabel className="text-xs font-medium">Cestello <span className="text-red-500">*</span></FormLabel>
                       <Select
-                        disabled={!watchFlupsyId || isLoading || availableBaskets.length === 0}
+                        disabled={!watchFlupsyId || isLoading || (baskets && watchFlupsyId ? baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)).length === 0 : true)}
                         value={field.value?.toString() || ''}
                         onValueChange={(value) => {
                           const basketId = Number(value);
@@ -1011,11 +998,11 @@ export default function OperationFormCompact({
                               console.log("Cestello senza ciclo attivo");
                               form.setValue('cycleId', null);
                               
-                              // 🚀 AUTO-IMPOSTAZIONE: Se il cestello è disponibile, imposta automaticamente "Prima Attivazione"
+                              // AUTO-IMPOSTAZIONE: Se il cestello è disponibile, imposta automaticamente "Prima Attivazione"
                               if (selectedBasket.state === 'available') {
-                                console.log("🚀 CESTELLO DISPONIBILE - Auto-impostazione Prima Attivazione");
+                                console.log("CESTELLO DISPONIBILE - Auto-impostazione Prima Attivazione");
                                 form.setValue('type', 'prima-attivazione');
-                                console.log("✅ Tipo operazione impostato automaticamente a 'Prima Attivazione'");
+                                console.log("Tipo operazione impostato automaticamente a 'Prima Attivazione'");
                               }
                             }
                           }
