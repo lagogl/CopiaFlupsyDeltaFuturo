@@ -125,7 +125,21 @@ export default function Cycles() {
   // Query per i dati necessari
   const { data: allCycles = [], isLoading: isAllCyclesLoading } = useQuery<Cycle[]>({
     queryKey: ['/api/cycles', 'all'],
-    queryFn: () => fetch('/api/cycles?includeAll=true').then(res => res.json()),
+    queryFn: async () => {
+      // Prova prima la query normale
+      let response = await fetch('/api/cycles?includeAll=true');
+      let data = await response.json();
+      
+      // Se non ci sono cicli, forza il refresh del cache
+      if (!data || data.length === 0) {
+        console.log('🔄 Nessun ciclo trovato nella pagina Cicli, forzando refresh cache...');
+        response = await fetch('/api/cycles?includeAll=true&force_refresh=true');
+        data = await response.json();
+        console.log(`✅ Dopo refresh cache: ${data?.length || 0} cicli trovati`);
+      }
+      
+      return data;
+    },
   });
   
   const { data: operations = [] } = useQuery<Operation[]>({
