@@ -144,6 +144,7 @@ function BasketTableView({
             <TableHead className="p-2">Data</TableHead>
             <TableHead className="p-2">Animali/Kg</TableHead>
             <TableHead className="p-2">Peso Medio</TableHead>
+            <TableHead className="p-2">Taglia</TableHead>
             <TableHead className="p-2">Lotto</TableHead>
             <TableHead className="p-2">Azioni</TableHead>
           </TableRow>
@@ -180,6 +181,11 @@ function BasketTableView({
             const avgWeight = lastOp && lastOp.animalsPerKg 
               ? Math.round(1000000 / lastOp.animalsPerKg) 
               : null;
+              
+            // Trova la taglia dall'ultima operazione
+            const size = lastOp && lastOp.sizeId && sizes && sizes.find 
+              ? sizes.find((s: any) => s.id === lastOp.sizeId) 
+              : null;
             
             return (
               <TableRow key={basket.id} className="hover:bg-gray-50 border-b">
@@ -213,6 +219,9 @@ function BasketTableView({
                 </TableCell>
                 <TableCell className="p-2">
                   {avgWeight ? formatNumberWithCommas(avgWeight) : "N/D"}
+                </TableCell>
+                <TableCell className="p-2">
+                  {size ? size.code : "N/D"}
                 </TableCell>
                 <TableCell className="p-2">
                   {lot ? lot.supplier : "N/D"}
