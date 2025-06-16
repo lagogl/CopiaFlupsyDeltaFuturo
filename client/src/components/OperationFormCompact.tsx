@@ -976,11 +976,24 @@ export default function OperationFormCompact({
                 <FormField
                   control={form.control}
                   name="basketId"
-                  render={({ field }) => (
+                  render={({ field }) => {
+                    // Calcola cestelli disponibili per il FLUPSY selezionato
+                    const availableBaskets = baskets && watchFlupsyId ? 
+                      baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)) : [];
+                    
+                    // Debug - mostra sempre cosa stiamo filtrando
+                    console.log(`🔍 BASKET DROPDOWN - FLUPSY ${watchFlupsyId}:`, {
+                      totalBaskets: baskets?.length || 0,
+                      availableBaskets: availableBaskets.length,
+                      isLoading,
+                      watchFlupsyId
+                    });
+                    
+                    return (
                     <FormItem className="mb-1">
                       <FormLabel className="text-xs font-medium">Cestello <span className="text-red-500">*</span></FormLabel>
                       <Select
-                        disabled={!watchFlupsyId || isLoading || (baskets && watchFlupsyId ? baskets.filter(b => b.flupsyId === parseInt(watchFlupsyId)).length === 0 : true)}
+                        disabled={!watchFlupsyId || isLoading || availableBaskets.length === 0}
                         value={field.value?.toString() || ''}
                         onValueChange={(value) => {
                           const basketId = Number(value);
