@@ -68,9 +68,14 @@ export function initializeWebSocket() {
       return socket;
     }
     
-    // In ambiente di sviluppo, usa direttamente l'URL del server
-    // Assicuriamoci che l'URL sia costruito correttamente
+    // Costruisci l'URL WebSocket correttamente
+    // Per Replit, usiamo sempre il dominio completo
     let wsUrl = `${protocol}//${host}/ws`;
+    
+    // Se siamo in ambiente Replit, assicuriamoci di usare il dominio corretto
+    if (host.includes('replit.dev') || host.includes('replit.co')) {
+      wsUrl = `${protocol}//${host}/ws`;
+    }
     
     // Verifica che wsUrl sia un URL WebSocket valido
     try {
@@ -239,14 +244,12 @@ function configureSocketHandlers() {
   };
   
   socket.onerror = (error) => {
-    // Log più discreto in console per gli errori di WebSocket in ambiente di sviluppo
-    if (process.env.NODE_ENV === 'development') {
-      // Versione ridotta del log per l'ambiente di sviluppo
-      console.log('WebSocket ha riscontrato un errore di connessione. Riconnessione in corso...');
-    } else {
-      // Log completo in produzione
+    // Gestione silenziosa degli errori WebSocket per evitare spam nella console
+    // Solo log essenziali in produzione
+    if (process.env.NODE_ENV !== 'development') {
       console.error('Errore WebSocket:', error);
     }
+    // In sviluppo, non loggiamo errori di connessione comuni per mantenere la console pulita
     
     // Impedisci all'errore di propagarsi come unhandledrejection
     return true;
