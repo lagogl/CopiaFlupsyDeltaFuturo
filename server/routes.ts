@@ -6946,6 +6946,131 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, error: error.message });
     }
   });
+
+  // === EXTERNAL DATA SYNC AND SALES REPORTS ROUTES ===
+
+  // Get sync status
+  app.get('/api/sync/status', async (req, res) => {
+    try {
+      const status = await storage.getSyncStatus();
+      res.json({ success: true, status });
+    } catch (error) {
+      console.error('Error getting sync status:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get external customers
+  app.get('/api/sync/customers', async (req, res) => {
+    try {
+      const customers = await storage.getExternalCustomersSync();
+      res.json({ success: true, customers });
+    } catch (error) {
+      console.error('Error getting external customers:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get external sales
+  app.get('/api/sync/sales', async (req, res) => {
+    try {
+      const { startDate, endDate, customerId } = req.query;
+      let sales;
+
+      if (startDate && endDate) {
+        sales = await storage.getExternalSalesSyncByDateRange(startDate as string, endDate as string);
+      } else if (customerId) {
+        sales = await storage.getExternalSalesSyncByCustomer(parseInt(customerId as string));
+      } else {
+        sales = await storage.getExternalSalesSync();
+      }
+
+      res.json({ success: true, sales });
+    } catch (error) {
+      console.error('Error getting external sales:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Sales reports - Summary
+  app.get('/api/reports/sales/summary', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'startDate e endDate sono richiesti' 
+        });
+      }
+
+      const summary = await storage.getSalesReportsSummary(startDate as string, endDate as string);
+      res.json({ success: true, summary });
+    } catch (error) {
+      console.error('Error getting sales summary:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Sales reports - By Product
+  app.get('/api/reports/sales/by-product', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'startDate e endDate sono richiesti' 
+        });
+      }
+
+      const reportsByProduct = await storage.getSalesReportsByProduct(startDate as string, endDate as string);
+      res.json({ success: true, reports: reportsByProduct });
+    } catch (error) {
+      console.error('Error getting sales by product:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Sales reports - By Customer
+  app.get('/api/reports/sales/by-customer', async (req, res) => {
+    try {
+      const { startDate, endDate } = req.query;
+      
+      if (!startDate || !endDate) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'startDate e endDate sono richiesti' 
+        });
+      }
+
+      const reportsByCustomer = await storage.getSalesReportsByCustomer(startDate as string, endDate as string);
+      res.json({ success: true, reports: reportsByCustomer });
+    } catch (error) {
+      console.error('Error getting sales by customer:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Sales reports - Monthly
+  app.get('/api/reports/sales/monthly', async (req, res) => {
+    try {
+      const { year } = req.query;
+      
+      if (!year) {
+        return res.status(400).json({ 
+          success: false, 
+          error: 'year è richiesto' 
+        });
+      }
+
+      const monthlyReports = await storage.getSalesReportsMonthly(parseInt(year as string));
+      res.json({ success: true, reports: monthlyReports });
+    } catch (error) {
+      console.error('Error getting monthly sales:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
   
   return httpServer;
 }

@@ -141,6 +141,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       items: [
         { icon: <BarChart className="h-5 w-5 mr-2 text-purple-600" />, label: "Statistiche", path: "/statistics" },
         { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: "Indici SGR", path: "/sgr" },
+        { icon: <PieChart className="h-5 w-5 mr-2 text-purple-600" />, label: "Report di Vendita", path: "/sales-reports" },
         { icon: <FileText className="h-5 w-5 mr-2 text-purple-600" />, label: "Diario di Impianto", path: "/diario-di-impianto" },
         { icon: <Leaf className="h-5 w-5 mr-2 text-purple-600" />, label: "Impatto Ambientale", path: "/eco-impact" }
       ]

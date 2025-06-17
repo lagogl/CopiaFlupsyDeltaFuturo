@@ -1,334 +1,464 @@
-import { useState, useEffect } from "react";
-import { useQuery } from "@tanstack/react-query";
-import { format, startOfMonth, endOfMonth, subMonths } from "date-fns";
-import { it } from "date-fns/locale";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { CalendarIcon, Download, TrendingUp, TrendingDown, DollarSign, Package } from "lucide-react";
-import { Badge } from "@/components/ui/badge";
-import { Separator } from "@/components/ui/separator";
+import { useState, useEffect } from 'react';
+import { useQuery } from '@tanstack/react-query';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Separator } from '@/components/ui/separator';
+import { 
+  TrendingUp, 
+  DollarSign, 
+  Users, 
+  Package, 
+  Calendar,
+  Database,
+  RefreshCw,
+  AlertCircle,
+  CheckCircle2,
+  Loader2,
+  BarChart3,
+  PieChart,
+  TrendingDown
+} from 'lucide-react';
+import { format, subDays, startOfMonth, endOfMonth, startOfYear } from 'date-fns';
+import { it } from 'date-fns/locale';
 
-interface SalesOperation {
-  id: number;
-  date: string;
-  type: string;
-  basketId: number;
-  cycleId: number;
-  animalCount: number;
-  totalWeight: number;
-  animalsPerKg: number;
-  notes: string;
-  basketPhysicalNumber: number;
-  flupsyName: string;
-  lotSupplier: string;
+interface SalesSummary {
+  totalSales: number;
+  totalRevenue: string;
+  totalCustomers: number;
+  averageOrderValue: string;
+  topProduct: string;
+  bestCustomer: string;
+  period: string;
 }
 
-interface SalesStats {
+interface ProductSale {
+  productName: string;
+  productCode: string;
+  totalQuantity: string;
+  totalRevenue: string;
+  orderCount: number;
+  averagePrice: string;
+}
+
+interface CustomerSale {
+  customerName: string;
+  customerCode: string;
+  totalOrders: number;
+  totalRevenue: string;
+  lastOrderDate: string;
+  averageOrderValue: string;
+}
+
+interface MonthlySale {
+  month: string;
+  year: number;
   totalSales: number;
-  totalAnimals: number;
-  totalWeight: number;
-  averagePrice: number;
-  operations: SalesOperation[];
+  totalRevenue: string;
+  uniqueCustomers: number;
+}
+
+interface SyncStatus {
+  tableName: string;
+  lastSyncAt: string | null;
+  lastSyncSuccess: boolean;
+  syncInProgress: boolean;
+  recordCount: number;
+  errorMessage: string | null;
 }
 
 export default function SalesReports() {
-  const [dateFrom, setDateFrom] = useState<Date>(startOfMonth(new Date()));
-  const [dateTo, setDateTo] = useState<Date>(endOfMonth(new Date()));
+  const [dateRange, setDateRange] = useState({
+    startDate: format(subDays(new Date(), 30), 'yyyy-MM-dd'),
+    endDate: format(new Date(), 'yyyy-MM-dd')
+  });
+  const [selectedYear, setSelectedYear] = useState(new Date().getFullYear());
 
-  // Query per ottenere i dati delle vendite
-  const { data: salesData, isLoading, refetch } = useQuery<SalesStats>({
-    queryKey: ['/api/reports/sales', format(dateFrom, 'yyyy-MM-dd'), format(dateTo, 'yyyy-MM-dd')],
-    queryFn: async () => {
-      const response = await fetch(
-        `/api/reports/sales?from=${format(dateFrom, 'yyyy-MM-dd')}&to=${format(dateTo, 'yyyy-MM-dd')}`
-      );
-      if (!response.ok) throw new Error('Failed to fetch sales data');
-      return response.json();
-    },
+  // Query per lo stato di sincronizzazione
+  const { data: syncStatus, isLoading: syncLoading } = useQuery({
+    queryKey: ['/api/sync/status'],
+    refetchInterval: 30000 // Aggiorna ogni 30 secondi
   });
 
-  // Funzione per esportare in CSV
-  const exportToCsv = () => {
-    if (!salesData?.operations?.length) return;
+  // Query per il riepilogo vendite
+  const { data: salesSummary, isLoading: summaryLoading, refetch: refetchSummary } = useQuery({
+    queryKey: ['/api/reports/sales/summary', dateRange.startDate, dateRange.endDate],
+    enabled: !!dateRange.startDate && !!dateRange.endDate
+  });
 
-    const headers = [
-      'Data',
-      'Tipo',
-      'Cestello',
-      'FLUPSY',
-      'Fornitore',
-      'Animali',
-      'Peso (kg)',
-      'Animali/kg',
-      'Note'
-    ];
+  // Query per vendite per prodotto
+  const { data: productReports, isLoading: productLoading } = useQuery({
+    queryKey: ['/api/reports/sales/by-product', dateRange.startDate, dateRange.endDate],
+    enabled: !!dateRange.startDate && !!dateRange.endDate
+  });
 
-    const csvContent = [
-      headers.join(','),
-      ...salesData.operations.map(op =>
-        [
-          op.date,
-          op.type,
-          op.basketPhysicalNumber,
-          `"${op.flupsyName}"`,
-          `"${op.lotSupplier}"`,
-          op.animalCount,
-          op.totalWeight,
-          op.animalsPerKg,
-          `"${op.notes || ''}"`
-        ].join(',')
-      )
-    ].join('\n');
+  // Query per vendite per cliente
+  const { data: customerReports, isLoading: customerLoading } = useQuery({
+    queryKey: ['/api/reports/sales/by-customer', dateRange.startDate, dateRange.endDate],
+    enabled: !!dateRange.startDate && !!dateRange.endDate
+  });
 
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const link = document.createElement('a');
-    link.href = URL.createObjectURL(blob);
-    link.download = `vendite_${format(dateFrom, 'yyyy-MM-dd')}_${format(dateTo, 'yyyy-MM-dd')}.csv`;
-    link.click();
+  // Query per report mensili
+  const { data: monthlyReports, isLoading: monthlyLoading } = useQuery({
+    queryKey: ['/api/reports/sales/monthly', selectedYear]
+  });
+
+  const handleDateRangeChange = (field: string, value: string) => {
+    setDateRange(prev => ({ ...prev, [field]: value }));
   };
 
-  // Preset rapidi per le date
-  const quickDatePresets = [
-    {
-      label: "Questo mese",
-      action: () => {
-        setDateFrom(startOfMonth(new Date()));
-        setDateTo(endOfMonth(new Date()));
-      }
-    },
-    {
-      label: "Mese scorso",
-      action: () => {
-        const lastMonth = subMonths(new Date(), 1);
-        setDateFrom(startOfMonth(lastMonth));
-        setDateTo(endOfMonth(lastMonth));
-      }
-    },
-    {
-      label: "Ultimi 3 mesi",
-      action: () => {
-        setDateFrom(startOfMonth(subMonths(new Date(), 2)));
-        setDateTo(endOfMonth(new Date()));
-      }
+  const setQuickRange = (days: number) => {
+    setDateRange({
+      startDate: format(subDays(new Date(), days), 'yyyy-MM-dd'),
+      endDate: format(new Date(), 'yyyy-MM-dd')
+    });
+  };
+
+  const setCurrentMonth = () => {
+    const now = new Date();
+    setDateRange({
+      startDate: format(startOfMonth(now), 'yyyy-MM-dd'),
+      endDate: format(endOfMonth(now), 'yyyy-MM-dd')
+    });
+  };
+
+  const formatCurrency = (amount: string | number) => {
+    const num = typeof amount === 'string' ? parseFloat(amount) : amount;
+    return new Intl.NumberFormat('it-IT', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(num);
+  };
+
+  const formatNumber = (num: string | number) => {
+    const value = typeof num === 'string' ? parseFloat(num) : num;
+    return new Intl.NumberFormat('it-IT').format(value);
+  };
+
+  const getSyncStatusBadge = (status: SyncStatus) => {
+    if (status.syncInProgress) {
+      return <Badge variant="outline" className="bg-blue-50"><Loader2 className="w-3 h-3 mr-1 animate-spin" />In corso</Badge>;
     }
-  ];
+    if (status.lastSyncSuccess) {
+      return <Badge variant="outline" className="bg-green-50"><CheckCircle2 className="w-3 h-3 mr-1" />Sincronizzato</Badge>;
+    }
+    return <Badge variant="destructive"><AlertCircle className="w-3 h-3 mr-1" />Errore</Badge>;
+  };
 
   return (
-    <div className="container mx-auto p-6 space-y-6">
+    <div className="p-6 max-w-7xl mx-auto space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Rapporti Vendite</h1>
+          <h1 className="text-3xl font-bold tracking-tight">Report di Vendita</h1>
           <p className="text-muted-foreground">
-            Analisi delle vendite e operazioni commerciali
+            Analisi delle vendite sincronizzate dal database esterno
           </p>
         </div>
-        <Button onClick={exportToCsv} disabled={!salesData?.operations?.length}>
-          <Download className="w-4 h-4 mr-2" />
-          Esporta CSV
-        </Button>
+        <div className="flex items-center gap-2">
+          <Database className="w-5 h-5 text-muted-foreground" />
+          <span className="text-sm text-muted-foreground">Dati esterni</span>
+        </div>
       </div>
 
-      {/* Filtri data */}
+      {/* Stato di Sincronizzazione */}
       <Card>
         <CardHeader>
-          <CardTitle>Filtri Periodo</CardTitle>
+          <CardTitle className="flex items-center gap-2">
+            <RefreshCw className="w-5 h-5" />
+            Stato Sincronizzazione
+          </CardTitle>
           <CardDescription>
-            Seleziona il periodo per visualizzare i rapporti vendite
+            Monitoraggio della sincronizzazione con il database esterno
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-wrap gap-4 items-center">
-            <div className="flex gap-2">
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-[150px] justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(dateFrom, "dd/MM/yyyy")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dateFrom}
-                    onSelect={(date) => date && setDateFrom(date)}
-                    initialFocus
-                    locale={it}
-                  />
-                </PopoverContent>
-              </Popover>
-              
-              <span className="self-center">-</span>
-              
-              <Popover>
-                <PopoverTrigger asChild>
-                  <Button variant="outline" className="w-[150px] justify-start text-left font-normal">
-                    <CalendarIcon className="mr-2 h-4 w-4" />
-                    {format(dateTo, "dd/MM/yyyy")}
-                  </Button>
-                </PopoverTrigger>
-                <PopoverContent className="w-auto p-0">
-                  <Calendar
-                    mode="single"
-                    selected={dateTo}
-                    onSelect={(date) => date && setDateTo(date)}
-                    initialFocus
-                    locale={it}
-                  />
-                </PopoverContent>
-              </Popover>
+          {syncLoading ? (
+            <div className="flex items-center gap-2">
+              <Loader2 className="w-4 h-4 animate-spin" />
+              <span>Caricamento stato...</span>
             </div>
-
-            <Separator orientation="vertical" className="h-8" />
-
-            <div className="flex gap-2">
-              {quickDatePresets.map((preset) => (
-                <Button
-                  key={preset.label}
-                  variant="outline"
-                  size="sm"
-                  onClick={preset.action}
-                >
-                  {preset.label}
-                </Button>
+          ) : syncStatus?.status ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {syncStatus.status.map((status: SyncStatus) => (
+                <div key={status.tableName} className="flex items-center justify-between p-3 border rounded-lg">
+                  <div className="flex flex-col">
+                    <span className="font-medium">
+                      {status.tableName === 'external_customers_sync' ? 'Clienti' : 'Vendite'}
+                    </span>
+                    <span className="text-sm text-muted-foreground">
+                      {status.recordCount} record
+                      {status.lastSyncAt && ` • ${format(new Date(status.lastSyncAt), 'dd MMM yyyy HH:mm', { locale: it })}`}
+                    </span>
+                  </div>
+                  {getSyncStatusBadge(status)}
+                </div>
               ))}
+            </div>
+          ) : (
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Sincronizzazione non configurata</AlertTitle>
+              <AlertDescription>
+                Il sistema di sincronizzazione non è ancora configurato. 
+                Contattare l'amministratore per configurare la connessione al database esterno.
+              </AlertDescription>
+            </Alert>
+          )}
+        </CardContent>
+      </Card>
+
+      {/* Filtri Data */}
+      <Card>
+        <CardHeader>
+          <CardTitle>Filtri Periodo</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-wrap items-end gap-4">
+            <div className="flex-1 min-w-[200px]">
+              <Label htmlFor="startDate">Data Inizio</Label>
+              <Input
+                id="startDate"
+                type="date"
+                value={dateRange.startDate}
+                onChange={(e) => handleDateRangeChange('startDate', e.target.value)}
+              />
+            </div>
+            <div className="flex-1 min-w-[200px]">
+              <Label htmlFor="endDate">Data Fine</Label>
+              <Input
+                id="endDate"
+                type="date"
+                value={dateRange.endDate}
+                onChange={(e) => handleDateRangeChange('endDate', e.target.value)}
+              />
+            </div>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setQuickRange(7)}>7 giorni</Button>
+              <Button variant="outline" onClick={() => setQuickRange(30)}>30 giorni</Button>
+              <Button variant="outline" onClick={setCurrentMonth}>Mese corrente</Button>
             </div>
           </div>
         </CardContent>
       </Card>
 
-      {/* Statistiche generali */}
-      {salesData && (
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Totale Operazioni</CardTitle>
-              <Package className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{salesData.totalSales}</div>
-              <p className="text-xs text-muted-foreground">
-                operazioni di vendita nel periodo
-              </p>
-            </CardContent>
-          </Card>
+      <Tabs defaultValue="summary" className="space-y-6">
+        <TabsList className="grid w-full grid-cols-4">
+          <TabsTrigger value="summary">Riepilogo</TabsTrigger>
+          <TabsTrigger value="products">Per Prodotto</TabsTrigger>
+          <TabsTrigger value="customers">Per Cliente</TabsTrigger>
+          <TabsTrigger value="monthly">Andamento Mensile</TabsTrigger>
+        </TabsList>
 
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Animali Venduti</CardTitle>
-              <TrendingUp className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {salesData.totalAnimals.toLocaleString('it-IT')}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                totale capi venduti
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Peso Totale</CardTitle>
-              <TrendingDown className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {salesData.totalWeight.toFixed(1)} kg
-              </div>
-              <p className="text-xs text-muted-foreground">
-                peso complessivo venduto
-              </p>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Media Animali/kg</CardTitle>
-              <DollarSign className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">
-                {salesData.averagePrice.toFixed(0)}
-              </div>
-              <p className="text-xs text-muted-foreground">
-                media ponderata del periodo
-              </p>
-            </CardContent>
-          </Card>
-        </div>
-      )}
-
-      {/* Tabella operazioni */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Dettaglio Operazioni di Vendita</CardTitle>
-          <CardDescription>
-            {salesData ? 
-              `${salesData.operations.length} operazioni trovate nel periodo selezionato` :
-              'Caricamento dati...'
-            }
-          </CardDescription>
-        </CardHeader>
-        <CardContent>
-          {isLoading ? (
-            <div className="text-center py-8">Caricamento dati vendite...</div>
-          ) : !salesData?.operations?.length ? (
-            <div className="text-center py-8 text-muted-foreground">
-              Nessuna vendita trovata nel periodo selezionato
+        {/* Riepilogo */}
+        <TabsContent value="summary" className="space-y-6">
+          {summaryLoading ? (
+            <div className="flex items-center justify-center py-8">
+              <Loader2 className="w-6 h-6 animate-spin mr-2" />
+              <span>Caricamento riepilogo...</span>
+            </div>
+          ) : salesSummary?.summary ? (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Vendite Totali</CardTitle>
+                  <BarChart3 className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{salesSummary.summary.totalSales}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Fatturato Totale</CardTitle>
+                  <DollarSign className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatCurrency(salesSummary.summary.totalRevenue)}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Clienti Attivi</CardTitle>
+                  <Users className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{salesSummary.summary.totalCustomers}</div>
+                </CardContent>
+              </Card>
+              
+              <Card>
+                <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+                  <CardTitle className="text-sm font-medium">Valore Medio Ordine</CardTitle>
+                  <TrendingUp className="h-4 w-4 text-muted-foreground" />
+                </CardHeader>
+                <CardContent>
+                  <div className="text-2xl font-bold">{formatCurrency(salesSummary.summary.averageOrderValue)}</div>
+                </CardContent>
+              </Card>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full border-collapse">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Data</th>
-                    <th className="text-left p-2">Tipo</th>
-                    <th className="text-left p-2">Cestello</th>
-                    <th className="text-left p-2">FLUPSY</th>
-                    <th className="text-left p-2">Fornitore</th>
-                    <th className="text-right p-2">Animali</th>
-                    <th className="text-right p-2">Peso (kg)</th>
-                    <th className="text-right p-2">Animali/kg</th>
-                    <th className="text-left p-2">Note</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {salesData.operations.map((operation) => (
-                    <tr key={operation.id} className="border-b hover:bg-muted/50">
-                      <td className="p-2">
-                        {format(new Date(operation.date), "dd/MM/yyyy", { locale: it })}
-                      </td>
-                      <td className="p-2">
-                        <Badge variant={operation.type === 'vendita' ? 'default' : 'secondary'}>
-                          {operation.type}
-                        </Badge>
-                      </td>
-                      <td className="p-2 font-mono">#{operation.basketPhysicalNumber}</td>
-                      <td className="p-2">{operation.flupsyName}</td>
-                      <td className="p-2">{operation.lotSupplier}</td>
-                      <td className="p-2 text-right font-mono">
-                        {operation.animalCount.toLocaleString('it-IT')}
-                      </td>
-                      <td className="p-2 text-right font-mono">
-                        {operation.totalWeight.toFixed(1)}
-                      </td>
-                      <td className="p-2 text-right font-mono">
-                        {operation.animalsPerKg.toFixed(0)}
-                      </td>
-                      <td className="p-2 max-w-[200px] truncate" title={operation.notes}>
-                        {operation.notes}
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
+            <Alert>
+              <AlertCircle className="h-4 w-4" />
+              <AlertTitle>Nessun dato disponibile</AlertTitle>
+              <AlertDescription>
+                Non sono disponibili dati di vendita per il periodo selezionato.
+              </AlertDescription>
+            </Alert>
           )}
-        </CardContent>
-      </Card>
+        </TabsContent>
+
+        {/* Vendite per Prodotto */}
+        <TabsContent value="products" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="w-5 h-5" />
+                Vendite per Prodotto
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {productLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  <span>Caricamento dati prodotti...</span>
+                </div>
+              ) : productReports?.reports?.length > 0 ? (
+                <div className="space-y-4">
+                  {productReports.reports.map((product: ProductSale, index: number) => (
+                    <div key={product.productCode} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{product.productName}</h4>
+                        <p className="text-sm text-muted-foreground">Codice: {product.productCode}</p>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <div className="text-lg font-bold">{formatCurrency(product.totalRevenue)}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {formatNumber(product.totalQuantity)} kg • {product.orderCount} ordini
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  Nessun dato prodotto disponibile per il periodo selezionato.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Vendite per Cliente */}
+        <TabsContent value="customers" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Vendite per Cliente
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {customerLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  <span>Caricamento dati clienti...</span>
+                </div>
+              ) : customerReports?.reports?.length > 0 ? (
+                <div className="space-y-4">
+                  {customerReports.reports.map((customer: CustomerSale, index: number) => (
+                    <div key={customer.customerCode} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{customer.customerName}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {customer.totalOrders} ordini • Ultimo: {format(new Date(customer.lastOrderDate), 'dd MMM yyyy', { locale: it })}
+                        </p>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <div className="text-lg font-bold">{formatCurrency(customer.totalRevenue)}</div>
+                        <div className="text-sm text-muted-foreground">
+                          Medio: {formatCurrency(customer.averageOrderValue)}
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  Nessun dato cliente disponibile per il periodo selezionato.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Andamento Mensile */}
+        <TabsContent value="monthly" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Calendar className="w-5 h-5" />
+                Andamento Mensile {selectedYear}
+              </CardTitle>
+              <div className="flex items-center gap-2">
+                <Label htmlFor="year">Anno:</Label>
+                <Select value={selectedYear.toString()} onValueChange={(value) => setSelectedYear(parseInt(value))}>
+                  <SelectTrigger className="w-[120px]">
+                    <SelectValue />
+                  </SelectTrigger>
+                  <SelectContent>
+                    {Array.from({ length: 5 }, (_, i) => {
+                      const year = new Date().getFullYear() - i;
+                      return (
+                        <SelectItem key={year} value={year.toString()}>
+                          {year}
+                        </SelectItem>
+                      );
+                    })}
+                  </SelectContent>
+                </Select>
+              </div>
+            </CardHeader>
+            <CardContent>
+              {monthlyLoading ? (
+                <div className="flex items-center justify-center py-8">
+                  <Loader2 className="w-6 h-6 animate-spin mr-2" />
+                  <span>Caricamento dati mensili...</span>
+                </div>
+              ) : monthlyReports?.reports?.length > 0 ? (
+                <div className="space-y-4">
+                  {monthlyReports.reports.map((month: MonthlySale, index: number) => (
+                    <div key={`${month.year}-${month.month}`} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <h4 className="font-medium">{month.month} {month.year}</h4>
+                        <p className="text-sm text-muted-foreground">
+                          {month.uniqueCustomers} clienti attivi
+                        </p>
+                      </div>
+                      <div className="text-right space-y-1">
+                        <div className="text-lg font-bold">{formatCurrency(month.totalRevenue)}</div>
+                        <div className="text-sm text-muted-foreground">
+                          {month.totalSales} vendite
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <p className="text-center text-muted-foreground py-8">
+                  Nessun dato mensile disponibile per l'anno {selectedYear}.
+                </p>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }

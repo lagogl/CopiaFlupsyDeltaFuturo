@@ -106,6 +106,7 @@ function Router() {
       <ProtectedRoute path="/notification-settings" component={NotificationSettings} requiredRole="admin" />
       <ProtectedRoute path="/amministrazione-utilita" component={AmministrazioneUtilita} requiredRole="admin" />
       <ProtectedRoute path="/eco-impact" component={EcoImpact}/>
+      <ProtectedRoute path="/sales-reports" component={SalesReports}/>
       
       {/* Redirezione per pagine rimosse */}
       <Route path="/tp3000-forecast">
