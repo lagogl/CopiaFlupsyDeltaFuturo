@@ -259,6 +259,7 @@ export interface IStorage {
   bulkUpsertExternalSalesSync(sales: any[]): Promise<void>;
   getSyncStatusByTable(tableName: string): Promise<any>;
   upsertSyncStatus(tableName: string, data: any): Promise<void>;
+  updateSyncStatus(tableName: string, data: any): Promise<SyncStatus | undefined>;
 
 }
 

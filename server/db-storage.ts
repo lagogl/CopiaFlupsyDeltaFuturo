@@ -2234,7 +2234,7 @@ export class DbStorage implements IStorage {
     try {
       if (customers.length === 0) return;
       
-      await this.db.insert(externalCustomersSync)
+      await db.insert(externalCustomersSync)
         .values(customers)
         .onConflictDoUpdate({
           target: externalCustomersSync.externalId,
@@ -2262,7 +2262,7 @@ export class DbStorage implements IStorage {
     try {
       if (sales.length === 0) return;
       
-      await this.db.insert(externalSalesSync)
+      await db.insert(externalSalesSync)
         .values(sales)
         .onConflictDoUpdate({
           target: externalSalesSync.externalId,
@@ -2286,7 +2286,7 @@ export class DbStorage implements IStorage {
 
   async getSyncStatusByTable(tableName: string): Promise<any> {
     try {
-      const result = await this.db.select()
+      const result = await db.select()
         .from(syncStatus)
         .where(eq(syncStatus.tableName, tableName))
         .limit(1);
@@ -2300,7 +2300,7 @@ export class DbStorage implements IStorage {
 
   async upsertSyncStatus(tableName: string, data: any): Promise<void> {
     try {
-      await this.db.insert(syncStatus)
+      await db.insert(syncStatus)
         .values({
           tableName,
           lastSyncAt: data.lastSyncAt || null,
