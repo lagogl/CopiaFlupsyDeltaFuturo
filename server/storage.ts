@@ -18,7 +18,11 @@ import {
   ScreeningBasketHistory, InsertScreeningBasketHistory,
   ScreeningLotReference, InsertScreeningLotReference,
   // Importazioni per l'autenticazione
-  User, InsertUser
+  User, InsertUser,
+  // Importazioni per la sincronizzazione dati esterni
+  SyncStatus, InsertSyncStatus,
+  ExternalCustomerSync, InsertExternalCustomerSync,
+  ExternalSaleSync, InsertExternalSaleSync
 } from "@shared/schema";
 
 export interface IStorage {
@@ -215,6 +219,38 @@ export interface IStorage {
   // Screening Lot Reference methods
   getScreeningLotReferencesByDestination(destinationBasketId: number): Promise<ScreeningLotReference[]>;
   createScreeningLotReference(lotReference: InsertScreeningLotReference): Promise<ScreeningLotReference>;
+  
+  // External Data Sync methods
+  getSyncStatus(): Promise<SyncStatus[]>;
+  getSyncStatusByTable(tableName: string): Promise<SyncStatus | undefined>;
+  createSyncStatus(syncStatus: InsertSyncStatus): Promise<SyncStatus>;
+  updateSyncStatus(tableName: string, syncStatus: Partial<SyncStatus>): Promise<SyncStatus | undefined>;
+  
+  // External Customers Sync methods
+  getExternalCustomersSync(): Promise<ExternalCustomerSync[]>;
+  getExternalCustomerSync(id: number): Promise<ExternalCustomerSync | undefined>;
+  getExternalCustomerSyncByExternalId(externalId: number): Promise<ExternalCustomerSync | undefined>;
+  createExternalCustomerSync(customer: InsertExternalCustomerSync): Promise<ExternalCustomerSync>;
+  updateExternalCustomerSync(id: number, customer: Partial<ExternalCustomerSync>): Promise<ExternalCustomerSync | undefined>;
+  deleteExternalCustomerSync(id: number): Promise<boolean>;
+  bulkUpsertExternalCustomersSync(customers: InsertExternalCustomerSync[]): Promise<ExternalCustomerSync[]>;
+  
+  // External Sales Sync methods
+  getExternalSalesSync(): Promise<ExternalSaleSync[]>;
+  getExternalSaleSync(id: number): Promise<ExternalSaleSync | undefined>;
+  getExternalSaleSyncByExternalId(externalId: number): Promise<ExternalSaleSync | undefined>;
+  getExternalSalesSyncByDateRange(startDate: string, endDate: string): Promise<ExternalSaleSync[]>;
+  getExternalSalesSyncByCustomer(customerId: number): Promise<ExternalSaleSync[]>;
+  createExternalSaleSync(sale: InsertExternalSaleSync): Promise<ExternalSaleSync>;
+  updateExternalSaleSync(id: number, sale: Partial<ExternalSaleSync>): Promise<ExternalSaleSync | undefined>;
+  deleteExternalSaleSync(id: number): Promise<boolean>;
+  bulkUpsertExternalSalesSync(sales: InsertExternalSaleSync[]): Promise<ExternalSaleSync[]>;
+  
+  // Sales Reports methods
+  getSalesReportsSummary(startDate: string, endDate: string): Promise<any>;
+  getSalesReportsByProduct(startDate: string, endDate: string): Promise<any>;
+  getSalesReportsByCustomer(startDate: string, endDate: string): Promise<any>;
+  getSalesReportsMonthly(year: number): Promise<any>;
 }
 
 export class MemStorage implements IStorage {

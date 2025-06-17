@@ -682,3 +682,96 @@ export type InsertLotInventoryTransaction = z.infer<typeof insertLotInventoryTra
 // Tipi per le registrazioni della mortalità
 export type LotMortalityRecord = typeof lotMortalityRecords.$inferSelect;
 export type InsertLotMortalityRecord = z.infer<typeof insertLotMortalityRecordSchema>;
+
+// Tabelle per sincronizzazione dati esterni per report vendite
+
+// Stato delle sincronizzazioni
+export const syncStatus = pgTable("sync_status", {
+  id: serial("id").primaryKey(),
+  tableName: text("table_name").notNull().unique(), // Nome della tabella sincronizzata
+  lastSyncAt: timestamp("last_sync_at"), // Ultima sincronizzazione completata
+  lastSyncSuccess: boolean("last_sync_success").default(true), // Se l'ultima sincronizzazione è andata a buon fine
+  syncInProgress: boolean("sync_in_progress").default(false), // Se una sincronizzazione è in corso
+  recordCount: integer("record_count").default(0), // Numero di record sincronizzati
+  errorMessage: text("error_message"), // Messaggio di errore dell'ultima sincronizzazione
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+// Clienti sincronizzati dal database esterno
+export const externalCustomersSync = pgTable("external_customers_sync", {
+  id: serial("id").primaryKey(),
+  externalId: integer("external_id").notNull().unique(), // ID nel database esterno
+  customerCode: text("customer_code").notNull(), // Codice cliente
+  customerName: text("customer_name").notNull(), // Nome/ragione sociale
+  customerType: text("customer_type"), // Tipo cliente (privato, azienda, ecc.)
+  vatNumber: text("vat_number"), // Partita IVA
+  taxCode: text("tax_code"), // Codice fiscale
+  address: text("address"), // Indirizzo
+  city: text("city"), // Città
+  province: text("province"), // Provincia
+  postalCode: text("postal_code"), // CAP
+  country: text("country").default("IT"), // Paese
+  phone: text("phone"), // Telefono
+  email: text("email"), // Email
+  isActive: boolean("is_active").default(true), // Se il cliente è attivo
+  notes: text("notes"), // Note
+  syncedAt: timestamp("synced_at").notNull().defaultNow(), // Quando è stato sincronizzato
+  lastModifiedExternal: timestamp("last_modified_external") // Ultima modifica nel DB esterno
+});
+
+// Vendite sincronizzate dal database esterno
+export const externalSalesSync = pgTable("external_sales_sync", {
+  id: serial("id").primaryKey(),
+  externalId: integer("external_id").notNull().unique(), // ID nel database esterno
+  saleNumber: text("sale_number").notNull(), // Numero vendita/fattura
+  saleDate: date("sale_date").notNull(), // Data vendita
+  customerId: integer("customer_id"), // Riferimento a external_customers_sync
+  customerName: text("customer_name"), // Nome cliente (denormalizzato per performance)
+  productCode: text("product_code"), // Codice prodotto
+  productName: text("product_name").notNull(), // Nome prodotto
+  productCategory: text("product_category"), // Categoria prodotto
+  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(), // Quantità venduta
+  unitOfMeasure: text("unit_of_measure").default("kg"), // Unità di misura
+  unitPrice: decimal("unit_price", { precision: 10, scale: 4 }), // Prezzo unitario
+  totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(), // Importo totale
+  discountPercent: decimal("discount_percent", { precision: 5, scale: 2 }).default("0"), // Sconto percentuale
+  discountAmount: decimal("discount_amount", { precision: 10, scale: 2 }).default("0"), // Importo sconto
+  netAmount: decimal("net_amount", { precision: 12, scale: 2 }).notNull(), // Importo netto
+  vatPercent: decimal("vat_percent", { precision: 5, scale: 2 }).default("22"), // Aliquota IVA
+  vatAmount: decimal("vat_amount", { precision: 10, scale: 2 }).default("0"), // Importo IVA
+  totalWithVat: decimal("total_with_vat", { precision: 12, scale: 2 }).notNull(), // Totale con IVA
+  paymentMethod: text("payment_method"), // Metodo pagamento
+  deliveryDate: date("delivery_date"), // Data consegna
+  origin: text("origin"), // Origine del prodotto (es. "lotto_123", "flupsy_A")
+  lotReference: text("lot_reference"), // Riferimento al lotto se disponibile
+  salesPerson: text("sales_person"), // Venditore
+  notes: text("notes"), // Note
+  status: text("status").default("completed"), // Stato vendita
+  syncedAt: timestamp("synced_at").notNull().defaultNow(), // Quando è stato sincronizzato
+  lastModifiedExternal: timestamp("last_modified_external") // Ultima modifica nel DB esterno
+});
+
+// Schema di inserimento per sync status
+export const insertSyncStatusSchema = createInsertSchema(syncStatus)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+// Schema di inserimento per clienti esterni
+export const insertExternalCustomerSyncSchema = createInsertSchema(externalCustomersSync)
+  .omit({ id: true, syncedAt: true });
+
+// Schema di inserimento per vendite esterne
+export const insertExternalSaleSyncSchema = createInsertSchema(externalSalesSync)
+  .omit({ id: true, syncedAt: true });
+
+// Tipi per sync status
+export type SyncStatus = typeof syncStatus.$inferSelect;
+export type InsertSyncStatus = z.infer<typeof insertSyncStatusSchema>;
+
+// Tipi per clienti esterni
+export type ExternalCustomerSync = typeof externalCustomersSync.$inferSelect;
+export type InsertExternalCustomerSync = z.infer<typeof insertExternalCustomerSyncSchema>;
+
+// Tipi per vendite esterne
+export type ExternalSaleSync = typeof externalSalesSync.$inferSelect;
+export type InsertExternalSaleSync = z.infer<typeof insertExternalSaleSyncSchema>;
