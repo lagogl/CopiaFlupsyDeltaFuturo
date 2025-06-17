@@ -2229,4 +2229,100 @@ export class DbStorage implements IStorage {
       return 0;
     }
   }
+
+  async bulkUpsertExternalCustomersSync(customers: any[]): Promise<void> {
+    try {
+      if (customers.length === 0) return;
+      
+      await this.db.insert(externalCustomersSync)
+        .values(customers)
+        .onConflictDoUpdate({
+          target: externalCustomersSync.externalId,
+          set: {
+            customerName: sql`excluded.customer_name`,
+            customerCode: sql`excluded.customer_code`,
+            email: sql`excluded.email`,
+            phone: sql`excluded.phone`,
+            address: sql`excluded.address`,
+            city: sql`excluded.city`,
+            zipCode: sql`excluded.zip_code`,
+            country: sql`excluded.country`,
+            vatNumber: sql`excluded.vat_number`,
+            fiscalCode: sql`excluded.fiscal_code`,
+            lastSyncAt: sql`excluded.last_sync_at`
+          }
+        });
+    } catch (error) {
+      console.error('Errore nell\'upsert bulk clienti:', error);
+      throw error;
+    }
+  }
+
+  async bulkUpsertExternalSalesSync(sales: any[]): Promise<void> {
+    try {
+      if (sales.length === 0) return;
+      
+      await this.db.insert(externalSalesSync)
+        .values(sales)
+        .onConflictDoUpdate({
+          target: externalSalesSync.externalId,
+          set: {
+            customerId: sql`excluded.customer_id`,
+            customerName: sql`excluded.customer_name`,
+            productName: sql`excluded.product_name`,
+            productCode: sql`excluded.product_code`,
+            quantity: sql`excluded.quantity`,
+            unitPrice: sql`excluded.unit_price`,
+            totalAmount: sql`excluded.total_amount`,
+            saleDate: sql`excluded.sale_date`,
+            lastSyncAt: sql`excluded.last_sync_at`
+          }
+        });
+    } catch (error) {
+      console.error('Errore nell\'upsert bulk vendite:', error);
+      throw error;
+    }
+  }
+
+  async getSyncStatusByTable(tableName: string): Promise<any> {
+    try {
+      const result = await this.db.select()
+        .from(syncStatus)
+        .where(eq(syncStatus.tableName, tableName))
+        .limit(1);
+      
+      return result[0] || null;
+    } catch (error) {
+      console.error('Errore nel recupero stato sincronizzazione:', error);
+      return null;
+    }
+  }
+
+  async upsertSyncStatus(tableName: string, data: any): Promise<void> {
+    try {
+      await this.db.insert(syncStatus)
+        .values({
+          tableName,
+          lastSyncAt: data.lastSyncAt || null,
+          lastSyncSuccess: data.lastSyncSuccess || false,
+          syncInProgress: data.syncInProgress || false,
+          recordCount: data.recordCount || 0,
+          errorMessage: data.errorMessage || null
+        })
+        .onConflictDoUpdate({
+          target: syncStatus.tableName,
+          set: {
+            lastSyncAt: sql`excluded.last_sync_at`,
+            lastSyncSuccess: sql`excluded.last_sync_success`,
+            syncInProgress: sql`excluded.sync_in_progress`,
+            recordCount: sql`excluded.record_count`,
+            errorMessage: sql`excluded.error_message`,
+            updatedAt: sql`CURRENT_TIMESTAMP`
+          }
+        });
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento stato sync:', error);
+      throw error;
+    }
+  }
 }

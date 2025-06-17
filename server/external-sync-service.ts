@@ -320,8 +320,7 @@ export class ExternalSyncService {
           updatedAt: new Date()
         });
       } else {
-        await this.storage.createSyncStatus({
-          tableName,
+        await this.storage.upsertSyncStatus(tableName, {
           lastSyncAt: success ? new Date() : null,
           lastSyncSuccess: success,
           syncInProgress: inProgress,

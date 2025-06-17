@@ -255,6 +255,10 @@ export interface IStorage {
   // Sync status methods
   getSyncCustomersCount(): Promise<number>;
   getSyncSalesCount(): Promise<number>;
+  bulkUpsertExternalCustomersSync(customers: any[]): Promise<void>;
+  bulkUpsertExternalSalesSync(sales: any[]): Promise<void>;
+  getSyncStatusByTable(tableName: string): Promise<any>;
+  upsertSyncStatus(tableName: string, data: any): Promise<void>;
 
 }
 
