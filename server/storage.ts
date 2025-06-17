@@ -247,15 +247,11 @@ export interface IStorage {
   bulkUpsertExternalSalesSync(sales: InsertExternalSaleSync[]): Promise<ExternalSaleSync[]>;
   
   // Sales Reports methods
-  getSyncStatus(): Promise<any[]>;
-  getExternalCustomersSync(): Promise<any[]>;
-  getExternalSalesSync(): Promise<any[]>;
-  getExternalSalesSyncByDateRange(startDate: string, endDate: string): Promise<any[]>;
-  getExternalSalesSyncByCustomer(customerCode: string): Promise<any[]>;
-  getSalesReportsSummary(startDate?: string, endDate?: string): Promise<any>;
-  getSalesReportsByProduct(startDate?: string, endDate?: string): Promise<any[]>;
-  getSalesReportsByCustomer(startDate?: string, endDate?: string): Promise<any[]>;
-  getSalesReportsMonthly(startDate?: string, endDate?: string): Promise<any[]>;
+  getSalesReportSummary(startDate: string, endDate: string): Promise<any>;
+  getSalesReportByProduct(startDate: string, endDate: string): Promise<any[]>;
+  getSalesReportByCustomer(startDate: string, endDate: string): Promise<any[]>;
+  getSalesReportMonthly(year: number): Promise<any[]>;
+
 }
 
 export class MemStorage implements IStorage {

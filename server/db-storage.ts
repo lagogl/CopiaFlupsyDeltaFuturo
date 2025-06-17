@@ -2095,7 +2095,7 @@ export class DbStorage implements IStorage {
       let query = db.select({
         totalSales: count(externalSalesSync.id),
         totalRevenue: sum(externalSalesSync.totalAmount),
-        totalCustomers: countDistinct(externalSalesSync.customerCode)
+        totalCustomers: countDistinct(externalSalesSync.customerId)
       }).from(externalSalesSync);
 
       if (startDate && endDate) {
@@ -2148,13 +2148,13 @@ export class DbStorage implements IStorage {
     try {
       let query = db.select({
         customerName: externalSalesSync.customerName,
-        customerCode: externalSalesSync.customerCode,
+        customerId: externalSalesSync.customerId,
         totalOrders: count(externalSalesSync.id),
         totalRevenue: sum(externalSalesSync.totalAmount),
         lastOrderDate: max(externalSalesSync.saleDate)
       })
       .from(externalSalesSync)
-      .groupBy(externalSalesSync.customerCode, externalSalesSync.customerName);
+      .groupBy(externalSalesSync.customerId, externalSalesSync.customerName);
 
       if (startDate && endDate) {
         query = query.where(
