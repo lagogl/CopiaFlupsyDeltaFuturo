@@ -270,7 +270,7 @@ export class ExternalSyncService {
     return {
       externalId: Number(mapped.externalId || row.id),
       saleNumber: String(mapped.saleNumber || row.sale_number || ''),
-      saleDate: mapped.saleDate ? new Date(mapped.saleDate) : (row.sale_date ? new Date(row.sale_date) : new Date()),
+      saleDate: mapped.saleDate ? new Date(mapped.saleDate).toISOString().split('T')[0] : (row.sale_date ? new Date(row.sale_date).toISOString().split('T')[0] : new Date().toISOString().split('T')[0]),
       customerId: Number(mapped.customerId || row.customer_id || 0),
       customerName: String(mapped.customerName || row.customer_name || ''),
       productCode: String(mapped.productCode || row.product_code || ''),
@@ -287,7 +287,7 @@ export class ExternalSyncService {
       vatAmount: String(mapped.vatAmount || row.vat_amount || '0'),
       totalWithVat: String(mapped.totalWithVat || row.total_with_vat || '0'),
       paymentMethod: String(mapped.paymentMethod || row.payment_method || ''),
-      deliveryDate: mapped.deliveryDate ? new Date(mapped.deliveryDate) : (row.delivery_date ? new Date(row.delivery_date) : null),
+      deliveryDate: mapped.deliveryDate ? new Date(mapped.deliveryDate).toISOString().split('T')[0] : (row.delivery_date ? new Date(row.delivery_date).toISOString().split('T')[0] : null),
       origin: mapped.origin || row.origin,
       lotReference: mapped.lotReference || row.lot_reference,
       salesPerson: mapped.salesPerson || row.sales_person,
