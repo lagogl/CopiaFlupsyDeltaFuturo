@@ -75,7 +75,7 @@ async function testExternalDatabase() {
 }
 
 // Esegui test se chiamato direttamente
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   testExternalDatabase()
     .then(success => {
       console.log(success ? '\n✅ Test completato con successo' : '\n❌ Test fallito');

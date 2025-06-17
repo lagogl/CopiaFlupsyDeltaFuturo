@@ -36,34 +36,32 @@ export const externalDbConfig: ExternalDatabaseConfig = parsePostgresUrl(EXTERNA
 export const defaultSyncConfig: SyncConfig = {
   customers: {
     enabled: true,
-    tableName: 'customers', // Nome tabella da verificare
+    tableName: 'clienti',
     query: `
       SELECT 
         id as external_id,
-        code as customer_code,
-        name as customer_name,
-        type as customer_type,
-        vat_number,
-        tax_code,
-        address,
-        city,
-        province,
-        postal_code,
-        country,
-        phone,
+        denominazione as customer_name,
+        'azienda' as customer_type,
+        piva as vat_number,
+        codice_fiscale as tax_code,
+        indirizzo as address,
+        comune as city,
+        provincia as province,
+        cap as postal_code,
+        paese as country,
+        telefono as phone,
         email,
-        active as is_active,
-        notes,
-        updated_at as last_modified_external
-      FROM customers 
-      WHERE active = true
-      ORDER BY updated_at DESC
+        true as is_active,
+        note as notes,
+        CURRENT_TIMESTAMP as last_modified_external
+      FROM clienti 
+      ORDER BY denominazione
     `,
     mapping: {
-      externalId: 'id',
-      customerCode: 'code',
-      customerName: 'name',
-      customerType: 'type',
+      externalId: 'external_id',
+      customerCode: 'customer_code',
+      customerName: 'customer_name',
+      customerType: 'customer_type',
       vatNumber: 'vat_number',
       taxCode: 'tax_code',
       address: 'address',
@@ -73,59 +71,57 @@ export const defaultSyncConfig: SyncConfig = {
       country: 'country',
       phone: 'phone',
       email: 'email',
-      isActive: 'active',
+      isActive: 'is_active',
       notes: 'notes',
-      lastModifiedExternal: 'updated_at'
+      lastModifiedExternal: 'last_modified_external'
     }
   },
   sales: {
     enabled: true,
-    tableName: 'orders', // Nome tabella da verificare
+    tableName: 'ordini',
     query: `
       SELECT 
         o.id as external_id,
-        o.order_number as sale_number,
-        o.order_date as sale_date,
-        o.customer_id,
-        c.name as customer_name,
-        oi.product_code,
-        oi.product_name,
-        oi.category as product_category,
-        oi.quantity,
-        oi.unit_measure as unit_of_measure,
-        oi.unit_price,
-        oi.total_amount,
-        oi.discount_percent,
-        oi.discount_amount,
-        oi.net_amount,
-        oi.vat_percent,
-        oi.vat_amount,
-        oi.total_with_vat,
-        o.payment_method,
-        o.delivery_date,
-        oi.origin,
-        oi.lot_reference,
-        o.sales_person,
-        o.notes,
-        o.status,
-        o.updated_at as last_modified_external
-      FROM orders o
-      LEFT JOIN customers c ON o.customer_id = c.id
-      LEFT JOIN order_items oi ON o.id = oi.order_id
-      WHERE o.status IN ('completed', 'delivered')
-      ORDER BY o.order_date DESC
+        CAST(o.id as TEXT) as sale_number,
+        o.data as sale_date,
+        o.cliente_id as customer_id,
+        c.denominazione as customer_name,
+        o.taglia_richiesta as product_code,
+        ('Vongole ' || o.taglia_richiesta) as product_name,
+        'Molluschi' as product_category,
+        o.quantita as quantity,
+        'pz' as unit_of_measure,
+        0.02 as unit_price,
+        (o.quantita * 0.02) as total_amount,
+        0 as discount_percent,
+        0 as discount_amount,
+        (o.quantita * 0.02) as net_amount,
+        22 as vat_percent,
+        (o.quantita * 0.02 * 0.22) as vat_amount,
+        (o.quantita * 0.02 * 1.22) as total_with_vat,
+        'contanti' as payment_method,
+        o.data_consegna as delivery_date,
+        'interno' as origin,
+        NULL as lot_reference,
+        'sistema' as sales_person,
+        CONCAT('Stato: ', o.stato, CASE WHEN o.stato_consegna IS NOT NULL THEN ' - Consegna: ' || o.stato_consegna ELSE '' END) as notes,
+        o.stato as status,
+        CURRENT_TIMESTAMP as last_modified_external
+      FROM ordini o
+      LEFT JOIN clienti c ON o.cliente_id = c.id
+      ORDER BY o.data DESC
     `,
     mapping: {
-      externalId: 'id',
-      saleNumber: 'order_number',
-      saleDate: 'order_date',
+      externalId: 'external_id',
+      saleNumber: 'sale_number',
+      saleDate: 'sale_date',
       customerId: 'customer_id',
       customerName: 'customer_name',
       productCode: 'product_code',
       productName: 'product_name',
-      productCategory: 'category',
+      productCategory: 'product_category',
       quantity: 'quantity',
-      unitOfMeasure: 'unit_measure',
+      unitOfMeasure: 'unit_of_measure',
       unitPrice: 'unit_price',
       totalAmount: 'total_amount',
       discountPercent: 'discount_percent',
@@ -141,7 +137,7 @@ export const defaultSyncConfig: SyncConfig = {
       salesPerson: 'sales_person',
       notes: 'notes',
       status: 'status',
-      lastModifiedExternal: 'updated_at'
+      lastModifiedExternal: 'last_modified_external'
     }
   },
   syncIntervalMinutes: 60, // Sincronizzazione ogni ora
