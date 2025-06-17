@@ -56,9 +56,18 @@ export function initializeWebSocket() {
     const protocol = window.location.protocol === 'https:' ? 'wss:' : 'ws:';
     const host = window.location.host;
     
+    // Debug: log delle variabili di ambiente
+    console.log("Debug WebSocket URL construction:", {
+      protocol: window.location.protocol,
+      host: window.location.host,
+      hostname: window.location.hostname,
+      port: window.location.port,
+      href: window.location.href
+    });
+    
     // Verifica che l'host sia definito correttamente
-    if (!host || host === 'undefined') {
-      console.error("Errore di inizializzazione WebSocket: host non definito", {
+    if (!host || host === 'undefined' || host.includes('undefined')) {
+      console.error("Errore di inizializzazione WebSocket: host non valido", {
         locationProtocol: window.location.protocol,
         locationHost: window.location.host,
         fullLocation: window.location.href
@@ -69,12 +78,13 @@ export function initializeWebSocket() {
     }
     
     // Costruisci l'URL WebSocket correttamente
-    // Per Replit, usiamo sempre il dominio completo
     let wsUrl = `${protocol}//${host}/ws`;
     
-    // Se siamo in ambiente Replit, assicuriamoci di usare il dominio corretto
-    if (host.includes('replit.dev') || host.includes('replit.co')) {
-      wsUrl = `${protocol}//${host}/ws`;
+    // Validazione aggiuntiva per evitare URL malformati
+    if (wsUrl.includes('undefined') || wsUrl.includes('localhost:undefined')) {
+      console.error("URL WebSocket contiene 'undefined':", wsUrl);
+      socket = createDummySocket();
+      return socket;
     }
     
     // Verifica che wsUrl sia un URL WebSocket valido
