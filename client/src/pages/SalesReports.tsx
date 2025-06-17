@@ -182,9 +182,9 @@ export default function SalesReports() {
               <Loader2 className="w-4 h-4 animate-spin" />
               <span>Caricamento stato...</span>
             </div>
-          ) : syncStatus?.status ? (
+          ) : (syncStatus as any)?.status ? (
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              {syncStatus.status.map((status: SyncStatus) => (
+              {(syncStatus as any).status.map((status: SyncStatus) => (
                 <div key={status.tableName} className="flex items-center justify-between p-3 border rounded-lg">
                   <div className="flex flex-col">
                     <span className="font-medium">
@@ -261,7 +261,7 @@ export default function SalesReports() {
               <Loader2 className="w-6 h-6 animate-spin mr-2" />
               <span>Caricamento riepilogo...</span>
             </div>
-          ) : salesSummary?.summary ? (
+          ) : (salesSummary as any)?.summary ? (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
@@ -269,7 +269,7 @@ export default function SalesReports() {
                   <BarChart3 className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{salesSummary.summary.totalSales}</div>
+                  <div className="text-2xl font-bold">{(salesSummary as any).summary.totalSales}</div>
                 </CardContent>
               </Card>
               
@@ -279,7 +279,7 @@ export default function SalesReports() {
                   <DollarSign className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(salesSummary.summary.totalRevenue)}</div>
+                  <div className="text-2xl font-bold">{formatCurrency((salesSummary as any).summary.totalRevenue)}</div>
                 </CardContent>
               </Card>
               
@@ -289,7 +289,7 @@ export default function SalesReports() {
                   <Users className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{salesSummary.summary.totalCustomers}</div>
+                  <div className="text-2xl font-bold">{(salesSummary as any).summary.totalCustomers}</div>
                 </CardContent>
               </Card>
               
@@ -299,7 +299,7 @@ export default function SalesReports() {
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">{formatCurrency(salesSummary.summary.averageOrderValue)}</div>
+                  <div className="text-2xl font-bold">{formatCurrency((salesSummary as any).summary.averageOrderValue)}</div>
                 </CardContent>
               </Card>
             </div>
@@ -329,9 +329,9 @@ export default function SalesReports() {
                   <Loader2 className="w-6 h-6 animate-spin mr-2" />
                   <span>Caricamento dati prodotti...</span>
                 </div>
-              ) : productReports?.reports?.length > 0 ? (
+              ) : (productReports as any)?.reports?.length > 0 ? (
                 <div className="space-y-4">
-                  {productReports.reports.map((product: ProductSale, index: number) => (
+                  {(productReports as any).reports.map((product: ProductSale, index: number) => (
                     <div key={product.productCode} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
                         <h4 className="font-medium">{product.productName}</h4>
@@ -370,9 +370,9 @@ export default function SalesReports() {
                   <Loader2 className="w-6 h-6 animate-spin mr-2" />
                   <span>Caricamento dati clienti...</span>
                 </div>
-              ) : customerReports?.reports?.length > 0 ? (
+              ) : (customerReports as any)?.reports?.length > 0 ? (
                 <div className="space-y-4">
-                  {customerReports.reports.map((customer: CustomerSale, index: number) => (
+                  {(customerReports as any).reports.map((customer: CustomerSale, index: number) => (
                     <div key={customer.customerCode} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
                         <h4 className="font-medium">{customer.customerName}</h4>
@@ -431,9 +431,9 @@ export default function SalesReports() {
                   <Loader2 className="w-6 h-6 animate-spin mr-2" />
                   <span>Caricamento dati mensili...</span>
                 </div>
-              ) : monthlyReports?.reports?.length > 0 ? (
+              ) : (monthlyReports as any)?.reports?.length > 0 ? (
                 <div className="space-y-4">
-                  {monthlyReports.reports.map((month: MonthlySale, index: number) => (
+                  {(monthlyReports as any).reports.map((month: MonthlySale, index: number) => (
                     <div key={`${month.year}-${month.month}`} className="flex items-center justify-between p-4 border rounded-lg">
                       <div className="flex-1">
                         <h4 className="font-medium">{month.month} {month.year}</h4>
