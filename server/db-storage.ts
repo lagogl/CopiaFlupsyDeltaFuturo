@@ -1,4 +1,4 @@
-import { and, eq, isNull, desc, gte, lte, sql, inArray, or } from 'drizzle-orm';
+import { and, eq, isNull, desc, gte, lte, sql, inArray, or, count, sum, countDistinct, max } from 'drizzle-orm';
 import { db } from './db';
 import { 
   Flupsy, InsertFlupsy, flupsys,
@@ -13,6 +13,10 @@ import {
   ScreeningDestinationBasket, InsertScreeningDestinationBasket, screeningDestinationBaskets,
   ScreeningBasketHistory, InsertScreeningBasketHistory, screeningBasketHistory,
   ScreeningLotReference, InsertScreeningLotReference, screeningLotReferences,
+  // Sales sync tables
+  ExternalSaleSync, InsertExternalSaleSync, externalSalesSync,
+  ExternalCustomerSync, InsertExternalCustomerSync, externalCustomersSync,
+  SyncStatus, InsertSyncStatus, syncStatus,
   // Autenticazione
   User, InsertUser, users
 } from '../shared/schema';
@@ -2022,6 +2026,185 @@ export class DbStorage implements IStorage {
       return enrichedResults;
     } catch (error) {
       console.error(`getBasketPositionHistory - Errore durante il recupero della cronologia per la cesta ${basketId}:`, error);
+      throw error;
+    }
+  }
+
+  // Sales sync and reporting methods
+  async getSyncStatus(): Promise<any[]> {
+    try {
+      const results = await db.select().from(syncStatus);
+      return results;
+    } catch (error) {
+      console.error('Errore nel recupero dello stato di sincronizzazione:', error);
+      throw error;
+    }
+  }
+
+  async getExternalCustomersSync(): Promise<any[]> {
+    try {
+      const results = await db.select().from(externalCustomersSync);
+      return results;
+    } catch (error) {
+      console.error('Errore nel recupero dei clienti sincronizzati:', error);
+      throw error;
+    }
+  }
+
+  async getExternalSalesSync(): Promise<any[]> {
+    try {
+      const results = await db.select().from(externalSalesSync);
+      return results;
+    } catch (error) {
+      console.error('Errore nel recupero delle vendite sincronizzate:', error);
+      throw error;
+    }
+  }
+
+  async getExternalSalesSyncByDateRange(startDate: string, endDate: string): Promise<any[]> {
+    try {
+      const results = await db.select()
+        .from(externalSalesSync)
+        .where(
+          and(
+            gte(externalSalesSync.saleDate, startDate),
+            lte(externalSalesSync.saleDate, endDate)
+          )
+        );
+      return results;
+    } catch (error) {
+      console.error('Errore nel recupero delle vendite per intervallo di date:', error);
+      throw error;
+    }
+  }
+
+  async getExternalSalesSyncByCustomer(customerCode: string): Promise<any[]> {
+    try {
+      const results = await db.select()
+        .from(externalSalesSync)
+        .where(eq(externalSalesSync.customerCode, customerCode));
+      return results;
+    } catch (error) {
+      console.error('Errore nel recupero delle vendite per cliente:', error);
+      throw error;
+    }
+  }
+
+  async getSalesReportsSummary(startDate?: string, endDate?: string): Promise<any> {
+    try {
+      let query = db.select({
+        totalSales: count(externalSalesSync.id),
+        totalRevenue: sum(externalSalesSync.totalAmount),
+        totalCustomers: countDistinct(externalSalesSync.customerCode)
+      }).from(externalSalesSync);
+
+      if (startDate && endDate) {
+        query = query.where(
+          and(
+            gte(externalSalesSync.saleDate, startDate),
+            lte(externalSalesSync.saleDate, endDate)
+          )
+        );
+      }
+
+      const result = await query;
+      return result[0] || { totalSales: 0, totalRevenue: 0, totalCustomers: 0 };
+    } catch (error) {
+      console.error('Errore nel calcolo del riepilogo vendite:', error);
+      throw error;
+    }
+  }
+
+  async getSalesReportsByProduct(startDate?: string, endDate?: string): Promise<any[]> {
+    try {
+      let query = db.select({
+        productName: externalSalesSync.productName,
+        productCode: externalSalesSync.productCode,
+        totalQuantity: sum(externalSalesSync.quantity),
+        totalRevenue: sum(externalSalesSync.totalAmount),
+        orderCount: count(externalSalesSync.id)
+      })
+      .from(externalSalesSync)
+      .groupBy(externalSalesSync.productCode, externalSalesSync.productName);
+
+      if (startDate && endDate) {
+        query = query.where(
+          and(
+            gte(externalSalesSync.saleDate, startDate),
+            lte(externalSalesSync.saleDate, endDate)
+          )
+        );
+      }
+
+      const results = await query;
+      return results;
+    } catch (error) {
+      console.error('Errore nel recupero dei report prodotti:', error);
+      throw error;
+    }
+  }
+
+  async getSalesReportsByCustomer(startDate?: string, endDate?: string): Promise<any[]> {
+    try {
+      let query = db.select({
+        customerName: externalSalesSync.customerName,
+        customerCode: externalSalesSync.customerCode,
+        totalOrders: count(externalSalesSync.id),
+        totalRevenue: sum(externalSalesSync.totalAmount),
+        lastOrderDate: max(externalSalesSync.saleDate)
+      })
+      .from(externalSalesSync)
+      .groupBy(externalSalesSync.customerCode, externalSalesSync.customerName);
+
+      if (startDate && endDate) {
+        query = query.where(
+          and(
+            gte(externalSalesSync.saleDate, startDate),
+            lte(externalSalesSync.saleDate, endDate)
+          )
+        );
+      }
+
+      const results = await query;
+      return results;
+    } catch (error) {
+      console.error('Errore nel recupero dei report clienti:', error);
+      throw error;
+    }
+  }
+
+  async getSalesReportsMonthly(startDate?: string, endDate?: string): Promise<any[]> {
+    try {
+      let query = db.select({
+        month: sql<string>`EXTRACT(MONTH FROM ${externalSalesSync.saleDate})`,
+        year: sql<number>`EXTRACT(YEAR FROM ${externalSalesSync.saleDate})`,
+        totalSales: count(externalSalesSync.id),
+        totalRevenue: sum(externalSalesSync.totalAmount),
+        uniqueCustomers: countDistinct(externalSalesSync.customerCode)
+      })
+      .from(externalSalesSync)
+      .groupBy(
+        sql`EXTRACT(YEAR FROM ${externalSalesSync.saleDate})`,
+        sql`EXTRACT(MONTH FROM ${externalSalesSync.saleDate})`
+      )
+      .orderBy(
+        sql`EXTRACT(YEAR FROM ${externalSalesSync.saleDate}) DESC`,
+        sql`EXTRACT(MONTH FROM ${externalSalesSync.saleDate}) DESC`
+      );
+
+      if (startDate && endDate) {
+        query = query.where(
+          and(
+            gte(externalSalesSync.saleDate, startDate),
+            lte(externalSalesSync.saleDate, endDate)
+          )
+        );
+      }
+
+      const results = await query;
+      return results;
+    } catch (error) {
+      console.error('Errore nel recupero dei report mensili:', error);
       throw error;
     }
   }
