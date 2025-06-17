@@ -7071,6 +7071,78 @@ export async function registerRoutes(app: Express): Promise<Server> {
       res.status(500).json({ success: false, error: error.message });
     }
   });
+
+  // === ENDPOINT SINCRONIZZAZIONE DATABASE ESTERNO ===
+  app.post("/api/sync/external-database", async (req, res) => {
+    try {
+      // Importa il servizio di sincronizzazione
+      const { ExternalSyncService } = await import("./external-sync-service");
+      const { externalDbConfig, defaultSyncConfig } = await import("./external-db-config");
+      
+      // Crea un'istanza del servizio
+      const syncService = new ExternalSyncService(externalDbConfig, defaultSyncConfig, storage);
+      
+      console.log("🔄 Avvio sincronizzazione manuale con database esterno...");
+      
+      // Esegui la sincronizzazione
+      const syncResults = await syncService.syncAllData();
+      
+      console.log("✅ Sincronizzazione completata:", syncResults);
+      
+      res.json({ 
+        success: true, 
+        message: "Sincronizzazione completata con successo",
+        results: syncResults
+      });
+    } catch (error) {
+      console.error("❌ Errore durante la sincronizzazione:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message,
+        message: "Errore durante la sincronizzazione con il database esterno"
+      });
+    }
+  });
+
+  // Endpoint per verificare lo stato della sincronizzazione
+  app.get("/api/sync/status", async (req, res) => {
+    try {
+      const { ExternalSyncService } = await import("./external-sync-service");
+      const { externalDbConfig, defaultSyncConfig } = await import("./external-db-config");
+      
+      const syncService = new ExternalSyncService(externalDbConfig, defaultSyncConfig, storage);
+      
+      // Verifica connessione al database esterno
+      const isConnected = await syncService.testConnection();
+      
+      // Ottieni statistiche delle tabelle di sincronizzazione
+      const customerCount = await storage.getSyncCustomersCount();
+      const salesCount = await storage.getSyncSalesCount();
+      
+      res.json({
+        success: true,
+        status: {
+          externalDbConnected: isConnected,
+          lastSync: null, // TODO: implementare tracking dell'ultima sincronizzazione
+          syncedCustomers: customerCount,
+          syncedSales: salesCount,
+          config: {
+            host: externalDbConfig.host,
+            database: externalDbConfig.database,
+            customersEnabled: defaultSyncConfig.customers.enabled,
+            salesEnabled: defaultSyncConfig.sales.enabled,
+            syncInterval: defaultSyncConfig.syncIntervalMinutes
+          }
+        }
+      });
+    } catch (error) {
+      console.error("Errore nel controllo stato sincronizzazione:", error);
+      res.status(500).json({ 
+        success: false, 
+        error: error.message 
+      });
+    }
+  });
   
   return httpServer;
 }

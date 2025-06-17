@@ -251,6 +251,10 @@ export interface IStorage {
   getSalesReportByProduct(startDate: string, endDate: string): Promise<any[]>;
   getSalesReportByCustomer(startDate: string, endDate: string): Promise<any[]>;
   getSalesReportMonthly(year: number): Promise<any[]>;
+  
+  // Sync status methods
+  getSyncCustomersCount(): Promise<number>;
+  getSyncSalesCount(): Promise<number>;
 
 }
 
@@ -1668,6 +1672,14 @@ export class MemStorage implements IStorage {
   async getSalesReportMonthly(year: number): Promise<any[]> {
     // MemStorage non ha dati di vendita, restituisce array vuoto
     return [];
+  }
+
+  async getSyncCustomersCount(): Promise<number> {
+    return 0;
+  }
+
+  async getSyncSalesCount(): Promise<number> {
+    return 0;
   }
 }
 

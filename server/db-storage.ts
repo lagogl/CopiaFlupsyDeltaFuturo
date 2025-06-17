@@ -2208,4 +2208,25 @@ export class DbStorage implements IStorage {
       throw error;
     }
   }
+
+  // Metodi per il conteggio dei record sincronizzati
+  async getSyncCustomersCount(): Promise<number> {
+    try {
+      const result = await this.db.select({ count: count() }).from(externalCustomersSync);
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Errore nel conteggio clienti sincronizzati:', error);
+      return 0;
+    }
+  }
+
+  async getSyncSalesCount(): Promise<number> {
+    try {
+      const result = await this.db.select({ count: count() }).from(externalSalesSync);
+      return result[0]?.count || 0;
+    } catch (error) {
+      console.error('Errore nel conteggio vendite sincronizzate:', error);
+      return 0;
+    }
+  }
 }
