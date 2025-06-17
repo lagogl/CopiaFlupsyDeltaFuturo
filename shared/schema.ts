@@ -731,7 +731,7 @@ export const externalSalesSync = pgTable("external_sales_sync", {
   productCode: text("product_code"), // Codice prodotto
   productName: text("product_name").notNull(), // Nome prodotto
   productCategory: text("product_category"), // Categoria prodotto
-  quantity: decimal("quantity", { precision: 10, scale: 3 }).notNull(), // Quantità venduta
+  quantity: decimal("quantity", { precision: 12, scale: 3 }).notNull(), // Quantità venduta
   unitOfMeasure: text("unit_of_measure").default("kg"), // Unità di misura
   unitPrice: decimal("unit_price", { precision: 10, scale: 4 }), // Prezzo unitario
   totalAmount: decimal("total_amount", { precision: 12, scale: 2 }).notNull(), // Importo totale
