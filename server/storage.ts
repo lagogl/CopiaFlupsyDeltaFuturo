@@ -1612,6 +1612,67 @@ export class MemStorage implements IStorage {
     // Restituisci il numero successivo
     return maxNumber + 1;
   }
+
+  // Sales sync methods - implementazione base per MemStorage
+  async getSyncStatus(tableName?: string): Promise<SyncStatus[]> {
+    // MemStorage non supporta la sincronizzazione, restituisce array vuoto
+    return [];
+  }
+
+  async updateSyncStatus(tableName: string, data: Partial<InsertSyncStatus>): Promise<void> {
+    // MemStorage non supporta la sincronizzazione, operazione no-op
+  }
+
+  async getExternalSales(filters?: any): Promise<ExternalSaleSync[]> {
+    // MemStorage non ha dati di vendita esterni, restituisce array vuoto
+    return [];
+  }
+
+  async getExternalCustomers(filters?: any): Promise<ExternalCustomerSync[]> {
+    // MemStorage non ha dati clienti esterni, restituisce array vuoto
+    return [];
+  }
+
+  async insertExternalSales(sales: InsertExternalSaleSync[]): Promise<void> {
+    // MemStorage non supporta l'inserimento di dati esterni, operazione no-op
+  }
+
+  async insertExternalCustomers(customers: InsertExternalCustomerSync[]): Promise<void> {
+    // MemStorage non supporta l'inserimento di dati esterni, operazione no-op
+  }
+
+  async clearExternalSales(): Promise<void> {
+    // MemStorage non ha dati da cancellare, operazione no-op
+  }
+
+  async clearExternalCustomers(): Promise<void> {
+    // MemStorage non ha dati da cancellare, operazione no-op
+  }
+
+  async getSalesReportSummary(startDate: string, endDate: string): Promise<any> {
+    // MemStorage non ha dati di vendita, restituisce struttura vuota
+    return {
+      totalSales: 0,
+      totalAmount: 0,
+      totalCustomers: 0,
+      averageOrderValue: 0
+    };
+  }
+
+  async getSalesReportByProduct(startDate: string, endDate: string): Promise<any[]> {
+    // MemStorage non ha dati di vendita, restituisce array vuoto
+    return [];
+  }
+
+  async getSalesReportByCustomer(startDate: string, endDate: string): Promise<any[]> {
+    // MemStorage non ha dati di vendita, restituisce array vuoto
+    return [];
+  }
+
+  async getSalesReportMonthly(year: number): Promise<any[]> {
+    // MemStorage non ha dati di vendita, restituisce array vuoto
+    return [];
+  }
 }
 
 import { DbStorage } from './db-storage';

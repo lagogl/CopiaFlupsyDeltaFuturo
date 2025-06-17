@@ -2078,11 +2078,11 @@ export class DbStorage implements IStorage {
     }
   }
 
-  async getExternalSalesSyncByCustomer(customerCode: string): Promise<any[]> {
+  async getExternalSalesSyncByCustomer(customerId: number): Promise<any[]> {
     try {
       const results = await db.select()
         .from(externalSalesSync)
-        .where(eq(externalSalesSync.customerCode, customerCode));
+        .where(eq(externalSalesSync.customerId, customerId));
       return results;
     } catch (error) {
       console.error('Errore nel recupero delle vendite per cliente:', error);
@@ -2180,7 +2180,7 @@ export class DbStorage implements IStorage {
         year: sql<number>`EXTRACT(YEAR FROM ${externalSalesSync.saleDate})`,
         totalSales: count(externalSalesSync.id),
         totalRevenue: sum(externalSalesSync.totalAmount),
-        uniqueCustomers: countDistinct(externalSalesSync.customerCode)
+        uniqueCustomers: countDistinct(externalSalesSync.customerId)
       })
       .from(externalSalesSync)
       .groupBy(
