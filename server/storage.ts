@@ -1624,8 +1624,9 @@ export class MemStorage implements IStorage {
     return [];
   }
 
-  async updateSyncStatus(tableName: string, data: Partial<InsertSyncStatus>): Promise<void> {
-    // MemStorage non supporta la sincronizzazione, operazione no-op
+  async updateSyncStatus(tableName: string, data: any): Promise<SyncStatus | undefined> {
+    // MemStorage non supporta la sincronizzazione, restituisce undefined
+    return undefined;
   }
 
   async getExternalSales(filters?: any): Promise<ExternalSaleSync[]> {

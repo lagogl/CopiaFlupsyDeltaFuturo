@@ -2325,4 +2325,25 @@ export class DbStorage implements IStorage {
       throw error;
     }
   }
+
+  async updateSyncStatus(tableName: string, data: any): Promise<SyncStatus | undefined> {
+    try {
+      const [result] = await db.update(syncStatus)
+        .set({
+          lastSyncAt: data.lastSyncAt,
+          lastSyncSuccess: data.lastSyncSuccess,
+          syncInProgress: data.syncInProgress,
+          recordCount: data.recordCount,
+          errorMessage: data.errorMessage,
+          updatedAt: new Date()
+        })
+        .where(eq(syncStatus.tableName, tableName))
+        .returning();
+      
+      return result;
+    } catch (error) {
+      console.error('Errore nell\'aggiornamento stato sync:', error);
+      return undefined;
+    }
+  }
 }
