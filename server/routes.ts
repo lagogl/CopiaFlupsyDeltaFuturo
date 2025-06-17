@@ -6805,6 +6805,66 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sequences", SequenceController.getSequencesInfo);
   app.post("/api/sequences/reset", SequenceController.resetSequence);
   
+  // === Sales Reports API ===
+  app.get("/api/reports/sales", async (req, res) => {
+    try {
+      const from = req.query.from as string;
+      const to = req.query.to as string;
+      
+      if (!from || !to) {
+        return res.status(400).json({ message: "Date range required (from, to)" });
+      }
+      
+      // Query per ottenere tutte le operazioni di vendita nel periodo
+      const salesOperations = await db.select({
+        id: operations.id,
+        date: operations.date,
+        type: operations.type,
+        basketId: operations.basketId,
+        cycleId: operations.cycleId,
+        animalCount: operations.animalCount,
+        totalWeight: operations.totalWeight,
+        animalsPerKg: operations.animalsPerKg,
+        notes: operations.notes,
+        basketPhysicalNumber: baskets.physicalNumber,
+        flupsyName: flupsys.name,
+        lotSupplier: lots.supplier
+      })
+      .from(operations)
+      .leftJoin(baskets, eq(operations.basketId, baskets.id))
+      .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+      .leftJoin(cycles, eq(operations.cycleId, cycles.id))
+      .leftJoin(lots, eq(operations.lotId, lots.id))
+      .where(
+        and(
+          inArray(operations.type, ['vendita', 'selezione-per-vendita', 'cessazione']),
+          gte(operations.date, from),
+          lte(operations.date, to)
+        )
+      )
+      .orderBy(desc(operations.date));
+      
+      // Calcola statistiche
+      const totalSales = salesOperations.length;
+      const totalAnimals = salesOperations.reduce((sum, op) => sum + (op.animalCount || 0), 0);
+      const totalWeight = salesOperations.reduce((sum, op) => sum + (op.totalWeight || 0), 0);
+      const averagePrice = totalWeight > 0 ? totalAnimals / totalWeight : 0;
+      
+      const salesStats = {
+        totalSales,
+        totalAnimals,
+        totalWeight,
+        averagePrice,
+        operations: salesOperations
+      };
+      
+      res.json(salesStats);
+    } catch (error) {
+      console.error("Error fetching sales reports:", error);
+      res.status(500).json({ message: "Failed to fetch sales reports" });
+    }
+  });
+
   // === Route per gestione posizione cestelli ===
   app.put("/api/baskets/:id/position", updateBasketPosition);
 

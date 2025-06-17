@@ -39,6 +39,7 @@ import ExportPage from "@/pages/ExportPage";
 import DiarioDiBordo from "@/pages/DiarioDiBordo";
 import NotificationSettings from "@/pages/NotificationSettings";
 import EcoImpact from "@/pages/EcoImpact";
+import SalesReports from "@/pages/SalesReports";
 import AuthPage from "@/pages/AuthPage";
 // Modulo screening rimosso - ora si usa solo Vagliatura con Mappa
 // Modulo selezione rimosso - ora si usa solo Vagliatura con Mappa
