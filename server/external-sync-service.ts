@@ -117,9 +117,28 @@ export class ExternalSyncService {
   }
 
   /**
+   * Testa la connessione al database esterno
+   */
+  async testConnection(): Promise<boolean> {
+    if (!this.externalPool) {
+      return false;
+    }
+
+    try {
+      const client = await this.externalPool.connect();
+      await client.query('SELECT 1');
+      client.release();
+      return true;
+    } catch (error) {
+      console.error('Errore test connessione:', error);
+      return false;
+    }
+  }
+
+  /**
    * Esegue un ciclo completo di sincronizzazione
    */
-  private async runSyncCycle(): Promise<void> {
+  async runSyncCycle(): Promise<void> {
     if (!this.externalPool) {
       console.error('❌ Database esterno non configurato');
       return;

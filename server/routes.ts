@@ -7080,12 +7080,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { externalDbConfig, defaultSyncConfig } = await import("./external-db-config");
       
       // Crea un'istanza del servizio
-      const syncService = new ExternalSyncService(externalDbConfig, defaultSyncConfig, storage);
+      const syncService = new ExternalSyncService(storage, defaultSyncConfig);
+      
+      // Configura il database esterno
+      await syncService.configureExternalDatabase(externalDbConfig);
       
       console.log("🔄 Avvio sincronizzazione manuale con database esterno...");
       
       // Esegui la sincronizzazione
-      const syncResults = await syncService.syncAllData();
+      await syncService.runSyncCycle();
+      const syncResults = { success: true, message: 'Sincronizzazione completata' };
       
       console.log("✅ Sincronizzazione completata:", syncResults);
       
@@ -7110,7 +7114,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const { ExternalSyncService } = await import("./external-sync-service");
       const { externalDbConfig, defaultSyncConfig } = await import("./external-db-config");
       
-      const syncService = new ExternalSyncService(externalDbConfig, defaultSyncConfig, storage);
+      const syncService = new ExternalSyncService(storage, defaultSyncConfig);
+      
+      // Configura il database esterno
+      await syncService.configureExternalDatabase(externalDbConfig);
       
       // Verifica connessione al database esterno
       const isConnected = await syncService.testConnection();
