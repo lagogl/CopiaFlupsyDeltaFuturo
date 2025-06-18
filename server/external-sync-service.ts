@@ -315,24 +315,24 @@ export class ExternalSyncService {
       // Prima di sincronizzare, pulisci le tabelle per garantire dati sempre aggiornati
       await this.clearSyncTables();
 
-      // Sincronizza clienti
+      // Sincronizza clienti (usando SQL diretto)
       if (this.config.customers.enabled) {
-        await this.syncCustomers();
+        await this.syncCustomersDirectSQL();
       }
 
-      // Sincronizza vendite/ordini
+      // Sincronizza vendite/ordini (usando SQL diretto)
       if (this.config.sales.enabled) {
-        await this.syncSales();
+        await this.syncSalesDirectSQL();
       }
 
-      // Sincronizza consegne
+      // Sincronizza consegne (usando SQL diretto)
       if (this.config.deliveries?.enabled) {
-        await this.syncDeliveries();
+        await this.syncDeliveriesDirectSQL();
       }
 
-      // Sincronizza dettagli consegne
+      // Sincronizza dettagli consegne (usando SQL diretto)
       if (this.config.deliveryDetails?.enabled) {
-        await this.syncDeliveryDetails();
+        await this.syncDeliveryDetailsDirectSQL();
       }
 
       console.log('✅ Sincronizzazione completa terminata');
@@ -768,6 +768,156 @@ export class ExternalSyncService {
     } catch (error) {
       console.error('Errore test connessione:', error);
       return false;
+    }
+  }
+
+  /**
+   * Sincronizza le consegne dal database esterno usando SQL diretto
+   */
+  private async syncDeliveriesDirectSQL(): Promise<void> {
+    console.log('🚚 Sincronizzazione consegne (SQL diretto)...');
+    
+    if (!this.externalPool) {
+      throw new Error('Database esterno non configurato');
+    }
+
+    const externalClient = await this.externalPool.connect();
+    
+    try {
+      const result = await externalClient.query(this.config.deliveries.query);
+      console.log(`📦 Trovate ${result.rows.length} consegne nel database esterno`);
+      
+      if (result.rows.length === 0) {
+        console.log('📦 Nessuna consegna da sincronizzare');
+        return;
+      }
+
+      // Inserimento diretto nel database locale usando il pool di connessioni
+      for (const row of result.rows) {
+        const mappedData = this.mapDeliveryData(row, this.config.deliveries.mapping);
+        
+        // Query SQL diretta per inserimento
+        const insertQuery = `
+          INSERT INTO external_deliveries_sync (
+            external_id, data_creazione, cliente_id, ordine_id, data_consegna,
+            stato, numero_totale_ceste, peso_totale_kg, totale_animali,
+            taglia_media, qrcode_url, note, numero_progressivo, 
+            synced_at, last_sync_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), $15)
+          ON CONFLICT (external_id) DO UPDATE SET
+            data_creazione = EXCLUDED.data_creazione,
+            cliente_id = EXCLUDED.cliente_id,
+            ordine_id = EXCLUDED.ordine_id,
+            data_consegna = EXCLUDED.data_consegna,
+            stato = EXCLUDED.stato,
+            numero_totale_ceste = EXCLUDED.numero_totale_ceste,
+            peso_totale_kg = EXCLUDED.peso_totale_kg,
+            totale_animali = EXCLUDED.totale_animali,
+            taglia_media = EXCLUDED.taglia_media,
+            qrcode_url = EXCLUDED.qrcode_url,
+            note = EXCLUDED.note,
+            numero_progressivo = EXCLUDED.numero_progressivo,
+            synced_at = NOW(),
+            last_sync_at = EXCLUDED.last_sync_at
+        `;
+        
+        await this.storage.db.query(insertQuery, [
+          mappedData.externalId,
+          mappedData.dataCreazione,
+          mappedData.clienteId,
+          mappedData.ordineId,
+          mappedData.dataConsegna,
+          mappedData.stato,
+          mappedData.numeroTotaleCeste,
+          mappedData.pesoTotaleKg,
+          mappedData.totaleAnimali,
+          mappedData.tagliaMedia,
+          mappedData.qrcodeUrl,
+          mappedData.note,
+          mappedData.numeroProgressivo,
+          mappedData.lastSyncAt
+        ]);
+      }
+      
+      console.log(`✅ Sincronizzazione consegne completata: ${result.rows.length} records`);
+      
+    } finally {
+      externalClient.release();
+    }
+  }
+
+  /**
+   * Sincronizza i dettagli consegne dal database esterno usando SQL diretto
+   */
+  private async syncDeliveryDetailsDirectSQL(): Promise<void> {
+    console.log('📋 Sincronizzazione dettagli consegne (SQL diretto)...');
+    
+    if (!this.externalPool) {
+      throw new Error('Database esterno non configurato');
+    }
+
+    const externalClient = await this.externalPool.connect();
+    
+    try {
+      const result = await externalClient.query(this.config.deliveryDetails.query);
+      console.log(`📋 Trovati ${result.rows.length} dettagli consegne nel database esterno`);
+      
+      if (result.rows.length === 0) {
+        console.log('📋 Nessun dettaglio consegna da sincronizzare');
+        return;
+      }
+
+      // Inserimento diretto nel database locale
+      for (const row of result.rows) {
+        const mappedData = this.mapDeliveryDetailData(row, this.config.deliveryDetails.mapping);
+        
+        // Query SQL diretta per inserimento
+        const insertQuery = `
+          INSERT INTO external_delivery_details_sync (
+            external_id, report_id, misurazione_id, vasca_id, codice_sezione,
+            numero_ceste, peso_ceste_kg, taglia, animali_per_kg,
+            percentuale_guscio, percentuale_mortalita, numero_animali,
+            note, synced_at, last_sync_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), $15)
+          ON CONFLICT (external_id) DO UPDATE SET
+            report_id = EXCLUDED.report_id,
+            misurazione_id = EXCLUDED.misurazione_id,
+            vasca_id = EXCLUDED.vasca_id,
+            codice_sezione = EXCLUDED.codice_sezione,
+            numero_ceste = EXCLUDED.numero_ceste,
+            peso_ceste_kg = EXCLUDED.peso_ceste_kg,
+            taglia = EXCLUDED.taglia,
+            animali_per_kg = EXCLUDED.animali_per_kg,
+            percentuale_guscio = EXCLUDED.percentuale_guscio,
+            percentuale_mortalita = EXCLUDED.percentuale_mortalita,
+            numero_animali = EXCLUDED.numero_animali,
+            note = EXCLUDED.note,
+            synced_at = NOW(),
+            last_sync_at = EXCLUDED.last_sync_at
+        `;
+        
+        await this.storage.db.query(insertQuery, [
+          mappedData.externalId,
+          mappedData.reportId,
+          mappedData.misurazioneId,
+          mappedData.vascaId,
+          mappedData.codiceSezione,
+          mappedData.numeroCeste,
+          mappedData.pesoCesteKg,
+          mappedData.taglia,
+          mappedData.animaliPerKg,
+          mappedData.percentualeGuscio,
+          mappedData.percentualeMortalita,
+          mappedData.numeroAnimali,
+          mappedData.note,
+          mappedData.lastSyncAt
+        ]);
+      }
+      
+      console.log(`✅ Sincronizzazione dettagli consegne completata: ${result.rows.length} records`);
+      
+    } finally {
+      externalClient.release();
     }
   }
 
