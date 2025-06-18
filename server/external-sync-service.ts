@@ -468,24 +468,24 @@ export class ExternalSyncService {
   }
 
   /**
-   * Converte un valore in un oggetto Date valido o null
+   * Converte un valore in una stringa ISO valida o null per PostgreSQL
    */
-  private convertToValidDate(value: any): Date | null {
+  private convertToValidDate(value: any): string | null {
     if (!value) return null;
     
     if (value instanceof Date && !isNaN(value.getTime())) {
-      return value;
+      return value.toISOString();
     }
     
     if (typeof value === 'string') {
       const dateValue = new Date(value);
-      return !isNaN(dateValue.getTime()) ? dateValue : null;
+      return !isNaN(dateValue.getTime()) ? dateValue.toISOString() : null;
     }
     
     if (typeof value === 'object' && value.toISOString) {
       try {
         const dateValue = new Date(value);
-        return !isNaN(dateValue.getTime()) ? dateValue : null;
+        return !isNaN(dateValue.getTime()) ? dateValue.toISOString() : null;
       } catch {
         return null;
       }
@@ -513,7 +513,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalCustomerSync;
   }
 
@@ -526,15 +526,9 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti timestamp in oggetti Date per Drizzle ORM
+      // Gestisci campi timestamp
       if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
-        if (value instanceof Date) {
-          value = value;
-        } else if (value && typeof value === 'string') {
-          value = new Date(value);
-        } else if (value && typeof value === 'object' && value.toISOString) {
-          value = new Date(value);
-        }
+        value = this.convertToValidDate(value);
       }
       
       mappedData[localField] = value;
@@ -555,15 +549,9 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti timestamp in oggetti Date per Drizzle ORM
+      // Gestisci campi timestamp
       if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
-        if (value instanceof Date) {
-          value = value;
-        } else if (value && typeof value === 'string') {
-          value = new Date(value);
-        } else if (value && typeof value === 'object' && value.toISOString) {
-          value = new Date(value);
-        }
+        value = this.convertToValidDate(value);
       }
       
       mappedData[localField] = value;
@@ -584,15 +572,9 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti timestamp in oggetti Date per Drizzle ORM
+      // Gestisci campi timestamp
       if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
-        if (value instanceof Date) {
-          value = value;
-        } else if (value && typeof value === 'string') {
-          value = new Date(value);
-        } else if (value && typeof value === 'object' && value.toISOString) {
-          value = new Date(value);
-        }
+        value = this.convertToValidDate(value);
       }
       
       mappedData[localField] = value;
