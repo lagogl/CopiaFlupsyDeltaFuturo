@@ -7122,8 +7122,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       console.log("🔄 Avvio sincronizzazione manuale con database esterno...");
       
-      // Esegui la sincronizzazione
-      await syncService.runSyncCycle();
+      // Esegui la sincronizzazione completa
+      await syncService.performFullSync();
       const syncResults = { success: true, message: 'Sincronizzazione completata' };
       
       console.log("✅ Sincronizzazione completata:", syncResults);

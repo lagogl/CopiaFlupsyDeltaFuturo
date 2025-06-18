@@ -476,14 +476,16 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti timestamp in Date object per Drizzle ORM
+      // Converti timestamp in string ISO per PostgreSQL
       if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
         if (value instanceof Date) {
-          value = value;
+          value = value.toISOString();
         } else if (value && typeof value === 'string') {
-          value = new Date(value);
+          if (!value.endsWith('Z') && !value.includes('+')) {
+            value = new Date(value).toISOString();
+          }
         } else if (value && typeof value === 'object' && value.toISOString) {
-          value = value;
+          value = value.toISOString();
         }
       }
       
@@ -492,7 +494,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalCustomerSync;
   }
 
@@ -505,14 +507,16 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti timestamp in Date object per Drizzle ORM
+      // Converti timestamp in string ISO per PostgreSQL
       if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
         if (value instanceof Date) {
-          value = value;
+          value = value.toISOString();
         } else if (value && typeof value === 'string') {
-          value = new Date(value);
+          if (!value.endsWith('Z') && !value.includes('+')) {
+            value = new Date(value).toISOString();
+          }
         } else if (value && typeof value === 'object' && value.toISOString) {
-          value = value;
+          value = value.toISOString();
         }
       }
       
@@ -521,7 +525,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalSaleSync;
   }
 
@@ -534,14 +538,16 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti timestamp in Date object per Drizzle ORM
+      // Converti timestamp in string ISO per PostgreSQL
       if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
         if (value instanceof Date) {
-          value = value;
+          value = value.toISOString();
         } else if (value && typeof value === 'string') {
-          value = new Date(value);
+          if (!value.endsWith('Z') && !value.includes('+')) {
+            value = new Date(value).toISOString();
+          }
         } else if (value && typeof value === 'object' && value.toISOString) {
-          value = value;
+          value = value.toISOString();
         }
       }
       
@@ -550,7 +556,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalDeliverySync;
   }
 
@@ -563,14 +569,16 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti timestamp in Date object per Drizzle ORM
+      // Converti timestamp in string ISO per PostgreSQL
       if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
         if (value instanceof Date) {
-          value = value;
+          value = value.toISOString();
         } else if (value && typeof value === 'string') {
-          value = new Date(value);
+          if (!value.endsWith('Z') && !value.includes('+')) {
+            value = new Date(value).toISOString();
+          }
         } else if (value && typeof value === 'object' && value.toISOString) {
-          value = value;
+          value = value.toISOString();
         }
       }
       
@@ -579,7 +587,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalDeliveryDetailSync;
   }
 
