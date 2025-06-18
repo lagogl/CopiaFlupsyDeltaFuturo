@@ -157,8 +157,8 @@ export default function SalesReports() {
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {(syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_sales_sync')?.lastSync 
-                  ? format(new Date((syncStatus as any).status.find((s: any) => s.tableName === 'external_sales_sync').lastSync), 'dd/MM/yyyy HH:mm', { locale: it })
+                {(syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_sales_sync')?.lastSyncAt 
+                  ? format(new Date((syncStatus as any).status.find((s: any) => s.tableName === 'external_sales_sync').lastSyncAt), 'dd/MM/yyyy HH:mm', { locale: it })
                   : 'Mai'
                 }
               </div>
