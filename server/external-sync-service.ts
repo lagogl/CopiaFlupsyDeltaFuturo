@@ -476,8 +476,13 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti Date in string ISO per evitare errori PostgreSQL
+      // Converti Date/timestamp in string ISO per evitare errori PostgreSQL
       if (value instanceof Date) {
+        value = value.toISOString();
+      } else if (value && typeof value === 'string' && value.includes('T')) {
+        // Già in formato ISO string
+        value = value;
+      } else if (value && typeof value === 'object' && value.toISOString) {
         value = value.toISOString();
       }
       
@@ -486,7 +491,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date().toISOString()
+      lastSyncAt: new Date()
     } as InsertExternalCustomerSync;
   }
 
@@ -499,8 +504,12 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti Date in string ISO per evitare errori PostgreSQL
+      // Converti Date/timestamp in string ISO per evitare errori PostgreSQL
       if (value instanceof Date) {
+        value = value.toISOString();
+      } else if (value && typeof value === 'string' && value.includes('T')) {
+        value = value;
+      } else if (value && typeof value === 'object' && value.toISOString) {
         value = value.toISOString();
       }
       
@@ -509,7 +518,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date().toISOString()
+      lastSyncAt: new Date()
     } as InsertExternalSaleSync;
   }
 
@@ -522,8 +531,12 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti Date in string ISO per evitare errori PostgreSQL
+      // Converti Date/timestamp in string ISO per evitare errori PostgreSQL
       if (value instanceof Date) {
+        value = value.toISOString();
+      } else if (value && typeof value === 'string' && value.includes('T')) {
+        value = value;
+      } else if (value && typeof value === 'object' && value.toISOString) {
         value = value.toISOString();
       }
       
@@ -532,7 +545,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date().toISOString()
+      lastSyncAt: new Date()
     } as InsertExternalDeliverySync;
   }
 
@@ -545,8 +558,12 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti Date in string ISO per evitare errori PostgreSQL
+      // Converti Date/timestamp in string ISO per evitare errori PostgreSQL
       if (value instanceof Date) {
+        value = value.toISOString();
+      } else if (value && typeof value === 'string' && value.includes('T')) {
+        value = value;
+      } else if (value && typeof value === 'object' && value.toISOString) {
         value = value.toISOString();
       }
       
@@ -555,7 +572,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date().toISOString()
+      lastSyncAt: new Date()
     } as InsertExternalDeliveryDetailSync;
   }
 
