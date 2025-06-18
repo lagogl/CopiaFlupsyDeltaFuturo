@@ -181,20 +181,20 @@ export class ExternalSyncService {
         query: `
           SELECT 
             r.id as external_id,
-            CAST(r.id as TEXT) as delivery_number,
+            COALESCE('CONS-' || LPAD(CAST(r.id as TEXT), 6, '0'), CAST(r.id as TEXT)) as delivery_number,
             r.data_consegna as delivery_date,
             r.cliente_id as customer_id,
             c.denominazione as customer_name,
-            r.indirizzo_consegna as delivery_address,
-            r.note_consegna as delivery_notes,
-            r.stato_consegna as delivery_status,
-            r.totale_ordine as total_amount,
-            r.metodo_pagamento as payment_method,
-            r.conducente as driver_name,
-            r.veicolo as vehicle_info,
-            r.ora_partenza as departure_time,
-            r.ora_arrivo as arrival_time,
-            CURRENT_TIMESTAMP as last_modified_external
+            c.indirizzo as delivery_address,
+            r.note as delivery_notes,
+            COALESCE(r.stato, 'completata') as delivery_status,
+            r.peso_totale_kg as total_amount,
+            'contanti' as payment_method,
+            'n/a' as driver_name,
+            'n/a' as vehicle_info,
+            r.data_creazione as departure_time,
+            r.data_consegna as arrival_time,
+            r.data_creazione as last_modified_external
           FROM reports_consegna r
           LEFT JOIN clienti c ON r.cliente_id = c.id
           ORDER BY r.data_consegna DESC
@@ -223,19 +223,19 @@ export class ExternalSyncService {
         query: `
           SELECT 
             d.id as external_id,
-            d.reports_consegna_id as report_id,
-            d.prodotto_codice as product_code,
-            d.prodotto_nome as product_name,
-            d.quantita as quantity,
-            d.unita_misura as unit_of_measure,
-            d.prezzo_unitario as unit_price,
-            d.totale_riga as line_total,
-            d.note_prodotto as product_notes,
-            d.lotto_origine as source_lot,
-            d.data_scadenza as expiry_date,
+            d.report_id as report_id,
+            COALESCE(d.taglia, 'n/a') as product_code,
+            COALESCE('Vongole ' || d.taglia, 'Prodotto mare') as product_name,
+            d.numero_animali as quantity,
+            'pz' as unit_of_measure,
+            0.02 as unit_price,
+            (d.numero_animali * 0.02) as line_total,
+            d.note as product_notes,
+            d.codice_sezione as source_lot,
+            NULL as expiry_date,
             CURRENT_TIMESTAMP as last_modified_external
           FROM reports_consegna_dettagli d
-          ORDER BY d.reports_consegna_id, d.id
+          ORDER BY d.report_id, d.id
         `,
         mapping: {
           externalId: 'external_id',
@@ -474,12 +474,19 @@ export class ExternalSyncService {
     const mappedData: any = {};
     
     for (const [localField, externalField] of Object.entries(mapping)) {
-      mappedData[localField] = row[externalField];
+      let value = row[externalField];
+      
+      // Converti Date in string ISO per evitare errori PostgreSQL
+      if (value instanceof Date) {
+        value = value.toISOString();
+      }
+      
+      mappedData[localField] = value;
     }
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalCustomerSync;
   }
 
@@ -490,12 +497,19 @@ export class ExternalSyncService {
     const mappedData: any = {};
     
     for (const [localField, externalField] of Object.entries(mapping)) {
-      mappedData[localField] = row[externalField];
+      let value = row[externalField];
+      
+      // Converti Date in string ISO per evitare errori PostgreSQL
+      if (value instanceof Date) {
+        value = value.toISOString();
+      }
+      
+      mappedData[localField] = value;
     }
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalSaleSync;
   }
 
@@ -506,12 +520,19 @@ export class ExternalSyncService {
     const mappedData: any = {};
     
     for (const [localField, externalField] of Object.entries(mapping)) {
-      mappedData[localField] = row[externalField];
+      let value = row[externalField];
+      
+      // Converti Date in string ISO per evitare errori PostgreSQL
+      if (value instanceof Date) {
+        value = value.toISOString();
+      }
+      
+      mappedData[localField] = value;
     }
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalDeliverySync;
   }
 
@@ -522,12 +543,19 @@ export class ExternalSyncService {
     const mappedData: any = {};
     
     for (const [localField, externalField] of Object.entries(mapping)) {
-      mappedData[localField] = row[externalField];
+      let value = row[externalField];
+      
+      // Converti Date in string ISO per evitare errori PostgreSQL
+      if (value instanceof Date) {
+        value = value.toISOString();
+      }
+      
+      mappedData[localField] = value;
     }
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalDeliveryDetailSync;
   }
 
