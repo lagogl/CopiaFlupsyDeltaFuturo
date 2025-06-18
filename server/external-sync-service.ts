@@ -207,6 +207,16 @@ export class ExternalSyncService {
       // Pulisci la tabella dei clienti sincronizzati
       await this.storage.clearExternalCustomersSync();
       
+      // Pulisci la tabella delle consegne sincronizzate
+      if (this.storage.clearExternalDeliveriesSync) {
+        await this.storage.clearExternalDeliveriesSync();
+      }
+      
+      // Pulisci la tabella dei dettagli consegne sincronizzati
+      if (this.storage.clearExternalDeliveryDetailsSync) {
+        await this.storage.clearExternalDeliveryDetailsSync();
+      }
+      
       console.log('✅ Tabelle di sincronizzazione pulite');
     } catch (error) {
       console.error('❌ Errore durante la pulizia delle tabelle:', error);
@@ -267,6 +277,66 @@ export class ExternalSyncService {
       }
 
       await this.updateSyncStatus(tableName, true, null, false, sales.length);
+      
+    } catch (error) {
+      await this.updateSyncStatus(tableName, false, String(error), false);
+      throw error;
+    }
+  }
+
+  /**
+   * Sincronizza le consegne dal database esterno
+   */
+  private async syncDeliveries(): Promise<void> {
+    const tableName = 'external_deliveries_sync';
+    
+    try {
+      await this.updateSyncStatus(tableName, true, null, true);
+
+      const client = await this.externalPool!.connect();
+      const result = await client.query(this.config.deliveries.query);
+      client.release();
+
+      const deliveries: InsertExternalDeliverySync[] = result.rows.map(row => 
+        this.mapDeliveryData(row, this.config.deliveries.mapping)
+      );
+
+      if (deliveries.length > 0) {
+        await this.storage.bulkUpsertExternalDeliveriesSync(deliveries);
+        console.log(`📥 Sincronizzate ${deliveries.length} consegne`);
+      }
+
+      await this.updateSyncStatus(tableName, true, null, false, deliveries.length);
+      
+    } catch (error) {
+      await this.updateSyncStatus(tableName, false, String(error), false);
+      throw error;
+    }
+  }
+
+  /**
+   * Sincronizza i dettagli consegne dal database esterno
+   */
+  private async syncDeliveryDetails(): Promise<void> {
+    const tableName = 'external_delivery_details_sync';
+    
+    try {
+      await this.updateSyncStatus(tableName, true, null, true);
+
+      const client = await this.externalPool!.connect();
+      const result = await client.query(this.config.deliveryDetails.query);
+      client.release();
+
+      const deliveryDetails: InsertExternalDeliveryDetailSync[] = result.rows.map(row => 
+        this.mapDeliveryDetailData(row, this.config.deliveryDetails.mapping)
+      );
+
+      if (deliveryDetails.length > 0) {
+        await this.storage.bulkUpsertExternalDeliveryDetailsSync(deliveryDetails);
+        console.log(`📥 Sincronizzati ${deliveryDetails.length} dettagli consegne`);
+      }
+
+      await this.updateSyncStatus(tableName, true, null, false, deliveryDetails.length);
       
     } catch (error) {
       await this.updateSyncStatus(tableName, false, String(error), false);
@@ -340,6 +410,62 @@ export class ExternalSyncService {
       salesPerson: mapped.salesPerson || row.sales_person,
       notes: mapped.notes || row.notes,
       status: mapped.status || row.status || 'completed',
+      lastModifiedExternal: mapped.lastModifiedExternal ? new Date(mapped.lastModifiedExternal) : new Date()
+    };
+  }
+
+  /**
+   * Mappa i dati di una consegna dal formato esterno
+   */
+  private mapDeliveryData(row: any, mapping: Record<string, string>): InsertExternalDeliverySync {
+    const mapped: any = {};
+    
+    for (const [localField, externalField] of Object.entries(mapping)) {
+      mapped[localField] = row[externalField];
+    }
+
+    return {
+      externalId: Number(mapped.externalId || row.id),
+      dataCreazione: mapped.dataCreazione ? new Date(mapped.dataCreazione) : new Date(row.data_creazione),
+      clienteId: mapped.clienteId ? Number(mapped.clienteId) : (row.cliente_id ? Number(row.cliente_id) : null),
+      ordineId: mapped.ordineId ? Number(mapped.ordineId) : (row.ordine_id ? Number(row.ordine_id) : null),
+      dataConsegna: mapped.dataConsegna ? new Date(mapped.dataConsegna).toISOString().split('T')[0] : new Date(row.data_consegna).toISOString().split('T')[0],
+      stato: mapped.stato || row.stato,
+      numeroTotaleCeste: Number(mapped.numeroTotaleCeste || row.numero_totale_ceste),
+      pesoTotaleKg: String(mapped.pesoTotaleKg || row.peso_totale_kg),
+      totaleAnimali: Number(mapped.totaleAnimali || row.totale_animali),
+      tagliaMedia: mapped.tagliaMedia || row.taglia_media,
+      qrcodeUrl: mapped.qrcodeUrl || row.qrcode_url,
+      note: mapped.note || row.note,
+      numeroProgressivo: mapped.numeroProgressivo ? Number(mapped.numeroProgressivo) : (row.numero_progressivo ? Number(row.numero_progressivo) : null),
+      lastModifiedExternal: mapped.lastModifiedExternal ? new Date(mapped.lastModifiedExternal) : new Date()
+    };
+  }
+
+  /**
+   * Mappa i dati di un dettaglio consegna dal formato esterno
+   */
+  private mapDeliveryDetailData(row: any, mapping: Record<string, string>): InsertExternalDeliveryDetailSync {
+    const mapped: any = {};
+    
+    for (const [localField, externalField] of Object.entries(mapping)) {
+      mapped[localField] = row[externalField];
+    }
+
+    return {
+      externalId: Number(mapped.externalId || row.id),
+      reportId: Number(mapped.reportId || row.report_id),
+      misurazioneId: mapped.misurazioneId ? Number(mapped.misurazioneId) : (row.misurazione_id ? Number(row.misurazione_id) : null),
+      vascaId: Number(mapped.vascaId || row.vasca_id),
+      codiceSezione: String(mapped.codiceSezione || row.codice_sezione),
+      numeroCeste: Number(mapped.numeroCeste || row.numero_ceste),
+      pesoCesteKg: String(mapped.pesoCesteKg || row.peso_ceste_kg),
+      taglia: mapped.taglia || row.taglia,
+      animaliPerKg: mapped.animaliPerKg ? String(mapped.animaliPerKg) : (row.animali_per_kg ? String(row.animali_per_kg) : null),
+      percentualeGuscio: mapped.percentualeGuscio ? String(mapped.percentualeGuscio) : (row.percentuale_guscio ? String(row.percentuale_guscio) : null),
+      percentualeMortalita: mapped.percentualeMortalita ? String(mapped.percentualeMortalita) : (row.percentuale_mortalita ? String(row.percentuale_mortalita) : null),
+      numeroAnimali: Number(mapped.numeroAnimali || row.numero_animali),
+      note: mapped.note || row.note,
       lastModifiedExternal: mapped.lastModifiedExternal ? new Date(mapped.lastModifiedExternal) : new Date()
     };
   }
@@ -447,35 +573,77 @@ export const defaultSyncConfig: SyncConfig = {
   },
   sales: {
     enabled: true,
-    tableName: 'sales',
-    query: 'SELECT * FROM sales WHERE updated_at > $1 OR $1 IS NULL',
+    tableName: 'ordini',
+    query: 'SELECT * FROM ordini ORDER BY id',
     mapping: {
       externalId: 'id',
-      saleNumber: 'sale_number',
-      saleDate: 'sale_date',
-      customerId: 'customer_id',
-      customerName: 'customer_name',
-      productCode: 'product_code',
-      productName: 'product_name',
-      productCategory: 'product_category',
-      quantity: 'quantity',
-      unitOfMeasure: 'unit_of_measure',
-      unitPrice: 'unit_price',
-      totalAmount: 'total_amount',
-      discountPercent: 'discount_percent',
-      discountAmount: 'discount_amount',
-      netAmount: 'net_amount',
-      vatPercent: 'vat_percent',
-      vatAmount: 'vat_amount',
-      totalWithVat: 'total_with_vat',
-      paymentMethod: 'payment_method',
-      deliveryDate: 'delivery_date',
-      origin: 'origin',
-      lotReference: 'lot_reference',
-      salesPerson: 'sales_person',
-      notes: 'notes',
-      status: 'status',
+      saleNumber: 'numero_ordine',
+      saleDate: 'data_ordine',
+      customerId: 'cliente_id',
+      customerName: 'cliente_nome',
+      productCode: 'codice_prodotto',
+      productName: 'nome_prodotto',
+      productCategory: 'categoria_prodotto',
+      quantity: 'quantita',
+      unitOfMeasure: 'unita_misura',
+      unitPrice: 'prezzo_unitario',
+      totalAmount: 'totale',
+      discountPercent: 'sconto_percentuale',
+      discountAmount: 'sconto_importo',
+      netAmount: 'netto',
+      vatPercent: 'iva_percentuale',
+      vatAmount: 'iva_importo',
+      totalWithVat: 'totale_con_iva',
+      paymentMethod: 'metodo_pagamento',
+      deliveryDate: 'data_consegna',
+      origin: 'origine',
+      lotReference: 'riferimento_lotto',
+      salesPerson: 'venditore',
+      notes: 'note',
+      status: 'stato',
       lastModifiedExternal: 'updated_at'
+    }
+  },
+  deliveries: {
+    enabled: true,
+    tableName: 'reports_consegna',
+    query: 'SELECT * FROM reports_consegna ORDER BY id',
+    mapping: {
+      externalId: 'id',
+      dataCreazione: 'data_creazione',
+      clienteId: 'cliente_id',
+      ordineId: 'ordine_id',
+      dataConsegna: 'data_consegna',
+      stato: 'stato',
+      numeroTotaleCeste: 'numero_totale_ceste',
+      pesoTotaleKg: 'peso_totale_kg',
+      totaleAnimali: 'totale_animali',
+      tagliaMedia: 'taglia_media',
+      qrcodeUrl: 'qrcode_url',
+      note: 'note',
+      numeroProgressivo: 'numero_progressivo',
+      lastModifiedExternal: 'data_creazione'
+    }
+  },
+  deliveryDetails: {
+    enabled: true,
+    tableName: 'reports_consegna_dettagli',
+    query: 'SELECT * FROM reports_consegna_dettagli ORDER BY id',
+    mapping: {
+      externalId: 'id',
+      reportId: 'report_id',
+      misurazioneId: 'misurazione_id',
+      vascaId: 'vasca_id',
+      codiceSezione: 'codice_sezione',
+      numeroCeste: 'numero_ceste',
+      pesoCesteKg: 'peso_ceste_kg',
+      taglia: 'taglia',
+      animaliPerKg: 'animali_per_kg',
+      percentualeGuscio: 'percentuale_guscio',
+      percentualeMortalita: 'percentuale_mortalita',
+      numeroAnimali: 'numero_animali',
+      note: 'note',
+      lastModifiedExternal: 'id'
     }
   },
   syncIntervalMinutes: 60, // Sincronizzazione ogni ora

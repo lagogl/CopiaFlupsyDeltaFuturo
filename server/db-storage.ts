@@ -2284,6 +2284,112 @@ export class DbStorage implements IStorage {
     }
   }
 
+  async clearExternalDeliveriesSync(): Promise<void> {
+    try {
+      await db.delete(externalDeliveriesSync);
+      console.log('🧹 Tabella consegne sincronizzate pulita');
+    } catch (error) {
+      console.error('Errore pulizia tabella consegne:', error);
+      throw error;
+    }
+  }
+
+  async clearExternalDeliveryDetailsSync(): Promise<void> {
+    try {
+      await db.delete(externalDeliveryDetailsSync);
+      console.log('🧹 Tabella dettagli consegne sincronizzati pulita');
+    } catch (error) {
+      console.error('Errore pulizia tabella dettagli consegne:', error);
+      throw error;
+    }
+  }
+
+  async bulkUpsertExternalDeliveriesSync(deliveries: InsertExternalDeliverySync[]): Promise<ExternalDeliverySync[]> {
+    try {
+      if (deliveries.length === 0) return [];
+      
+      const result = await db.insert(externalDeliveriesSync)
+        .values(deliveries)
+        .onConflictDoUpdate({
+          target: externalDeliveriesSync.externalId,
+          set: {
+            dataCreazione: sql`excluded.data_creazione`,
+            clienteId: sql`excluded.cliente_id`,
+            ordineId: sql`excluded.ordine_id`,
+            dataConsegna: sql`excluded.data_consegna`,
+            stato: sql`excluded.stato`,
+            numeroTotaleCeste: sql`excluded.numero_totale_ceste`,
+            pesoTotaleKg: sql`excluded.peso_totale_kg`,
+            totaleAnimali: sql`excluded.totale_animali`,
+            tagliaMedia: sql`excluded.taglia_media`,
+            qrcodeUrl: sql`excluded.qrcode_url`,
+            note: sql`excluded.note`,
+            numeroProgressivo: sql`excluded.numero_progressivo`,
+            lastModifiedExternal: sql`excluded.last_modified_external`,
+            syncedAt: sql`CURRENT_TIMESTAMP`
+          }
+        })
+        .returning();
+      
+      return result;
+    } catch (error) {
+      console.error('Errore nell\'upsert bulk consegne:', error);
+      throw error;
+    }
+  }
+
+  async bulkUpsertExternalDeliveryDetailsSync(deliveryDetails: InsertExternalDeliveryDetailSync[]): Promise<ExternalDeliveryDetailSync[]> {
+    try {
+      if (deliveryDetails.length === 0) return [];
+      
+      const result = await db.insert(externalDeliveryDetailsSync)
+        .values(deliveryDetails)
+        .onConflictDoUpdate({
+          target: externalDeliveryDetailsSync.externalId,
+          set: {
+            reportId: sql`excluded.report_id`,
+            misurazioneId: sql`excluded.misurazione_id`,
+            vascaId: sql`excluded.vasca_id`,
+            codiceSezione: sql`excluded.codice_sezione`,
+            numeroCeste: sql`excluded.numero_ceste`,
+            pesoCesteKg: sql`excluded.peso_ceste_kg`,
+            taglia: sql`excluded.taglia`,
+            animaliPerKg: sql`excluded.animali_per_kg`,
+            percentualeGuscio: sql`excluded.percentuale_guscio`,
+            percentualeMortalita: sql`excluded.percentuale_mortalita`,
+            numeroAnimali: sql`excluded.numero_animali`,
+            note: sql`excluded.note`,
+            lastModifiedExternal: sql`excluded.last_modified_external`,
+            syncedAt: sql`CURRENT_TIMESTAMP`
+          }
+        })
+        .returning();
+      
+      return result;
+    } catch (error) {
+      console.error('Errore nell\'upsert bulk dettagli consegne:', error);
+      throw error;
+    }
+  }
+
+  async getExternalDeliveriesSync(): Promise<ExternalDeliverySync[]> {
+    try {
+      return await db.select().from(externalDeliveriesSync).orderBy(externalDeliveriesSync.dataConsegna);
+    } catch (error) {
+      console.error('Errore nel recupero consegne sincronizzate:', error);
+      return [];
+    }
+  }
+
+  async getExternalDeliveryDetailsSync(): Promise<ExternalDeliveryDetailSync[]> {
+    try {
+      return await db.select().from(externalDeliveryDetailsSync).orderBy(externalDeliveryDetailsSync.reportId);
+    } catch (error) {
+      console.error('Errore nel recupero dettagli consegne sincronizzati:', error);
+      return [];
+    }
+  }
+
   async getSyncStatusByTable(tableName: string): Promise<any> {
     try {
       const result = await db.select()
