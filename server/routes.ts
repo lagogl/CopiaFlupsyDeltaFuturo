@@ -6992,6 +6992,41 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // Get external deliveries
+  app.get('/api/sync/deliveries', async (req, res) => {
+    try {
+      const deliveries = await storage.getExternalDeliveriesSync();
+      res.json({ success: true, deliveries });
+    } catch (error) {
+      console.error('Error getting external deliveries:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get external delivery details
+  app.get('/api/sync/delivery-details', async (req, res) => {
+    try {
+      const deliveryDetails = await storage.getExternalDeliveryDetailsSync();
+      res.json({ success: true, deliveryDetails });
+    } catch (error) {
+      console.error('Error getting external delivery details:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
+  // Get external delivery details by report ID
+  app.get('/api/sync/delivery-details/:reportId', async (req, res) => {
+    try {
+      const reportId = parseInt(req.params.reportId);
+      const deliveryDetails = await storage.getExternalDeliveryDetailsSync();
+      const filteredDetails = deliveryDetails.filter(detail => detail.reportId === reportId);
+      res.json({ success: true, deliveryDetails: filteredDetails });
+    } catch (error) {
+      console.error('Error getting external sales:', error);
+      res.status(500).json({ success: false, error: error.message });
+    }
+  });
+
   // Sales reports - Summary
   app.get('/api/reports/sales/summary', async (req, res) => {
     try {

@@ -246,6 +246,24 @@ export interface IStorage {
   deleteExternalSaleSync(id: number): Promise<boolean>;
   bulkUpsertExternalSalesSync(sales: InsertExternalSaleSync[]): Promise<ExternalSaleSync[]>;
   
+  // External Deliveries Sync methods
+  getExternalDeliveriesSync(): Promise<ExternalDeliverySync[]>;
+  getExternalDeliverySync(id: number): Promise<ExternalDeliverySync | undefined>;
+  getExternalDeliverySyncByExternalId(externalId: number): Promise<ExternalDeliverySync | undefined>;
+  createExternalDeliverySync(delivery: InsertExternalDeliverySync): Promise<ExternalDeliverySync>;
+  updateExternalDeliverySync(id: number, delivery: Partial<ExternalDeliverySync>): Promise<ExternalDeliverySync | undefined>;
+  deleteExternalDeliverySync(id: number): Promise<boolean>;
+  bulkUpsertExternalDeliveriesSync(deliveries: InsertExternalDeliverySync[]): Promise<ExternalDeliverySync[]>;
+  
+  // External Delivery Details Sync methods
+  getExternalDeliveryDetailsSync(): Promise<ExternalDeliveryDetailSync[]>;
+  getExternalDeliveryDetailSync(id: number): Promise<ExternalDeliveryDetailSync | undefined>;
+  getExternalDeliveryDetailSyncByExternalId(externalId: number): Promise<ExternalDeliveryDetailSync | undefined>;
+  createExternalDeliveryDetailSync(detail: InsertExternalDeliveryDetailSync): Promise<ExternalDeliveryDetailSync>;
+  updateExternalDeliveryDetailSync(id: number, detail: Partial<ExternalDeliveryDetailSync>): Promise<ExternalDeliveryDetailSync | undefined>;
+  deleteExternalDeliveryDetailSync(id: number): Promise<boolean>;
+  bulkUpsertExternalDeliveryDetailsSync(details: InsertExternalDeliveryDetailSync[]): Promise<ExternalDeliveryDetailSync[]>;
+  
   // Sales Reports methods
   getSalesReportSummary(startDate: string, endDate: string): Promise<any>;
   getSalesReportByProduct(startDate: string, endDate: string): Promise<any[]>;
@@ -264,6 +282,8 @@ export interface IStorage {
   // Sync table clearing methods
   clearExternalCustomersSync(): Promise<void>;
   clearExternalSalesSync(): Promise<void>;
+  clearExternalDeliveriesSync(): Promise<void>;
+  clearExternalDeliveryDetailsSync(): Promise<void>;
 
 }
 

@@ -16,6 +16,8 @@ import {
   // Sales sync tables
   ExternalSaleSync, InsertExternalSaleSync, externalSalesSync,
   ExternalCustomerSync, InsertExternalCustomerSync, externalCustomersSync,
+  ExternalDeliverySync, InsertExternalDeliverySync, externalDeliveriesSync,
+  ExternalDeliveryDetailSync, InsertExternalDeliveryDetailSync, externalDeliveryDetailsSync,
   SyncStatus, InsertSyncStatus, syncStatus,
   // Autenticazione
   User, InsertUser, users
