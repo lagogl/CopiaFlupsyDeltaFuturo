@@ -70,7 +70,8 @@ app.use((req, res, next) => {
   console.log("🔄 Inizializzazione servizio sincronizzazione esterno...");
   try {
     const { ExternalSyncService } = await import('./external-sync-service');
-    const syncService = new ExternalSyncService();
+    const { storage } = await import('./routes');
+    const syncService = new ExternalSyncService(storage);
     
     // Avvia la sincronizzazione iniziale
     console.log("📥 Avvio sincronizzazione iniziale dati esterni...");
