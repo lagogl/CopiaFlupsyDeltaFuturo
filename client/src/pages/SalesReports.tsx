@@ -8,15 +8,18 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { RefreshCw, Download, Database, Users, Package, TrendingUp } from "lucide-react";
+import { RefreshCw, Download, Database, Users, Package, TrendingUp, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
+import { useToast } from "@/hooks/use-toast";
 
 export default function SalesReports() {
   const [selectedCustomer, setSelectedCustomer] = useState<string>("");
   const [startDate, setStartDate] = useState<string>("");
   const [endDate, setEndDate] = useState<string>("");
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
+  const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const { toast } = useToast();
 
   // Query per lo stato della sincronizzazione
   const { data: syncStatus, refetch: refetchStatus } = useQuery({
@@ -43,6 +46,17 @@ export default function SalesReports() {
 
   // Funzione per sincronizzare i dati
   const handleSync = async () => {
+    if (isSyncing) return; // Previene sincronizzazioni multiple
+    
+    setIsSyncing(true);
+    
+    // Toast di inizio sincronizzazione
+    toast({
+      title: "Sincronizzazione in corso",
+      description: "Aggiornamento dati dal database esterno...",
+      duration: 3000,
+    });
+
     try {
       const response = await fetch('/api/sync/external-database', {
         method: 'POST',
@@ -51,14 +65,35 @@ export default function SalesReports() {
       const result = await response.json();
       
       if (result.success) {
+        // Aggiorna i dati
         refetchStatus();
         refetchSales();
-        alert('Sincronizzazione completata con successo!');
+        
+        // Toast di successo
+        toast({
+          title: "Sincronizzazione completata",
+          description: "I dati sono stati aggiornati con successo dal database esterno",
+          duration: 4000,
+        });
       } else {
-        alert('Errore durante la sincronizzazione: ' + result.message);
+        // Toast di errore
+        toast({
+          variant: "destructive",
+          title: "Errore sincronizzazione",
+          description: result.message || "Si è verificato un errore durante la sincronizzazione",
+          duration: 5000,
+        });
       }
     } catch (error) {
-      alert('Errore di connessione durante la sincronizzazione');
+      // Toast di errore di connessione
+      toast({
+        variant: "destructive",
+        title: "Errore di connessione",
+        description: "Impossibile connettersi al server per la sincronizzazione",
+        duration: 5000,
+      });
+    } finally {
+      setIsSyncing(false);
     }
   };
 
@@ -84,9 +119,17 @@ export default function SalesReports() {
             Dati sincronizzati dal database esterno
           </p>
         </div>
-        <Button onClick={handleSync} className="flex items-center gap-2">
-          <RefreshCw className="h-4 w-4" />
-          Sincronizza Dati
+        <Button 
+          onClick={handleSync} 
+          disabled={isSyncing}
+          className="flex items-center gap-2"
+        >
+          {isSyncing ? (
+            <Loader2 className="h-4 w-4 animate-spin" />
+          ) : (
+            <RefreshCw className="h-4 w-4" />
+          )}
+          {isSyncing ? "Sincronizzazione..." : "Sincronizza Dati"}
         </Button>
       </div>
 
