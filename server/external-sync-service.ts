@@ -10,6 +10,8 @@ import { IStorage } from './storage';
 import { 
   InsertExternalCustomerSync, 
   InsertExternalSaleSync, 
+  InsertExternalDeliverySync,
+  InsertExternalDeliveryDetailSync,
   InsertSyncStatus 
 } from '@shared/schema';
 
@@ -30,6 +32,18 @@ export interface SyncConfig {
     mapping: Record<string, string>;
   };
   sales: {
+    enabled: boolean;
+    tableName: string;
+    query: string;
+    mapping: Record<string, string>;
+  };
+  deliveries: {
+    enabled: boolean;
+    tableName: string;
+    query: string;
+    mapping: Record<string, string>;
+  };
+  deliveryDetails: {
     enabled: boolean;
     tableName: string;
     query: string;
@@ -155,9 +169,19 @@ export class ExternalSyncService {
         await this.syncCustomers();
       }
 
-      // Sincronizza vendite
+      // Sincronizza vendite/ordini
       if (this.config.sales.enabled) {
         await this.syncSales();
+      }
+
+      // Sincronizza consegne
+      if (this.config.deliveries.enabled) {
+        await this.syncDeliveries();
+      }
+
+      // Sincronizza dettagli consegne
+      if (this.config.deliveryDetails.enabled) {
+        await this.syncDeliveryDetails();
       }
 
       console.log('✅ Ciclo di sincronizzazione completato');

@@ -752,6 +752,46 @@ export const externalSalesSync = pgTable("external_sales_sync", {
   lastModifiedExternal: timestamp("last_modified_external") // Ultima modifica nel DB esterno
 });
 
+// Consegne/Vendite reali dal database esterno (reports_consegna)
+export const externalDeliveriesSync = pgTable("external_deliveries_sync", {
+  id: serial("id").primaryKey(),
+  externalId: integer("external_id").notNull().unique(), // ID nel database esterno
+  dataCreazione: timestamp("data_creazione").notNull(), // Data creazione
+  clienteId: integer("cliente_id"), // ID cliente nel database esterno
+  ordineId: integer("ordine_id"), // ID ordine nel database esterno
+  dataConsegna: date("data_consegna").notNull(), // Data consegna
+  stato: text("stato"), // Stato consegna
+  numeroTotaleCeste: integer("numero_totale_ceste").notNull(), // Numero totale ceste
+  pesoTotaleKg: decimal("peso_totale_kg", { precision: 12, scale: 3 }).notNull(), // Peso totale in kg
+  totaleAnimali: integer("totale_animali").notNull(), // Totale animali
+  tagliaMedia: text("taglia_media"), // Taglia media
+  qrcodeUrl: text("qrcode_url"), // URL QR code
+  note: text("note"), // Note
+  numeroProgressivo: integer("numero_progressivo"), // Numero progressivo
+  syncedAt: timestamp("synced_at").notNull().defaultNow(), // Quando è stato sincronizzato
+  lastModifiedExternal: timestamp("last_modified_external") // Ultima modifica nel DB esterno
+});
+
+// Dettagli consegne dal database esterno (reports_consegna_dettagli)
+export const externalDeliveryDetailsSync = pgTable("external_delivery_details_sync", {
+  id: serial("id").primaryKey(),
+  externalId: integer("external_id").notNull().unique(), // ID nel database esterno
+  reportId: integer("report_id").notNull(), // ID report nel database esterno
+  misurazioneId: integer("misurazione_id"), // ID misurazione
+  vascaId: integer("vasca_id").notNull(), // ID vasca
+  codiceSezione: text("codice_sezione").notNull(), // Codice sezione
+  numeroCeste: integer("numero_ceste").notNull(), // Numero ceste
+  pesoCesteKg: decimal("peso_ceste_kg", { precision: 12, scale: 3 }).notNull(), // Peso ceste in kg
+  taglia: text("taglia"), // Taglia
+  animaliPerKg: decimal("animali_per_kg", { precision: 10, scale: 3 }), // Animali per kg
+  percentualeGuscio: decimal("percentuale_guscio", { precision: 5, scale: 2 }), // Percentuale guscio
+  percentualeMortalita: decimal("percentuale_mortalita", { precision: 5, scale: 2 }), // Percentuale mortalità
+  numeroAnimali: integer("numero_animali").notNull(), // Numero animali
+  note: text("note"), // Note
+  syncedAt: timestamp("synced_at").notNull().defaultNow(), // Quando è stato sincronizzato
+  lastModifiedExternal: timestamp("last_modified_external") // Ultima modifica nel DB esterno
+});
+
 // Schema di inserimento per sync status
 export const insertSyncStatusSchema = createInsertSchema(syncStatus)
   .omit({ id: true, createdAt: true, updatedAt: true });
@@ -762,6 +802,14 @@ export const insertExternalCustomerSyncSchema = createInsertSchema(externalCusto
 
 // Schema di inserimento per vendite esterne
 export const insertExternalSaleSyncSchema = createInsertSchema(externalSalesSync)
+  .omit({ id: true, syncedAt: true });
+
+// Schema di inserimento per consegne esterne
+export const insertExternalDeliverySyncSchema = createInsertSchema(externalDeliveriesSync)
+  .omit({ id: true, syncedAt: true });
+
+// Schema di inserimento per dettagli consegne esterne
+export const insertExternalDeliveryDetailSyncSchema = createInsertSchema(externalDeliveryDetailsSync)
   .omit({ id: true, syncedAt: true });
 
 // Tipi per sync status
@@ -775,3 +823,11 @@ export type InsertExternalCustomerSync = z.infer<typeof insertExternalCustomerSy
 // Tipi per vendite esterne
 export type ExternalSaleSync = typeof externalSalesSync.$inferSelect;
 export type InsertExternalSaleSync = z.infer<typeof insertExternalSaleSyncSchema>;
+
+// Tipi per consegne esterne
+export type ExternalDeliverySync = typeof externalDeliveriesSync.$inferSelect;
+export type InsertExternalDeliverySync = z.infer<typeof insertExternalDeliverySyncSchema>;
+
+// Tipi per dettagli consegne esterne
+export type ExternalDeliveryDetailSync = typeof externalDeliveryDetailsSync.$inferSelect;
+export type InsertExternalDeliveryDetailSync = z.infer<typeof insertExternalDeliveryDetailSyncSchema>;
