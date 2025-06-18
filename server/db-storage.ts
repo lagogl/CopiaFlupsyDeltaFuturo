@@ -2346,4 +2346,24 @@ export class DbStorage implements IStorage {
       return undefined;
     }
   }
+
+  async clearExternalCustomersSync(): Promise<void> {
+    try {
+      await db.delete(externalCustomersSync);
+      console.log('🧹 Tabella clienti sincronizzati pulita');
+    } catch (error) {
+      console.error('Errore nella pulizia clienti sincronizzati:', error);
+      throw error;
+    }
+  }
+
+  async clearExternalSalesSync(): Promise<void> {
+    try {
+      await db.delete(externalSalesSync);
+      console.log('🧹 Tabella vendite sincronizzate pulita');
+    } catch (error) {
+      console.error('Errore nella pulizia vendite sincronizzate:', error);
+      throw error;
+    }
+  }
 }

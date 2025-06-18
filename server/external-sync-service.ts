@@ -147,6 +147,9 @@ export class ExternalSyncService {
     console.log('🔄 Inizio ciclo di sincronizzazione');
 
     try {
+      // Prima di sincronizzare, pulisci le tabelle per garantire dati sempre aggiornati
+      await this.clearSyncTables();
+
       // Sincronizza clienti
       if (this.config.customers.enabled) {
         await this.syncCustomers();
@@ -164,6 +167,26 @@ export class ExternalSyncService {
       // Aggiorna stato di errore per tutte le tabelle
       await this.updateSyncStatus('external_customers_sync', false, String(error));
       await this.updateSyncStatus('external_sales_sync', false, String(error));
+    }
+  }
+
+  /**
+   * Pulisce le tabelle di sincronizzazione per garantire dati sempre aggiornati
+   */
+  private async clearSyncTables(): Promise<void> {
+    try {
+      console.log('🧹 Pulizia tabelle di sincronizzazione...');
+      
+      // Pulisci la tabella delle vendite sincronizzate
+      await this.storage.clearExternalSalesSync();
+      
+      // Pulisci la tabella dei clienti sincronizzati
+      await this.storage.clearExternalCustomersSync();
+      
+      console.log('✅ Tabelle di sincronizzazione pulite');
+    } catch (error) {
+      console.error('❌ Errore durante la pulizia delle tabelle:', error);
+      throw error;
     }
   }
 

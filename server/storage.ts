@@ -260,6 +260,10 @@ export interface IStorage {
   getSyncStatusByTable(tableName: string): Promise<any>;
   upsertSyncStatus(tableName: string, data: any): Promise<void>;
   updateSyncStatus(tableName: string, data: any): Promise<SyncStatus | undefined>;
+  
+  // Sync table clearing methods
+  clearExternalCustomersSync(): Promise<void>;
+  clearExternalSalesSync(): Promise<void>;
 
 }
 
@@ -1653,6 +1657,16 @@ export class MemStorage implements IStorage {
 
   async clearExternalCustomers(): Promise<void> {
     // MemStorage non ha dati da cancellare, operazione no-op
+  }
+
+  async clearExternalCustomersSync(): Promise<void> {
+    // MemStorage implementation - no-op for in-memory storage
+    console.log('🧹 Pulizia clienti sincronizzati (MemStorage)');
+  }
+
+  async clearExternalSalesSync(): Promise<void> {
+    // MemStorage implementation - no-op for in-memory storage
+    console.log('🧹 Pulizia vendite sincronizzate (MemStorage)');
   }
 
   async getSalesReportSummary(startDate: string, endDate: string): Promise<any> {
