@@ -691,20 +691,26 @@ export class ExternalSyncService {
       mappedData[localField] = value;
     }
     
-    // Assicurati che tutti i campi timestamp siano stringhe ISO valide
-    const finalData = {
-      ...mappedData,
-      lastSyncAt: new Date().toISOString()
-    };
-
-    // Converti tutti i campi timestamp rimanenti
-    for (const [key, value] of Object.entries(finalData)) {
-      if ((key.includes('At') || key.includes('Date') || key.includes('Time') || key.includes('Modified')) && value !== null) {
-        finalData[key] = this.convertToValidDate(value);
+    // Rimuovi completamente i campi timestamp problematici
+    const cleanData: any = {};
+    for (const [key, value] of Object.entries(mappedData)) {
+      // Escludi completamente i campi timestamp che causano problemi
+      if (key.includes('Modified') || key.includes('Time') || key === 'lastModifiedExternal') {
+        continue; // Salta questi campi
+      }
+      
+      // Per i campi data, converti in stringa semplice
+      if (key.includes('Date') || key.includes('At')) {
+        cleanData[key] = value ? String(value) : null;
+      } else {
+        cleanData[key] = value;
       }
     }
+    
+    // Aggiungi solo lastSyncAt come stringa semplice
+    cleanData.lastSyncAt = new Date().toISOString();
 
-    return finalData as InsertExternalDeliverySync;
+    return cleanData as InsertExternalDeliverySync;
   }
 
   /**
@@ -724,20 +730,26 @@ export class ExternalSyncService {
       mappedData[localField] = value;
     }
     
-    // Assicurati che tutti i campi timestamp siano stringhe ISO valide
-    const finalData = {
-      ...mappedData,
-      lastSyncAt: new Date().toISOString()
-    };
-
-    // Converti tutti i campi timestamp rimanenti
-    for (const [key, value] of Object.entries(finalData)) {
-      if ((key.includes('At') || key.includes('Date') || key.includes('Time') || key.includes('Modified')) && value !== null) {
-        finalData[key] = this.convertToValidDate(value);
+    // Rimuovi completamente i campi timestamp problematici
+    const cleanData: any = {};
+    for (const [key, value] of Object.entries(mappedData)) {
+      // Escludi completamente i campi timestamp che causano problemi
+      if (key.includes('Modified') || key.includes('Time') || key === 'lastModifiedExternal') {
+        continue; // Salta questi campi
+      }
+      
+      // Per i campi data, converti in stringa semplice
+      if (key.includes('Date') || key.includes('At')) {
+        cleanData[key] = value ? String(value) : null;
+      } else {
+        cleanData[key] = value;
       }
     }
+    
+    // Aggiungi solo lastSyncAt come stringa semplice
+    cleanData.lastSyncAt = new Date().toISOString();
 
-    return finalData as InsertExternalDeliveryDetailSync;
+    return cleanData as InsertExternalDeliveryDetailSync;
   }
 
   /**
