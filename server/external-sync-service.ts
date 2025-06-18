@@ -378,9 +378,9 @@ export class ExternalSyncService {
       const result = await client.query(this.config.customers.query);
       client.release();
 
-      const customers: InsertExternalCustomerSync[] = result.rows.map(row => 
-        this.mapCustomerData(row, this.config.customers.mapping)
-      );
+      const customers: InsertExternalCustomerSync[] = result.rows
+        .map(row => this.mapCustomerData(row, this.config.customers.mapping))
+        .filter(customer => this.validateDataObject(customer));
 
       if (customers.length > 0) {
         await this.storage.bulkUpsertExternalCustomersSync(customers);
@@ -403,9 +403,9 @@ export class ExternalSyncService {
       const result = await client.query(this.config.sales.query);
       client.release();
 
-      const sales: InsertExternalSaleSync[] = result.rows.map(row => 
-        this.mapSaleData(row, this.config.sales.mapping)
-      );
+      const sales: InsertExternalSaleSync[] = result.rows
+        .map(row => this.mapSaleData(row, this.config.sales.mapping))
+        .filter(sale => this.validateDataObject(sale));
 
       if (sales.length > 0) {
         await this.storage.bulkUpsertExternalSalesSync(sales);
@@ -478,8 +478,12 @@ export class ExternalSyncService {
     }
     
     if (typeof value === 'string') {
-      const dateValue = new Date(value);
-      return !isNaN(dateValue.getTime()) ? dateValue.toISOString() : null;
+      try {
+        const dateValue = new Date(value);
+        return !isNaN(dateValue.getTime()) ? dateValue.toISOString() : null;
+      } catch {
+        return null;
+      }
     }
     
     if (typeof value === 'object' && value.toISOString) {
@@ -492,6 +496,38 @@ export class ExternalSyncService {
     }
     
     return null;
+  }
+
+  /**
+   * Valida che tutti i campi timestamp siano stringhe ISO valide
+   */
+  private validateDataObject(data: any): boolean {
+    try {
+      for (const [key, value] of Object.entries(data)) {
+        if (key.includes('At') || key.includes('Date') || key.includes('Time') || key.includes('Modified')) {
+          if (value !== null && typeof value !== 'string') {
+            console.error(`Campo timestamp ${key} non è una stringa:`, typeof value, value);
+            return false;
+          }
+          if (value && typeof value === 'string') {
+            try {
+              const testDate = new Date(value);
+              if (isNaN(testDate.getTime())) {
+                console.error(`Campo timestamp ${key} non è una data valida:`, value);
+                return false;
+              }
+            } catch {
+              console.error(`Campo timestamp ${key} non può essere convertito in data:`, value);
+              return false;
+            }
+          }
+        }
+      }
+      return true;
+    } catch (error) {
+      console.error('Errore validazione oggetto dati:', error);
+      return false;
+    }
   }
 
   /**
@@ -536,7 +572,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalSaleSync;
   }
 
@@ -559,7 +595,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalDeliverySync;
   }
 
@@ -582,7 +618,7 @@ export class ExternalSyncService {
     
     return {
       ...mappedData,
-      lastSyncAt: new Date()
+      lastSyncAt: new Date().toISOString()
     } as InsertExternalDeliveryDetailSync;
   }
 
