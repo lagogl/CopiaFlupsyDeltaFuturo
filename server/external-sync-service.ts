@@ -59,10 +59,16 @@ export class ExternalSyncService {
   private externalPool: Pool | null = null;
   private storage: IStorage;
   private config: SyncConfig;
+  private localPool: Pool;
 
   constructor(storage?: IStorage) {
     this.storage = storage || (new DbStorage() as any);
     this.config = this.getDefaultConfig();
+    // Inizializza il pool di connessioni locale
+    this.localPool = new Pool({
+      connectionString: process.env.DATABASE_URL,
+      ssl: process.env.NODE_ENV === 'production' ? { rejectUnauthorized: false } : false
+    });
     this.initializeConnection();
   }
 
@@ -325,15 +331,15 @@ export class ExternalSyncService {
         await this.syncSalesDirectSQL();
       }
 
-      // Sincronizza consegne (usando SQL diretto)
-      if (this.config.deliveries?.enabled) {
-        await this.syncDeliveriesDirectSQL();
-      }
+      // Sincronizza consegne - SALTATO per ora (problemi timestamp)
+      // if (this.config.deliveries?.enabled) {
+      //   await this.syncDeliveriesDirectSQL();
+      // }
 
-      // Sincronizza dettagli consegne (usando SQL diretto)
-      if (this.config.deliveryDetails?.enabled) {
-        await this.syncDeliveryDetailsDirectSQL();
-      }
+      // Sincronizza dettagli consegne - SALTATO per ora (problemi timestamp)
+      // if (this.config.deliveryDetails?.enabled) {
+      //   await this.syncDeliveryDetailsDirectSQL();
+      // }
 
       console.log('✅ Sincronizzazione completa terminata');
     } catch (error) {
@@ -768,6 +774,180 @@ export class ExternalSyncService {
     } catch (error) {
       console.error('Errore test connessione:', error);
       return false;
+    }
+  }
+
+  /**
+   * Sincronizza i clienti dal database esterno usando SQL diretto
+   */
+  private async syncCustomersDirectSQL(): Promise<void> {
+    console.log('👥 Sincronizzazione clienti (SQL diretto)...');
+    
+    if (!this.externalPool) {
+      throw new Error('Database esterno non configurato');
+    }
+
+    const externalClient = await this.externalPool.connect();
+    
+    try {
+      const result = await externalClient.query(this.config.customers.query);
+      console.log(`👥 Trovati ${result.rows.length} clienti nel database esterno`);
+      
+      if (result.rows.length === 0) {
+        console.log('👥 Nessun cliente da sincronizzare');
+        return;
+      }
+
+      // Inserimento diretto nel database locale
+      for (const row of result.rows) {
+        const mappedData = this.mapCustomerData(row, this.config.customers.mapping);
+        
+        // Query SQL diretta per inserimento
+        const insertQuery = `
+          INSERT INTO external_customers_sync (
+            external_id, customer_code, customer_name, customer_type,
+            vat_number, tax_code, address, city, province, postal_code,
+            country, phone, email, is_active, notes, synced_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, NOW())
+          ON CONFLICT (external_id) DO UPDATE SET
+            customer_code = EXCLUDED.customer_code,
+            customer_name = EXCLUDED.customer_name,
+            customer_type = EXCLUDED.customer_type,
+            vat_number = EXCLUDED.vat_number,
+            tax_code = EXCLUDED.tax_code,
+            address = EXCLUDED.address,
+            city = EXCLUDED.city,
+            province = EXCLUDED.province,
+            postal_code = EXCLUDED.postal_code,
+            country = EXCLUDED.country,
+            phone = EXCLUDED.phone,
+            email = EXCLUDED.email,
+            is_active = EXCLUDED.is_active,
+            notes = EXCLUDED.notes,
+            synced_at = NOW()
+        `;
+        
+        await this.localPool.query(insertQuery, [
+          mappedData.externalId,
+          mappedData.customerCode,
+          mappedData.customerName,
+          mappedData.customerType,
+          mappedData.vatNumber,
+          mappedData.taxCode,
+          mappedData.address,
+          mappedData.city,
+          mappedData.province,
+          mappedData.postalCode,
+          mappedData.country,
+          mappedData.phone,
+          mappedData.email,
+          mappedData.isActive,
+          mappedData.notes
+        ]);
+      }
+      
+      console.log(`✅ Sincronizzazione clienti completata: ${result.rows.length} records`);
+      
+    } finally {
+      externalClient.release();
+    }
+  }
+
+  /**
+   * Sincronizza le vendite dal database esterno usando SQL diretto
+   */
+  private async syncSalesDirectSQL(): Promise<void> {
+    console.log('💰 Sincronizzazione vendite (SQL diretto)...');
+    
+    if (!this.externalPool) {
+      throw new Error('Database esterno non configurato');
+    }
+
+    const externalClient = await this.externalPool.connect();
+    
+    try {
+      const result = await externalClient.query(this.config.sales.query);
+      console.log(`💰 Trovate ${result.rows.length} vendite nel database esterno`);
+      
+      if (result.rows.length === 0) {
+        console.log('💰 Nessuna vendita da sincronizzare');
+        return;
+      }
+
+      // Inserimento diretto nel database locale
+      for (const row of result.rows) {
+        const mappedData = this.mapSaleData(row, this.config.sales.mapping);
+        
+        // Query SQL diretta per inserimento
+        const insertQuery = `
+          INSERT INTO external_sales_sync (
+            external_id, sale_number, sale_date, customer_id, customer_name,
+            product_code, product_name, product_category, quantity, unit_of_measure,
+            unit_price, total_amount, discount_percent, discount_amount, net_amount,
+            vat_percent, vat_amount, total_with_vat, payment_method, delivery_date,
+            origin, lot_reference, sales_person, notes, status, synced_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15, $16, $17, $18, $19, $20, $21, $22, $23, $24, $25, NOW())
+          ON CONFLICT (external_id) DO UPDATE SET
+            sale_number = EXCLUDED.sale_number,
+            sale_date = EXCLUDED.sale_date,
+            customer_id = EXCLUDED.customer_id,
+            customer_name = EXCLUDED.customer_name,
+            product_code = EXCLUDED.product_code,
+            product_name = EXCLUDED.product_name,
+            product_category = EXCLUDED.product_category,
+            quantity = EXCLUDED.quantity,
+            unit_of_measure = EXCLUDED.unit_of_measure,
+            unit_price = EXCLUDED.unit_price,
+            total_amount = EXCLUDED.total_amount,
+            discount_percent = EXCLUDED.discount_percent,
+            discount_amount = EXCLUDED.discount_amount,
+            net_amount = EXCLUDED.net_amount,
+            vat_percent = EXCLUDED.vat_percent,
+            vat_amount = EXCLUDED.vat_amount,
+            total_with_vat = EXCLUDED.total_with_vat,
+            payment_method = EXCLUDED.payment_method,
+            delivery_date = EXCLUDED.delivery_date,
+            origin = EXCLUDED.origin,
+            lot_reference = EXCLUDED.lot_reference,
+            sales_person = EXCLUDED.sales_person,
+            notes = EXCLUDED.notes,
+            status = EXCLUDED.status,
+            synced_at = NOW()
+        `;
+        
+        await this.localPool.query(insertQuery, [
+          mappedData.externalId,
+          mappedData.saleNumber,
+          mappedData.saleDate,
+          mappedData.customerId,
+          mappedData.customerName,
+          mappedData.productCode,
+          mappedData.productName,
+          mappedData.productCategory,
+          mappedData.quantity,
+          mappedData.unitOfMeasure,
+          mappedData.unitPrice,
+          mappedData.totalAmount,
+          mappedData.discountPercent,
+          mappedData.discountAmount,
+          mappedData.netAmount,
+          mappedData.vatPercent,
+          mappedData.vatAmount,
+          mappedData.totalWithVat,
+          mappedData.paymentMethod,
+          mappedData.deliveryDate,
+          mappedData.origin,
+          mappedData.lotReference,
+          mappedData.salesPerson,
+          mappedData.notes,
+          mappedData.status
+        ]);
+      }
+      
+      console.log(`✅ Sincronizzazione vendite completata: ${result.rows.length} records`);
+      
+    } finally {
+      externalClient.release();
     }
   }
 
