@@ -380,7 +380,8 @@ export class ExternalSyncService {
 
       const customers: InsertExternalCustomerSync[] = result.rows
         .map(row => this.mapCustomerData(row, this.config.customers.mapping))
-        .filter(customer => this.validateDataObject(customer));
+        .map(customer => this.validateAndSanitizeDataObject(customer))
+        .filter(customer => customer !== null);
 
       if (customers.length > 0) {
         await this.storage.bulkUpsertExternalCustomersSync(customers);
@@ -405,7 +406,8 @@ export class ExternalSyncService {
 
       const sales: InsertExternalSaleSync[] = result.rows
         .map(row => this.mapSaleData(row, this.config.sales.mapping))
-        .filter(sale => this.validateDataObject(sale));
+        .map(sale => this.validateAndSanitizeDataObject(sale))
+        .filter(sale => sale !== null);
 
       if (sales.length > 0) {
         await this.storage.bulkUpsertExternalSalesSync(sales);
@@ -499,34 +501,33 @@ export class ExternalSyncService {
   }
 
   /**
-   * Valida che tutti i campi timestamp siano stringhe ISO valide
+   * Valida e forza la conversione di tutti i campi timestamp in stringhe ISO valide
    */
-  private validateDataObject(data: any): boolean {
+  private validateAndSanitizeDataObject(data: any): any {
     try {
-      for (const [key, value] of Object.entries(data)) {
+      const sanitizedData = { ...data };
+      
+      for (const [key, value] of Object.entries(sanitizedData)) {
         if (key.includes('At') || key.includes('Date') || key.includes('Time') || key.includes('Modified')) {
-          if (value !== null && typeof value !== 'string') {
-            console.error(`Campo timestamp ${key} non è una stringa:`, typeof value, value);
-            return false;
-          }
-          if (value && typeof value === 'string') {
-            try {
-              const testDate = new Date(value);
-              if (isNaN(testDate.getTime())) {
-                console.error(`Campo timestamp ${key} non è una data valida:`, value);
-                return false;
-              }
-            } catch {
-              console.error(`Campo timestamp ${key} non può essere convertito in data:`, value);
-              return false;
+          if (value === null || value === undefined) {
+            sanitizedData[key] = null;
+          } else {
+            // Forza la conversione a stringa ISO valida
+            const convertedValue = this.convertToValidDate(value);
+            if (convertedValue === null && value !== null) {
+              console.warn(`Campo timestamp ${key} ignorato per valore non valido:`, value);
+              sanitizedData[key] = null;
+            } else {
+              sanitizedData[key] = convertedValue;
             }
           }
         }
       }
-      return true;
+      
+      return sanitizedData;
     } catch (error) {
-      console.error('Errore validazione oggetto dati:', error);
-      return false;
+      console.error('Errore sanitizzazione oggetto dati:', error);
+      return null;
     }
   }
 
@@ -547,10 +548,20 @@ export class ExternalSyncService {
       mappedData[localField] = value;
     }
     
-    return {
+    // Assicurati che tutti i campi timestamp siano stringhe ISO valide
+    const finalData = {
       ...mappedData,
       lastSyncAt: new Date().toISOString()
-    } as InsertExternalCustomerSync;
+    };
+
+    // Converti tutti i campi timestamp rimanenti
+    for (const [key, value] of Object.entries(finalData)) {
+      if ((key.includes('At') || key.includes('Date') || key.includes('Time') || key.includes('Modified')) && value !== null) {
+        finalData[key] = this.convertToValidDate(value);
+      }
+    }
+
+    return finalData as InsertExternalCustomerSync;
   }
 
   /**
@@ -570,10 +581,20 @@ export class ExternalSyncService {
       mappedData[localField] = value;
     }
     
-    return {
+    // Assicurati che tutti i campi timestamp siano stringhe ISO valide
+    const finalData = {
       ...mappedData,
       lastSyncAt: new Date().toISOString()
-    } as InsertExternalSaleSync;
+    };
+
+    // Converti tutti i campi timestamp rimanenti
+    for (const [key, value] of Object.entries(finalData)) {
+      if ((key.includes('At') || key.includes('Date') || key.includes('Time') || key.includes('Modified')) && value !== null) {
+        finalData[key] = this.convertToValidDate(value);
+      }
+    }
+
+    return finalData as InsertExternalSaleSync;
   }
 
   /**
@@ -593,10 +614,20 @@ export class ExternalSyncService {
       mappedData[localField] = value;
     }
     
-    return {
+    // Assicurati che tutti i campi timestamp siano stringhe ISO valide
+    const finalData = {
       ...mappedData,
       lastSyncAt: new Date().toISOString()
-    } as InsertExternalDeliverySync;
+    };
+
+    // Converti tutti i campi timestamp rimanenti
+    for (const [key, value] of Object.entries(finalData)) {
+      if ((key.includes('At') || key.includes('Date') || key.includes('Time') || key.includes('Modified')) && value !== null) {
+        finalData[key] = this.convertToValidDate(value);
+      }
+    }
+
+    return finalData as InsertExternalDeliverySync;
   }
 
   /**
@@ -616,10 +647,20 @@ export class ExternalSyncService {
       mappedData[localField] = value;
     }
     
-    return {
+    // Assicurati che tutti i campi timestamp siano stringhe ISO valide
+    const finalData = {
       ...mappedData,
       lastSyncAt: new Date().toISOString()
-    } as InsertExternalDeliveryDetailSync;
+    };
+
+    // Converti tutti i campi timestamp rimanenti
+    for (const [key, value] of Object.entries(finalData)) {
+      if ((key.includes('At') || key.includes('Date') || key.includes('Time') || key.includes('Modified')) && value !== null) {
+        finalData[key] = this.convertToValidDate(value);
+      }
+    }
+
+    return finalData as InsertExternalDeliveryDetailSync;
   }
 
   /**
