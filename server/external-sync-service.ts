@@ -476,14 +476,15 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti Date/timestamp in string ISO per evitare errori PostgreSQL
-      if (value instanceof Date) {
-        value = value.toISOString();
-      } else if (value && typeof value === 'string' && value.includes('T')) {
-        // Già in formato ISO string
-        value = value;
-      } else if (value && typeof value === 'object' && value.toISOString) {
-        value = value.toISOString();
+      // Converti timestamp in Date object per Drizzle ORM
+      if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
+        if (value instanceof Date) {
+          value = value;
+        } else if (value && typeof value === 'string') {
+          value = new Date(value);
+        } else if (value && typeof value === 'object' && value.toISOString) {
+          value = value;
+        }
       }
       
       mappedData[localField] = value;
@@ -504,13 +505,15 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti Date/timestamp in string ISO per evitare errori PostgreSQL
-      if (value instanceof Date) {
-        value = value.toISOString();
-      } else if (value && typeof value === 'string' && value.includes('T')) {
-        value = value;
-      } else if (value && typeof value === 'object' && value.toISOString) {
-        value = value.toISOString();
+      // Converti timestamp in Date object per Drizzle ORM
+      if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
+        if (value instanceof Date) {
+          value = value;
+        } else if (value && typeof value === 'string') {
+          value = new Date(value);
+        } else if (value && typeof value === 'object' && value.toISOString) {
+          value = value;
+        }
       }
       
       mappedData[localField] = value;
@@ -531,13 +534,15 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti Date/timestamp in string ISO per evitare errori PostgreSQL
-      if (value instanceof Date) {
-        value = value.toISOString();
-      } else if (value && typeof value === 'string' && value.includes('T')) {
-        value = value;
-      } else if (value && typeof value === 'object' && value.toISOString) {
-        value = value.toISOString();
+      // Converti timestamp in Date object per Drizzle ORM
+      if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
+        if (value instanceof Date) {
+          value = value;
+        } else if (value && typeof value === 'string') {
+          value = new Date(value);
+        } else if (value && typeof value === 'object' && value.toISOString) {
+          value = value;
+        }
       }
       
       mappedData[localField] = value;
@@ -558,13 +563,15 @@ export class ExternalSyncService {
     for (const [localField, externalField] of Object.entries(mapping)) {
       let value = row[externalField];
       
-      // Converti Date/timestamp in string ISO per evitare errori PostgreSQL
-      if (value instanceof Date) {
-        value = value.toISOString();
-      } else if (value && typeof value === 'string' && value.includes('T')) {
-        value = value;
-      } else if (value && typeof value === 'object' && value.toISOString) {
-        value = value.toISOString();
+      // Converti timestamp in Date object per Drizzle ORM
+      if (localField.includes('At') || localField.includes('Date') || localField.includes('Time') || localField.includes('Modified')) {
+        if (value instanceof Date) {
+          value = value;
+        } else if (value && typeof value === 'string') {
+          value = new Date(value);
+        } else if (value && typeof value === 'object' && value.toISOString) {
+          value = value;
+        }
       }
       
       mappedData[localField] = value;
