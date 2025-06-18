@@ -140,6 +140,83 @@ export const defaultSyncConfig: SyncConfig = {
       lastModifiedExternal: 'last_modified_external'
     }
   },
+  deliveries: {
+    enabled: true,
+    tableName: 'reports_consegna',
+    query: `
+      SELECT 
+        r.id as external_id,
+        CAST(r.id as TEXT) as delivery_number,
+        r.data_consegna as delivery_date,
+        r.cliente_id as customer_id,
+        c.denominazione as customer_name,
+        r.indirizzo_consegna as delivery_address,
+        r.note_consegna as delivery_notes,
+        r.stato_consegna as delivery_status,
+        r.totale_ordine as total_amount,
+        r.metodo_pagamento as payment_method,
+        r.conducente as driver_name,
+        r.veicolo as vehicle_info,
+        r.ora_partenza as departure_time,
+        r.ora_arrivo as arrival_time,
+        CURRENT_TIMESTAMP as last_modified_external
+      FROM reports_consegna r
+      LEFT JOIN clienti c ON r.cliente_id = c.id
+      ORDER BY r.data_consegna DESC
+    `,
+    mapping: {
+      externalId: 'external_id',
+      deliveryNumber: 'delivery_number',
+      deliveryDate: 'delivery_date',
+      customerId: 'customer_id',
+      customerName: 'customer_name',
+      deliveryAddress: 'delivery_address',
+      deliveryNotes: 'delivery_notes',
+      deliveryStatus: 'delivery_status',
+      totalAmount: 'total_amount',
+      paymentMethod: 'payment_method',
+      driverName: 'driver_name',
+      vehicleInfo: 'vehicle_info',
+      departureTime: 'departure_time',
+      arrivalTime: 'arrival_time',
+      lastModifiedExternal: 'last_modified_external'
+    }
+  },
+  deliveryDetails: {
+    enabled: true,
+    tableName: 'reports_consegna_dettagli',
+    query: `
+      SELECT 
+        d.id as external_id,
+        d.reports_consegna_id as report_id,
+        d.prodotto_codice as product_code,
+        d.prodotto_nome as product_name,
+        d.quantita as quantity,
+        d.unita_misura as unit_of_measure,
+        d.prezzo_unitario as unit_price,
+        d.totale_riga as line_total,
+        d.note_prodotto as product_notes,
+        d.lotto_origine as source_lot,
+        d.data_scadenza as expiry_date,
+        CURRENT_TIMESTAMP as last_modified_external
+      FROM reports_consegna_dettagli d
+      ORDER BY d.reports_consegna_id, d.id
+    `,
+    mapping: {
+      externalId: 'external_id',
+      reportId: 'report_id',
+      productCode: 'product_code',
+      productName: 'product_name',
+      quantity: 'quantity',
+      unitOfMeasure: 'unit_of_measure',
+      unitPrice: 'unit_price',
+      lineTotal: 'line_total',
+      productNotes: 'product_notes',
+      sourceLot: 'source_lot',
+      expiryDate: 'expiry_date',
+      lastModifiedExternal: 'last_modified_external'
+    }
+  },
   syncIntervalMinutes: 60, // Sincronizzazione ogni ora
   batchSize: 1000 // Massimo 1000 record per batch
 };

@@ -65,6 +65,33 @@ app.use((req, res, next) => {
   } catch (error) {
     console.error("⚠️ Errore durante il controllo consistenza:", error);
   }
+
+  // Inizializza il servizio di sincronizzazione esterno
+  console.log("🔄 Inizializzazione servizio sincronizzazione esterno...");
+  try {
+    const { ExternalSyncService } = await import('./external-sync-service');
+    const syncService = new ExternalSyncService();
+    
+    // Avvia la sincronizzazione iniziale
+    console.log("📥 Avvio sincronizzazione iniziale dati esterni...");
+    await syncService.performFullSync();
+    console.log("✅ Sincronizzazione iniziale completata");
+    
+    // Programma sincronizzazioni periodiche (ogni 30 minuti)
+    setInterval(async () => {
+      try {
+        console.log("🔄 Sincronizzazione periodica in corso...");
+        await syncService.performFullSync();
+        console.log("✅ Sincronizzazione periodica completata");
+      } catch (error) {
+        console.error("❌ Errore durante sincronizzazione periodica:", error);
+      }
+    }, 30 * 60 * 1000); // 30 minuti
+    
+    console.log("⏰ Sincronizzazione periodica programmata (ogni 30 minuti)");
+  } catch (error) {
+    console.error("❌ Errore durante l'inizializzazione del servizio di sincronizzazione:", error);
+  }
   
   const server = await registerRoutes(app);
   

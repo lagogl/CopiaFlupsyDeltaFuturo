@@ -345,6 +345,57 @@ export class ExternalSyncService {
   }
 
   /**
+   * Esegue una sincronizzazione completa di tutti i dati
+   */
+  async performFullSync(): Promise<void> {
+    await this.runSyncCycle();
+        this.mapDeliveryData(row, this.config.deliveries.mapping)
+      );
+
+      if (deliveries.length > 0) {
+        await this.storage.bulkUpsertExternalDeliveriesSync(deliveries);
+        console.log(`📥 Sincronizzate ${deliveries.length} consegne`);
+      }
+
+      await this.updateSyncStatus(tableName, true, null, false, deliveries.length);
+      
+    } catch (error) {
+      await this.updateSyncStatus(tableName, false, String(error), false);
+      throw error;
+    }
+  }
+
+  /**
+   * Sincronizza i dettagli consegne dal database esterno
+   */
+  private async syncDeliveryDetails(): Promise<void> {
+    const tableName = 'external_delivery_details_sync';
+    
+    try {
+      await this.updateSyncStatus(tableName, true, null, true);
+
+      const client = await this.externalPool!.connect();
+      const result = await client.query(this.config.deliveryDetails.query);
+      client.release();
+
+      const deliveryDetails: InsertExternalDeliveryDetailSync[] = result.rows.map(row => 
+        this.mapDeliveryDetailData(row, this.config.deliveryDetails.mapping)
+      );
+
+      if (deliveryDetails.length > 0) {
+        await this.storage.bulkUpsertExternalDeliveryDetailsSync(deliveryDetails);
+        console.log(`📥 Sincronizzati ${deliveryDetails.length} dettagli consegne`);
+      }
+
+      await this.updateSyncStatus(tableName, true, null, false, deliveryDetails.length);
+      
+    } catch (error) {
+      await this.updateSyncStatus(tableName, false, String(error), false);
+      throw error;
+    }
+  }
+
+  /**
    * Mappa i dati di un cliente dal formato esterno
    */
   private mapCustomerData(row: any, mapping: Record<string, string>): InsertExternalCustomerSync {
