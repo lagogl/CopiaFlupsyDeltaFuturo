@@ -68,31 +68,32 @@ app.use((req, res, next) => {
 
   // Inizializza il servizio di sincronizzazione esterno
   console.log("🔄 Inizializzazione servizio sincronizzazione esterno...");
-  try {
-    const { ExternalSyncService } = await import('./external-sync-service');
-    const { storage } = await import('./routes');
-    const syncService = new ExternalSyncService(storage);
-    
-    // Avvia la sincronizzazione iniziale
-    console.log("📥 Avvio sincronizzazione iniziale dati esterni...");
-    await syncService.performFullSync();
-    console.log("✅ Sincronizzazione iniziale completata");
-    
-    // Programma sincronizzazioni periodiche (ogni 30 minuti)
-    setInterval(async () => {
-      try {
-        console.log("🔄 Sincronizzazione periodica in corso...");
-        await syncService.performFullSync();
-        console.log("✅ Sincronizzazione periodica completata");
-      } catch (error) {
-        console.error("❌ Errore durante sincronizzazione periodica:", error);
-      }
-    }, 30 * 60 * 1000); // 30 minuti
-    
-    console.log("⏰ Sincronizzazione periodica programmata (ogni 30 minuti)");
-  } catch (error) {
-    console.error("❌ Errore durante l'inizializzazione del servizio di sincronizzazione:", error);
-  }
+  setTimeout(async () => {
+    try {
+      const { ExternalSyncService } = await import('./external-sync-service');
+      const syncService = new ExternalSyncService();
+      
+      // Avvia la sincronizzazione iniziale
+      console.log("📥 Avvio sincronizzazione iniziale dati esterni...");
+      await syncService.performFullSync();
+      console.log("✅ Sincronizzazione iniziale completata");
+      
+      // Programma sincronizzazioni periodiche (ogni 30 minuti)
+      setInterval(async () => {
+        try {
+          console.log("🔄 Sincronizzazione periodica in corso...");
+          await syncService.performFullSync();
+          console.log("✅ Sincronizzazione periodica completata");
+        } catch (error) {
+          console.error("❌ Errore durante sincronizzazione periodica:", error);
+        }
+      }, 30 * 60 * 1000); // 30 minuti
+      
+      console.log("⏰ Sincronizzazione periodica programmata (ogni 30 minuti)");
+    } catch (error) {
+      console.error("❌ Errore durante l'inizializzazione del servizio di sincronizzazione:", error);
+    }
+  }, 5000); // Avvia dopo 5 secondi per permettere al server di inizializzarsi
   
   const server = await registerRoutes(app);
   

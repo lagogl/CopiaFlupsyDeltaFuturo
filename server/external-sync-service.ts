@@ -74,7 +74,8 @@ export class ExternalSyncService {
         query: `
           SELECT 
             id as external_id,
-            denominazione as customer_name,
+            COALESCE(CAST(id as TEXT), 'CLI' || LPAD(CAST(id as TEXT), 6, '0')) as customer_code,
+            COALESCE(denominazione, 'Cliente ' || id) as customer_name,
             'azienda' as customer_type,
             piva as vat_number,
             codice_fiscale as tax_code,
@@ -82,7 +83,7 @@ export class ExternalSyncService {
             comune as city,
             provincia as province,
             cap as postal_code,
-            paese as country,
+            COALESCE(paese, 'Italia') as country,
             telefono as phone,
             email,
             true as is_active,
@@ -93,6 +94,7 @@ export class ExternalSyncService {
         `,
         mapping: {
           externalId: 'external_id',
+          customerCode: 'customer_code',
           customerName: 'customer_name',
           customerType: 'customer_type',
           vatNumber: 'vat_number',
