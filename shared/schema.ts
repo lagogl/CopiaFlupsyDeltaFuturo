@@ -756,10 +756,10 @@ export const externalSalesSync = pgTable("external_sales_sync", {
 export const externalDeliveriesSync = pgTable("external_deliveries_sync", {
   id: serial("id").primaryKey(),
   externalId: integer("external_id").notNull().unique(), // ID nel database esterno
-  dataCreazione: timestamp("data_creazione").notNull(), // Data creazione
+  dataCreazione: text("data_creazione").notNull(), // Data creazione (come testo per compatibilità)
   clienteId: integer("cliente_id"), // ID cliente nel database esterno
   ordineId: integer("ordine_id"), // ID ordine nel database esterno
-  dataConsegna: date("data_consegna").notNull(), // Data consegna
+  dataConsegna: text("data_consegna").notNull(), // Data consegna (come testo per compatibilità)
   stato: text("stato"), // Stato consegna
   numeroTotaleCeste: integer("numero_totale_ceste").notNull(), // Numero totale ceste
   pesoTotaleKg: decimal("peso_totale_kg", { precision: 12, scale: 3 }).notNull(), // Peso totale in kg
@@ -769,7 +769,7 @@ export const externalDeliveriesSync = pgTable("external_deliveries_sync", {
   note: text("note"), // Note
   numeroProgressivo: integer("numero_progressivo"), // Numero progressivo
   syncedAt: timestamp("synced_at").notNull().defaultNow(), // Quando è stato sincronizzato
-  lastModifiedExternal: timestamp("last_modified_external") // Ultima modifica nel DB esterno
+  lastSyncAt: text("last_sync_at") // Ultima sincronizzazione (come testo per compatibilità)
 });
 
 // Dettagli consegne dal database esterno (reports_consegna_dettagli)
@@ -789,7 +789,7 @@ export const externalDeliveryDetailsSync = pgTable("external_delivery_details_sy
   numeroAnimali: integer("numero_animali").notNull(), // Numero animali
   note: text("note"), // Note
   syncedAt: timestamp("synced_at").notNull().defaultNow(), // Quando è stato sincronizzato
-  lastModifiedExternal: timestamp("last_modified_external") // Ultima modifica nel DB esterno
+  lastSyncAt: text("last_sync_at") // Ultima sincronizzazione (come testo per compatibilità)
 });
 
 // Schema di inserimento per sync status
