@@ -302,7 +302,7 @@ export default function SalesReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {salesData?.sales?.length || 0}
+                  {(salesData as any)?.sales?.length || 0}
                 </div>
               </CardContent>
             </Card>
@@ -315,7 +315,7 @@ export default function SalesReports() {
               <CardContent>
                 <div className="text-2xl font-bold">
                   {formatCurrency(
-                    salesData?.sales?.reduce((sum: number, sale: any) => sum + (sale.totalAmount || 0), 0) || 0
+                    (salesData as any)?.sales?.reduce((sum: number, sale: any) => sum + (sale.totalAmount || 0), 0) || 0
                   )}
                 </div>
               </CardContent>
@@ -329,7 +329,7 @@ export default function SalesReports() {
               <CardContent>
                 <div className="text-2xl font-bold">
                   {formatQuantity(
-                    salesData?.sales?.reduce((sum: number, sale: any) => sum + (sale.quantity || 0), 0) || 0
+                    (salesData as any)?.sales?.reduce((sum: number, sale: any) => sum + (sale.quantity || 0), 0) || 0
                   )} kg
                 </div>
               </CardContent>
