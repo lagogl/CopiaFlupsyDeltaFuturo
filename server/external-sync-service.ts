@@ -430,9 +430,10 @@ export class ExternalSyncService {
       const result = await client.query(this.config.deliveries.query);
       client.release();
 
-      const deliveries: InsertExternalDeliverySync[] = result.rows.map(row => 
-        this.mapDeliveryData(row, this.config.deliveries.mapping)
-      );
+      const deliveries: InsertExternalDeliverySync[] = result.rows
+        .map(row => this.mapDeliveryData(row, this.config.deliveries.mapping))
+        .map(delivery => this.validateAndSanitizeDataObject(delivery))
+        .filter(delivery => delivery !== null);
 
       if (deliveries.length > 0) {
         await this.storage.bulkUpsertExternalDeliveriesSync(deliveries);
@@ -455,9 +456,10 @@ export class ExternalSyncService {
       const result = await client.query(this.config.deliveryDetails.query);
       client.release();
 
-      const deliveryDetails: InsertExternalDeliveryDetailSync[] = result.rows.map(row => 
-        this.mapDeliveryDetailData(row, this.config.deliveryDetails.mapping)
-      );
+      const deliveryDetails: InsertExternalDeliveryDetailSync[] = result.rows
+        .map(row => this.mapDeliveryDetailData(row, this.config.deliveryDetails.mapping))
+        .map(detail => this.validateAndSanitizeDataObject(detail))
+        .filter(detail => detail !== null);
 
       if (deliveryDetails.length > 0) {
         await this.storage.bulkUpsertExternalDeliveryDetailsSync(deliveryDetails);
@@ -473,28 +475,71 @@ export class ExternalSyncService {
    * Converte un valore in una stringa ISO valida o null per PostgreSQL
    */
   private convertToValidDate(value: any): string | null {
-    if (!value) return null;
-    
-    if (value instanceof Date && !isNaN(value.getTime())) {
-      return value.toISOString();
+    if (value === null || value === undefined || value === '') {
+      return null;
     }
     
-    if (typeof value === 'string') {
-      try {
+    try {
+      // Se è già un oggetto Date valido
+      if (value instanceof Date && !isNaN(value.getTime())) {
+        return value.toISOString();
+      }
+      
+      // Se è una stringa
+      if (typeof value === 'string') {
         const dateValue = new Date(value);
         return !isNaN(dateValue.getTime()) ? dateValue.toISOString() : null;
-      } catch {
-        return null;
       }
-    }
-    
-    if (typeof value === 'object' && value.toISOString) {
-      try {
+      
+      // Se è un numero (timestamp)
+      if (typeof value === 'number' && !isNaN(value)) {
         const dateValue = new Date(value);
         return !isNaN(dateValue.getTime()) ? dateValue.toISOString() : null;
-      } catch {
-        return null;
       }
+      
+      // Se è un oggetto complesso (come quelli di MongoDB o altri DB)
+      if (typeof value === 'object' && value !== null) {
+        // Prova proprietà comuni per timestamp
+        const timestampProps = ['$date', 'date', 'timestamp', 'value', '_date', 'time'];
+        for (const prop of timestampProps) {
+          if (value[prop] !== undefined && value[prop] !== null) {
+            return this.convertToValidDate(value[prop]);
+          }
+        }
+        
+        // Se ha un metodo toISOString
+        if (typeof value.toISOString === 'function') {
+          try {
+            return value.toISOString();
+          } catch {
+            // Fallback a toString
+          }
+        }
+        
+        // Se ha un metodo toString che non è il default di Object
+        if (typeof value.toString === 'function') {
+          const stringValue = value.toString();
+          if (stringValue !== '[object Object]' && stringValue !== 'Invalid Date') {
+            const dateValue = new Date(stringValue);
+            if (!isNaN(dateValue.getTime())) {
+              return dateValue.toISOString();
+            }
+          }
+        }
+        
+        // Se è un array di valori
+        if (Array.isArray(value) && value.length > 0) {
+          return this.convertToValidDate(value[0]);
+        }
+      }
+      
+      // Ultimo tentativo: conversione diretta
+      const dateValue = new Date(value);
+      if (!isNaN(dateValue.getTime())) {
+        return dateValue.toISOString();
+      }
+    } catch (error) {
+      console.warn(`Impossibile convertire timestamp:`, typeof value, value, error?.message);
     }
     
     return null;
@@ -507,22 +552,54 @@ export class ExternalSyncService {
     try {
       const sanitizedData = { ...data };
       
+      // Prima fase: converti tutti i campi timestamp conosciuti
       for (const [key, value] of Object.entries(sanitizedData)) {
         if (key.includes('At') || key.includes('Date') || key.includes('Time') || key.includes('Modified')) {
           if (value === null || value === undefined) {
             sanitizedData[key] = null;
           } else {
-            // Forza la conversione a stringa ISO valida
+            console.log(`Conversione campo ${key}:`, typeof value, value);
             const convertedValue = this.convertToValidDate(value);
             if (convertedValue === null && value !== null) {
-              console.warn(`Campo timestamp ${key} ignorato per valore non valido:`, value);
+              console.warn(`Campo timestamp ${key} ignorato per valore non valido:`, typeof value, value);
               sanitizedData[key] = null;
             } else {
               sanitizedData[key] = convertedValue;
+              console.log(`Campo ${key} convertito in:`, convertedValue);
             }
           }
         }
       }
+      
+      // Seconda fase: verifica che tutti i valori siano stringhe o null
+      for (const [key, value] of Object.entries(sanitizedData)) {
+        if (value !== null && value !== undefined) {
+          // Se il valore è ancora un oggetto o ha metodi che potrebbero causare problemi
+          if (typeof value === 'object' && value !== null) {
+            console.warn(`ATTENZIONE: Campo ${key} è ancora un oggetto dopo sanitizzazione:`, typeof value, value);
+            // Forza conversione a stringa o null
+            if (key.includes('At') || key.includes('Date') || key.includes('Time') || key.includes('Modified')) {
+              sanitizedData[key] = null;
+              console.warn(`Campo ${key} forzato a null per sicurezza`);
+            } else {
+              // Per campi non timestamp, prova conversione a stringa
+              try {
+                sanitizedData[key] = JSON.stringify(value);
+              } catch {
+                sanitizedData[key] = String(value);
+              }
+            }
+          }
+        }
+      }
+      
+      // Terza fase: aggiunta lastSyncAt come stringa ISO
+      sanitizedData.lastSyncAt = new Date().toISOString();
+      
+      console.log(`Oggetto sanitizzato finale:`, Object.keys(sanitizedData).reduce((acc, key) => {
+        acc[key] = typeof sanitizedData[key];
+        return acc;
+      }, {} as any));
       
       return sanitizedData;
     } catch (error) {
