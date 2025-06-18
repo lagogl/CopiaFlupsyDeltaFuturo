@@ -33,7 +33,7 @@ export default function SalesReports() {
     queryKey: ['/api/sync/sales', selectedCustomer, startDate, endDate],
     queryFn: () => {
       const params = new URLSearchParams();
-      if (selectedCustomer) params.append('customerId', selectedCustomer);
+      if (selectedCustomer && selectedCustomer !== "all") params.append('customerId', selectedCustomer);
       if (startDate) params.append('startDate', startDate);
       if (endDate) params.append('endDate', endDate);
       
@@ -102,20 +102,20 @@ export default function SalesReports() {
           <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
-                {syncStatus?.status?.find((s: any) => s.tableName === 'external_customers_sync')?.recordCount || 0}
+                {(syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_customers_sync')?.recordCount || 0}
               </div>
               <div className="text-sm text-muted-foreground">Clienti Sincronizzati</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
-                {syncStatus?.status?.find((s: any) => s.tableName === 'external_sales_sync')?.recordCount || 0}
+                {(syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_sales_sync')?.recordCount || 0}
               </div>
               <div className="text-sm text-muted-foreground">Vendite Sincronizzate</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
-                {syncStatus?.status?.find((s: any) => s.tableName === 'external_sales_sync')?.lastSync 
-                  ? format(new Date(syncStatus.status.find((s: any) => s.tableName === 'external_sales_sync').lastSync), 'dd/MM/yyyy HH:mm', { locale: it })
+                {(syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_sales_sync')?.lastSync 
+                  ? format(new Date((syncStatus as any).status.find((s: any) => s.tableName === 'external_sales_sync').lastSync), 'dd/MM/yyyy HH:mm', { locale: it })
                   : 'Mai'
                 }
               </div>
@@ -147,8 +147,8 @@ export default function SalesReports() {
                       <SelectValue placeholder="Tutti i clienti" />
                     </SelectTrigger>
                     <SelectContent>
-                      <SelectItem value="">Tutti i clienti</SelectItem>
-                      {customersData?.customers?.map((customer: any) => (
+                      <SelectItem value="all">Tutti i clienti</SelectItem>
+                      {(customersData as any)?.customers?.map((customer: any) => (
                         <SelectItem key={customer.id} value={customer.externalId.toString()}>
                           {customer.customerName}
                         </SelectItem>
@@ -188,7 +188,7 @@ export default function SalesReports() {
             <CardHeader>
               <CardTitle>Elenco Vendite</CardTitle>
               <CardDescription>
-                {salesData?.sales?.length || 0} vendite trovate
+                {(salesData as any)?.sales?.length || 0} vendite trovate
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -205,7 +205,7 @@ export default function SalesReports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {salesData?.sales?.map((sale: any) => (
+                    {(salesData as any)?.sales?.map((sale: any) => (
                       <TableRow key={sale.id}>
                         <TableCell>
                           {format(new Date(sale.saleDate), 'dd/MM/yyyy', { locale: it })}
@@ -249,7 +249,7 @@ export default function SalesReports() {
                 Clienti Sincronizzati
               </CardTitle>
               <CardDescription>
-                {customersData?.customers?.length || 0} clienti nel database
+                {(customersData as any)?.customers?.length || 0} clienti nel database
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -266,7 +266,7 @@ export default function SalesReports() {
                     </TableRow>
                   </TableHeader>
                   <TableBody>
-                    {customersData?.customers?.map((customer: any) => (
+                    {(customersData as any)?.customers?.map((customer: any) => (
                       <TableRow key={customer.id}>
                         <TableCell className="font-medium">
                           {customer.customerName}
@@ -342,7 +342,7 @@ export default function SalesReports() {
               </CardHeader>
               <CardContent>
                 <div className="text-2xl font-bold">
-                  {customersData?.customers?.filter((c: any) => c.isActive).length || 0}
+                  {(customersData as any)?.customers?.filter((c: any) => c.isActive).length || 0}
                 </div>
               </CardContent>
             </Card>
