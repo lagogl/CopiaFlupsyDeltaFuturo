@@ -1115,6 +1115,27 @@ export class ExternalSyncService {
   }
 
   /**
+   * Aggiorna lo stato di sincronizzazione per una tabella specifica
+   */
+  private async updateSyncStatusForTable(tableName: string, recordCount: number, success: boolean): Promise<void> {
+    try {
+      const now = new Date();
+      
+      await this.storage.upsertSyncStatus(tableName, {
+        lastSyncAt: now,
+        lastSyncSuccess: success,
+        syncInProgress: false,
+        recordCount: recordCount,
+        errorMessage: success ? null : 'Errore durante la sincronizzazione'
+      });
+      
+      console.log(`📊 Stato sincronizzazione aggiornato per ${tableName}: ${recordCount} records`);
+    } catch (error) {
+      console.error(`❌ Errore nell'aggiornamento dello stato per ${tableName}:`, error);
+    }
+  }
+
+  /**
    * Aggiorna lo stato di sincronizzazione con successo
    */
   private async updateSyncStatusAfterCompletion(): Promise<void> {
