@@ -342,7 +342,7 @@ export class ExternalSyncService {
       // }
 
       // Aggiorna lo stato di sincronizzazione con timestamp corrente
-      await this.updateSyncStatus();
+      await this.updateSyncStatusAfterCompletion();
       
       console.log('✅ Sincronizzazione completa terminata');
     } catch (error) {
@@ -855,6 +855,9 @@ export class ExternalSyncService {
       
       console.log(`✅ Sincronizzazione clienti completata: ${result.rows.length} records`);
       
+      // Aggiorna immediatamente lo stato di sincronizzazione per i clienti
+      await this.updateSyncStatusForTable('external_customers_sync', result.rows.length, true);
+      
     } finally {
       externalClient.release();
     }
@@ -952,6 +955,9 @@ export class ExternalSyncService {
       }
       
       console.log(`✅ Sincronizzazione vendite completata: ${result.rows.length} records`);
+      
+      // Aggiorna immediatamente lo stato di sincronizzazione per le vendite
+      await this.updateSyncStatusForTable('external_sales_sync', result.rows.length, true);
       
     } finally {
       externalClient.release();
@@ -1111,7 +1117,7 @@ export class ExternalSyncService {
   /**
    * Aggiorna lo stato di sincronizzazione con successo
    */
-  private async updateSyncStatus(): Promise<void> {
+  private async updateSyncStatusAfterCompletion(): Promise<void> {
     try {
       const now = new Date();
       
