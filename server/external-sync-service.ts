@@ -341,9 +341,16 @@ export class ExternalSyncService {
       //   await this.syncDeliveryDetailsDirectSQL();
       // }
 
+      // Aggiorna lo stato di sincronizzazione con timestamp corrente
+      await this.updateSyncStatus();
+      
       console.log('✅ Sincronizzazione completa terminata');
     } catch (error) {
       console.error('❌ Errore durante sincronizzazione:', error);
+      
+      // Aggiorna lo stato di sincronizzazione con errore
+      await this.updateSyncStatusWithError(error);
+      
       throw error;
     }
   }
@@ -1098,6 +1105,73 @@ export class ExternalSyncService {
       
     } finally {
       externalClient.release();
+    }
+  }
+
+  /**
+   * Aggiorna lo stato di sincronizzazione con successo
+   */
+  private async updateSyncStatus(): Promise<void> {
+    try {
+      const now = new Date();
+      
+      // Conta i record sincronizzati
+      const customersCount = await this.storage.getExternalCustomersSync();
+      const salesCount = await this.storage.getExternalSalesSync();
+      
+      // Aggiorna stato clienti
+      await this.storage.upsertSyncStatus('external_customers_sync', {
+        lastSyncAt: now,
+        lastSyncSuccess: true,
+        syncInProgress: false,
+        recordCount: customersCount.length,
+        errorMessage: null
+      });
+      
+      // Aggiorna stato vendite
+      await this.storage.upsertSyncStatus('external_sales_sync', {
+        lastSyncAt: now,
+        lastSyncSuccess: true,
+        syncInProgress: false,
+        recordCount: salesCount.length,
+        errorMessage: null
+      });
+      
+      console.log('📊 Stato sincronizzazione aggiornato con successo');
+    } catch (error) {
+      console.error('❌ Errore nell\'aggiornamento dello stato:', error);
+    }
+  }
+
+  /**
+   * Aggiorna lo stato di sincronizzazione con errore
+   */
+  private async updateSyncStatusWithError(error: any): Promise<void> {
+    try {
+      const now = new Date();
+      const errorMessage = error.message || 'Errore sconosciuto';
+      
+      // Aggiorna stato clienti con errore
+      await this.storage.upsertSyncStatus('external_customers_sync', {
+        lastSyncAt: now,
+        lastSyncSuccess: false,
+        syncInProgress: false,
+        recordCount: 0,
+        errorMessage
+      });
+      
+      // Aggiorna stato vendite con errore
+      await this.storage.upsertSyncStatus('external_sales_sync', {
+        lastSyncAt: now,
+        lastSyncSuccess: false,
+        syncInProgress: false,
+        recordCount: 0,
+        errorMessage
+      });
+      
+      console.log('📊 Stato sincronizzazione aggiornato con errore');
+    } catch (updateError) {
+      console.error('❌ Errore nell\'aggiornamento dello stato con errore:', updateError);
     }
   }
 
