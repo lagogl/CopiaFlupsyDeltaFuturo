@@ -9,6 +9,7 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { RefreshCw, Download, Database, Users, Package, TrendingUp, CheckCircle, AlertCircle, Loader2 } from "lucide-react";
+import { Progress } from "@/components/ui/progress";
 import { format } from "date-fns";
 import { it } from "date-fns/locale";
 import { useToast } from "@/hooks/use-toast";
@@ -19,6 +20,8 @@ export default function SalesReports() {
   const [endDate, setEndDate] = useState<string>("");
   const [year, setYear] = useState<string>(new Date().getFullYear().toString());
   const [isSyncing, setIsSyncing] = useState<boolean>(false);
+  const [syncProgress, setSyncProgress] = useState<number>(0);
+  const [syncStatusMessage, setSyncStatusMessage] = useState<string>("");
   const { toast } = useToast();
 
   // Query per lo stato della sincronizzazione
