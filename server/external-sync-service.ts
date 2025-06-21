@@ -331,14 +331,15 @@ export class ExternalSyncService {
         await this.syncSalesDirectSQL();
       }
 
-      // DISABILITO TEMPORANEAMENTE LE CONSEGNE PER DEBUG
-      // if (this.config.deliveries?.enabled) {
-      //   await this.syncDeliveriesDirectSQL();
-      // }
+      // Sincronizza consegne utilizzando metodo semplificato
+      if (this.config.deliveries?.enabled) {
+        await this.syncDeliveriesSimple();
+      }
 
-      // if (this.config.deliveryDetails?.enabled) {
-      //   await this.syncDeliveryDetailsDirectSQL();
-      // }
+      // Sincronizza dettagli consegne utilizzando metodo semplificato
+      if (this.config.deliveryDetails?.enabled) {
+        await this.syncDeliveryDetailsSimple();
+      }
 
       // Aggiorna lo stato di sincronizzazione con timestamp corrente
       await this.updateSyncStatusAfterCompletion();
@@ -1109,6 +1110,152 @@ export class ExternalSyncService {
       console.log(`✅ Sincronizzazione dettagli consegne completata: ${result.rows.length} records`);
       
       // Aggiorna immediatamente lo stato di sincronizzazione per i dettagli consegne
+      await this.updateSyncStatusForTable('external_delivery_details_sync', result.rows.length, true);
+      
+    } finally {
+      externalClient.release();
+    }
+  }
+
+  /**
+   * Sincronizza le consegne con metodo semplificato
+   */
+  private async syncDeliveriesSimple(): Promise<void> {
+    console.log('🚚 Sincronizzazione consegne semplificata...');
+    
+    if (!this.externalPool) {
+      throw new Error('Database esterno non configurato');
+    }
+
+    const externalClient = await this.externalPool.connect();
+    
+    try {
+      const result = await externalClient.query(`
+        SELECT 
+          r.id as external_id,
+          r.data_creazione,
+          r.cliente_id,
+          NULL as ordine_id,
+          r.data_consegna,
+          COALESCE(r.stato, 'completata') as stato,
+          COALESCE(r.numero_totale_ceste, 1) as numero_totale_ceste,
+          COALESCE(r.peso_totale_kg, '0') as peso_totale_kg,
+          COALESCE(r.totale_animali, 0) as totale_animali,
+          r.taglia_media,
+          r.qrcode_url,
+          r.note,
+          r.numero_progressivo
+        FROM reports_consegna r
+        ORDER BY r.data_consegna DESC
+        LIMIT 100
+      `);
+      
+      console.log(`🚚 Trovate ${result.rows.length} consegne nel database esterno`);
+      
+      for (const row of result.rows) {
+        await this.localPool.query(`
+          INSERT INTO external_deliveries_sync (
+            external_id, data_creazione, cliente_id, ordine_id, data_consegna,
+            stato, numero_totale_ceste, peso_totale_kg, totale_animali,
+            taglia_media, qrcode_url, note, numero_progressivo, 
+            synced_at, last_modified_external
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+          ON CONFLICT (external_id) DO UPDATE SET
+            data_creazione = EXCLUDED.data_creazione,
+            cliente_id = EXCLUDED.cliente_id,
+            data_consegna = EXCLUDED.data_consegna,
+            stato = EXCLUDED.stato,
+            synced_at = NOW()
+        `, [
+          row.external_id,
+          row.data_creazione || new Date().toISOString(),
+          row.cliente_id,
+          row.ordine_id,
+          row.data_consegna || new Date().toISOString().split('T')[0],
+          row.stato,
+          row.numero_totale_ceste,
+          row.peso_totale_kg,
+          row.totale_animali,
+          row.taglia_media,
+          row.qrcode_url,
+          row.note,
+          row.numero_progressivo
+        ]);
+      }
+      
+      console.log(`✅ Sincronizzazione consegne completata: ${result.rows.length} records`);
+      await this.updateSyncStatusForTable('external_deliveries_sync', result.rows.length, true);
+      
+    } finally {
+      externalClient.release();
+    }
+  }
+
+  /**
+   * Sincronizza i dettagli consegne con metodo semplificato
+   */
+  private async syncDeliveryDetailsSimple(): Promise<void> {
+    console.log('📦 Sincronizzazione dettagli consegne semplificata...');
+    
+    if (!this.externalPool) {
+      throw new Error('Database esterno non configurato');
+    }
+
+    const externalClient = await this.externalPool.connect();
+    
+    try {
+      const result = await externalClient.query(`
+        SELECT 
+          d.id as external_id,
+          d.report_id,
+          d.misurazione_id,
+          d.vasca_id,
+          d.codice_sezione,
+          COALESCE(d.numero_ceste, 1) as numero_ceste,
+          COALESCE(d.peso_ceste_kg, '0') as peso_ceste_kg,
+          d.taglia,
+          d.animali_per_kg,
+          d.percentuale_guscio,
+          d.percentuale_mortalita,
+          COALESCE(d.numero_animali, 0) as numero_animali,
+          d.note
+        FROM reports_consegna_dettagli d
+        ORDER BY d.report_id, d.id
+        LIMIT 200
+      `);
+      
+      console.log(`📦 Trovati ${result.rows.length} dettagli consegne nel database esterno`);
+      
+      for (const row of result.rows) {
+        await this.localPool.query(`
+          INSERT INTO external_delivery_details_sync (
+            external_id, report_id, misurazione_id, vasca_id, codice_sezione,
+            numero_ceste, peso_ceste_kg, taglia, animali_per_kg, percentuale_guscio,
+            percentuale_mortalita, numero_animali, note, synced_at, last_modified_external
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
+          ON CONFLICT (external_id) DO UPDATE SET
+            report_id = EXCLUDED.report_id,
+            taglia = EXCLUDED.taglia,
+            numero_animali = EXCLUDED.numero_animali,
+            synced_at = NOW()
+        `, [
+          row.external_id,
+          row.report_id,
+          row.misurazione_id,
+          row.vasca_id,
+          row.codice_sezione,
+          row.numero_ceste,
+          row.peso_ceste_kg,
+          row.taglia,
+          row.animali_per_kg,
+          row.percentuale_guscio,
+          row.percentuale_mortalita,
+          row.numero_animali,
+          row.note
+        ]);
+      }
+      
+      console.log(`✅ Sincronizzazione dettagli consegne completata: ${result.rows.length} records`);
       await this.updateSyncStatusForTable('external_delivery_details_sync', result.rows.length, true);
       
     } finally {
