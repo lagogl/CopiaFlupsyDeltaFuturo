@@ -57,12 +57,25 @@ export default function SalesReports() {
     }
   });
 
-  // Funzione per sincronizzare i dati
+  // Funzione per sincronizzare i dati con indicatore di progresso
   const handleSync = async () => {
     if (isSyncing) return; // Previene sincronizzazioni multiple
     
     setIsSyncing(true);
+    setSyncProgress(0);
+    setSyncStatusMessage("Inizializzazione sincronizzazione...");
     
+    // Simulazione progresso durante sincronizzazione
+    const progressInterval = setInterval(() => {
+      setSyncProgress(prev => {
+        if (prev >= 90) {
+          return prev;
+        }
+        const increment = Math.random() * 10 + 5;
+        return Math.min(prev + increment, 90);
+      });
+    }, 1500);
+
     // Toast di inizio sincronizzazione
     toast({
       title: "Sincronizzazione in corso",
@@ -71,16 +84,29 @@ export default function SalesReports() {
     });
 
     try {
+      setSyncStatusMessage("Connessione al database esterno...");
+      
       const response = await fetch('/api/sync/external-database', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
+      
+      setSyncStatusMessage("Sincronizzazione dati in corso...");
       const result = await response.json();
       
+      clearInterval(progressInterval);
+      setSyncProgress(100);
+      setSyncStatusMessage("Sincronizzazione completata!");
+      
       if (result.success) {
-        // Aggiorna i dati
-        refetchStatus();
-        refetchSales();
+        // Aggiorna tutti i dati
+        await Promise.all([
+          refetchStatus(),
+          refetchCustomers(),
+          refetchDeliveries(),
+          refetchDeliveryDetails(),
+          refetchSales()
+        ]);
         
         // Toast di successo
         toast({
@@ -98,6 +124,10 @@ export default function SalesReports() {
         });
       }
     } catch (error) {
+      clearInterval(progressInterval);
+      setSyncProgress(0);
+      setSyncStatusMessage("Errore nella sincronizzazione");
+      
       // Toast di errore di connessione
       toast({
         variant: "destructive",
@@ -106,7 +136,11 @@ export default function SalesReports() {
         duration: 5000,
       });
     } finally {
-      setIsSyncing(false);
+      setTimeout(() => {
+        setIsSyncing(false);
+        setSyncProgress(0);
+        setSyncStatusMessage("");
+      }, 2000);
     }
   };
 
@@ -145,6 +179,27 @@ export default function SalesReports() {
           {isSyncing ? "Sincronizzazione..." : "Sincronizza Dati"}
         </Button>
       </div>
+
+      {/* Indicatore di progresso sincronizzazione */}
+      {(isSyncing || syncProgress > 0) && (
+        <Card className="mb-6">
+          <CardContent className="pt-6">
+            <div className="space-y-3">
+              <div className="flex justify-between items-center">
+                <span className="text-sm font-medium">Sincronizzazione in corso...</span>
+                <span className="text-sm text-muted-foreground">{Math.round(syncProgress)}%</span>
+              </div>
+              <Progress value={syncProgress} className="w-full" />
+              {syncStatusMessage && (
+                <p className="text-sm text-muted-foreground flex items-center gap-2">
+                  <Loader2 className="h-4 w-4 animate-spin" />
+                  {syncStatusMessage}
+                </p>
+              )}
+            </div>
+          </CardContent>
+        </Card>
+      )}
 
       {/* Stato Sincronizzazione */}
       <Card>
@@ -419,7 +474,7 @@ export default function SalesReports() {
                 Clienti Sincronizzati
               </CardTitle>
               <CardDescription>
-                {(customersData as any)?.customers?.length || 0} clienti nel database
+                {(customersData as any)?.customers?.length || (syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_customers_sync')?.recordCount || 0} clienti nel database
               </CardDescription>
             </CardHeader>
             <CardContent>
