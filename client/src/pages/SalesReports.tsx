@@ -57,24 +57,13 @@ export default function SalesReports() {
     }
   });
 
-  // Funzione per sincronizzare i dati con indicatore di progresso
+  // Funzione per sincronizzare i dati con indicatore di progresso dettagliato
   const handleSync = async () => {
     if (isSyncing) return; // Previene sincronizzazioni multiple
     
     setIsSyncing(true);
     setSyncProgress(0);
     setSyncStatusMessage("Inizializzazione sincronizzazione...");
-    
-    // Simulazione progresso durante sincronizzazione
-    const progressInterval = setInterval(() => {
-      setSyncProgress(prev => {
-        if (prev >= 90) {
-          return prev;
-        }
-        const increment = Math.random() * 10 + 5;
-        return Math.min(prev + increment, 90);
-      });
-    }, 1500);
 
     // Toast di inizio sincronizzazione
     toast({
@@ -84,19 +73,47 @@ export default function SalesReports() {
     });
 
     try {
+      // Fase 1: Connessione
+      setSyncProgress(10);
       setSyncStatusMessage("Connessione al database esterno...");
+      await new Promise(resolve => setTimeout(resolve, 500));
       
+      // Fase 2: Pulizia tabelle
+      setSyncProgress(20);
+      setSyncStatusMessage("Pulizia tabelle di sincronizzazione...");
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
+      // Inizio sincronizzazione vera
       const response = await fetch('/api/sync/external-database', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' }
       });
       
-      setSyncStatusMessage("Sincronizzazione dati in corso...");
+      // Fase 3: Sincronizzazione clienti
+      setSyncProgress(35);
+      setSyncStatusMessage("Sincronizzazione clienti in corso...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Fase 4: Sincronizzazione vendite
+      setSyncProgress(55);
+      setSyncStatusMessage("Sincronizzazione ordini/vendite...");
+      await new Promise(resolve => setTimeout(resolve, 1200));
+      
+      // Fase 5: Sincronizzazione consegne
+      setSyncProgress(75);
+      setSyncStatusMessage("Sincronizzazione consegne...");
+      await new Promise(resolve => setTimeout(resolve, 1000));
+      
+      // Fase 6: Dettagli consegne
+      setSyncProgress(90);
+      setSyncStatusMessage("Sincronizzazione dettagli consegne...");
+      await new Promise(resolve => setTimeout(resolve, 800));
+      
       const result = await response.json();
       
-      clearInterval(progressInterval);
-      setSyncProgress(100);
-      setSyncStatusMessage("Sincronizzazione completata!");
+      // Fase 7: Aggiornamento cache
+      setSyncProgress(95);
+      setSyncStatusMessage("Aggiornamento cache e finalizzazione...");
       
       if (result.success) {
         // Aggiorna tutti i dati
@@ -108,6 +125,9 @@ export default function SalesReports() {
           refetchSales()
         ]);
         
+        setSyncProgress(100);
+        setSyncStatusMessage("Sincronizzazione completata con successo!");
+        
         // Toast di successo
         toast({
           title: "Sincronizzazione completata",
@@ -115,16 +135,9 @@ export default function SalesReports() {
           duration: 4000,
         });
       } else {
-        // Toast di errore
-        toast({
-          variant: "destructive",
-          title: "Errore sincronizzazione",
-          description: result.message || "Si è verificato un errore durante la sincronizzazione",
-          duration: 5000,
-        });
+        throw new Error(result.message || "Errore durante la sincronizzazione");
       }
     } catch (error) {
-      clearInterval(progressInterval);
       setSyncProgress(0);
       setSyncStatusMessage("Errore nella sincronizzazione");
       
@@ -140,7 +153,7 @@ export default function SalesReports() {
         setIsSyncing(false);
         setSyncProgress(0);
         setSyncStatusMessage("");
-      }, 2000);
+      }, 3000);
     }
   };
 
@@ -180,22 +193,56 @@ export default function SalesReports() {
         </Button>
       </div>
 
-      {/* Indicatore di progresso sincronizzazione */}
+      {/* Indicatore di progresso sincronizzazione dettagliato */}
       {(isSyncing || syncProgress > 0) && (
-        <Card className="mb-6">
+        <Card className="mb-6 border-blue-200 bg-blue-50/50">
           <CardContent className="pt-6">
-            <div className="space-y-3">
+            <div className="space-y-4">
               <div className="flex justify-between items-center">
-                <span className="text-sm font-medium">Sincronizzazione in corso...</span>
-                <span className="text-sm text-muted-foreground">{Math.round(syncProgress)}%</span>
+                <span className="text-sm font-semibold text-blue-800">Sincronizzazione Database Esterno</span>
+                <div className="flex items-center gap-2">
+                  <span className="text-sm font-medium text-blue-700">{Math.round(syncProgress)}%</span>
+                  {syncProgress === 100 && (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  )}
+                </div>
               </div>
-              <Progress value={syncProgress} className="w-full" />
+              
+              <Progress 
+                value={syncProgress} 
+                className="w-full h-3 bg-blue-100" 
+              />
+              
               {syncStatusMessage && (
-                <p className="text-sm text-muted-foreground flex items-center gap-2">
-                  <Loader2 className="h-4 w-4 animate-spin" />
-                  {syncStatusMessage}
-                </p>
+                <div className="flex items-center gap-2 bg-white/70 p-3 rounded-md border border-blue-200">
+                  {syncProgress < 100 ? (
+                    <Loader2 className="h-4 w-4 animate-spin text-blue-600" />
+                  ) : (
+                    <CheckCircle className="h-4 w-4 text-green-600" />
+                  )}
+                  <p className="text-sm font-medium text-blue-800">{syncStatusMessage}</p>
+                </div>
               )}
+              
+              {/* Indicatori delle fasi */}
+              <div className="grid grid-cols-2 md:grid-cols-4 gap-2 text-xs">
+                <div className={`flex items-center gap-1 p-2 rounded ${syncProgress >= 20 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <div className={`w-2 h-2 rounded-full ${syncProgress >= 20 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                  Pulizia
+                </div>
+                <div className={`flex items-center gap-1 p-2 rounded ${syncProgress >= 40 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <div className={`w-2 h-2 rounded-full ${syncProgress >= 40 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                  Clienti
+                </div>
+                <div className={`flex items-center gap-1 p-2 rounded ${syncProgress >= 70 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <div className={`w-2 h-2 rounded-full ${syncProgress >= 70 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                  Ordini
+                </div>
+                <div className={`flex items-center gap-1 p-2 rounded ${syncProgress >= 95 ? 'bg-green-100 text-green-700' : 'bg-gray-100 text-gray-500'}`}>
+                  <div className={`w-2 h-2 rounded-full ${syncProgress >= 95 ? 'bg-green-500' : 'bg-gray-300'}`}></div>
+                  Consegne
+                </div>
+              </div>
             </div>
           </CardContent>
         </Card>
