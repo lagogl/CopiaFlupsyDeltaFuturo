@@ -7165,6 +7165,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+
+
   // Endpoint per verificare lo stato della sincronizzazione
   app.get("/api/sync/status", async (req, res) => {
     try {
