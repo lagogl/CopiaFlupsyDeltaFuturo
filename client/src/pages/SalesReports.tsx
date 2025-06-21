@@ -378,11 +378,11 @@ export default function SalesReports() {
                       {(deliveryDetailsData as any).deliveryDetails.map((detail: any) => (
                         <TableRow key={detail.id}>
                           <TableCell>{detail.reportId}</TableCell>
-                          <TableCell>{detail.productName || detail.productCode}</TableCell>
-                          <TableCell>{detail.quantity} {detail.unitOfMeasure}</TableCell>
-                          <TableCell>€{detail.unitPrice}</TableCell>
-                          <TableCell>€{detail.lineTotal}</TableCell>
-                          <TableCell className="max-w-xs truncate">{detail.productNotes || 'N/A'}</TableCell>
+                          <TableCell>{detail.taglia || 'N/A'}</TableCell>
+                          <TableCell>{detail.numeroAnimali || 'N/A'}</TableCell>
+                          <TableCell>{detail.pesoCesteKg || 'N/A'}</TableCell>
+                          <TableCell>{detail.numeroCeste || 'N/A'}</TableCell>
+                          <TableCell className="max-w-xs truncate">{detail.note || 'N/A'}</TableCell>
                         </TableRow>
                       ))}
                     </TableBody>

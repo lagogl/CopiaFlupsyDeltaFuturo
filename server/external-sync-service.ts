@@ -331,15 +331,14 @@ export class ExternalSyncService {
         await this.syncSalesDirectSQL();
       }
 
-      // Sincronizza consegne (SQL diretto)
-      if (this.config.deliveries?.enabled) {
-        await this.syncDeliveriesDirectSQL();
-      }
+      // DISABILITO TEMPORANEAMENTE LE CONSEGNE PER DEBUG
+      // if (this.config.deliveries?.enabled) {
+      //   await this.syncDeliveriesDirectSQL();
+      // }
 
-      // Sincronizza dettagli consegne (SQL diretto)
-      if (this.config.deliveryDetails?.enabled) {
-        await this.syncDeliveryDetailsDirectSQL();
-      }
+      // if (this.config.deliveryDetails?.enabled) {
+      //   await this.syncDeliveryDetailsDirectSQL();
+      // }
 
       // Aggiorna lo stato di sincronizzazione con timestamp corrente
       await this.updateSyncStatusAfterCompletion();
