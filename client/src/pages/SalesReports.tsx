@@ -152,7 +152,7 @@ export default function SalesReports() {
           </CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <div className="text-center">
               <div className="text-2xl font-bold text-blue-600">
                 {(syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_customers_sync')?.recordCount || 0}
