@@ -26,9 +26,19 @@ export default function SalesReports() {
     queryKey: ['/api/sync/status'],
   });
 
-  // Query per i clienti
-  const { data: customersData } = useQuery({
+  // Query per i clienti  
+  const { data: customersData, refetch: refetchCustomers } = useQuery({
     queryKey: ['/api/sync/customers'],
+  });
+
+  // Query per le consegne
+  const { data: deliveriesData, refetch: refetchDeliveries } = useQuery({
+    queryKey: ['/api/sync/deliveries'],
+  });
+
+  // Query per i dettagli consegne
+  const { data: deliveryDetailsData, refetch: refetchDeliveryDetails } = useQuery({
+    queryKey: ['/api/sync/delivery-details'],
   });
 
   // Query per le vendite

@@ -2376,7 +2376,7 @@ export class DbStorage implements IStorage {
 
   async getExternalDeliveriesSync(): Promise<ExternalDeliverySync[]> {
     try {
-      return await db.select().from(externalDeliveriesSync).orderBy(externalDeliveriesSync.dataConsegna);
+      return await db.select().from(externalDeliveriesSync).orderBy(desc(externalDeliveriesSync.dataConsegna));
     } catch (error) {
       console.error('Errore nel recupero consegne sincronizzate:', error);
       return [];
