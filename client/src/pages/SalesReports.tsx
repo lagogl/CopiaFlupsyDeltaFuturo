@@ -171,6 +171,7 @@ export default function SalesReports() {
       <Tabs defaultValue="sales" className="space-y-4">
         <TabsList>
           <TabsTrigger value="sales">Ordini</TabsTrigger>
+          <TabsTrigger value="deliveries">Consegne</TabsTrigger>
           <TabsTrigger value="customers">Clienti</TabsTrigger>
           <TabsTrigger value="analytics">Analisi</TabsTrigger>
         </TabsList>
@@ -282,6 +283,104 @@ export default function SalesReports() {
               </div>
             </CardContent>
           </Card>
+        </TabsContent>
+
+        <TabsContent value="deliveries" className="space-y-4">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Package className="h-5 w-5" />
+                Elenco Consegne
+              </CardTitle>
+              <CardDescription>
+                Consegne effettuate sincronizzate dal database esterno (reports_consegna)
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(deliveriesData as any)?.deliveries?.length > 0 ? (
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Data Consegna</TableHead>
+                        <TableHead>Cliente ID</TableHead>
+                        <TableHead>Stato</TableHead>
+                        <TableHead>Peso Totale (kg)</TableHead>
+                        <TableHead>Totale Animali</TableHead>
+                        <TableHead>Note</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(deliveriesData as any).deliveries.map((delivery: any) => (
+                        <TableRow key={delivery.id}>
+                          <TableCell>
+                            {delivery.dataConsegna ? 
+                              format(new Date(delivery.dataConsegna), 'dd/MM/yyyy', { locale: it }) : 
+                              'N/A'
+                            }
+                          </TableCell>
+                          <TableCell>{delivery.clienteId || 'N/A'}</TableCell>
+                          <TableCell>
+                            <Badge variant={delivery.stato === 'completata' ? 'default' : 'secondary'}>
+                              {delivery.stato || 'N/A'}
+                            </Badge>
+                          </TableCell>
+                          <TableCell>{delivery.pesoTotaleKg || 'N/A'}</TableCell>
+                          <TableCell>{delivery.totaleAnimali || 'N/A'}</TableCell>
+                          <TableCell className="max-w-xs truncate">{delivery.note || 'N/A'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              ) : (
+                <div className="flex flex-col items-center justify-center py-8 text-gray-500">
+                  <Package className="h-12 w-12 mb-4 opacity-50" />
+                  <p className="text-lg font-medium">Nessuna consegna trovata</p>
+                  <p className="text-sm">Le consegne appariranno qui dopo la sincronizzazione</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          {(deliveryDetailsData as any)?.deliveryDetails?.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Dettagli Consegne</CardTitle>
+                <CardDescription>
+                  Dettagli prodotti delle consegne (reports_consegna_dettagli)
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="rounded-md border">
+                  <Table>
+                    <TableHeader>
+                      <TableRow>
+                        <TableHead>Report ID</TableHead>
+                        <TableHead>Prodotto</TableHead>
+                        <TableHead>Quantità</TableHead>
+                        <TableHead>Prezzo Unitario</TableHead>
+                        <TableHead>Totale Riga</TableHead>
+                        <TableHead>Note</TableHead>
+                      </TableRow>
+                    </TableHeader>
+                    <TableBody>
+                      {(deliveryDetailsData as any).deliveryDetails.map((detail: any) => (
+                        <TableRow key={detail.id}>
+                          <TableCell>{detail.reportId}</TableCell>
+                          <TableCell>{detail.productName || detail.productCode}</TableCell>
+                          <TableCell>{detail.quantity} {detail.unitOfMeasure}</TableCell>
+                          <TableCell>€{detail.unitPrice}</TableCell>
+                          <TableCell>€{detail.lineTotal}</TableCell>
+                          <TableCell className="max-w-xs truncate">{detail.productNotes || 'N/A'}</TableCell>
+                        </TableRow>
+                      ))}
+                    </TableBody>
+                  </Table>
+                </div>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
 
         <TabsContent value="customers" className="space-y-4">
