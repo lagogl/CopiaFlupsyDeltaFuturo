@@ -157,13 +157,19 @@ export default function SalesReports() {
               <div className="text-2xl font-bold text-blue-600">
                 {(syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_customers_sync')?.recordCount || 0}
               </div>
-              <div className="text-sm text-muted-foreground">Clienti Sincronizzati</div>
+              <div className="text-sm text-muted-foreground">Clienti</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">
                 {(syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_sales_sync')?.recordCount || 0}
               </div>
-              <div className="text-sm text-muted-foreground">Ordini Sincronizzati</div>
+              <div className="text-sm text-muted-foreground">Ordini</div>
+            </div>
+            <div className="text-center">
+              <div className="text-2xl font-bold text-orange-600">
+                {(syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_deliveries_sync')?.recordCount || 0}
+              </div>
+              <div className="text-sm text-muted-foreground">Consegne</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
@@ -172,7 +178,7 @@ export default function SalesReports() {
                   : 'Mai'
                 }
               </div>
-              <div className="text-sm text-muted-foreground">Ultima Sincronizzazione</div>
+              <div className="text-sm text-muted-foreground">Ultima Sync</div>
             </div>
           </div>
         </CardContent>
