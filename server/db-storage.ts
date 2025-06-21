@@ -2376,7 +2376,23 @@ export class DbStorage implements IStorage {
 
   async getExternalDeliveriesSync(): Promise<ExternalDeliverySync[]> {
     try {
-      return await db.select().from(externalDeliveriesSync).orderBy(desc(externalDeliveriesSync.dataConsegna));
+      return await db.select({
+        id: externalDeliveriesSync.id,
+        externalId: externalDeliveriesSync.externalId,
+        dataCreazione: externalDeliveriesSync.dataCreazione,
+        clienteId: externalDeliveriesSync.clienteId,
+        ordineId: externalDeliveriesSync.ordineId,
+        dataConsegna: externalDeliveriesSync.dataConsegna,
+        stato: externalDeliveriesSync.stato,
+        numeroTotaleCeste: externalDeliveriesSync.numeroTotaleCeste,
+        pesoTotaleKg: externalDeliveriesSync.pesoTotaleKg,
+        totaleAnimali: externalDeliveriesSync.totaleAnimali,
+        tagliaMedia: externalDeliveriesSync.tagliaMedia,
+        qrcodeUrl: externalDeliveriesSync.qrcodeUrl,
+        note: externalDeliveriesSync.note,
+        numeroProgressivo: externalDeliveriesSync.numeroProgressivo,
+        syncedAt: externalDeliveriesSync.syncedAt
+      }).from(externalDeliveriesSync).orderBy(desc(externalDeliveriesSync.dataConsegna));
     } catch (error) {
       console.error('Errore nel recupero consegne sincronizzate:', error);
       return [];
@@ -2385,7 +2401,23 @@ export class DbStorage implements IStorage {
 
   async getExternalDeliveryDetailsSync(): Promise<ExternalDeliveryDetailSync[]> {
     try {
-      return await db.select().from(externalDeliveryDetailsSync).orderBy(externalDeliveryDetailsSync.reportId);
+      return await db.select({
+        id: externalDeliveryDetailsSync.id,
+        externalId: externalDeliveryDetailsSync.externalId,
+        reportId: externalDeliveryDetailsSync.reportId,
+        misurazioneId: externalDeliveryDetailsSync.misurazioneId,
+        vascaId: externalDeliveryDetailsSync.vascaId,
+        codiceSezione: externalDeliveryDetailsSync.codiceSezione,
+        numeroCeste: externalDeliveryDetailsSync.numeroCeste,
+        pesoCesteKg: externalDeliveryDetailsSync.pesoCesteKg,
+        taglia: externalDeliveryDetailsSync.taglia,
+        animaliPerKg: externalDeliveryDetailsSync.animaliPerKg,
+        percentualeGuscio: externalDeliveryDetailsSync.percentualeGuscio,
+        percentualeMortalita: externalDeliveryDetailsSync.percentualeMortalita,
+        numeroAnimali: externalDeliveryDetailsSync.numeroAnimali,
+        note: externalDeliveryDetailsSync.note,
+        syncedAt: externalDeliveryDetailsSync.syncedAt
+      }).from(externalDeliveryDetailsSync).orderBy(externalDeliveryDetailsSync.reportId);
     } catch (error) {
       console.error('Errore nel recupero dettagli consegne sincronizzati:', error);
       return [];

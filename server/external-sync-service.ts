@@ -1027,8 +1027,7 @@ export class ExternalSyncService {
           null, // taglia_media
           null, // qrcode_url
           mappedData.deliveryNotes,
-          null, // numero_progressivo
-          mappedData.departureTime
+          null // numero_progressivo
         ]);
       }
       
@@ -1070,35 +1069,41 @@ export class ExternalSyncService {
         // Query SQL diretta per inserimento
         const insertQuery = `
           INSERT INTO external_delivery_details_sync (
-            external_id, report_id, product_code, product_name, quantity, unit_of_measure,
-            unit_price, line_total, product_notes, source_lot, expiry_date, synced_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+            external_id, report_id, misurazione_id, vasca_id, codice_sezione,
+            numero_ceste, peso_ceste_kg, taglia, animali_per_kg, percentuale_guscio,
+            percentuale_mortalita, numero_animali, note, synced_at, last_modified_external
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), NOW())
           ON CONFLICT (external_id) DO UPDATE SET
             report_id = EXCLUDED.report_id,
-            product_code = EXCLUDED.product_code,
-            product_name = EXCLUDED.product_name,
-            quantity = EXCLUDED.quantity,
-            unit_of_measure = EXCLUDED.unit_of_measure,
-            unit_price = EXCLUDED.unit_price,
-            line_total = EXCLUDED.line_total,
-            product_notes = EXCLUDED.product_notes,
-            source_lot = EXCLUDED.source_lot,
-            expiry_date = EXCLUDED.expiry_date,
-            synced_at = NOW()
+            misurazione_id = EXCLUDED.misurazione_id,
+            vasca_id = EXCLUDED.vasca_id,
+            codice_sezione = EXCLUDED.codice_sezione,
+            numero_ceste = EXCLUDED.numero_ceste,
+            peso_ceste_kg = EXCLUDED.peso_ceste_kg,
+            taglia = EXCLUDED.taglia,
+            animali_per_kg = EXCLUDED.animali_per_kg,
+            percentuale_guscio = EXCLUDED.percentuale_guscio,
+            percentuale_mortalita = EXCLUDED.percentuale_mortalita,
+            numero_animali = EXCLUDED.numero_animali,
+            note = EXCLUDED.note,
+            synced_at = NOW(),
+            last_modified_external = EXCLUDED.last_modified_external
         `;
         
         await this.localPool.query(insertQuery, [
           mappedData.externalId,
           mappedData.reportId,
-          mappedData.productCode,
-          mappedData.productName,
-          mappedData.quantity,
-          mappedData.unitOfMeasure,
-          mappedData.unitPrice,
-          mappedData.lineTotal,
-          mappedData.productNotes,
+          null, // misurazione_id
+          null, // vasca_id
           mappedData.sourceLot,
-          mappedData.expiryDate
+          1, // numero_ceste
+          mappedData.lineTotal,
+          mappedData.productCode,
+          '50', // animali_per_kg
+          '0', // percentuale_guscio
+          '0', // percentuale_mortalita
+          mappedData.quantity,
+          mappedData.productNotes
         ]);
       }
       
