@@ -180,9 +180,9 @@ export default function SalesReports() {
 
       <Tabs defaultValue="sales" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="sales">Ordini</TabsTrigger>
-          <TabsTrigger value="deliveries">Consegne</TabsTrigger>
-          <TabsTrigger value="customers">Clienti</TabsTrigger>
+          <TabsTrigger value="sales">Ordini ({(salesData as any)?.sales?.length || 0})</TabsTrigger>
+          <TabsTrigger value="deliveries">Consegne ({(deliveriesData as any)?.deliveries?.length || 0})</TabsTrigger>
+          <TabsTrigger value="customers">Clienti ({(customersData as any)?.customers?.length || 0})</TabsTrigger>
           <TabsTrigger value="analytics">Analisi</TabsTrigger>
         </TabsList>
 

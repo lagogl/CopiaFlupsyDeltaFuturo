@@ -130,10 +130,10 @@ export class ExternalSyncService {
             o.taglia_richiesta as product_code,
             o.taglia_richiesta as product_name,
             'Molluschi' as product_category,
-            o.quantita as quantity,
+            CAST(o.quantita as INTEGER) as quantity,
             'animali' as unit_of_measure,
-            0 as unit_price,
-            0 as total_amount,
+            COALESCE(o.prezzo_unitario, 0) as unit_price,
+            COALESCE(o.quantita * o.prezzo_unitario, 0) as total_amount,
             0 as discount_percent,
             0 as discount_amount,
             0 as net_amount,
@@ -150,7 +150,9 @@ export class ExternalSyncService {
             CURRENT_TIMESTAMP as last_modified_external
           FROM ordini o
           LEFT JOIN clienti c ON o.cliente_id = c.id
+          WHERE o.data >= '2024-01-01'
           ORDER BY o.data DESC
+          LIMIT 500
         `,
         mapping: {
           externalId: 'external_id',
