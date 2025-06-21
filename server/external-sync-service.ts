@@ -331,15 +331,15 @@ export class ExternalSyncService {
         await this.syncSalesDirectSQL();
       }
 
-      // Sincronizza consegne - SALTATO per ora (problemi timestamp)
-      // if (this.config.deliveries?.enabled) {
-      //   await this.syncDeliveriesDirectSQL();
-      // }
+      // Sincronizza consegne (SQL diretto)
+      if (this.config.deliveries?.enabled) {
+        await this.syncDeliveriesDirectSQL();
+      }
 
-      // Sincronizza dettagli consegne - SALTATO per ora (problemi timestamp)
-      // if (this.config.deliveryDetails?.enabled) {
-      //   await this.syncDeliveryDetailsDirectSQL();
-      // }
+      // Sincronizza dettagli consegne (SQL diretto)
+      if (this.config.deliveryDetails?.enabled) {
+        await this.syncDeliveryDetailsDirectSQL();
+      }
 
       // Aggiorna lo stato di sincronizzazione con timestamp corrente
       await this.updateSyncStatusAfterCompletion();
@@ -992,47 +992,119 @@ export class ExternalSyncService {
         // Query SQL diretta per inserimento
         const insertQuery = `
           INSERT INTO external_deliveries_sync (
-            external_id, data_creazione, cliente_id, ordine_id, data_consegna,
-            stato, numero_totale_ceste, peso_totale_kg, totale_animali,
-            taglia_media, qrcode_url, note, numero_progressivo, 
-            synced_at, last_sync_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), $15)
+            external_id, delivery_number, delivery_date, customer_id, customer_name,
+            delivery_address, delivery_notes, delivery_status, total_amount, payment_method,
+            driver_name, vehicle_info, departure_time, arrival_time, synced_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
           ON CONFLICT (external_id) DO UPDATE SET
-            data_creazione = EXCLUDED.data_creazione,
-            cliente_id = EXCLUDED.cliente_id,
-            ordine_id = EXCLUDED.ordine_id,
-            data_consegna = EXCLUDED.data_consegna,
-            stato = EXCLUDED.stato,
-            numero_totale_ceste = EXCLUDED.numero_totale_ceste,
-            peso_totale_kg = EXCLUDED.peso_totale_kg,
-            totale_animali = EXCLUDED.totale_animali,
-            taglia_media = EXCLUDED.taglia_media,
-            qrcode_url = EXCLUDED.qrcode_url,
-            note = EXCLUDED.note,
-            numero_progressivo = EXCLUDED.numero_progressivo,
-            synced_at = NOW(),
-            last_sync_at = EXCLUDED.last_sync_at
+            delivery_number = EXCLUDED.delivery_number,
+            delivery_date = EXCLUDED.delivery_date,
+            customer_id = EXCLUDED.customer_id,
+            customer_name = EXCLUDED.customer_name,
+            delivery_address = EXCLUDED.delivery_address,
+            delivery_notes = EXCLUDED.delivery_notes,
+            delivery_status = EXCLUDED.delivery_status,
+            total_amount = EXCLUDED.total_amount,
+            payment_method = EXCLUDED.payment_method,
+            driver_name = EXCLUDED.driver_name,
+            vehicle_info = EXCLUDED.vehicle_info,
+            departure_time = EXCLUDED.departure_time,
+            arrival_time = EXCLUDED.arrival_time,
+            synced_at = NOW()
         `;
         
-        await this.storage.db.query(insertQuery, [
+        await this.localPool.query(insertQuery, [
           mappedData.externalId,
-          mappedData.dataCreazione,
-          mappedData.clienteId,
-          mappedData.ordineId,
-          mappedData.dataConsegna,
-          mappedData.stato,
-          mappedData.numeroTotaleCeste,
-          mappedData.pesoTotaleKg,
-          mappedData.totaleAnimali,
-          mappedData.tagliaMedia,
-          mappedData.qrcodeUrl,
-          mappedData.note,
-          mappedData.numeroProgressivo,
-          mappedData.lastSyncAt
+          mappedData.deliveryNumber,
+          mappedData.deliveryDate,
+          mappedData.customerId,
+          mappedData.customerName,
+          mappedData.deliveryAddress,
+          mappedData.deliveryNotes,
+          mappedData.deliveryStatus,
+          mappedData.totalAmount,
+          mappedData.paymentMethod,
+          mappedData.driverName,
+          mappedData.vehicleInfo,
+          mappedData.departureTime,
+          mappedData.arrivalTime
         ]);
       }
       
       console.log(`✅ Sincronizzazione consegne completata: ${result.rows.length} records`);
+      
+      // Aggiorna immediatamente lo stato di sincronizzazione per le consegne
+      await this.updateSyncStatusForTable('external_deliveries_sync', result.rows.length, true);
+      
+    } finally {
+      externalClient.release();
+    }
+  }
+
+  /**
+   * Sincronizza i dettagli consegne dal database esterno usando SQL diretto
+   */
+  private async syncDeliveryDetailsDirectSQL(): Promise<void> {
+    console.log('📦 Sincronizzazione dettagli consegne (SQL diretto)...');
+    
+    if (!this.externalPool) {
+      throw new Error('Database esterno non configurato');
+    }
+
+    const externalClient = await this.externalPool.connect();
+    
+    try {
+      const result = await externalClient.query(this.config.deliveryDetails.query);
+      console.log(`📦 Trovati ${result.rows.length} dettagli consegne nel database esterno`);
+      
+      if (result.rows.length === 0) {
+        console.log('📦 Nessun dettaglio consegna da sincronizzare');
+        return;
+      }
+
+      // Inserimento diretto nel database locale
+      for (const row of result.rows) {
+        const mappedData = this.mapDeliveryDetailData(row, this.config.deliveryDetails.mapping);
+        
+        // Query SQL diretta per inserimento
+        const insertQuery = `
+          INSERT INTO external_delivery_details_sync (
+            external_id, report_id, product_code, product_name, quantity, unit_of_measure,
+            unit_price, line_total, product_notes, source_lot, expiry_date, synced_at
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, NOW())
+          ON CONFLICT (external_id) DO UPDATE SET
+            report_id = EXCLUDED.report_id,
+            product_code = EXCLUDED.product_code,
+            product_name = EXCLUDED.product_name,
+            quantity = EXCLUDED.quantity,
+            unit_of_measure = EXCLUDED.unit_of_measure,
+            unit_price = EXCLUDED.unit_price,
+            line_total = EXCLUDED.line_total,
+            product_notes = EXCLUDED.product_notes,
+            source_lot = EXCLUDED.source_lot,
+            expiry_date = EXCLUDED.expiry_date,
+            synced_at = NOW()
+        `;
+        
+        await this.localPool.query(insertQuery, [
+          mappedData.externalId,
+          mappedData.reportId,
+          mappedData.productCode,
+          mappedData.productName,
+          mappedData.quantity,
+          mappedData.unitOfMeasure,
+          mappedData.unitPrice,
+          mappedData.lineTotal,
+          mappedData.productNotes,
+          mappedData.sourceLot,
+          mappedData.expiryDate
+        ]);
+      }
+      
+      console.log(`✅ Sincronizzazione dettagli consegne completata: ${result.rows.length} records`);
+      
+      // Aggiorna immediatamente lo stato di sincronizzazione per i dettagli consegne
+      await this.updateSyncStatusForTable('external_delivery_details_sync', result.rows.length, true);
       
     } finally {
       externalClient.release();
