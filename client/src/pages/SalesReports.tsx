@@ -153,7 +153,7 @@ export default function SalesReports() {
               <div className="text-2xl font-bold text-green-600">
                 {(syncStatus as any)?.status?.find((s: any) => s.tableName === 'external_sales_sync')?.recordCount || 0}
               </div>
-              <div className="text-sm text-muted-foreground">Vendite Sincronizzate</div>
+              <div className="text-sm text-muted-foreground">Ordini Sincronizzati</div>
             </div>
             <div className="text-center">
               <div className="text-2xl font-bold text-purple-600">
@@ -170,7 +170,7 @@ export default function SalesReports() {
 
       <Tabs defaultValue="sales" className="space-y-4">
         <TabsList>
-          <TabsTrigger value="sales">Vendite</TabsTrigger>
+          <TabsTrigger value="sales">Ordini</TabsTrigger>
           <TabsTrigger value="customers">Clienti</TabsTrigger>
           <TabsTrigger value="analytics">Analisi</TabsTrigger>
         </TabsList>
@@ -226,12 +226,12 @@ export default function SalesReports() {
             </CardContent>
           </Card>
 
-          {/* Tabella Vendite */}
+          {/* Tabella Ordini */}
           <Card>
             <CardHeader>
-              <CardTitle>Elenco Vendite</CardTitle>
+              <CardTitle>Elenco Ordini</CardTitle>
               <CardDescription>
-                {(salesData as any)?.sales?.length || 0} vendite trovate
+                {(salesData as any)?.sales?.length || 0} ordini trovati
               </CardDescription>
             </CardHeader>
             <CardContent>
@@ -241,10 +241,9 @@ export default function SalesReports() {
                     <TableRow>
                       <TableHead>Data</TableHead>
                       <TableHead>Cliente</TableHead>
-                      <TableHead>Prodotto</TableHead>
-                      <TableHead className="text-right">Quantità</TableHead>
-                      <TableHead className="text-right">Prezzo Unit.</TableHead>
-                      <TableHead className="text-right">Totale</TableHead>
+                      <TableHead>Taglia</TableHead>
+                      <TableHead className="text-right">N. Animali</TableHead>
+                      <TableHead>Data Consegna</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
@@ -255,25 +254,26 @@ export default function SalesReports() {
                         </TableCell>
                         <TableCell>{sale.customerName || 'N/A'}</TableCell>
                         <TableCell>
-                          <div>
-                            <div className="font-medium">{sale.productName}</div>
-                            {sale.productCode && (
-                              <div className="text-sm text-muted-foreground">
-                                {sale.productCode}
-                              </div>
-                            )}
-                          </div>
-                        </TableCell>
-                        <TableCell className="text-right">
-                          <Badge variant="outline">
-                            {formatQuantity(sale.quantity)} {sale.unitOfMeasure}
+                          <Badge variant="secondary" className="font-medium">
+                            {sale.productCode || sale.productName}
                           </Badge>
                         </TableCell>
                         <TableCell className="text-right">
-                          {sale.unitPrice ? formatCurrency(sale.unitPrice) : 'N/A'}
+                          <div className="font-semibold text-blue-600">
+                            {formatQuantity(sale.quantity)}
+                          </div>
+                          <div className="text-xs text-muted-foreground">
+                            {sale.unitOfMeasure || 'animali'}
+                          </div>
                         </TableCell>
-                        <TableCell className="text-right font-semibold">
-                          {formatCurrency(sale.totalAmount)}
+                        <TableCell>
+                          {sale.deliveryDate ? (
+                            <Badge variant="outline">
+                              {format(new Date(sale.deliveryDate), 'dd/MM/yyyy', { locale: it })}
+                            </Badge>
+                          ) : (
+                            <span className="text-muted-foreground">-</span>
+                          )}
                         </TableCell>
                       </TableRow>
                     ))}
