@@ -452,59 +452,146 @@ export default function SalesReports() {
         </TabsContent>
 
         <TabsContent value="analytics" className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Vendite Totali</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {(salesData as any)?.sales?.length || 0}
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Ricavi Totali</CardTitle>
-                <TrendingUp className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatCurrency(
-                    (salesData as any)?.sales?.reduce((sum: number, sale: any) => sum + (sale.totalAmount || 0), 0) || 0
-                  )}
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-blue-100 rounded-lg">
+                    <Package className="h-6 w-6 text-blue-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Totale Ordini</p>
+                    <p className="text-2xl font-bold text-gray-900">{(salesData as any)?.sales?.length || 0}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Quantità Totale</CardTitle>
-                <Package className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {formatQuantity(
-                    (salesData as any)?.sales?.reduce((sum: number, sale: any) => sum + (sale.quantity || 0), 0) || 0
-                  )} kg
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-green-100 rounded-lg">
+                    <Package className="h-6 w-6 text-green-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Totale Consegne</p>
+                    <p className="text-2xl font-bold text-gray-900">{(deliveriesData as any)?.deliveries?.length || 0}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
 
             <Card>
-              <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                <CardTitle className="text-sm font-medium">Clienti Attivi</CardTitle>
-                <Users className="h-4 w-4 text-muted-foreground" />
-              </CardHeader>
-              <CardContent>
-                <div className="text-2xl font-bold">
-                  {(customersData as any)?.customers?.filter((c: any) => c.isActive).length || 0}
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-purple-100 rounded-lg">
+                    <TrendingUp className="h-6 w-6 text-purple-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Totale Animali</p>
+                    <p className="text-2xl font-bold text-gray-900">
+                      {(salesData as any)?.sales?.reduce((sum: number, sale: any) => sum + (parseInt(sale.quantity) || 0), 0).toLocaleString() || 0}
+                    </p>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardContent className="p-6">
+                <div className="flex items-center">
+                  <div className="p-2 bg-orange-100 rounded-lg">
+                    <Users className="h-6 w-6 text-orange-600" />
+                  </div>
+                  <div className="ml-4">
+                    <p className="text-sm font-medium text-gray-600">Clienti Attivi</p>
+                    <p className="text-2xl font-bold text-gray-900">{(customersData as any)?.customers?.length || 0}</p>
+                  </div>
                 </div>
               </CardContent>
             </Card>
           </div>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Analisi per Taglia Prodotto</CardTitle>
+              <CardDescription>Distribuzione ordini per tipologia di prodotto</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(salesData as any)?.sales?.length > 0 ? (
+                <div className="space-y-4">
+                  {Object.entries(
+                    (salesData as any).sales.reduce((acc: any, sale: any) => {
+                      const taglia = sale.productCode || 'N/A';
+                      if (!acc[taglia]) {
+                        acc[taglia] = { count: 0, quantity: 0 };
+                      }
+                      acc[taglia].count++;
+                      acc[taglia].quantity += parseInt(sale.quantity) || 0;
+                      return acc;
+                    }, {})
+                  ).map(([taglia, data]: [string, any]) => (
+                    <div key={taglia} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div>
+                        <p className="font-medium">{taglia}</p>
+                        <p className="text-sm text-gray-600">{data.count} ordini</p>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">{data.quantity.toLocaleString()} animali</p>
+                        <p className="text-sm text-gray-600">Media: {Math.round(data.quantity / data.count).toLocaleString()}/ordine</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <TrendingUp className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Nessun dato disponibile per l'analisi</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
+
+          <Card>
+            <CardHeader>
+              <CardTitle>Stato Consegne</CardTitle>
+              <CardDescription>Distribuzione consegne per stato di avanzamento</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {(deliveriesData as any)?.deliveries?.length > 0 ? (
+                <div className="space-y-4">
+                  {Object.entries(
+                    (deliveriesData as any).deliveries.reduce((acc: any, delivery: any) => {
+                      const stato = delivery.stato || 'N/A';
+                      if (!acc[stato]) {
+                        acc[stato] = { count: 0, animali: 0 };
+                      }
+                      acc[stato].count++;
+                      acc[stato].animali += delivery.totaleAnimali || 0;
+                      return acc;
+                    }, {})
+                  ).map(([stato, data]: [string, any]) => (
+                    <div key={stato} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                      <div className="flex items-center">
+                        <Badge variant={stato === 'completata' ? 'default' : stato === 'spedita' ? 'secondary' : 'outline'}>
+                          {stato}
+                        </Badge>
+                        <span className="ml-2 font-medium">{data.count} consegne</span>
+                      </div>
+                      <div className="text-right">
+                        <p className="font-bold">{data.animali.toLocaleString()} animali</p>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="text-center py-8 text-gray-500">
+                  <Package className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                  <p>Nessuna consegna disponibile per l'analisi</p>
+                </div>
+              )}
+            </CardContent>
+          </Card>
         </TabsContent>
       </Tabs>
     </div>
