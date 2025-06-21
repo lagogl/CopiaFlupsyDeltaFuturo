@@ -992,42 +992,43 @@ export class ExternalSyncService {
         // Query SQL diretta per inserimento
         const insertQuery = `
           INSERT INTO external_deliveries_sync (
-            external_id, delivery_number, delivery_date, customer_id, customer_name,
-            delivery_address, delivery_notes, delivery_status, total_amount, payment_method,
-            driver_name, vehicle_info, departure_time, arrival_time, synced_at
-          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, NOW())
+            external_id, data_creazione, cliente_id, ordine_id, data_consegna,
+            stato, numero_totale_ceste, peso_totale_kg, totale_animali,
+            taglia_media, qrcode_url, note, numero_progressivo, 
+            synced_at, last_modified_external
+          ) VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, NOW(), $15)
           ON CONFLICT (external_id) DO UPDATE SET
-            delivery_number = EXCLUDED.delivery_number,
-            delivery_date = EXCLUDED.delivery_date,
-            customer_id = EXCLUDED.customer_id,
-            customer_name = EXCLUDED.customer_name,
-            delivery_address = EXCLUDED.delivery_address,
-            delivery_notes = EXCLUDED.delivery_notes,
-            delivery_status = EXCLUDED.delivery_status,
-            total_amount = EXCLUDED.total_amount,
-            payment_method = EXCLUDED.payment_method,
-            driver_name = EXCLUDED.driver_name,
-            vehicle_info = EXCLUDED.vehicle_info,
-            departure_time = EXCLUDED.departure_time,
-            arrival_time = EXCLUDED.arrival_time,
-            synced_at = NOW()
+            data_creazione = EXCLUDED.data_creazione,
+            cliente_id = EXCLUDED.cliente_id,
+            ordine_id = EXCLUDED.ordine_id,
+            data_consegna = EXCLUDED.data_consegna,
+            stato = EXCLUDED.stato,
+            numero_totale_ceste = EXCLUDED.numero_totale_ceste,
+            peso_totale_kg = EXCLUDED.peso_totale_kg,
+            totale_animali = EXCLUDED.totale_animali,
+            taglia_media = EXCLUDED.taglia_media,
+            qrcode_url = EXCLUDED.qrcode_url,
+            note = EXCLUDED.note,
+            numero_progressivo = EXCLUDED.numero_progressivo,
+            synced_at = NOW(),
+            last_modified_external = EXCLUDED.last_modified_external
         `;
         
         await this.localPool.query(insertQuery, [
           mappedData.externalId,
-          mappedData.deliveryNumber,
-          mappedData.deliveryDate,
-          mappedData.customerId,
-          mappedData.customerName,
-          mappedData.deliveryAddress,
-          mappedData.deliveryNotes,
-          mappedData.deliveryStatus,
-          mappedData.totalAmount,
-          mappedData.paymentMethod,
-          mappedData.driverName,
-          mappedData.vehicleInfo,
           mappedData.departureTime,
-          mappedData.arrivalTime
+          mappedData.customerId,
+          null, // ordine_id
+          mappedData.deliveryDate,
+          mappedData.deliveryStatus,
+          null, // numero_totale_ceste
+          mappedData.totalAmount,
+          null, // totale_animali
+          null, // taglia_media
+          null, // qrcode_url
+          mappedData.deliveryNotes,
+          null, // numero_progressivo
+          mappedData.departureTime
         ]);
       }
       
