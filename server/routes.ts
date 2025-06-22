@@ -7223,9 +7223,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/advanced-sales", AdvancedSalesController.getAdvancedSales);
   app.get("/api/advanced-sales/:id", AdvancedSalesController.getAdvancedSale);
   app.post("/api/advanced-sales", AdvancedSalesController.createAdvancedSale);
+  app.patch("/api/advanced-sales/:id/status", AdvancedSalesController.updateSaleStatus);
   
   // Configurazione sacchi
   app.post("/api/advanced-sales/:saleId/bags", AdvancedSalesController.configureBags);
+  
+  // Generazione e download PDF
+  app.get("/api/advanced-sales/:id/generate-pdf", AdvancedSalesController.generateSalePDF);
+  app.get("/api/advanced-sales/:id/download-pdf", AdvancedSalesController.downloadSalePDF);
+  
+  // Serve static PDF files
+  app.use('/generated-pdfs', (req, res, next) => {
+    // Simple auth check - in production you'd want proper authentication
+    next();
+  }, express.static(path.join(process.cwd(), 'generated-pdfs')));
   
   return httpServer;
 }

@@ -12,7 +12,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Package, FileText, Users, Calculator } from "lucide-react";
+import { Plus, Package, FileText, Users, Calculator, Download, Eye, CheckCircle } from "lucide-react";
 import { format } from "date-fns";
 import { apiRequest } from "@/lib/queryClient";
 
@@ -127,6 +127,23 @@ export default function AdvancedSales() {
       toast({ 
         title: "Errore", 
         description: error.message || "Errore nella configurazione dei sacchi",
+        variant: "destructive" 
+      });
+    }
+  });
+
+  // Mutation per aggiornare stato vendita
+  const updateStatusMutation = useMutation({
+    mutationFn: ({ saleId, status }: { saleId: number; status: string }) =>
+      apiRequest(`/api/advanced-sales/${saleId}/status`, 'PATCH', { status }),
+    onSuccess: () => {
+      toast({ title: "Successo", description: "Stato vendita aggiornato" });
+      queryClient.invalidateQueries({ queryKey: ['/api/advanced-sales'] });
+    },
+    onError: (error: any) => {
+      toast({ 
+        title: "Errore", 
+        description: error.message || "Errore nell'aggiornamento dello stato",
         variant: "destructive" 
       });
     }
@@ -281,6 +298,18 @@ export default function AdvancedSales() {
       saleId: currentSaleId,
       bags: bagConfigs
     });
+  };
+
+  const handleGeneratePDF = (saleId: number) => {
+    window.open(`/api/advanced-sales/${saleId}/generate-pdf`, '_blank');
+  };
+
+  const handleDownloadPDF = (saleId: number) => {
+    window.open(`/api/advanced-sales/${saleId}/download-pdf`, '_blank');
+  };
+
+  const handleUpdateStatus = (saleId: number, status: string) => {
+    updateStatusMutation.mutate({ saleId, status });
   };
 
   return (
@@ -541,13 +570,26 @@ export default function AdvancedSales() {
                 </div>
               ))}
 
-              <Button 
-                onClick={saveBagConfiguration}
-                disabled={configureBagsMutation.isPending}
-                className="w-full"
-              >
-                {configureBagsMutation.isPending ? "Salvataggio..." : "Salva Configurazione"}
-              </Button>
+              <div className="flex gap-4">
+                <Button 
+                  onClick={saveBagConfiguration}
+                  disabled={configureBagsMutation.isPending}
+                  className="flex-1"
+                >
+                  {configureBagsMutation.isPending ? "Salvataggio..." : "Salva Configurazione"}
+                </Button>
+                
+                {currentSaleId && bagConfigs.length > 0 && (
+                  <Button 
+                    onClick={() => handleGeneratePDF(currentSaleId)}
+                    variant="outline"
+                    className="flex-1"
+                  >
+                    <FileText className="h-4 w-4 mr-2" />
+                    Genera PDF
+                  </Button>
+                )}
+              </div>
             </CardContent>
           </Card>
         </TabsContent>
@@ -593,16 +635,54 @@ export default function AdvancedSales() {
                           </Badge>
                         </TableCell>
                         <TableCell>
-                          <Button 
-                            variant="outline" 
-                            size="sm"
-                            onClick={() => {
-                              setCurrentSaleId(sale.id);
-                              setActiveTab("config");
-                            }}
-                          >
-                            Visualizza
-                          </Button>
+                          <div className="flex gap-2">
+                            <Button 
+                              variant="outline" 
+                              size="sm"
+                              onClick={() => {
+                                setCurrentSaleId(sale.id);
+                                setActiveTab("config");
+                              }}
+                            >
+                              <Eye className="h-4 w-4 mr-1" />
+                              Dettagli
+                            </Button>
+                            
+                            {sale.totalBags > 0 && (
+                              <Button 
+                                variant="default" 
+                                size="sm"
+                                onClick={() => handleGeneratePDF(sale.id)}
+                                className="bg-blue-600 hover:bg-blue-700"
+                              >
+                                <FileText className="h-4 w-4 mr-1" />
+                                PDF
+                              </Button>
+                            )}
+
+                            {sale.pdfPath && (
+                              <Button 
+                                variant="secondary" 
+                                size="sm"
+                                onClick={() => handleDownloadPDF(sale.id)}
+                              >
+                                <Download className="h-4 w-4 mr-1" />
+                                Download
+                              </Button>
+                            )}
+
+                            {sale.status === 'draft' && (
+                              <Button 
+                                variant="default" 
+                                size="sm"
+                                onClick={() => handleUpdateStatus(sale.id, 'confirmed')}
+                                className="bg-green-600 hover:bg-green-700"
+                              >
+                                <CheckCircle className="h-4 w-4 mr-1" />
+                                Conferma
+                              </Button>
+                            )}
+                          </div>
                         </TableCell>
                       </TableRow>
                     ))}

@@ -5,6 +5,9 @@
 import { Request, Response } from "express";
 import { db } from "../db";
 import { eq, desc, and, gte, lte, sql, isNotNull, inArray } from "drizzle-orm";
+import { pdfGenerator } from "../services/pdf-generator";
+import path from "path";
+import fs from "fs/promises";
 import { 
   advancedSales,
   saleBags,
@@ -484,6 +487,205 @@ export async function getCustomers(req: Request, res: Response) {
     res.status(500).json({
       success: false,
       error: "Errore nel recupero dei clienti"
+    });
+  }
+}
+
+/**
+ * Genera PDF per una vendita avanzata
+ */
+export async function generateSalePDF(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    // Recupera dati completi della vendita
+    const sale = await db.select()
+      .from(advancedSales)
+      .where(eq(advancedSales.id, parseInt(id)))
+      .limit(1);
+
+    if (sale.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Vendita non trovata"
+      });
+    }
+
+    // Recupera sacchi con allocazioni
+    const bags = await db.select()
+      .from(saleBags)
+      .where(eq(saleBags.advancedSaleId, parseInt(id)))
+      .orderBy(saleBags.bagNumber);
+
+    const bagsWithAllocations = await Promise.all(
+      bags.map(async (bag) => {
+        const allocations = await db.select({
+          id: bagAllocations.id,
+          sourceOperationId: bagAllocations.sourceOperationId,
+          sourceBasketId: bagAllocations.sourceBasketId,
+          allocatedAnimals: bagAllocations.allocatedAnimals,
+          allocatedWeight: bagAllocations.allocatedWeight,
+          sourceAnimalsPerKg: bagAllocations.sourceAnimalsPerKg,
+          sourceSizeCode: bagAllocations.sourceSizeCode,
+          basketPhysicalNumber: baskets.physicalNumber
+        })
+        .from(bagAllocations)
+        .leftJoin(baskets, eq(bagAllocations.sourceBasketId, baskets.id))
+        .where(eq(bagAllocations.saleBagId, bag.id));
+
+        return {
+          ...bag,
+          allocations
+        };
+      })
+    );
+
+    // Recupera operazioni di riferimento
+    const operationsRefs = await db.select({
+      operationId: saleOperationsRef.operationId,
+      basketId: saleOperationsRef.basketId,
+      originalAnimals: saleOperationsRef.originalAnimals,
+      originalWeight: saleOperationsRef.originalWeight,
+      originalAnimalsPerKg: saleOperationsRef.originalAnimalsPerKg,
+      includedInSale: saleOperationsRef.includedInSale,
+      basketPhysicalNumber: baskets.physicalNumber,
+      date: operations.date
+    })
+    .from(saleOperationsRef)
+    .leftJoin(baskets, eq(saleOperationsRef.basketId, baskets.id))
+    .leftJoin(operations, eq(saleOperationsRef.operationId, operations.id))
+    .where(eq(saleOperationsRef.advancedSaleId, parseInt(id)));
+
+    // Prepara dati per PDF
+    const saleData = {
+      sale: sale[0],
+      bags: bagsWithAllocations,
+      operations: operationsRefs
+    };
+
+    // Genera PDF
+    const pdfBuffer = await pdfGenerator.generateSalePDF(saleData);
+
+    // Crea directory per PDF se non esiste
+    const pdfDir = path.join(process.cwd(), 'generated-pdfs');
+    await fs.mkdir(pdfDir, { recursive: true });
+
+    // Salva PDF su file system
+    const fileName = `vendita-${sale[0].saleNumber}-${Date.now()}.pdf`;
+    const filePath = path.join(pdfDir, fileName);
+    await fs.writeFile(filePath, pdfBuffer);
+
+    // Aggiorna record vendita con percorso PDF
+    await db.update(advancedSales)
+      .set({
+        pdfPath: `/generated-pdfs/${fileName}`,
+        updatedAt: new Date()
+      })
+      .where(eq(advancedSales.id, parseInt(id)));
+
+    // Invia PDF come risposta
+    res.setHeader('Content-Type', 'application/pdf');
+    res.setHeader('Content-Disposition', `attachment; filename="Vendita-${sale[0].saleNumber}.pdf"`);
+    res.setHeader('Content-Length', pdfBuffer.length);
+    res.send(pdfBuffer);
+
+  } catch (error) {
+    console.error("Errore nella generazione PDF:", error);
+    res.status(500).json({
+      success: false,
+      error: "Errore nella generazione del PDF"
+    });
+  }
+}
+
+/**
+ * Scarica PDF di una vendita esistente
+ */
+export async function downloadSalePDF(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+
+    const sale = await db.select()
+      .from(advancedSales)
+      .where(eq(advancedSales.id, parseInt(id)))
+      .limit(1);
+
+    if (sale.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Vendita non trovata"
+      });
+    }
+
+    if (!sale[0].pdfPath) {
+      return res.status(404).json({
+        success: false,
+        error: "PDF non ancora generato per questa vendita"
+      });
+    }
+
+    const filePath = path.join(process.cwd(), sale[0].pdfPath);
+    
+    try {
+      await fs.access(filePath);
+      res.download(filePath, `Vendita-${sale[0].saleNumber}.pdf`);
+    } catch (fileError) {
+      return res.status(404).json({
+        success: false,
+        error: "File PDF non trovato sul server"
+      });
+    }
+
+  } catch (error) {
+    console.error("Errore nel download PDF:", error);
+    res.status(500).json({
+      success: false,
+      error: "Errore nel download del PDF"
+    });
+  }
+}
+
+/**
+ * Aggiorna lo stato di una vendita
+ */
+export async function updateSaleStatus(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const { status } = req.body;
+
+    if (!status || !['draft', 'confirmed', 'completed'].includes(status)) {
+      return res.status(400).json({
+        success: false,
+        error: "Stato non valido. Valori consentiti: draft, confirmed, completed"
+      });
+    }
+
+    const [updatedSale] = await db.update(advancedSales)
+      .set({
+        status,
+        updatedAt: new Date()
+      })
+      .where(eq(advancedSales.id, parseInt(id)))
+      .returning();
+
+    if (!updatedSale) {
+      return res.status(404).json({
+        success: false,
+        error: "Vendita non trovata"
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Stato vendita aggiornato con successo",
+      sale: updatedSale
+    });
+
+  } catch (error) {
+    console.error("Errore nell'aggiornamento stato vendita:", error);
+    res.status(500).json({
+      success: false,
+      error: "Errore nell'aggiornamento dello stato"
     });
   }
 }
