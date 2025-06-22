@@ -1,0 +1,87 @@
+Infatti, durante le vendite alcuni clienti possono richiedere dei sacchi con un preciso numero di animali e altri 
+clienti possono avere in ordine taglie differenti, quindi si ritiene necessario un menù plastico così strutturato: - 
+Un bottone “Nuova vendita” avvia una nuova vendita; - 
+Un bottone “Selezione Cliente” attinge dalla lista “Anagrafica Clienti” per caricare i dati aziendali; 
+Successivamente all’avvio della vendita: - 
+Un bottone “Selezione ceste per vendita” attinge alla lista delle ceste precedentemente spostate con 
+la Destinazione diretta per vendita e consente di spuntare quelle da accorpare nella Vendita in corso; - 
+Una tabella riassuntiva di facile lettura mostra i dati necessari al cliente, collocati in sei colonne come 
+da esempio sotto riportato: 
+nr. sacco 
+Kg totali % scarto 
+su kg 
+1 
+20 
+pz/kg nr. 
+Animali 
+(solo vivo) 
+Taglia 
+1% 25.000 
+2 
+20 
+3% 26.000 
+500.000 T3 
+Tot Parz. 
+520.000 T3 
+40 
+2% 25.500 1.020.000  T3 
+3 
+12 
+3% 50.000 
+4 
+12 
+3% 55.000 
+600.000 T2.5 
+Tot Parz. 
+600.000 T2.5 
+24 
+3% 52.500 1.200.000  T2.5 
+TOT sacchi Kg totali % scarto 
+medio su 
+kg 
+pz/kg 
+Medi 
+nr. 
+Animali 
+(solo vivo) 
+4 
+Taglie 
+64 
+Condizioni: - 
+/ 
+/ 
+2.220.000 
+T2.5 
+T3 
+Se nella tabella sono presenti più taglie, i totali parziali riporteranno: la SOMMA dei chilogrammi dei 
+sacchi, la SOMMA del numero animali vivi, la MEDIA dello scarto e la MEDIA dei pz/kg; - 
+L’ultima riga funziona come un totale parziale se la taglia è solo una, mentre invece riporta il totale 
+dei sacchi, la SOMMA dei chilogrammi dei sacchi finali, la SOMMA del numero animali vivi finali 
+e le diverse taglie vendute; 
+Si aggiunge una funzione che permette di riallocare il numero di animali totali di una singola taglia secondo 
+le specifiche richieste del cliente. 
+Il menù permette di selezionare la taglia di interesse per quella vendita e far scegliere il numero di animali 
+presenti su ogni sacco, successivamente divide i totali avendo cura di rispettare i chilogrammi e pz/kg 
+(attenzione soprattutto ai pz/kg che possono avere delle leggere differenze tra loro) e genera un numero di 
+sacchi corretto.   
+Se ultimata la divisione del totale degli animali vivi nei sacchi, è presente una rimanenza minore della metà 
+degli animali presenti su ogni sacco, questa può essere ridivisa sui singoli sacchi, come da esempio: 
+1.700.000 animali divisi in sacchi da 400.000 = 4 * 400.000 e 1*100.000 (rimanenza). 
+Se rimanenza è < di  𝑁.  𝐴𝑛𝑖𝑚𝑎𝑙𝑖 𝑠𝑢 𝑠𝑎𝑐𝑐𝑜
+ allora 1.700.000 divisi in sacchi è 4 * 425.000; se rimanenza è invece 
+2
+ > di  𝑁.  𝐴𝑛𝑖𝑚𝑎𝑙𝑖 𝑠𝑢 𝑠𝑎𝑐𝑐𝑜
+ 2
+ allora può rimanere come sacco singolo. 
+Si aggiunge una funzione che permette di stabilire un deficit sul peso dei sacchi se questi perdono una parte 
+di acqua rilasciata dagli animali.  
+Il menù permette di sottrarre non più di 1.5kg di peso da ogni sacco, il numero degli animali resta invariato e 
+i pz/kg vengono ricalcolati sulla base del nuovo peso ponendo attenzione a non andare oltre il 5% di differenza 
+rispetto al valore precedente: 25.000 ≥ 5% = 26.250. 
+Questa condizione serve a non generare discrepanze troppo elevate a seguito di una verifica e/o 
+campionamento successivo alla vendita. 
+Un bottone chiamato “Visualizza bozza Cliente” permette di visualizzare una bozza di verifica del foglio di 
+consegna.  
+Un bottone chiamato “Conferma e Stampa” permette di confermare la vendita dismettendo gli animali per 
+vendita, inoltre permette di visualizzare un file PDF che può essere stampato e scaricato sul pc con i dati 
+relativi alla vendita eseguita.  
