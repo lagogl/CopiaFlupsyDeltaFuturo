@@ -831,3 +831,89 @@ export type InsertExternalDeliverySync = z.infer<typeof insertExternalDeliverySy
 // Tipi per dettagli consegne esterne
 export type ExternalDeliveryDetailSync = typeof externalDeliveryDetailsSync.$inferSelect;
 export type InsertExternalDeliveryDetailSync = z.infer<typeof insertExternalDeliveryDetailSyncSchema>;
+
+// ===== MODULO VENDITE AVANZATE =====
+
+// Vendite avanzate (master)
+export const advancedSales = pgTable("advanced_sales", {
+  id: serial("id").primaryKey(),
+  saleNumber: text("sale_number").notNull().unique(), // Numero vendita progressivo
+  customerId: integer("customer_id"), // Riferimento cliente (opzionale)
+  customerName: text("customer_name"), // Nome cliente per vendite senza anagrafica
+  customerDetails: jsonb("customer_details"), // Dati aziendali cliente
+  saleDate: date("sale_date").notNull(), // Data vendita
+  status: text("status").notNull().default("draft"), // draft, confirmed, completed
+  totalWeight: real("total_weight"), // Peso totale vendita
+  totalAnimals: integer("total_animals"), // Animali totali vendita
+  totalBags: integer("total_bags"), // Numero sacchi totali
+  notes: text("notes"), // Note vendita
+  pdfPath: text("pdf_path"), // Percorso file PDF generato
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at"),
+});
+
+// Sacchi per vendita
+export const saleBags = pgTable("sale_bags", {
+  id: serial("id").primaryKey(),
+  advancedSaleId: integer("advanced_sale_id").notNull(), // Riferimento vendita
+  bagNumber: integer("bag_number").notNull(), // Numero sacco progressivo
+  sizeCode: text("size_code").notNull(), // Codice taglia (es. "TP-3000")
+  totalWeight: real("total_weight").notNull(), // Peso totale sacco
+  originalWeight: real("original_weight").notNull(), // Peso originale prima perdite
+  weightLoss: real("weight_loss").default(0), // Perdita peso (max 1.5kg)
+  animalCount: integer("animal_count").notNull(), // Numero animali nel sacco
+  animalsPerKg: real("animals_per_kg").notNull(), // Animali per kg
+  originalAnimalsPerKg: real("original_animals_per_kg").notNull(), // Originale prima ricalcolo
+  wastePercentage: real("waste_percentage").default(0), // Percentuale scarto
+  notes: text("notes"), // Note sacco
+});
+
+// Dettaglio allocazione animali per sacco
+export const bagAllocations = pgTable("bag_allocations", {
+  id: serial("id").primaryKey(),
+  saleBagId: integer("sale_bag_id").notNull(), // Riferimento sacco
+  sourceOperationId: integer("source_operation_id").notNull(), // Operazione vendita originale
+  sourceBasketId: integer("source_basket_id").notNull(), // Cestello origine
+  allocatedAnimals: integer("allocated_animals").notNull(), // Animali allocati da questa fonte
+  allocatedWeight: real("allocated_weight").notNull(), // Peso allocato da questa fonte
+  sourceAnimalsPerKg: real("source_animals_per_kg"), // AnimalsPerKg originale
+  sourceSizeCode: text("source_size_code"), // Taglia originale
+});
+
+// Riferimenti operazioni vendita
+export const saleOperationsRef = pgTable("sale_operations_ref", {
+  id: serial("id").primaryKey(),
+  advancedSaleId: integer("advanced_sale_id").notNull(), // Riferimento vendita avanzata
+  operationId: integer("operation_id").notNull(), // Riferimento operazione vendita originale
+  basketId: integer("basket_id").notNull(), // Cestello venduto
+  originalAnimals: integer("original_animals"), // Animali originali
+  originalWeight: real("original_weight"), // Peso originale
+  originalAnimalsPerKg: real("original_animals_per_kg"), // AnimalsPerKg originale
+  includedInSale: boolean("included_in_sale").default(true), // Se incluso nella vendita
+});
+
+// Schemi Zod per validazione
+export const insertAdvancedSaleSchema = createInsertSchema(advancedSales)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+export const insertSaleBagSchema = createInsertSchema(saleBags)
+  .omit({ id: true });
+
+export const insertBagAllocationSchema = createInsertSchema(bagAllocations)
+  .omit({ id: true });
+
+export const insertSaleOperationsRefSchema = createInsertSchema(saleOperationsRef)
+  .omit({ id: true });
+
+// Tipi TypeScript
+export type AdvancedSale = typeof advancedSales.$inferSelect;
+export type InsertAdvancedSale = z.infer<typeof insertAdvancedSaleSchema>;
+
+export type SaleBag = typeof saleBags.$inferSelect;
+export type InsertSaleBag = z.infer<typeof insertSaleBagSchema>;
+
+export type BagAllocation = typeof bagAllocations.$inferSelect;
+export type InsertBagAllocation = z.infer<typeof insertBagAllocationSchema>;
+
+export type SaleOperationsRef = typeof saleOperationsRef.$inferSelect;
+export type InsertSaleOperationsRef = z.infer<typeof insertSaleOperationsRefSchema>;

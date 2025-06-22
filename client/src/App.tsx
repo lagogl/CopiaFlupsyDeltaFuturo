@@ -48,6 +48,8 @@ import VagliaturaConMappa from "@/pages/VagliaturaConMappa";
 // Importazioni per la gestione delle pagine di amministrazione
 import BackupPage from "@/pages/BackupPage";
 import AmministrazioneUtilita from "@/pages/AmministrazioneUtilita";
+// Importazione modulo vendite avanzate
+import AdvancedSales from "@/pages/AdvancedSales";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -125,6 +127,9 @@ function Router() {
       
       {/* Vagliatura con Mappa routes */}
       <ProtectedRoute path="/vagliatura-con-mappa" component={VagliaturaConMappa}/>
+      
+      {/* Vendite Avanzate routes */}
+      <ProtectedRoute path="/advanced-sales" component={AdvancedSales}/>
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

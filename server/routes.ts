@@ -7209,6 +7209,23 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // ===== ROUTE VENDITE AVANZATE =====
+  const AdvancedSalesController = await import('./controllers/advanced-sales-controller');
+  
+  // Operazioni vendita disponibili
+  app.get("/api/advanced-sales/operations", AdvancedSalesController.getAvailableSaleOperations);
+  
+  // Clienti per vendite
+  app.get("/api/advanced-sales/customers", AdvancedSalesController.getCustomers);
+  
+  // CRUD vendite avanzate
+  app.get("/api/advanced-sales", AdvancedSalesController.getAdvancedSales);
+  app.get("/api/advanced-sales/:id", AdvancedSalesController.getAdvancedSale);
+  app.post("/api/advanced-sales", AdvancedSalesController.createAdvancedSale);
+  
+  // Configurazione sacchi
+  app.post("/api/advanced-sales/:saleId/bags", AdvancedSalesController.configureBags);
   
   return httpServer;
 }

@@ -147,6 +147,15 @@ export default function MainLayout({ children }: MainLayoutProps) {
       ]
     },
     {
+      id: 'sales',
+      label: 'VENDITE',
+      icon: <Package className="h-5 w-5" />,
+      color: 'text-emerald-600',
+      items: [
+        { icon: <Package className="h-5 w-5 mr-2 text-emerald-600" />, label: "Gestione Vendite", path: "/advanced-sales" }
+      ]
+    },
+    {
       id: 'system',
       label: 'SISTEMA',
       icon: <SettingsIcon className="h-5 w-5" />,
