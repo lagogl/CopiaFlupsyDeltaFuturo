@@ -17,6 +17,7 @@ import {
   baskets,
   sizes,
   externalCustomersSync,
+  externalSalesSync,
   insertAdvancedSaleSchema,
   insertSaleBagSchema,
   insertBagAllocationSchema,
