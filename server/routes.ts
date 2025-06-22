@@ -7233,6 +7233,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/advanced-sales/:id/download-pdf", AdvancedSalesController.downloadSalePDF);
   
   // Serve static PDF files
+  const express = await import('express');
   app.use('/generated-pdfs', (req, res, next) => {
     // Simple auth check - in production you'd want proper authentication
     next();
