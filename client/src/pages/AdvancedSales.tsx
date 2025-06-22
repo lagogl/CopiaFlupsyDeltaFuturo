@@ -301,7 +301,13 @@ export default function AdvancedSales() {
   };
 
   const handleGeneratePDF = (saleId: number) => {
-    window.open(`/api/advanced-sales/${saleId}/generate-pdf`, '_blank');
+    // Crea un link temporaneo per il download
+    const link = document.createElement('a');
+    link.href = `/api/advanced-sales/${saleId}/generate-pdf`;
+    link.download = `vendita-${saleId}.pdf`;
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
   };
 
   const handleDownloadPDF = (saleId: number) => {
