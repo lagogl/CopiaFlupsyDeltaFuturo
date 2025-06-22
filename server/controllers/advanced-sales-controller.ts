@@ -191,9 +191,10 @@ export async function createAdvancedSale(req: Request, res: Response) {
     });
   } catch (error) {
     console.error("Errore nella creazione vendita avanzata:", error);
+    console.error("Stack trace:", error.stack);
     res.status(500).json({
       success: false,
-      error: "Errore nella creazione della vendita avanzata"
+      error: `Errore nella creazione della vendita avanzata: ${error.message}`
     });
   }
 }
@@ -387,7 +388,7 @@ export async function getAdvancedSale(req: Request, res: Response) {
       success: true,
       sale: sale[0],
       bags: bagsWithAllocations,
-      operations
+      operations: operationsRefs
     });
   } catch (error) {
     console.error("Errore nel recupero vendita avanzata:", error);
