@@ -453,9 +453,22 @@ export async function getAdvancedSales(req: Request, res: Response) {
  */
 export async function getCustomers(req: Request, res: Response) {
   try {
-    const customers = await db.select()
-      .from(externalCustomersSync)
-      .orderBy(externalCustomersSync.name);
+    const customers = await db.select({
+      id: externalCustomersSync.id,
+      externalId: externalCustomersSync.externalId,
+      name: externalCustomersSync.customerName,
+      businessName: externalCustomersSync.customerName,
+      vatNumber: externalCustomersSync.vatNumber,
+      address: externalCustomersSync.address,
+      city: externalCustomersSync.city,
+      province: externalCustomersSync.province,
+      postalCode: externalCustomersSync.postalCode,
+      phone: externalCustomersSync.phone,
+      email: externalCustomersSync.email
+    })
+    .from(externalCustomersSync)
+    .where(eq(externalCustomersSync.isActive, true))
+    .orderBy(externalCustomersSync.customerName);
 
     res.json({
       success: true,
