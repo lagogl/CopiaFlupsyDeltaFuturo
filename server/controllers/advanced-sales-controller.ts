@@ -4,7 +4,7 @@
  */
 import { Request, Response } from "express";
 import { db } from "../db";
-import { eq, desc, and, gte, lte, sql, isNotNull } from "drizzle-orm";
+import { eq, desc, and, gte, lte, sql, isNotNull, inArray } from "drizzle-orm";
 import { 
   advancedSales,
   saleBags,
@@ -99,7 +99,7 @@ export async function createAdvancedSale(req: Request, res: Response) {
     // Verifica che le operazioni non siano già state processate
     const existingRefs = await db.select()
       .from(saleOperationsRef)
-      .where(sql`${saleOperationsRef.operationId} = ANY(${operationIds})`);
+      .where(inArray(saleOperationsRef.operationId, operationIds));
 
     if (existingRefs.length > 0) {
       return res.status(400).json({
@@ -148,7 +148,7 @@ export async function createAdvancedSale(req: Request, res: Response) {
       .from(operations)
       .leftJoin(baskets, eq(operations.basketId, baskets.id))
       .leftJoin(sizes, eq(operations.sizeId, sizes.id))
-      .where(sql`${operations.id} = ANY(${operationIds})`);
+      .where(inArray(operations.id, operationIds));
 
       // Crea riferimenti operazioni
       for (const op of operationsData) {
@@ -453,26 +453,30 @@ export async function getAdvancedSales(req: Request, res: Response) {
  */
 export async function getCustomers(req: Request, res: Response) {
   try {
-    const customers = await db.select({
-      id: externalCustomersSync.id,
-      externalId: externalCustomersSync.externalId,
-      name: externalCustomersSync.customerName,
-      businessName: externalCustomersSync.customerName,
-      vatNumber: externalCustomersSync.vatNumber,
-      address: externalCustomersSync.address,
-      city: externalCustomersSync.city,
-      province: externalCustomersSync.province,
-      postalCode: externalCustomersSync.postalCode,
-      phone: externalCustomersSync.phone,
-      email: externalCustomersSync.email
-    })
-    .from(externalCustomersSync)
-    .where(eq(externalCustomersSync.isActive, true))
-    .orderBy(externalCustomersSync.customerName);
+    const customers = await db.select()
+      .from(externalCustomersSync)
+      .where(eq(externalCustomersSync.isActive, true))
+      .orderBy(externalCustomersSync.customerName)
+      .limit(20);
+
+    // Mappiamo i campi per compatibilità con il frontend
+    const mappedCustomers = customers.map(customer => ({
+      id: customer.id,
+      externalId: customer.externalId,
+      name: customer.customerName,
+      businessName: customer.customerName,
+      vatNumber: customer.vatNumber,
+      address: customer.address,
+      city: customer.city,
+      province: customer.province,
+      postalCode: customer.postalCode,
+      phone: customer.phone,
+      email: customer.email
+    }));
 
     res.json({
       success: true,
-      customers
+      customers: mappedCustomers
     });
   } catch (error) {
     console.error("Errore nel recupero clienti:", error);
