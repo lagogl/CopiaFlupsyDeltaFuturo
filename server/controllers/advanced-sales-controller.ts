@@ -689,3 +689,53 @@ export async function updateSaleStatus(req: Request, res: Response) {
     });
   }
 }
+
+/**
+ * Recupera ordini disponibili per le vendite avanzate
+ */
+export async function getAvailableOrders(req: Request, res: Response) {
+  try {
+    // Recupera ordini con status "Aperto" o "Parziale" e dati cliente
+    const orders = await db.select({
+      orderId: externalSalesSync.id,
+      orderNumber: externalSalesSync.saleNumber,
+      externalOrderId: externalSalesSync.externalId,
+      orderDate: externalSalesSync.saleDate,
+      customerId: externalSalesSync.customerId,
+      customerName: externalSalesSync.customerName,
+      productCode: externalSalesSync.productCode,
+      productName: externalSalesSync.productName,
+      quantity: externalSalesSync.quantity,
+      unitPrice: externalSalesSync.unitPrice,
+      totalAmount: externalSalesSync.totalAmount,
+      deliveryDate: externalSalesSync.deliveryDate,
+      status: externalSalesSync.status,
+      notes: externalSalesSync.notes,
+      // Dati cliente dalla tabella sincronizzata
+      customerCode: externalCustomersSync.customerCode,
+      customerBusinessName: externalCustomersSync.customerName,
+      customerVatNumber: externalCustomersSync.vatNumber,
+      customerAddress: externalCustomersSync.address,
+      customerCity: externalCustomersSync.city,
+      customerProvince: externalCustomersSync.province,
+      customerPostalCode: externalCustomersSync.postalCode,
+      customerPhone: externalCustomersSync.phone,
+      customerEmail: externalCustomersSync.email
+    })
+    .from(externalSalesSync)
+    .leftJoin(externalCustomersSync, eq(externalSalesSync.customerId, externalCustomersSync.externalId))
+    .where(inArray(externalSalesSync.status, ['Aperto', 'Parziale']))
+    .orderBy(desc(externalSalesSync.saleDate));
+
+    res.json({
+      success: true,
+      orders
+    });
+  } catch (error) {
+    console.error("Errore nel recupero ordini:", error);
+    res.status(500).json({
+      success: false,
+      error: "Errore nel recupero degli ordini"
+    });
+  }
+}
