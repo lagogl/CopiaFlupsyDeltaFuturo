@@ -7216,6 +7216,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Operazioni vendita disponibili
   app.get("/api/advanced-sales/operations", AdvancedSalesController.getAvailableSaleOperations);
   
+  // Ordini disponibili per vendite
+  app.get("/api/advanced-sales/orders", AdvancedSalesController.getAvailableOrders);
+  
   // Clienti per vendite
   app.get("/api/advanced-sales/customers", AdvancedSalesController.getCustomers);
   
