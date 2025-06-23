@@ -4742,12 +4742,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           broadcastMessage("database_reset_progress", { message: startMessage, step: "start" });
           
           // 1. Elimina i dati delle vendite avanzate e report
-          const step1 = "💰 Eliminazione vendite avanzate e report...";
+          const step1 = "💰 Eliminazione vendite avanzate e dati sincronizzazione...";
           console.log(step1);
           broadcastMessage("database_reset_progress", { message: step1, step: 1 });
           await sql`DELETE FROM sale_bags`;
           await sql`DELETE FROM advanced_sales`;
-          console.log("✅ Tabelle vendite avanzate pulite");
+          
+          // Elimina anche i dati di sincronizzazione esterni
+          await sql`DELETE FROM external_sales_sync`;
+          await sql`DELETE FROM external_deliveries_sync`;
+          await sql`DELETE FROM external_customers_sync`;
+          await sql`DELETE FROM external_delivery_details_sync`;
+          await sql`UPDATE sync_status SET last_sync = NULL, record_count = 0`;
+          
+          console.log("✅ Tabelle vendite avanzate e sincronizzazione pulite");
           
           // 2. Elimina le transazioni dell'inventario lotti (collegata alle operazioni)
           const step2 = "📦 Eliminazione transazioni inventario lotti...";
@@ -4822,10 +4830,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(step12);
           broadcastMessage("database_reset_progress", { message: step12, step: 12 });
           
-          // Reset sequenze vendite avanzate
+          // Reset sequenze vendite avanzate e sincronizzazione
           await sql`ALTER SEQUENCE IF EXISTS advanced_sales_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS sale_bags_id_seq RESTART WITH 1`;
-          console.log("✅ Sequenze vendite avanzate resettate");
+          await sql`ALTER SEQUENCE IF EXISTS external_sales_sync_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS external_deliveries_sync_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS external_customers_sync_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS external_delivery_details_sync_id_seq RESTART WITH 1`;
+          console.log("✅ Sequenze vendite avanzate e sincronizzazione resettate");
           await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`;
@@ -4845,7 +4857,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`;
           
-          const completeMessage = "✅ AZZERAMENTO COMPLETATO - Tutte le tabelle operative sono state eliminate e i contatori resettati";
+          const completeMessage = "✅ AZZERAMENTO COMPLETATO - Tutte le tabelle operative, vendite e dati di sincronizzazione eliminati";
           console.log(completeMessage);
           broadcastMessage("database_reset_progress", { message: completeMessage, step: "complete" });
           
@@ -4858,7 +4870,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json({ 
         success: true,
-        message: "Dati azzerati con successo. Operazioni, cicli, cestelli e posizioni eliminati."
+        message: "Dati azzerati con successo. Operazioni, cicli, cestelli, posizioni, vendite e dati sincronizzazione eliminati."
       });
     } catch (error) {
       console.error("Errore durante l'azzeramento dei dati operativi:", error);
