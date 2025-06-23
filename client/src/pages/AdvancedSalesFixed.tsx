@@ -272,20 +272,48 @@ export default function AdvancedSales() {
               
               {/* Selezione Operazioni */}
               <div>
-                <Label className="text-base font-semibold">Operazioni Disponibili</Label>
+                <Label className="text-base font-semibold flex items-center gap-2">
+                  <input
+                    type="checkbox"
+                    className="w-4 h-4 text-blue-600 rounded border-gray-300"
+                    checked={operationsQuery.data?.operations?.length > 0 && newSaleForm.operationIds.length === operationsQuery.data?.operations?.length}
+                    onChange={(e) => {
+                      if (e.target.checked) {
+                        setNewSaleForm(prev => ({
+                          ...prev,
+                          operationIds: operationsQuery.data?.operations?.map((op: Operation) => op.operationId) || []
+                        }));
+                      } else {
+                        setNewSaleForm(prev => ({
+                          ...prev,
+                          operationIds: []
+                        }));
+                      }
+                    }}
+                  />
+                  Operazioni Disponibili ({operationsQuery.data?.operations?.length || 0})
+                </Label>
                 <p className="text-sm text-muted-foreground mb-3">
-                  Seleziona le operazioni da includere nella vendita
+                  {newSaleForm.operationIds.length > 0 
+                    ? `${newSaleForm.operationIds.length} operazione/i selezionate`
+                    : "Seleziona le operazioni da includere nella vendita"
+                  }
                 </p>
-                <div className="border rounded-lg p-4 max-h-48 overflow-y-auto">
+                <div className="border rounded-lg p-2 max-h-64 overflow-y-auto bg-gray-50">
                   {operationsQuery.isLoading ? (
                     <div>Caricamento operazioni...</div>
                   ) : operationsQuery.data?.operations?.length === 0 ? (
-                    <div className="text-sm text-gray-500">Nessuna operazione disponibile</div>
+                    <div className="text-sm text-yellow-600 bg-yellow-50 p-3 rounded-lg">
+                      <strong>Nessuna operazione disponibile per vendita.</strong><br/>
+                      Le operazioni di tipo "vendita" vengono create automaticamente dal sistema quando i prodotti sono pronti per la vendita.
+                      Contatta l'amministratore se necessario.
+                    </div>
                   ) : (
                     operationsQuery.data?.operations?.map((operation: Operation) => (
-                      <div key={operation.operationId} className="flex items-center space-x-2 py-2">
+                      <div key={operation.operationId} className="flex items-center space-x-3 py-3 border-b border-gray-100 hover:bg-gray-50 rounded px-2">
                         <input
                           type="checkbox"
+                          className="w-4 h-4 text-blue-600 rounded border-gray-300 focus:ring-blue-500"
                           checked={newSaleForm.operationIds.includes(operation.operationId)}
                           onChange={(e) => {
                             if (e.target.checked) {
@@ -301,10 +329,14 @@ export default function AdvancedSales() {
                             }
                           }}
                         />
-                        <span className="text-sm">
-                          Op. #{operation.operationId} - Cestello #{operation.basketPhysicalNumber} - 
-                          {operation.animalCount.toLocaleString()} animali ({operation.sizeCode})
-                        </span>
+                        <div className="flex-1">
+                          <div className="font-medium text-sm">Operazione #{operation.operationId}</div>
+                          <div className="text-xs text-gray-600">
+                            Cestello #{operation.basketPhysicalNumber} • {operation.animalCount.toLocaleString()} animali • 
+                            {operation.totalWeight} kg • {operation.sizeCode}
+                          </div>
+                          <div className="text-xs text-gray-500">{format(new Date(operation.date), 'dd/MM/yyyy')}</div>
+                        </div>
                       </div>
                     ))
                   )}
