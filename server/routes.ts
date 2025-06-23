@@ -2907,18 +2907,27 @@ export async function registerRoutes(app: Express): Promise<Server> {
     try {
       const startTime = Date.now();
       
-      // Utilizzo del controller ottimizzato
+      // Utilizzo del controller ottimizzato con filtro per cicli attivi
       const cyclesController = await import('./controllers/cycles-controller-optimized.js');
       
-      // Richiama la funzione ottimizzata con cache
-      const result = await cyclesController.getActiveCyclesWithDetails();
+      // Ottieni solo i cicli attivi usando il controller ottimizzato
+      const options = {
+        page: 1,
+        pageSize: 100, // Limite ragionevole per cicli attivi
+        state: 'active',
+        includeAll: true
+      };
+      
+      const result = await cyclesController.getCycles(options);
       
       const duration = Date.now() - startTime;
       if (duration > 200) {
         console.log(`Cicli attivi recuperati in ${duration}ms`);
       }
       
-      res.json(result);
+      // Restituisci solo i cicli attivi
+      const activeCycles = Array.isArray(result) ? result : result.cycles || [];
+      res.json(activeCycles);
     } catch (error) {
       console.error("Error fetching active cycles:", error);
       res.status(500).json({ message: "Failed to fetch active cycles" });
