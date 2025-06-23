@@ -114,7 +114,6 @@ export async function getCycles(options = {}) {
     return cached;
   }
 
-  console.log(`Richiesta cicli con opzioni: ${JSON.stringify(options)}`);
   const startTime = Date.now();
 
   try {

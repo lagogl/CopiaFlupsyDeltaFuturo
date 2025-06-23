@@ -4875,6 +4875,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(completeMessage);
           broadcastMessage("database_reset_progress", { message: completeMessage, step: "complete" });
           
+          // Invalidazione cache dopo azzeramento completo
+          try {
+            const { BasketsCache } = await import('./baskets-cache-service.js');
+            const { CyclesCache } = await import('./controllers/cycles-controller-optimized.js');
+            
+            BasketsCache.clear();
+            CyclesCache.clear();
+            
+            console.log("✅ Cache invalidate dopo azzeramento");
+            
+            // Notifica WebSocket per refresh client
+            broadcastMessage("cache_invalidated", { 
+              message: "Database reset completato - aggiornamento dati",
+              caches: ['baskets', 'cycles', 'operations', 'lots']
+            });
+          } catch (error) {
+            console.warn("Cache invalidation warning:", error.message);
+          }
+          
           return true; // Successo - commit implicito
         } catch (error) {
           console.error("Errore durante l'azzeramento dei dati:", error);

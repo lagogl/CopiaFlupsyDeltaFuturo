@@ -15,6 +15,9 @@ const messageTypeToQueryKeys: Record<string, string[]> = {
   'cycle_updated': ['/api/cycles', '/api/cycles/active', '/api/baskets'],
   'cycle_deleted': ['/api/cycles', '/api/cycles/active', '/api/baskets'],
   
+  // Cache invalidation dopo database reset
+  'cache_invalidated': ['/api/baskets', '/api/cycles', '/api/operations', '/api/lots', '/api/flupsys'],
+  
   // Statistiche
   'statistics_updated': ['/api/statistics/cycles/comparison', '/api/size-predictions'],
 };
@@ -46,6 +49,9 @@ export function useWebSocketQueryIntegration() {
   
   // Registra handler per 'operation_deleted'
   useWebSocketMessage('operation_deleted', createHandler('operation_deleted'));
+  
+  // Registra handler per 'cache_invalidated' (database reset)
+  useWebSocketMessage('cache_invalidated', createHandler('cache_invalidated'));
   
   // Registra handler per 'cycle_created'
   useWebSocketMessage('cycle_created', createHandler('cycle_created'));
