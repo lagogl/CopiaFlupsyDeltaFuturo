@@ -403,8 +403,9 @@ export class ExternalSyncService {
         console.log(`📥 Sincronizzati ${customers.length} clienti`);
       }
     } catch (error) {
-      console.error('❌ Errore sincronizzazione clienti:', error);
-      throw error;
+      console.error('❌ Errore sincronizzazione clienti:', error.message);
+      // Non propagare l'errore per evitare crash dell'app
+      return;
     }
   }
 
@@ -429,8 +430,9 @@ export class ExternalSyncService {
         console.log(`📥 Sincronizzate ${sales.length} vendite`);
       }
     } catch (error) {
-      console.error('❌ Errore sincronizzazione vendite:', error);
-      throw error;
+      console.error('❌ Errore sincronizzazione vendite:', error.message);
+      // Non propagare l'errore per evitare crash dell'app
+      return;
     }
   }
 
@@ -455,8 +457,9 @@ export class ExternalSyncService {
         console.log(`📥 Sincronizzate ${deliveries.length} consegne`);
       }
     } catch (error) {
-      console.error('❌ Errore sincronizzazione consegne:', error);
-      throw error;
+      console.error('❌ Errore sincronizzazione consegne:', error.message);
+      // Non propagare l'errore per evitare crash dell'app
+      return;
     }
   }
 
@@ -481,8 +484,9 @@ export class ExternalSyncService {
         console.log(`📥 Sincronizzati ${deliveryDetails.length} dettagli consegne`);
       }
     } catch (error) {
-      console.error('❌ Errore sincronizzazione dettagli consegne:', error);
-      throw error;
+      console.error('❌ Errore sincronizzazione dettagli consegne:', error.message);
+      // Non propagare l'errore per evitare crash dell'app
+      return;
     }
   }
 
