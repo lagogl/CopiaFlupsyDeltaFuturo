@@ -4741,78 +4741,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(startMessage);
           broadcastMessage("database_reset_progress", { message: startMessage, step: "start" });
           
-          // 1. Elimina le transazioni dell'inventario lotti (collegata alle operazioni)
-          const step1 = "📦 Eliminazione transazioni inventario lotti...";
+          // 1. Elimina i dati delle vendite avanzate e report
+          const step1 = "💰 Eliminazione vendite avanzate e report...";
           console.log(step1);
           broadcastMessage("database_reset_progress", { message: step1, step: 1 });
-          await sql`DELETE FROM lot_inventory_transactions`;
+          await sql`DELETE FROM advanced_sales_operations`;
+          await sql`DELETE FROM advanced_sales`;
           
-          // 2. Elimina le misurazioni (collegate ai cestelli)
-          const step2 = "📏 Eliminazione misurazioni cestelli...";
+          // 2. Elimina le transazioni dell'inventario lotti (collegata alle operazioni)
+          const step2 = "📦 Eliminazione transazioni inventario lotti...";
           console.log(step2);
           broadcastMessage("database_reset_progress", { message: step2, step: 2 });
-          await sql`DELETE FROM measurements`;
+          await sql`DELETE FROM lot_inventory_transactions`;
           
-          // 3. Elimina le annotazioni taglie target (collegate ai cestelli)
-          const step3 = "🏷️ Eliminazione annotazioni taglie target...";
+          // 3. Elimina le misurazioni (collegate ai cestelli)
+          const step3 = "📏 Eliminazione misurazioni cestelli...";
           console.log(step3);
           broadcastMessage("database_reset_progress", { message: step3, step: 3 });
-          await sql`DELETE FROM target_size_annotations`;
+          await sql`DELETE FROM measurements`;
           
-          // 4. Elimina gli impatti sui cicli
-          const step4 = "📊 Eliminazione impatti sui cicli...";
+          // 4. Elimina le annotazioni taglie target (collegate ai cestelli)
+          const step4 = "🏷️ Eliminazione annotazioni taglie target...";
           console.log(step4);
           broadcastMessage("database_reset_progress", { message: step4, step: 4 });
-          await sql`DELETE FROM cycle_impacts`;
+          await sql`DELETE FROM target_size_annotations`;
           
-          // 5. Elimina i dati delle operazioni di vagliatura
-          const step5 = "🔍 Eliminazione dati operazioni di vagliatura...";
+          // 5. Elimina gli impatti sui cicli
+          const step5 = "📊 Eliminazione impatti sui cicli...";
           console.log(step5);
           broadcastMessage("database_reset_progress", { message: step5, step: 5 });
+          await sql`DELETE FROM cycle_impacts`;
+          
+          // 6. Elimina i dati delle operazioni di vagliatura
+          const step6 = "🔍 Eliminazione dati operazioni di vagliatura...";
+          console.log(step6);
+          broadcastMessage("database_reset_progress", { message: step6, step: 6 });
           await sql`DELETE FROM screening_lot_references`;
           await sql`DELETE FROM screening_basket_history`;
           await sql`DELETE FROM screening_destination_baskets`;
           await sql`DELETE FROM screening_source_baskets`;
           await sql`DELETE FROM screening_operations`;
           
-          // 6. Elimina i dati delle operazioni di selezione
-          const step6 = "✅ Eliminazione dati operazioni di selezione...";
-          console.log(step6);
-          broadcastMessage("database_reset_progress", { message: step6, step: 6 });
+          // 7. Elimina i dati delle operazioni di selezione
+          const step7 = "✅ Eliminazione dati operazioni di selezione...";
+          console.log(step7);
+          broadcastMessage("database_reset_progress", { message: step7, step: 7 });
           await sql`DELETE FROM selection_lot_references`;
           await sql`DELETE FROM selection_basket_history`;
           await sql`DELETE FROM selection_destination_baskets`;
           await sql`DELETE FROM selection_source_baskets`;
           await sql`DELETE FROM selections`;
           
-          // 7. Elimina la cronologia delle posizioni dei cestelli
-          const step7 = "📍 Eliminazione cronologia posizioni cestelli...";
-          console.log(step7);
-          broadcastMessage("database_reset_progress", { message: step7, step: 7 });
-          await sql`DELETE FROM basket_position_history`;
-          
-          // 8. Elimina le operazioni
-          const step8 = "⚙️ Eliminazione operazioni...";
+          // 8. Elimina la cronologia delle posizioni dei cestelli
+          const step8 = "📍 Eliminazione cronologia posizioni cestelli...";
           console.log(step8);
           broadcastMessage("database_reset_progress", { message: step8, step: 8 });
-          await sql`DELETE FROM operations`;
+          await sql`DELETE FROM basket_position_history`;
           
-          // 9. Elimina i cicli
-          const step9 = "🔄 Eliminazione cicli produttivi...";
+          // 9. Elimina le operazioni
+          const step9 = "⚙️ Eliminazione operazioni...";
           console.log(step9);
           broadcastMessage("database_reset_progress", { message: step9, step: 9 });
-          await sql`DELETE FROM cycles`;
+          await sql`DELETE FROM operations`;
           
-          // 10. Elimina i cestelli
-          const step10 = "🗑️ Eliminazione cestelli...";
+          // 10. Elimina i cicli
+          const step10 = "🔄 Eliminazione cicli produttivi...";
           console.log(step10);
           broadcastMessage("database_reset_progress", { message: step10, step: 10 });
-          await sql`DELETE FROM baskets`;
+          await sql`DELETE FROM cycles`;
           
-          // 11. Resettiamo le sequenze degli ID
-          const step11 = "🔢 Reset contatori ID di tutte le tabelle...";
+          // 11. Elimina i cestelli
+          const step11 = "🗑️ Eliminazione cestelli...";
           console.log(step11);
           broadcastMessage("database_reset_progress", { message: step11, step: 11 });
+          await sql`DELETE FROM baskets`;
+          
+          // 12. Resettiamo le sequenze degli ID
+          const step12 = "🔢 Reset contatori ID di tutte le tabelle...";
+          console.log(step12);
+          broadcastMessage("database_reset_progress", { message: step12, step: 12 });
+          await sql`ALTER SEQUENCE IF EXISTS advanced_sales_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS advanced_sales_operations_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`;
@@ -4832,7 +4841,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`;
           
-          const completeMessage = "✅ AZZERAMENTO COMPLETATO - Tutte le tabelle operative sono state eliminate e i contatori resettati";
+          const completeMessage = "✅ AZZERAMENTO COMPLETATO - Tutte le tabelle operative, vendite avanzate e report sono stati eliminati e i contatori resettati";
           console.log(completeMessage);
           broadcastMessage("database_reset_progress", { message: completeMessage, step: "complete" });
           
@@ -4845,7 +4854,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json({ 
         success: true,
-        message: "Dati azzerati con successo. Operazioni, cicli, cestelli e posizioni eliminati."
+        message: "Dati azzerati con successo. Operazioni, cicli, cestelli, posizioni, vendite avanzate e report eliminati."
       });
     } catch (error) {
       console.error("Errore durante l'azzeramento dei dati operativi:", error);
