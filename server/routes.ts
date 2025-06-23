@@ -4741,25 +4741,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(startMessage);
           broadcastMessage("database_reset_progress", { message: startMessage, step: "start" });
           
-          // 1. Elimina i dati delle vendite avanzate e report (se esistono)
-          const step1 = "💰 Eliminazione vendite avanzate e report...";
+          // 1. Controllo ed eliminazione vendite avanzate (se esistono)
+          const step1 = "💰 Controllo vendite avanzate...";
           console.log(step1);
           broadcastMessage("database_reset_progress", { message: step1, step: 1 });
           
-          // Elimina solo se le tabelle esistono
-          try {
-            await sql`DELETE FROM advanced_sales_operations`;
-            console.log("✅ Tabella advanced_sales_operations pulita");
-          } catch (error) {
-            console.log("ℹ️ Tabella advanced_sales_operations non trovata, salto eliminazione");
-          }
-          
-          try {
-            await sql`DELETE FROM advanced_sales`;
-            console.log("✅ Tabella advanced_sales pulita");
-          } catch (error) {
-            console.log("ℹ️ Tabella advanced_sales non trovata, salto eliminazione");
-          }
+          // Per ora saltiamo le tabelle vendite avanzate dato che non esistono ancora
+          console.log("ℹ️ Sistema vendite avanzate non ancora implementato, salto eliminazione");
           
           // 2. Elimina le transazioni dell'inventario lotti (collegata alle operazioni)
           const step2 = "📦 Eliminazione transazioni inventario lotti...";
@@ -4834,14 +4822,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(step12);
           broadcastMessage("database_reset_progress", { message: step12, step: 12 });
           
-          // Reset sequenze vendite avanzate (se esistono)
-          try {
-            await sql`ALTER SEQUENCE IF EXISTS advanced_sales_id_seq RESTART WITH 1`;
-            await sql`ALTER SEQUENCE IF EXISTS advanced_sales_operations_id_seq RESTART WITH 1`;
-            console.log("✅ Sequenze vendite avanzate resettate");
-          } catch (error) {
-            console.log("ℹ️ Sequenze vendite avanzate non trovate, salto reset");
-          }
+          // Reset sequenze vendite avanzate (quando implementate)
+          console.log("ℹ️ Sequenze vendite avanzate non ancora presenti, salto reset");
           await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`;
@@ -4861,7 +4843,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`;
           
-          const completeMessage = "✅ AZZERAMENTO COMPLETATO - Tutte le tabelle operative, vendite avanzate e report sono stati eliminati e i contatori resettati";
+          const completeMessage = "✅ AZZERAMENTO COMPLETATO - Tutte le tabelle operative sono state eliminate e i contatori resettati";
           console.log(completeMessage);
           broadcastMessage("database_reset_progress", { message: completeMessage, step: "complete" });
           
@@ -4874,7 +4856,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json({ 
         success: true,
-        message: "Dati azzerati con successo. Operazioni, cicli, cestelli, posizioni, vendite avanzate e report eliminati."
+        message: "Dati azzerati con successo. Operazioni, cicli, cestelli e posizioni eliminati."
       });
     } catch (error) {
       console.error("Errore durante l'azzeramento dei dati operativi:", error);
