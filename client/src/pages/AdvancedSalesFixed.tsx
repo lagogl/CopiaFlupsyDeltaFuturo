@@ -98,50 +98,75 @@ export default function AdvancedSales() {
   });
 
   const createNewSale = () => {
-    if (newSaleForm.operationIds.length === 0) {
+    try {
+      if (newSaleForm.operationIds.length === 0) {
+        toast({ 
+          title: "Errore", 
+          description: "Seleziona almeno un'operazione",
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      if (!newSaleForm.customerId) {
+        toast({ 
+          title: "Errore", 
+          description: "Seleziona un cliente",
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      // Controllo sicurezza per dati clienti
+      if (!customersQuery.data?.customers || !Array.isArray(customersQuery.data.customers)) {
+        toast({ 
+          title: "Errore", 
+          description: "Dati clienti non disponibili",
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      const selectedCustomer = customersQuery.data.customers.find(c => {
+        return c && 
+               typeof c === 'object' && 
+               c.id === newSaleForm.customerId &&
+               c.name;
+      });
+
+      if (!selectedCustomer) {
+        toast({ 
+          title: "Errore", 
+          description: "Cliente selezionato non valido o dati incompleti",
+          variant: "destructive" 
+        });
+        return;
+      }
+
+      const customerData = {
+        id: selectedCustomer.id || 0,
+        name: selectedCustomer.name || '',
+        businessName: selectedCustomer.businessName || selectedCustomer.name || '',
+        vatNumber: selectedCustomer.vatNumber || '',
+        city: selectedCustomer.city || '',
+        phone: selectedCustomer.phone || '',
+        email: selectedCustomer.email || ''
+      };
+
+      createSaleMutation.mutate({
+        operationIds: newSaleForm.operationIds,
+        customerData,
+        saleDate: newSaleForm.saleDate,
+        notes: newSaleForm.notes
+      });
+    } catch (error) {
+      console.error('Errore nella creazione vendita:', error);
       toast({ 
         title: "Errore", 
-        description: "Seleziona almeno un'operazione",
+        description: "Errore imprevisto nella creazione vendita",
         variant: "destructive" 
       });
-      return;
     }
-
-    if (!newSaleForm.customerId) {
-      toast({ 
-        title: "Errore", 
-        description: "Seleziona un cliente",
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    const selectedCustomer = customersQuery.data?.customers?.find(c => c && c.id === newSaleForm.customerId);
-    if (!selectedCustomer || !selectedCustomer.id) {
-      toast({ 
-        title: "Errore", 
-        description: "Cliente selezionato non valido",
-        variant: "destructive" 
-      });
-      return;
-    }
-
-    const customerData = {
-      id: selectedCustomer.id,
-      name: selectedCustomer.name,
-      businessName: selectedCustomer.businessName,
-      vatNumber: selectedCustomer.vatNumber,
-      city: selectedCustomer.city,
-      phone: selectedCustomer.phone,
-      email: selectedCustomer.email
-    };
-
-    createSaleMutation.mutate({
-      operationIds: newSaleForm.operationIds,
-      customerData,
-      saleDate: newSaleForm.saleDate,
-      notes: newSaleForm.notes
-    });
   };
 
   const handleGeneratePDF = (saleId: number) => {
@@ -281,7 +306,7 @@ export default function AdvancedSales() {
                       if (e.target.checked) {
                         setNewSaleForm(prev => ({
                           ...prev,
-                          operationIds: operationsQuery.data?.operations?.map((op: Operation) => op.operationId) || []
+                          operationIds: operationsQuery.data?.operations?.filter(op => op && op.operationId).map((op: Operation) => op.operationId) || []
                         }));
                       } else {
                         setNewSaleForm(prev => ({
@@ -362,11 +387,17 @@ export default function AdvancedSales() {
                       <SelectValue placeholder="Seleziona cliente..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {customersQuery.data?.customers?.filter(customer => customer && customer.id).map((customer: Customer) => (
+                      {customersQuery.data?.customers?.filter(customer => {
+                        return customer && 
+                               typeof customer === 'object' && 
+                               customer.id && 
+                               customer.name && 
+                               customer.name.trim() !== '';
+                      }).map((customer: Customer) => (
                         <SelectItem key={customer.id} value={customer.id.toString()}>
                           <div className="flex flex-col">
-                            <span className="font-medium">{customer.name || 'Nome non disponibile'}</span>
-                            {customer.city && (
+                            <span className="font-medium">{customer.name}</span>
+                            {customer.city && customer.city.trim() !== '' && (
                               <span className="text-xs text-gray-500">{customer.city}</span>
                             )}
                           </div>
@@ -379,38 +410,52 @@ export default function AdvancedSales() {
 
               {/* Dettagli cliente selezionato */}
               {newSaleForm.customerId && (() => {
-                const selectedCustomer = customersQuery.data?.customers?.find(c => c && c.id === newSaleForm.customerId);
-                return selectedCustomer ? (
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <h4 className="font-medium text-sm mb-2">Dettagli Cliente</h4>
-                    <div className="grid grid-cols-2 gap-2 text-xs">
-                      <div>
-                        <span className="font-medium">Nome:</span>
-                        <div>{selectedCustomer.name || 'Non disponibile'}</div>
+                try {
+                  if (!customersQuery.data?.customers || !Array.isArray(customersQuery.data.customers)) {
+                    return <div className="text-sm text-yellow-600">Dati clienti non disponibili</div>;
+                  }
+
+                  const selectedCustomer = customersQuery.data.customers.find(c => {
+                    return c && 
+                           typeof c === 'object' && 
+                           c.id === newSaleForm.customerId;
+                  });
+
+                  return selectedCustomer ? (
+                    <div className="bg-gray-50 p-3 rounded-lg">
+                      <h4 className="font-medium text-sm mb-2">Dettagli Cliente</h4>
+                      <div className="grid grid-cols-2 gap-2 text-xs">
+                        <div>
+                          <span className="font-medium">Nome:</span>
+                          <div>{selectedCustomer.name || 'Non disponibile'}</div>
+                        </div>
+                        {selectedCustomer.vatNumber && selectedCustomer.vatNumber.trim() !== '' && (
+                          <div>
+                            <span className="font-medium">P.IVA:</span>
+                            <div>{selectedCustomer.vatNumber}</div>
+                          </div>
+                        )}
+                        {selectedCustomer.city && selectedCustomer.city.trim() !== '' && (
+                          <div>
+                            <span className="font-medium">Città:</span>
+                            <div>{selectedCustomer.city}</div>
+                          </div>
+                        )}
+                        {selectedCustomer.email && selectedCustomer.email !== '.' && selectedCustomer.email.trim() !== '' && (
+                          <div>
+                            <span className="font-medium">Email:</span>
+                            <div>{selectedCustomer.email}</div>
+                          </div>
+                        )}
                       </div>
-                      {selectedCustomer.vatNumber && (
-                        <div>
-                          <span className="font-medium">P.IVA:</span>
-                          <div>{selectedCustomer.vatNumber}</div>
-                        </div>
-                      )}
-                      {selectedCustomer.city && (
-                        <div>
-                          <span className="font-medium">Città:</span>
-                          <div>{selectedCustomer.city}</div>
-                        </div>
-                      )}
-                      {selectedCustomer.email && selectedCustomer.email !== '.' && (
-                        <div>
-                          <span className="font-medium">Email:</span>
-                          <div>{selectedCustomer.email}</div>
-                        </div>
-                      )}
                     </div>
-                  </div>
-                ) : (
-                  <div className="text-sm text-yellow-600">Cliente selezionato non trovato</div>
-                );
+                  ) : (
+                    <div className="text-sm text-yellow-600">Cliente selezionato non trovato</div>
+                  );
+                } catch (error) {
+                  console.error('Errore nel rendering dettagli cliente:', error);
+                  return <div className="text-sm text-red-600">Errore nel caricamento dettagli cliente</div>;
+                }
               })()}
 
               {/* Data vendita */}
