@@ -4741,12 +4741,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(startMessage);
           broadcastMessage("database_reset_progress", { message: startMessage, step: "start" });
           
-          // 1. Elimina i dati delle vendite avanzate e report
+          // 1. Elimina i dati delle vendite avanzate e report (se esistono)
           const step1 = "💰 Eliminazione vendite avanzate e report...";
           console.log(step1);
           broadcastMessage("database_reset_progress", { message: step1, step: 1 });
-          await sql`DELETE FROM advanced_sales_operations`;
-          await sql`DELETE FROM advanced_sales`;
+          
+          // Elimina solo se le tabelle esistono
+          try {
+            await sql`DELETE FROM advanced_sales_operations`;
+            console.log("✅ Tabella advanced_sales_operations pulita");
+          } catch (error) {
+            console.log("ℹ️ Tabella advanced_sales_operations non trovata, salto eliminazione");
+          }
+          
+          try {
+            await sql`DELETE FROM advanced_sales`;
+            console.log("✅ Tabella advanced_sales pulita");
+          } catch (error) {
+            console.log("ℹ️ Tabella advanced_sales non trovata, salto eliminazione");
+          }
           
           // 2. Elimina le transazioni dell'inventario lotti (collegata alle operazioni)
           const step2 = "📦 Eliminazione transazioni inventario lotti...";
@@ -4820,8 +4833,15 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const step12 = "🔢 Reset contatori ID di tutte le tabelle...";
           console.log(step12);
           broadcastMessage("database_reset_progress", { message: step12, step: 12 });
-          await sql`ALTER SEQUENCE IF EXISTS advanced_sales_id_seq RESTART WITH 1`;
-          await sql`ALTER SEQUENCE IF EXISTS advanced_sales_operations_id_seq RESTART WITH 1`;
+          
+          // Reset sequenze vendite avanzate (se esistono)
+          try {
+            await sql`ALTER SEQUENCE IF EXISTS advanced_sales_id_seq RESTART WITH 1`;
+            await sql`ALTER SEQUENCE IF EXISTS advanced_sales_operations_id_seq RESTART WITH 1`;
+            console.log("✅ Sequenze vendite avanzate resettate");
+          } catch (error) {
+            console.log("ℹ️ Sequenze vendite avanzate non trovate, salto reset");
+          }
           await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`;
