@@ -116,11 +116,11 @@ export default function AdvancedSales() {
       return;
     }
 
-    const selectedCustomer = customersQuery.data?.customers.find(c => c.id === newSaleForm.customerId);
-    if (!selectedCustomer) {
+    const selectedCustomer = customersQuery.data?.customers?.find(c => c && c.id === newSaleForm.customerId);
+    if (!selectedCustomer || !selectedCustomer.id) {
       toast({ 
         title: "Errore", 
-        description: "Cliente non trovato",
+        description: "Cliente selezionato non valido",
         variant: "destructive" 
       });
       return;
@@ -348,6 +348,8 @@ export default function AdvancedSales() {
                 <Label htmlFor="cliente">Cliente</Label>
                 {customersQuery.isLoading ? (
                   <div className="text-sm text-gray-500">Caricamento clienti...</div>
+                ) : customersQuery.isError ? (
+                  <div className="text-sm text-red-500">Errore nel caricamento clienti</div>
                 ) : (
                   <Select 
                     value={newSaleForm.customerId?.toString() || ""} 
@@ -360,10 +362,10 @@ export default function AdvancedSales() {
                       <SelectValue placeholder="Seleziona cliente..." />
                     </SelectTrigger>
                     <SelectContent>
-                      {customersQuery.data?.customers?.map((customer: Customer) => (
+                      {customersQuery.data?.customers?.filter(customer => customer && customer.id).map((customer: Customer) => (
                         <SelectItem key={customer.id} value={customer.id.toString()}>
                           <div className="flex flex-col">
-                            <span className="font-medium">{customer.name}</span>
+                            <span className="font-medium">{customer.name || 'Nome non disponibile'}</span>
                             {customer.city && (
                               <span className="text-xs text-gray-500">{customer.city}</span>
                             )}
@@ -377,14 +379,14 @@ export default function AdvancedSales() {
 
               {/* Dettagli cliente selezionato */}
               {newSaleForm.customerId && (() => {
-                const selectedCustomer = customersQuery.data?.customers.find(c => c.id === newSaleForm.customerId);
+                const selectedCustomer = customersQuery.data?.customers?.find(c => c && c.id === newSaleForm.customerId);
                 return selectedCustomer ? (
                   <div className="bg-gray-50 p-3 rounded-lg">
                     <h4 className="font-medium text-sm mb-2">Dettagli Cliente</h4>
                     <div className="grid grid-cols-2 gap-2 text-xs">
                       <div>
                         <span className="font-medium">Nome:</span>
-                        <div>{selectedCustomer.name}</div>
+                        <div>{selectedCustomer.name || 'Non disponibile'}</div>
                       </div>
                       {selectedCustomer.vatNumber && (
                         <div>
@@ -398,7 +400,7 @@ export default function AdvancedSales() {
                           <div>{selectedCustomer.city}</div>
                         </div>
                       )}
-                      {selectedCustomer.email && (
+                      {selectedCustomer.email && selectedCustomer.email !== '.' && (
                         <div>
                           <span className="font-medium">Email:</span>
                           <div>{selectedCustomer.email}</div>
@@ -406,7 +408,9 @@ export default function AdvancedSales() {
                       )}
                     </div>
                   </div>
-                ) : null;
+                ) : (
+                  <div className="text-sm text-yellow-600">Cliente selezionato non trovato</div>
+                );
               })()}
 
               {/* Data vendita */}
