@@ -392,7 +392,7 @@ export async function getAdvancedSale(req: Request, res: Response) {
       success: true,
       sale: sale[0],
       bags: bagsWithAllocations,
-      operations: operationsRefs
+      operations: operations
     });
   } catch (error) {
     console.error("Errore nel recupero vendita avanzata:", error);

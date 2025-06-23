@@ -107,12 +107,12 @@ export async function getCycles(options = {}) {
     page, pageSize, state, flupsyId, startDateFrom, startDateTo, sortBy, sortOrder, includeAll 
   });
   
-  // TEMP: Cache disabilitata per debug problema FLUPSY
-  CyclesCache.clear(); // Forza pulizia cache
-  // const cached = CyclesCache.get(cacheKey);
-  // if (cached) {
-  //   return cached;
-  // }
+  // Controlla la cache prima di eseguire query costose
+  const cached = CyclesCache.get(cacheKey);
+  if (cached) {
+    console.log(`Cicli recuperati dalla cache in 0ms`);
+    return cached;
+  }
 
   console.log(`Richiesta cicli con opzioni: ${JSON.stringify(options)}`);
   const startTime = Date.now();
@@ -208,31 +208,16 @@ export async function getCycles(options = {}) {
     
     const cyclesResult = await query;
     
-    // 3. Ottieni i dettagli dei cestelli associati
-    const cycleBasketIds = cyclesResult.map(cycle => cycle.basketId);
-    
-    // Assicuriamoci che ci siano ID prima di eseguire la query
+    // 3. Ottieni i dettagli dei cestelli associati usando una singola query ottimizzata
     let basketsResult = [];
-    if (cycleBasketIds.length > 0) {
-      // Utilizziamo il metodo corretto per query con IN
-      if (cycleBasketIds.length === 1) {
-        // Per un solo ID, usiamo eq
+    if (cyclesResult.length > 0) {
+      const cycleBasketIds = cyclesResult.map(cycle => cycle.basketId);
+      
+      if (cycleBasketIds.length > 0) {
+        // Usa una singola query con inArray per migliori performance
         basketsResult = await db.select()
           .from(baskets)
-          .where(eq(baskets.id, cycleBasketIds[0]));
-      } else {
-        // Per più ID, facciamo più query singole e combiniamo i risultati
-        // Questo evita problemi con l'operatore IN e array di parametri
-        basketsResult = [];
-        for (const basketId of cycleBasketIds) {
-          const result = await db.select()
-            .from(baskets)
-            .where(eq(baskets.id, basketId));
-          
-          if (result.length > 0) {
-            basketsResult.push(result[0]);
-          }
-        }
+          .where(inArray(baskets.id, cycleBasketIds));
       }
     }
     
@@ -255,37 +240,30 @@ export async function getCycles(options = {}) {
       return map;
     }, {});
     
-    // 4. Ottieni i dettagli dei FLUPSY
-    const flupsyIds = new Set();
-    for (const basket of basketsResult) {
-      if (basket.flupsyId) {
-        flupsyIds.add(basket.flupsyId);
-      }
-    }
-    
+    // 4. Ottieni i dettagli dei FLUPSY con una singola query ottimizzata
     let flupsysMap = {};
-    if (flupsyIds.size > 0) {
-      const flupsyIdsArray = Array.from(flupsyIds);
+    if (basketsResult.length > 0) {
+      const flupsyIds = [...new Set(basketsResult.map(b => b.flupsyId).filter(Boolean))];
       
-      // Per evitare problemi con l'operatore IN, recuperiamo i FLUPSY uno alla volta
-      for (const flupsyId of flupsyIdsArray) {
+      if (flupsyIds.length > 0) {
+        // Usa una singola query con inArray per migliori performance
         const flupsysResult = await db.select()
           .from(flupsys)
-          .where(eq(flupsys.id, flupsyId));
+          .where(inArray(flupsys.id, flupsyIds));
         
-        if (flupsysResult.length > 0) {
-          const flupsy = flupsysResult[0];
-          // Mappa per ID
-          flupsysMap[flupsy.id] = {
+        // Crea la mappa dei FLUPSY
+        flupsysMap = flupsysResult.reduce((map, flupsy) => {
+          map[flupsy.id] = {
             id: flupsy.id,
             name: flupsy.name,
             location: flupsy.location,
             description: flupsy.description,
             active: flupsy.active,
-            maxPositions: flupsy.max_positions,
-            productionCenter: flupsy.production_center
+            maxPositions: flupsy.maxPositions,
+            productionCenter: flupsy.productionCenter
           };
-        }
+          return map;
+        }, {});
       }
     }
     
