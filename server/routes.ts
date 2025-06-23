@@ -4748,12 +4748,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`DELETE FROM sale_bags`;
           await sql`DELETE FROM advanced_sales`;
           
-          // Elimina anche i dati di sincronizzazione esterni
-          await sql`DELETE FROM external_sales_sync`;
-          await sql`DELETE FROM external_deliveries_sync`;
-          await sql`DELETE FROM external_customers_sync`;
-          await sql`DELETE FROM external_delivery_details_sync`;
-          await sql`UPDATE sync_status SET last_sync = NULL, record_count = 0`;
+          // Elimina anche i dati di sincronizzazione esterni (con gestione errori)
+          try {
+            await sql`DELETE FROM external_sales_sync`;
+            await sql`DELETE FROM external_deliveries_sync`;
+            await sql`DELETE FROM external_customers_sync`;
+            await sql`DELETE FROM external_delivery_details_sync`;
+            await sql`UPDATE sync_status SET last_sync_at = NULL, record_count = 0`;
+            console.log("✅ Dati di sincronizzazione esterni eliminati");
+          } catch (syncError) {
+            console.log("⚠️ Errore nell'eliminazione dati sincronizzazione, continuo con il reset:", syncError.message);
+          }
           
           console.log("✅ Tabelle vendite avanzate e sincronizzazione pulite");
           
