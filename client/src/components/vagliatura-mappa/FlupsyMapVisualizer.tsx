@@ -175,9 +175,9 @@ export default function FlupsyMapVisualizer({
     if (!basket) {
       // Se siamo in modalità destinazione, le posizioni vuote dovrebbero essere selezionabili
       if (mode === 'destination') {
-        return 'bg-gray-100 dark:bg-gray-800 hover:bg-green-100 dark:hover:bg-green-900 border-2 border-dashed border-green-500 cursor-pointer'; // Posizione vuota selezionabile
+        return 'bg-gray-50 dark:bg-gray-800 hover:bg-green-50 dark:hover:bg-green-900 border-2 border-dashed border-green-400 cursor-pointer text-gray-700'; // Posizione vuota selezionabile
       }
-      return 'bg-gray-100 dark:bg-gray-800'; // Posizione vuota non selezionabile
+      return 'bg-gray-50 dark:bg-gray-800 text-gray-600'; // Posizione vuota non selezionabile
     }
     
     // Verifica se il cestello può essere selezionato
@@ -192,36 +192,36 @@ export default function FlupsyMapVisualizer({
       mode === 'destination';
     
     if (isSourceAndDestination) {
-      return 'bg-purple-500 hover:bg-purple-600 text-white border-2 border-yellow-400'; // Cestello sia origine che destinazione
+      return 'bg-purple-600 hover:bg-purple-700 text-white border-2 border-yellow-400 font-semibold shadow-lg'; // Cestello sia origine che destinazione
     } else if (basket.isSourceBasket && mode === 'destination') {
       // Cestello selezionato come origine nella vista destinazione
-      return 'bg-blue-500 hover:bg-blue-600 text-white'; 
+      return 'bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md'; 
     } else if (isBasketSelected(basket.id)) {
       if (mode === 'source') {
-        return 'bg-blue-500 hover:bg-blue-600 text-white'; // Cestello origine
+        return 'bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md'; // Cestello origine
       } else if (isForSale) {
-        return 'bg-red-500 hover:bg-red-600 text-white'; // Cestello destinazione per vendita
+        return 'bg-red-600 hover:bg-red-700 text-white font-semibold shadow-md'; // Cestello destinazione per vendita
       } else {
         // Cestello destinazione normale - verifica se è una cesta virtuale (da posizione vuota)
         const isVirtualSelected = basket.id < 0 || (basket as any)._isEmpty;
         if (isVirtualSelected) {
-          return 'bg-orange-500 hover:bg-orange-600 text-white border-2 border-yellow-400'; // Cestello destinazione da posizione vuota
+          return 'bg-orange-600 hover:bg-orange-700 text-white border-2 border-yellow-400 font-semibold shadow-lg'; // Cestello destinazione da posizione vuota
         } else {
-          return 'bg-green-500 hover:bg-green-600 text-white'; // Cestello destinazione normale
+          return 'bg-green-600 hover:bg-green-700 text-white font-semibold shadow-md'; // Cestello destinazione normale
         }
       }
     } else if (mode === 'source') {
-      return 'bg-white dark:bg-gray-700 hover:bg-blue-100 dark:hover:bg-blue-900 border-2 border-blue-500'; // Cestello selezionabile come origine
+      return 'bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900 border-2 border-blue-400 text-gray-800 dark:text-gray-200 font-medium'; // Cestello selezionabile come origine
     } else if (mode === 'destination') {
       // Se è in modalità destinazione ma non può essere selezionato (ha un ciclo attivo e non è un cestello origine)
       if (!canBeSelected) {
-        return 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed opacity-60'; // Cestello non selezionabile
+        return 'bg-gray-200 dark:bg-gray-600 cursor-not-allowed opacity-50 text-gray-500'; // Cestello non selezionabile
       }
-      return 'bg-white dark:bg-gray-700 hover:bg-green-100 dark:hover:bg-green-900 border-2 border-green-500'; // Cestello selezionabile come destinazione
+      return 'bg-white dark:bg-gray-700 hover:bg-green-50 dark:hover:bg-green-900 border-2 border-green-400 text-gray-800 dark:text-gray-200 font-medium'; // Cestello selezionabile come destinazione
     }
     
     // Cestello non selezionabile (stato non appropriato)
-    return 'bg-gray-300 dark:bg-gray-600 cursor-not-allowed';
+    return 'bg-gray-200 dark:bg-gray-600 cursor-not-allowed text-gray-500';
   };
   
   // Genera i tooltip per i cestelli
@@ -465,66 +465,72 @@ export default function FlupsyMapVisualizer({
                         <TooltipTrigger asChild>
                           <div
                             className={cn(
-                              "rounded-md p-1 flex flex-col items-center justify-center transition-colors cursor-pointer",
-                              positionsPerRow > 5 ? "h-auto" : "h-16",
+                              "rounded-md p-2 flex flex-col items-center justify-center transition-colors cursor-pointer shadow-sm border",
+                              positionsPerRow > 5 ? "h-auto min-h-[4rem]" : "h-20",
                               getBasketClass(basket)
                             )}
                             onClick={() => handlePositionClick(row, position)}
                             role="button"
                             tabIndex={0}
                           >
-                            <div className="text-[10px] font-medium flex items-center justify-center gap-1">
+                            <div className="text-sm font-bold flex items-center justify-center gap-1 mb-1">
                               {row}{position} #{basket?.physicalNumber || ''}
                               {/* Icona Euro per cestelli destinati alla vendita */}
                               {basket && soldBasketIds.includes(basket.id) && (
-                                <Euro className="w-6 h-6 text-black font-bold drop-shadow-md" />
+                                <Euro className="w-4 h-4 text-yellow-600 font-bold drop-shadow-md" />
                               )}
                             </div>
                             {basket ? (
                               <div className="text-center w-full">
                                 {positionsPerRow > 5 ? (
-                                  // Layout compatto per FLUPSY con tante posizioni
-                                  <div className="flex flex-col text-[9px] leading-tight">
-                                    <div className="font-semibold">
+                                  // Layout compatto per FLUPSY con tante posizioni - Font migliorato
+                                  <div className="flex flex-col text-xs leading-tight">
+                                    <div className="font-bold text-sm">
                                       {basket.size?.code || 
                                        (basket.lastOperation?.animalsPerKg 
                                         ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
                                         : "N/D")}
                                     </div>
-                                    <div className={`text-[8px] ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-600 font-bold' : ''}`}>
+                                    <div className={`text-xs font-semibold ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-700' : 'text-gray-700'}`}>
                                       {basket.lastOperation?.animalCount 
                                         ? (basket.lastOperation.animalCount >= 1000000 
                                             ? (basket.lastOperation.animalCount / 1000000).toFixed(1) + 'M'
                                             : basket.lastOperation.animalCount >= 1000
-                                            ? (basket.lastOperation.animalCount / 1000).toFixed(1) + 'K'
-                                            : basket.lastOperation.animalCount.toString())
-                                        : "0"} anim.
+                                            ? (basket.lastOperation.animalCount / 1000).toFixed(0) + 'K'
+                                            : basket.lastOperation.animalCount.toString()) + ' anim.'
+                                        : "0 anim."}
                                     </div>
                                   </div>
                                 ) : (
-                                  // Layout normale per FLUPSY con poche posizioni
-                                  <div className="flex flex-col gap-0.5 text-xs text-center">
-                                    <div className={`font-medium ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-600 font-bold' : ''}`}>
+                                  // Layout normale per FLUPSY con poche posizioni - Migliorata leggibilità
+                                  <div className="flex flex-col gap-1 text-sm text-center">
+                                    <div className={`font-bold text-base ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-700' : 'text-gray-800'}`}>
                                       {basket.size?.code || 
                                        (basket.lastOperation?.animalsPerKg 
                                         ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
                                         : "Senza taglia")}
                                     </div>
-                                    <div className={`font-semibold ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-600 font-bold' : ''}`}>
+                                    <div className={`font-bold text-sm ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-700' : 'text-gray-700'}`}>
                                       {basket.lastOperation?.animalCount 
-                                        ? basket.lastOperation.animalCount.toLocaleString() 
-                                        : "0"} anim.
+                                        ? (basket.lastOperation.animalCount >= 1000000 
+                                            ? (basket.lastOperation.animalCount / 1000000).toFixed(1) + 'M'
+                                            : basket.lastOperation.animalCount >= 1000
+                                            ? (basket.lastOperation.animalCount / 1000).toFixed(0) + 'K'
+                                            : basket.lastOperation.animalCount.toString()) + ' anim.'
+                                        : "0 anim."}
                                     </div>
-                                    <div>
+                                    <div className="font-medium text-xs text-gray-600">
                                       {basket.lastOperation?.animalsPerKg 
-                                        ? basket.lastOperation.animalsPerKg.toLocaleString() 
-                                        : "0"} per kg
+                                        ? (basket.lastOperation.animalsPerKg >= 1000
+                                            ? (basket.lastOperation.animalsPerKg / 1000).toFixed(0) + 'K'
+                                            : basket.lastOperation.animalsPerKg.toString()) + ' per kg'
+                                        : "0 per kg"}
                                     </div>
                                   </div>
                                 )}
                               </div>
                             ) : (
-                              <div className="text-[10px] text-gray-500 dark:text-gray-400">Vuoto</div>
+                              <div className="text-sm font-medium text-gray-500 dark:text-gray-400">Vuoto</div>
                             )}
                           </div>
                         </TooltipTrigger>
