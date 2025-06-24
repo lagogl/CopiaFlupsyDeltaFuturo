@@ -1173,10 +1173,6 @@ export async function addDestinationBaskets(req: Request, res: Response) {
       // CORREZIONE BUG: Eliminato tutto il codice che creava operazioni e cicli anticipati
       // Le operazioni saranno create solo durante completeSelection() per evitare duplicazioni
       console.log(`Cestelli di destinazione registrati: ${destinationBasketsWithValidFlupsyId.length}`);
-
-      
-      // Non aggiorniamo lo stato qui, in quanto verrà fatto in un passaggio successivo
-      // esplicito al termine del processo di aggiunta dei cestelli di destinazione
       
       // Invia notifiche WebSocket
       if (typeof (global as any).broadcastUpdate === 'function') {
