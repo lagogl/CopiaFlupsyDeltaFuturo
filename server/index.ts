@@ -45,55 +45,62 @@ app.use((req, res, next) => {
 });
 
 (async () => {
-  // Bypassiamo temporaneamente il test del database per poter testare le modifiche al frontend
+  // Test di connessione database
   console.log("\n===== TEST DI CONNESSIONE DATABASE =====");
-  console.log("Test di connessione database temporaneamente disabilitato per debug");
+  try {
+    await testDatabaseConnection();
+    console.log("✅ Connessione database principale verificata con successo");
+  } catch (error) {
+    console.error("❌ Errore connessione database principale:", error);
+    console.log("⚠️ Continuando con avvio del server...");
+  }
   console.log("===== FINE TEST DI CONNESSIONE DATABASE =====\n");
   
-  // Configura le ottimizzazioni di prestazioni (indici, caching, monitoraggio)
-  await setupPerformanceOptimizations(app);
+  // Configura le ottimizzazioni di prestazioni (temporaneamente disabilitato)
+  console.log("🔧 Ottimizzazioni prestazioni temporaneamente disabilitate per debug");
+  // await setupPerformanceOptimizations(app);
   
-  // Controllo automatico consistenza database
-  console.log("🔍 Controllo consistenza database...");
-  try {
-    const consistencyResult = await ensureDatabaseConsistency();
-    if (consistencyResult.consistent) {
-      console.log("✅ Database consistente - nessun problema rilevato");
-    } else {
-      console.log(`🔧 Database riparato automaticamente - risolte ${consistencyResult.fixedIssues} inconsistenze`);
-    }
-  } catch (error) {
-    console.error("⚠️ Errore durante il controllo consistenza:", error);
-  }
+  // Controllo automatico consistenza database (temporaneamente disabilitato)
+  console.log("🔍 Controllo consistenza database temporaneamente disabilitato per debug");
+  // try {
+  //   const consistencyResult = await ensureDatabaseConsistency();
+  //   if (consistencyResult.consistent) {
+  //     console.log("✅ Database consistente - nessun problema rilevato");
+  //   } else {
+  //     console.log(`🔧 Database riparato automaticamente - risolte ${consistencyResult.fixedIssues} inconsistenze`);
+  //   }
+  // } catch (error) {
+  //   console.error("⚠️ Errore durante il controllo consistenza:", error);
+  // }
 
-  // Inizializza il servizio di sincronizzazione esterno
-  console.log("🔄 Inizializzazione servizio sincronizzazione esterno...");
-  setTimeout(async () => {
-    try {
-      const { ExternalSyncService } = await import('./external-sync-service');
-      const syncService = new ExternalSyncService();
-      
-      // Avvia la sincronizzazione iniziale
-      console.log("📥 Avvio sincronizzazione iniziale dati esterni...");
-      await syncService.performFullSync();
-      console.log("✅ Sincronizzazione iniziale completata");
-      
-      // Programma sincronizzazioni periodiche (ogni 30 minuti)
-      setInterval(async () => {
-        try {
-          console.log("🔄 Sincronizzazione periodica in corso...");
-          await syncService.performFullSync();
-          console.log("✅ Sincronizzazione periodica completata");
-        } catch (error) {
-          console.error("❌ Errore durante sincronizzazione periodica:", error);
-        }
-      }, 30 * 60 * 1000); // 30 minuti
-      
-      console.log("⏰ Sincronizzazione periodica programmata (ogni 30 minuti)");
-    } catch (error) {
-      console.error("❌ Errore durante l'inizializzazione del servizio di sincronizzazione:", error);
-    }
-  }, 5000); // Avvia dopo 5 secondi per permettere al server di inizializzarsi
+  // Inizializza il servizio di sincronizzazione esterno (temporaneamente disabilitato)
+  console.log("🔄 Servizio sincronizzazione esterno temporaneamente disabilitato per debug");
+  // setTimeout(async () => {
+  //   try {
+  //     const { ExternalSyncService } = await import('./external-sync-service');
+  //     const syncService = new ExternalSyncService();
+  //     
+  //     // Avvia la sincronizzazione iniziale
+  //     console.log("📥 Avvio sincronizzazione iniziale dati esterni...");
+  //     await syncService.performFullSync();
+  //     console.log("✅ Sincronizzazione iniziale completata");
+  //     
+  //     // Programma sincronizzazioni periodiche (ogni 30 minuti)
+  //     setInterval(async () => {
+  //       try {
+  //         console.log("🔄 Sincronizzazione periodica in corso...");
+  //         await syncService.performFullSync();
+  //         console.log("✅ Sincronizzazione periodica completata");
+  //       } catch (error) {
+  //         console.error("❌ Errore durante sincronizzazione periodica:", error);
+  //       }
+  //     }, 30 * 60 * 1000); // 30 minuti
+  //     
+  //     console.log("⏰ Sincronizzazione periodica programmata (ogni 30 minuti)");
+  //   } catch (error) {
+  //     console.error("❌ Errore durante l'inizializzazione del servizio di sincronizzazione:", error);
+  //   }
+  // }, 5000); // Avvia dopo 5 secondi per permettere al server di inizializzarsi
   
   const server = await registerRoutes(app);
   
@@ -103,69 +110,71 @@ app.use((req, res, next) => {
   // Registra l'handler per le notifiche di vagliatura
   registerScreeningNotificationHandler(app);
   
-  // Inizializza lo scheduler per l'invio automatico delle email
-  import('./controllers/email-controller').then(EmailController => {
-    try {
-      EmailController.initializeEmailScheduler();
-      console.log('Scheduler email inizializzato con successo');
-    } catch (err) {
-      console.error('Errore durante l\'inizializzazione dello scheduler email:', err);
-    }
-  });
+  // Inizializza lo scheduler per l'invio automatico delle email (temporaneamente disabilitato)
+  console.log("📧 Scheduler email temporaneamente disabilitato per debug");
+  // import('./controllers/email-controller').then(EmailController => {
+  //   try {
+  //     EmailController.initializeEmailScheduler();
+  //     console.log('Scheduler email inizializzato con successo');
+  //   } catch (err) {
+  //     console.error('Errore durante l\'inizializzazione dello scheduler email:', err);
+  //   }
+  // });
   
-  // Importa il controller per le notifiche di crescita
-  import('./controllers/growth-notification-handler').then(GrowthNotificationHandler => {
-    try {
-      // Esegui un controllo iniziale
-      GrowthNotificationHandler.checkCyclesForTP3000()
-        .then(count => {
-          console.log(`Controllo iniziale notifiche accrescimento completato: create ${count} notifiche`);
-        })
-        .catch(err => {
-          console.error('Errore durante il controllo notifiche accrescimento:', err);
-        });
-      
-      // Imposta un timer giornaliero (esegue il controllo a mezzanotte)
-      const setupDailyCheck = () => {
-        const now = new Date();
-        const nextMidnight = new Date(now);
-        nextMidnight.setDate(now.getDate() + 1);
-        nextMidnight.setHours(0, 0, 0, 0);
-        
-        const msUntilMidnight = nextMidnight.getTime() - now.getTime();
-        
-        // Imposta il timeout per il primo controllo a mezzanotte
-        setTimeout(() => {
-          // Esegui il controllo
-          GrowthNotificationHandler.checkCyclesForTP3000()
-            .then(count => {
-              console.log(`Controllo giornaliero notifiche accrescimento completato: create ${count} notifiche`);
-            })
-            .catch(err => {
-              console.error('Errore durante il controllo giornaliero notifiche accrescimento:', err);
-            });
-          
-          // Imposta il controllo per tutti i giorni successivi (ogni 24 ore)
-          setInterval(() => {
-            GrowthNotificationHandler.checkCyclesForTP3000()
-              .then(count => {
-                console.log(`Controllo giornaliero notifiche accrescimento completato: create ${count} notifiche`);
-              })
-              .catch(err => {
-                console.error('Errore durante il controllo giornaliero notifiche accrescimento:', err);
-              });
-          }, 24 * 60 * 60 * 1000); // 24 ore in millisecondi
-        }, msUntilMidnight);
-        
-        console.log(`Timer per controllo notifiche accrescimento impostato, prossima esecuzione: ${nextMidnight.toLocaleString()}`);
-      };
-      
-      // Avvia il timer
-      setupDailyCheck();
-    } catch (err) {
-      console.error('Errore durante l\'inizializzazione dello scheduler notifiche accrescimento:', err);
-    }
-  });
+  // Importa il controller per le notifiche di crescita (temporaneamente disabilitato)
+  console.log("🌱 Notifiche di crescita temporaneamente disabilitate per debug");
+  // import('./controllers/growth-notification-handler').then(GrowthNotificationHandler => {
+  //   try {
+  //     // Esegui un controllo iniziale
+  //     GrowthNotificationHandler.checkCyclesForTP3000()
+  //       .then(count => {
+  //         console.log(`Controllo iniziale notifiche accrescimento completato: create ${count} notifiche`);
+  //       })
+  //       .catch(err => {
+  //         console.error('Errore durante il controllo notifiche accrescimento:', err);
+  //       });
+  //     
+  //     // Imposta un timer giornaliero (esegue il controllo a mezzanotte)
+  //     const setupDailyCheck = () => {
+  //       const now = new Date();
+  //       const nextMidnight = new Date(now);
+  //       nextMidnight.setDate(now.getDate() + 1);
+  //       nextMidnight.setHours(0, 0, 0, 0);
+  //       
+  //       const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+  //       
+  //       // Imposta il timeout per il primo controllo a mezzanotte
+  //       setTimeout(() => {
+  //         // Esegui il controllo
+  //         GrowthNotificationHandler.checkCyclesForTP3000()
+  //           .then(count => {
+  //             console.log(`Controllo giornaliero notifiche accrescimento completato: create ${count} notifiche`);
+  //           })
+  //           .catch(err => {
+  //             console.error('Errore durante il controllo giornaliero notifiche accrescimento:', err);
+  //           });
+  //         
+  //         // Imposta il controllo per tutti i giorni successivi (ogni 24 ore)
+  //         setInterval(() => {
+  //           GrowthNotificationHandler.checkCyclesForTP3000()
+  //             .then(count => {
+  //               console.log(`Controllo giornaliero notifiche accrescimento completato: create ${count} notifiche`);
+  //             })
+  //             .catch(err => {
+  //               console.error('Errore durante il controllo giornaliero notifiche accrescimento:', err);
+  //             });
+  //         }, 24 * 60 * 60 * 1000); // 24 ore in millisecondi
+  //       }, msUntilMidnight);
+  //       
+  //       console.log(`Timer per controllo notifiche accrescimento impostato, prossima esecuzione: ${nextMidnight.toLocaleString()}`);
+  //     };
+  //     
+  //     // Avvia il timer
+  //     setupDailyCheck();
+  //   } catch (err) {
+  //     console.error('Errore durante l\'inizializzazione dello scheduler notifiche accrescimento:', err);
+  //   }
+  // });
 
   app.use((err: any, _req: Request, res: Response, _next: NextFunction) => {
     const status = err.status || err.statusCode || 500;
