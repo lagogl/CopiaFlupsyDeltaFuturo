@@ -113,10 +113,21 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 - **Build Scripts**: Automated build and deployment processes
 - **Monitoring**: Built-in health checks and status endpoints
 
+## Recent Changes
+
+✓ Fixed critical database connection issues during startup
+✓ Simplified initialization process to prevent failures
+✓ Re-enabled performance optimizations and database consistency checks
+✓ Restored email scheduler and growth notification systems
+✓ Application now runs stable on port 5000 with all features active
+✓ All core functionality (baskets, operations, cycles, FLUPSY management) working
+✓ WebSocket real-time updates functioning properly
+✓ API caching system operational and optimized
+
 ## Changelog
 
-Changelog:
-- June 24, 2025. Initial setup
+- June 24, 2025: Fixed app startup issues and restored stability
+- June 24, 2025: Initial setup
 
 ## User Preferences
 

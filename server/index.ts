@@ -56,22 +56,27 @@ app.use((req, res, next) => {
   }
   console.log("===== FINE TEST DI CONNESSIONE DATABASE =====\n");
   
-  // Configura le ottimizzazioni di prestazioni (temporaneamente disabilitato)
-  console.log("🔧 Ottimizzazioni prestazioni temporaneamente disabilitate per debug");
-  // await setupPerformanceOptimizations(app);
+  // Configura le ottimizzazioni di prestazioni
+  console.log("🔧 Configurazione ottimizzazioni prestazioni...");
+  try {
+    await setupPerformanceOptimizations(app);
+    console.log("✅ Ottimizzazioni prestazioni configurate con successo");
+  } catch (error) {
+    console.error("⚠️ Errore durante configurazione ottimizzazioni:", error);
+  }
   
-  // Controllo automatico consistenza database (temporaneamente disabilitato)
-  console.log("🔍 Controllo consistenza database temporaneamente disabilitato per debug");
-  // try {
-  //   const consistencyResult = await ensureDatabaseConsistency();
-  //   if (consistencyResult.consistent) {
-  //     console.log("✅ Database consistente - nessun problema rilevato");
-  //   } else {
-  //     console.log(`🔧 Database riparato automaticamente - risolte ${consistencyResult.fixedIssues} inconsistenze`);
-  //   }
-  // } catch (error) {
-  //   console.error("⚠️ Errore durante il controllo consistenza:", error);
-  // }
+  // Controllo automatico consistenza database
+  console.log("🔍 Controllo consistenza database...");
+  try {
+    const consistencyResult = await ensureDatabaseConsistency();
+    if (consistencyResult.consistent) {
+      console.log("✅ Database consistente - nessun problema rilevato");
+    } else {
+      console.log(`🔧 Database riparato automaticamente - risolte ${consistencyResult.fixedIssues} inconsistenze`);
+    }
+  } catch (error) {
+    console.error("⚠️ Errore durante il controllo consistenza:", error);
+  }
 
   // Inizializza il servizio di sincronizzazione esterno (temporaneamente disabilitato)
   console.log("🔄 Servizio sincronizzazione esterno temporaneamente disabilitato per debug");
@@ -110,19 +115,54 @@ app.use((req, res, next) => {
   // Registra l'handler per le notifiche di vagliatura
   registerScreeningNotificationHandler(app);
   
-  // Inizializza lo scheduler per l'invio automatico delle email (temporaneamente disabilitato)
-  console.log("📧 Scheduler email temporaneamente disabilitato per debug");
-  // import('./controllers/email-controller').then(EmailController => {
-  //   try {
-  //     EmailController.initializeEmailScheduler();
-  //     console.log('Scheduler email inizializzato con successo');
-  //   } catch (err) {
-  //     console.error('Errore durante l\'inizializzazione dello scheduler email:', err);
-  //   }
-  // });
+  // Inizializza lo scheduler per l'invio automatico delle email
+  setTimeout(() => {
+    import('./controllers/email-controller').then(EmailController => {
+      try {
+        EmailController.initializeEmailScheduler();
+        console.log('📧 Scheduler email inizializzato con successo');
+      } catch (err) {
+        console.error('⚠️ Errore durante inizializzazione scheduler email:', err);
+      }
+    });
+  }, 2000);
   
-  // Importa il controller per le notifiche di crescita (temporaneamente disabilitato)
-  console.log("🌱 Notifiche di crescita temporaneamente disabilitate per debug");
+  // Importa il controller per le notifiche di crescita
+  setTimeout(() => {
+    import('./controllers/growth-notification-handler').then(GrowthNotificationHandler => {
+      try {
+        console.log('🌱 Inizializzazione notifiche di crescita...');
+        
+        // Setup timer giornaliero semplificato
+        const setupDailyCheck = () => {
+          const now = new Date();
+          const nextMidnight = new Date(now);
+          nextMidnight.setDate(now.getDate() + 1);
+          nextMidnight.setHours(0, 0, 0, 0);
+          
+          const msUntilMidnight = nextMidnight.getTime() - now.getTime();
+          
+          setTimeout(() => {
+            GrowthNotificationHandler.checkCyclesForTP3000()
+              .then(count => console.log(`Controllo notifiche crescita: create ${count} notifiche`))
+              .catch(err => console.error('Errore controllo notifiche crescita:', err));
+            
+            setInterval(() => {
+              GrowthNotificationHandler.checkCyclesForTP3000()
+                .then(count => console.log(`Controllo giornaliero notifiche: create ${count} notifiche`))
+                .catch(err => console.error('Errore controllo giornaliero:', err));
+            }, 24 * 60 * 60 * 1000);
+          }, msUntilMidnight);
+          
+          console.log(`Timer notifiche crescita: prossima esecuzione ${nextMidnight.toLocaleString()}`);
+        };
+        
+        setupDailyCheck();
+      } catch (err) {
+        console.error('⚠️ Errore inizializzazione notifiche crescita:', err);
+      }
+    });
+  }, 3000);
   // import('./controllers/growth-notification-handler').then(GrowthNotificationHandler => {
   //   try {
   //     // Esegui un controllo iniziale
