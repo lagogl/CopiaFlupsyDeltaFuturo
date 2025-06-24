@@ -198,7 +198,7 @@ export default function FlupsyMapVisualizer({
       return 'bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md'; 
     } else if (isBasketSelected(basket.id)) {
       if (mode === 'source') {
-        return 'bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md'; // Cestello origine
+        return 'bg-blue-600 hover:bg-blue-700 text-white font-semibold shadow-md'; // Cestello origine - colore migliore per leggibilità
       } else if (isForSale) {
         return 'bg-red-600 hover:bg-red-700 text-white font-semibold shadow-md'; // Cestello destinazione per vendita
       } else {
@@ -465,33 +465,33 @@ export default function FlupsyMapVisualizer({
                         <TooltipTrigger asChild>
                           <div
                             className={cn(
-                              "rounded-md p-2 flex flex-col items-center justify-center transition-colors cursor-pointer shadow-sm border",
-                              positionsPerRow > 5 ? "h-auto min-h-[4rem]" : "h-20",
+                              "rounded-md p-2 flex flex-col items-center justify-center transition-colors cursor-pointer shadow-sm border overflow-hidden",
+                              positionsPerRow > 5 ? "h-auto min-h-[5rem] w-28" : "h-24 w-32",
                               getBasketClass(basket)
                             )}
                             onClick={() => handlePositionClick(row, position)}
                             role="button"
                             tabIndex={0}
                           >
-                            <div className="text-sm font-bold flex items-center justify-center gap-1 mb-1">
+                            <div className="text-xs font-bold flex items-center justify-center gap-1 mb-1 truncate w-full">
                               {row}{position} #{basket?.physicalNumber || ''}
                               {/* Icona Euro per cestelli destinati alla vendita */}
                               {basket && soldBasketIds.includes(basket.id) && (
-                                <Euro className="w-4 h-4 text-yellow-600 font-bold drop-shadow-md" />
+                                <Euro className="w-3 h-3 text-yellow-600 font-bold drop-shadow-md flex-shrink-0" />
                               )}
                             </div>
                             {basket ? (
                               <div className="text-center w-full">
                                 {positionsPerRow > 5 ? (
-                                  // Layout compatto per FLUPSY con tante posizioni - Font migliorato
-                                  <div className="flex flex-col text-xs leading-tight">
-                                    <div className="font-bold text-sm">
+                                  // Layout compatto per FLUPSY con tante posizioni - Ottimizzato per spazio
+                                  <div className="flex flex-col text-xs leading-tight w-full">
+                                    <div className="font-bold text-xs truncate w-full">
                                       {basket.size?.code || 
                                        (basket.lastOperation?.animalsPerKg 
                                         ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
                                         : "N/D")}
                                     </div>
-                                    <div className={`text-xs font-semibold ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-700' : 'text-gray-700'}`}>
+                                    <div className="text-xs font-semibold truncate w-full">
                                       {basket.lastOperation?.animalCount 
                                         ? (basket.lastOperation.animalCount >= 1000000 
                                             ? (basket.lastOperation.animalCount / 1000000).toFixed(1) + 'M'
@@ -502,15 +502,15 @@ export default function FlupsyMapVisualizer({
                                     </div>
                                   </div>
                                 ) : (
-                                  // Layout normale per FLUPSY con poche posizioni - Migliorata leggibilità
-                                  <div className="flex flex-col gap-1 text-sm text-center">
-                                    <div className={`font-bold text-base ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-700' : 'text-gray-800'}`}>
+                                  // Layout normale per FLUPSY con poche posizioni - Contenuto ottimizzato per spazio
+                                  <div className="flex flex-col gap-0.5 text-center w-full">
+                                    <div className="font-bold text-sm truncate w-full">
                                       {basket.size?.code || 
                                        (basket.lastOperation?.animalsPerKg 
                                         ? getSizeCodeFromAnimalsPerKg(basket.lastOperation.animalsPerKg) 
                                         : "Senza taglia")}
                                     </div>
-                                    <div className={`font-bold text-sm ${basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0 ? 'text-red-700' : 'text-gray-700'}`}>
+                                    <div className="font-semibold text-xs truncate w-full">
                                       {basket.lastOperation?.animalCount 
                                         ? (basket.lastOperation.animalCount >= 1000000 
                                             ? (basket.lastOperation.animalCount / 1000000).toFixed(1) + 'M'
@@ -519,7 +519,7 @@ export default function FlupsyMapVisualizer({
                                             : basket.lastOperation.animalCount.toString()) + ' anim.'
                                         : "0 anim."}
                                     </div>
-                                    <div className="font-medium text-xs text-gray-600">
+                                    <div className="font-medium text-xs opacity-80 truncate w-full">
                                       {basket.lastOperation?.animalsPerKg 
                                         ? (basket.lastOperation.animalsPerKg >= 1000
                                             ? (basket.lastOperation.animalsPerKg / 1000).toFixed(0) + 'K'
