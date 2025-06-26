@@ -1300,11 +1300,11 @@ export async function completeSelection(req: Request, res: Response) {
           if (existingBasket.length > 0 && existingBasket[0].currentCycleId) {
             await tx.insert(operations).values({
               date: selection[0].date,
-              type: 'selezione-origine',
+              type: 'dismissione',
               basketId: destBasket.basketId,
               cycleId: existingBasket[0].currentCycleId,
               animalCount: sourceBaskets.find(sb => sb.basketId === destBasket.basketId)?.animalCount || 0,
-              notes: `Parte della vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
+              notes: `Dismissione per vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
             });
             
             await tx.update(cycles)
@@ -1492,7 +1492,7 @@ export async function completeSelection(req: Request, res: Response) {
         }
       }
       
-      // FASE 3: Gestisci cestelli SOLO ORIGINE
+      // FASE 3: Gestisci cestelli SOLO ORIGINE - CHIUDI CICLI CON DISMISSIONE
       for (const sourceBasket of sourceBaskets) {
         if (!originDestinationBaskets.has(sourceBasket.basketId)) {
           console.log(`Processando cestello SOLO ORIGINE: ${sourceBasket.basketId}`);
@@ -1503,14 +1503,31 @@ export async function completeSelection(req: Request, res: Response) {
             .limit(1);
           
           if (basketInfo.length > 0 && basketInfo[0].currentCycleId) {
+            // 1. Crea operazione di DISMISSIONE per chiudere il ciclo
             await tx.insert(operations).values({
               date: selection[0].date,
-              type: 'selezione-origine',
+              type: 'dismissione',
               basketId: sourceBasket.basketId,
               cycleId: basketInfo[0].currentCycleId,
               animalCount: sourceBasket.animalCount,
-              notes: `Parte della vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
+              notes: `Dismissione per vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
             });
+            
+            // 2. Chiudi il ciclo
+            await tx.update(cycles)
+              .set({ 
+                state: 'closed', 
+                endDate: selection[0].date 
+              })
+              .where(eq(cycles.id, basketInfo[0].currentCycleId));
+            
+            // 3. Aggiorna il cestello a disponibile
+            await tx.update(baskets)
+              .set({ 
+                state: 'available',
+                currentCycleId: null
+              })
+              .where(eq(baskets.id, sourceBasket.basketId));
           }
         }
       }
