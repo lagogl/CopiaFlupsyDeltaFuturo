@@ -123,6 +123,9 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ All core functionality (baskets, operations, cycles, FLUPSY management) working
 ✓ WebSocket real-time updates functioning properly
 ✓ API caching system operational and optimized
+✓ Fixed critical duplication bug in screening/selection operations
+✓ Added visual enhancement: orange border for baskets containing animals
+✓ Applied consistent styling across all FLUPSY visualizers
 
 ## Changelog
 

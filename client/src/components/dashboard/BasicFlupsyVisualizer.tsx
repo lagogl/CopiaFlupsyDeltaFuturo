@@ -226,16 +226,20 @@ export default function BasicFlupsyVisualizer({ selectedFlupsyIds = [] }: BasicF
     let borderClass = 'border border-dashed border-slate-300';
     let bgClass = 'bg-slate-50';
     
+    // Verifica se il cestello contiene animali
+    const hasAnimals = latestOperation?.animalCount && latestOperation.animalCount > 0;
+    
     // Stile per cestelli presenti ma non attivi (in deposito)
     if (basket && basket.state !== 'active') {
-      borderClass = 'border-2 border-dashed border-slate-400';
+      // Bordo arancione per cestelli non attivi con animali
+      borderClass = hasAnimals ? 'border-2 border-dashed border-orange-400' : 'border-2 border-dashed border-slate-400';
       bgClass = 'bg-slate-100/50';
     }
     
     // Stile più evidente SOLO per cestelli con ciclo attivo
     if (basket && basket.state === 'active' && basket.currentCycleId) {
-      // Base styling for active baskets
-      borderClass = 'border-blue-400 border-2';
+      // Base styling for active baskets - bordo arancione se contengono animali
+      borderClass = hasAnimals ? 'border-orange-500 border-3' : 'border-blue-400 border-2';
       bgClass = 'bg-white';
       
       // Special styling for baskets with weight data

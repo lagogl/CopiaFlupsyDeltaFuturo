@@ -186,6 +186,9 @@ export default function FlupsyMapVisualizer({
     // Verifica se il cestello è selezionato per vendita (gestito dalla pagina padre)
     const isForSale = basket.state === 'for_sale' || basket.state === 'sold';
     
+    // NUOVA FUNZIONALITÀ: Verifica se il cestello contiene animali
+    const hasAnimals = basket.lastOperation?.animalCount && basket.lastOperation.animalCount > 0;
+    
     // Verifica se il cestello è sia origine che destinazione
     const isSourceAndDestination = basket.isSourceBasket && 
       isBasketSelected(basket.id) && 
@@ -211,17 +214,24 @@ export default function FlupsyMapVisualizer({
         }
       }
     } else if (mode === 'source') {
-      return 'bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900 border-2 border-blue-400 text-gray-800 dark:text-gray-200 font-medium'; // Cestello selezionabile come origine
+      // Cestello selezionabile come origine - BORDO ARANCIONE se contiene animali
+      const borderClass = hasAnimals ? 'border-2 border-orange-500' : 'border-2 border-blue-400';
+      return `bg-white dark:bg-gray-700 hover:bg-blue-50 dark:hover:bg-blue-900 ${borderClass} text-gray-800 dark:text-gray-200 font-medium`;
     } else if (mode === 'destination') {
       // Se è in modalità destinazione ma non può essere selezionato (ha un ciclo attivo e non è un cestello origine)
       if (!canBeSelected) {
-        return 'bg-gray-200 dark:bg-gray-600 cursor-not-allowed opacity-50 text-gray-500'; // Cestello non selezionabile
+        // Non selezionabile - BORDO ARANCIONE ATTENUATO se contiene animali
+        const borderClass = hasAnimals ? 'border-2 border-orange-300' : 'border border-gray-300';
+        return `bg-gray-200 dark:bg-gray-600 cursor-not-allowed opacity-50 text-gray-500 ${borderClass}`;
       }
-      return 'bg-white dark:bg-gray-700 hover:bg-green-50 dark:hover:bg-green-900 border-2 border-green-400 text-gray-800 dark:text-gray-200 font-medium'; // Cestello selezionabile come destinazione
+      // Cestello selezionabile come destinazione - BORDO ARANCIONE se contiene animali
+      const borderClass = hasAnimals ? 'border-2 border-orange-500' : 'border-2 border-green-400';
+      return `bg-white dark:bg-gray-700 hover:bg-green-50 dark:hover:bg-green-900 ${borderClass} text-gray-800 dark:text-gray-200 font-medium`;
     }
     
-    // Cestello non selezionabile (stato non appropriato)
-    return 'bg-gray-200 dark:bg-gray-600 cursor-not-allowed text-gray-500';
+    // Cestello non selezionabile (stato non appropriato) - BORDO ARANCIONE ATTENUATO se contiene animali
+    const borderClass = hasAnimals ? 'border-2 border-orange-300' : 'border border-gray-300';
+    return `bg-gray-200 dark:bg-gray-600 cursor-not-allowed text-gray-500 ${borderClass}`;
   };
   
   // Genera i tooltip per i cestelli
