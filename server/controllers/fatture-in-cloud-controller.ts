@@ -586,6 +586,37 @@ router.get('/ddt', async (req: Request, res: Response) => {
   }
 });
 
+// ===== ENDPOINTS AZIENDA =====
+
+// Recupera informazioni azienda
+router.get('/company/:companyId', async (req: Request, res: Response) => {
+  try {
+    const { companyId } = req.params;
+    
+    if (!companyId) {
+      return res.status(400).json({ success: false, message: 'ID azienda richiesto' });
+    }
+
+    await refreshTokenIfNeeded();
+    
+    const companyResponse = await withRetry(() => 
+      apiRequest('GET', `/c/${companyId}/company/info`)
+    );
+    
+    res.json({
+      success: true,
+      data: companyResponse.data,
+      message: 'Informazioni azienda recuperate con successo'
+    });
+  } catch (error: any) {
+    console.error('Errore nel recupero informazioni azienda:', error);
+    res.status(500).json({ 
+      success: false, 
+      message: `Errore nel recupero informazioni azienda: ${error.message}` 
+    });
+  }
+});
+
 // ===== ENDPOINTS TEST =====
 
 // Test connessione

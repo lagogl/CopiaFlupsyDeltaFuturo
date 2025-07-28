@@ -236,7 +236,7 @@ const FattureInCloudConfig: React.FC = () => {
     });
   };
 
-  const handleSaveCompanyId = () => {
+  const handleSaveCompanyId = async () => {
     if (!companyId.trim()) {
       toast({
         title: "Errore",
@@ -246,11 +246,32 @@ const FattureInCloudConfig: React.FC = () => {
       return;
     }
 
-    saveConfigMutation.mutate({
-      chiave: 'fatture_in_cloud_company_id',
-      valore: companyId.trim(),
-      descrizione: 'ID Azienda selezionata in Fatture in Cloud'
-    });
+    try {
+      // Prima salva l'ID azienda
+      await saveConfigMutation.mutateAsync({
+        chiave: 'fatture_in_cloud_company_id',
+        valore: companyId.trim(),
+        descrizione: 'ID Azienda selezionata in Fatture in Cloud'
+      });
+
+      // Poi recupera le informazioni dell'azienda
+      const response = await fetch(`/api/fatture-in-cloud/company/${companyId}`);
+      if (response.ok) {
+        const companyData = await response.json();
+        if (companyData.success) {
+          toast({
+            title: "✅ ID Azienda salvato",
+            description: `Azienda: ${companyData.data?.name || 'N/A'} - P.IVA: ${companyData.data?.vat_number || 'N/A'}`
+          });
+        }
+      }
+    } catch (error: any) {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore nel salvataggio ID azienda",
+        variant: "destructive"
+      });
+    }
   };
 
   const isConfigured = () => {
