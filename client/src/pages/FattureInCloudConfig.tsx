@@ -152,31 +152,8 @@ const FattureInCloudConfig: React.FC = () => {
     },
     onSuccess: (data) => {
       if (data.url) {
-        const popup = window.open(
-          data.url,
-          'fattureincloud-oauth',
-          'width=600,height=700,scrollbars=yes,resizable=yes'
-        );
-        
-        if (!popup) {
-          toast({
-            title: "Popup bloccato",
-            description: "Abilita i popup per completare l'autorizzazione OAuth2",
-            variant: "destructive"
-          });
-          return;
-        }
-        
-        const checkClosed = setInterval(() => {
-          if (popup?.closed) {
-            clearInterval(checkClosed);
-            queryClient.invalidateQueries({ queryKey: ['/api/fatture-in-cloud/config'] });
-            toast({
-              title: "Autorizzazione completata",
-              description: "Controlla la configurazione per verificare lo stato"
-            });
-          }
-        }, 1000);
+        // Reindirizza nella stessa finestra invece di aprire un popup
+        window.location.href = data.url;
       }
     },
     onError: (error: any) => {
