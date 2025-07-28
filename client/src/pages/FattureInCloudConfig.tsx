@@ -259,9 +259,23 @@ const FattureInCloudConfig: React.FC = () => {
       if (response.ok) {
         const companyData = await response.json();
         if (companyData.success) {
+          console.log('🏢 Dati azienda ricevuti nel frontend:', companyData.data);
+          
+          // Prova diversi nomi di campo che potrebbero essere utilizzati
+          const nomeAzienda = companyData.data?.name || 
+                             companyData.data?.company_name || 
+                             companyData.data?.denomination || 
+                             companyData.data?.ragione_sociale || 
+                             'N/A';
+          
+          const partitaIva = companyData.data?.vat_number || 
+                            companyData.data?.piva || 
+                            companyData.data?.vat || 
+                            'N/A';
+          
           toast({
             title: "✅ ID Azienda salvato",
-            description: `Azienda: ${companyData.data?.name || 'N/A'} - P.IVA: ${companyData.data?.vat_number || 'N/A'}`
+            description: `Azienda: ${nomeAzienda} - P.IVA: ${partitaIva}`
           });
         }
       }

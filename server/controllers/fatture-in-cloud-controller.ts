@@ -612,6 +612,8 @@ router.get('/company/:companyId', async (req: Request, res: Response) => {
       apiRequest('GET', `/c/${companyId}/company/info`)
     );
     
+    console.log('📊 Dati azienda ricevuti:', JSON.stringify(companyResponse.data, null, 2));
+    
     res.json({
       success: true,
       data: companyResponse.data,
