@@ -38,6 +38,7 @@ import { updateBasketPosition } from "./controllers/basket-position-controller";
 import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
 import { checkDatabaseIntegrityHandler } from "./controllers/database-integrity-controller";
+import fattureInCloudRouter from "./controllers/fatture-in-cloud-controller";
 
 // Importazione del router per le API esterne
 // API esterne disabilitate
@@ -180,6 +181,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
     console.log(`🧪 TEST: ID ricevuto: ${id}`);
     return res.json({ message: "Test route funziona!", id, timestamp: new Date().toISOString() });
   });
+
+  // ===== ROUTE FATTURE IN CLOUD =====
+  console.log("💼 Registrazione route Fatture in Cloud...");
+  app.use('/api/fatture-in-cloud', fattureInCloudRouter);
+  console.log("✅ Route Fatture in Cloud registrate con successo");
   
   // === Autenticazione routes ===
   app.post("/api/login", async (req, res) => {

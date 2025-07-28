@@ -50,6 +50,7 @@ import BackupPage from "@/pages/BackupPage";
 import AmministrazioneUtilita from "@/pages/AmministrazioneUtilita";
 // Importazione modulo vendite avanzate
 import AdvancedSales from "@/pages/AdvancedSales";
+import FattureInCloudConfig from "@/pages/FattureInCloudConfig";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -130,6 +131,9 @@ function Router() {
       
       {/* Vendite Avanzate routes */}
       <ProtectedRoute path="/advanced-sales" component={AdvancedSales}/>
+      
+      {/* Fatture in Cloud routes */}
+      <ProtectedRoute path="/fatture-in-cloud" component={FattureInCloudConfig} requiredRole="admin" />
       
       {/* Fallback to 404 */}
       <Route component={NotFound} />

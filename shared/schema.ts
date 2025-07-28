@@ -534,23 +534,6 @@ export const cycleSchema = insertCycleSchema.extend({
 export const lotSchema = insertLotSchema.extend({
   arrivalDate: z.coerce.date(),
   supplierLotNumber: z.string().optional()
-    .superRefine((val, ctx) => {
-      // Assicurati che ctx.data esista e abbia la proprietà supplier
-      if (!ctx.data || !('supplier' in ctx.data)) {
-        return; // Se non c'è supplier, non possiamo controllare
-      }
-      
-      // Rendi il campo obbligatorio solo se il fornitore è "Zeeland" o "Ecotapes Zeeland"
-      const supplier = ctx.data.supplier as string;
-      const isZeelandSupplier = supplier === "Zeeland" || supplier === "Ecotapes Zeeland";
-      
-      if (isZeelandSupplier && (!val || val.trim() === "")) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Il numero di lotto del fornitore è obbligatorio per i fornitori Zeeland o Ecotapes Zeeland",
-        });
-      }
-    })
 });
 
 export const basketPositionHistorySchema = insertBasketPositionHistorySchema.extend({
@@ -917,3 +900,90 @@ export type InsertBagAllocation = z.infer<typeof insertBagAllocationSchema>;
 
 export type SaleOperationsRef = typeof saleOperationsRef.$inferSelect;
 export type InsertSaleOperationsRef = z.infer<typeof insertSaleOperationsRefSchema>;
+
+// ===== INTEGRAZIONE FATTURE IN CLOUD =====
+
+// Tabella configurazione per memorizzare le credenziali
+export const configurazione = pgTable("configurazione", {
+  id: serial("id").primaryKey(),
+  chiave: text("chiave").notNull().unique(),
+  valore: text("valore"),
+  descrizione: text("descrizione"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at").notNull().defaultNow()
+});
+
+// Clienti estesi per integrazione Fatture in Cloud
+export const clienti = pgTable("clienti", {
+  id: serial("id").primaryKey(),
+  denominazione: text("denominazione").notNull(),
+  indirizzo: text("indirizzo").notNull().default("N/A"),
+  comune: text("comune").notNull().default("N/A"),
+  cap: text("cap").notNull().default("N/A"),
+  provincia: text("provincia").notNull().default("N/A"),
+  paese: text("paese").notNull().default("Italia"),
+  email: text("email").notNull().default("N/A"),
+  telefono: text("telefono").notNull().default("N/A"),
+  piva: text("piva").notNull().default("N/A"),
+  codiceFiscale: text("codice_fiscale").notNull().default("N/A"),
+  fattureInCloudId: integer("fatture_in_cloud_id"), // Collegamento con Fatture in Cloud
+  attivo: boolean("attivo").notNull().default(true),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+});
+
+// Tabella principale DDT
+export const ddt = pgTable("ddt", {
+  id: serial("id").primaryKey(),
+  numero: integer("numero").notNull(),
+  data: date("data").notNull(),
+  clienteId: integer("cliente_id").notNull(),
+  totaleColli: integer("totale_colli").notNull().default(0),
+  pesoTotale: decimal("peso_totale", { precision: 10, scale: 2 }).notNull().default("0"),
+  note: text("note"),
+  ddtStato: text("ddt_stato", { enum: ["nessuno", "locale", "inviato"] }).notNull().default("nessuno"),
+  fattureInCloudId: integer("fatture_in_cloud_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  updatedAt: timestamp("updated_at")
+});
+
+// Righe dettaglio DDT
+export const ddtRighe = pgTable("ddt_righe", {
+  id: serial("id").primaryKey(),
+  ddtId: integer("ddt_id").notNull(),
+  descrizione: text("descrizione").notNull(),
+  quantita: decimal("quantita", { precision: 10, scale: 2 }).notNull(),
+  unitaMisura: text("unita_misura").notNull().default("NR"),
+  prezzoUnitario: decimal("prezzo_unitario", { precision: 10, scale: 2 }).notNull().default("0"),
+  reportDettaglioId: integer("report_dettaglio_id"),
+  createdAt: timestamp("created_at").notNull().defaultNow()
+});
+
+// Schema di inserimento per la configurazione
+export const insertConfigurazioneSchema = createInsertSchema(configurazione)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+// Schema di inserimento per i clienti
+export const insertClientiSchema = createInsertSchema(clienti)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+// Schema di inserimento per DDT
+export const insertDdtSchema = createInsertSchema(ddt)
+  .omit({ id: true, createdAt: true, updatedAt: true });
+
+// Schema di inserimento per righe DDT
+export const insertDdtRigheSchema = createInsertSchema(ddtRighe)
+  .omit({ id: true, createdAt: true });
+
+// Tipi per Fatture in Cloud
+export type Configurazione = typeof configurazione.$inferSelect;
+export type InsertConfigurazione = z.infer<typeof insertConfigurazioneSchema>;
+
+export type Cliente = typeof clienti.$inferSelect;
+export type InsertCliente = z.infer<typeof insertClientiSchema>;
+
+export type Ddt = typeof ddt.$inferSelect;
+export type InsertDdt = z.infer<typeof insertDdtSchema>;
+
+export type DdtRiga = typeof ddtRighe.$inferSelect;
+export type InsertDdtRiga = z.infer<typeof insertDdtRigheSchema>;
