@@ -143,14 +143,35 @@ async function withRetry<T>(operation: () => Promise<T>, maxRetries = 1): Promis
 router.get('/oauth/url', async (req: Request, res: Response) => {
   try {
     const clientId = await getConfigValue('fatture_in_cloud_client_id');
+    const clientSecret = await getConfigValue('fatture_in_cloud_client_secret');
     
     if (!clientId) {
       return res.status(400).json({ 
-        message: 'Client ID non configurato. Configurare prima le credenziali OAuth2.' 
+        success: false,
+        message: 'Client ID non configurato. Inserire prima il Client ID nelle impostazioni.' 
+      });
+    }
+    
+    if (!clientSecret) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Client Secret non configurato. Inserire prima il Client Secret nelle impostazioni.' 
+      });
+    }
+    
+    // Validazione formato client_id (deve essere una stringa alfanumerica di almeno 16 caratteri)
+    if (clientId.length < 16 || !/^[a-zA-Z0-9_-]+$/.test(clientId)) {
+      return res.status(400).json({ 
+        success: false,
+        message: 'Client ID non valido. Deve essere una stringa alfanumerica di almeno 16 caratteri.',
+        details: `Client ID ricevuto: ${clientId.substring(0, 8)}...`
       });
     }
     
     const redirectUri = `${req.protocol}://${req.get('host')}/api/fatture-in-cloud/oauth/callback`;
+    
+    console.log(`🔐 Generazione URL OAuth2 per Client ID: ${clientId.substring(0, 8)}...`);
+    console.log(`🔗 Redirect URI: ${redirectUri}`);
     
     const authUrl = `${FATTURE_IN_CLOUD_API_BASE}/oauth/authorize` +
       `?response_type=code` +

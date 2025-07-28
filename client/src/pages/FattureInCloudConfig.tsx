@@ -129,6 +129,15 @@ const FattureInCloudConfig: React.FC = () => {
           'width=600,height=700,scrollbars=yes,resizable=yes'
         );
         
+        if (!popup) {
+          toast({
+            title: "Popup bloccato",
+            description: "Abilita i popup per completare l'autorizzazione OAuth2",
+            variant: "destructive"
+          });
+          return;
+        }
+        
         const checkClosed = setInterval(() => {
           if (popup?.closed) {
             clearInterval(checkClosed);
@@ -358,8 +367,13 @@ const FattureInCloudConfig: React.FC = () => {
               <Alert>
                 <AlertCircle className="w-4 h-4" />
                 <AlertDescription>
-                  Per ottenere le credenziali API, accedi al tuo account Fatture in Cloud e vai in 
-                  "Impostazioni" → "API" → "Nuova applicazione".
+                  <strong>Come ottenere le credenziali API:</strong><br/>
+                  1. Accedi al tuo account Fatture in Cloud<br/>
+                  2. Vai in "Impostazioni" → "API" → "Nuova applicazione"<br/>
+                  3. Crea una nuova applicazione con questi dati:<br/>
+                  - Nome: "Sistema FLUPSY"<br/>
+                  - Redirect URI: <code>{window.location.origin}/api/fatture-in-cloud/oauth/callback</code><br/>
+                  4. Copia Client ID e Client Secret qui sotto
                 </AlertDescription>
               </Alert>
               
