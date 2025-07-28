@@ -591,21 +591,52 @@ router.get('/ddt', async (req: Request, res: Response) => {
 // Test connessione
 router.get('/test', async (req: Request, res: Response) => {
   try {
-    await refreshTokenIfNeeded();
-    const response = await withRetry(() => apiRequest('GET', '/user/info'));
+    console.log('Inizio test connessione Fatture in Cloud...');
     
-    res.json({ 
-      success: true, 
-      status: 'connected',
-      user: response.data.data,
-      message: 'Connessione a Fatture in Cloud attiva' 
-    });
+    // Prima ottieni le informazioni dell'utente per trovare il company ID corretto
+    const userResponse = await withRetry(() => 
+      apiRequest('/user/info', 'GET')
+    );
+    
+    console.log('Informazioni utente ricevute:', userResponse);
+    
+    // Se l'utente ha aziende associate, usa la prima disponibile
+    if (userResponse.data?.companies && userResponse.data.companies.length > 0) {
+      const companyId = userResponse.data.companies[0].id;
+      console.log(`Utilizzo Company ID: ${companyId}`);
+      
+      // Salva il Company ID nella configurazione
+      await setConfigValue('fatture_in_cloud_company_id', companyId.toString(), 'ID Azienda per Fatture in Cloud');
+      
+      // Testa l'accesso specifico all'azienda
+      const companyResponse = await withRetry(() => 
+        apiRequest(`/c/${companyId}/company/info`, 'GET')
+      );
+      
+      res.json({
+        success: true,
+        status: "connesso",
+        message: "Connessione a Fatture in Cloud attiva",
+        data: {
+          user: userResponse.data,
+          company: companyResponse.data,
+          companyId: companyId
+        }
+      });
+    } else {
+      res.status(400).json({
+        success: false,
+        status: "errore",
+        message: "L'utente non ha aziende associate all'account Fatture in Cloud"
+      });
+    }
   } catch (error: any) {
     console.error('Errore nel test connessione:', error);
-    res.status(500).json({ 
-      success: false, 
-      status: 'error', 
-      message: `Errore di connessione: ${error.message}` 
+    res.status(500).json({
+      success: false,
+      status: "errore",
+      message: error.message || 'Errore nella connessione a Fatture in Cloud',
+      details: error.response?.data || null
     });
   }
 });
