@@ -261,16 +261,18 @@ const FattureInCloudConfig: React.FC = () => {
         if (companyData.success) {
           console.log('🏢 Dati azienda ricevuti nel frontend:', companyData.data);
           
-          // Prova diversi nomi di campo che potrebbero essere utilizzati
-          const nomeAzienda = companyData.data?.name || 
-                             companyData.data?.company_name || 
-                             companyData.data?.denomination || 
-                             companyData.data?.ragione_sociale || 
+          // I dati sono annidati in data.data (dalla risposta API di Fatture in Cloud)
+          const aziendaInfo = companyData.data?.data || companyData.data;
+          
+          const nomeAzienda = aziendaInfo?.name || 
+                             aziendaInfo?.company_name || 
+                             aziendaInfo?.denomination || 
+                             aziendaInfo?.ragione_sociale || 
                              'N/A';
           
-          const partitaIva = companyData.data?.vat_number || 
-                            companyData.data?.piva || 
-                            companyData.data?.vat || 
+          const partitaIva = aziendaInfo?.vat_number || 
+                            aziendaInfo?.piva || 
+                            aziendaInfo?.vat || 
                             'N/A';
           
           toast({
