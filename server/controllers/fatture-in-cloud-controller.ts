@@ -635,24 +635,20 @@ router.get('/test', async (req: Request, res: Response) => {
   try {
     console.log('Inizio test connessione Fatture in Cloud...');
     
-    // Prima ottieni le informazioni dell'utente per trovare il company ID corretto
-    const userResponse = await withRetry(() => 
-      apiRequest('GET', '/user/info')
-    );
+    // Verifica se abbiamo già un company ID configurato
+    const companyId = await getConfigValue('fatture_in_cloud_company_id');
     
-    console.log('Informazioni utente ricevute:', userResponse);
-    
-    // Se l'utente ha aziende associate, usa la prima disponibile
-    if (userResponse.data?.companies && userResponse.data.companies.length > 0) {
-      const companyId = userResponse.data.companies[0].id;
-      console.log(`Utilizzo Company ID: ${companyId}`);
-      
-      // Salva il Company ID nella configurazione
-      await setConfigValue('fatture_in_cloud_company_id', companyId.toString(), 'ID Azienda per Fatture in Cloud');
+    if (companyId) {
+      console.log(`Utilizzo Company ID configurato: ${companyId}`);
       
       // Testa l'accesso specifico all'azienda
       const companyResponse = await withRetry(() => 
         apiRequest('GET', `/c/${companyId}/company/info`)
+      );
+      
+      // Ottieni anche le informazioni dell'utente
+      const userResponse = await withRetry(() => 
+        apiRequest('GET', '/user/info')
       );
       
       res.json({
@@ -666,10 +662,20 @@ router.get('/test', async (req: Request, res: Response) => {
         }
       });
     } else {
+      // Se non abbiamo un company ID, prova a ottenerlo dalle informazioni utente
+      const userResponse = await withRetry(() => 
+        apiRequest('GET', '/user/info')
+      );
+      
+      console.log('Informazioni utente ricevute:', userResponse);
+      
       res.status(400).json({
         success: false,
         status: "errore",
-        message: "L'utente non ha aziende associate all'account Fatture in Cloud"
+        message: "ID Azienda non configurato. Inserisci l'ID azienda nella sezione Configurazione Azienda.",
+        data: {
+          user: userResponse.data
+        }
       });
     }
   } catch (error: any) {
