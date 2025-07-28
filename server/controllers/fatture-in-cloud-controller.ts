@@ -52,17 +52,26 @@ async function setConfigValue(chiave: string, valore: string, descrizione?: stri
 // Helper per richieste autenticate a Fatture in Cloud
 async function apiRequest(method: string, endpoint: string, data?: any) {
   const accessToken = await getConfigValue('fatture_in_cloud_access_token');
-  const companyId = await getConfigValue('fatture_in_cloud_company_id');
   
   if (!accessToken) {
     throw new Error('Token di accesso mancante - eseguire prima l\'autenticazione OAuth2');
   }
   
-  if (!companyId) {
-    throw new Error('ID azienda mancante - selezionare prima un\'azienda');
+  // Costruisci URL completo - se l'endpoint contiene già /c/{id}, non aggiungere company prefix
+  let url: string;
+  if (endpoint.startsWith('/c/') || endpoint.startsWith('/user/')) {
+    // Endpoint che non richiedono companyId o già lo contengono
+    url = `${FATTURE_IN_CLOUD_API_BASE}${endpoint}`;
+  } else {
+    // Endpoint che richiedono companyId
+    const companyId = await getConfigValue('fatture_in_cloud_company_id');
+    if (!companyId) {
+      throw new Error('ID azienda mancante - selezionare prima un\'azienda');
+    }
+    url = `${FATTURE_IN_CLOUD_API_BASE}/c/${companyId}${endpoint}`;
   }
   
-  const url = `${FATTURE_IN_CLOUD_API_BASE}/c/${companyId}${endpoint}`;
+  console.log(`🔗 API Request: ${method} ${url}`);
   
   return await axios({
     method,
