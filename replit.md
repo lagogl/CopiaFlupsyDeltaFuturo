@@ -126,6 +126,11 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Fixed critical duplication bug in screening/selection operations
 ✓ Added visual enhancement: orange border for baskets containing animals
 ✓ Applied consistent styling across all FLUPSY visualizers
+✓ **July 28, 2025**: Implemented complete Fatture in Cloud integration
+✓ Added database tables for clients, DDT, configuration and sync logs
+✓ Created backend controller with OAuth2 authentication and API endpoints
+✓ Built comprehensive frontend configuration page with real-time sync
+✓ Added navigation menu item in System section (admin only)
 
 ## Changelog
 
