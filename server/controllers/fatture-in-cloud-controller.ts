@@ -168,7 +168,9 @@ router.get('/oauth/url', async (req: Request, res: Response) => {
       });
     }
     
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/fatture-in-cloud/oauth/callback`;
+    // Forza HTTPS per Replit deployment
+    const protocol = req.get('host')?.includes('replit.dev') ? 'https' : req.protocol;
+    const redirectUri = `${protocol}://${req.get('host')}/api/fatture-in-cloud/oauth/callback`;
     
     console.log(`🔐 Generazione URL OAuth2 per Client ID: ${clientId.substring(0, 8)}...`);
     console.log(`🔗 Redirect URI: ${redirectUri}`);
@@ -206,7 +208,9 @@ router.get('/oauth/callback', async (req: Request, res: Response) => {
       return res.redirect('/configurazione?oauth=error&reason=missing_credentials');
     }
     
-    const redirectUri = `${req.protocol}://${req.get('host')}/api/fatture-in-cloud/oauth/callback`;
+    // Forza HTTPS per Replit deployment  
+    const protocol = req.get('host')?.includes('replit.dev') ? 'https' : req.protocol;
+    const redirectUri = `${protocol}://${req.get('host')}/api/fatture-in-cloud/oauth/callback`;
     
     const tokenResponse = await axios.post(`${FATTURE_IN_CLOUD_API_BASE}/oauth/token`, {
       grant_type: 'authorization_code',

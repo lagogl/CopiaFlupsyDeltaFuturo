@@ -372,7 +372,7 @@ const FattureInCloudConfig: React.FC = () => {
                   2. Vai in "Impostazioni" → "API" → "Nuova applicazione"<br/>
                   3. Crea una nuova applicazione con questi dati:<br/>
                   - Nome: "Sistema FLUPSY"<br/>
-                  - Redirect URI: <code>{window.location.origin}/api/fatture-in-cloud/oauth/callback</code><br/>
+                  - Redirect URI: <code>{window.location.origin.replace('http:', 'https:')}/api/fatture-in-cloud/oauth/callback</code><br/>
                   4. Copia Client ID e Client Secret qui sotto
                 </AlertDescription>
               </Alert>
