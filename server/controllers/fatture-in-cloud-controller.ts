@@ -595,7 +595,7 @@ router.get('/test', async (req: Request, res: Response) => {
     
     // Prima ottieni le informazioni dell'utente per trovare il company ID corretto
     const userResponse = await withRetry(() => 
-      apiRequest('/user/info', 'GET')
+      apiRequest('GET', '/user/info')
     );
     
     console.log('Informazioni utente ricevute:', userResponse);
@@ -610,7 +610,7 @@ router.get('/test', async (req: Request, res: Response) => {
       
       // Testa l'accesso specifico all'azienda
       const companyResponse = await withRetry(() => 
-        apiRequest(`/c/${companyId}/company/info`, 'GET')
+        apiRequest('GET', `/c/${companyId}/company/info`)
       );
       
       res.json({
