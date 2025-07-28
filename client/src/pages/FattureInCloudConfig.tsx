@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
@@ -56,6 +56,35 @@ const FattureInCloudConfig: React.FC = () => {
   const [clientId, setClientId] = useState('');
   const [clientSecret, setClientSecret] = useState('');
   const [companyId, setCompanyId] = useState('');
+
+  // Gestione parametri OAuth2 di ritorno
+  useEffect(() => {
+    const urlParams = new URLSearchParams(window.location.search);
+    const oauthStatus = urlParams.get('oauth');
+    
+    if (oauthStatus === 'success') {
+      toast({
+        title: "✅ Autorizzazione completata",
+        description: "L'integrazione con Fatture in Cloud è ora attiva!"
+      });
+      // Rimuovi il parametro dall'URL
+      window.history.replaceState({}, document.title, window.location.pathname);
+      // Aggiorna la configurazione
+      queryClient.invalidateQueries({ queryKey: ['/api/fatture-in-cloud/config'] });
+    } else if (oauthStatus === 'error' || oauthStatus === 'cancelled') {
+      const reason = urlParams.get('reason');
+      toast({
+        title: "❌ Errore autorizzazione",
+        description: reason === 'missing_credentials' 
+          ? "Credenziali API mancanti o non valide"
+          : reason === 'token_exchange'
+          ? "Errore nello scambio del token"
+          : "Autorizzazione annullata dall'utente",
+        variant: "destructive"
+      });
+      window.history.replaceState({}, document.title, window.location.pathname);
+    }
+  }, [toast, queryClient]);
 
   // Query per recuperare la configurazione
   const configQuery = useQuery({

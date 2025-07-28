@@ -194,18 +194,18 @@ router.get('/oauth/callback', async (req: Request, res: Response) => {
     const { code, error: oauthError } = req.query;
     
     if (oauthError) {
-      return res.redirect('/configurazione?oauth=cancelled');
+      return res.redirect('/fatture-in-cloud?oauth=cancelled');
     }
     
     if (!code) {
-      return res.redirect('/configurazione?oauth=error&reason=no_code');
+      return res.redirect('/fatture-in-cloud?oauth=error&reason=no_code');
     }
     
     const clientId = await getConfigValue('fatture_in_cloud_client_id');
     const clientSecret = await getConfigValue('fatture_in_cloud_client_secret');
     
     if (!clientId || !clientSecret) {
-      return res.redirect('/configurazione?oauth=error&reason=missing_credentials');
+      return res.redirect('/fatture-in-cloud?oauth=error&reason=missing_credentials');
     }
     
     // Forza HTTPS per Replit deployment  
@@ -230,10 +230,10 @@ router.get('/oauth/callback', async (req: Request, res: Response) => {
     await setConfigValue('fatture_in_cloud_token_expires_at', expiresAt.toISOString());
     
     console.log('Autenticazione OAuth2 Fatture in Cloud completata con successo');
-    res.redirect('/configurazione?oauth=success');
+    res.redirect('/fatture-in-cloud?oauth=success');
   } catch (error: any) {
     console.error('Errore nel callback OAuth2:', error);
-    res.redirect('/configurazione?oauth=error&reason=token_exchange');
+    res.redirect('/fatture-in-cloud?oauth=error&reason=token_exchange');
   }
 });
 
