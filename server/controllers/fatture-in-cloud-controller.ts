@@ -315,21 +315,21 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
       
       const datiCliente = {
         denominazione: clienteFIC.name || 'N/A',
-        indirizzo: clienteFIC.address_street || 'N/A',
-        comune: clienteFIC.address_city || 'N/A',
-        cap: clienteFIC.address_postal_code || 'N/A',
-        provincia: clienteFIC.address_province || 'N/A',
+        indirizzo: clienteFIC.address_street || '',
+        comune: clienteFIC.address_city || '',
+        cap: clienteFIC.address_postal_code || '',
+        provincia: clienteFIC.address_province || '',
         paese: clienteFIC.country || 'Italia',
-        email: clienteFIC.email || 'N/A',
-        telefono: clienteFIC.phone || 'N/A',
-        piva: clienteFIC.vat_number || 'N/A',
-        codiceFiscale: clienteFIC.tax_code || clienteFIC.vat_number || 'N/A',
-        fattureInCloudId: clienteFIC.id
+        email: clienteFIC.email || '',
+        telefono: clienteFIC.phone || '',
+        piva: clienteFIC.vat_number || '',
+        codice_fiscale: clienteFIC.tax_code || clienteFIC.vat_number || '',
+        fatture_in_cloud_id: clienteFIC.id
       };
       
       if (clienteEsistente) {
         await db.update(clienti)
-          .set({ ...datiCliente, updatedAt: new Date() })
+          .set({ ...datiCliente, updated_at: new Date() })
           .where(eq(clienti.id, clienteEsistente.id));
         clientiAggiornati++;
       } else {
@@ -355,7 +355,7 @@ router.post('/clients/sync', async (req: Request, res: Response) => {
 // Ottenere lista clienti locali
 router.get('/clients', async (req: Request, res: Response) => {
   try {
-    const clientiLocali = await db.select().from(clienti).where(eq(clienti.attivo, true));
+    const clientiLocali = await db.select().from(clienti);
     
     res.json({
       success: true,
