@@ -308,6 +308,9 @@ export default function SpreadsheetOperations() {
       if (!row.sampleWeight || row.sampleWeight <= 0) {
         errors.push('Peso campione richiesto per operazione misura');
       }
+      if (row.deadCount === null || row.deadCount === undefined || row.deadCount < 0) {
+        errors.push('Numero animali morti richiesto per operazione misura');
+      }
     }
     
     // Validazione per prima-attivazione (richiede numero animali)
@@ -585,7 +588,7 @@ export default function SpreadsheetOperations() {
                 {/* Header tabella compatto con TUTTE le colonne necessarie */}
                 <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{
                   gridTemplateColumns: selectedOperationType === 'misura' 
-                    ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 2fr 60px' 
+                    ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 2fr 60px' 
                     : selectedOperationType === 'peso'
                     ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
                     : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
@@ -612,6 +615,10 @@ export default function SpreadsheetOperations() {
                   {selectedOperationType === 'misura' && (
                     <div className="px-1 py-1.5 border-r">Vivi</div>
                   )}
+                  {/* ANIMALI MORTI per misura */}
+                  {selectedOperationType === 'misura' && (
+                    <div className="px-1 py-1.5 border-r bg-yellow-50">Morti*</div>
+                  )}
                   <div className="px-2 py-1.5 border-r">Note</div>
                   <div className="px-1 py-1.5 text-center">Azioni</div>
                 </div>
@@ -627,7 +634,7 @@ export default function SpreadsheetOperations() {
                     }`}
                     style={{
                       gridTemplateColumns: selectedOperationType === 'misura' 
-                        ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 2fr 60px' 
+                        ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 2fr 60px' 
                         : selectedOperationType === 'peso'
                         ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
                         : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
@@ -756,6 +763,21 @@ export default function SpreadsheetOperations() {
                           className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
                           min="0"
                           placeholder="0"
+                        />
+                      </div>
+                    )}
+
+                    {/* ANIMALI MORTI per misura */}
+                    {selectedOperationType === 'misura' && (
+                      <div className="px-1 py-1 border-r bg-yellow-50">
+                        <input
+                          type="number"
+                          value={row.deadCount || ''}
+                          onChange={(e) => updateCell(row.basketId, 'deadCount', Number(e.target.value))}
+                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                          min="0"
+                          placeholder="0"
+                          required
                         />
                       </div>
                     )}
