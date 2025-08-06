@@ -1,0 +1,24 @@
+/* Stili per il modulo Spreadsheet Operations */
+
+/* Shadow personalizzato per colonne fisse */
+.shadow-r {
+  box-shadow: 2px 0 4px -1px rgba(0, 0, 0, 0.1);
+}
+
+/* Griglia a 16 colonne per spreadsheet */
+.grid-cols-16 {
+  grid-template-columns: repeat(16, minmax(0, 1fr));
+}
+
+/* Smooth scroll per navigazione mobile */
+.scroll-smooth {
+  scroll-behavior: smooth;
+}
+
+/* Focus ring personalizzato per input spreadsheet */
+.focus-ring-spreadsheet:focus {
+  outline: none;
+  ring: 1px;
+  ring-color: #3b82f6;
+  ring-opacity: 0.5;
+}

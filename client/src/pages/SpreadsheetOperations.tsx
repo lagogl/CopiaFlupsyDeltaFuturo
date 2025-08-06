@@ -3,6 +3,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import useIsMobile from "@/hooks/use-mobile";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -10,6 +11,7 @@ import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Save, RotateCcw, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
+import "../styles/spreadsheet.css";
 
 interface BasketData {
   id: number;
@@ -46,6 +48,11 @@ interface OperationRowData {
   mortalityRate?: number | null;
   status: 'editing' | 'saving' | 'saved' | 'error';
   errors?: string[];
+  // Dati aggiuntivi cesta
+  currentSize?: string;
+  averageWeight?: number;
+  lastOperationDate?: string;
+  lastOperationType?: string;
 }
 
 const operationTypeLabels = {
@@ -59,6 +66,7 @@ const operationTypeLabels = {
 export default function SpreadsheetOperations() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  const isMobile = useIsMobile();
   
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(null);
   const [selectedOperationType, setSelectedOperationType] = useState<string>('peso');
@@ -158,6 +166,9 @@ export default function SpreadsheetOperations() {
     if (selectedFlupsyId && selectedOperationType && eligibleBaskets.length > 0) {
       const newRows: OperationRowData[] = eligibleBaskets.map(basket => {
         const lastOp = basket.lastOperation;
+        const currentSize = ((sizes as any[]) || []).find((size: any) => size.id === lastOp?.sizeId)?.code || 'N/A';
+        const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
+          Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : 0;
         
         return {
           basketId: basket.id,
@@ -174,7 +185,12 @@ export default function SpreadsheetOperations() {
           sampleWeight: selectedOperationType === 'misura' ? 100 : null,
           sizeId: selectedOperationType === 'misura' ? ((sizes as any[]) || [])[0]?.id : null,
           status: 'editing',
-          errors: []
+          errors: [],
+          // Dati aggiuntivi cesta
+          currentSize,
+          averageWeight,
+          lastOperationDate: lastOp?.date,
+          lastOperationType: lastOp?.type
         };
       });
       
@@ -388,47 +404,77 @@ export default function SpreadsheetOperations() {
             </h3>
           </div>
           
-          <ScrollArea className="w-full">
-            <div className="min-w-[900px]">
-              {/* Header tabella compatto */}
-              <div className="grid grid-cols-12 border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10">
-                <div className="col-span-1 px-2 py-1.5 border-r">Cestello</div>
-                <div className="col-span-1 px-2 py-1.5 border-r text-center">Stato</div>
-                <div className="col-span-2 px-2 py-1.5 border-r">Animali</div>
-                <div className="col-span-2 px-2 py-1.5 border-r">Peso Tot (g)</div>
-                <div className="col-span-2 px-2 py-1.5 border-r">Anim/kg</div>
-                {selectedOperationType === 'misura' && (
-                  <>
-                    <div className="col-span-1 px-2 py-1.5 border-r">Vivi</div>
-                    <div className="col-span-1 px-2 py-1.5 border-r">Peso Camp</div>
-                  </>
-                )}
-                <div className="col-span-2 px-2 py-1.5 border-r">Note</div>
-                <div className="col-span-1 px-2 py-1.5 text-center">Azioni</div>
+          <div className="relative">
+            {/* Indicatore scroll mobile */}
+            {isMobile && (
+              <div className="absolute top-2 right-2 z-20 bg-blue-600 text-white text-xs px-2 py-1 rounded-full opacity-75 animate-pulse">
+                ← Scorri →
               </div>
+            )}
+            
+            <ScrollArea className="w-full">
+              <div className="min-w-[1200px]">
+                {/* Header tabella compatto con più colonne */}
+                <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{gridTemplateColumns: '80px 40px 60px 70px 60px 1fr 1fr 1fr 80px 80px 2fr 60px'}}>
+                  <div className="px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
+                  <div className="px-1 py-1.5 border-r text-center">Stato</div>
+                  <div className="px-1 py-1.5 border-r text-xs">Taglia</div>
+                  <div className="px-1 py-1.5 border-r text-xs">P.Med(g)</div>
+                  <div className="px-1 py-1.5 border-r text-xs">Ult.Op</div>
+                  <div className="px-2 py-1.5 border-r">Animali</div>
+                  <div className="px-2 py-1.5 border-r">Peso Tot (g)</div>
+                  <div className="px-2 py-1.5 border-r">Anim/kg</div>
+                  {selectedOperationType === 'misura' && (
+                    <>
+                      <div className="px-1 py-1.5 border-r">Vivi</div>
+                      <div className="px-1 py-1.5 border-r">P.Camp</div>
+                    </>
+                  )}
+                  <div className="px-2 py-1.5 border-r">Note</div>
+                  <div className="px-1 py-1.5 text-center">Azioni</div>
+                </div>
 
               {/* Righe dati compatte */}
               {operationRows.map((row, index) => (
                 <div key={row.basketId}>
                   <div
-                    className={`grid grid-cols-12 border-b text-xs hover:bg-gray-50 ${
+                    className={`grid border-b text-xs hover:bg-gray-50 ${
                       row.status === 'error' ? 'bg-red-50' : 
                       row.status === 'saved' ? 'bg-green-50' : 
                       row.status === 'saving' ? 'bg-yellow-50' : 'bg-white'
                     }`}
+                    style={{gridTemplateColumns: '80px 40px 60px 70px 60px 1fr 1fr 1fr 80px 80px 2fr 60px'}}
                   >
-                    <div className="col-span-1 px-2 py-1 border-r flex items-center font-medium text-gray-700">
+                    {/* Colonna cestello fissa */}
+                    <div className="px-2 py-1 border-r flex items-center font-medium text-gray-700 bg-white sticky left-0 z-10 shadow-r">
                       #{row.physicalNumber}
                     </div>
                     
-                    <div className="col-span-1 px-2 py-1 border-r flex items-center justify-center">
+                    {/* Stato */}
+                    <div className="px-1 py-1 border-r flex items-center justify-center">
                       {row.status === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
                       {row.status === 'saved' && <CheckCircle2 className="h-3 w-3 text-green-600" />}
                       {row.status === 'error' && <AlertCircle className="h-3 w-3 text-red-600" />}
                       {row.status === 'editing' && <div className="h-2 w-2 rounded-full bg-blue-400" />}
                     </div>
 
-                    <div className="col-span-2 px-1 py-1 border-r">
+                    {/* Info aggiuntive */}
+                    <div className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
+                      <span className="truncate">{row.currentSize}</span>
+                    </div>
+
+                    <div className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
+                      <span className="truncate">{row.averageWeight}g</span>
+                    </div>
+
+                    <div className="px-1 py-1 border-r flex items-center text-xs text-gray-500">
+                      <span className="truncate" title={`${row.lastOperationType} - ${row.lastOperationDate}`}>
+                        {row.lastOperationDate ? new Date(row.lastOperationDate).toLocaleDateString('it-IT', {month: '2-digit', day: '2-digit'}) : '-'}
+                      </span>
+                    </div>
+
+                    {/* Campi editabili */}
+                    <div className="px-1 py-1 border-r">
                       <input
                         type="number"
                         value={row.animalCount || ''}
@@ -439,7 +485,7 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="col-span-2 px-1 py-1 border-r">
+                    <div className="px-1 py-1 border-r">
                       <input
                         type="number"
                         value={row.totalWeight || ''}
@@ -450,7 +496,7 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="col-span-2 px-1 py-1 border-r">
+                    <div className="px-1 py-1 border-r">
                       <input
                         type="number"
                         value={row.animalsPerKg || ''}
@@ -463,23 +509,23 @@ export default function SpreadsheetOperations() {
 
                     {selectedOperationType === 'misura' && (
                       <>
-                        <div className="col-span-1 px-1 py-1 border-r">
+                        <div className="px-1 py-1 border-r">
                           <input
                             type="number"
                             value={row.liveAnimals || ''}
                             onChange={(e) => updateCell(row.basketId, 'liveAnimals', Number(e.target.value))}
-                            className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
+                            className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
                             min="0"
                             placeholder="0"
                           />
                         </div>
 
-                        <div className="col-span-1 px-1 py-1 border-r">
+                        <div className="px-1 py-1 border-r">
                           <input
                             type="number"
                             value={row.sampleWeight || ''}
                             onChange={(e) => updateCell(row.basketId, 'sampleWeight', Number(e.target.value))}
-                            className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
+                            className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
                             min="0"
                             placeholder="0"
                           />
@@ -487,7 +533,7 @@ export default function SpreadsheetOperations() {
                       </>
                     )}
 
-                    <div className="col-span-2 px-1 py-1 border-r">
+                    <div className="px-1 py-1 border-r">
                       <input
                         value={row.notes}
                         onChange={(e) => updateCell(row.basketId, 'notes', e.target.value)}
@@ -496,11 +542,11 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="col-span-1 px-1 py-1 flex items-center justify-center">
+                    <div className="px-1 py-1 flex items-center justify-center">
                       <button
                         onClick={() => saveRow(row.basketId)}
                         disabled={row.status === 'saving' || row.status === 'saved'}
-                        className="h-6 w-8 flex items-center justify-center text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                        className="h-6 w-6 flex items-center justify-center text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                       >
                         {row.status === 'saving' ? (
                           <Loader2 className="h-2.5 w-2.5 animate-spin" />
@@ -513,16 +559,17 @@ export default function SpreadsheetOperations() {
 
                   {/* Errori inline compatti */}
                   {row.errors && row.errors.length > 0 && (
-                    <div className="grid grid-cols-12 bg-red-50 border-b">
-                      <div className="col-span-12 px-2 py-1 text-xs text-red-600 font-medium">
+                    <div className="bg-red-50 border-b">
+                      <div className="px-2 py-1 text-xs text-red-600 font-medium">
                         ⚠️ {row.errors.join(', ')}
                       </div>
                     </div>
                   )}
                 </div>
               ))}
-            </div>
-          </ScrollArea>
+              </div>
+            </ScrollArea>
+          </div>
         </div>
       )}
 

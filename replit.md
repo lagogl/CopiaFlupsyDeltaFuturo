@@ -170,6 +170,10 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Replaced UI components with native HTML inputs for authentic spreadsheet feel
 ✓ Optimized cell sizes, borders, and typography for maximum data density
 ✓ Maintained perfect readability while achieving compact professional layout
+✓ Added rich basket information: current size, average weight, last operation date
+✓ Implemented sticky first column for basket numbers during horizontal scroll
+✓ Mobile-optimized with scroll indicators and responsive column widths
+✓ Fixed column layout with proper CSS grid for consistent cell alignment
 
 ## Changelog
 
