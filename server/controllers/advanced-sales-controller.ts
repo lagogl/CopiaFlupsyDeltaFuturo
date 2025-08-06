@@ -18,6 +18,7 @@ import {
   sizes,
   externalCustomersSync,
   externalSalesSync,
+  clienti,
   insertAdvancedSaleSchema,
   insertSaleBagSchema,
   insertBagAllocationSchema,
@@ -458,25 +459,26 @@ export async function getAdvancedSales(req: Request, res: Response) {
  */
 export async function getCustomers(req: Request, res: Response) {
   try {
+    // Recupera i clienti sincronizzati da Fatture in Cloud dalla tabella clienti
     const customers = await db.select()
-      .from(externalCustomersSync)
-      .where(eq(externalCustomersSync.isActive, true))
-      .orderBy(externalCustomersSync.customerName)
-      .limit(20);
+      .from(clienti)
+      .where(eq(clienti.attivo, true))
+      .orderBy(clienti.denominazione)
+      .limit(100);
 
     // Mappiamo i campi per compatibilità con il frontend
     const mappedCustomers = customers.map(customer => ({
       id: customer.id,
-      externalId: customer.externalId,
-      name: customer.customerName,
-      businessName: customer.customerName,
-      vatNumber: customer.vatNumber,
-      address: customer.address,
-      city: customer.city,
-      province: customer.province,
-      postalCode: customer.postalCode,
-      phone: customer.phone,
-      email: customer.email
+      externalId: customer.fatture_in_cloud_id?.toString() || '',
+      name: customer.denominazione,
+      businessName: customer.denominazione,
+      vatNumber: customer.piva || '',
+      address: customer.indirizzo || '',
+      city: customer.comune || '',
+      province: customer.provincia || '',
+      postalCode: customer.cap || '',
+      phone: customer.telefono || '',
+      email: customer.email || ''
     }));
 
     res.json({
@@ -484,10 +486,10 @@ export async function getCustomers(req: Request, res: Response) {
       customers: mappedCustomers
     });
   } catch (error) {
-    console.error("Errore nel recupero clienti:", error);
+    console.error("Errore nel recupero clienti da Fatture in Cloud:", error);
     res.status(500).json({
       success: false,
-      error: "Errore nel recupero dei clienti"
+      error: "Errore nel recupero dei clienti da Fatture in Cloud"
     });
   }
 }
