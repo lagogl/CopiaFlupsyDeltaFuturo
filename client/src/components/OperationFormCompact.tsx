@@ -627,9 +627,9 @@ export default function OperationFormCompact({
     handlePesoOperation();
   }, [watchType, watchBasketId, form, operations, prevOperationData]);
 
-  // Calcola valori derivati per misurazione e prima attivazione
+  // Calcola valori derivati per misurazione e prima attivazione (solo se modifica manuale non è attiva)
   useEffect(() => {
-    if (watchType === 'misura' || watchType === 'prima-attivazione') {
+    if ((watchType === 'misura' || watchType === 'prima-attivazione') && !watchManualCountAdjustment) {
       // Calcola il totale del campione (vivi + morti)
       if (watchLiveAnimals !== null && deadCount !== null) {
         const totalSample = watchLiveAnimals + deadCount;
@@ -650,7 +650,39 @@ export default function OperationFormCompact({
         }
       }
     }
-  }, [watchType, watchLiveAnimals, deadCount, watchSampleWeight, form]);
+  }, [watchType, watchLiveAnimals, deadCount, watchSampleWeight, form, watchManualCountAdjustment]);
+
+  // Gestisce il cambio di modalità tra automatica e manuale
+  useEffect(() => {
+    if (watchManualCountAdjustment) {
+      // Modalità manuale attivata: reset di alcuni campi calcolati per permettere input manuale
+      console.log("Modalità modifica manuale attivata - reset campi calcolati");
+    } else {
+      // Modalità automatica attivata: ricalcola i valori se abbiamo i dati necessari
+      console.log("Modalità automatica attivata - ricalcolo valori");
+      
+      // Se abbiamo i dati del campione, ricalcola tutto
+      if ((watchType === 'misura' || watchType === 'prima-attivazione') && 
+          watchLiveAnimals !== null && deadCount !== null && 
+          watchSampleWeight && watchSampleWeight > 0) {
+        
+        const totalSample = watchLiveAnimals + deadCount;
+        form.setValue('totalSample', totalSample);
+        
+        if (totalSample > 0) {
+          const mortalityRate = (deadCount / totalSample) * 100;
+          form.setValue('mortalityRate', mortalityRate);
+        }
+        
+        if (watchLiveAnimals > 0) {
+          const animalsPerKg = Math.round((watchLiveAnimals / watchSampleWeight) * 1000);
+          if (!isNaN(animalsPerKg) && isFinite(animalsPerKg)) {
+            form.setValue('animalsPerKg', animalsPerKg);
+          }
+        }
+      }
+    }
+  }, [watchManualCountAdjustment, form, watchType, watchLiveAnimals, deadCount, watchSampleWeight]);
 
   // Funzione di submit del form
   const handleSubmit = async (values: z.infer<typeof operationSchema>) => {
@@ -1807,7 +1839,7 @@ export default function OperationFormCompact({
                   <h4 className="text-xs font-medium text-purple-800 mb-2">Valori calcolati</h4>
                   <div className="grid grid-cols-2 gap-3">
                     {/* Mortality Rate */}
-                    {watchTotalSample > 0 && (
+                    {(watchTotalSample > 0 || watchManualCountAdjustment) && (
                       <FormField
                         control={form.control}
                         name="mortalityRate"
@@ -1817,14 +1849,31 @@ export default function OperationFormCompact({
                             <FormControl>
                               <Input 
                                 type="text" 
-                                className="h-8 text-sm bg-purple-50"
-                                readOnly
+                                className={`h-8 text-sm ${!watchManualCountAdjustment ? 'bg-purple-50' : ''}`}
+                                readOnly={!watchManualCountAdjustment}
+                                placeholder={watchManualCountAdjustment ? "Inserisci mortalità" : ""}
                                 value={field.value === null || field.value === undefined 
                                   ? '' 
                                   : field.value.toLocaleString('it-IT', { 
                                       minimumFractionDigits: 2,
                                       maximumFractionDigits: 2
                                     })}
+                                onChange={(e) => {
+                                  if (watchManualCountAdjustment) {
+                                    const value = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
+                                    if (value === '') {
+                                      field.onChange(null);
+                                    } else {
+                                      const numValue = parseFloat(value);
+                                      if (!isNaN(numValue) && numValue >= 0 && numValue <= 100) {
+                                        field.onChange(numValue);
+                                      }
+                                    }
+                                  }
+                                }}
+                                onBlur={field.onBlur}
+                                name={field.name}
+                                ref={field.ref}
                               />
                             </FormControl>
                             <FormMessage />
@@ -1834,7 +1883,7 @@ export default function OperationFormCompact({
                     )}
                     
                     {/* Animals per kg per misura */}
-                    {watchSampleWeight > 0 && watchLiveAnimals > 0 && (
+                    {((watchSampleWeight > 0 && watchLiveAnimals > 0) || watchManualCountAdjustment) && (
                       <FormField
                         control={form.control}
                         name="animalsPerKg"
@@ -1844,11 +1893,30 @@ export default function OperationFormCompact({
                             <FormControl>
                               <Input 
                                 type="text" 
-                                className="h-8 text-sm bg-purple-50"
-                                readOnly
+                                className={`h-8 text-sm ${!watchManualCountAdjustment ? 'bg-purple-50' : ''}`}
+                                readOnly={!watchManualCountAdjustment}
+                                placeholder={watchManualCountAdjustment ? "Inserisci animali per kg" : ""}
                                 value={field.value === null || field.value === undefined 
                                   ? '' 
                                   : field.value.toLocaleString('it-IT')}
+                                onChange={(e) => {
+                                  if (watchManualCountAdjustment) {
+                                    const value = e.target.value.replace(/[^0-9]/g, '');
+                                    if (value === '') {
+                                      field.onChange(null);
+                                    } else {
+                                      const numValue = parseInt(value, 10);
+                                      if (!isNaN(numValue) && numValue > 0) {
+                                        field.onChange(numValue);
+                                        // Calcola automaticamente il peso medio quando viene inserito animali per kg
+                                        form.setValue('averageWeight', 1000000 / numValue);
+                                      }
+                                    }
+                                  }
+                                }}
+                                onBlur={field.onBlur}
+                                name={field.name}
+                                ref={field.ref}
                               />
                             </FormControl>
                             <FormMessage />
