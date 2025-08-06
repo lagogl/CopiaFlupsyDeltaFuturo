@@ -7374,6 +7374,121 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Generazione e download PDF
   app.get("/api/advanced-sales/:id/generate-pdf", AdvancedSalesController.generateSalePDF);
   app.get("/api/advanced-sales/:id/download-pdf", AdvancedSalesController.downloadSalePDF);
+
+  // Route per eliminare tutti i dati relativi ai lotti
+  app.post("/api/reset-lots", async (req, res) => {
+    try {
+      // Verifica la password
+      const { password } = req.body;
+      
+      if (password !== "Gianluigi") {
+        return res.status(401).json({
+          success: false,
+          message: "Password non valida. Operazione non autorizzata."
+        });
+      }
+      
+      // Importiamo il queryClient dal modulo db
+      const { queryClient } = await import("./db.js");
+      
+      // Importa la funzione di broadcast WebSocket
+      const { broadcastMessage } = await import("./websocket.js");
+      
+      // Usiamo il metodo corretto per le transazioni
+      await queryClient.begin(async sql => {
+        try {
+          const startMessage = "🗑️ INIZIO ELIMINAZIONE DATI LOTTI - Cancellazione di tutti i dati relativi ai lotti";
+          console.log(startMessage);
+          broadcastMessage("database_reset_progress", { message: startMessage, step: "start" });
+          
+          // 1. Elimina le transazioni dell'inventario lotti
+          const step1 = "📦 Eliminazione transazioni inventario lotti...";
+          console.log(step1);
+          broadcastMessage("database_reset_progress", { message: step1, step: 1 });
+          await sql`DELETE FROM lot_inventory_transactions`;
+          
+          // 2. Elimina i record di mortalità dei lotti
+          const step2 = "☠️ Eliminazione record mortalità lotti...";
+          console.log(step2);
+          broadcastMessage("database_reset_progress", { message: step2, step: 2 });
+          await sql`DELETE FROM lot_mortality_records`;
+          
+          // 3. Elimina i riferimenti ai lotti nelle operazioni di screening
+          const step3 = "🔍 Eliminazione riferimenti lotti in screening...";
+          console.log(step3);
+          broadcastMessage("database_reset_progress", { message: step3, step: 3 });
+          await sql`DELETE FROM screening_lot_references`;
+          
+          // 4. Elimina i riferimenti ai lotti nelle operazioni di selezione
+          const step4 = "✅ Eliminazione riferimenti lotti in selezioni...";
+          console.log(step4);
+          broadcastMessage("database_reset_progress", { message: step4, step: 4 });
+          await sql`DELETE FROM selection_lot_references`;
+          
+          // 5. Elimina i lotti principali
+          const step5 = "📋 Eliminazione lotti principali...";
+          console.log(step5);
+          broadcastMessage("database_reset_progress", { message: step5, step: 5 });
+          await sql`DELETE FROM lots`;
+          
+          // 6. Reset delle sequenze ID relative ai lotti
+          const step6 = "🔢 Reset contatori ID lotti...";
+          console.log(step6);
+          broadcastMessage("database_reset_progress", { message: step6, step: 6 });
+          await sql`ALTER SEQUENCE IF EXISTS lots_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS lot_mortality_records_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`;
+          
+          console.log("✅ Tutte le sequenze ID lotti resettate a 1");
+          
+          const completeMessage = "✅ ELIMINAZIONE DATI LOTTI COMPLETATA - Tutti i dati relativi ai lotti sono stati cancellati";
+          console.log(completeMessage);
+          broadcastMessage("database_reset_progress", { message: completeMessage, step: "complete" });
+          
+          // Invalidazione cache dopo eliminazione lotti
+          try {
+            // Invalida cache delle operazioni e cestelli che potrebbero avere riferimenti ai lotti
+            if ((global as any).basketCache) {
+              (global as any).basketCache.clear();
+              console.log("🗑️ Cache cestelli invalidata dopo eliminazione lotti");
+            }
+            
+            if ((global as any).operationsCache) {
+              (global as any).operationsCache.clear();
+              console.log("🗑️ Cache operazioni invalidata dopo eliminazione lotti");
+            }
+            
+            // Notifica WebSocket per refresh client
+            broadcastMessage("cache_invalidated", { 
+              message: "Eliminazione lotti completata - aggiornamento dati",
+              caches: ['lots', 'operations', 'baskets', 'inventory']
+            });
+          } catch (error) {
+            console.warn("Cache invalidation warning:", error.message);
+          }
+          
+          return true; // Successo - commit implicito
+        } catch (error) {
+          console.error("Errore durante l'eliminazione dei dati lotti:", error);
+          throw error; // Rollback implicito
+        }
+      });
+      
+      res.status(200).json({ 
+        success: true,
+        message: "Eliminazione dati lotti completata con successo. Tutti i dati relativi ai lotti sono stati cancellati."
+      });
+    } catch (error) {
+      console.error("Errore durante l'eliminazione dei dati lotti:", error);
+      res.status(500).json({ 
+        success: false,
+        message: "Errore durante l'eliminazione dei dati lotti",
+        error: error instanceof Error ? error.message : "Errore sconosciuto"
+      });
+    }
+  });
   
   // Serve static PDF files
   const express = await import('express');

@@ -194,7 +194,7 @@ export async function createAdvancedSale(req: Request, res: Response) {
       operations: result.operationsData,
       totals: result.totals
     });
-  } catch (error) {
+  } catch (error: any) {
     console.error("Errore nella creazione vendita avanzata:", error);
     console.error("Stack trace:", error.stack);
     res.status(500).json({
@@ -441,8 +441,8 @@ export async function getAdvancedSales(req: Request, res: Response) {
       pagination: {
         page: parseInt(page as string),
         pageSize: parseInt(pageSize as string),
-        totalCount: totalCount[0].count,
-        totalPages: Math.ceil(totalCount[0].count / parseInt(pageSize as string))
+        totalCount: Number(totalCount[0].count),
+        totalPages: Math.ceil(Number(totalCount[0].count) / parseInt(pageSize as string))
       }
     });
   } catch (error) {
@@ -469,7 +469,7 @@ export async function getCustomers(req: Request, res: Response) {
     // Mappiamo i campi per compatibilità con il frontend
     const mappedCustomers = customers.map(customer => ({
       id: customer.id,
-      externalId: customer.fatture_in_cloud_id?.toString() || '',
+      externalId: customer.fattureInCloudId?.toString() || '',
       name: customer.denominazione,
       businessName: customer.denominazione,
       vatNumber: customer.piva || '',
