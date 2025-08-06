@@ -142,6 +142,11 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Fixed decimal input validation for mortality field (now supports values like 2.50%)
 ✓ Implemented automatic calculation disable when manual mode is active
 ✓ Added proper number input types with step validation for precision
+✓ **August 6, 2025**: Completed manual mode implementation with automatic weight calculation
+✓ Fixed server validation to accept manual operations without sample weight requirement
+✓ Implemented automatic total weight calculation: number of animals × average weight per animal
+✓ Updated form validation logic to enable button correctly for both manual and automatic modes
+✓ Set maximum limit for total weight field to 999,999 grams in non-manual mode
 
 ## Changelog
 

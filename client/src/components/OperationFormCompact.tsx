@@ -1558,7 +1558,7 @@ export default function OperationFormCompact({
                                 field.onChange(null);
                               } else {
                                 const numValue = parseFloat(value);
-                                if (!isNaN(numValue) && numValue <= 1000000) {
+                                if (!isNaN(numValue) && numValue <= 999999) {
                                   field.onChange(numValue);
                                   
                                   // Se è un'operazione di tipo peso e abbiamo un conteggio animali,
@@ -1859,7 +1859,7 @@ export default function OperationFormCompact({
                                   field.onChange(null);
                                 } else {
                                   const numValue = parseFloat(value);
-                                  if (!isNaN(numValue) && numValue <= 1000000) {
+                                  if (!isNaN(numValue) && numValue <= 999999) {
                                     field.onChange(numValue);
                                   }
                                 }
