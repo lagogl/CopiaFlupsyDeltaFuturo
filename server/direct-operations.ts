@@ -153,7 +153,8 @@ export function implementDirectOperationRoute(app: Express) {
         throw new Error("Il peso totale grammi è obbligatorio e deve essere maggiore di 0");
       }
       
-      if (!operationData.sampleWeight || operationData.sampleWeight <= 0) {
+      // I grammi sample sono obbligatori solo se NON è modalità manuale
+      if (!operationData.manualCountAdjustment && (!operationData.sampleWeight || operationData.sampleWeight <= 0)) {
         throw new Error("I grammi sample sono obbligatori e devono essere maggiori di 0");
       }
       
