@@ -218,7 +218,7 @@ export default function SpreadsheetOperations() {
           animalCount: lastOp?.animalCount || 10000,
           totalWeight: lastOp?.totalWeight || 1000,
           animalsPerKg: lastOp?.animalsPerKg || 100,
-          deadCount: 0,
+          deadCount: 0, // Sempre inizializza a 0 per evitare errori null
           notes: '',
           // Campi specifici per operazioni che richiedono campione
           liveAnimals: selectedOperationType === 'misura' ? 50 : null,
@@ -395,7 +395,7 @@ export default function SpreadsheetOperations() {
       animalCount: row.animalCount || null,                     // integer animal_count (nullable)
       totalWeight: row.totalWeight || null,                     // real total_weight (nullable, in grams)
       animalsPerKg: row.animalsPerKg || null,                  // integer animals_per_kg (nullable)
-      deadCount: row.deadCount || null,                         // integer dead_count (nullable)
+      deadCount: row.deadCount !== null && row.deadCount !== undefined ? row.deadCount : 0, // integer dead_count (default 0)
       mortalityRate: null,                                      // real mortality_rate (nullable) - calcolato dal backend
       notes: row.notes || null,                                 // text notes (nullable)
       
@@ -772,8 +772,8 @@ export default function SpreadsheetOperations() {
                       <div className="px-1 py-1 border-r bg-yellow-50">
                         <input
                           type="number"
-                          value={row.deadCount || ''}
-                          onChange={(e) => updateCell(row.basketId, 'deadCount', Number(e.target.value))}
+                          value={row.deadCount !== null && row.deadCount !== undefined ? row.deadCount : 0}
+                          onChange={(e) => updateCell(row.basketId, 'deadCount', Number(e.target.value) || 0)}
                           className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
                           min="0"
                           placeholder="0"
