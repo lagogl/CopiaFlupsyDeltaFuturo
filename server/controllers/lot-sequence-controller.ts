@@ -36,8 +36,13 @@ export async function getNextSequentialLotId(): Promise<number> {
  */
 export async function resetLotIdSequence(nextId: number): Promise<void> {
   try {
-    // Imposta la sequenza per iniziare dal valore specificato
-    await db.execute(sql`SELECT setval('lots_id_seq', ${nextId - 1}, true)`);
+    // Se nextId è 1, usiamo setval con false per non chiamare currval
+    // Altrimenti usiamo nextId - 1 con true
+    if (nextId <= 1) {
+      await db.execute(sql`SELECT setval('lots_id_seq', 1, false)`);
+    } else {
+      await db.execute(sql`SELECT setval('lots_id_seq', ${nextId - 1}, true)`);
+    }
     console.log(`Sequenza ID lotti reimpostata. Il prossimo ID sarà: ${nextId}`);
   } catch (error) {
     console.error("Errore nel reimpostare la sequenza:", error);
