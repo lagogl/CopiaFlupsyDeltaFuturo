@@ -2,6 +2,7 @@ import { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
+import { createDirectOperation } from "@/lib/operations";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import useIsMobile from "@/hooks/use-mobile";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
@@ -95,43 +96,73 @@ export default function SpreadsheetOperations() {
     queryKey: ['/api/lots'],
   });
 
-  // Mutation per salvare operazioni
+  // Mutation per salvare operazioni - USA LA STESSA LOGICA DEL MODULO OPERATIONS STANDARD
   const saveOperationMutation = useMutation({
     mutationFn: async (operationData: any) => {
-      return apiRequest({
-        url: '/api/operations',
-        method: 'POST',
-        body: operationData
-      });
+      console.log('🔄 Spreadsheet: Inviando operazione con route diretta:', operationData);
+      
+      // Recupera informazioni sulla cesta (stessa logica del modulo Operations)
+      const basket = ((baskets as any[]) || []).find((b: any) => b.id === operationData.basketId);
+      console.log('📦 Spreadsheet: Cestello trovato:', basket);
+      
+      // Determina il tipo di operazione
+      const isPrimaAttivazione = operationData.type === 'prima-attivazione';
+      const isVendita = operationData.type === 'vendita' || operationData.type === 'selezione-vendita';
+      console.log('🔍 Spreadsheet: Tipo operazione:', { isPrimaAttivazione, isVendita, type: operationData.type });
+      
+      // Determina stato cestello
+      const isBasketAvailable = basket?.state === 'available';
+      const isBasketActive = basket?.state === 'active';
+      console.log('📋 Spreadsheet: Stato cestello:', { isBasketAvailable, isBasketActive, state: basket?.state });
+      
+      try {
+        // USA LA FUNZIONE createDirectOperation ESATTAMENTE COME IL MODULO OPERATIONS STANDARD
+        const response = await createDirectOperation(operationData);
+        console.log('✅ Spreadsheet: Operazione creata con successo:', response);
+        return response;
+      } catch (error) {
+        console.error('❌ Spreadsheet: Errore durante createDirectOperation:', error);
+        throw error;
+      }
     },
     onSuccess: (data, variables) => {
+      console.log('✅ Spreadsheet: Success callback - operazione salvata:', data);
       const basketId = variables.basketId;
+      
+      // Aggiorna lo stato della riga
       setOperationRows(prev => prev.map(row => 
         row.basketId === basketId 
           ? { ...row, status: 'saved', errors: [] }
           : row
       ));
       
-      // Invalida cache
+      // Invalida le stesse cache del modulo Operations standard
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
       
+      // Toast di successo
+      const basket = ((baskets as any[]) || []).find((b: any) => b.id === basketId);
       toast({
-        title: "Operazione salvata",
-        description: `Cestello #${((operations as any[]) || []).find((op: any) => op.basketId === basketId)?.physicalNumber || basketId}`,
+        title: "Operazione completata",
+        description: `Operazione registrata per cestello #${basket?.physicalNumber || basketId}`,
       });
     },
     onError: (error: any, variables) => {
+      console.error('❌ Spreadsheet: Error callback:', error, variables);
       const basketId = variables.basketId;
+      
+      // Aggiorna lo stato della riga con errore
       setOperationRows(prev => prev.map(row => 
         row.basketId === basketId 
-          ? { ...row, status: 'error', errors: [error.message || 'Errore sconosciuto'] }
+          ? { ...row, status: 'error', errors: [error.message || 'Errore durante il salvataggio'] }
           : row
       ));
       
+      // Toast di errore
       toast({
-        title: "Errore salvataggio",
-        description: error.message || "Errore durante il salvataggio",
+        title: "Errore",
+        description: error.message || "Si è verificato un errore durante la registrazione dell'operazione",
         variant: "destructive"
       });
     }
@@ -237,11 +268,17 @@ export default function SpreadsheetOperations() {
 
   // Salva una singola riga
   const saveRow = async (basketId: number) => {
+    console.log('🔄 Spreadsheet: Tentativo salvataggio riga basketId:', basketId);
+    
     const row = operationRows.find(r => r.basketId === basketId);
-    if (!row) return;
+    if (!row) {
+      console.error('❌ Spreadsheet: Riga non trovata per basketId:', basketId);
+      return;
+    }
     
     const errors = validateRow(row);
     if (errors.length > 0) {
+      console.warn('⚠️ Spreadsheet: Errori validazione:', errors);
       setOperationRows(prev => prev.map(r => 
         r.basketId === basketId 
           ? { ...r, status: 'error', errors }
@@ -257,7 +294,10 @@ export default function SpreadsheetOperations() {
     ));
     
     const basket = eligibleBaskets.find(b => b.id === basketId);
-    if (!basket) return;
+    if (!basket) {
+      console.error('❌ Spreadsheet: Cestello non trovato per basketId:', basketId);
+      return;
+    }
     
     const operationData = {
       basketId: row.basketId,
@@ -279,18 +319,49 @@ export default function SpreadsheetOperations() {
       })
     };
     
-    await saveOperationMutation.mutateAsync(operationData);
+    console.log('📦 Spreadsheet: Dati operazione preparati:', operationData);
+    
+    try {
+      await saveOperationMutation.mutateAsync(operationData);
+      console.log('✅ Spreadsheet: Riga salvata con successo');
+    } catch (error) {
+      console.error('❌ Spreadsheet: Errore salvataggio riga:', error);
+    }
   };
 
   // Salva tutte le righe valide
   const saveAllRows = async () => {
-    const validRows = operationRows.filter(row => validateRow(row).length === 0);
+    console.log('🔄 Spreadsheet: Inizio salvataggio di tutte le righe');
+    console.log('📊 Spreadsheet: Righe totali:', operationRows.length);
     
-    for (const row of validRows) {
-      if (row.status === 'editing') {
-        await saveRow(row.basketId);
+    const validRows = operationRows.filter(row => {
+      const errors = validateRow(row);
+      if (errors.length > 0) {
+        console.warn('⚠️ Spreadsheet: Riga non valida basketId:', row.basketId, 'errori:', errors);
       }
+      return errors.length === 0;
+    });
+    
+    console.log('✅ Spreadsheet: Righe valide trovate:', validRows.length);
+    
+    const editingRows = validRows.filter(row => row.status === 'editing');
+    console.log('📝 Spreadsheet: Righe da salvare (editing):', editingRows.length);
+    
+    if (editingRows.length === 0) {
+      console.log('ℹ️ Spreadsheet: Nessuna riga da salvare');
+      toast({
+        title: "Nessuna operazione da salvare",
+        description: "Tutte le righe sono già salvate o contengono errori",
+      });
+      return;
     }
+    
+    for (const row of editingRows) {
+      console.log('🔄 Spreadsheet: Salvando riga basketId:', row.basketId);
+      await saveRow(row.basketId);
+    }
+    
+    console.log('✅ Spreadsheet: Salvataggio completato');
   };
 
   // Reset di tutte le righe
