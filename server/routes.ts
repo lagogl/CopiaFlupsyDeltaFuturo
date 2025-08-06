@@ -1749,13 +1749,24 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Logica semplificata per creare operazioni
       const operationData = req.body;
       
-      // Validazione base
-      if (!operationData.type || !operationData.basketId) {
-        return res.status(400).json({ message: "Tipo operazione e ID cestello richiesti" });
+      // Validazione base SOLO campi essenziali
+      if (!operationData.type || !operationData.basketId || !operationData.cycleId) {
+        return res.status(400).json({ 
+          message: "Campi richiesti mancanti", 
+          required: ["type", "basketId", "cycleId"],
+          received: Object.keys(operationData)
+        });
       }
 
+      console.log("Creazione operazione con dati:", operationData);
       const result = await storage.createOperation(operationData);
       console.log("✅ Operazione creata con successo:", result);
+      
+      // Broadcast WebSocket update
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        console.log("📡 Broadcasting WebSocket update...");
+        (global as any).broadcastUpdate();
+      }
       
       res.json({ success: true, operation: result });
     } catch (error) {

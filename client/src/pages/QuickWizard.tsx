@@ -131,14 +131,36 @@ export default function QuickWizard() {
     queryKey: ['/api/lots'],
   });
 
-  // Submit operation mutation
+  // Submit operation mutation with timeout fix
   const submitOperationMutation = useMutation({
-    mutationFn: (data: OperationFormData) => apiRequest({
-      url: '/api/operations',
-      method: 'POST',
-      body: data
-    }),
+    mutationFn: async (data: OperationFormData) => {
+      console.log('Starting API request for operation:', data);
+      
+      // Add timeout to prevent infinite hanging
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => {
+        controller.abort();
+      }, 15000); // 15 second timeout
+
+      try {
+        // Try emergency route first since main route is hanging
+        const response = await apiRequest({
+          url: '/api/operations-emergency',
+          method: 'POST',
+          body: data,
+          signal: controller.signal
+        });
+        clearTimeout(timeoutId);
+        console.log('API request completed successfully:', response);
+        return response;
+      } catch (error) {
+        clearTimeout(timeoutId);
+        console.error('API request failed:', error);
+        throw error;
+      }
+    },
     onSuccess: (data, variables) => {
+      console.log(`Operation saved successfully for basket ${variables.basketId}`);
       setCompletedBaskets(prev => [...prev, variables.basketId]);
       toast({
         title: "Operazione salvata",
@@ -151,9 +173,10 @@ export default function QuickWizard() {
       queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
     },
     onError: (error: any) => {
+      console.error('Operation save failed:', error);
       toast({
         title: "Errore",
-        description: error.message || "Errore durante il salvataggio",
+        description: error.message || "Errore durante il salvataggio - timeout o errore server",
         variant: "destructive"
       });
     }
@@ -197,46 +220,45 @@ export default function QuickWizard() {
     setCurrentBasketIndex(0);
   }, [baskets, selectedOperationType, operations, flupsys]);
 
-  // Pre-populate operation data with intelligent defaults
+  // Pre-populate operation data with intelligent defaults - FIXED to prevent data propagation
   const initializeOperationData = (basket: BasketData) => {
-    if (operationData[basket.id]) return; // Already initialized
-
+    // ALWAYS create fresh data for each basket - don't check if already exists
     const lastOp = basket.lastOperation;
     const defaultLot = lots?.[0]; // Get first available lot
     
-    // Base data with ALL required fields
+    // Base data with ALL required fields - FRESH for each basket
     const baseData: OperationFormData = {
       basketId: basket.id,
       cycleId: basket.currentCycleId!,
       flupsyId: basket.flupsyId,
-      lotId: defaultLot?.id || 1, // Use first lot or fallback
+      lotId: defaultLot?.id || 1,
       type: selectedOperationType,
-      date: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
-      animalCount: 0, // Default value, will be updated based on operation type
-      totalWeight: 0, // Default value, will be updated based on operation type
+      date: new Date().toISOString().split('T')[0],
+      animalCount: 10000, // Default values
+      totalWeight: 1000,
       deadCount: 0,
       manualCountAdjustment: false
     };
 
-    // Intelligent pre-population based on operation type and history
+    // Intelligent pre-population based on THIS SPECIFIC basket's history
     if (selectedOperationType === 'peso') {
-      // For peso operations, we need totalWeight
-      baseData.animalCount = lastOp?.animalCount || 10000; // Default estimate
-      baseData.totalWeight = lastOp?.totalWeight || 1000; // Default weight in grams
+      baseData.animalCount = lastOp?.animalCount || 10000;
+      baseData.totalWeight = lastOp?.totalWeight || 1000;
       baseData.animalsPerKg = lastOp?.animalsPerKg || 100;
     } else if (selectedOperationType === 'misura') {
-      // For misura operations, we need liveAnimals and sampleWeight
-      baseData.liveAnimals = 50; // Default sample size
-      baseData.sampleWeight = 100; // Default sample weight in grams
-      baseData.animalCount = lastOp?.animalCount || 10000; // Keep existing count
-      baseData.totalWeight = lastOp?.totalWeight || 1000; // Keep existing weight
-      baseData.sizeId = lastOp?.sizeId || sizes?.[0]?.id; // Use last size or first available
+      // Fresh values for misura operation for THIS specific basket
+      baseData.liveAnimals = lastOp?.liveAnimals || 50;
+      baseData.sampleWeight = lastOp?.sampleWeight || 100;
+      baseData.animalCount = lastOp?.animalCount || 10000;
+      baseData.totalWeight = lastOp?.totalWeight || 1000;
+      baseData.sizeId = lastOp?.sizeId || sizes?.[0]?.id;
+      baseData.deadCount = 0; // Always start fresh
     } else {
-      // For other operations
       baseData.animalCount = lastOp?.animalCount || 10000;
       baseData.totalWeight = lastOp?.totalWeight || 1000;
     }
 
+    // FORCE set the data for this specific basket
     setOperationData(prev => ({
       ...prev,
       [basket.id]: baseData
@@ -325,18 +347,21 @@ export default function QuickWizard() {
     }
   };
 
-  // Initialize operation data when basket changes
+  // Initialize operation data when basket changes - FORCE refresh each time
   useEffect(() => {
-    if (currentBasket && lots) {
+    if (currentBasket && lots && sizes) {
+      console.log(`Initializing data for basket ${currentBasket.id} (#${currentBasket.physicalNumber})`);
       initializeOperationData(currentBasket);
     }
-  }, [currentBasket, lots, sizes]);
+  }, [currentBasket, lots, sizes, currentBasketIndex]); // Added currentBasketIndex to force refresh
 
   // Reset operation data when operation type changes
   useEffect(() => {
     if (selectedOperationType) {
+      console.log(`Resetting all data for operation type: ${selectedOperationType}`);
       setOperationData({}); // Clear all data when operation type changes
       setCompletedBaskets([]); // Reset completed baskets
+      setCurrentBasketIndex(0); // Reset to first basket
     }
   }, [selectedOperationType]);
 
