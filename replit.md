@@ -160,6 +160,12 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ User feedback indicated the feature was not satisfactory and requested its removal
 ✓ Cleaned up menu item, route, and component files for "Inserimento Rapido"
 ✓ Maintained existing "Operazioni Rapide" as the preferred rapid entry method
+✓ **August 6, 2025**: Implemented Spreadsheet Operations module
+✓ Created completely independent menu item "Spreadsheet Operazioni" with table-based interface
+✓ Mobile-first design with editable cells for rapid data entry like Excel/Google Sheets
+✓ Real-time validation, auto-save functionality, and status indicators per row
+✓ Supports all operation types (peso, misura, pulizia, trattamento, vagliatura)
+✓ Batch operations with overview statistics and error handling per basket
 
 ## Changelog
 
