@@ -48,10 +48,12 @@ interface BasketData {
 interface OperationFormData {
   basketId: number;
   cycleId: number;
+  flupsyId: number;
+  lotId: number;
   type: string;
   date: string;
-  animalCount?: number;
-  totalWeight?: number;
+  animalCount: number;
+  totalWeight: number;
   sampleWeight?: number;
   liveAnimals?: number;
   deadCount?: number;
@@ -122,6 +124,11 @@ export default function QuickWizard() {
   // Fetch sizes for auto-selection
   const { data: sizes } = useQuery({
     queryKey: ['/api/sizes'],
+  });
+
+  // Fetch lots for operation creation
+  const { data: lots } = useQuery({
+    queryKey: ['/api/lots'],
   });
 
   // Submit operation mutation
@@ -195,25 +202,39 @@ export default function QuickWizard() {
     if (operationData[basket.id]) return; // Already initialized
 
     const lastOp = basket.lastOperation;
+    const defaultLot = lots?.[0]; // Get first available lot
+    
+    // Base data with ALL required fields
     const baseData: OperationFormData = {
       basketId: basket.id,
       cycleId: basket.currentCycleId!,
+      flupsyId: basket.flupsyId,
+      lotId: defaultLot?.id || 1, // Use first lot or fallback
       type: selectedOperationType,
-      date: new Date().toISOString(),
+      date: new Date().toISOString().split('T')[0], // Format as YYYY-MM-DD
+      animalCount: 0, // Default value, will be updated based on operation type
+      totalWeight: 0, // Default value, will be updated based on operation type
       deadCount: 0,
       manualCountAdjustment: false
     };
 
     // Intelligent pre-population based on operation type and history
-    if (lastOp) {
-      if (selectedOperationType === 'peso') {
-        baseData.animalCount = lastOp.animalCount;
-        baseData.animalsPerKg = lastOp.animalsPerKg;
-      } else if (selectedOperationType === 'misura') {
-        baseData.sizeId = lastOp.sizeId;
-        baseData.liveAnimals = lastOp.liveAnimals || 50;
-        baseData.sampleWeight = lastOp.sampleWeight || 100;
-      }
+    if (selectedOperationType === 'peso') {
+      // For peso operations, we need totalWeight
+      baseData.animalCount = lastOp?.animalCount || 10000; // Default estimate
+      baseData.totalWeight = lastOp?.totalWeight || 1000; // Default weight in grams
+      baseData.animalsPerKg = lastOp?.animalsPerKg || 100;
+    } else if (selectedOperationType === 'misura') {
+      // For misura operations, we need liveAnimals and sampleWeight
+      baseData.liveAnimals = 50; // Default sample size
+      baseData.sampleWeight = 100; // Default sample weight in grams
+      baseData.animalCount = lastOp?.animalCount || 10000; // Keep existing count
+      baseData.totalWeight = lastOp?.totalWeight || 1000; // Keep existing weight
+      baseData.sizeId = lastOp?.sizeId || sizes?.[0]?.id; // Use last size or first available
+    } else {
+      // For other operations
+      baseData.animalCount = lastOp?.animalCount || 10000;
+      baseData.totalWeight = lastOp?.totalWeight || 1000;
     }
 
     setOperationData(prev => ({
@@ -252,18 +273,27 @@ export default function QuickWizard() {
   const submitCurrentOperation = async () => {
     if (!currentBasket || !currentData) return;
 
-    // Initialize data if not already done
-    initializeOperationData(currentBasket);
-    
+    // Prepare final data with all required fields
+    const finalData: OperationFormData = {
+      ...currentData,
+      basketId: currentBasket.id,
+      cycleId: currentBasket.currentCycleId!,
+      flupsyId: currentBasket.flupsyId,
+      lotId: currentData.lotId || lots?.[0]?.id || 1,
+      date: currentData.date || new Date().toISOString().split('T')[0],
+      animalCount: currentData.animalCount || 10000,
+      totalWeight: currentData.totalWeight || 1000
+    };
+
     try {
-      await submitOperationMutation.mutateAsync(currentData);
+      await submitOperationMutation.mutateAsync(finalData);
       
       // Move to next basket if available
       if (currentBasketIndex < eligibleBaskets.length - 1) {
         nextBasket();
       }
     } catch (error) {
-      // Error handled by mutation
+      console.error('Errore durante il salvataggio:', error);
     }
   };
 
@@ -283,10 +313,18 @@ export default function QuickWizard() {
 
   // Initialize operation data when basket changes
   useEffect(() => {
-    if (currentBasket) {
+    if (currentBasket && lots) {
       initializeOperationData(currentBasket);
     }
-  }, [currentBasket]);
+  }, [currentBasket, lots, sizes]);
+
+  // Reset operation data when operation type changes
+  useEffect(() => {
+    if (selectedOperationType) {
+      setOperationData({}); // Clear all data when operation type changes
+      setCompletedBaskets([]); // Reset completed baskets
+    }
+  }, [selectedOperationType]);
 
   const renderStepContent = () => {
     switch (currentStep) {
