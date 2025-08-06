@@ -174,21 +174,45 @@ export default function OperationFormCompact({
     // Validazione specifica per tipo operazione
     switch (watchType) {
       case 'prima-attivazione':
-        // Prima attivazione richiede: animali per kg, peso sample, animali vivi, peso totale
-        return !!(
-          watchAnimalsPerKg && watchAnimalsPerKg > 0 &&
-          watchSampleWeight && watchSampleWeight > 0 &&
-          watchLiveAnimals && watchLiveAnimals > 0 &&
-          watchTotalWeight && watchTotalWeight > 0
-        );
+        if (watchManualCountAdjustment) {
+          // Modalità manuale: richiede numero animali, animali per kg, mortalità e peso totale
+          const watchAnimalCount = form.watch("animalCount");
+          const watchMortalityRate = form.watch("mortalityRate");
+          return !!(
+            watchAnimalCount && watchAnimalCount > 0 &&
+            watchAnimalsPerKg && watchAnimalsPerKg > 0 &&
+            watchMortalityRate !== null && watchMortalityRate !== undefined &&
+            watchTotalWeight && watchTotalWeight > 0
+          );
+        } else {
+          // Modalità automatica: richiede animali per kg, peso sample, animali vivi, peso totale
+          return !!(
+            watchAnimalsPerKg && watchAnimalsPerKg > 0 &&
+            watchSampleWeight && watchSampleWeight > 0 &&
+            watchLiveAnimals && watchLiveAnimals > 0 &&
+            watchTotalWeight && watchTotalWeight > 0
+          );
+        }
       
       case 'misura':
-        // Misura richiede: peso sample, animali vivi, peso totale
-        return !!(
-          watchSampleWeight && watchSampleWeight > 0 &&
-          watchLiveAnimals && watchLiveAnimals > 0 &&
-          watchTotalWeight && watchTotalWeight > 0
-        );
+        if (watchManualCountAdjustment) {
+          // Modalità manuale: richiede numero animali, animali per kg, mortalità e peso totale
+          const watchAnimalCount = form.watch("animalCount");
+          const watchMortalityRate = form.watch("mortalityRate");
+          return !!(
+            watchAnimalCount && watchAnimalCount > 0 &&
+            watchAnimalsPerKg && watchAnimalsPerKg > 0 &&
+            watchMortalityRate !== null && watchMortalityRate !== undefined &&
+            watchTotalWeight && watchTotalWeight > 0
+          );
+        } else {
+          // Modalità automatica: richiede peso sample, animali vivi, peso totale
+          return !!(
+            watchSampleWeight && watchSampleWeight > 0 &&
+            watchLiveAnimals && watchLiveAnimals > 0 &&
+            watchTotalWeight && watchTotalWeight > 0
+          );
+        }
       
       case 'peso':
         // Peso richiede: peso totale
@@ -201,7 +225,7 @@ export default function OperationFormCompact({
       default:
         return false;
     }
-  }, [watchFlupsyId, watchBasketId, watchType, watchDate, watchLotId, watchAnimalsPerKg, watchSampleWeight, watchLiveAnimals, watchTotalWeight]);
+  }, [watchFlupsyId, watchBasketId, watchType, watchDate, watchLotId, watchAnimalsPerKg, watchSampleWeight, watchLiveAnimals, watchTotalWeight, watchManualCountAdjustment, form]);
 
   // Query per ottenere dati da database
   const { data: flupsys } = useQuery({ 
