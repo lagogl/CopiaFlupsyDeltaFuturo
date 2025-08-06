@@ -104,7 +104,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Posizioni", path: "/flupsy-positions" },
         { icon: <FileText className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni", path: "/operations" },
         { icon: <Zap className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Rapide", path: "/quick-operations" },
-        { icon: <LayoutGrid className="h-5 w-5 mr-2 text-orange-600" />, label: "Inserimento Rapido", path: "/quick-wizard" },
+
         { icon: <GripHorizontal className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Drag&Drop", path: "/operations-drag-drop" },
         { icon: <LayoutGrid className="h-5 w-5 mr-2 text-blue-600" />, label: "Vagliatura con Mappa", path: "/vagliatura-con-mappa" },
         { icon: <Smartphone className="h-5 w-5 mr-2 text-blue-600" />, label: "Prima Attivazione NFC", path: "/nfc-prima-attivazione" },

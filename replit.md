@@ -156,6 +156,10 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Resolved problem where cursor would jump back when entering 5th digit in weight fields
 ✓ Removed automatic thousands separator formatting during input to prevent cursor issues
 ✓ Changed weight field validation to accept only integers without decimal points
+✓ **August 6, 2025**: Removed QuickWizard Multi-Step interface
+✓ User feedback indicated the feature was not satisfactory and requested its removal
+✓ Cleaned up menu item, route, and component files for "Inserimento Rapido"
+✓ Maintained existing "Operazioni Rapide" as the preferred rapid entry method
 
 ## Changelog
 

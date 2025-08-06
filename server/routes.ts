@@ -1740,43 +1740,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: "POST endpoint funziona!" });
   });
 
-  // Route temporaneo di emergenza per le operazioni
-  app.post("/api/operations-emergency", async (req, res) => {
-    console.log("🚨 EMERGENCY OPERATIONS ROUTE - Ricevuta richiesta");
-    console.log("Body:", req.body);
-    
-    try {
-      // Logica semplificata per creare operazioni
-      const operationData = req.body;
-      
-      // Validazione base SOLO campi essenziali
-      if (!operationData.type || !operationData.basketId || !operationData.cycleId) {
-        return res.status(400).json({ 
-          message: "Campi richiesti mancanti", 
-          required: ["type", "basketId", "cycleId"],
-          received: Object.keys(operationData)
-        });
-      }
 
-      console.log("Creazione operazione con dati:", operationData);
-      const result = await storage.createOperation(operationData);
-      console.log("✅ Operazione creata con successo:", result);
-      
-      // Broadcast WebSocket update
-      if (typeof (global as any).broadcastUpdate === 'function') {
-        console.log("📡 Broadcasting WebSocket update...");
-        (global as any).broadcastUpdate();
-      }
-      
-      res.json({ success: true, operation: result });
-    } catch (error) {
-      console.error("❌ Errore nella creazione operazione:", error);
-      res.status(500).json({ 
-        message: "Errore nella creazione operazione", 
-        error: error instanceof Error ? error.message : String(error) 
-      });
-    }
-  });
 
   app.post("/api/operations", async (req, res) => {
     console.log("🔍 STANDARD OPERATIONS ENDPOINT CHIAMATO - POST /api/operations");
