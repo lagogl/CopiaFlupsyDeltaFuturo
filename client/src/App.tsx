@@ -11,6 +11,7 @@ import Operations from "@/pages/Operations";
 import OperationDetail from "@/pages/OperationDetail";
 import EditOperation from "@/pages/EditOperation";
 import QuickOperations from "@/pages/QuickOperations";
+import QuickWizard from "@/pages/QuickWizard";
 import OperationsDragDrop from "@/pages/OperationsDragDrop";
 import Cycles from "@/pages/Cycles";
 import CyclesPaginated from "@/pages/CyclesPaginated";
@@ -86,6 +87,7 @@ function Router() {
       <ProtectedRoute path="/operations/:id" component={OperationDetail}/>
       <ProtectedRoute path="/quick-operations" component={QuickOperations}/>
       <ProtectedRoute path="/quickoperations" component={QuickOperations}/>
+      <ProtectedRoute path="/quick-wizard" component={QuickWizard}/>
       <ProtectedRoute path="/operations-drag-drop" component={OperationsDragDrop}/>
       <ProtectedRoute path="/cycles" component={CyclesPaginated}/>
       <ProtectedRoute path="/cycles/:id" component={CycleDetail}/>
