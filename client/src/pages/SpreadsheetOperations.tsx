@@ -243,24 +243,76 @@ export default function SpreadsheetOperations() {
     ));
   };
 
-  // Validazione di una riga
+  // Validazione di una riga seguendo lo schema database e le regole del modulo Operations
   const validateRow = (row: OperationRowData): string[] => {
     const errors: string[] = [];
     
-    if (!row.animalCount || row.animalCount <= 0) {
-      errors.push('Numero animali richiesto');
+    // Validazioni di base sempre richieste
+    if (!row.basketId) {
+      errors.push('Cestello richiesto');
     }
     
+    if (!row.type) {
+      errors.push('Tipo operazione richiesto');
+    }
+    
+    // Verifica che il tipo sia valido secondo operationTypes enum
+    const validTypes = ["prima-attivazione", "pulizia", "vagliatura", "trattamento", "misura", "vendita", "selezione-vendita", "cessazione", "peso", "selezione-origine"];
+    if (row.type && !validTypes.includes(row.type)) {
+      errors.push(`Tipo operazione non valido: ${row.type}`);
+    }
+    
+    if (!row.date) {
+      errors.push('Data richiesta');
+    }
+    
+    // Validazione formato data (deve essere YYYY-MM-DD)
+    if (row.date && !/^\d{4}-\d{2}-\d{2}$/.test(row.date)) {
+      errors.push('Formato data non valido (richiesto YYYY-MM-DD)');
+    }
+    
+    // Validazioni specifiche per tipo operazione (come nel modulo Operations standard)
     if (row.type === 'peso' && (!row.totalWeight || row.totalWeight <= 0)) {
       errors.push('Peso totale richiesto per operazione peso');
     }
     
-    if (row.type === 'misura' && (!row.liveAnimals || row.liveAnimals <= 0)) {
-      errors.push('Animali vivi campione richiesto per operazione misura');
+    if (row.type === 'misura') {
+      if (!row.animalCount || row.animalCount <= 0) {
+        errors.push('Numero animali richiesto per operazione misura');
+      }
+      if (!row.sizeId) {
+        errors.push('Taglia richiesta per operazione misura');
+      }
+      if (!row.liveAnimals || row.liveAnimals <= 0) {
+        errors.push('Animali vivi campione richiesto per operazione misura');
+      }
+      if (!row.sampleWeight || row.sampleWeight <= 0) {
+        errors.push('Peso campione richiesto per operazione misura');
+      }
     }
     
-    if (row.type === 'misura' && (!row.sampleWeight || row.sampleWeight <= 0)) {
-      errors.push('Peso campione richiesto per operazione misura');
+    // Validazione per prima-attivazione (richiede numero animali)
+    if (row.type === 'prima-attivazione') {
+      if (!row.animalCount || row.animalCount <= 0) {
+        errors.push('Numero animali richiesto per prima attivazione');
+      }
+    }
+    
+    // Validazioni numeriche per campi opzionali
+    if (row.animalCount && (row.animalCount < 0 || !Number.isInteger(row.animalCount))) {
+      errors.push('Numero animali deve essere un intero positivo');
+    }
+    
+    if (row.totalWeight && row.totalWeight < 0) {
+      errors.push('Peso totale deve essere positivo');
+    }
+    
+    if (row.animalsPerKg && (row.animalsPerKg < 0 || !Number.isInteger(row.animalsPerKg))) {
+      errors.push('Animali per kg deve essere un intero positivo');
+    }
+    
+    if (row.deadCount && (row.deadCount < 0 || !Number.isInteger(row.deadCount))) {
+      errors.push('Numero morti deve essere un intero positivo');
     }
     
     return errors;
@@ -299,25 +351,51 @@ export default function SpreadsheetOperations() {
       return;
     }
     
+    // Gestione speciale per operazioni di prima-attivazione (come nel modulo Operations standard)
+    const isPrimaAttivazione = row.type === 'prima-attivazione';
+    const isVendita = row.type === 'vendita' || row.type === 'selezione-vendita';
+    const requiresLot = isPrimaAttivazione;
+    
+    // Prepara i dati dell'operazione seguendo ESATTAMENTE lo schema shared/schema.ts
     const operationData = {
-      basketId: row.basketId,
-      cycleId: basket.currentCycleId,
-      flupsyId: basket.flupsyId,
-      lotId: ((lots as any[]) || [])[0]?.id || 1,
-      type: row.type,
-      date: row.date,
-      animalCount: row.animalCount,
-      totalWeight: row.totalWeight,
-      animalsPerKg: row.animalsPerKg,
-      deadCount: row.deadCount || 0,
-      notes: row.notes || '',
-      // Campi specifici per misura
+      // CAMPI OBBLIGATORI secondo lo schema operations
+      basketId: row.basketId,                                    // integer basket_id NOT NULL
+      // cycleId è NOT NULL nello schema, ma il backend di direct-operations gestisce le eccezioni per prima-attivazione
+      cycleId: isPrimaAttivazione ? null : basket.currentCycleId, // Per prima-attivazione, il backend crea il ciclo
+      type: row.type,                                           // text type (enum operationTypes) NOT NULL 
+      date: row.date,                                           // date NOT NULL (formato YYYY-MM-DD)
+      
+      // CAMPI OPZIONALI secondo lo schema operations  
+      sizeId: row.type === 'misura' ? row.sizeId : null,       // integer size_id (nullable)
+      sgrId: null,                                              // integer sgr_id (nullable)
+      // Per prima-attivazione, lotId è obbligatorio
+      lotId: requiresLot ? (((lots as any[]) || [])[0]?.id || 1) : null, // integer lot_id (nullable)
+      animalCount: row.animalCount || null,                     // integer animal_count (nullable)
+      totalWeight: row.totalWeight || null,                     // real total_weight (nullable, in grams)
+      animalsPerKg: row.animalsPerKg || null,                  // integer animals_per_kg (nullable)
+      deadCount: row.deadCount || null,                         // integer dead_count (nullable)
+      mortalityRate: null,                                      // real mortality_rate (nullable) - calcolato dal backend
+      notes: row.notes || null,                                 // text notes (nullable)
+      
+      // CAMPI NON INCLUSI (gestiti dal backend o omessi per insert)
+      // id: omesso (auto-generato)
+      // averageWeight: omesso (calcolato dal backend)
+      // metadata: omesso (gestito dal backend per API esterne)
+      
+      // CAMPI SPECIFICI PER OPERAZIONE MISURA (aggiunti come metadata custom se necessario)
       ...(row.type === 'misura' && {
-        liveAnimals: row.liveAnimals,
-        sampleWeight: row.sampleWeight,
-        sizeId: row.sizeId
+        // Questi campi non sono nello schema operations standard, potrebbero essere gestiti diversamente
+        liveAnimals: row.liveAnimals,     // Potrebbe essere aggiunto come metadata
+        sampleWeight: row.sampleWeight    // Potrebbe essere aggiunto come metadata
       })
     };
+    
+    console.log('📋 Spreadsheet: Schema-compliant operation data:', {
+      ...operationData,
+      isSpecialType: { isPrimaAttivazione, isVendita, requiresLot },
+      basketState: basket.state,
+      hasActiveCycle: basket.currentCycleId != null
+    });
     
     console.log('📦 Spreadsheet: Dati operazione preparati:', operationData);
     
