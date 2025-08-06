@@ -220,9 +220,9 @@ export default function SpreadsheetOperations() {
           animalsPerKg: lastOp?.animalsPerKg || 100,
           deadCount: 0,
           notes: '',
-          // Campi specifici per misura
+          // Campi specifici per operazioni che richiedono campione
           liveAnimals: selectedOperationType === 'misura' ? 50 : null,
-          sampleWeight: selectedOperationType === 'misura' ? 100 : null,
+          sampleWeight: (selectedOperationType === 'misura' || selectedOperationType === 'peso') ? 100 : null,
           sizeId: selectedOperationType === 'misura' ? ((sizes as any[]) || [])[0]?.id : null,
           status: 'editing',
           errors: [],
@@ -286,8 +286,13 @@ export default function SpreadsheetOperations() {
     }
     
     // Validazioni specifiche per tipo operazione (come nel modulo Operations standard)
-    if (row.type === 'peso' && (!row.totalWeight || row.totalWeight <= 0)) {
-      errors.push('Peso totale richiesto per operazione peso');
+    if (row.type === 'peso') {
+      if (!row.totalWeight || row.totalWeight <= 0) {
+        errors.push('Peso totale richiesto per operazione peso');
+      }
+      if (!row.sampleWeight || row.sampleWeight <= 0) {
+        errors.push('Peso campione richiesto per operazione peso');
+      }
     }
     
     if (row.type === 'misura') {
@@ -581,6 +586,8 @@ export default function SpreadsheetOperations() {
                 <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{
                   gridTemplateColumns: selectedOperationType === 'misura' 
                     ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 2fr 60px' 
+                    : selectedOperationType === 'peso'
+                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
                     : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
                 }}>
                   <div className="px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
@@ -597,11 +604,13 @@ export default function SpreadsheetOperations() {
                   <div className="px-2 py-1.5 border-r">Animali</div>
                   <div className="px-2 py-1.5 border-r">Peso Tot (g)</div>
                   <div className="px-2 py-1.5 border-r">Anim/kg</div>
+                  {/* PESO CAMPIONE per operazioni peso e misura */}
+                  {(selectedOperationType === 'peso' || selectedOperationType === 'misura') && (
+                    <div className="px-1 py-1.5 border-r bg-yellow-50">P.Camp*</div>
+                  )}
+                  {/* ANIMALI VIVI solo per misura */}
                   {selectedOperationType === 'misura' && (
-                    <>
-                      <div className="px-1 py-1.5 border-r">Vivi</div>
-                      <div className="px-1 py-1.5 border-r">P.Camp</div>
-                    </>
+                    <div className="px-1 py-1.5 border-r">Vivi</div>
                   )}
                   <div className="px-2 py-1.5 border-r">Note</div>
                   <div className="px-1 py-1.5 text-center">Azioni</div>
@@ -619,6 +628,8 @@ export default function SpreadsheetOperations() {
                     style={{
                       gridTemplateColumns: selectedOperationType === 'misura' 
                         ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 2fr 60px' 
+                        : selectedOperationType === 'peso'
+                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
                         : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
                     }}
                   >
@@ -720,30 +731,33 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    {selectedOperationType === 'misura' && (
-                      <>
-                        <div className="px-1 py-1 border-r">
-                          <input
-                            type="number"
-                            value={row.liveAnimals || ''}
-                            onChange={(e) => updateCell(row.basketId, 'liveAnimals', Number(e.target.value))}
-                            className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
-                            min="0"
-                            placeholder="0"
-                          />
-                        </div>
+                    {/* PESO CAMPIONE per operazioni peso e misura */}
+                    {(selectedOperationType === 'peso' || selectedOperationType === 'misura') && (
+                      <div className="px-1 py-1 border-r bg-yellow-50">
+                        <input
+                          type="number"
+                          value={row.sampleWeight || ''}
+                          onChange={(e) => updateCell(row.basketId, 'sampleWeight', Number(e.target.value))}
+                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                          min="0"
+                          placeholder="0"
+                          required
+                        />
+                      </div>
+                    )}
 
-                        <div className="px-1 py-1 border-r">
-                          <input
-                            type="number"
-                            value={row.sampleWeight || ''}
-                            onChange={(e) => updateCell(row.basketId, 'sampleWeight', Number(e.target.value))}
-                            className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
-                            min="0"
-                            placeholder="0"
-                          />
-                        </div>
-                      </>
+                    {/* ANIMALI VIVI solo per misura */}
+                    {selectedOperationType === 'misura' && (
+                      <div className="px-1 py-1 border-r">
+                        <input
+                          type="number"
+                          value={row.liveAnimals || ''}
+                          onChange={(e) => updateCell(row.basketId, 'liveAnimals', Number(e.target.value))}
+                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
+                          min="0"
+                          placeholder="0"
+                        />
+                      </div>
                     )}
 
                     <div className="px-1 py-1 border-r">
