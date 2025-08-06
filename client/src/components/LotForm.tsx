@@ -68,7 +68,10 @@ export default function LotForm({
 
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: {
+      ...defaultValues,
+      quality: defaultValues?.quality || "normali",
+    },
   });
   
   // Stato per tenere traccia dei valori di calcolo
@@ -188,7 +191,7 @@ export default function LotForm({
                 <FormControl>
                   <RadioGroup
                     onValueChange={field.onChange}
-                    defaultValue={field.value}
+                    value={field.value || "normali"}
                     className="flex flex-col space-y-1"
                   >
                     <div className="flex items-center space-x-2">
