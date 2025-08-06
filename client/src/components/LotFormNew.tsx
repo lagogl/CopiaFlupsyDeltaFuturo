@@ -33,7 +33,7 @@ const formSchema = z.object({
   arrivalDate: z.string(),  // Semplifico da date a string
   supplier: z.string().min(1, "Il nome del fornitore è obbligatorio"),
   supplierLotNumber: z.string().optional(),
-  quality: z.string().optional(),
+  quality: z.string().default("normali"),
   animalCount: z.number().int().optional().nullable(),
   weight: z.number().optional().nullable(),
   sizeId: z.number().optional().nullable(),
@@ -55,12 +55,17 @@ interface LotFormProps {
 
 export default function LotFormNew({ 
   onSubmit, 
-  defaultValues = {
-    arrivalDate: new Date().toISOString().split('T')[0],
-  },
+  defaultValues,
   isLoading = false,
   isEditing = false
 }: LotFormProps) {
+  
+  // Assicuriamo che i valori di default includano sempre la qualità normali
+  const finalDefaultValues = {
+    arrivalDate: new Date().toISOString().split('T')[0],
+    quality: "normali",
+    ...defaultValues,
+  };
   // Fetch sizes for dropdown
   const { data: sizes = [] } = useQuery<Size[]>({
     queryKey: ['/api/sizes'],
@@ -68,7 +73,7 @@ export default function LotFormNew({
   
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchema),
-    defaultValues,
+    defaultValues: finalDefaultValues,
   });
   
   // Stato per i calcoli automatici
@@ -308,7 +313,7 @@ export default function LotFormNew({
                   <FormControl>
                     <RadioGroup
                       onValueChange={field.onChange}
-                      defaultValue={field.value}
+                      value={field.value || "normali"}
                       className="flex space-x-6 pt-1"
                     >
                       <div className="flex items-center">
