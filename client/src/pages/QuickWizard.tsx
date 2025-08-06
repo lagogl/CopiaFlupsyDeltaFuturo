@@ -273,17 +273,31 @@ export default function QuickWizard() {
   const submitCurrentOperation = async () => {
     if (!currentBasket || !currentData) return;
 
-    // Prepare final data with all required fields
-    const finalData: OperationFormData = {
-      ...currentData,
+    // Ensure all required fields are present and correctly formatted
+    const finalData = {
       basketId: currentBasket.id,
       cycleId: currentBasket.currentCycleId!,
       flupsyId: currentBasket.flupsyId,
       lotId: currentData.lotId || lots?.[0]?.id || 1,
+      type: selectedOperationType,
       date: currentData.date || new Date().toISOString().split('T')[0],
       animalCount: currentData.animalCount || 10000,
-      totalWeight: currentData.totalWeight || 1000
+      totalWeight: currentData.totalWeight || 1000,
+      deadCount: currentData.deadCount || 0,
+      notes: currentData.notes || '',
+      // Add specific fields for misura operations
+      ...(selectedOperationType === 'misura' && {
+        liveAnimals: currentData.liveAnimals || 50,
+        sampleWeight: currentData.sampleWeight || 100,
+        sizeId: currentData.sizeId
+      }),
+      // Add specific fields for peso operations
+      ...(selectedOperationType === 'peso' && {
+        animalsPerKg: currentData.animalsPerKg || 100
+      })
     };
+
+    console.log('Sending operation data:', finalData);
 
     try {
       await submitOperationMutation.mutateAsync(finalData);
