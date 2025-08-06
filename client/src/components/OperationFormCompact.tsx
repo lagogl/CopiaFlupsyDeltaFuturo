@@ -163,6 +163,7 @@ export default function OperationFormCompact({
   const watchTotalSample = form.watch("totalSample");
   const deadCount = form.watch("deadCount") || 0;
   const watchManualCountAdjustment = form.watch("manualCountAdjustment");
+  const watchAnimalCount = form.watch("animalCount");
 
   // Validazione completa campi obbligatori
   const isFormValid = useMemo(() => {
@@ -175,14 +176,12 @@ export default function OperationFormCompact({
     switch (watchType) {
       case 'prima-attivazione':
         if (watchManualCountAdjustment) {
-          // Modalità manuale: richiede numero animali, animali per kg, mortalità e peso totale
-          const watchAnimalCount = form.watch("animalCount");
+          // Modalità manuale: richiede numero animali, animali per kg, mortalità (peso totale calcolato auto)
           const watchMortalityRate = form.watch("mortalityRate");
           return !!(
             watchAnimalCount && watchAnimalCount > 0 &&
             watchAnimalsPerKg && watchAnimalsPerKg > 0 &&
-            watchMortalityRate !== null && watchMortalityRate !== undefined &&
-            watchTotalWeight && watchTotalWeight > 0
+            watchMortalityRate !== null && watchMortalityRate !== undefined
           );
         } else {
           // Modalità automatica: richiede animali per kg, peso sample, animali vivi, peso totale
@@ -196,14 +195,12 @@ export default function OperationFormCompact({
       
       case 'misura':
         if (watchManualCountAdjustment) {
-          // Modalità manuale: richiede numero animali, animali per kg, mortalità e peso totale
-          const watchAnimalCount = form.watch("animalCount");
+          // Modalità manuale: richiede numero animali, animali per kg, mortalità (peso totale calcolato auto)
           const watchMortalityRate = form.watch("mortalityRate");
           return !!(
             watchAnimalCount && watchAnimalCount > 0 &&
             watchAnimalsPerKg && watchAnimalsPerKg > 0 &&
-            watchMortalityRate !== null && watchMortalityRate !== undefined &&
-            watchTotalWeight && watchTotalWeight > 0
+            watchMortalityRate !== null && watchMortalityRate !== undefined
           );
         } else {
           // Modalità automatica: richiede peso sample, animali vivi, peso totale
@@ -225,7 +222,7 @@ export default function OperationFormCompact({
       default:
         return false;
     }
-  }, [watchFlupsyId, watchBasketId, watchType, watchDate, watchLotId, watchAnimalsPerKg, watchSampleWeight, watchLiveAnimals, watchTotalWeight, watchManualCountAdjustment, form]);
+  }, [watchFlupsyId, watchBasketId, watchType, watchDate, watchLotId, watchAnimalsPerKg, watchSampleWeight, watchLiveAnimals, watchTotalWeight, watchManualCountAdjustment, watchAnimalCount, form]);
 
   // Query per ottenere dati da database
   const { data: flupsys } = useQuery({ 
@@ -707,6 +704,21 @@ export default function OperationFormCompact({
       }
     }
   }, [watchManualCountAdjustment, form, watchType, watchLiveAnimals, deadCount, watchSampleWeight]);
+
+  // Calcola automaticamente il peso totale in modalità manuale
+  useEffect(() => {
+    if (watchManualCountAdjustment && watchAnimalsPerKg && watchAnimalsPerKg > 0 && watchAnimalCount && watchAnimalCount > 0) {
+      // Peso medio di un animale in grammi = 1000 / animali per kg
+      const avgWeightPerAnimalInGrams = 1000 / watchAnimalsPerKg;
+      
+      // Peso totale = numero animali * peso medio per animale
+      const calculatedTotalWeight = Math.round(watchAnimalCount * avgWeightPerAnimalInGrams);
+      
+      console.log(`Calcolo peso totale automatico: ${watchAnimalCount} animali * ${avgWeightPerAnimalInGrams.toFixed(3)}g = ${calculatedTotalWeight}g`);
+      
+      form.setValue('totalWeight', calculatedTotalWeight);
+    }
+  }, [watchManualCountAdjustment, watchAnimalsPerKg, watchAnimalCount, form]);
 
   // Funzione di submit del form
   const handleSubmit = async (values: z.infer<typeof operationSchema>) => {
@@ -1829,21 +1841,27 @@ export default function OperationFormCompact({
                     name="totalWeight"
                     render={({ field }) => (
                       <FormItem className="mb-1">
-                        <FormLabel className="text-xs font-medium">Peso totale (grammi)</FormLabel>
+                        <FormLabel className="text-xs font-medium">
+                          Peso totale (grammi)
+                          {watchManualCountAdjustment && <span className="text-xs text-gray-500 ml-1">(calcolato automaticamente)</span>}
+                        </FormLabel>
                         <FormControl>
                           <Input 
                             type="text" 
-                            placeholder="Peso totale cestello"
-                            className="h-8 text-sm"
-                            value={field.value === null || field.value === undefined ? '' : field.value}
+                            placeholder={watchManualCountAdjustment ? "Peso calcolato automaticamente" : "Peso totale cestello"}
+                            className={`h-8 text-sm ${watchManualCountAdjustment ? 'bg-purple-50' : ''}`}
+                            readOnly={watchManualCountAdjustment}
+                            value={field.value === null || field.value === undefined ? '' : field.value.toLocaleString('it-IT')}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
-                              if (value === '') {
-                                field.onChange(null);
-                              } else {
-                                const numValue = parseFloat(value);
-                                if (!isNaN(numValue) && numValue <= 1000000) {
-                                  field.onChange(numValue);
+                              if (!watchManualCountAdjustment) {
+                                const value = e.target.value.replace(/[^0-9.]/g, '');
+                                if (value === '') {
+                                  field.onChange(null);
+                                } else {
+                                  const numValue = parseFloat(value);
+                                  if (!isNaN(numValue) && numValue <= 1000000) {
+                                    field.onChange(numValue);
+                                  }
                                 }
                               }
                             }}
