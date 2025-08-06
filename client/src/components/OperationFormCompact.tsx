@@ -1551,13 +1551,13 @@ export default function OperationFormCompact({
                             type="text" 
                             placeholder="Inserisci peso totale"
                             className="h-8 text-sm"
-                            value={field.value === null || field.value === undefined ? '' : field.value}
+                            value={field.value === null || field.value === undefined ? '' : field.value.toString()}
                             onChange={(e) => {
-                              const value = e.target.value.replace(/[^0-9.]/g, '');
+                              const value = e.target.value.replace(/[^0-9]/g, '');
                               if (value === '') {
                                 field.onChange(null);
                               } else {
-                                const numValue = parseFloat(value);
+                                const numValue = parseInt(value, 10);
                                 if (!isNaN(numValue) && numValue <= 999999) {
                                   field.onChange(numValue);
                                   
@@ -1851,14 +1851,14 @@ export default function OperationFormCompact({
                             placeholder={watchManualCountAdjustment ? "Peso calcolato automaticamente" : "Peso totale cestello"}
                             className={`h-8 text-sm ${watchManualCountAdjustment ? 'bg-purple-50' : ''}`}
                             readOnly={watchManualCountAdjustment}
-                            value={field.value === null || field.value === undefined ? '' : field.value.toLocaleString('it-IT')}
+                            value={field.value === null || field.value === undefined ? '' : field.value.toString()}
                             onChange={(e) => {
                               if (!watchManualCountAdjustment) {
-                                const value = e.target.value.replace(/[^0-9.]/g, '');
+                                const value = e.target.value.replace(/[^0-9]/g, '');
                                 if (value === '') {
                                   field.onChange(null);
                                 } else {
-                                  const numValue = parseFloat(value);
+                                  const numValue = parseInt(value, 10);
                                   if (!isNaN(numValue) && numValue <= 999999) {
                                     field.onChange(numValue);
                                   }

@@ -152,6 +152,10 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Added comprehensive cache invalidation for all related data (operations, baskets, cycles, FLUPSY)
 ✓ Implemented WebSocket notifications for real-time updates after operation deletion
 ✓ Fixed dashboard visualization sync issues when operations are deleted
+✓ **August 6, 2025**: Fixed numeric input cursor jumping issue in operation forms
+✓ Resolved problem where cursor would jump back when entering 5th digit in weight fields
+✓ Removed automatic thousands separator formatting during input to prevent cursor issues
+✓ Changed weight field validation to accept only integers without decimal points
 
 ## Changelog
 
