@@ -4886,10 +4886,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`DELETE FROM bag_allocations`;
           await sql`DELETE FROM sale_operations_ref`;
           
-          // 17. Elimina solo DDT (mantieni clienti sincronizzati da Fatture in Cloud)
-          const step17 = "📄 Eliminazione DDT (mantengo clienti sincronizzati)...";
+          // 17. Elimina dati Fatture in Cloud (ricaricabili con sincronizzazione)
+          const step17 = "📄 Eliminazione dati Fatture in Cloud...";
           console.log(step17);
           broadcastMessage("database_reset_progress", { message: step17, step: 17 });
+          await sql`DELETE FROM clienti`;
+          await sql`DELETE FROM clients`;
           await sql`DELETE FROM ddt`;
           await sql`DELETE FROM sync_log_fatture_in_cloud`;
           
@@ -4944,6 +4946,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`ALTER SEQUENCE IF EXISTS payments_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS bag_allocations_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS sale_operations_ref_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS clienti_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS clients_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS ddt_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS sync_log_fatture_in_cloud_id_seq RESTART WITH 1`;
           
