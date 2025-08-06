@@ -36,6 +36,8 @@ interface OperationRowData {
   physicalNumber: number;
   type: string;
   date: string;
+  // CAMPI OBBLIGATORI che devono essere compilati
+  lotId: number | null;           // Lotto - OBBLIGATORIO per tutte le operazioni
   animalCount: number | null;
   totalWeight: number | null;
   animalsPerKg: number | null;
@@ -44,7 +46,7 @@ interface OperationRowData {
   // Campi specifici per misura
   liveAnimals?: number | null;
   sampleWeight?: number | null;
-  sizeId?: number | null;
+  sizeId?: number | null;          // Taglia - OBBLIGATORIO per operazione misura
   // Campi calcolati
   mortalityRate?: number | null;
   status: 'editing' | 'saving' | 'saved' | 'error';
@@ -56,12 +58,17 @@ interface OperationRowData {
   lastOperationType?: string;
 }
 
+// Tipi operazione per il modulo Spreadsheet (SOLO per ceste già attive - NO prima-attivazione)
 const operationTypeLabels = {
   'peso': 'Peso',
   'misura': 'Misura',
   'pulizia': 'Pulizia',
   'trattamento': 'Trattamento',
-  'vagliatura': 'Vagliatura'
+  'vagliatura': 'Vagliatura',
+  'vendita': 'Vendita',
+  'selezione-vendita': 'Selezione Vendita',
+  'cessazione': 'Cessazione'
+  // NOTA: 'prima-attivazione' non è inclusa perché questo modulo è solo per ceste già attive
 };
 
 export default function SpreadsheetOperations() {
@@ -206,6 +213,8 @@ export default function SpreadsheetOperations() {
           physicalNumber: basket.physicalNumber,
           type: selectedOperationType,
           date: operationDate,
+          // CAMPI OBBLIGATORI con valori predefiniti validi
+          lotId: ((lots as any[]) || [])[0]?.id || null,  // Lotto predefinito (primo disponibile)
           animalCount: lastOp?.animalCount || 10000,
           totalWeight: lastOp?.totalWeight || 1000,
           animalsPerKg: lastOp?.animalsPerKg || 100,
@@ -254,6 +263,11 @@ export default function SpreadsheetOperations() {
     
     if (!row.type) {
       errors.push('Tipo operazione richiesto');
+    }
+    
+    // LOTTO SEMPRE OBBLIGATORIO per tutte le operazioni
+    if (!row.lotId) {
+      errors.push('Lotto obbligatorio');
     }
     
     // Verifica che il tipo sia valido secondo operationTypes enum
@@ -368,8 +382,8 @@ export default function SpreadsheetOperations() {
       // CAMPI OPZIONALI secondo lo schema operations  
       sizeId: row.type === 'misura' ? row.sizeId : null,       // integer size_id (nullable)
       sgrId: null,                                              // integer sgr_id (nullable)
-      // Per prima-attivazione, lotId è obbligatorio
-      lotId: requiresLot ? (((lots as any[]) || [])[0]?.id || 1) : null, // integer lot_id (nullable)
+      // lotId è sempre richiesto per operazioni su ceste attive (FISSO IL BUG: era null!)
+      lotId: row.lotId || ((lots as any[]) || [])[0]?.id || 1, // integer lot_id (obbligatorio per operazioni normali)
       animalCount: row.animalCount || null,                     // integer animal_count (nullable)
       totalWeight: row.totalWeight || null,                     // real total_weight (nullable, in grams)
       animalsPerKg: row.animalsPerKg || null,                  // integer animals_per_kg (nullable)
@@ -563,13 +577,23 @@ export default function SpreadsheetOperations() {
             
             <ScrollArea className="w-full">
               <div className="min-w-[1200px]">
-                {/* Header tabella compatto con più colonne */}
-                <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{gridTemplateColumns: '80px 40px 60px 70px 60px 1fr 1fr 1fr 80px 80px 2fr 60px'}}>
+                {/* Header tabella compatto con TUTTE le colonne necessarie */}
+                <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{
+                  gridTemplateColumns: selectedOperationType === 'misura' 
+                    ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 2fr 60px' 
+                    : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
+                }}>
                   <div className="px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
                   <div className="px-1 py-1.5 border-r text-center">Stato</div>
                   <div className="px-1 py-1.5 border-r text-xs">Taglia</div>
                   <div className="px-1 py-1.5 border-r text-xs">P.Med(g)</div>
                   <div className="px-1 py-1.5 border-r text-xs">Ult.Op</div>
+                  {/* COLONNA LOTTO - OBBLIGATORIO */}
+                  <div className="px-1 py-1.5 border-r text-xs bg-yellow-50">Lotto*</div>
+                  {/* COLONNA TAGLIA - OBBLIGATORIO PER MISURA */}
+                  {selectedOperationType === 'misura' && (
+                    <div className="px-1 py-1.5 border-r text-xs bg-yellow-50">Taglia*</div>
+                  )}
                   <div className="px-2 py-1.5 border-r">Animali</div>
                   <div className="px-2 py-1.5 border-r">Peso Tot (g)</div>
                   <div className="px-2 py-1.5 border-r">Anim/kg</div>
@@ -592,7 +616,11 @@ export default function SpreadsheetOperations() {
                       row.status === 'saved' ? 'bg-green-50' : 
                       row.status === 'saving' ? 'bg-yellow-50' : 'bg-white'
                     }`}
-                    style={{gridTemplateColumns: '80px 40px 60px 70px 60px 1fr 1fr 1fr 80px 80px 2fr 60px'}}
+                    style={{
+                      gridTemplateColumns: selectedOperationType === 'misura' 
+                        ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 2fr 60px' 
+                        : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
+                    }}
                   >
                     {/* Colonna cestello fissa */}
                     <div className="px-2 py-1 border-r flex items-center font-medium text-gray-700 bg-white sticky left-0 z-10 shadow-r">
@@ -621,6 +649,42 @@ export default function SpreadsheetOperations() {
                         {row.lastOperationDate ? new Date(row.lastOperationDate).toLocaleDateString('it-IT', {month: '2-digit', day: '2-digit'}) : '-'}
                       </span>
                     </div>
+
+                    {/* CAMPO LOTTO - OBBLIGATORIO */}
+                    <div className="px-1 py-1 border-r bg-yellow-50">
+                      <select
+                        value={row.lotId || ''}
+                        onChange={(e) => updateCell(row.basketId, 'lotId', Number(e.target.value))}
+                        className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                        required
+                      >
+                        <option value="">-</option>
+                        {((lots as any[]) || []).map((lot: any) => (
+                          <option key={lot.id} value={lot.id}>
+                            L{lot.id}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+
+                    {/* CAMPO TAGLIA - OBBLIGATORIO PER MISURA */}
+                    {selectedOperationType === 'misura' && (
+                      <div className="px-1 py-1 border-r bg-yellow-50">
+                        <select
+                          value={row.sizeId || ''}
+                          onChange={(e) => updateCell(row.basketId, 'sizeId', Number(e.target.value))}
+                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                          required
+                        >
+                          <option value="">-</option>
+                          {((sizes as any[]) || []).map((size: any) => (
+                            <option key={size.id} value={size.id}>
+                              {size.code}
+                            </option>
+                          ))}
+                        </select>
+                      </div>
+                    )}
 
                     {/* Campi editabili */}
                     <div className="px-1 py-1 border-r">
