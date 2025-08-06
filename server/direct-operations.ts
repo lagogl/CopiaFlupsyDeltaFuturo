@@ -94,19 +94,87 @@ export function implementDirectOperationRoute(app: Express) {
         return res.status(400).json({ message: "Invalid operation ID" });
       }
 
-      // Elimina direttamente dal database
-      console.log("🗑️ Eliminazione diretta dal database...");
+      // Prima recupera l'operazione per ottenere i dettagli
+      const operationToDelete = await db.select().from(operations).where(eq(operations.id, id)).limit(1);
+      
+      if (!operationToDelete || operationToDelete.length === 0) {
+        console.log(`❌ Nessuna operazione trovata con ID ${id}`);
+        return res.status(404).json({ message: "Operation not found" });
+      }
+
+      const operation = operationToDelete[0];
+      console.log(`🔍 Operazione trovata: tipo=${operation.type}, basketId=${operation.basketId}, cycleId=${operation.cycleId}`);
+
+      // Elimina l'operazione dal database
+      console.log("🗑️ Eliminazione operazione dal database...");
       const deletedOperations = await db.delete(operations).where(eq(operations.id, id)).returning();
       
       if (deletedOperations && deletedOperations.length > 0) {
-        console.log(`✅ Operazione ${id} eliminata con successo via DIRECT ROUTE`);
+        console.log(`✅ Operazione ${id} eliminata con successo`);
+
+        // Se è un'operazione di prima attivazione, elimina anche il ciclo e resetta il cestello
+        if (operation.type === 'prima-attivazione' && operation.cycleId) {
+          console.log(`🔄 Eliminazione ciclo associato ID: ${operation.cycleId}`);
+          
+          // Elimina il ciclo
+          await db.delete(cycles).where(eq(cycles.id, operation.cycleId));
+          console.log(`✅ Ciclo ${operation.cycleId} eliminato`);
+          
+          // Resetta il cestello a stato disponibile
+          await db.update(baskets)
+            .set({
+              state: 'available',
+              currentCycleId: null,
+              cycleCode: null
+            })
+            .where(eq(baskets.id, operation.basketId));
+          console.log(`✅ Cestello ${operation.basketId} resettato a disponibile`);
+        }
+
+        // Invalida cache operazioni
+        const { OperationsCache } = await import('./operations-cache-service.js');
+        OperationsCache.clear();
+        console.log('🔄 Cache operazioni invalidata');
+
+        // Invia notifiche WebSocket per aggiornamenti real-time
+        if (typeof (global as any).broadcastUpdate === 'function') {
+          console.log("📡 Invio notifiche WebSocket per eliminazione operazione");
+          
+          (global as any).broadcastUpdate('operation_deleted', {
+            operationId: id,
+            basketId: operation.basketId,
+            operationType: operation.type,
+            message: `Operazione ${operation.type} eliminata`
+          });
+          
+          if (operation.type === 'prima-attivazione' && operation.cycleId) {
+            (global as any).broadcastUpdate('cycle_deleted', {
+              cycleId: operation.cycleId,
+              basketId: operation.basketId,
+              message: `Ciclo eliminato dopo rimozione prima attivazione`
+            });
+          }
+          
+          (global as any).broadcastUpdate('basket_updated', {
+            basketId: operation.basketId,
+            state: 'available',
+            message: `Cestello aggiornato dopo eliminazione operazione`
+          });
+          
+          console.log("✅ Notifiche WebSocket inviate");
+        } else {
+          console.warn("⚠️ WebSocket non disponibile per notifiche");
+        }
+
         return res.status(200).json({ 
-          message: "Operation deleted successfully via direct route",
+          message: "Operation deleted successfully with all related data cleanup",
           operationId: id,
-          deletedOperation: deletedOperations[0]
+          deletedOperation: deletedOperations[0],
+          cycleDeleted: operation.type === 'prima-attivazione' && operation.cycleId ? operation.cycleId : null,
+          basketReset: operation.basketId
         });
       } else {
-        console.log(`❌ Nessuna operazione trovata con ID ${id}`);
+        console.log(`❌ Nessuna operazione eliminata`);
         return res.status(404).json({ message: "Operation not found" });
       }
     } catch (error) {

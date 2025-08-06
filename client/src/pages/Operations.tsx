@@ -539,7 +539,16 @@ export default function Operations() {
       method: 'POST'
     }),
     onSuccess: () => {
+      // Invalida tutte le cache correlate per mantenere la sincronizzazione
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/operations-optimized'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/operations-unified'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+      // Invalida anche le cache specifiche per mini-mappa e visualizzatori
+      queryClient.invalidateQueries({ queryKey: ['mini-map-baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['flupsy-visualizer'] });
       setIsDeleteDialogOpen(false);
       setSelectedOperation(null);
       toast({

@@ -147,6 +147,11 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Implemented automatic total weight calculation: number of animals × average weight per animal
 ✓ Updated form validation logic to enable button correctly for both manual and automatic modes
 ✓ Set maximum limit for total weight field to 999,999 grams in non-manual mode
+✓ **August 6, 2025**: Fixed database consistency issues after operation deletion
+✓ Enhanced emergency delete route to properly handle cycle and basket cleanup
+✓ Added comprehensive cache invalidation for all related data (operations, baskets, cycles, FLUPSY)
+✓ Implemented WebSocket notifications for real-time updates after operation deletion
+✓ Fixed dashboard visualization sync issues when operations are deleted
 
 ## Changelog
 
