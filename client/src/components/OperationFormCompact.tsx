@@ -1848,19 +1848,25 @@ export default function OperationFormCompact({
                             <FormLabel className="text-xs font-medium">Mortalità (%)</FormLabel>
                             <FormControl>
                               <Input 
-                                type="text" 
+                                type={watchManualCountAdjustment ? "number" : "text"}
+                                step={watchManualCountAdjustment ? "0.01" : undefined}
+                                min={watchManualCountAdjustment ? "0" : undefined}
+                                max={watchManualCountAdjustment ? "100" : undefined}
                                 className={`h-8 text-sm ${!watchManualCountAdjustment ? 'bg-purple-50' : ''}`}
                                 readOnly={!watchManualCountAdjustment}
-                                placeholder={watchManualCountAdjustment ? "Inserisci mortalità" : ""}
-                                value={field.value === null || field.value === undefined 
-                                  ? '' 
-                                  : field.value.toLocaleString('it-IT', { 
-                                      minimumFractionDigits: 2,
-                                      maximumFractionDigits: 2
-                                    })}
+                                placeholder={watchManualCountAdjustment ? "Inserisci mortalità %" : ""}
+                                value={watchManualCountAdjustment 
+                                  ? (field.value === null || field.value === undefined ? '' : field.value)
+                                  : (field.value === null || field.value === undefined 
+                                      ? '' 
+                                      : field.value.toLocaleString('it-IT', { 
+                                          minimumFractionDigits: 2,
+                                          maximumFractionDigits: 2
+                                        }))
+                                }
                                 onChange={(e) => {
                                   if (watchManualCountAdjustment) {
-                                    const value = e.target.value.replace(/[^0-9.,]/g, '').replace(',', '.');
+                                    const value = e.target.value;
                                     if (value === '') {
                                       field.onChange(null);
                                     } else {
