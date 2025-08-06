@@ -137,6 +137,11 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Successfully synchronized 67 clients from Fatture in Cloud
 ✓ Implemented company data display when saving company ID
 ✓ All core functionality verified: authentication, client sync, company info display
+✓ **August 6, 2025**: Enhanced manual editing functionality in operations
+✓ Extended "Modifica manuale" checkbox to include mortality percentage and animals per kg
+✓ Fixed decimal input validation for mortality field (now supports values like 2.50%)
+✓ Implemented automatic calculation disable when manual mode is active
+✓ Added proper number input types with step validation for precision
 
 ## Changelog
 
