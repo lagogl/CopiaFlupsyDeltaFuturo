@@ -56,6 +56,7 @@ export default function LotForm({
   onSubmit, 
   defaultValues = {
     arrivalDate: new Date().toISOString().split('T')[0],
+    quality: "normali",
   },
   isLoading = false,
   isEditing = false
