@@ -4845,10 +4845,60 @@ export async function registerRoutes(app: Express): Promise<Server> {
           broadcastMessage("database_reset_progress", { message: step11, step: 11 });
           await sql`DELETE FROM baskets`;
           
-          // 12. Resettiamo le sequenze degli ID
-          const step12 = "🔢 Reset contatori ID di tutte le tabelle...";
+          // 12. Elimina tutte le notifiche
+          const step12 = "🔔 Eliminazione notifiche...";
           console.log(step12);
           broadcastMessage("database_reset_progress", { message: step12, step: 12 });
+          await sql`DELETE FROM notifications`;
+          
+          // 13. Elimina mortalità e SGR 
+          const step13 = "📊 Eliminazione dati mortalità e SGR...";
+          console.log(step13);
+          broadcastMessage("database_reset_progress", { message: step13, step: 13 });
+          await sql`DELETE FROM lot_mortality_records`;
+          await sql`DELETE FROM mortality_rates`;
+          await sql`DELETE FROM sgr_giornalieri`;
+          
+          // 14. Elimina impatti e sostenibilità
+          const step14 = "🌱 Eliminazione dati impatti e sostenibilità...";
+          console.log(step14);
+          broadcastMessage("database_reset_progress", { message: step14, step: 14 });
+          await sql`DELETE FROM operation_impacts`;
+          await sql`DELETE FROM flupsy_impacts`;
+          await sql`DELETE FROM sustainability_reports`;
+          
+          // 15. Elimina report e documenti
+          const step15 = "📋 Eliminazione report e documenti...";
+          console.log(step15);
+          broadcastMessage("database_reset_progress", { message: step15, step: 15 });
+          await sql`DELETE FROM delivery_reports`;
+          await sql`DELETE FROM sales_reports`;
+          await sql`DELETE FROM reports`;
+          await sql`DELETE FROM documents`;
+          
+          // 16. Elimina ordini e pagamenti
+          const step16 = "💳 Eliminazione ordini e pagamenti...";
+          console.log(step16);
+          broadcastMessage("database_reset_progress", { message: step16, step: 16 });
+          await sql`DELETE FROM order_items`;
+          await sql`DELETE FROM orders`;
+          await sql`DELETE FROM payments`;
+          await sql`DELETE FROM bag_allocations`;
+          await sql`DELETE FROM sale_operations_ref`;
+          
+          // 17. Elimina dati Fatture in Cloud
+          const step17 = "📄 Eliminazione dati Fatture in Cloud...";
+          console.log(step17);
+          broadcastMessage("database_reset_progress", { message: step17, step: 17 });
+          await sql`DELETE FROM clienti`;
+          await sql`DELETE FROM clients`;
+          await sql`DELETE FROM ddt`;
+          await sql`DELETE FROM sync_log_fatture_in_cloud`;
+          
+          // 18. Resettiamo le sequenze degli ID di tutte le tabelle
+          const step18 = "🔢 Reset contatori ID di tutte le tabelle...";
+          console.log(step18);
+          broadcastMessage("database_reset_progress", { message: step18, step: 18 });
           
           // Reset sequenze vendite avanzate e sincronizzazione
           await sql`ALTER SEQUENCE IF EXISTS advanced_sales_id_seq RESTART WITH 1`;
@@ -4858,6 +4908,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`ALTER SEQUENCE IF EXISTS external_customers_sync_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS external_delivery_details_sync_id_seq RESTART WITH 1`;
           console.log("✅ Sequenze vendite avanzate e sincronizzazione resettate");
+          
+          // Reset sequenze core operative
           await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS measurements_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS target_size_annotations_id_seq RESTART WITH 1`;
@@ -4877,7 +4929,31 @@ export async function registerRoutes(app: Express): Promise<Server> {
           await sql`ALTER SEQUENCE IF EXISTS cycles_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS baskets_id_seq RESTART WITH 1`;
           
-          const completeMessage = "✅ AZZERAMENTO COMPLETATO - Tutte le tabelle operative, vendite e dati di sincronizzazione eliminati";
+          // Reset sequenze nuove tabelle aggiunte
+          await sql`ALTER SEQUENCE IF EXISTS notifications_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS lot_mortality_records_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS mortality_rates_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS sgr_giornalieri_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS operation_impacts_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS flupsy_impacts_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS sustainability_reports_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS delivery_reports_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS sales_reports_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS reports_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS documents_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS order_items_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS orders_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS payments_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS bag_allocations_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS sale_operations_ref_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS clienti_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS clients_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS ddt_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS sync_log_fatture_in_cloud_id_seq RESTART WITH 1`;
+          
+          console.log("✅ Tutte le sequenze ID resettate a 1");
+          
+          const completeMessage = "✅ AZZERAMENTO COMPLETO DATABASE - Tutti i dati cancellati (eccetto lotti, FLUPSY, utenti e configurazioni)";
           console.log(completeMessage);
           broadcastMessage("database_reset_progress", { message: completeMessage, step: "complete" });
           
@@ -4909,7 +4985,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       res.status(200).json({ 
         success: true,
-        message: "Dati azzerati con successo. Operazioni, cicli, cestelli, posizioni, vendite e dati sincronizzazione eliminati."
+        message: "Azzeramento completo del database completato con successo. Tutti i dati cancellati eccetto lotti, FLUPSY, utenti e configurazioni."
       });
     } catch (error) {
       console.error("Errore durante l'azzeramento dei dati operativi:", error);
