@@ -296,236 +296,243 @@ export default function SpreadsheetOperations() {
   };
 
   return (
-    <div className="container mx-auto py-6 space-y-6">
+    <div className="container mx-auto py-4 space-y-3">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold">Spreadsheet Operazioni</h1>
-          <p className="text-muted-foreground">Inserimento rapido a foglio elettronico</p>
+          <h1 className="text-2xl font-bold">Spreadsheet Operazioni</h1>
+          <p className="text-sm text-gray-600">Inserimento rapido a foglio elettronico</p>
         </div>
         
         <div className="flex items-center gap-2">
-          <Badge variant="outline">
+          <div className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
             {stats.saved}/{stats.total} salvate
-          </Badge>
+          </div>
           {stats.errors > 0 && (
-            <Badge variant="destructive">
+            <div className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
               {stats.errors} errori
-            </Badge>
+            </div>
           )}
         </div>
       </div>
 
-      {/* Controlli principali */}
-      <Card>
-        <CardHeader>
-          <CardTitle>Configurazione</CardTitle>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <div>
-              <label className="text-sm font-medium">FLUPSY</label>
-              <Select value={selectedFlupsyId?.toString() || ""} onValueChange={(value) => setSelectedFlupsyId(Number(value))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona FLUPSY" />
-                </SelectTrigger>
-                <SelectContent>
-                  {((flupsys as any[]) || []).map((flupsy: any) => (
-                    <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
-                      {flupsy.name}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Tipo Operazione</label>
-              <Select value={selectedOperationType} onValueChange={setSelectedOperationType}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  {Object.entries(operationTypeLabels).map(([value, label]) => (
-                    <SelectItem key={value} value={value}>
-                      {label}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-
-            <div>
-              <label className="text-sm font-medium">Data</label>
-              <Input
-                type="date"
-                value={operationDate}
-                onChange={(e) => setOperationDate(e.target.value)}
-              />
-            </div>
-
-            <div className="flex items-end gap-2">
-              <Button onClick={saveAllRows} className="flex-1">
-                <Save className="h-4 w-4 mr-2" />
-                Salva Tutto
-              </Button>
-              <Button onClick={resetAllRows} variant="outline">
-                <RotateCcw className="h-4 w-4" />
-              </Button>
-            </div>
+      {/* Controlli compatti */}
+      <div className="bg-white border rounded-lg p-3 shadow-sm">
+        <div className="flex items-center gap-3 flex-wrap">
+          <div className="flex items-center gap-2 min-w-0">
+            <label className="text-xs font-medium text-gray-600 whitespace-nowrap">FLUPSY</label>
+            <Select value={selectedFlupsyId?.toString() || ""} onValueChange={(value) => setSelectedFlupsyId(Number(value))}>
+              <SelectTrigger className="w-40 h-8 text-xs">
+                <SelectValue placeholder="Seleziona FLUPSY" />
+              </SelectTrigger>
+              <SelectContent>
+                {((flupsys as any[]) || []).map((flupsy: any) => (
+                  <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                    {flupsy.name}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
           </div>
-        </CardContent>
-      </Card>
 
-      {/* Tabella spreadsheet */}
+          <div className="flex items-center gap-2 min-w-0">
+            <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Tipo Operazione</label>
+            <Select value={selectedOperationType} onValueChange={setSelectedOperationType}>
+              <SelectTrigger className="w-32 h-8 text-xs">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {Object.entries(operationTypeLabels).map(([value, label]) => (
+                  <SelectItem key={value} value={value}>
+                    {label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          <div className="flex items-center gap-2 min-w-0">
+            <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Data</label>
+            <input
+              type="date"
+              value={operationDate}
+              onChange={(e) => setOperationDate(e.target.value)}
+              className="w-32 h-8 px-2 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+            />
+          </div>
+
+          <div className="flex items-center gap-2 ml-auto">
+            <button
+              onClick={saveAllRows}
+              className="h-8 px-3 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1 transition-colors"
+            >
+              <Save className="h-3 w-3" />
+              Salva Tutto
+            </button>
+            <button
+              onClick={resetAllRows}
+              className="h-8 px-2 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center transition-colors"
+            >
+              <RotateCcw className="h-3 w-3" />
+            </button>
+          </div>
+        </div>
+      </div>
+
+      {/* Tabella spreadsheet compatta */}
       {selectedFlupsyId && operationRows.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle>
+        <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+          {/* Header compatto */}
+          <div className="bg-gray-50 border-b px-3 py-2">
+            <h3 className="font-medium text-sm">
               {((flupsys as any[]) || []).find((f: any) => f.id === selectedFlupsyId)?.name} - {operationTypeLabels[selectedOperationType as keyof typeof operationTypeLabels]}
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <ScrollArea className="w-full">
-              <div className="min-w-[800px]">
-                {/* Header tabella */}
-                <div className="grid grid-cols-12 gap-2 p-2 bg-muted rounded-t-lg font-medium text-sm">
-                  <div className="col-span-1">Cestello</div>
-                  <div className="col-span-1">Stato</div>
-                  <div className="col-span-2">Animali</div>
-                  <div className="col-span-2">Peso Tot (g)</div>
-                  <div className="col-span-2">Anim/kg</div>
-                  {selectedOperationType === 'misura' && (
-                    <>
-                      <div className="col-span-1">Vivi</div>
-                      <div className="col-span-1">Peso Camp</div>
-                    </>
-                  )}
-                  <div className="col-span-2">Note</div>
-                  <div className="col-span-1">Azioni</div>
-                </div>
+            </h3>
+          </div>
+          
+          <ScrollArea className="w-full">
+            <div className="min-w-[900px]">
+              {/* Header tabella compatto */}
+              <div className="grid grid-cols-12 border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10">
+                <div className="col-span-1 px-2 py-1.5 border-r">Cestello</div>
+                <div className="col-span-1 px-2 py-1.5 border-r text-center">Stato</div>
+                <div className="col-span-2 px-2 py-1.5 border-r">Animali</div>
+                <div className="col-span-2 px-2 py-1.5 border-r">Peso Tot (g)</div>
+                <div className="col-span-2 px-2 py-1.5 border-r">Anim/kg</div>
+                {selectedOperationType === 'misura' && (
+                  <>
+                    <div className="col-span-1 px-2 py-1.5 border-r">Vivi</div>
+                    <div className="col-span-1 px-2 py-1.5 border-r">Peso Camp</div>
+                  </>
+                )}
+                <div className="col-span-2 px-2 py-1.5 border-r">Note</div>
+                <div className="col-span-1 px-2 py-1.5 text-center">Azioni</div>
+              </div>
 
-                {/* Righe dati */}
-                {operationRows.map((row, index) => (
+              {/* Righe dati compatte */}
+              {operationRows.map((row, index) => (
+                <div key={row.basketId}>
                   <div
-                    key={row.basketId}
-                    className={`grid grid-cols-12 gap-2 p-2 border-b ${
+                    className={`grid grid-cols-12 border-b text-xs hover:bg-gray-50 ${
                       row.status === 'error' ? 'bg-red-50' : 
                       row.status === 'saved' ? 'bg-green-50' : 
                       row.status === 'saving' ? 'bg-yellow-50' : 'bg-white'
                     }`}
                   >
-                    <div className="col-span-1 flex items-center font-medium">
+                    <div className="col-span-1 px-2 py-1 border-r flex items-center font-medium text-gray-700">
                       #{row.physicalNumber}
                     </div>
                     
-                    <div className="col-span-1 flex items-center">
-                      {row.status === 'saving' && <Loader2 className="h-4 w-4 animate-spin" />}
-                      {row.status === 'saved' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
-                      {row.status === 'error' && <AlertCircle className="h-4 w-4 text-red-600" />}
-                      {row.status === 'editing' && <div className="h-4 w-4 rounded-full bg-blue-200" />}
+                    <div className="col-span-1 px-2 py-1 border-r flex items-center justify-center">
+                      {row.status === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
+                      {row.status === 'saved' && <CheckCircle2 className="h-3 w-3 text-green-600" />}
+                      {row.status === 'error' && <AlertCircle className="h-3 w-3 text-red-600" />}
+                      {row.status === 'editing' && <div className="h-2 w-2 rounded-full bg-blue-400" />}
                     </div>
 
-                    <div className="col-span-2">
-                      <Input
+                    <div className="col-span-2 px-1 py-1 border-r">
+                      <input
                         type="number"
                         value={row.animalCount || ''}
                         onChange={(e) => updateCell(row.basketId, 'animalCount', Number(e.target.value))}
-                        className="h-8"
+                        className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
                         min="0"
+                        placeholder="0"
                       />
                     </div>
 
-                    <div className="col-span-2">
-                      <Input
+                    <div className="col-span-2 px-1 py-1 border-r">
+                      <input
                         type="number"
                         value={row.totalWeight || ''}
                         onChange={(e) => updateCell(row.basketId, 'totalWeight', Number(e.target.value))}
-                        className="h-8"
+                        className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
                         min="0"
+                        placeholder="0"
                       />
                     </div>
 
-                    <div className="col-span-2">
-                      <Input
+                    <div className="col-span-2 px-1 py-1 border-r">
+                      <input
                         type="number"
                         value={row.animalsPerKg || ''}
                         onChange={(e) => updateCell(row.basketId, 'animalsPerKg', Number(e.target.value))}
-                        className="h-8"
+                        className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
                         min="0"
+                        placeholder="0"
                       />
                     </div>
 
                     {selectedOperationType === 'misura' && (
                       <>
-                        <div className="col-span-1">
-                          <Input
+                        <div className="col-span-1 px-1 py-1 border-r">
+                          <input
                             type="number"
                             value={row.liveAnimals || ''}
                             onChange={(e) => updateCell(row.basketId, 'liveAnimals', Number(e.target.value))}
-                            className="h-8"
+                            className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
                             min="0"
+                            placeholder="0"
                           />
                         </div>
 
-                        <div className="col-span-1">
-                          <Input
+                        <div className="col-span-1 px-1 py-1 border-r">
+                          <input
                             type="number"
                             value={row.sampleWeight || ''}
                             onChange={(e) => updateCell(row.basketId, 'sampleWeight', Number(e.target.value))}
-                            className="h-8"
+                            className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
                             min="0"
+                            placeholder="0"
                           />
                         </div>
                       </>
                     )}
 
-                    <div className="col-span-2">
-                      <Input
+                    <div className="col-span-2 px-1 py-1 border-r">
+                      <input
                         value={row.notes}
                         onChange={(e) => updateCell(row.basketId, 'notes', e.target.value)}
-                        className="h-8"
+                        className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
                         placeholder="Note..."
                       />
                     </div>
 
-                    <div className="col-span-1">
-                      <Button
-                        size="sm"
+                    <div className="col-span-1 px-1 py-1 flex items-center justify-center">
+                      <button
                         onClick={() => saveRow(row.basketId)}
                         disabled={row.status === 'saving' || row.status === 'saved'}
-                        className="h-8 w-full"
+                        className="h-6 w-8 flex items-center justify-center text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
                       >
                         {row.status === 'saving' ? (
-                          <Loader2 className="h-3 w-3 animate-spin" />
+                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
                         ) : (
-                          <Save className="h-3 w-3" />
+                          <Save className="h-2.5 w-2.5" />
                         )}
-                      </Button>
+                      </button>
                     </div>
-
-                    {/* Mostra errori */}
-                    {row.errors && row.errors.length > 0 && (
-                      <div className="col-span-12 text-xs text-red-600 mt-1">
-                        {row.errors.join(', ')}
-                      </div>
-                    )}
                   </div>
-                ))}
-              </div>
-            </ScrollArea>
-          </CardContent>
-        </Card>
+
+                  {/* Errori inline compatti */}
+                  {row.errors && row.errors.length > 0 && (
+                    <div className="grid grid-cols-12 bg-red-50 border-b">
+                      <div className="col-span-12 px-2 py-1 text-xs text-red-600 font-medium">
+                        ⚠️ {row.errors.join(', ')}
+                      </div>
+                    </div>
+                  )}
+                </div>
+              ))}
+            </div>
+          </ScrollArea>
+        </div>
       )}
 
       {/* Messaggio quando non ci sono cestelli */}
       {selectedFlupsyId && operationRows.length === 0 && (
-        <Card>
-          <CardContent className="text-center py-8">
-            <p className="text-muted-foreground">
-              Nessun cestello attivo trovato per il FLUPSY selezionato
-            </p>
-          </CardContent>
-        </Card>
+        <div className="bg-gray-50 border border-dashed rounded-lg p-8 text-center">
+          <p className="text-sm text-gray-500">
+            Nessun cestello attivo trovato per il FLUPSY selezionato
+          </p>
+        </div>
       )}
     </div>
   );
