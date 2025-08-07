@@ -867,15 +867,15 @@ export default function SpreadsheetOperations() {
                   <div className="px-2 py-1.5 border-r">Anim/kg</div>
                   {/* PESO CAMPIONE per operazioni peso e misura */}
                   {(selectedOperationType === 'peso' || selectedOperationType === 'misura') && (
-                    <div className="px-1 py-1.5 border-r bg-yellow-50">P.Camp*</div>
+                    <div className="px-1 py-1.5 border-r bg-yellow-50 text-[10px]">P.Camp*</div>
                   )}
                   {/* ANIMALI VIVI solo per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="px-1 py-1.5 border-r bg-yellow-50">Vivi*</div>
+                    <div className="px-1 py-1.5 border-r bg-yellow-50 text-[10px]">Vivi*</div>
                   )}
                   {/* ANIMALI MORTI per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="px-1 py-1.5 border-r bg-yellow-50">Morti*</div>
+                    <div className="px-1 py-1.5 border-r bg-yellow-50 text-[10px]">Morti*</div>
                   )}
                   {/* TOTALE CAMPIONE per misura */}
                   {selectedOperationType === 'misura' && (
