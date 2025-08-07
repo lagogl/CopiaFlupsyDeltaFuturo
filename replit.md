@@ -186,6 +186,11 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Resolved issue where save button remained disabled despite complete form fields
 ✓ Fixed initialization of popup form to include required date and lotId fields
 ✓ Save button now properly enables when all mandatory fields are filled correctly
+✓ **August 7, 2025**: Implemented automatic size calculation in Spreadsheet Operations
+✓ Added logic to calculate current size based on animalsPerKg from latest operations
+✓ Used same algorithm as Inventory module: findSizeFromAnimalsPerKg function
+✓ Dynamic size calculation for new rows based on animal count and weight inputs
+✓ Size column now shows correct TP-1000, TP-3500 codes instead of "N/A"
 
 ## Changelog
 

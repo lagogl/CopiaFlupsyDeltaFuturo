@@ -263,14 +263,24 @@ export default function SpreadsheetOperations() {
         const lastOp = basket.lastOperation;
         const sizesArray = Array.isArray(sizes) ? sizes : [];
         
-        // Calcola taglia corrente basandosi sull'ultima operazione di misura per questo cestello
+        // Calcola taglia corrente basandosi sulla logica del modulo Inventory
         const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === basket.id);
-        const lastMeasureOp = basketOperations
-          .filter((op: any) => op.type === 'misura' && op.sizeId)
+        const lastOperationWithAnimalsPerKg = basketOperations
+          .filter((op: any) => op.animalsPerKg && op.animalsPerKg > 0)
           .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
         
-        const currentSize = lastMeasureOp?.sizeId ? 
-          sizesArray.find((s: any) => s.id === lastMeasureOp.sizeId)?.code || 'N/A' 
+        // Funzione per trovare la taglia basata su animalsPerKg (stessa logica di Inventory)
+        const findSizeFromAnimalsPerKg = (animalsPerKg: number): any => {
+          return sizesArray.find((size: any) => 
+            size.minAnimalsPerKg !== null && 
+            size.maxAnimalsPerKg !== null &&
+            animalsPerKg >= size.minAnimalsPerKg && 
+            animalsPerKg <= size.maxAnimalsPerKg
+          );
+        };
+        
+        const currentSize = lastOperationWithAnimalsPerKg?.animalsPerKg ? 
+          findSizeFromAnimalsPerKg(lastOperationWithAnimalsPerKg.animalsPerKg)?.code || 'N/A' 
           : 'N/A';
         
         const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
@@ -959,12 +969,25 @@ export default function SpreadsheetOperations() {
                       {row.status === 'editing' && <div className="h-2 w-2 rounded-full bg-blue-400" />}
                     </div>
 
-                    {/* Info aggiuntive */}
+                    {/* Info aggiuntive - Taglia calcolata automaticamente */}
                     <div style={{width: '80px'}} className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
                       <span className="truncate">
-                        {(row as any).isNewRow && row.sizeId ? 
-                          ((sizes as any[]) || []).find((size: any) => size.id === row.sizeId)?.code || row.currentSize 
-                          : row.currentSize}
+                        {(() => {
+                          // Per le righe nuove, calcola la taglia basandosi su animalsPerKg
+                          if ((row as any).isNewRow && row.animalCount && row.totalWeight) {
+                            const calculatedAnimalsPerKg = Math.round((row.animalCount / row.totalWeight) * 1000);
+                            const sizesArray = Array.isArray(sizes) ? sizes : [];
+                            const matchingSize = sizesArray.find((size: any) => 
+                              size.minAnimalsPerKg !== null && 
+                              size.maxAnimalsPerKg !== null &&
+                              calculatedAnimalsPerKg >= size.minAnimalsPerKg && 
+                              calculatedAnimalsPerKg <= size.maxAnimalsPerKg
+                            );
+                            return matchingSize?.code || 'N/A';
+                          }
+                          // Per righe esistenti, usa la taglia calcolata nel setup
+                          return row.currentSize;
+                        })()}
                       </span>
                     </div>
 
