@@ -182,6 +182,10 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Moved popup form to right side of screen to avoid covering data rows
 ✓ Enhanced transparency and added visual indicators for better user experience
 ✓ Expanded "Taglia" column from 50px to 80px to display full size descriptions
+✓ **August 7, 2025**: Fixed form validation bug preventing save button activation
+✓ Resolved issue where save button remained disabled despite complete form fields
+✓ Fixed initialization of popup form to include required date and lotId fields
+✓ Save button now properly enables when all mandatory fields are filled correctly
 
 ## Changelog
 

@@ -262,7 +262,17 @@ export default function SpreadsheetOperations() {
       const newRows: OperationRowData[] = eligibleBaskets.map(basket => {
         const lastOp = basket.lastOperation;
         const sizesArray = Array.isArray(sizes) ? sizes : [];
-        const currentSize = 'N/A'; // Size info not available in lastOperation
+        
+        // Calcola taglia corrente basandosi sull'ultima operazione di misura per questo cestello
+        const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === basket.id);
+        const lastMeasureOp = basketOperations
+          .filter((op: any) => op.type === 'misura' && op.sizeId)
+          .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+        
+        const currentSize = lastMeasureOp?.sizeId ? 
+          sizesArray.find((s: any) => s.id === lastMeasureOp.sizeId)?.code || 'N/A' 
+          : 'N/A';
+        
         const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
           Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : 0;
         
