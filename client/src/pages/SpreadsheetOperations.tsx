@@ -1149,14 +1149,17 @@ export default function SpreadsheetOperations() {
             onClick={closeEditingForm}
           />
           
-          {/* Form popup posizionato a lato per non coprire i dati */}
+          {/* Form popup responsive - desktop a lato, mobile fullscreen */}
           <div 
-            className="fixed z-50 rounded border shadow-2xl"
+            className="fixed z-50 rounded border shadow-2xl 
+                       md:max-w-[600px] md:min-w-[500px]
+                       max-md:inset-x-2 max-md:w-auto max-md:max-w-none max-md:min-w-0
+                       max-md:top-4 max-md:bottom-4 max-md:overflow-y-auto"
             style={{ 
-              top: Math.max(10, editingPosition.top - 20), 
-              right: Math.max(10, 50), // Posiziona a destra invece che sopra la riga
-              minWidth: '500px',
-              maxWidth: '600px',
+              // Desktop: posizionato a lato destro
+              top: window.innerWidth >= 768 ? Math.max(10, editingPosition.top - 20) : undefined,
+              right: window.innerWidth >= 768 ? Math.max(10, 50) : undefined,
+              
               backgroundColor: 'rgba(255, 255, 255, 0.98)',
               backdropFilter: 'blur(3px)',
               border: '2px solid #3b82f6'
@@ -1172,18 +1175,24 @@ export default function SpreadsheetOperations() {
             }}
             tabIndex={-1}
           >
-            {/* Header compatto con indicatore visivo */}
-            <div className="px-3 py-2 border-b border-blue-300" style={{backgroundColor: 'rgba(59, 130, 246, 0.15)'}}>
+            {/* Header responsive con indicatori appropriati */}
+            <div className="px-3 py-2 md:py-2 max-md:py-3 border-b border-blue-300" style={{backgroundColor: 'rgba(59, 130, 246, 0.15)'}}>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-semibold text-blue-900 flex items-center gap-2">
                   📝 Cestello #{editingForm.basketId} - {selectedOperationType}
-                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full max-md:hidden">
                     Riga visibile sotto
+                  </span>
+                  <span className="text-xs bg-green-100 text-green-700 px-2 py-1 rounded-full md:hidden">
+                    Mobile
                   </span>
                 </span>
                 <button 
                   onClick={closeEditingForm}
-                  className="text-gray-500 hover:text-gray-700 text-xl font-bold leading-none w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100"
+                  className="text-gray-500 hover:text-gray-700 text-xl font-bold leading-none 
+                           w-6 h-6 md:w-6 md:h-6 max-md:w-8 max-md:h-8 
+                           flex items-center justify-center rounded hover:bg-gray-100
+                           max-md:text-2xl"
                   title="Chiudi (Esc)"
                 >
                   ×
@@ -1191,14 +1200,14 @@ export default function SpreadsheetOperations() {
               </div>
             </div>
 
-            {/* Layout Excel-style con campi inline */}
-            <div className="p-3">
+            {/* Layout responsive - desktop inline, mobile stacked */}
+            <div className="p-3 md:p-3 max-md:p-4">
               {selectedOperationType === 'misura' && (
-                <div className="space-y-3">
-                  {/* Riga 1: Peso campione e animali */}
-                  <div className="grid grid-cols-3 gap-3 items-end">
+                <div className="space-y-4 md:space-y-3">
+                  {/* Riga 1: Peso campione e animali - responsive grid */}
+                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4 md:gap-3 items-end">
                     <div>
-                      <label className="text-xs text-gray-600 mb-1 block">Peso campione (g)</label>
+                      <label className="text-sm md:text-xs text-gray-600 mb-2 md:mb-1 block font-medium">Peso campione (g)</label>
                       <input
                         type="number"
                         value={editingForm.sampleWeight || ''}
@@ -1206,7 +1215,9 @@ export default function SpreadsheetOperations() {
                           const value = Number(e.target.value);
                           setEditingForm({...editingForm, sampleWeight: value});
                         }}
-                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
+                        className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
+                                 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-yellow-50
+                                 touch-manipulation"
                         min="1"
                         placeholder="100"
                         autoFocus
@@ -1214,7 +1225,7 @@ export default function SpreadsheetOperations() {
                     </div>
                     
                     <div>
-                      <label className="text-xs text-gray-600 mb-1 block">Vivi</label>
+                      <label className="text-sm md:text-xs text-gray-600 mb-2 md:mb-1 block font-medium">Vivi</label>
                       <input
                         type="number"
                         value={editingForm.liveAnimals || ''}
@@ -1222,14 +1233,16 @@ export default function SpreadsheetOperations() {
                           const value = Number(e.target.value);
                           setEditingForm({...editingForm, liveAnimals: value});
                         }}
-                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
+                        className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
+                                 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-yellow-50
+                                 touch-manipulation"
                         min="0"
                         placeholder="50"
                       />
                     </div>
                     
                     <div>
-                      <label className="text-xs text-gray-600 mb-1 block">Morti</label>
+                      <label className="text-sm md:text-xs text-gray-600 mb-2 md:mb-1 block font-medium">Morti</label>
                       <input
                         type="number"
                         value={editingForm.deadCount || ''}
@@ -1237,7 +1250,9 @@ export default function SpreadsheetOperations() {
                           const value = Number(e.target.value) || 0;
                           setEditingForm({...editingForm, deadCount: value});
                         }}
-                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
+                                 focus:outline-none focus:ring-2 focus:ring-blue-400
+                                 touch-manipulation"
                         min="0"
                         placeholder="0"
                       />
@@ -1383,21 +1398,31 @@ export default function SpreadsheetOperations() {
               )}
             </div>
 
-            {/* Pulsanti in linea stile Excel */}
-            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-              <div className="text-xs text-gray-500">
-                Premi Invio per salvare • Esc per annullare
+            {/* Pulsanti responsive - mobile più grandi */}
+            <div className="flex justify-between items-center pt-3 md:pt-2 border-t border-gray-200 
+                          max-md:flex-col max-md:gap-3">
+              <div className="text-xs md:text-xs max-md:text-sm text-gray-500 max-md:text-center">
+                <span className="md:hidden">Tocca Salva per confermare • Annulla per chiudere</span>
+                <span className="max-md:hidden">Premi Invio per salvare • Esc per annullare</span>
               </div>
-              <div className="flex space-x-2">
+              <div className="flex space-x-2 max-md:space-x-0 max-md:gap-3 max-md:w-full">
                 <button
                   onClick={closeEditingForm}
-                  className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 border rounded hover:bg-gray-200"
+                  className="px-3 py-1 md:px-3 md:py-1 max-md:px-4 max-md:py-3 
+                           text-xs md:text-xs max-md:text-sm font-medium text-gray-600 bg-gray-100 
+                           border rounded hover:bg-gray-200 max-md:flex-1 max-md:h-12 
+                           max-md:flex max-md:items-center max-md:justify-center
+                           touch-manipulation"
                 >
                   Annulla
                 </button>
                 <button
                   onClick={saveEditingForm}
-                  className="px-3 py-1 text-xs font-medium text-white bg-blue-600 border rounded hover:bg-blue-700"
+                  className="px-3 py-1 md:px-3 md:py-1 max-md:px-4 max-md:py-3 
+                           text-xs md:text-xs max-md:text-sm font-medium text-white bg-blue-600 
+                           border rounded hover:bg-blue-700 max-md:flex-1 max-md:h-12 
+                           max-md:flex max-md:items-center max-md:justify-center
+                           touch-manipulation"
                 >
                   ✓ Salva
                 </button>
