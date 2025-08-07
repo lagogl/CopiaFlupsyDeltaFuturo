@@ -83,6 +83,11 @@ export default function SpreadsheetOperations() {
   const [operationRows, setOperationRows] = useState<OperationRowData[]>([]);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   
+  // Stati per sistema Undo e salvataggio singolo
+  const [originalRows, setOriginalRows] = useState<OperationRowData[]>([]);  // Backup per Undo
+  const [savedRows, setSavedRows] = useState<Set<number>>(new Set());       // IDs righe già salvate
+  const [sessionId] = useState<string>(() => Date.now().toString());       // ID sessione per tracking
+  
   // Stati per il nuovo sistema di editing inline
   const [editingRow, setEditingRow] = useState<number | null>(null);
   const [editingForm, setEditingForm] = useState<{
@@ -151,12 +156,15 @@ export default function SpreadsheetOperations() {
       console.log('✅ Spreadsheet: Success callback - operazione salvata:', data);
       const basketId = variables.basketId;
       
-      // Aggiorna lo stato della riga
+      // Aggiorna lo stato della riga e traccia come salvata
       setOperationRows(prev => prev.map(row => 
         row.basketId === basketId 
           ? { ...row, status: 'saved', errors: [] }
           : row
       ));
+      
+      // Segna la riga come già salvata singolarmente
+      setSavedRows(prev => new Set(prev).add(basketId));
       
       // Invalida le stesse cache del modulo Operations standard
       queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
@@ -252,6 +260,10 @@ export default function SpreadsheetOperations() {
       });
       
       setOperationRows(newRows);
+      // Salva backup originale per sistema Undo
+      setOriginalRows([...newRows]);
+      // Reset righe salvate per nuova sessione
+      setSavedRows(new Set());
     }
   }, [selectedFlupsyId, selectedOperationType, operationDate, eligibleBaskets.length, sizes]);
 
@@ -610,7 +622,71 @@ export default function SpreadsheetOperations() {
     }
   };
 
-  // Salva tutte le righe valide
+  // **NUOVE FUNZIONI SISTEMA UNDO E SALVATAGGIO SINGOLO**
+  
+  // Undo singolo: riporta una riga specifica allo stato originale  
+  const undoRow = (basketId: number) => {
+    const originalRow = originalRows.find(r => r.basketId === basketId);
+    if (!originalRow) return;
+    
+    setOperationRows(prev => prev.map(row => 
+      row.basketId === basketId 
+        ? { ...originalRow, status: 'editing' as const }
+        : row
+    ));
+    
+    // Rimuovi dalla lista salvate
+    setSavedRows(prev => {
+      const newSet = new Set(prev);
+      newSet.delete(basketId);
+      return newSet;
+    });
+    
+    toast({
+      title: "Undo completato",
+      description: `Cestello #${originalRow.physicalNumber} ripristinato allo stato originale`,
+    });
+  };
+  
+  // Salva singola riga
+  const saveSingleRow = async (basketId: number) => {
+    const row = operationRows.find(r => r.basketId === basketId);
+    if (!row) return;
+    
+    const errors = validateRow(row);
+    if (errors.length > 0) {
+      toast({
+        title: "Impossibile salvare",
+        description: `Errori: ${errors.join(', ')}`,
+        variant: "destructive"
+      });
+      return;
+    }
+    
+    await saveRow(basketId);
+  };
+  
+  // Undo generale: rimuove tutte le nuove righe della sessione
+  const undoAllNewRows = () => {
+    // Rimuovi tutte le righe che hanno la proprietà isNewRow
+    setOperationRows(prev => prev.filter((row: any) => !row.isNewRow));
+    
+    // Reset anche le righe originali ai valori iniziali
+    setOperationRows(prev => prev.map(row => {
+      const original = originalRows.find(o => o.basketId === row.basketId);
+      return original ? { ...original, status: 'editing' as const } : row;
+    }));
+    
+    // Reset righe salvate
+    setSavedRows(new Set());
+    
+    toast({
+      title: "Undo generale completato",
+      description: "Tutte le operazioni della sessione sono state annullate",
+    });
+  };
+
+  // Salva tutte le righe valide (esclude quelle già salvate singolarmente)
   const saveAllRows = async () => {
     console.log('🔄 Spreadsheet: Inizio salvataggio di tutte le righe');
     console.log('📊 Spreadsheet: Righe totali:', operationRows.length);
@@ -625,8 +701,11 @@ export default function SpreadsheetOperations() {
     
     console.log('✅ Spreadsheet: Righe valide trovate:', validRows.length);
     
-    const editingRows = validRows.filter(row => row.status === 'editing');
-    console.log('📝 Spreadsheet: Righe da salvare (editing):', editingRows.length);
+    const editingRows = validRows.filter(row => 
+      row.status === 'editing' && !savedRows.has(row.basketId)
+    );
+    console.log('📝 Spreadsheet: Righe da salvare (editing e non già salvate):', editingRows.length);
+    console.log('📋 Spreadsheet: Righe già salvate singolarmente:', Array.from(savedRows));
     
     if (editingRows.length === 0) {
       console.log('ℹ️ Spreadsheet: Nessuna riga da salvare');
@@ -737,6 +816,14 @@ export default function SpreadsheetOperations() {
               Salva Tutto
             </button>
             <button
+              onClick={undoAllNewRows}
+              className="h-8 px-3 text-xs bg-orange-500 text-white rounded hover:bg-orange-600 flex items-center gap-1 transition-colors"
+              title="Annulla tutte le nuove righe della sessione"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Undo Generale
+            </button>
+            <button
               onClick={resetAllRows}
               className="h-8 px-2 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center transition-colors"
             >
@@ -769,10 +856,10 @@ export default function SpreadsheetOperations() {
                 {/* Header tabella compatto con TUTTE le colonne necessarie */}
                 <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{
                   gridTemplateColumns: selectedOperationType === 'misura' 
-                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 70px 2fr 60px' 
+                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 70px 2fr 70px' 
                     : selectedOperationType === 'peso'
-                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
-                    : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
+                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 70px'
+                    : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 70px'
                 }}>
                   <div className="px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
                   <div className="px-1 py-1.5 border-r text-center">Stato</div>
@@ -819,10 +906,10 @@ export default function SpreadsheetOperations() {
                     }`}
                     style={{
                       gridTemplateColumns: selectedOperationType === 'misura' 
-                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 70px 2fr 60px' 
+                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 70px 2fr 70px' 
                         : selectedOperationType === 'peso'
-                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
-                        : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
+                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 70px'
+                        : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 70px'
                     }}
                   >
                     {/* Colonna cestello fissa */}
@@ -1011,21 +1098,37 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="px-1 py-1 flex items-center justify-center">
+                    <div className="px-1 py-1 flex items-center justify-center gap-1">
+                      {/* Pulsante Salva Singolo */}
                       <button
-                        onClick={() => saveRow(row.basketId)}
-                        disabled={row.status === 'saving' || row.status === 'saved' || !(row as any).isNewRow}
-                        className={`h-6 w-6 flex items-center justify-center text-xs rounded transition-colors ${
-                          (row as any).isNewRow 
-                            ? 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed' 
-                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        onClick={() => saveSingleRow(row.basketId)}
+                        disabled={row.status === 'saving' || row.status === 'saved' || savedRows.has(row.basketId)}
+                        className={`h-5 w-5 flex items-center justify-center text-xs rounded transition-colors ${
+                          row.status === 'saved' || savedRows.has(row.basketId)
+                            ? 'bg-green-500 text-white cursor-not-allowed' 
+                            : row.status === 'saving'
+                            ? 'bg-yellow-500 text-white cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
                         }`}
+                        title="Salva operazione singolarmente"
                       >
                         {row.status === 'saving' ? (
-                          <Loader2 className="h-2.5 w-2.5 animate-spin" />
+                          <Loader2 className="h-2 w-2 animate-spin" />
+                        ) : row.status === 'saved' || savedRows.has(row.basketId) ? (
+                          <CheckCircle2 className="h-2 w-2" />
                         ) : (
-                          <Save className="h-2.5 w-2.5" />
+                          <Save className="h-2 w-2" />
                         )}
+                      </button>
+                      
+                      {/* Pulsante Undo Singolo */}
+                      <button
+                        onClick={() => undoRow(row.basketId)}
+                        disabled={row.status === 'saving'}
+                        className="h-5 w-5 flex items-center justify-center text-xs rounded bg-orange-500 text-white hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                        title="Annulla modifiche per questa riga"
+                      >
+                        <RotateCcw className="h-2 w-2" />
                       </button>
                     </div>
                   </div>
