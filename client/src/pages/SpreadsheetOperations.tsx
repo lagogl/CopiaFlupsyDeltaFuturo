@@ -851,7 +851,7 @@ export default function SpreadsheetOperations() {
                 <div className="flex border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{fontSize: '10px'}}>
                   <div style={{width: '70px'}} className="px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
                   <div style={{width: '40px'}} className="px-1 py-1.5 border-r text-center">Stato</div>
-                  <div style={{width: '50px'}} className="px-1 py-1.5 border-r">Taglia</div>
+                  <div style={{width: '80px'}} className="px-1 py-1.5 border-r">Taglia</div>
                   <div style={{width: '60px'}} className="px-1 py-1.5 border-r">P.Med(g)</div>
                   <div style={{width: '50px'}} className="px-1 py-1.5 border-r">Ult.Op</div>
                   {/* COLONNA LOTTO - OBBLIGATORIO */}
@@ -912,7 +912,7 @@ export default function SpreadsheetOperations() {
                     </div>
 
                     {/* Info aggiuntive */}
-                    <div style={{width: '50px'}} className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
+                    <div style={{width: '80px'}} className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
                       <span className="truncate">
                         {(row as any).isNewRow && row.sizeId ? 
                           ((sizes as any[]) || []).find((size: any) => size.id === row.sizeId)?.code || row.currentSize 

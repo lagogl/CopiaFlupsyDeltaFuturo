@@ -178,6 +178,10 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Implemented exact pixel widths (70px, 40px, 50px, etc.) for Excel-style precision
 ✓ All columns now perfectly aligned vertically between headers and data rows
 ✓ Layout matches professional spreadsheet applications like Excel/Google Sheets
+✓ **August 7, 2025**: Improved popup form positioning for better data visibility
+✓ Moved popup form to right side of screen to avoid covering data rows
+✓ Enhanced transparency and added visual indicators for better user experience
+✓ Expanded "Taglia" column from 50px to 80px to display full size descriptions
 
 ## Changelog
 
