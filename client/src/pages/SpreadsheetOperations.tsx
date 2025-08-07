@@ -850,7 +850,7 @@ export default function SpreadsheetOperations() {
                 {/* Header tabella compatto con TUTTE le colonne necessarie */}
                 <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{
                   gridTemplateColumns: selectedOperationType === 'misura' 
-                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 50px 2fr 70px' 
+                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 40px 2fr 70px' 
                     : selectedOperationType === 'peso'
                     ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 70px'
                     : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 70px'
@@ -900,7 +900,7 @@ export default function SpreadsheetOperations() {
                     }`}
                     style={{
                       gridTemplateColumns: selectedOperationType === 'misura' 
-                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 50px 2fr 70px' 
+                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 40px 2fr 70px' 
                         : selectedOperationType === 'peso'
                         ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 70px'
                         : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 70px'
@@ -1092,7 +1092,7 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="px-1 py-1 flex items-center justify-center gap-1">
+                    <div className="px-1 py-1 flex items-center justify-center gap-1 min-h-[28px]">
                       {/* Pulsante Salva Singolo */}
                       <button
                         onClick={() => saveSingleRow(row.basketId)}
