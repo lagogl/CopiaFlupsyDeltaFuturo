@@ -823,12 +823,6 @@ export default function SpreadsheetOperations() {
               <RotateCcw className="h-3 w-3" />
               Undo Generale
             </button>
-            <button
-              onClick={resetAllRows}
-              className="h-8 px-2 text-xs border border-gray-300 rounded hover:bg-gray-50 flex items-center transition-colors"
-            >
-              <RotateCcw className="h-3 w-3" />
-            </button>
           </div>
         </div>
       </div>
@@ -856,7 +850,7 @@ export default function SpreadsheetOperations() {
                 {/* Header tabella compatto con TUTTE le colonne necessarie */}
                 <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{
                   gridTemplateColumns: selectedOperationType === 'misura' 
-                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 70px 2fr 70px' 
+                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 50px 2fr 70px' 
                     : selectedOperationType === 'peso'
                     ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 70px'
                     : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 70px'
@@ -906,7 +900,7 @@ export default function SpreadsheetOperations() {
                     }`}
                     style={{
                       gridTemplateColumns: selectedOperationType === 'misura' 
-                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 70px 2fr 70px' 
+                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 80px 60px 50px 2fr 70px' 
                         : selectedOperationType === 'peso'
                         ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 70px'
                         : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 70px'
