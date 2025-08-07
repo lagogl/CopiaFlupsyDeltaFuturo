@@ -1083,37 +1083,45 @@ export default function SpreadsheetOperations() {
                     </div>
 
                     <div style={{width: '70px'}} className="px-1 py-1 border-r flex items-center justify-center gap-1 min-h-[28px]">
-                      {/* Pulsante Salva Singolo */}
-                      <button
-                        onClick={() => saveSingleRow(row.basketId)}
-                        disabled={row.status === 'saving' || row.status === 'saved' || savedRows.has(row.basketId)}
-                        className={`h-5 w-5 flex items-center justify-center text-xs rounded transition-colors ${
-                          row.status === 'saved' || savedRows.has(row.basketId)
-                            ? 'bg-green-500 text-white cursor-not-allowed' 
-                            : row.status === 'saving'
-                            ? 'bg-yellow-500 text-white cursor-not-allowed'
-                            : 'bg-blue-600 text-white hover:bg-blue-700'
-                        }`}
-                        title="Salva operazione singolarmente"
-                      >
-                        {row.status === 'saving' ? (
-                          <Loader2 className="h-2 w-2 animate-spin" />
-                        ) : row.status === 'saved' || savedRows.has(row.basketId) ? (
-                          <CheckCircle2 className="h-2 w-2" />
-                        ) : (
-                          <Save className="h-2 w-2" />
-                        )}
-                      </button>
-                      
-                      {/* Pulsante Undo Singolo */}
-                      <button
-                        onClick={() => undoRow(row.basketId)}
-                        disabled={row.status === 'saving'}
-                        className="h-5 w-5 flex items-center justify-center text-xs rounded bg-orange-500 text-white hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                        title="Annulla modifiche per questa riga"
-                      >
-                        <RotateCcw className="h-2 w-2" />
-                      </button>
+                      {/* Pulsanti Salva e Undo solo per righe create (nuove) */}
+                      {(row as any).isNewRow ? (
+                        <>
+                          {/* Pulsante Salva Singolo */}
+                          <button
+                            onClick={() => saveSingleRow(row.basketId)}
+                            disabled={row.status === 'saving' || row.status === 'saved' || savedRows.has(row.basketId)}
+                            className={`h-5 w-5 flex items-center justify-center text-xs rounded transition-colors ${
+                              row.status === 'saved' || savedRows.has(row.basketId)
+                                ? 'bg-green-500 text-white cursor-not-allowed' 
+                                : row.status === 'saving'
+                                ? 'bg-yellow-500 text-white cursor-not-allowed'
+                                : 'bg-blue-600 text-white hover:bg-blue-700'
+                            }`}
+                            title="Salva operazione singolarmente"
+                          >
+                            {row.status === 'saving' ? (
+                              <Loader2 className="h-2 w-2 animate-spin" />
+                            ) : row.status === 'saved' || savedRows.has(row.basketId) ? (
+                              <CheckCircle2 className="h-2 w-2" />
+                            ) : (
+                              <Save className="h-2 w-2" />
+                            )}
+                          </button>
+                          
+                          {/* Pulsante Undo Singolo */}
+                          <button
+                            onClick={() => undoRow(row.basketId)}
+                            disabled={row.status === 'saving'}
+                            className="h-5 w-5 flex items-center justify-center text-xs rounded bg-orange-500 text-white hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                            title="Annulla modifiche per questa riga"
+                          >
+                            <RotateCcw className="h-2 w-2" />
+                          </button>
+                        </>
+                      ) : (
+                        // Per righe originali, mostra solo lo stato senza azioni
+                        <div className="text-xs text-gray-500">Originale</div>
+                      )}
                     </div>
                   </div>
 
