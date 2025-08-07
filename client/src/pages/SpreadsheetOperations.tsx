@@ -871,45 +871,22 @@ export default function SpreadsheetOperations() {
                       </span>
                     </div>
 
-                    {/* CAMPO LOTTO - OBBLIGATORIO */}
-                    <div className="px-1 py-1 border-r bg-yellow-50">
-                      <select
-                        value={row.lotId || ''}
-                        onChange={(e) => updateCell(row.basketId, 'lotId', Number(e.target.value))}
-                        className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
-                        }`}
-                        disabled={!(row as any).isNewRow}
-                        required
-                      >
-                        <option value="">-</option>
-                        {((lots as any[]) || []).map((lot: any) => (
-                          <option key={lot.id} value={lot.id}>
-                            L{lot.id}
-                          </option>
-                        ))}
-                      </select>
+                    {/* CAMPO LOTTO - NON MODIFICABILE */}
+                    <div className="px-1 py-1 border-r bg-gray-100">
+                      <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center">
+                        L{row.lotId || '1'}
+                      </div>
                     </div>
 
-                    {/* CAMPO TAGLIA - OBBLIGATORIO PER MISURA */}
+                    {/* CAMPO TAGLIA - NON MODIFICABILE PER MISURA */}
                     {selectedOperationType === 'misura' && (
-                      <div className="px-1 py-1 border-r bg-yellow-50">
-                        <select
-                          value={row.sizeId || ''}
-                          onChange={(e) => updateCell(row.basketId, 'sizeId', Number(e.target.value))}
-                          className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                            (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
-                          }`}
-                          disabled={!(row as any).isNewRow}
-                          required
-                        >
-                          <option value="">-</option>
-                          {((sizes as any[]) || []).map((size: any) => (
-                            <option key={size.id} value={size.id}>
-                              {size.code}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="px-1 py-1 border-r bg-gray-100">
+                        <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center">
+                          {row.sizeId ? 
+                            ((sizes as any[]) || []).find((size: any) => size.id === row.sizeId)?.code || 'TP-1000'
+                            : 'TP-1000'
+                          }
+                        </div>
                       </div>
                     )}
 
