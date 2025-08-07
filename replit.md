@@ -173,7 +173,11 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Added rich basket information: current size, average weight, last operation date
 ✓ Implemented sticky first column for basket numbers during horizontal scroll
 ✓ Mobile-optimized with scroll indicators and responsive column widths
-✓ Fixed column layout with proper CSS grid for consistent cell alignment
+✓ **August 7, 2025**: Fixed column alignment issues with exact pixel widths
+✓ Replaced CSS Grid with Flexbox layout for perfect header-data alignment
+✓ Implemented exact pixel widths (70px, 40px, 50px, etc.) for Excel-style precision
+✓ All columns now perfectly aligned vertically between headers and data rows
+✓ Layout matches professional spreadsheet applications like Excel/Google Sheets
 
 ## Changelog
 
