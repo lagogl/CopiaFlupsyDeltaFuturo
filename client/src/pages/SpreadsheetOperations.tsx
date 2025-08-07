@@ -893,7 +893,7 @@ export default function SpreadsheetOperations() {
               {operationRows.map((row, index) => (
                 <div key={row.basketId}>
                   <div
-                    className={`grid border-b text-xs hover:bg-gray-50 ${
+                    className={`grid border-b text-xs hover:bg-gray-50 items-center ${
                       row.status === 'error' ? 'bg-red-50' : 
                       row.status === 'saved' ? 'bg-green-50' : 
                       row.status === 'saving' ? 'bg-yellow-50' : 'bg-white'
@@ -1092,7 +1092,7 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="px-1 py-1 flex items-center justify-center gap-1 min-h-[28px]">
+                    <div className="px-1 py-1 border-r flex items-center justify-center gap-1 min-h-[28px]">
                       {/* Pulsante Salva Singolo */}
                       <button
                         onClick={() => saveSingleRow(row.basketId)}
