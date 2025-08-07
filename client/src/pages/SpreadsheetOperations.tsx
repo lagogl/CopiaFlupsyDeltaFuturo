@@ -78,7 +78,7 @@ export default function SpreadsheetOperations() {
   const isMobile = useIsMobile();
   
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(null);
-  const [selectedOperationType, setSelectedOperationType] = useState<string>('peso');
+  const [selectedOperationType, setSelectedOperationType] = useState<string>('misura');
   const [operationDate, setOperationDate] = useState(new Date().toISOString().split('T')[0]);
   const [operationRows, setOperationRows] = useState<OperationRowData[]>([]);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
@@ -302,7 +302,7 @@ export default function SpreadsheetOperations() {
       ...originalRow,
       ...editingForm,
       type: selectedOperationType,
-      date: operationDate,
+      date: operationDate, // Usa la data dal controllo in alto
       status: 'editing' as const,
       errors: [],
       isNewRow: true  // Marca questa come nuova riga modificabile

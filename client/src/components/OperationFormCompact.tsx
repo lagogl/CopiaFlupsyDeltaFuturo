@@ -101,6 +101,8 @@ type OperationFormProps = {
   initialFlupsyId?: number | null;
   initialCycleId?: number | null;
   isDuplication?: boolean;
+  defaultOperationType?: string;
+  defaultOperationDate?: string;
 };
 
 export default function OperationFormCompact({
@@ -112,6 +114,8 @@ export default function OperationFormCompact({
   initialFlupsyId = null,
   initialCycleId = null,
   isDuplication = false,
+  defaultOperationType = "misura",
+  defaultOperationDate,
 }: OperationFormProps) {
   // Stato per la gestione dei dati e degli errori
   const [operationDateError, setOperationDateError] = useState<string | null>(null);
@@ -127,8 +131,8 @@ export default function OperationFormCompact({
   const form = useForm<z.infer<typeof operationSchema>>({
     resolver: zodResolver(operationSchema),
     defaultValues: defaultValues || {
-      date: new Date(),
-      type: null,
+      date: defaultOperationDate ? new Date(defaultOperationDate) : new Date(),
+      type: defaultOperationType,
       basketId: initialBasketId,
       flupsyId: initialFlupsyId,
       cycleId: initialCycleId,
