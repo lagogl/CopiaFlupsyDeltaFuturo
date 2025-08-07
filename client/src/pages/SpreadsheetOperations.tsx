@@ -32,7 +32,6 @@ interface BasketData {
 }
 
 interface OperationRowData {
-  id: string;                     // ID univoco per tracking (basketId_timestamp o simile)
   basketId: number;
   physicalNumber: number;
   type: string;
@@ -58,9 +57,6 @@ interface OperationRowData {
   averageWeight?: number;
   lastOperationDate?: string;
   lastOperationType?: string;
-  // Flags per sistema UNDO/Salva
-  isOriginal?: boolean;           // true = riga originale (doppio click), false = riga aggiunta
-  isAddedInSession?: boolean;     // true = riga aggiunta in questa sessione
 }
 
 // Tipi operazione per il modulo Spreadsheet (SOLO per ceste già attive - NO prima-attivazione)
@@ -87,10 +83,10 @@ export default function SpreadsheetOperations() {
   const [operationRows, setOperationRows] = useState<OperationRowData[]>([]);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   
-  // Sistema di tracciamento righe originali vs aggiunte
-  const [originalRowsCount, setOriginalRowsCount] = useState<number>(0);     // Numero righe originali sessione
-  const [addedRowIds, setAddedRowIds] = useState<Set<string>>(new Set());   // IDs righe aggiunte
-  const [sessionId] = useState<string>(() => Date.now().toString());        // ID sessione per tracking
+  // Stati per sistema Undo e salvataggio singolo
+  const [originalRows, setOriginalRows] = useState<OperationRowData[]>([]);  // Backup per Undo
+  const [savedRows, setSavedRows] = useState<Set<number>>(new Set());       // IDs righe già salvate
+  const [sessionId] = useState<string>(() => Date.now().toString());       // ID sessione per tracking
   
   // Stati per il nuovo sistema di editing inline
   const [editingRow, setEditingRow] = useState<number | null>(null);
@@ -105,60 +101,6 @@ export default function SpreadsheetOperations() {
     notes?: string;
   } | null>(null);
   const [editingPosition, setEditingPosition] = useState<{top: number, left: number} | null>(null);
-
-  // Funzioni per gestione UNDO e salvataggio
-  const undoAllAddedRows = () => {
-    // Rimuove tutte le righe aggiunte e ripristina solo le righe originali
-    const originalRows = operationRows.slice(0, originalRowsCount);
-    setOperationRows(originalRows);
-    setAddedRowIds(new Set());
-    toast({ title: "Undo generale completato", description: "Rimosse tutte le righe aggiunte" });
-  };
-
-  const undoSingleRow = (rowId: string) => {
-    // Rimuove una riga specifica se è aggiunta in sessione
-    if (!addedRowIds.has(rowId)) return;
-    
-    setOperationRows(prevRows => prevRows.filter(row => row.id !== rowId));
-    setAddedRowIds(prev => {
-      const newSet = new Set(prev);
-      newSet.delete(rowId);
-      return newSet;
-    });
-    toast({ title: "Riga rimossa", description: "Riga aggiunta cancellata" });
-  };
-
-  const saveAddedRow = async (row: OperationRowData) => {
-    if (!row.isAddedInSession) return;
-    
-    // Aggiorna stato riga
-    setOperationRows(prevRows => 
-      prevRows.map(r => r.id === row.id ? { ...r, status: 'saving' } : r)
-    );
-
-    try {
-      // Salva nel database usando la mutation esistente
-      await saveOperationMutation.mutateAsync(row);
-      
-      // Aggiorna stato a salvato
-      setOperationRows(prevRows => 
-        prevRows.map(r => r.id === row.id ? { ...r, status: 'saved' } : r)
-      );
-      
-      toast({ title: "Riga salvata", description: "Operazione salvata nel database" });
-    } catch (error) {
-      // Ripristina stato di errore
-      setOperationRows(prevRows => 
-        prevRows.map(r => r.id === row.id ? { ...r, status: 'error' } : r)
-      );
-      
-      toast({ 
-        title: "Errore salvataggio", 
-        description: "Impossibile salvare l'operazione", 
-        variant: "destructive" 
-      });
-    }
-  };
 
   // Query per recuperare dati
   const { data: flupsys } = useQuery({
@@ -290,7 +232,6 @@ export default function SpreadsheetOperations() {
           Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : 0;
         
         return {
-          id: `original_${basket.id}_${sessionId}`,          // ID univoco per riga originale
           basketId: basket.id,
           physicalNumber: basket.physicalNumber,
           type: selectedOperationType,
@@ -314,60 +255,43 @@ export default function SpreadsheetOperations() {
           currentSize,
           averageWeight,
           lastOperationDate: lastOp?.date,
-          lastOperationType: lastOp?.type,
-          // Flags per sistema UNDO/Salva
-          isOriginal: true,                                 // È una riga originale (doppio click)
-          isAddedInSession: false                           // NON è una riga aggiunta
+          lastOperationType: lastOp?.type
         };
       });
       
       setOperationRows(newRows);
-      // Traccia il numero di righe originali della sessione
-      setOriginalRowsCount(newRows.length);
-      // Reset righe aggiunte per nuova sessione
-      setAddedRowIds(new Set());
+      // Salva backup originale per sistema Undo
+      setOriginalRows([...newRows]);
+      // Reset righe salvate per nuova sessione
+      setSavedRows(new Set());
     }
   }, [selectedFlupsyId, selectedOperationType, operationDate, eligibleBaskets.length, sizes]);
 
   // Aggiorna una singola cella
   // Gestione doppio click per editing inline
   const handleDoubleClick = (basketId: number, event: React.MouseEvent) => {
-    // Trova la riga originale per ottenere i dati del cestello
-    const originalRow = operationRows.find(r => r.basketId === basketId && !r.isAddedInSession);
-    if (!originalRow) return;
+    const rect = (event.target as HTMLElement).getBoundingClientRect();
+    const row = operationRows.find(r => r.basketId === basketId);
     
-    // Crea un ID univoco per la nuova riga aggiunta
-    const newRowId = `added_${basketId}_${Date.now()}`;
+    if (!row) return;
     
-    // Crea una nuova riga basata sui dati della riga originale
-    const newAddedRow: OperationRowData = {
-      ...originalRow,
-      id: newRowId,
-      // Flags per sistema UNDO/Salva
-      isOriginal: false,                    // NON è riga originale
-      isAddedInSession: true,               // È riga aggiunta in sessione
-      status: 'editing',                    // Stato editing per consentire modifiche
-      // Campi editabili inizializzati con valori sensati
-      animalCount: originalRow.animalCount || 10000,
-      totalWeight: originalRow.totalWeight || 1000,
-      animalsPerKg: originalRow.animalsPerKg || 100,
-      deadCount: 0,
-      notes: '',
-      // Campi specifici per misura resettati
-      liveAnimals: selectedOperationType === 'misura' ? 50 : null,
-      sampleWeight: (selectedOperationType === 'misura' || selectedOperationType === 'peso') ? 100 : null,
-      totalSample: selectedOperationType === 'misura' ? 50 : null,
-    };
+    setEditingRow(basketId);
+    setEditingPosition({
+      top: rect.top + window.scrollY,
+      left: rect.left + window.scrollX
+    });
     
-    // Aggiunge la nuova riga alla fine della lista
-    setOperationRows(prevRows => [...prevRows, newAddedRow]);
-    
-    // Traccia l'ID della riga aggiunta
-    setAddedRowIds(prev => new Set([...prev, newRowId]));
-    
-    toast({ 
-      title: "Nuova riga aggiunta", 
-      description: `Aggiunta riga per cestello #${originalRow.physicalNumber}` 
+    // Inizializza form vuoto per creare una NUOVA operazione
+    // (la riga originale non viene modificata)
+    setEditingForm({
+      basketId: row.basketId,
+      type: selectedOperationType,
+      sampleWeight: undefined,
+      liveAnimals: undefined,
+      deadCount: undefined,
+      totalWeight: undefined,
+      animalCount: undefined,
+      notes: ''
     });
   };
 
@@ -378,27 +302,22 @@ export default function SpreadsheetOperations() {
     setEditingPosition(null);
   };
 
-  // Salva i dati dal form di editing e crea nuova riga AGGIUNTA
+  // Salva i dati dal form di editing e crea nuova riga
   const saveEditingForm = async () => {
     if (!editingForm) return;
 
     const originalRow = operationRows.find(r => r.basketId === editingForm.basketId);
     if (!originalRow) return;
 
-    // Genera ID univoco per la riga aggiunta
-    const newRowId = `${editingForm.basketId}_${Date.now()}_${sessionId}`;
-
-    // Crea una nuova riga AGGIUNTA con i dati compilati
-    const newRow: OperationRowData = { 
+    // Crea una nuova riga con i dati compilati
+    const newRow = { 
       ...originalRow,
       ...editingForm,
-      id: newRowId,                    // ID univoco per tracking
       type: selectedOperationType,
-      date: operationDate,
+      date: operationDate, // Usa la data dal controllo in alto
       status: 'editing' as const,
       errors: [],
-      isOriginal: false,              // NON è una riga originale
-      isAddedInSession: true          // È stata aggiunta in questa sessione
+      isNewRow: true  // Marca questa come nuova riga modificabile
     };
     
     // Applica calcoli automatici per misura
@@ -441,9 +360,6 @@ export default function SpreadsheetOperations() {
     // Trova l'indice della riga originale
     const originalIndex = operationRows.findIndex(r => r.basketId === editingForm.basketId);
     
-    // Traccia questa riga come aggiunta nella sessione
-    setAddedRowIds(prev => new Set(prev).add(newRowId));
-
     // Inserisci la nuova riga subito dopo la riga originale
     setOperationRows(prev => {
       const newArray = [...prev];
@@ -485,12 +401,6 @@ export default function SpreadsheetOperations() {
 
     closeEditingForm();
   };
-
-
-
-
-
-
 
   const updateCell = (basketId: number, field: keyof OperationRowData, value: any) => {
     setOperationRows(prev => prev.map(row => {
@@ -898,21 +808,21 @@ export default function SpreadsheetOperations() {
           </div>
 
           <div className="flex items-center gap-2 ml-auto">
-            <div className="text-xs text-gray-600">
-              Righe aggiunte: {addedRowIds.size}
-            </div>
-            
-            {/* Undo Generale - rimuove tutte le righe aggiunte */}
-            {addedRowIds.size > 0 && (
-              <button
-                onClick={undoAllAddedRows}
-                className="h-8 px-3 text-xs bg-orange-500 text-white rounded hover:bg-orange-600 flex items-center gap-1 transition-colors"
-                title="Rimuovi tutte le righe aggiunte e ripristina stato iniziale"
-              >
-                <RotateCcw className="h-3 w-3" />
-                Undo Generale ({addedRowIds.size})
-              </button>
-            )}
+            <button
+              onClick={saveAllRows}
+              className="h-8 px-3 text-xs bg-blue-600 text-white rounded hover:bg-blue-700 flex items-center gap-1 transition-colors"
+            >
+              <Save className="h-3 w-3" />
+              Salva Tutto
+            </button>
+            <button
+              onClick={undoAllNewRows}
+              className="h-8 px-3 text-xs bg-orange-500 text-white rounded hover:bg-orange-600 flex items-center gap-1 transition-colors"
+              title="Annulla tutte le nuove righe della sessione"
+            >
+              <RotateCcw className="h-3 w-3" />
+              Undo Generale
+            </button>
           </div>
         </div>
       </div>
@@ -1042,9 +952,9 @@ export default function SpreadsheetOperations() {
                         value={row.animalCount || ''}
                         onChange={(e) => updateCell(row.basketId, 'animalCount', Number(e.target.value))}
                         className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                          row.isAddedInSession ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                         }`}
-                        disabled={!row.isAddedInSession}
+                        disabled={!(row as any).isNewRow}
                         min="0"
                         placeholder="0"
                       />
@@ -1056,9 +966,9 @@ export default function SpreadsheetOperations() {
                         value={row.totalWeight || ''}
                         onChange={(e) => updateCell(row.basketId, 'totalWeight', Number(e.target.value))}
                         className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                          row.isAddedInSession ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                         }`}
-                        disabled={!row.isAddedInSession}
+                        disabled={!(row as any).isNewRow}
                         min="0"
                         placeholder="0"
                       />
@@ -1070,9 +980,9 @@ export default function SpreadsheetOperations() {
                         value={row.animalsPerKg || ''}
                         onChange={(e) => updateCell(row.basketId, 'animalsPerKg', Number(e.target.value))}
                         className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                          row.isAddedInSession ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                         }`}
-                        disabled={!row.isAddedInSession}
+                        disabled={!(row as any).isNewRow}
                         min="0"
                         placeholder="0"
                       />
@@ -1086,9 +996,9 @@ export default function SpreadsheetOperations() {
                           value={row.sampleWeight || ''}
                           onChange={(e) => updateCell(row.basketId, 'sampleWeight', Number(e.target.value))}
                           className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                            row.isAddedInSession ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                            (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                           }`}
-                          disabled={!row.isAddedInSession}
+                          disabled={!(row as any).isNewRow}
                           min="0"
                           placeholder="0"
                           required
@@ -1104,9 +1014,9 @@ export default function SpreadsheetOperations() {
                           value={row.liveAnimals || ''}
                           onChange={(e) => updateCell(row.basketId, 'liveAnimals', Number(e.target.value))}
                           className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                            row.isAddedInSession ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                            (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                           }`}
-                          disabled={!row.isAddedInSession}
+                          disabled={!(row as any).isNewRow}
                           min="0"
                           placeholder="0"
                           required
@@ -1122,9 +1032,9 @@ export default function SpreadsheetOperations() {
                           value={row.deadCount !== null && row.deadCount !== undefined ? row.deadCount : 0}
                           onChange={(e) => updateCell(row.basketId, 'deadCount', Number(e.target.value) || 0)}
                           className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                            row.isAddedInSession ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                            (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                           }`}
-                          disabled={!row.isAddedInSession}
+                          disabled={!(row as any).isNewRow}
                           min="0"
                           placeholder="0"
                           required
@@ -1163,53 +1073,45 @@ export default function SpreadsheetOperations() {
                         value={row.notes}
                         onChange={(e) => updateCell(row.basketId, 'notes', e.target.value)}
                         className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                          row.isAddedInSession ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                         }`}
-                        disabled={!row.isAddedInSession}
+                        disabled={!(row as any).isNewRow}
                         placeholder="Note..."
                       />
                     </div>
 
                     <div style={{width: '70px'}} className="px-1 py-1 border-r flex items-center justify-center gap-1 min-h-[28px]">
-                      {/* I pulsanti sono visibili SOLO per le righe aggiunte (isAddedInSession === true) */}
-                      {row.isAddedInSession ? (
-                        <>
-                          {/* Pulsante Salva - Solo per righe aggiunte */}
-                          <button
-                            onClick={() => saveAddedRow(row)}
-                            disabled={row.status === 'saving' || row.status === 'saved'}
-                            className={`h-5 w-5 flex items-center justify-center text-xs rounded transition-colors ${
-                              row.status === 'saved'
-                                ? 'bg-green-500 text-white cursor-not-allowed' 
-                                : row.status === 'saving'
-                                ? 'bg-yellow-500 text-white cursor-not-allowed'
-                                : 'bg-blue-600 text-white hover:bg-blue-700'
-                            }`}
-                            title="Salva questa riga nel database"
-                          >
-                            {row.status === 'saving' ? (
-                              <Loader2 className="h-2 w-2 animate-spin" />
-                            ) : row.status === 'saved' ? (
-                              <CheckCircle2 className="h-2 w-2" />
-                            ) : (
-                              <Save className="h-2 w-2" />
-                            )}
-                          </button>
-                          
-                          {/* Pulsante Undo Singolo - Solo per righe aggiunte */}
-                          <button
-                            onClick={() => undoSingleRow(row.id)}
-                            disabled={row.status === 'saving'}
-                            className="h-5 w-5 flex items-center justify-center text-xs rounded bg-orange-500 text-white hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
-                            title="Rimuovi questa riga aggiunta"
-                          >
-                            <RotateCcw className="h-2 w-2" />
-                          </button>
-                        </>
-                      ) : (
-                        /* Righe originali: solo indicatore che non sono modificabili */
-                        <span className="text-xs text-gray-400 font-medium">Originale</span>
-                      )}
+                      {/* Pulsante Salva Singolo */}
+                      <button
+                        onClick={() => saveSingleRow(row.basketId)}
+                        disabled={row.status === 'saving' || row.status === 'saved' || savedRows.has(row.basketId)}
+                        className={`h-5 w-5 flex items-center justify-center text-xs rounded transition-colors ${
+                          row.status === 'saved' || savedRows.has(row.basketId)
+                            ? 'bg-green-500 text-white cursor-not-allowed' 
+                            : row.status === 'saving'
+                            ? 'bg-yellow-500 text-white cursor-not-allowed'
+                            : 'bg-blue-600 text-white hover:bg-blue-700'
+                        }`}
+                        title="Salva operazione singolarmente"
+                      >
+                        {row.status === 'saving' ? (
+                          <Loader2 className="h-2 w-2 animate-spin" />
+                        ) : row.status === 'saved' || savedRows.has(row.basketId) ? (
+                          <CheckCircle2 className="h-2 w-2" />
+                        ) : (
+                          <Save className="h-2 w-2" />
+                        )}
+                      </button>
+                      
+                      {/* Pulsante Undo Singolo */}
+                      <button
+                        onClick={() => undoRow(row.basketId)}
+                        disabled={row.status === 'saving'}
+                        className="h-5 w-5 flex items-center justify-center text-xs rounded bg-orange-500 text-white hover:bg-orange-600 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                        title="Annulla modifiche per questa riga"
+                      >
+                        <RotateCcw className="h-2 w-2" />
+                      </button>
                     </div>
                   </div>
 
