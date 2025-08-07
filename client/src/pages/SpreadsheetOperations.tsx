@@ -85,7 +85,16 @@ export default function SpreadsheetOperations() {
   
   // Stati per il nuovo sistema di editing inline
   const [editingRow, setEditingRow] = useState<number | null>(null);
-  const [editingForm, setEditingForm] = useState<any>(null);
+  const [editingForm, setEditingForm] = useState<{
+    basketId: number;
+    type: string;
+    sampleWeight?: number;
+    liveAnimals?: number;
+    deadCount?: number;
+    totalWeight?: number;
+    animalCount?: number;
+    notes?: string;
+  } | null>(null);
   const [editingPosition, setEditingPosition] = useState<{top: number, left: number} | null>(null);
 
   // Query per recuperare dati
@@ -260,17 +269,17 @@ export default function SpreadsheetOperations() {
       left: rect.left + window.scrollX
     });
     
-    // Inizializza form con dati della riga
+    // Inizializza form vuoto per creare una NUOVA operazione
+    // (la riga originale non viene modificata)
     setEditingForm({
       basketId: row.basketId,
       type: selectedOperationType,
-      sizeId: row.sizeId,
-      sampleWeight: row.sampleWeight,
-      liveAnimals: row.liveAnimals,
-      deadCount: row.deadCount,
-      totalWeight: row.totalWeight,
-      animalCount: row.animalCount,
-      notes: row.notes
+      sampleWeight: undefined,
+      liveAnimals: undefined,
+      deadCount: undefined,
+      totalWeight: undefined,
+      animalCount: undefined,
+      notes: ''
     });
   };
 
@@ -282,7 +291,7 @@ export default function SpreadsheetOperations() {
   };
 
   // Salva i dati dal form di editing e crea nuova riga
-  const saveEditingForm = () => {
+  const saveEditingForm = async () => {
     if (!editingForm) return;
 
     const originalRow = operationRows.find(r => r.basketId === editingForm.basketId);
@@ -295,7 +304,8 @@ export default function SpreadsheetOperations() {
       type: selectedOperationType,
       date: operationDate,
       status: 'editing' as const,
-      errors: []
+      errors: [],
+      isNewRow: true  // Marca questa come nuova riga modificabile
     };
     
     // Applica calcoli automatici per misura
@@ -312,7 +322,18 @@ export default function SpreadsheetOperations() {
       }
       
       if (sampleWeight > 0 && liveAnimals > 0) {
-        newRow.animalsPerKg = Math.round((liveAnimals / sampleWeight) * 1000);
+        const animalsPerKgValue = Math.round((liveAnimals / sampleWeight) * 1000);
+        newRow.animalsPerKg = animalsPerKgValue;
+        
+        // Calcola automaticamente la taglia usando la stessa logica del modulo Operazioni
+        if (sizes && sizes.length > 0) {
+          const { findSizeByAnimalsPerKg } = await import("@/lib/utils");
+          const selectedSize = findSizeByAnimalsPerKg(animalsPerKgValue, sizes);
+          if (selectedSize) {
+            newRow.sizeId = selectedSize.id;
+            console.log(`Taglia calcolata automaticamente: ${selectedSize.code} (ID: ${selectedSize.id})`);
+          }
+        }
       }
     }
 
@@ -328,7 +349,34 @@ export default function SpreadsheetOperations() {
 
     // Salva automaticamente se abilitato
     if (autoSaveEnabled) {
-      saveOperationMutation.mutate(prepareOperationData(newRow));
+      // Prepara i dati dell'operazione seguendo la stessa logica di saveRow
+      const basket = eligibleBaskets.find(b => b.id === newRow.basketId);
+      if (basket) {
+        const isPrimaAttivazione = newRow.type === 'prima-attivazione';
+        
+        const operationData = {
+          basketId: newRow.basketId,
+          cycleId: isPrimaAttivazione ? null : basket.currentCycleId,
+          type: newRow.type,
+          date: newRow.date,
+          sizeId: newRow.type === 'misura' ? newRow.sizeId : null,
+          sgrId: null,
+          lotId: newRow.lotId || ((lots as any[]) || [])[0]?.id || 1,
+          animalCount: newRow.animalCount || null,
+          totalWeight: newRow.totalWeight || null,
+          animalsPerKg: newRow.animalsPerKg || null,
+          deadCount: newRow.deadCount !== null && newRow.deadCount !== undefined ? newRow.deadCount : 0,
+          mortalityRate: newRow.mortalityRate || null,
+          notes: newRow.notes || null,
+          ...(newRow.type === 'misura' && {
+            liveAnimals: newRow.liveAnimals,
+            sampleWeight: newRow.sampleWeight,
+            totalSample: newRow.totalSample
+          })
+        };
+        
+        saveOperationMutation.mutate(operationData);
+      }
     }
 
     closeEditingForm();
@@ -810,7 +858,10 @@ export default function SpreadsheetOperations() {
                       <select
                         value={row.lotId || ''}
                         onChange={(e) => updateCell(row.basketId, 'lotId', Number(e.target.value))}
-                        className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                        className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                        }`}
+                        disabled={!(row as any).isNewRow}
                         required
                       >
                         <option value="">-</option>
@@ -847,7 +898,10 @@ export default function SpreadsheetOperations() {
                         type="number"
                         value={row.animalCount || ''}
                         onChange={(e) => updateCell(row.basketId, 'animalCount', Number(e.target.value))}
-                        className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
+                        className={`w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                        }`}
+                        disabled={!(row as any).isNewRow}
                         min="0"
                         placeholder="0"
                       />
@@ -858,7 +912,10 @@ export default function SpreadsheetOperations() {
                         type="number"
                         value={row.totalWeight || ''}
                         onChange={(e) => updateCell(row.basketId, 'totalWeight', Number(e.target.value))}
-                        className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
+                        className={`w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                        }`}
+                        disabled={!(row as any).isNewRow}
                         min="0"
                         placeholder="0"
                       />
@@ -869,7 +926,10 @@ export default function SpreadsheetOperations() {
                         type="number"
                         value={row.animalsPerKg || ''}
                         onChange={(e) => updateCell(row.basketId, 'animalsPerKg', Number(e.target.value))}
-                        className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
+                        className={`w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                        }`}
+                        disabled={!(row as any).isNewRow}
                         min="0"
                         placeholder="0"
                       />
@@ -882,7 +942,10 @@ export default function SpreadsheetOperations() {
                           type="number"
                           value={row.sampleWeight || ''}
                           onChange={(e) => updateCell(row.basketId, 'sampleWeight', Number(e.target.value))}
-                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                          className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                            (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                          }`}
+                          disabled={!(row as any).isNewRow}
                           min="0"
                           placeholder="0"
                           required
@@ -897,7 +960,10 @@ export default function SpreadsheetOperations() {
                           type="number"
                           value={row.liveAnimals || ''}
                           onChange={(e) => updateCell(row.basketId, 'liveAnimals', Number(e.target.value))}
-                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                          className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                            (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                          }`}
+                          disabled={!(row as any).isNewRow}
                           min="0"
                           placeholder="0"
                           required
@@ -912,7 +978,10 @@ export default function SpreadsheetOperations() {
                           type="number"
                           value={row.deadCount !== null && row.deadCount !== undefined ? row.deadCount : 0}
                           onChange={(e) => updateCell(row.basketId, 'deadCount', Number(e.target.value) || 0)}
-                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                          className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                            (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                          }`}
+                          disabled={!(row as any).isNewRow}
                           min="0"
                           placeholder="0"
                           required
@@ -950,7 +1019,10 @@ export default function SpreadsheetOperations() {
                       <input
                         value={row.notes}
                         onChange={(e) => updateCell(row.basketId, 'notes', e.target.value)}
-                        className="w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
+                        className={`w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
+                        }`}
+                        disabled={!(row as any).isNewRow}
                         placeholder="Note..."
                       />
                     </div>
@@ -958,8 +1030,12 @@ export default function SpreadsheetOperations() {
                     <div className="px-1 py-1 flex items-center justify-center">
                       <button
                         onClick={() => saveRow(row.basketId)}
-                        disabled={row.status === 'saving' || row.status === 'saved'}
-                        className="h-6 w-6 flex items-center justify-center text-xs bg-blue-600 text-white rounded hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors"
+                        disabled={row.status === 'saving' || row.status === 'saved' || !(row as any).isNewRow}
+                        className={`h-6 w-6 flex items-center justify-center text-xs rounded transition-colors ${
+                          (row as any).isNewRow 
+                            ? 'bg-blue-600 text-white hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed' 
+                            : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+                        }`}
                       >
                         {row.status === 'saving' ? (
                           <Loader2 className="h-2.5 w-2.5 animate-spin" />
@@ -1025,39 +1101,18 @@ export default function SpreadsheetOperations() {
               {/* Campi specifici per tipo di operazione */}
               {selectedOperationType === 'misura' && (
                 <>
-                  <div className="grid grid-cols-2 gap-3">
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Taglia *
-                      </label>
-                      <select
-                        value={editingForm.sizeId || ''}
-                        onChange={(e) => setEditingForm({...editingForm, sizeId: Number(e.target.value)})}
-                        className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        required
-                      >
-                        <option value="">Seleziona taglia</option>
-                        {((sizes as any[]) || []).map((size: any) => (
-                          <option key={size.id} value={size.id}>
-                            {size.code}
-                          </option>
-                        ))}
-                      </select>
-                    </div>
-                    
-                    <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Peso campione (g) *
-                      </label>
-                      <input
-                        type="number"
-                        value={editingForm.sampleWeight || ''}
-                        onChange={(e) => setEditingForm({...editingForm, sampleWeight: Number(e.target.value)})}
-                        className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        min="1"
-                        required
-                      />
-                    </div>
+                  <div>
+                    <label className="block text-xs font-medium text-gray-700 mb-1">
+                      Peso campione (g) *
+                    </label>
+                    <input
+                      type="number"
+                      value={editingForm.sampleWeight || ''}
+                      onChange={(e) => setEditingForm({...editingForm, sampleWeight: Number(e.target.value)})}
+                      className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                      min="1"
+                      required
+                    />
                   </div>
 
                   <div className="grid grid-cols-2 gap-3">
