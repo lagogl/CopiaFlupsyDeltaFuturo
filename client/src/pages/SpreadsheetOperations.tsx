@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { useToast } from "@/hooks/use-toast";
 import { apiRequest } from "@/lib/queryClient";
@@ -847,68 +847,55 @@ export default function SpreadsheetOperations() {
             
             <ScrollArea className="w-full">
               <div className="min-w-[1200px]">
-                {/* Header tabella compatto con TUTTE le colonne necessarie */}
-                <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{
-                  gridTemplateColumns: selectedOperationType === 'misura' 
-                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 60px 60px 50px 40px 2fr 70px' 
-                    : selectedOperationType === 'peso'
-                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 60px 2fr 70px'
-                    : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 70px'
-                }}>
-                  <div className="px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
-                  <div className="px-1 py-1.5 border-r text-center">Stato</div>
-                  <div className="px-1 py-1.5 border-r text-xs">Taglia</div>
-                  <div className="px-1 py-1.5 border-r text-xs">P.Med(g)</div>
-                  <div className="px-1 py-1.5 border-r text-xs">Ult.Op</div>
+                {/* Header tabella compatto con layout FLEXBOX per allineamento perfetto */}
+                <div className="flex border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10">
+                  <div className="w-20 px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
+                  <div className="w-10 px-1 py-1.5 border-r text-center">Stato</div>
+                  <div className="w-15 px-1 py-1.5 border-r text-xs">Taglia</div>
+                  <div className="w-18 px-1 py-1.5 border-r text-xs">P.Med(g)</div>
+                  <div className="w-15 px-1 py-1.5 border-r text-xs">Ult.Op</div>
                   {/* COLONNA LOTTO - OBBLIGATORIO */}
-                  <div className="px-1 py-1.5 border-r text-xs bg-yellow-50">Lotto*</div>
-                  <div className="px-2 py-1.5 border-r">Animali</div>
-                  <div className="px-2 py-1.5 border-r">Peso Tot (g)</div>
-                  <div className="px-2 py-1.5 border-r">Anim/kg</div>
+                  <div className="w-15 px-1 py-1.5 border-r text-xs bg-yellow-50">Lotto*</div>
+                  <div className="w-20 px-2 py-1.5 border-r">Animali</div>
+                  <div className="w-24 px-2 py-1.5 border-r">Peso Tot (g)</div>
+                  <div className="w-20 px-2 py-1.5 border-r">Anim/kg</div>
                   {/* PESO CAMPIONE per operazioni peso e misura */}
                   {(selectedOperationType === 'peso' || selectedOperationType === 'misura') && (
-                    <div className="px-1 py-1.5 border-r bg-yellow-50 text-[10px]">P.Camp*</div>
+                    <div className="w-15 px-1 py-1.5 border-r bg-yellow-50 text-[10px]">P.Camp*</div>
                   )}
                   {/* ANIMALI VIVI solo per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="px-1 py-1.5 border-r bg-yellow-50 text-[10px]">Vivi*</div>
+                    <div className="w-15 px-1 py-1.5 border-r bg-yellow-50 text-[10px]">Vivi*</div>
                   )}
                   {/* ANIMALI MORTI per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="px-1 py-1.5 border-r bg-yellow-50 text-[10px]">Morti*</div>
+                    <div className="w-13 px-1 py-1.5 border-r bg-yellow-50 text-[10px]">Morti*</div>
                   )}
                   {/* TOTALE CAMPIONE per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="px-1 py-1.5 border-r">Tot.Camp.</div>
+                    <div className="w-10 px-1 py-1.5 border-r">Tot.Camp.</div>
                   )}
                   {/* MORTALITÀ PERCENTUALE per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="px-1 py-1.5 border-r">Mortalità%</div>
+                    <div className="w-10 px-1 py-1.5 border-r">Mortalità%</div>
                   )}
-                  <div className="px-2 py-1.5 border-r">Note</div>
-                  <div className="px-1 py-1.5 text-center">Azioni</div>
+                  <div className="flex-1 px-2 py-1.5 border-r">Note</div>
+                  <div className="w-18 px-1 py-1.5 text-center">Azioni</div>
                 </div>
 
               {/* Righe dati compatte */}
               {operationRows.map((row, index) => (
-                <>
-                  <div key={row.basketId}
-                    className={`grid border-b text-xs hover:bg-gray-50 items-center ${
+                <React.Fragment key={row.basketId}>
+                  <div
+                    className={`flex border-b text-xs hover:bg-gray-50 items-center ${
                       row.status === 'error' ? 'bg-red-50' : 
                       row.status === 'saved' ? 'bg-green-50' : 
                       row.status === 'saving' ? 'bg-yellow-50' : 'bg-white'
                     }`}
-                    style={{
-                      gridTemplateColumns: selectedOperationType === 'misura' 
-                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 60px 60px 50px 40px 2fr 70px' 
-                        : selectedOperationType === 'peso'
-                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 60px 2fr 70px'
-                        : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 70px'
-                    }}
                   >
                     {/* Colonna cestello fissa */}
                     <div 
-                      className="px-2 py-1 border-r flex items-center font-medium text-gray-700 bg-white sticky left-0 z-10 shadow-r cursor-pointer hover:bg-blue-50 transition-colors"
+                      className="w-20 px-2 py-1 border-r flex items-center font-medium text-gray-700 bg-white sticky left-0 z-10 shadow-r cursor-pointer hover:bg-blue-50 transition-colors"
                       onDoubleClick={(e) => handleDoubleClick(row.basketId, e)}
                       title="Doppio click per modificare operazione"
                     >
@@ -916,7 +903,7 @@ export default function SpreadsheetOperations() {
                     </div>
                     
                     {/* Stato */}
-                    <div className="px-1 py-1 border-r flex items-center justify-center">
+                    <div className="w-10 px-1 py-1 border-r flex items-center justify-center">
                       {row.status === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
                       {row.status === 'saved' && <CheckCircle2 className="h-3 w-3 text-green-600" />}
                       {row.status === 'error' && <AlertCircle className="h-3 w-3 text-red-600" />}
@@ -924,7 +911,7 @@ export default function SpreadsheetOperations() {
                     </div>
 
                     {/* Info aggiuntive */}
-                    <div className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
+                    <div className="w-15 px-1 py-1 border-r flex items-center text-xs text-gray-600">
                       <span className="truncate">
                         {(row as any).isNewRow && row.sizeId ? 
                           ((sizes as any[]) || []).find((size: any) => size.id === row.sizeId)?.code || row.currentSize 
@@ -932,7 +919,7 @@ export default function SpreadsheetOperations() {
                       </span>
                     </div>
 
-                    <div className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
+                    <div className="w-18 px-1 py-1 border-r flex items-center text-xs text-gray-600">
                       <span className="truncate">
                         {(row as any).isNewRow && row.animalCount && row.totalWeight ? 
                           `${Math.round((row.totalWeight / row.animalCount) * 100) / 100}g`
@@ -940,7 +927,7 @@ export default function SpreadsheetOperations() {
                       </span>
                     </div>
 
-                    <div className="px-1 py-1 border-r flex items-center text-xs text-gray-500">
+                    <div className="w-15 px-1 py-1 border-r flex items-center text-xs text-gray-500">
                       <span className="truncate" title={`${row.lastOperationType} - ${row.lastOperationDate}`}>
                         {(row as any).isNewRow && row.date ? 
                           new Date(row.date).toLocaleDateString('it-IT', {month: '2-digit', day: '2-digit'})
@@ -949,7 +936,7 @@ export default function SpreadsheetOperations() {
                     </div>
 
                     {/* CAMPO LOTTO - NON MODIFICABILE */}
-                    <div className="px-1 py-1 border-r bg-gray-100">
+                    <div className="w-15 px-1 py-1 border-r bg-gray-100">
                       <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center">
                         L{row.lotId || '1'}
                       </div>
@@ -958,7 +945,7 @@ export default function SpreadsheetOperations() {
 
 
                     {/* Campi editabili */}
-                    <div className="px-1 py-1 border-r">
+                    <div className="w-20 px-1 py-1 border-r">
                       <input
                         type="number"
                         value={row.animalCount || ''}
@@ -972,7 +959,7 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="px-1 py-1 border-r">
+                    <div className="w-24 px-1 py-1 border-r">
                       <input
                         type="number"
                         value={row.totalWeight || ''}
@@ -986,7 +973,7 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="px-1 py-1 border-r">
+                    <div className="w-20 px-1 py-1 border-r">
                       <input
                         type="number"
                         value={row.animalsPerKg || ''}
@@ -1002,7 +989,7 @@ export default function SpreadsheetOperations() {
 
                     {/* PESO CAMPIONE per operazioni peso e misura */}
                     {(selectedOperationType === 'peso' || selectedOperationType === 'misura') && (
-                      <div className="px-1 py-1 border-r bg-yellow-50">
+                      <div className="w-15 px-1 py-1 border-r bg-yellow-50">
                         <input
                           type="number"
                           value={row.sampleWeight || ''}
@@ -1020,7 +1007,7 @@ export default function SpreadsheetOperations() {
 
                     {/* ANIMALI VIVI solo per misura */}
                     {selectedOperationType === 'misura' && (
-                      <div className="px-1 py-1 border-r bg-yellow-50">
+                      <div className="w-15 px-1 py-1 border-r bg-yellow-50">
                         <input
                           type="number"
                           value={row.liveAnimals || ''}
@@ -1038,7 +1025,7 @@ export default function SpreadsheetOperations() {
 
                     {/* ANIMALI MORTI per misura */}
                     {selectedOperationType === 'misura' && (
-                      <div className="px-1 py-1 border-r bg-yellow-50">
+                      <div className="w-13 px-1 py-1 border-r bg-yellow-50">
                         <input
                           type="number"
                           value={row.deadCount !== null && row.deadCount !== undefined ? row.deadCount : 0}
@@ -1056,7 +1043,7 @@ export default function SpreadsheetOperations() {
 
                     {/* TOTALE CAMPIONE per misura */}
                     {selectedOperationType === 'misura' && (
-                      <div className="px-1 py-1 border-r">
+                      <div className="w-10 px-1 py-1 border-r">
                         <input
                           type="number"
                           value={row.totalSample || ''}
@@ -1069,7 +1056,7 @@ export default function SpreadsheetOperations() {
 
                     {/* MORTALITÀ PERCENTUALE per misura */}
                     {selectedOperationType === 'misura' && (
-                      <div className="px-1 py-1 border-r">
+                      <div className="w-10 px-1 py-1 border-r">
                         <input
                           type="number"
                           value={row.mortalityRate ? row.mortalityRate.toFixed(2) : ''}
@@ -1080,7 +1067,7 @@ export default function SpreadsheetOperations() {
                       </div>
                     )}
 
-                    <div className="px-1 py-1 border-r">
+                    <div className="flex-1 px-1 py-1 border-r">
                       <input
                         value={row.notes}
                         onChange={(e) => updateCell(row.basketId, 'notes', e.target.value)}
@@ -1092,7 +1079,7 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="px-1 py-1 border-r flex items-center justify-center gap-1 min-h-[28px]">
+                    <div className="w-18 px-1 py-1 border-r flex items-center justify-center gap-1 min-h-[28px]">
                       {/* Pulsante Salva Singolo */}
                       <button
                         onClick={() => saveSingleRow(row.basketId)}
@@ -1135,7 +1122,7 @@ export default function SpreadsheetOperations() {
                       </div>
                     </div>
                   )}
-                </>
+                </React.Fragment>
               ))}
               </div>
             </ScrollArea>
