@@ -891,8 +891,8 @@ export default function SpreadsheetOperations() {
 
               {/* Righe dati compatte */}
               {operationRows.map((row, index) => (
-                <div key={row.basketId}>
-                  <div
+                <>
+                  <div key={row.basketId}
                     className={`grid border-b text-xs hover:bg-gray-50 items-center ${
                       row.status === 'error' ? 'bg-red-50' : 
                       row.status === 'saved' ? 'bg-green-50' : 
@@ -1135,7 +1135,7 @@ export default function SpreadsheetOperations() {
                       </div>
                     </div>
                   )}
-                </div>
+                </>
               ))}
               </div>
             </ScrollArea>
