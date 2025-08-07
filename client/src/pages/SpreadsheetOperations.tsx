@@ -99,8 +99,42 @@ export default function SpreadsheetOperations() {
     totalWeight?: number;
     animalCount?: number;
     notes?: string;
+    date?: string;
+    lotId?: number;
   } | null>(null);
   const [editingPosition, setEditingPosition] = useState<{top: number, left: number} | null>(null);
+
+  // Validazione campi obbligatori per il form popup
+  const validateEditingForm = (): boolean => {
+    if (!editingForm) return false;
+    
+    // Campi sempre obbligatori
+    if (!editingForm.basketId || !editingForm.type || !editingForm.date || !editingForm.lotId) {
+      return false;
+    }
+    
+    // Validazioni specifiche per tipo operazione
+    if (selectedOperationType === 'misura') {
+      // Per misura: peso campione, animali vivi, morti, peso totale sono obbligatori
+      if (!editingForm.sampleWeight || editingForm.sampleWeight <= 0) return false;
+      if (!editingForm.liveAnimals || editingForm.liveAnimals <= 0) return false;
+      if (editingForm.deadCount === null || editingForm.deadCount === undefined) return false;
+      if (!editingForm.totalWeight || editingForm.totalWeight <= 0) return false;
+    }
+    
+    if (selectedOperationType === 'peso') {
+      // Per peso: numero animali, peso totale sono obbligatori
+      if (!editingForm.animalCount || editingForm.animalCount <= 0) return false;
+      if (!editingForm.totalWeight || editingForm.totalWeight <= 0) return false;
+    }
+    
+    if (['pulizia', 'trattamento', 'vagliatura'].includes(selectedOperationType)) {
+      // Per altre operazioni: almeno il numero animali è obbligatorio
+      if (!editingForm.animalCount || editingForm.animalCount <= 0) return false;
+    }
+    
+    return true;
+  };
 
   // Query per recuperare dati
   const { data: flupsys } = useQuery({
@@ -1230,6 +1264,7 @@ export default function SpreadsheetOperations() {
                                  touch-manipulation"
                         min="1"
                         placeholder="100"
+                        required
                         autoFocus
                       />
                     </div>
@@ -1246,8 +1281,9 @@ export default function SpreadsheetOperations() {
                         className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
                                  focus:outline-none focus:ring-2 focus:ring-blue-400 bg-yellow-50
                                  touch-manipulation"
-                        min="0"
+                        min="1"
                         placeholder="50"
+                        required
                       />
                     </div>
                     
@@ -1265,6 +1301,7 @@ export default function SpreadsheetOperations() {
                                  touch-manipulation"
                         min="0"
                         placeholder="0"
+                        required
                       />
                     </div>
                   </div>
@@ -1308,6 +1345,7 @@ export default function SpreadsheetOperations() {
                         className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="1"
                         placeholder="15000"
+                        required
                       />
                     </div>
                   </div>
@@ -1428,11 +1466,15 @@ export default function SpreadsheetOperations() {
                 </button>
                 <button
                   onClick={saveEditingForm}
-                  className="px-3 py-1 md:px-3 md:py-1 max-md:px-4 max-md:py-3 
-                           text-xs md:text-xs max-md:text-sm font-medium text-white bg-blue-600 
-                           border rounded hover:bg-blue-700 max-md:flex-1 max-md:h-12 
+                  disabled={!validateEditingForm()}
+                  className={`px-3 py-1 md:px-3 md:py-1 max-md:px-4 max-md:py-3 
+                           text-xs md:text-xs max-md:text-sm font-medium border rounded max-md:flex-1 max-md:h-12 
                            max-md:flex max-md:items-center max-md:justify-center
-                           touch-manipulation"
+                           touch-manipulation transition-colors ${
+                             validateEditingForm() 
+                               ? 'text-white bg-blue-600 hover:bg-blue-700'
+                               : 'text-gray-500 bg-gray-300 cursor-not-allowed'
+                           }`}
                 >
                   ✓ Salva
                 </button>
