@@ -155,6 +155,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       if (result) {
         console.log(`✅ EMERGENCY DELETE: Operazione ${id} eliminata con successo`);
+        
+        // INVALIDAZIONE CACHE DOPO ELIMINAZIONE
+        invalidateUnifiedCache();
+        console.log(`🗑️ EMERGENCY DELETE: Cache unificata invalidata dopo eliminazione operazione ${id}`);
+        
+        // Invio notifica WebSocket per aggiornamento real-time
+        if (req.app.locals.webSocketServer) {
+          req.app.locals.webSocketServer.broadcastMessage('operation_deleted', {
+            operationId: id,
+            message: `Operazione ${id} eliminata con successo`
+          });
+          console.log(`📡 EMERGENCY DELETE: Notifica WebSocket inviata per operazione ${id}`);
+        }
+        
         return res.json({ 
           success: true, 
           message: "Operation deleted successfully",
