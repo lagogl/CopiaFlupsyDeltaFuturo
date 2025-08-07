@@ -227,7 +227,8 @@ export default function SpreadsheetOperations() {
     if (selectedFlupsyId && selectedOperationType && eligibleBaskets.length > 0) {
       const newRows: OperationRowData[] = eligibleBaskets.map(basket => {
         const lastOp = basket.lastOperation;
-        const currentSize = ((sizes as any[]) || []).find((size: any) => size.id === lastOp?.sizeId)?.code || 'N/A';
+        const sizesArray = Array.isArray(sizes) ? sizes : [];
+        const currentSize = 'N/A'; // Size info not available in lastOperation
         const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
           Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : 0;
         
@@ -248,7 +249,7 @@ export default function SpreadsheetOperations() {
           liveAnimals: selectedOperationType === 'misura' ? 50 : null,  // Animali vivi nel campione
           sampleWeight: (selectedOperationType === 'misura' || selectedOperationType === 'peso') ? 100 : null,  // Peso campione in grammi
           totalSample: selectedOperationType === 'misura' ? 50 : null,  // Totale campione (calcolato automaticamente)
-          sizeId: selectedOperationType === 'misura' ? ((sizes as any[]) || [])[0]?.id : null,
+          sizeId: selectedOperationType === 'misura' ? sizesArray[0]?.id : null,
           status: 'editing',
           errors: [],
           // Dati aggiuntivi cesta
@@ -346,9 +347,10 @@ export default function SpreadsheetOperations() {
         newRow.animalsPerKg = animalsPerKgValue;
         
         // Calcola automaticamente la taglia usando la stessa logica del modulo Operazioni
-        if (sizes && sizes.length > 0) {
+        const sizesArray = Array.isArray(sizes) ? sizes : [];
+        if (sizesArray.length > 0) {
           const { findSizeByAnimalsPerKg } = await import("@/lib/utils");
-          const selectedSize = findSizeByAnimalsPerKg(animalsPerKgValue, sizes);
+          const selectedSize = findSizeByAnimalsPerKg(animalsPerKgValue, sizesArray);
           if (selectedSize) {
             newRow.sizeId = selectedSize.id;
             console.log(`Taglia calcolata automaticamente: ${selectedSize.code} (ID: ${selectedSize.id})`);
@@ -406,10 +408,10 @@ export default function SpreadsheetOperations() {
     setOperationRows(prev => prev.map(row => {
       if (row.basketId !== basketId) return row;
       
-      const updatedRow = { 
+      const updatedRow: OperationRowData = { 
         ...row, 
         [field]: value, 
-        status: 'editing',
+        status: 'editing' as const,
         errors: []
       };
       
