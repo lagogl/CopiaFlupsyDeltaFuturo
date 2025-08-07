@@ -219,6 +219,7 @@ export default function SpreadsheetOperations() {
           totalWeight: lastOp?.totalWeight || 1000,
           animalsPerKg: lastOp?.animalsPerKg || 100,
           deadCount: 0, // Sempre inizializza a 0 per evitare errori null
+          mortalityRate: 0, // Inizializza mortalità a 0
           notes: '',
           // Campi specifici per operazioni che richiedono campione
           liveAnimals: selectedOperationType === 'misura' ? 50 : null,
@@ -240,16 +241,32 @@ export default function SpreadsheetOperations() {
 
   // Aggiorna una singola cella
   const updateCell = (basketId: number, field: keyof OperationRowData, value: any) => {
-    setOperationRows(prev => prev.map(row => 
-      row.basketId === basketId 
-        ? { 
-            ...row, 
-            [field]: value, 
-            status: 'editing',
-            errors: []
-          }
-        : row
-    ));
+    setOperationRows(prev => prev.map(row => {
+      if (row.basketId !== basketId) return row;
+      
+      const updatedRow = { 
+        ...row, 
+        [field]: value, 
+        status: 'editing',
+        errors: []
+      };
+      
+      // Calcolo automatico della mortalità per operazioni di misura
+      if (selectedOperationType === 'misura' && (field === 'deadCount' || field === 'liveAnimals')) {
+        const deadCount = field === 'deadCount' ? value : row.deadCount || 0;
+        const liveAnimals = field === 'liveAnimals' ? value : row.liveAnimals || 0;
+        const totalAnimals = deadCount + liveAnimals;
+        
+        if (totalAnimals > 0) {
+          const mortalityRate = (deadCount / totalAnimals) * 100;
+          updatedRow.mortalityRate = Math.round(mortalityRate * 100) / 100; // Arrotonda a 2 decimali
+        } else {
+          updatedRow.mortalityRate = 0;
+        }
+      }
+      
+      return updatedRow;
+    }));
   };
 
   // Validazione di una riga seguendo lo schema database e le regole del modulo Operations
@@ -396,7 +413,7 @@ export default function SpreadsheetOperations() {
       totalWeight: row.totalWeight || null,                     // real total_weight (nullable, in grams)
       animalsPerKg: row.animalsPerKg || null,                  // integer animals_per_kg (nullable)
       deadCount: row.deadCount !== null && row.deadCount !== undefined ? row.deadCount : 0, // integer dead_count (default 0)
-      mortalityRate: null,                                      // real mortality_rate (nullable) - calcolato dal backend
+      mortalityRate: row.mortalityRate || null,                 // real mortality_rate (nullable) - calcolato automaticamente o inserito manualmente
       notes: row.notes || null,                                 // text notes (nullable)
       
       // CAMPI NON INCLUSI (gestiti dal backend o omessi per insert)
@@ -588,7 +605,7 @@ export default function SpreadsheetOperations() {
                 {/* Header tabella compatto con TUTTE le colonne necessarie */}
                 <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{
                   gridTemplateColumns: selectedOperationType === 'misura' 
-                    ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 2fr 60px' 
+                    ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 80px 2fr 60px' 
                     : selectedOperationType === 'peso'
                     ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
                     : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
@@ -619,6 +636,10 @@ export default function SpreadsheetOperations() {
                   {selectedOperationType === 'misura' && (
                     <div className="px-1 py-1.5 border-r bg-yellow-50">Morti*</div>
                   )}
+                  {/* MORTALITÀ PERCENTUALE per misura */}
+                  {selectedOperationType === 'misura' && (
+                    <div className="px-1 py-1.5 border-r">Mortalità%</div>
+                  )}
                   <div className="px-2 py-1.5 border-r">Note</div>
                   <div className="px-1 py-1.5 text-center">Azioni</div>
                 </div>
@@ -634,7 +655,7 @@ export default function SpreadsheetOperations() {
                     }`}
                     style={{
                       gridTemplateColumns: selectedOperationType === 'misura' 
-                        ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 2fr 60px' 
+                        ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 80px 2fr 60px' 
                         : selectedOperationType === 'peso'
                         ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
                         : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
@@ -778,6 +799,22 @@ export default function SpreadsheetOperations() {
                           min="0"
                           placeholder="0"
                           required
+                        />
+                      </div>
+                    )}
+
+                    {/* MORTALITÀ PERCENTUALE per misura */}
+                    {selectedOperationType === 'misura' && (
+                      <div className="px-1 py-1 border-r">
+                        <input
+                          type="number"
+                          value={row.mortalityRate || ''}
+                          onChange={(e) => updateCell(row.basketId, 'mortalityRate', Number(e.target.value))}
+                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
+                          min="0"
+                          max="100"
+                          step="0.01"
+                          placeholder="0.00"
                         />
                       </div>
                     )}
