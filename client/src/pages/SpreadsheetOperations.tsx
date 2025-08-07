@@ -847,40 +847,40 @@ export default function SpreadsheetOperations() {
             
             <ScrollArea className="w-full">
               <div className="min-w-[1200px]">
-                {/* Header tabella compatto con layout FLEXBOX per allineamento perfetto */}
-                <div className="flex border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10">
-                  <div className="w-20 px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
-                  <div className="w-10 px-1 py-1.5 border-r text-center">Stato</div>
-                  <div className="w-15 px-1 py-1.5 border-r text-xs">Taglia</div>
-                  <div className="w-18 px-1 py-1.5 border-r text-xs">P.Med(g)</div>
-                  <div className="w-15 px-1 py-1.5 border-r text-xs">Ult.Op</div>
+                {/* Header tabella compatto con larghezze esatte per allineamento perfetto */}
+                <div className="flex border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{fontSize: '10px'}}>
+                  <div style={{width: '70px'}} className="px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
+                  <div style={{width: '40px'}} className="px-1 py-1.5 border-r text-center">Stato</div>
+                  <div style={{width: '50px'}} className="px-1 py-1.5 border-r">Taglia</div>
+                  <div style={{width: '60px'}} className="px-1 py-1.5 border-r">P.Med(g)</div>
+                  <div style={{width: '50px'}} className="px-1 py-1.5 border-r">Ult.Op</div>
                   {/* COLONNA LOTTO - OBBLIGATORIO */}
-                  <div className="w-15 px-1 py-1.5 border-r text-xs bg-yellow-50">Lotto*</div>
-                  <div className="w-20 px-2 py-1.5 border-r">Animali</div>
-                  <div className="w-24 px-2 py-1.5 border-r">Peso Tot (g)</div>
-                  <div className="w-20 px-2 py-1.5 border-r">Anim/kg</div>
+                  <div style={{width: '50px'}} className="px-1 py-1.5 border-r bg-yellow-50">Lotto*</div>
+                  <div style={{width: '70px'}} className="px-1 py-1.5 border-r">Animali</div>
+                  <div style={{width: '80px'}} className="px-1 py-1.5 border-r">Peso Tot (g)</div>
+                  <div style={{width: '65px'}} className="px-1 py-1.5 border-r">Anim/kg</div>
                   {/* PESO CAMPIONE per operazioni peso e misura */}
                   {(selectedOperationType === 'peso' || selectedOperationType === 'misura') && (
-                    <div className="w-15 px-1 py-1.5 border-r bg-yellow-50 text-[10px]">P.Camp*</div>
+                    <div style={{width: '60px'}} className="px-1 py-1.5 border-r bg-yellow-50">P.Camp*</div>
                   )}
                   {/* ANIMALI VIVI solo per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="w-15 px-1 py-1.5 border-r bg-yellow-50 text-[10px]">Vivi*</div>
+                    <div style={{width: '50px'}} className="px-1 py-1.5 border-r bg-yellow-50">Vivi*</div>
                   )}
                   {/* ANIMALI MORTI per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="w-13 px-1 py-1.5 border-r bg-yellow-50 text-[10px]">Morti*</div>
+                    <div style={{width: '50px'}} className="px-1 py-1.5 border-r bg-yellow-50">Morti*</div>
                   )}
                   {/* TOTALE CAMPIONE per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="w-10 px-1 py-1.5 border-r">Tot.Camp.</div>
+                    <div style={{width: '60px'}} className="px-1 py-1.5 border-r">Tot.Camp.</div>
                   )}
                   {/* MORTALITÀ PERCENTUALE per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="w-10 px-1 py-1.5 border-r">Mortalità%</div>
+                    <div style={{width: '65px'}} className="px-1 py-1.5 border-r">Mortalità%</div>
                   )}
-                  <div className="flex-1 px-2 py-1.5 border-r">Note</div>
-                  <div className="w-18 px-1 py-1.5 text-center">Azioni</div>
+                  <div className="flex-1 px-1 py-1.5 border-r" style={{minWidth: '120px'}}>Note</div>
+                  <div style={{width: '70px'}} className="px-1 py-1.5 text-center">Azioni</div>
                 </div>
 
               {/* Righe dati compatte */}
@@ -895,7 +895,8 @@ export default function SpreadsheetOperations() {
                   >
                     {/* Colonna cestello fissa */}
                     <div 
-                      className="w-20 px-2 py-1 border-r flex items-center font-medium text-gray-700 bg-white sticky left-0 z-10 shadow-r cursor-pointer hover:bg-blue-50 transition-colors"
+                      style={{width: '70px'}}
+                      className="px-2 py-1 border-r flex items-center font-medium text-gray-700 bg-white sticky left-0 z-10 shadow-r cursor-pointer hover:bg-blue-50 transition-colors"
                       onDoubleClick={(e) => handleDoubleClick(row.basketId, e)}
                       title="Doppio click per modificare operazione"
                     >
@@ -903,7 +904,7 @@ export default function SpreadsheetOperations() {
                     </div>
                     
                     {/* Stato */}
-                    <div className="w-10 px-1 py-1 border-r flex items-center justify-center">
+                    <div style={{width: '40px'}} className="px-1 py-1 border-r flex items-center justify-center">
                       {row.status === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
                       {row.status === 'saved' && <CheckCircle2 className="h-3 w-3 text-green-600" />}
                       {row.status === 'error' && <AlertCircle className="h-3 w-3 text-red-600" />}
@@ -911,7 +912,7 @@ export default function SpreadsheetOperations() {
                     </div>
 
                     {/* Info aggiuntive */}
-                    <div className="w-15 px-1 py-1 border-r flex items-center text-xs text-gray-600">
+                    <div style={{width: '50px'}} className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
                       <span className="truncate">
                         {(row as any).isNewRow && row.sizeId ? 
                           ((sizes as any[]) || []).find((size: any) => size.id === row.sizeId)?.code || row.currentSize 
@@ -919,7 +920,7 @@ export default function SpreadsheetOperations() {
                       </span>
                     </div>
 
-                    <div className="w-18 px-1 py-1 border-r flex items-center text-xs text-gray-600">
+                    <div style={{width: '60px'}} className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
                       <span className="truncate">
                         {(row as any).isNewRow && row.animalCount && row.totalWeight ? 
                           `${Math.round((row.totalWeight / row.animalCount) * 100) / 100}g`
@@ -927,7 +928,7 @@ export default function SpreadsheetOperations() {
                       </span>
                     </div>
 
-                    <div className="w-15 px-1 py-1 border-r flex items-center text-xs text-gray-500">
+                    <div style={{width: '50px'}} className="px-1 py-1 border-r flex items-center text-xs text-gray-500">
                       <span className="truncate" title={`${row.lastOperationType} - ${row.lastOperationDate}`}>
                         {(row as any).isNewRow && row.date ? 
                           new Date(row.date).toLocaleDateString('it-IT', {month: '2-digit', day: '2-digit'})
@@ -936,7 +937,7 @@ export default function SpreadsheetOperations() {
                     </div>
 
                     {/* CAMPO LOTTO - NON MODIFICABILE */}
-                    <div className="w-15 px-1 py-1 border-r bg-gray-100">
+                    <div style={{width: '50px'}} className="px-1 py-1 border-r bg-gray-100">
                       <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center">
                         L{row.lotId || '1'}
                       </div>
@@ -945,12 +946,12 @@ export default function SpreadsheetOperations() {
 
 
                     {/* Campi editabili */}
-                    <div className="w-20 px-1 py-1 border-r">
+                    <div style={{width: '70px'}} className="px-1 py-1 border-r">
                       <input
                         type="number"
                         value={row.animalCount || ''}
                         onChange={(e) => updateCell(row.basketId, 'animalCount', Number(e.target.value))}
-                        className={`w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                        className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
                           (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                         }`}
                         disabled={!(row as any).isNewRow}
@@ -959,12 +960,12 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="w-24 px-1 py-1 border-r">
+                    <div style={{width: '80px'}} className="px-1 py-1 border-r">
                       <input
                         type="number"
                         value={row.totalWeight || ''}
                         onChange={(e) => updateCell(row.basketId, 'totalWeight', Number(e.target.value))}
-                        className={`w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                        className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
                           (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                         }`}
                         disabled={!(row as any).isNewRow}
@@ -973,12 +974,12 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="w-20 px-1 py-1 border-r">
+                    <div style={{width: '65px'}} className="px-1 py-1 border-r">
                       <input
                         type="number"
                         value={row.animalsPerKg || ''}
                         onChange={(e) => updateCell(row.basketId, 'animalsPerKg', Number(e.target.value))}
-                        className={`w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                        className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
                           (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                         }`}
                         disabled={!(row as any).isNewRow}
@@ -989,7 +990,7 @@ export default function SpreadsheetOperations() {
 
                     {/* PESO CAMPIONE per operazioni peso e misura */}
                     {(selectedOperationType === 'peso' || selectedOperationType === 'misura') && (
-                      <div className="w-15 px-1 py-1 border-r bg-yellow-50">
+                      <div style={{width: '60px'}} className="px-1 py-1 border-r bg-yellow-50">
                         <input
                           type="number"
                           value={row.sampleWeight || ''}
@@ -1007,7 +1008,7 @@ export default function SpreadsheetOperations() {
 
                     {/* ANIMALI VIVI solo per misura */}
                     {selectedOperationType === 'misura' && (
-                      <div className="w-15 px-1 py-1 border-r bg-yellow-50">
+                      <div style={{width: '50px'}} className="px-1 py-1 border-r bg-yellow-50">
                         <input
                           type="number"
                           value={row.liveAnimals || ''}
@@ -1025,7 +1026,7 @@ export default function SpreadsheetOperations() {
 
                     {/* ANIMALI MORTI per misura */}
                     {selectedOperationType === 'misura' && (
-                      <div className="w-13 px-1 py-1 border-r bg-yellow-50">
+                      <div style={{width: '50px'}} className="px-1 py-1 border-r bg-yellow-50">
                         <input
                           type="number"
                           value={row.deadCount !== null && row.deadCount !== undefined ? row.deadCount : 0}
@@ -1043,7 +1044,7 @@ export default function SpreadsheetOperations() {
 
                     {/* TOTALE CAMPIONE per misura */}
                     {selectedOperationType === 'misura' && (
-                      <div className="w-10 px-1 py-1 border-r">
+                      <div style={{width: '60px'}} className="px-1 py-1 border-r">
                         <input
                           type="number"
                           value={row.totalSample || ''}
@@ -1056,7 +1057,7 @@ export default function SpreadsheetOperations() {
 
                     {/* MORTALITÀ PERCENTUALE per misura */}
                     {selectedOperationType === 'misura' && (
-                      <div className="w-10 px-1 py-1 border-r">
+                      <div style={{width: '65px'}} className="px-1 py-1 border-r">
                         <input
                           type="number"
                           value={row.mortalityRate ? row.mortalityRate.toFixed(2) : ''}
@@ -1067,11 +1068,11 @@ export default function SpreadsheetOperations() {
                       </div>
                     )}
 
-                    <div className="flex-1 px-1 py-1 border-r">
+                    <div className="flex-1 px-1 py-1 border-r" style={{minWidth: '120px'}}>
                       <input
                         value={row.notes}
                         onChange={(e) => updateCell(row.basketId, 'notes', e.target.value)}
-                        className={`w-full h-6 px-2 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
+                        className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
                           (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
                         }`}
                         disabled={!(row as any).isNewRow}
@@ -1079,7 +1080,7 @@ export default function SpreadsheetOperations() {
                       />
                     </div>
 
-                    <div className="w-18 px-1 py-1 border-r flex items-center justify-center gap-1 min-h-[28px]">
+                    <div style={{width: '70px'}} className="px-1 py-1 border-r flex items-center justify-center gap-1 min-h-[28px]">
                       {/* Pulsante Salva Singolo */}
                       <button
                         onClick={() => saveSingleRow(row.basketId)}
