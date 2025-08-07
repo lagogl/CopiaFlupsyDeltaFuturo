@@ -769,21 +769,22 @@ export default function SpreadsheetOperations() {
                 {/* Header tabella compatto con TUTTE le colonne necessarie */}
                 <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{
                   gridTemplateColumns: selectedOperationType === 'misura' 
-                    ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 70px 80px 2fr 60px' 
+                    ? '80px 40px 60px 70px 60px 60px 70px 80px 1fr 1fr 1fr 80px 80px 60px 70px 80px 2fr 60px' 
                     : selectedOperationType === 'peso'
-                    ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
-                    : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
+                    ? '80px 40px 60px 70px 60px 60px 70px 1fr 1fr 1fr 80px 2fr 60px'
+                    : '80px 40px 60px 70px 60px 60px 70px 1fr 1fr 1fr 2fr 60px'
                 }}>
                   <div className="px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
                   <div className="px-1 py-1.5 border-r text-center">Stato</div>
                   <div className="px-1 py-1.5 border-r text-xs">Taglia</div>
                   <div className="px-1 py-1.5 border-r text-xs">P.Med(g)</div>
                   <div className="px-1 py-1.5 border-r text-xs">Ult.Op</div>
+                  <div className="px-1 py-1.5 border-r text-xs">Data</div>
                   {/* COLONNA LOTTO - OBBLIGATORIO */}
                   <div className="px-1 py-1.5 border-r text-xs bg-yellow-50">Lotto*</div>
-                  {/* COLONNA TAGLIA - OBBLIGATORIO PER MISURA */}
+                  {/* COLONNA TAGLIA - NON MODIFICABILE (sempre calcolata) */}
                   {selectedOperationType === 'misura' && (
-                    <div className="px-1 py-1.5 border-r text-xs bg-yellow-50">Taglia*</div>
+                    <div className="px-1 py-1.5 border-r text-xs bg-gray-100">Taglia (Auto)</div>
                   )}
                   <div className="px-2 py-1.5 border-r">Animali</div>
                   <div className="px-2 py-1.5 border-r">Peso Tot (g)</div>
@@ -823,10 +824,10 @@ export default function SpreadsheetOperations() {
                     }`}
                     style={{
                       gridTemplateColumns: selectedOperationType === 'misura' 
-                        ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 70px 80px 2fr 60px' 
+                        ? '80px 40px 60px 70px 60px 60px 70px 80px 1fr 1fr 1fr 80px 80px 60px 70px 80px 2fr 60px' 
                         : selectedOperationType === 'peso'
-                        ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
-                        : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
+                        ? '80px 40px 60px 70px 60px 60px 70px 1fr 1fr 1fr 80px 2fr 60px'
+                        : '80px 40px 60px 70px 60px 60px 70px 1fr 1fr 1fr 2fr 60px'
                     }}
                   >
                     {/* Colonna cestello fissa */}
@@ -861,6 +862,13 @@ export default function SpreadsheetOperations() {
                       </span>
                     </div>
 
+                    {/* COLONNA DATA OPERAZIONE */}
+                    <div className="px-1 py-1 border-r flex items-center text-xs text-gray-700">
+                      <span className="truncate">
+                        {row.date ? new Date(row.date).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit'}) : operationDate ? new Date(operationDate).toLocaleDateString('it-IT', {day: '2-digit', month: '2-digit'}) : '-'}
+                      </span>
+                    </div>
+
                     {/* CAMPO LOTTO - OBBLIGATORIO */}
                     <div className="px-1 py-1 border-r bg-yellow-50">
                       <select
@@ -881,22 +889,15 @@ export default function SpreadsheetOperations() {
                       </select>
                     </div>
 
-                    {/* CAMPO TAGLIA - OBBLIGATORIO PER MISURA */}
+                    {/* CAMPO TAGLIA - SEMPRE NON MODIFICABILE (calcolata automaticamente) */}
                     {selectedOperationType === 'misura' && (
-                      <div className="px-1 py-1 border-r bg-yellow-50">
-                        <select
-                          value={row.sizeId || ''}
-                          onChange={(e) => updateCell(row.basketId, 'sizeId', Number(e.target.value))}
-                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
-                          required
-                        >
-                          <option value="">-</option>
-                          {((sizes as any[]) || []).map((size: any) => (
-                            <option key={size.id} value={size.id}>
-                              {size.code}
-                            </option>
-                          ))}
-                        </select>
+                      <div className="px-1 py-1 border-r bg-gray-100">
+                        <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center">
+                          {row.sizeId 
+                            ? ((sizes as any[]) || []).find((size: any) => size.id === row.sizeId)?.code || 'Auto'
+                            : 'Auto'
+                          }
+                        </div>
                       </div>
                     )}
 
