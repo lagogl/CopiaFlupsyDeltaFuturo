@@ -316,11 +316,13 @@ export default function SpreadsheetOperations() {
       left: rect.left + window.scrollX
     });
     
-    // Inizializza form vuoto per creare una NUOVA operazione
+    // Inizializza form con tutti i campi necessari per creare una NUOVA operazione
     // (la riga originale non viene modificata)
     setEditingForm({
       basketId: row.basketId,
       type: selectedOperationType,
+      date: operationDate, // Usa la data selezionata nei controlli
+      lotId: ((lots as any[]) || [])[0]?.id || 1, // Usa il primo lotto disponibile
       sampleWeight: undefined,
       liveAnimals: undefined,
       deadCount: undefined,
