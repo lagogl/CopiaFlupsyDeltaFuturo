@@ -1069,186 +1069,260 @@ export default function SpreadsheetOperations() {
         </div>
       )}
 
-      {/* Form popup per editing inline */}
+      {/* Form popup stile Excel per editing inline */}
       {editingRow !== null && editingForm && editingPosition && (
         <>
           {/* Overlay per chiudere il popup */}
           <div 
-            className="fixed inset-0 bg-black bg-opacity-50 z-40"
+            className="fixed inset-0 bg-black bg-opacity-30 z-40"
             onClick={closeEditingForm}
           />
           
-          {/* Form popup */}
+          {/* Form popup Excel-style */}
           <div 
-            className="fixed z-50 bg-white rounded-lg shadow-xl border-2 border-blue-500 p-4 min-w-96"
+            className="fixed z-50 bg-white rounded border shadow-2xl"
             style={{ 
-              top: editingPosition.top - 50, 
-              left: Math.min(editingPosition.left, window.innerWidth - 400)
+              top: Math.max(10, editingPosition.top - 80), 
+              left: Math.min(editingPosition.left - 50, window.innerWidth - 700),
+              minWidth: '650px'
             }}
+            onKeyDown={(e) => {
+              if (e.key === 'Enter') {
+                e.preventDefault();
+                saveEditingForm();
+              } else if (e.key === 'Escape') {
+                e.preventDefault();
+                closeEditingForm();
+              }
+            }}
+            tabIndex={-1}
           >
-            <div className="mb-4">
-              <h3 className="text-lg font-semibold text-gray-800 mb-2">
-                Modifica Operazione - Cestello {editingForm.basketId}
-              </h3>
-              <p className="text-sm text-gray-600">
-                Causale: <span className="font-medium">{selectedOperationType}</span>
-              </p>
+            {/* Header compatto */}
+            <div className="px-3 py-2 bg-blue-50 border-b border-blue-200">
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-medium text-blue-800">
+                  Cestello #{editingForm.basketId} - {selectedOperationType}
+                </span>
+                <button 
+                  onClick={closeEditingForm}
+                  className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                >
+                  ×
+                </button>
+              </div>
             </div>
 
-            <div className="space-y-3">
-              {/* Campi specifici per tipo di operazione */}
+            {/* Layout Excel-style con campi inline */}
+            <div className="p-3">
               {selectedOperationType === 'misura' && (
-                <>
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Peso campione (g) *
-                    </label>
-                    <input
-                      type="number"
-                      value={editingForm.sampleWeight || ''}
-                      onChange={(e) => setEditingForm({...editingForm, sampleWeight: Number(e.target.value)})}
-                      className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="1"
-                      required
-                    />
-                  </div>
-
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3">
+                  {/* Riga 1: Peso campione e animali */}
+                  <div className="grid grid-cols-3 gap-3 items-end">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Animali vivi *
-                      </label>
+                      <label className="text-xs text-gray-600 mb-1 block">Peso campione (g)</label>
                       <input
                         type="number"
-                        value={editingForm.liveAnimals || ''}
-                        onChange={(e) => setEditingForm({...editingForm, liveAnimals: Number(e.target.value)})}
-                        className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                        min="0"
-                        required
+                        value={editingForm.sampleWeight || ''}
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          setEditingForm({...editingForm, sampleWeight: value});
+                        }}
+                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
+                        min="1"
+                        placeholder="100"
+                        autoFocus
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Animali morti *
-                      </label>
+                      <label className="text-xs text-gray-600 mb-1 block">Vivi</label>
                       <input
                         type="number"
-                        value={editingForm.deadCount !== undefined ? editingForm.deadCount : ''}
-                        onChange={(e) => setEditingForm({...editingForm, deadCount: Number(e.target.value)})}
-                        className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={editingForm.liveAnimals || ''}
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          setEditingForm({...editingForm, liveAnimals: value});
+                        }}
+                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="0"
-                        required
+                        placeholder="50"
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">Morti</label>
+                      <input
+                        type="number"
+                        value={editingForm.deadCount || ''}
+                        onChange={(e) => {
+                          const value = Number(e.target.value) || 0;
+                          setEditingForm({...editingForm, deadCount: value});
+                        }}
+                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        min="0"
+                        placeholder="0"
                       />
                     </div>
                   </div>
 
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Peso totale (g) *
-                    </label>
-                    <input
-                      type="number"
-                      value={editingForm.totalWeight || ''}
-                      onChange={(e) => setEditingForm({...editingForm, totalWeight: Number(e.target.value)})}
-                      className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="1"
-                      required
-                    />
+                  {/* Riga 2: Calcoli automatici */}
+                  <div className="grid grid-cols-4 gap-3 items-end">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Tot. Campione</label>
+                      <div className="h-8 px-2 text-sm bg-gray-50 border rounded flex items-center text-gray-700">
+                        {(editingForm.liveAnimals || 0) + (editingForm.deadCount || 0) || '-'}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Mortalità %</label>
+                      <div className="h-8 px-2 text-sm bg-gray-50 border rounded flex items-center text-gray-700">
+                        {((editingForm.liveAnimals || 0) + (editingForm.deadCount || 0)) > 0 
+                          ? ((editingForm.deadCount || 0) / ((editingForm.liveAnimals || 0) + (editingForm.deadCount || 0)) * 100).toFixed(1)
+                          : '0.0'}%
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Peso Medio (g)</label>
+                      <div className="h-8 px-2 text-sm bg-gray-50 border rounded flex items-center text-gray-700">
+                        {(editingForm.sampleWeight && editingForm.liveAnimals && editingForm.liveAnimals > 0)
+                          ? (editingForm.sampleWeight / editingForm.liveAnimals).toFixed(2)
+                          : '-'}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">Peso totale (g)</label>
+                      <input
+                        type="number"
+                        value={editingForm.totalWeight || ''}
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          setEditingForm({...editingForm, totalWeight: value});
+                        }}
+                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
+                        min="1"
+                        placeholder="15000"
+                      />
+                    </div>
                   </div>
-                </>
+
+                  {/* Riga 3: Risultati finali */}
+                  <div className="grid grid-cols-2 gap-3 items-end">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Tot. Animali Calcolati</label>
+                      <div className="h-8 px-2 text-sm bg-blue-50 border-2 border-blue-200 rounded flex items-center font-medium text-blue-800">
+                        {(editingForm.totalWeight && editingForm.sampleWeight && editingForm.liveAnimals && editingForm.liveAnimals > 0)
+                          ? Math.round((editingForm.totalWeight * editingForm.liveAnimals) / editingForm.sampleWeight)
+                          : '-'}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Animali/kg</label>
+                      <div className="h-8 px-2 text-sm bg-blue-50 border-2 border-blue-200 rounded flex items-center font-medium text-blue-800">
+                        {(editingForm.totalWeight && editingForm.sampleWeight && editingForm.liveAnimals && editingForm.liveAnimals > 0)
+                          ? Math.round(((editingForm.totalWeight * editingForm.liveAnimals) / editingForm.sampleWeight) / (editingForm.totalWeight / 1000))
+                          : '-'}
+                      </div>
+                    </div>
+                  </div>
+                </div>
               )}
 
               {selectedOperationType === 'peso' && (
-                <>
-                  <div className="grid grid-cols-2 gap-3">
+                <div className="space-y-3">
+                  {/* Layout orizzontale per operazione Peso */}
+                  <div className="grid grid-cols-3 gap-3 items-end">
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Numero animali *
-                      </label>
+                      <label className="text-xs text-gray-600 mb-1 block">Numero animali</label>
                       <input
                         type="number"
                         value={editingForm.animalCount || ''}
                         onChange={(e) => setEditingForm({...editingForm, animalCount: Number(e.target.value)})}
-                        className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="1"
-                        required
+                        placeholder="150000"
+                        autoFocus
                       />
                     </div>
                     
                     <div>
-                      <label className="block text-xs font-medium text-gray-700 mb-1">
-                        Peso campione (g) *
-                      </label>
+                      <label className="text-xs text-gray-600 mb-1 block">Peso totale (g)</label>
                       <input
                         type="number"
-                        value={editingForm.sampleWeight || ''}
-                        onChange={(e) => setEditingForm({...editingForm, sampleWeight: Number(e.target.value)})}
-                        className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        value={editingForm.totalWeight || ''}
+                        onChange={(e) => setEditingForm({...editingForm, totalWeight: Number(e.target.value)})}
+                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="1"
-                        required
+                        placeholder="15000"
                       />
                     </div>
+                    
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Peso Medio (g)</label>
+                      <div className="h-8 px-2 text-sm bg-blue-50 border-2 border-blue-200 rounded flex items-center font-medium text-blue-800">
+                        {(editingForm.animalCount && editingForm.totalWeight && editingForm.animalCount > 0)
+                          ? (editingForm.totalWeight / editingForm.animalCount).toFixed(2)
+                          : '-'}
+                      </div>
+                    </div>
                   </div>
-
-                  <div>
-                    <label className="block text-xs font-medium text-gray-700 mb-1">
-                      Peso totale (g) *
-                    </label>
-                    <input
-                      type="number"
-                      value={editingForm.totalWeight || ''}
-                      onChange={(e) => setEditingForm({...editingForm, totalWeight: Number(e.target.value)})}
-                      className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                      min="1"
-                      required
-                    />
-                  </div>
-                </>
-              )}
-
-              {(selectedOperationType === 'pulizia' || selectedOperationType === 'trattamento' || selectedOperationType === 'vagliatura') && (
-                <div>
-                  <label className="block text-xs font-medium text-gray-700 mb-1">
-                    Numero animali *
-                  </label>
-                  <input
-                    type="number"
-                    value={editingForm.animalCount || ''}
-                    onChange={(e) => setEditingForm({...editingForm, animalCount: Number(e.target.value)})}
-                    className="w-full h-8 px-2 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500"
-                    min="1"
-                    required
-                  />
                 </div>
               )}
 
-              <div>
-                <label className="block text-xs font-medium text-gray-700 mb-1">
-                  Note
-                </label>
-                <textarea
-                  value={editingForm.notes || ''}
-                  onChange={(e) => setEditingForm({...editingForm, notes: e.target.value})}
-                  className="w-full h-16 px-2 py-1 text-sm border border-gray-300 rounded focus:outline-none focus:ring-2 focus:ring-blue-500 resize-none"
-                  placeholder="Inserisci note opzionali..."
-                />
-              </div>
+              {(selectedOperationType === 'pulizia' || selectedOperationType === 'trattamento' || selectedOperationType === 'vagliatura') && (
+                <div className="space-y-3">
+                  {/* Layout orizzontale per altre operazioni */}
+                  <div className="grid grid-cols-2 gap-3 items-end">
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">Numero animali</label>
+                      <input
+                        type="number"
+                        value={editingForm.animalCount || ''}
+                        onChange={(e) => setEditingForm({...editingForm, animalCount: Number(e.target.value)})}
+                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
+                        min="1"
+                        placeholder="150000"
+                        autoFocus
+                      />
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-gray-600 mb-1 block">Note</label>
+                      <input
+                        type="text"
+                        value={editingForm.notes || ''}
+                        onChange={(e) => setEditingForm({...editingForm, notes: e.target.value})}
+                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400"
+                        placeholder="Operazione di routine"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
 
-            <div className="flex justify-end space-x-2 mt-4 pt-3 border-t border-gray-200">
-              <button
-                onClick={closeEditingForm}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 border border-gray-300 rounded-md hover:bg-gray-200 focus:outline-none focus:ring-2 focus:ring-gray-500"
-              >
-                Annulla
-              </button>
-              <button
-                onClick={saveEditingForm}
-                className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                Salva e Aggiungi Riga
-              </button>
+            {/* Pulsanti in linea stile Excel */}
+            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+              <div className="text-xs text-gray-500">
+                Premi Invio per salvare • Esc per annullare
+              </div>
+              <div className="flex space-x-2">
+                <button
+                  onClick={closeEditingForm}
+                  className="px-3 py-1 text-xs font-medium text-gray-600 bg-gray-100 border rounded hover:bg-gray-200"
+                >
+                  Annulla
+                </button>
+                <button
+                  onClick={saveEditingForm}
+                  className="px-3 py-1 text-xs font-medium text-white bg-blue-600 border rounded hover:bg-blue-700"
+                >
+                  ✓ Salva
+                </button>
+              </div>
             </div>
           </div>
         </>
