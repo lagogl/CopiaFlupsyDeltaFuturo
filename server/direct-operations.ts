@@ -213,6 +213,16 @@ export function implementDirectOperationRoute(app: Express) {
       }
       
       // VALIDAZIONE CAMPI OBBLIGATORI
+      // Per operazioni di misura, animalCount può essere calcolato automaticamente
+      if (operationData.type === 'misura') {
+        // Se non è fornito animalCount ma abbiamo i dati per calcolarlo
+        if (!operationData.animalCount && operationData.liveAnimals && operationData.sampleWeight && operationData.totalWeight) {
+          operationData.animalCount = Math.round((operationData.liveAnimals / operationData.sampleWeight) * operationData.totalWeight);
+          console.log(`AnimalCount calcolato automaticamente: ${operationData.animalCount}`);
+        }
+      }
+      
+      // Controllo finale: animalCount deve essere presente dopo i calcoli
       if (!operationData.animalCount || operationData.animalCount <= 0) {
         throw new Error("Il numero animali vivi è obbligatorio e deve essere maggiore di 0");
       }

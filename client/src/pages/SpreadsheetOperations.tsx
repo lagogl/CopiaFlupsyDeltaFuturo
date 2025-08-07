@@ -313,9 +313,17 @@ export default function SpreadsheetOperations() {
       const liveAnimals = newRow.liveAnimals || 0;
       const deadCount = newRow.deadCount || 0;
       const sampleWeight = newRow.sampleWeight || 0;
+      const totalWeight = newRow.totalWeight || 0;
       
       const totalSample = liveAnimals + deadCount;
       newRow.totalSample = totalSample;
+      
+      // Calcola animalCount (OBBLIGATORIO per il server) 
+      // Per operazioni di misura, animalCount rappresenta il numero totale stimato di animali nel cestello
+      if (sampleWeight > 0 && liveAnimals > 0 && totalWeight > 0) {
+        // Stima il numero totale di animali: (animali vivi nel campione / peso campione) * peso totale cestello
+        newRow.animalCount = Math.round((liveAnimals / sampleWeight) * totalWeight);
+      }
       
       if (totalSample > 0) {
         newRow.mortalityRate = Math.round((deadCount / totalSample) * 100 * 100) / 100;
