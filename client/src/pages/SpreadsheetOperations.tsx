@@ -1143,21 +1143,23 @@ export default function SpreadsheetOperations() {
       {/* Form popup stile Excel per editing inline */}
       {editingRow !== null && editingForm && editingPosition && (
         <>
-          {/* Overlay trasparente per vedere i dati sottostanti */}
+          {/* Overlay molto trasparente per mantenere visibilità */}
           <div 
-            className="fixed inset-0 bg-black bg-opacity-10 z-40"
+            className="fixed inset-0 bg-black bg-opacity-5 z-40"
             onClick={closeEditingForm}
           />
           
-          {/* Form popup Excel-style con trasparenza */}
+          {/* Form popup posizionato a lato per non coprire i dati */}
           <div 
             className="fixed z-50 rounded border shadow-2xl"
             style={{ 
-              top: Math.max(10, editingPosition.top - 80), 
-              left: Math.min(editingPosition.left - 50, window.innerWidth - 700),
-              minWidth: '650px',
-              backgroundColor: 'rgba(255, 255, 255, 0.95)',
-              backdropFilter: 'blur(2px)'
+              top: Math.max(10, editingPosition.top - 20), 
+              right: Math.max(10, 50), // Posiziona a destra invece che sopra la riga
+              minWidth: '500px',
+              maxWidth: '600px',
+              backgroundColor: 'rgba(255, 255, 255, 0.98)',
+              backdropFilter: 'blur(3px)',
+              border: '2px solid #3b82f6'
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -1170,15 +1172,19 @@ export default function SpreadsheetOperations() {
             }}
             tabIndex={-1}
           >
-            {/* Header compatto trasparente */}
-            <div className="px-3 py-2 border-b border-blue-200" style={{backgroundColor: 'rgba(239, 246, 255, 0.9)'}}>
+            {/* Header compatto con indicatore visivo */}
+            <div className="px-3 py-2 border-b border-blue-300" style={{backgroundColor: 'rgba(59, 130, 246, 0.15)'}}>
               <div className="flex items-center justify-between">
-                <span className="text-sm font-medium text-blue-800">
-                  Cestello #{editingForm.basketId} - {selectedOperationType}
+                <span className="text-sm font-semibold text-blue-900 flex items-center gap-2">
+                  📝 Cestello #{editingForm.basketId} - {selectedOperationType}
+                  <span className="text-xs bg-blue-100 text-blue-700 px-2 py-1 rounded-full">
+                    Riga visibile sotto
+                  </span>
                 </span>
                 <button 
                   onClick={closeEditingForm}
-                  className="text-gray-400 hover:text-gray-600 text-lg leading-none"
+                  className="text-gray-500 hover:text-gray-700 text-xl font-bold leading-none w-6 h-6 flex items-center justify-center rounded hover:bg-gray-100"
+                  title="Chiudi (Esc)"
                 >
                   ×
                 </button>
