@@ -1072,19 +1072,21 @@ export default function SpreadsheetOperations() {
       {/* Form popup stile Excel per editing inline */}
       {editingRow !== null && editingForm && editingPosition && (
         <>
-          {/* Overlay per chiudere il popup */}
+          {/* Overlay trasparente per vedere i dati sottostanti */}
           <div 
-            className="fixed inset-0 bg-black bg-opacity-30 z-40"
+            className="fixed inset-0 bg-black bg-opacity-10 z-40"
             onClick={closeEditingForm}
           />
           
-          {/* Form popup Excel-style */}
+          {/* Form popup Excel-style con trasparenza */}
           <div 
-            className="fixed z-50 bg-white rounded border shadow-2xl"
+            className="fixed z-50 rounded border shadow-2xl"
             style={{ 
               top: Math.max(10, editingPosition.top - 80), 
               left: Math.min(editingPosition.left - 50, window.innerWidth - 700),
-              minWidth: '650px'
+              minWidth: '650px',
+              backgroundColor: 'rgba(255, 255, 255, 0.95)',
+              backdropFilter: 'blur(2px)'
             }}
             onKeyDown={(e) => {
               if (e.key === 'Enter') {
@@ -1097,8 +1099,8 @@ export default function SpreadsheetOperations() {
             }}
             tabIndex={-1}
           >
-            {/* Header compatto */}
-            <div className="px-3 py-2 bg-blue-50 border-b border-blue-200">
+            {/* Header compatto trasparente */}
+            <div className="px-3 py-2 border-b border-blue-200" style={{backgroundColor: 'rgba(239, 246, 255, 0.9)'}}>
               <div className="flex items-center justify-between">
                 <span className="text-sm font-medium text-blue-800">
                   Cestello #{editingForm.basketId} - {selectedOperationType}
