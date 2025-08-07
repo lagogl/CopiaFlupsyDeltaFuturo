@@ -43,11 +43,12 @@ interface OperationRowData {
   animalsPerKg: number | null;
   deadCount: number | null;
   notes: string;
-  // Campi specifici per misura
-  liveAnimals?: number | null;
-  sampleWeight?: number | null;
+  // Campi specifici per misura (IDENTICI AL MODULO OPERATIONS)
+  liveAnimals?: number | null;     // Animali vivi nel campione - OBBLIGATORIO per misura
+  sampleWeight?: number | null;    // Peso campione in grammi - OBBLIGATORIO per misura
+  totalSample?: number | null;     // Totale campione (liveAnimals + deadCount) - CALCOLATO
   sizeId?: number | null;          // Taglia - OBBLIGATORIO per operazione misura
-  // Campi calcolati
+  // Campi calcolati (IDENTICI AL MODULO OPERATIONS)
   mortalityRate?: number | null;
   status: 'editing' | 'saving' | 'saved' | 'error';
   errors?: string[];
@@ -221,9 +222,10 @@ export default function SpreadsheetOperations() {
           deadCount: 0, // Sempre inizializza a 0 per evitare errori null
           mortalityRate: 0, // Inizializza mortalità a 0
           notes: '',
-          // Campi specifici per operazioni che richiedono campione
-          liveAnimals: selectedOperationType === 'misura' ? 50 : null,
-          sampleWeight: (selectedOperationType === 'misura' || selectedOperationType === 'peso') ? 100 : null,
+          // Campi specifici per misura (IDENTICI AL MODULO OPERATIONS)
+          liveAnimals: selectedOperationType === 'misura' ? 50 : null,  // Animali vivi nel campione
+          sampleWeight: (selectedOperationType === 'misura' || selectedOperationType === 'peso') ? 100 : null,  // Peso campione in grammi
+          totalSample: selectedOperationType === 'misura' ? 50 : null,  // Totale campione (calcolato automaticamente)
           sizeId: selectedOperationType === 'misura' ? ((sizes as any[]) || [])[0]?.id : null,
           status: 'editing',
           errors: [],
@@ -251,17 +253,30 @@ export default function SpreadsheetOperations() {
         errors: []
       };
       
-      // Calcolo automatico della mortalità per operazioni di misura
-      if (selectedOperationType === 'misura' && (field === 'deadCount' || field === 'liveAnimals')) {
+      // Calcoli automatici per operazioni di misura (IDENTICI AL MODULO OPERATIONS)
+      if (selectedOperationType === 'misura') {
         const deadCount = field === 'deadCount' ? value : row.deadCount || 0;
         const liveAnimals = field === 'liveAnimals' ? value : row.liveAnimals || 0;
-        const totalAnimals = deadCount + liveAnimals;
+        const sampleWeight = field === 'sampleWeight' ? value : row.sampleWeight || 0;
         
-        if (totalAnimals > 0) {
-          const mortalityRate = (deadCount / totalAnimals) * 100;
+        // 1. Calcola totalSample (liveAnimals + deadCount)
+        const totalSample = liveAnimals + deadCount;
+        updatedRow.totalSample = totalSample;
+        
+        // 2. Calcola mortalityRate (deadCount / totalSample * 100)
+        if (totalSample > 0) {
+          const mortalityRate = (deadCount / totalSample) * 100;
           updatedRow.mortalityRate = Math.round(mortalityRate * 100) / 100; // Arrotonda a 2 decimali
         } else {
           updatedRow.mortalityRate = 0;
+        }
+        
+        // 3. Calcola animalsPerKg (liveAnimals / sampleWeight * 1000)
+        if (sampleWeight > 0 && liveAnimals > 0) {
+          const animalsPerKg = Math.round((liveAnimals / sampleWeight) * 1000);
+          if (!isNaN(animalsPerKg) && isFinite(animalsPerKg)) {
+            updatedRow.animalsPerKg = animalsPerKg;
+          }
         }
       }
       
@@ -313,17 +328,18 @@ export default function SpreadsheetOperations() {
     }
     
     if (row.type === 'misura') {
-      if (!row.animalCount || row.animalCount <= 0) {
-        errors.push('Numero animali richiesto per operazione misura');
-      }
+      // VALIDAZIONI IDENTICHE AL MODULO OPERATIONS
       if (!row.sizeId) {
         errors.push('Taglia richiesta per operazione misura');
       }
-      if (!row.liveAnimals || row.liveAnimals <= 0) {
-        errors.push('Animali vivi campione richiesto per operazione misura');
-      }
       if (!row.sampleWeight || row.sampleWeight <= 0) {
         errors.push('Peso campione richiesto per operazione misura');
+      }
+      if (!row.liveAnimals || row.liveAnimals <= 0) {
+        errors.push('Numero animali vivi richiesto per operazione misura');
+      }
+      if (!row.totalWeight || row.totalWeight <= 0) {
+        errors.push('Peso totale richiesto per operazione misura');
       }
       if (row.deadCount === null || row.deadCount === undefined || row.deadCount < 0) {
         errors.push('Numero animali morti richiesto per operazione misura');
@@ -421,11 +437,11 @@ export default function SpreadsheetOperations() {
       // averageWeight: omesso (calcolato dal backend)
       // metadata: omesso (gestito dal backend per API esterne)
       
-      // CAMPI SPECIFICI PER OPERAZIONE MISURA (aggiunti come metadata custom se necessario)
+      // CAMPI SPECIFICI PER OPERAZIONE MISURA (IDENTICI AL MODULO OPERATIONS)
       ...(row.type === 'misura' && {
-        // Questi campi non sono nello schema operations standard, potrebbero essere gestiti diversamente
-        liveAnimals: row.liveAnimals,     // Potrebbe essere aggiunto come metadata
-        sampleWeight: row.sampleWeight    // Potrebbe essere aggiunto come metadata
+        liveAnimals: row.liveAnimals,     // Numero animali vivi nel campione
+        sampleWeight: row.sampleWeight,   // Peso campione in grammi
+        totalSample: row.totalSample      // Totale campione (liveAnimals + deadCount)
       })
     };
     
@@ -605,7 +621,7 @@ export default function SpreadsheetOperations() {
                 {/* Header tabella compatto con TUTTE le colonne necessarie */}
                 <div className="grid border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{
                   gridTemplateColumns: selectedOperationType === 'misura' 
-                    ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 80px 2fr 60px' 
+                    ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 70px 80px 2fr 60px' 
                     : selectedOperationType === 'peso'
                     ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
                     : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
@@ -630,11 +646,15 @@ export default function SpreadsheetOperations() {
                   )}
                   {/* ANIMALI VIVI solo per misura */}
                   {selectedOperationType === 'misura' && (
-                    <div className="px-1 py-1.5 border-r">Vivi</div>
+                    <div className="px-1 py-1.5 border-r bg-yellow-50">Vivi*</div>
                   )}
                   {/* ANIMALI MORTI per misura */}
                   {selectedOperationType === 'misura' && (
                     <div className="px-1 py-1.5 border-r bg-yellow-50">Morti*</div>
+                  )}
+                  {/* TOTALE CAMPIONE per misura */}
+                  {selectedOperationType === 'misura' && (
+                    <div className="px-1 py-1.5 border-r">Tot.Camp.</div>
                   )}
                   {/* MORTALITÀ PERCENTUALE per misura */}
                   {selectedOperationType === 'misura' && (
@@ -655,7 +675,7 @@ export default function SpreadsheetOperations() {
                     }`}
                     style={{
                       gridTemplateColumns: selectedOperationType === 'misura' 
-                        ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 80px 2fr 60px' 
+                        ? '80px 40px 60px 70px 60px 60px 80px 1fr 1fr 1fr 80px 80px 60px 70px 80px 2fr 60px' 
                         : selectedOperationType === 'peso'
                         ? '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 80px 2fr 60px'
                         : '80px 40px 60px 70px 60px 60px 1fr 1fr 1fr 2fr 60px'
@@ -776,14 +796,15 @@ export default function SpreadsheetOperations() {
 
                     {/* ANIMALI VIVI solo per misura */}
                     {selectedOperationType === 'misura' && (
-                      <div className="px-1 py-1 border-r">
+                      <div className="px-1 py-1 border-r bg-yellow-50">
                         <input
                           type="number"
                           value={row.liveAnimals || ''}
                           onChange={(e) => updateCell(row.basketId, 'liveAnimals', Number(e.target.value))}
-                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
+                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
                           min="0"
                           placeholder="0"
+                          required
                         />
                       </div>
                     )}
@@ -803,18 +824,28 @@ export default function SpreadsheetOperations() {
                       </div>
                     )}
 
+                    {/* TOTALE CAMPIONE per misura */}
+                    {selectedOperationType === 'misura' && (
+                      <div className="px-1 py-1 border-r">
+                        <input
+                          type="number"
+                          value={row.totalSample || ''}
+                          readOnly
+                          className="w-full h-6 px-1 text-xs border-0 bg-gray-100 text-gray-600 rounded"
+                          placeholder="Auto"
+                        />
+                      </div>
+                    )}
+
                     {/* MORTALITÀ PERCENTUALE per misura */}
                     {selectedOperationType === 'misura' && (
                       <div className="px-1 py-1 border-r">
                         <input
                           type="number"
-                          value={row.mortalityRate || ''}
-                          onChange={(e) => updateCell(row.basketId, 'mortalityRate', Number(e.target.value))}
-                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded"
-                          min="0"
-                          max="100"
-                          step="0.01"
-                          placeholder="0.00"
+                          value={row.mortalityRate ? row.mortalityRate.toFixed(2) : ''}
+                          readOnly
+                          className="w-full h-6 px-1 text-xs border-0 bg-gray-100 text-gray-600 rounded"
+                          placeholder="Auto"
                         />
                       </div>
                     )}
