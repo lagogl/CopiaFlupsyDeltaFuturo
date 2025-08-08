@@ -453,7 +453,7 @@ export default function SpreadsheetOperations() {
 
   // Inizializza le righe quando cambiano FLUPSY, tipo operazione o data
   useEffect(() => {
-    if (selectedFlupsyId && selectedOperationType && eligibleBaskets.length > 0) {
+    if (selectedFlupsyId && selectedOperationType && eligibleBaskets.length > 0 && operations && Array.isArray(operations)) {
       const newRows: OperationRowData[] = eligibleBaskets.map(basket => {
         const lastOp = basket.lastOperation;
         const sizesArray = Array.isArray(sizes) ? sizes : [];
@@ -482,14 +482,15 @@ export default function SpreadsheetOperations() {
         
         const currentSize = lastOperationWithAnimalsPerKg?.animalsPerKg ? 
           findSizeFromAnimalsPerKg(lastOperationWithAnimalsPerKg.animalsPerKg)?.code || 'N/A' 
-          : 'N/A';
+          : (lastOp?.size?.code || 'N/A');
         
         const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
-          Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : 0;
+          Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : (lastOp?.averageWeight || 0);
         
         // Debug finale per verifica
         if (lastOp) {
           console.log(`✅ INIT CESTA ${basket.physicalNumber}: Usando op. ID=${(lastOp as any).id}, tipo=${lastOp.type}, animali=${lastOp.animalCount}`);
+          console.log(`   📊 Dati calcolati: currentSize=${currentSize}, averageWeight=${averageWeight}, taglia operazione=${lastOp?.size?.code}`);
         } else {
           console.warn(`❌ INIT CESTA ${basket.physicalNumber}: Nessuna operazione trovata - usando valori default`);
         }
@@ -522,13 +523,62 @@ export default function SpreadsheetOperations() {
         };
       });
       
-      setOperationRows(newRows);
+      // **ORDINAMENTO INTELLIGENTE** - Le migliori performance in alto
+      const sortedRows = newRows.sort((a, b) => {
+        // Score di performance (0-100, più alto = migliore)
+        const scoreA = calculatePerformanceScore(a);
+        const scoreB = calculatePerformanceScore(b);
+        
+        console.log(`🏆 PERFORMANCE: Cesta ${a.physicalNumber} = ${scoreA.toFixed(1)}, Cesta ${b.physicalNumber} = ${scoreB.toFixed(1)}`);
+        
+        // Ordine decrescente: migliori performance prima
+        return scoreB - scoreA;
+      });
+
+      setOperationRows(sortedRows);
       // Salva backup originale per sistema Undo
-      setOriginalRows([...newRows]);
+      setOriginalRows([...sortedRows]);
       // Reset righe salvate per nuova sessione
       setSavedRows(new Set());
     }
-  }, [selectedFlupsyId, selectedOperationType, operationDate, eligibleBaskets.length, sizes]);
+  }, [selectedFlupsyId, selectedOperationType, operationDate, eligibleBaskets.length, sizes, operations]);
+
+  // **CALCOLO PERFORMANCE INTELLIGENTE**
+  const calculatePerformanceScore = (row: OperationRowData): number => {
+    let score = 0;
+    
+    // 1. CRESCITA - Taglia (40% del punteggio)
+    // Taglie più grandi = animali cresciuti meglio = migliore performance
+    const sizeScore = (() => {
+      const size = row.currentSize;
+      if (size === 'TP-7000' || size === 'TP-10000') return 100; // Taglie grandi
+      if (size === 'TP-5000') return 80; // Taglia media-grande
+      if (size === 'TP-3000' || size === 'TP-3500') return 60; // Taglia media
+      if (size === 'TP-1000' || size === 'TP-1500') return 40; // Taglia piccola
+      return 20; // N/A o sconosciuta
+    })();
+    score += sizeScore * 0.4;
+
+    // 2. DENSITÀ POPOLAZIONE - Numero animali (30% del punteggio)
+    // Più animali = maggiore produttività = migliore performance
+    const animalCount = row.animalCount || 0;
+    const populationScore = Math.min(100, (animalCount / 100000) * 100); // 100k animali = 100%
+    score += populationScore * 0.3;
+
+    // 3. PESO MEDIO - Peso per animale (20% del punteggio)  
+    // Animali più pesanti = migliore crescita = migliore performance
+    const weightScore = Math.min(100, ((row.averageWeight || 0) / 1000) * 100); // 1g = 100%
+    score += weightScore * 0.2;
+
+    // 4. ETÀ CICLO - Operazioni recenti (10% del punteggio)
+    // Operazioni più recenti = ciclo più attivo = migliore gestione
+    const daysSinceLastOp = row.lastOperationDate ? 
+      Math.floor((new Date().getTime() - new Date(row.lastOperationDate).getTime()) / (1000 * 60 * 60 * 24)) : 30;
+    const ageScore = Math.max(0, 100 - (daysSinceLastOp * 5)); // -5 punti per giorno
+    score += ageScore * 0.1;
+
+    return Math.round(score * 100) / 100; // Arrotonda a 2 decimali
+  };
 
   // Aggiorna una singola cella
   // Gestione doppio click per editing inline
@@ -1324,7 +1374,20 @@ export default function SpreadsheetOperations() {
                       onDoubleClick={(e) => handleDoubleClick(row.basketId, e)}
                       title="Doppio click per modificare operazione"
                     >
-                      #{row.physicalNumber}
+                      <div className="flex items-center justify-between w-full">
+                        <span>#{row.physicalNumber}</span>
+                        {(() => {
+                          const perfScore = calculatePerformanceScore(row);
+                          const color = perfScore >= 80 ? 'text-green-600' : 
+                                       perfScore >= 60 ? 'text-yellow-600' : 
+                                       perfScore >= 40 ? 'text-orange-600' : 'text-red-600';
+                          return (
+                            <span className={`text-xs font-bold ${color}`} title={`Performance: ${perfScore.toFixed(1)}/100`}>
+                              {perfScore >= 80 ? '🏆' : perfScore >= 60 ? '⭐' : perfScore >= 40 ? '⚠️' : '🔴'}
+                            </span>
+                          );
+                        })()}
+                      </div>
                     </div>
                     
                     {/* Stato */}
