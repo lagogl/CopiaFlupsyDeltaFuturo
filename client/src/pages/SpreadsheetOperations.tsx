@@ -1658,7 +1658,13 @@ export default function SpreadsheetOperations() {
                         onChange={(e) => {
                           const value = Number(e.target.value);
                           setEditingForm({...editingForm, sampleWeight: value});
-                          moveToNextField('sampleWeight', value);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const value = Number(e.currentTarget.value);
+                            moveToNextField('sampleWeight', value);
+                          }
                         }}
                         className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
                                  focus:outline-none focus:ring-2 focus:ring-blue-400 bg-yellow-50
@@ -1679,7 +1685,13 @@ export default function SpreadsheetOperations() {
                         onChange={(e) => {
                           const value = Number(e.target.value);
                           setEditingForm({...editingForm, liveAnimals: value});
-                          moveToNextField('liveAnimals', value);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const value = Number(e.currentTarget.value);
+                            moveToNextField('liveAnimals', value);
+                          }
                         }}
                         className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
                                  focus:outline-none focus:ring-2 focus:ring-blue-400 bg-yellow-50
@@ -1699,7 +1711,13 @@ export default function SpreadsheetOperations() {
                         onChange={(e) => {
                           const value = Number(e.target.value) || 0;
                           setEditingForm({...editingForm, deadCount: value});
-                          moveToNextField('deadCount', value);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const value = Number(e.currentTarget.value) || 0;
+                            moveToNextField('deadCount', value);
+                          }
                         }}
                         className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
                                  focus:outline-none focus:ring-2 focus:ring-blue-400 bg-yellow-50
@@ -1747,7 +1765,13 @@ export default function SpreadsheetOperations() {
                         onChange={(e) => {
                           const value = Number(e.target.value);
                           setEditingForm({...editingForm, totalWeight: value});
-                          moveToNextField('totalWeight', value);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const value = Number(e.currentTarget.value);
+                            moveToNextField('totalWeight', value);
+                          }
                         }}
                         className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="1"
@@ -1832,7 +1856,13 @@ export default function SpreadsheetOperations() {
                         onChange={(e) => {
                           const value = Number(e.target.value);
                           setEditingForm({...editingForm, totalWeight: value});
-                          moveToNextField('totalWeight', value);
+                        }}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter') {
+                            e.preventDefault();
+                            const value = Number(e.currentTarget.value);
+                            moveToNextField('totalWeight', value);
+                          }
                         }}
                         className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="1"
