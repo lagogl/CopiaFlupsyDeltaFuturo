@@ -1627,20 +1627,6 @@ export class MemStorage implements IStorage {
     return false;
   }
   
-  // Funzione per ottenere il prossimo numero sequenziale per le vagliature
-  async getNextScreeningNumber(): Promise<number> {
-    const operations = Array.from(this.screeningOperations.values());
-    
-    if (operations.length === 0) {
-      return 1; // Se non ci sono operazioni, restituisci 1 come primo numero
-    }
-    
-    // Trova il numero di vagliatura più alto
-    const maxNumber = Math.max(...operations.map(op => op.screeningNumber));
-    
-    // Restituisci il numero successivo
-    return maxNumber + 1;
-  }
 
   // Sales sync methods - implementazione base per MemStorage
   async getSyncStatus(tableName?: string): Promise<SyncStatus[]> {

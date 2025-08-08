@@ -12,7 +12,8 @@ import {
   selectionDestinationBaskets,
   insertUserSchema,
   cycles,
-  sizes
+  sizes,
+  operations
 } from "../shared/schema";
 import { 
   getNotificationSettings, 
@@ -2045,9 +2046,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const formattedDate = format(new Date(date), 'yyyy-MM-dd');
 
         // Check if there's already an operation for this basket on the given date
-        // existingOperations già dichiarato sopra, lo riutilizziamo
-        const existingOperationsForComparison = await storage.getOperationsByBasket(basketId);
-        const operationOnSameDate = existingOperationsForComparison.find(op => 
+        // Riutilizza existingOperations già dichiarato sopra
+        const operationOnSameDate = existingOperations.find(op => 
           format(new Date(op.date), 'yyyy-MM-dd') === formattedDate
         );
 
