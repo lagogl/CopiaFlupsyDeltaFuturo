@@ -181,10 +181,10 @@ export default function SpreadsheetOperations() {
     queryKey: ['/api/baskets'],
   });
 
-  // Query ottimizzata per operazioni recenti (ultime 100 per efficienza)
+  // Query per TUTTE le operazioni senza limitazioni per Spreadsheet
   const { data: operations } = useQuery({
-    queryKey: ['/api/operations', { recent: true }],
-    queryFn: () => apiRequest('/api/operations?pageSize=100&sortBy=id&sortOrder=desc')
+    queryKey: ['/api/operations', { spreadsheet: true }],
+    queryFn: () => apiRequest('/api/operations?pageSize=1000&sortBy=id&sortOrder=desc')
   });
 
   const { data: sizes } = useQuery({
@@ -270,9 +270,15 @@ export default function SpreadsheetOperations() {
     }
   });
 
-  // Solo log essenziale per debug
+  // Debug dettagliato per capire il problema
   if ((operations as any[])?.length) {
-    console.log('📊 SPREADSHEET: Caricate', (operations as any[])?.length, 'operazioni recenti');
+    console.log('🔍 SPREADSHEET: Caricate', (operations as any[])?.length, 'operazioni totali');
+    const ops13 = ((operations as any[]) || []).filter(op => op.basketId === 13);
+    console.log('🔍 CESTA 13 - Operazioni trovate:', ops13.map(op => `ID=${op.id}, tipo=${op.type}, animali=${op.animalCount}, data=${op.date}`));
+    if (ops13.length > 0) {
+      const sorted = ops13.sort((a, b) => b.id - a.id);
+      console.log('🔍 CESTA 13 - Dopo ordinamento:', sorted[0]);
+    }
   }
   
   // Prepara i dati dei cestelli per il FLUPSY selezionato
@@ -296,9 +302,13 @@ export default function SpreadsheetOperations() {
           })[0]
         : null;
       
-      // Log debug solo se necessario
-      if (basketOperations.length === 0) {
-        console.warn(`⚠️ CESTA ${basket.physicalNumber}: Nessuna operazione trovata`);
+      // Debug dettagliato per ogni cesta
+      console.log(`🏀 CESTA ${basket.physicalNumber}: ${basketOperations.length} operazioni trovate`);
+      if (basketOperations.length > 0) {
+        console.log(`   📋 Operazioni: ${basketOperations.map(op => `ID=${op.id}(${op.type})`).join(', ')}`);
+        console.log(`   ✅ Selezionata: ID=${lastOp?.id}, tipo=${lastOp?.type}, animali=${lastOp?.animalCount}`);
+      } else {
+        console.warn(`   ⚠️ Nessuna operazione trovata`);
       }
       
       return {
@@ -349,9 +359,11 @@ export default function SpreadsheetOperations() {
         const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
           Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : 0;
         
-        // Debug ridotto
+        // Debug finale per verifica
         if (lastOp) {
-          console.log(`✅ CESTA ${basket.physicalNumber}: Ultima op. ${lastOp.type} (${lastOp.animalCount} animali)`);
+          console.log(`✅ INIT CESTA ${basket.physicalNumber}: Usando op. ID=${lastOp.id}, tipo=${lastOp.type}, animali=${lastOp.animalCount}`);
+        } else {
+          console.warn(`❌ INIT CESTA ${basket.physicalNumber}: Nessuna operazione trovata - usando valori default`);
         }
         
         return {
