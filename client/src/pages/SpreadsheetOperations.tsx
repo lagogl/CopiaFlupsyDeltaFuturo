@@ -623,7 +623,9 @@ export default function SpreadsheetOperations() {
   const saveRow = async (basketId: number) => {
     console.log('🔄 Spreadsheet: Tentativo salvataggio riga basketId:', basketId);
     
-    const row = operationRows.find(r => r.basketId === basketId);
+    // Cerca prima la riga nuova (isNewRow: true), se non esiste prendi l'originale
+    const row = operationRows.find(r => r.basketId === basketId && (r as any).isNewRow) || 
+                operationRows.find(r => r.basketId === basketId);
     if (!row) {
       console.error('❌ Spreadsheet: Riga non trovata per basketId:', basketId);
       return;
@@ -736,7 +738,9 @@ export default function SpreadsheetOperations() {
   
   // Salva singola riga
   const saveSingleRow = async (basketId: number) => {
-    const row = operationRows.find(r => r.basketId === basketId);
+    // Cerca prima la riga nuova (isNewRow: true), se non esiste prendi l'originale
+    const row = operationRows.find(r => r.basketId === basketId && (r as any).isNewRow) || 
+                operationRows.find(r => r.basketId === basketId);
     if (!row) return;
     
     const errors = validateRow(row);
