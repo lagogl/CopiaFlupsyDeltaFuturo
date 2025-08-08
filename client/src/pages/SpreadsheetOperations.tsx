@@ -1328,10 +1328,143 @@ export default function SpreadsheetOperations() {
                     
                     {/* Stato */}
                     <div style={{width: '40px'}} className="px-1 py-1 border-r flex items-center justify-center">
-                      {row.status === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
-                      {row.status === 'saved' && <CheckCircle2 className="h-3 w-3 text-green-600" />}
-                      {row.status === 'error' && <AlertCircle className="h-3 w-3 text-red-600" />}
-                      {row.status === 'editing' && <div className="h-2 w-2 rounded-full bg-blue-400" />}
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="cursor-help">
+                              {row.status === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
+                              {row.status === 'saved' && <CheckCircle2 className="h-3 w-3 text-green-600" />}
+                              {row.status === 'error' && <AlertCircle className="h-3 w-3 text-red-600" />}
+                              {row.status === 'editing' && <div className="h-2 w-2 rounded-full bg-blue-400" />}
+                              {!row.status && <div className="h-2 w-2 rounded-full bg-gray-300" />}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent side="right" className="max-w-md p-0 border-0 shadow-lg">
+                            <div className="bg-white rounded-lg border shadow-xl overflow-hidden">
+                              {/* Header del tooltip */}
+                              <div className="bg-gradient-to-r from-blue-500 to-blue-600 text-white px-4 py-3">
+                                <div className="flex items-center gap-2">
+                                  <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center">
+                                    #{row.physicalNumber}
+                                  </div>
+                                  <div>
+                                    <h4 className="font-semibold text-sm">Cestello #{row.physicalNumber}</h4>
+                                    <p className="text-xs opacity-90">Cronologia operazioni e performance</p>
+                                  </div>
+                                </div>
+                              </div>
+
+                              {/* Contenuto del tooltip */}
+                              <div className="p-4 space-y-4 max-h-80 overflow-y-auto">
+                                {/* Stato attuale */}
+                                <div className="flex items-center gap-2 p-2 bg-gray-50 rounded-lg">
+                                  <div className="flex items-center gap-1">
+                                    {row.status === 'saving' && <Loader2 className="h-4 w-4 animate-spin text-blue-500" />}
+                                    {row.status === 'saved' && <CheckCircle2 className="h-4 w-4 text-green-600" />}
+                                    {row.status === 'error' && <AlertCircle className="h-4 w-4 text-red-600" />}
+                                    {row.status === 'editing' && <div className="h-3 w-3 rounded-full bg-blue-400" />}
+                                    {!row.status && <div className="h-3 w-3 rounded-full bg-gray-400" />}
+                                  </div>
+                                  <span className="text-sm font-medium">
+                                    {row.status === 'saving' && 'Salvataggio in corso...'}
+                                    {row.status === 'saved' && 'Operazione salvata'}
+                                    {row.status === 'error' && 'Errore nel salvataggio'}
+                                    {row.status === 'editing' && 'Operazione modificata'}
+                                    {!row.status && 'Pronto per modifiche'}
+                                  </span>
+                                </div>
+
+                                {/* Performance attuali */}
+                                <div className="space-y-2">
+                                  <h5 className="font-semibold text-xs uppercase tracking-wide text-gray-600">Performance Attuali</h5>
+                                  <div className="grid grid-cols-2 gap-2 text-xs">
+                                    <div className="bg-blue-50 p-2 rounded">
+                                      <div className="text-gray-600">Taglia</div>
+                                      <div className="font-semibold text-blue-600">{row.currentSize || 'N/A'}</div>
+                                    </div>
+                                    <div className="bg-green-50 p-2 rounded">
+                                      <div className="text-gray-600">Peso medio</div>
+                                      <div className="font-semibold text-green-600">{row.averageWeight}g</div>
+                                    </div>
+                                    <div className="bg-purple-50 p-2 rounded">
+                                      <div className="text-gray-600">Animali</div>
+                                      <div className="font-semibold text-purple-600">{row.animalCount || 'N/A'}</div>
+                                    </div>
+                                    <div className="bg-orange-50 p-2 rounded">
+                                      <div className="text-gray-600">Animali/kg</div>
+                                      <div className="font-semibold text-orange-600">{row.animalsPerKg || 'N/A'}</div>
+                                    </div>
+                                  </div>
+                                </div>
+
+                                {/* Cronologia operazioni */}
+                                <div className="space-y-2">
+                                  <h5 className="font-semibold text-xs uppercase tracking-wide text-gray-600">Cronologia Operazioni</h5>
+                                  <div className="space-y-1 max-h-32 overflow-y-auto">
+                                    {(() => {
+                                      const basketOps = ((operations as any[]) || [])
+                                        .filter((op: any) => op.basketId === row.basketId)
+                                        .sort((a: any, b: any) => b.id - a.id)
+                                        .slice(0, 5); // Mostra ultime 5 operazioni
+                                      
+                                      if (basketOps.length === 0) {
+                                        return (
+                                          <div className="text-xs text-gray-500 italic p-2">
+                                            Nessuna operazione registrata
+                                          </div>
+                                        );
+                                      }
+
+                                      return basketOps.map((op: any, index: number) => (
+                                        <div key={op.id} className="flex items-center gap-2 p-2 bg-gray-50 rounded text-xs">
+                                          <div className={`h-2 w-2 rounded-full ${
+                                            op.type === 'prima-attivazione' ? 'bg-green-500' :
+                                            op.type === 'misura' ? 'bg-blue-500' :
+                                            op.type === 'peso' ? 'bg-purple-500' :
+                                            op.type === 'pulizia' ? 'bg-yellow-500' :
+                                            op.type === 'trattamento' ? 'bg-red-500' :
+                                            'bg-gray-500'
+                                          }`} />
+                                          <div className="flex-1">
+                                            <div className="font-medium capitalize">
+                                              {op.type === 'prima-attivazione' ? 'Prima attivazione' :
+                                               op.type === 'misura' ? 'Misura' :
+                                               op.type === 'peso' ? 'Peso' :
+                                               op.type === 'pulizia' ? 'Pulizia' :
+                                               op.type === 'trattamento' ? 'Trattamento' :
+                                               op.type}
+                                            </div>
+                                            <div className="text-gray-500">
+                                              {new Date(op.date).toLocaleDateString('it-IT')}
+                                              {op.animalCount && ` • ${op.animalCount.toLocaleString()} animali`}
+                                            </div>
+                                          </div>
+                                          {index === 0 && (
+                                            <div className="px-1.5 py-0.5 bg-blue-100 text-blue-600 rounded-full text-xs font-medium">
+                                              ULTIMA
+                                            </div>
+                                          )}
+                                        </div>
+                                      ));
+                                    })()}
+                                  </div>
+                                </div>
+
+                                {/* Info ciclo */}
+                                <div className="pt-2 border-t space-y-1">
+                                  <h5 className="font-semibold text-xs uppercase tracking-wide text-gray-600">Ciclo Attuale</h5>
+                                  <div className="text-xs text-gray-600">
+                                    <div>ID Ciclo: {row.currentCycleId || 'N/A'}</div>
+                                    <div>Lotto: L{row.lotId || '1'}</div>
+                                    <div>Ultima operazione: {row.lastOperationDate ? 
+                                      new Date(row.lastOperationDate).toLocaleDateString('it-IT') : 'N/A'}</div>
+                                  </div>
+                                </div>
+                              </div>
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
 
                     {/* Info aggiuntive - Taglia calcolata automaticamente */}
