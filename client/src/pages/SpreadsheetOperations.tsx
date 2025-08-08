@@ -1235,12 +1235,12 @@ export default function SpreadsheetOperations() {
             )}
             
             <ScrollArea className="w-full">
-              <div className="min-w-[1260px]">
+              <div className="min-w-[1200px]">
                 {/* Header tabella compatto con larghezze esatte per allineamento perfetto */}
                 <div className="flex border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{fontSize: '10px'}}>
                   <div style={{width: '70px'}} className="px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
                   <div style={{width: '40px'}} className="px-1 py-1.5 border-r text-center">Stato</div>
-                  <div style={{width: '60px'}} className="px-1 py-1.5 border-r text-center" title="Indicatori performance: popolazione (verde), taglia (medio), età ciclo (basso). Pallino colorato = performance generale">Performance</div>
+
                   <div style={{width: '80px'}} className="px-1 py-1.5 border-r">Taglia</div>
                   <div style={{width: '60px'}} className="px-1 py-1.5 border-r">P.Med(g)</div>
                   <div style={{width: '50px'}} className="px-1 py-1.5 border-r">Ult.Op</div>
@@ -1468,76 +1468,7 @@ export default function SpreadsheetOperations() {
                       </TooltipProvider>
                     </div>
 
-                    {/* Performance Indicators - RIMUOVIBILE: Per rimuovere questa colonna, cancella questo div e l'header "Performance" sopra */}
-                    <div style={{width: '60px'}} className="px-1 py-1 border-r flex flex-col items-center justify-center">
-                      {(() => {
-                        // Calcola i dati per gli indicatori
-                        const currentAnimals = row.animalCount || 0;
-                        const cycleStartDate = (row as any).lastOperationDate || new Date().toISOString();
-                        const daysSinceStart = Math.floor((new Date().getTime() - new Date(cycleStartDate).getTime()) / (1000 * 60 * 60 * 24));
-                        const currentSize = row.currentSize || 'N/A';
-                        
-                        // Performance scores (0-100)
-                        const populationScore = Math.min(100, (currentAnimals / 100000) * 100); // 100k animali = 100%
-                        const sizeScore = currentSize === 'TP-7000' ? 90 : 
-                                         currentSize === 'TP-5000' ? 70 :
-                                         currentSize === 'TP-3000' ? 50 : 30;
-                        const ageScore = Math.max(0, 100 - (daysSinceStart * 2)); // Diminuisce nel tempo
-                        
-                        // Colori basati sui punteggi
-                        const getColorFromScore = (score: number) => {
-                          if (score >= 80) return 'bg-green-500';
-                          if (score >= 60) return 'bg-yellow-500';
-                          if (score >= 40) return 'bg-orange-500';
-                          return 'bg-red-500';
-                        };
 
-                        return (
-                          <>
-                            {/* Population Bar */}
-                            <div className="w-full mb-1">
-                              <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full transition-all duration-300 ${getColorFromScore(populationScore)}`}
-                                  style={{width: `${Math.min(100, populationScore)}%`}}
-                                />
-                              </div>
-                            </div>
-                            
-                            {/* Size Bar */}
-                            <div className="w-full mb-1">
-                              <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full transition-all duration-300 ${getColorFromScore(sizeScore)}`}
-                                  style={{width: `${Math.min(100, sizeScore)}%`}}
-                                />
-                              </div>
-                            </div>
-                            
-                            {/* Age Bar */}
-                            <div className="w-full">
-                              <div className="h-1 bg-gray-200 rounded-full overflow-hidden">
-                                <div 
-                                  className={`h-full transition-all duration-300 ${getColorFromScore(ageScore)}`}
-                                  style={{width: `${Math.min(100, ageScore)}%`}}
-                                />
-                              </div>
-                            </div>
-                            
-                            {/* Performance Badge */}
-                            <div className="mt-1">
-                              {(() => {
-                                const avgScore = (populationScore + sizeScore + ageScore) / 3;
-                                if (avgScore >= 80) return <div className="w-2 h-2 bg-green-500 rounded-full" title="Performance eccellente" />;
-                                if (avgScore >= 60) return <div className="w-2 h-2 bg-yellow-500 rounded-full" title="Performance buona" />;
-                                if (avgScore >= 40) return <div className="w-2 h-2 bg-orange-500 rounded-full" title="Performance media" />;
-                                return <div className="w-2 h-2 bg-red-500 rounded-full animate-pulse" title="Richiede attenzione" />;
-                              })()}
-                            </div>
-                          </>
-                        );
-                      })()}
-                    </div>
 
                     {/* Info aggiuntive - Taglia calcolata automaticamente */}
                     <div style={{width: '80px'}} className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
