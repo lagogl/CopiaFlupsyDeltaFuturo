@@ -191,6 +191,17 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Used same algorithm as Inventory module: findSizeFromAnimalsPerKg function
 ✓ Dynamic size calculation for new rows based on animal count and weight inputs
 ✓ Size column now shows correct TP-1000, TP-3500 codes instead of "N/A"
+✓ **August 8, 2025**: Modified Spreadsheet Operations form saving behavior
+✓ Popup form now only creates/updates table rows without immediate database save
+✓ Database save occurs only when pressing green save button in table row
+✓ Implemented two-phase saving: popup form → row population → manual database save
+✓ **August 8, 2025**: Implemented peso operation logic with fixed animal count
+✓ For peso operations: only total weight field is required in popup form
+✓ Animal count remains fixed from previous operation (non-editable in peso forms)
+✓ Automatic calculation: average weight = total_weight ÷ animal_count
+✓ Automatic calculation: animals/kg = 1000 ÷ average_weight
+✓ Automatic size recalculation based on new animals/kg values
+✓ Proper date handling: new operation uses selected operation date
 
 ## Changelog
 

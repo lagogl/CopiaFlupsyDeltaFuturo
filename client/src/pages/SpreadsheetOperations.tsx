@@ -123,8 +123,7 @@ export default function SpreadsheetOperations() {
     }
     
     if (selectedOperationType === 'peso') {
-      // Per peso: numero animali, peso totale sono obbligatori
-      if (!editingForm.animalCount || editingForm.animalCount <= 0) return false;
+      // Per peso: solo peso totale è obbligatorio (numero animali viene preso dall'operazione precedente)
       if (!editingForm.totalWeight || editingForm.totalWeight <= 0) return false;
     }
     
@@ -338,7 +337,7 @@ export default function SpreadsheetOperations() {
     
     // Inizializza form con tutti i campi necessari per creare una NUOVA operazione
     // (la riga originale non viene modificata)
-    setEditingForm({
+    const initData: any = {
       basketId: row.basketId,
       type: selectedOperationType,
       date: operationDate, // Usa la data selezionata nei controlli
@@ -349,7 +348,14 @@ export default function SpreadsheetOperations() {
       totalWeight: undefined,
       animalCount: undefined,
       notes: ''
-    });
+    };
+    
+    // Per operazioni PESO: inizializza animalCount con valore dell'operazione precedente (non modificabile)
+    if (selectedOperationType === 'peso') {
+      initData.animalCount = row.animalCount; // Usa il valore precedente, non modificabile
+    }
+    
+    setEditingForm(initData);
   };
 
   // Chiude il form di editing
@@ -414,6 +420,33 @@ export default function SpreadsheetOperations() {
         }
       }
     }
+    
+    // Applica calcoli automatici per peso
+    if (selectedOperationType === 'peso') {
+      const animalCount = newRow.animalCount || 0; // Numero animali dell'operazione precedente (fisso)
+      const totalWeight = newRow.totalWeight || 0; // Peso totale della cesta (nuovo)
+      
+      if (animalCount > 0 && totalWeight > 0) {
+        // Calcola peso medio: peso_totale ÷ numero_animali
+        const averageWeight = totalWeight / animalCount;
+        newRow.averageWeight = Math.round(averageWeight * 100) / 100;
+        
+        // Calcola animali/kg: 1000 ÷ peso_medio
+        const animalsPerKgValue = Math.round(1000 / averageWeight);
+        newRow.animalsPerKg = animalsPerKgValue;
+        
+        // Calcola automaticamente la taglia basandosi sui nuovi animali/kg
+        const sizesArray = Array.isArray(sizes) ? sizes : [];
+        if (sizesArray.length > 0) {
+          const { findSizeByAnimalsPerKg } = await import("@/lib/utils");
+          const selectedSize = findSizeByAnimalsPerKg(animalsPerKgValue, sizesArray);
+          if (selectedSize) {
+            newRow.sizeId = selectedSize.id;
+            console.log(`Taglia calcolata automaticamente per operazione peso: ${selectedSize.code} (ID: ${selectedSize.id})`);
+          }
+        }
+      }
+    }
 
     // Trova l'indice della riga originale
     const originalIndex = operationRows.findIndex(r => r.basketId === editingForm.basketId);
@@ -425,37 +458,8 @@ export default function SpreadsheetOperations() {
       return newArray;
     });
 
-    // Salva automaticamente se abilitato
-    if (autoSaveEnabled) {
-      // Prepara i dati dell'operazione seguendo la stessa logica di saveRow
-      const basket = eligibleBaskets.find(b => b.id === newRow.basketId);
-      if (basket) {
-        const isPrimaAttivazione = newRow.type === 'prima-attivazione';
-        
-        const operationData = {
-          basketId: newRow.basketId,
-          cycleId: isPrimaAttivazione ? null : basket.currentCycleId,
-          type: newRow.type,
-          date: newRow.date,
-          sizeId: newRow.type === 'misura' ? newRow.sizeId : null,
-          sgrId: null,
-          lotId: newRow.lotId || ((lots as any[]) || [])[0]?.id || 1,
-          animalCount: newRow.animalCount || null,
-          totalWeight: newRow.totalWeight || null,
-          animalsPerKg: newRow.animalsPerKg || null,
-          deadCount: newRow.deadCount !== null && newRow.deadCount !== undefined ? newRow.deadCount : 0,
-          mortalityRate: newRow.mortalityRate || null,
-          notes: newRow.notes || null,
-          ...(newRow.type === 'misura' && {
-            liveAnimals: newRow.liveAnimals,
-            sampleWeight: newRow.sampleWeight,
-            totalSample: newRow.totalSample
-          })
-        };
-        
-        saveOperationMutation.mutate(operationData);
-      }
-    }
+    // NON salvare automaticamente nel database - solo popolare la riga
+    // Il salvataggio avviene solo quando si preme il pulsante verde nella riga
 
     closeEditingForm();
   };
@@ -492,6 +496,24 @@ export default function SpreadsheetOperations() {
         // 3. Calcola animalsPerKg (liveAnimals / sampleWeight * 1000)
         if (sampleWeight > 0 && liveAnimals > 0) {
           const animalsPerKg = Math.round((liveAnimals / sampleWeight) * 1000);
+          if (!isNaN(animalsPerKg) && isFinite(animalsPerKg)) {
+            updatedRow.animalsPerKg = animalsPerKg;
+          }
+        }
+      }
+      
+      // Calcoli automatici per operazioni di peso
+      if (selectedOperationType === 'peso') {
+        const animalCount = row.animalCount || 0; // Numero animali fisso dall'operazione precedente
+        const totalWeight = field === 'totalWeight' ? value : row.totalWeight || 0;
+        
+        if (animalCount > 0 && totalWeight > 0) {
+          // Calcola peso medio: peso_totale ÷ numero_animali
+          const averageWeight = totalWeight / animalCount;
+          updatedRow.averageWeight = Math.round(averageWeight * 100) / 100;
+          
+          // Calcola animali/kg: 1000 ÷ peso_medio
+          const animalsPerKg = Math.round(1000 / averageWeight);
           if (!isNaN(animalsPerKg) && isFinite(animalsPerKg)) {
             updatedRow.animalsPerKg = animalsPerKg;
           }
@@ -1410,19 +1432,14 @@ export default function SpreadsheetOperations() {
 
               {selectedOperationType === 'peso' && (
                 <div className="space-y-3">
-                  {/* Layout orizzontale per operazione Peso */}
+                  {/* Layout per operazione Peso - numero animali fisso, solo peso modificabile */}
                   <div className="grid grid-cols-3 gap-3 items-end">
                     <div>
-                      <label className="text-xs text-gray-600 mb-1 block">Numero animali</label>
-                      <input
-                        type="number"
-                        value={editingForm.animalCount || ''}
-                        onChange={(e) => setEditingForm({...editingForm, animalCount: Number(e.target.value)})}
-                        className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
-                        min="1"
-                        placeholder="150000"
-                        autoFocus
-                      />
+                      <label className="text-xs text-gray-500 mb-1 block">Numero animali (precedente)</label>
+                      <div className="h-8 px-2 text-sm bg-gray-100 border rounded flex items-center text-gray-600">
+                        {editingForm.animalCount?.toLocaleString() || '-'}
+                      </div>
+                      <div className="text-xs text-gray-400 mt-1">Non modificabile</div>
                     </div>
                     
                     <div>
@@ -1430,10 +1447,15 @@ export default function SpreadsheetOperations() {
                       <input
                         type="number"
                         value={editingForm.totalWeight || ''}
-                        onChange={(e) => setEditingForm({...editingForm, totalWeight: Number(e.target.value)})}
+                        onChange={(e) => {
+                          const value = Number(e.target.value);
+                          setEditingForm({...editingForm, totalWeight: value});
+                        }}
                         className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="1"
                         placeholder="15000"
+                        autoFocus
+                        required
                       />
                     </div>
                     
@@ -1442,6 +1464,37 @@ export default function SpreadsheetOperations() {
                       <div className="h-8 px-2 text-sm bg-blue-50 border-2 border-blue-200 rounded flex items-center font-medium text-blue-800">
                         {(editingForm.animalCount && editingForm.totalWeight && editingForm.animalCount > 0)
                           ? (editingForm.totalWeight / editingForm.animalCount).toFixed(2)
+                          : '-'}
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Riga 2: Risultati calcolati */}
+                  <div className="grid grid-cols-2 gap-3 items-end">
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Animali/kg</label>
+                      <div className="h-8 px-2 text-sm bg-blue-50 border-2 border-blue-200 rounded flex items-center font-medium text-blue-800">
+                        {(editingForm.animalCount && editingForm.totalWeight && editingForm.animalCount > 0)
+                          ? Math.round(1000 / (editingForm.totalWeight / editingForm.animalCount)).toLocaleString()
+                          : '-'}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Taglia (calcolata)</label>
+                      <div className="h-8 px-2 text-sm bg-green-50 border-2 border-green-200 rounded flex items-center font-medium text-green-800">
+                        {(editingForm.animalCount && editingForm.totalWeight && editingForm.animalCount > 0)
+                          ? (() => {
+                              const animalsPerKg = Math.round(1000 / (editingForm.totalWeight / editingForm.animalCount));
+                              const sizesArray = Array.isArray(sizes) ? sizes : [];
+                              const size = sizesArray.find((s: any) => 
+                                s.minAnimalsPerKg !== null && 
+                                s.maxAnimalsPerKg !== null &&
+                                animalsPerKg >= s.minAnimalsPerKg && 
+                                animalsPerKg <= s.maxAnimalsPerKg
+                              );
+                              return size?.code || 'N/A';
+                            })()
                           : '-'}
                       </div>
                     </div>
