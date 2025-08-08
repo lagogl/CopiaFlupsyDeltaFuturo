@@ -787,10 +787,25 @@ export default function SpreadsheetOperations() {
   
   // Salva singola riga
   const saveSingleRow = async (basketId: number) => {
+    console.log('🔵 SAVE SINGLE ROW: Inizio salvataggio singolo per basketId:', basketId);
+    
+    // DEBUGGING: Analizza tutte le righe per questo basketId
+    const allRowsForBasket = operationRows.filter(r => r.basketId === basketId);
+    console.log(`🔍 SAVE SINGLE ROW: Trovate ${allRowsForBasket.length} righe per basketId ${basketId}:`);
+    allRowsForBasket.forEach((r, index) => {
+      console.log(`  [${index}] isNewRow: ${(r as any).isNewRow}, Animali: ${r.animalCount}, Peso: ${r.totalWeight}, Anim/kg: ${r.animalsPerKg}, Taglia: ${r.sizeId}`);
+    });
+    
     // Cerca prima la riga nuova (isNewRow: true), se non esiste prendi l'originale
     const row = operationRows.find(r => r.basketId === basketId && (r as any).isNewRow) || 
                 operationRows.find(r => r.basketId === basketId);
-    if (!row) return;
+    if (!row) {
+      console.error('❌ SAVE SINGLE ROW: Riga non trovata per basketId:', basketId);
+      return;
+    }
+    
+    // DEBUGGING: Mostra quale riga è stata selezionata
+    console.log(`✅ SAVE SINGLE ROW: Riga selezionata - isNewRow: ${(row as any).isNewRow}, Animali: ${row.animalCount}, Peso: ${row.totalWeight}, Anim/kg: ${row.animalsPerKg}, Taglia: ${row.sizeId}`);
     
     const errors = validateRow(row);
     if (errors.length > 0) {
@@ -802,6 +817,7 @@ export default function SpreadsheetOperations() {
       return;
     }
     
+    console.log('🔵 SAVE SINGLE ROW: Chiamando saveRow...');
     await saveRow(basketId);
   };
   

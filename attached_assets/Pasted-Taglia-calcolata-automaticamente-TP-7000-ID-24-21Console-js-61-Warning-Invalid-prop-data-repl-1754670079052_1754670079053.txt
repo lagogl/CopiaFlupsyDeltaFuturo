@@ -1,0 +1,223 @@
+Taglia calcolata automaticamente: TP-7000 (ID: 24)
+21Console.js:61  Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at SpreadsheetOperations (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/pages/SpreadsheetOperations.tsx:34:21)
+    at Route (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:323:16)
+    at ProtectedRoute (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:379:17)
+    at Router
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/layouts/MainLayout.tsx:68:38)
+    at TooltipProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/contexts/TooltipContext.tsx:20:35)
+    at AuthProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=37635415:2805:3)
+    at App
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 API Request: GET /api/notifications?unreadOnly=true
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+9Console.js:61  Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at SpreadsheetOperations (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/pages/SpreadsheetOperations.tsx:34:21)
+    at Route (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:323:16)
+    at ProtectedRoute (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:379:17)
+    at Router
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/layouts/MainLayout.tsx:68:38)
+    at TooltipProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/contexts/TooltipContext.tsx:20:35)
+    at AuthProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=37635415:2805:3)
+    at App
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 API Request: GET /api/notifications?unreadOnly=true
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+15Console.js:61  Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at SpreadsheetOperations (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/pages/SpreadsheetOperations.tsx:34:21)
+    at Route (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:323:16)
+    at ProtectedRoute (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:379:17)
+    at Router
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/layouts/MainLayout.tsx:68:38)
+    at TooltipProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/contexts/TooltipContext.tsx:20:35)
+    at AuthProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=37635415:2805:3)
+    at App
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🔄 Spreadsheet: Tentativo salvataggio riga basketId: 13
+Console.js:61 📋 Spreadsheet: Schema-compliant operation data: Object
+Console.js:61 📦 Spreadsheet: Dati operazione preparati: Object
+3Console.js:61  Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at SpreadsheetOperations (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/pages/SpreadsheetOperations.tsx:34:21)
+    at Route (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:323:16)
+    at ProtectedRoute (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:379:17)
+    at Router
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/layouts/MainLayout.tsx:68:38)
+    at TooltipProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/contexts/TooltipContext.tsx:20:35)
+    at AuthProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=37635415:2805:3)
+    at App
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🔄 Spreadsheet: Inviando operazione con route diretta: Object
+Console.js:61 📦 Spreadsheet: Cestello trovato: Object
+Console.js:61 🔍 Spreadsheet: Tipo operazione: Object
+Console.js:61 📋 Spreadsheet: Stato cestello: Object
+Console.js:61 USANDO ROUTE DIRETTA PER OPERAZIONE: Object
+Console.js:61 API Request: POST /api/direct-operations
+15Console.js:61  Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at SpreadsheetOperations (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/pages/SpreadsheetOperations.tsx:34:21)
+    at Route (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:323:16)
+    at ProtectedRoute (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:379:17)
+    at Router
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/layouts/MainLayout.tsx:68:38)
+    at TooltipProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/contexts/TooltipContext.tsx:20:35)
+    at AuthProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=37635415:2805:3)
+    at App
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 Ricevuto messaggio WebSocket: Object
+Console.js:61 WebSocket trigger: invalidando query per "operation_created" Array(4)
+Console.js:61 Query request to: /api/operations
+Console.js:61 Query request to: /api/baskets
+Console.js:61 🚨 OPERATION LISTENER: Ricevuta notifica operation_created! Object
+Console.js:61 🚨 INVALIDATING CACHES...
+Console.js:61 Query request to: /api/operations
+Console.js:61 Query request to: /api/baskets
+Console.js:61 Query request to: /api/flupsys
+Console.js:61 🚀 UNIFIED: Caricamento dati unificati...
+Console.js:61 Query request to: /api/baskets
+Console.js:61 Query request to: /api/flupsys
+Console.js:61 🚨 CACHE INVALIDATED - Showing toast
+Console.js:61 API Response status: 201
+3Console.js:61  Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at SpreadsheetOperations (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/pages/SpreadsheetOperations.tsx:34:21)
+    at Route (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:323:16)
+    at ProtectedRoute (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:379:17)
+    at Router
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/layouts/MainLayout.tsx:68:38)
+    at TooltipProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/contexts/TooltipContext.tsx:20:35)
+    at AuthProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=37635415:2805:3)
+    at App
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 API Response data: {"id":37,"date":"2025-08-08","type":"misura","basketId":13,"cycleId":5,"sizeId":20,"sgrId":null,"lotId":1,"animalCount":5000000,"totalWeight":333333,"animalsPerKg":15000,"averageWeight":66.666664,"deadCount":0,"mortalityRate":null,"notes":null,"metadata":null}
+Console.js:61 ✅ Spreadsheet: Operazione creata con successo: Object
+Console.js:61 ✅ Spreadsheet: Success callback - operazione salvata: Object
+Console.js:61 Query request to: /api/operations
+Console.js:61 Query request to: /api/baskets
+Console.js:61 ✅ Spreadsheet: Riga salvata con successo
+30Console.js:61  Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at SpreadsheetOperations (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/pages/SpreadsheetOperations.tsx:34:21)
+    at Route (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:323:16)
+    at ProtectedRoute (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:379:17)
+    at Router
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/layouts/MainLayout.tsx:68:38)
+    at TooltipProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/contexts/TooltipContext.tsx:20:35)
+    at AuthProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=37635415:2805:3)
+    at App
+Mt.forEach.n.<computed> @ Console.js:61
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+3Console.js:61  Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at SpreadsheetOperations (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/pages/SpreadsheetOperations.tsx:34:21)
+    at Route (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:323:16)
+    at ProtectedRoute (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:379:17)
+    at Router
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/layouts/MainLayout.tsx:68:38)
+    at TooltipProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/contexts/TooltipContext.tsx:20:35)
+    at AuthProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=37635415:2805:3)
+    at App
+Mt.forEach.n.<computed> @ Console.js:61
+printWarning @ react-jsx-dev-runtime.development.js:87
+error @ react-jsx-dev-runtime.development.js:61
+validateFragmentProps @ react-jsx-dev-runtime.development.js:1194
+jsxWithValidation @ react-jsx-dev-runtime.development.js:1301
+(anonymous) @ SpreadsheetOperations.tsx:1020
+SpreadsheetOperations @ SpreadsheetOperations.tsx:1019
+renderWithHooks @ react-dom.development.js:15486
+updateFunctionComponent @ react-dom.development.js:19617
+beginWork @ react-dom.development.js:21640
+beginWork$1 @ react-dom.development.js:27465
+performUnitOfWork @ react-dom.development.js:26596
+workLoopSync @ react-dom.development.js:26505
+renderRootSync @ react-dom.development.js:26473
+performConcurrentWorkOnRoot @ react-dom.development.js:25777
+workLoop @ scheduler.development.js:266
+flushWork @ scheduler.development.js:239
+performWorkUntilDeadline @ scheduler.development.js:533
+3Console.js:61  Warning: Invalid prop `data-replit-metadata` supplied to `React.Fragment`. React.Fragment can only have `key` and `children` props.
+    at SpreadsheetOperations (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/pages/SpreadsheetOperations.tsx:34:21)
+    at Route (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:323:16)
+    at ProtectedRoute (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=37635415:379:17)
+    at Router
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/layouts/MainLayout.tsx:68:38)
+    at TooltipProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/contexts/TooltipContext.tsx:20:35)
+    at AuthProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/@fs/home/runner/workspace/node_modules/.vite/deps/@tanstack_react-query.js?v=37635415:2805:3)
+    at App
+Mt.forEach.n.<computed> @ Console.js:61
+printWarning @ react-jsx-dev-runtime.development.js:87
+error @ react-jsx-dev-runtime.development.js:61
+validateFragmentProps @ react-jsx-dev-runtime.development.js:1194
+jsxWithValidation @ react-jsx-dev-runtime.development.js:1301
+(anonymous) @ SpreadsheetOperations.tsx:1020
+SpreadsheetOperations @ SpreadsheetOperations.tsx:1019
+renderWithHooks @ react-dom.development.js:15486
+updateFunctionComponent @ react-dom.development.js:19617
+beginWork @ react-dom.development.js:21640
+beginWork$1 @ react-dom.development.js:27465
+performUnitOfWork @ react-dom.development.js:26596
+workLoopSync @ react-dom.development.js:26505
+renderRootSync @ react-dom.development.js:26473
+performSyncWorkOnRoot @ react-dom.development.js:26124
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+stallwart.build.js:1 stallwart: failed ping 1
+Console.js:61 ✅ UNIFIED: Dati caricati {operations: 4, fromCache: false}
+Console.js:61 API Request: GET /api/notifications?unreadOnly=true
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
