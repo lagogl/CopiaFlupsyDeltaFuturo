@@ -1235,7 +1235,7 @@ export default function SpreadsheetOperations() {
             )}
             
             <ScrollArea className="w-full">
-              <div className="min-w-[1200px]">
+              <div className="min-w-[1260px]">
                 {/* Header tabella compatto con larghezze esatte per allineamento perfetto */}
                 <div className="flex border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{fontSize: '10px'}}>
                   <div style={{width: '70px'}} className="px-2 py-1.5 border-r bg-white sticky left-0 z-20 shadow-r">Cesta</div>
