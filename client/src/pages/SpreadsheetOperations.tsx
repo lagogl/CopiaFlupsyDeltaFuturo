@@ -1331,7 +1331,7 @@ export default function SpreadsheetOperations() {
                       <TooltipProvider>
                         <Tooltip>
                           <TooltipTrigger asChild>
-                            <div className="cursor-help">
+                            <div className="cursor-help w-full h-full flex items-center justify-center">
                               {row.status === 'saving' && <Loader2 className="h-3 w-3 animate-spin text-blue-500" />}
                               {row.status === 'saved' && <CheckCircle2 className="h-3 w-3 text-green-600" />}
                               {row.status === 'error' && <AlertCircle className="h-3 w-3 text-red-600" />}
