@@ -284,6 +284,42 @@ export function implementDirectOperationRoute(app: Express) {
       
       const basket = basketResult[0];
       
+      // 3. VALIDAZIONI DATE - Impedire date duplicate e anteriori
+      console.log("Validazione date per operazione...");
+      
+      // Recupera tutte le operazioni esistenti per questa cesta
+      const existingOperations = await db
+        .select()
+        .from(operations)
+        .where(eq(operations.basketId, operationData.basketId))
+        .orderBy(sql`${operations.date} DESC`);
+      
+      console.log(`Trovate ${existingOperations.length} operazioni esistenti per cesta ${operationData.basketId}`);
+      
+      // Converti la data dell'operazione corrente in formato Date per confronti
+      const operationDate = new Date(operationData.date);
+      const operationDateString = operationData.date;
+      
+      // Validazione 1: Non più di una operazione nella stessa data
+      const sameDate = existingOperations.find(op => op.date === operationDateString);
+      if (sameDate) {
+        throw new Error(`Esiste già un'operazione per la cesta ${basket.physicalNumber} nella data ${operationDateString}. Ogni cesta può avere massimo una operazione per data.`);
+      }
+      
+      // Validazione 2: Data non anteriore alla ultima operazione
+      if (existingOperations.length > 0) {
+        const lastOperation = existingOperations[0]; // Prima operazione = più recente (ORDER BY date DESC)
+        const lastDate = new Date(lastOperation.date);
+        
+        console.log(`Ultima operazione: ${lastOperation.date}, Nuova operazione: ${operationDateString}`);
+        
+        if (operationDate < lastDate) {
+          throw new Error(`La data ${operationDateString} è anteriore all'ultima operazione (${lastOperation.date}) per la cesta ${basket.physicalNumber}. Le operazioni devono essere inserite in ordine cronologico.`);
+        }
+      }
+      
+      console.log("✅ Validazioni date completate con successo");
+      
       // 3. Calcola averageWeight e sizeId appropriato se viene fornito animalsPerKg
       if (operationData.animalsPerKg && operationData.animalsPerKg > 0) {
         // Calcola il peso medio in mg per ogni animale

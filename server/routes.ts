@@ -1807,6 +1807,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         const { basketId, date } = primaAttivSchema.data;
         console.log("Validazione prima-attivazione completata per cesta:", basketId);
+        
+        // VALIDAZIONI DATE per prima-attivazione
+        console.log("Validazione date per prima-attivazione...");
+        
+        // Recupera tutte le operazioni esistenti per questa cesta
+        const existingOperations = await db
+          .select()
+          .from(operations)
+          .where(eq(operations.basketId, basketId))
+          .orderBy(sql`${operations.date} DESC`);
+        
+        console.log(`Trovate ${existingOperations.length} operazioni esistenti per cesta ${basketId}`);
+        
+        // Converti la data in formato stringa per confronti
+        const operationDateString = format(date, 'yyyy-MM-dd');
+        const operationDate = new Date(date);
+        
+        // Validazione 1: Non più di una operazione nella stessa data
+        const sameDate = existingOperations.find(op => op.date === operationDateString);
+        if (sameDate) {
+          const basket = await storage.getBasket(basketId);
+          const physicalNumber = basket?.physicalNumber || basketId;
+          throw new Error(`Esiste già un'operazione per la cesta ${physicalNumber} nella data ${operationDateString}. Ogni cesta può avere massimo una operazione per data.`);
+        }
+        
+        // Validazione 2: Data non anteriore alla ultima operazione
+        if (existingOperations.length > 0) {
+          const lastOperation = existingOperations[0]; // Prima operazione = più recente (ORDER BY date DESC)
+          const lastDate = new Date(lastOperation.date);
+          
+          console.log(`Ultima operazione: ${lastOperation.date}, Nuova operazione: ${operationDateString}`);
+          
+          if (operationDate < lastDate) {
+            const basket = await storage.getBasket(basketId);
+            const physicalNumber = basket?.physicalNumber || basketId;
+            throw new Error(`La data ${operationDateString} è anteriore all'ultima operazione (${lastOperation.date}) per la cesta ${physicalNumber}. Le operazioni devono essere inserite in ordine cronologico.`);
+          }
+        }
+        
+        console.log("✅ Validazioni date per prima-attivazione completate con successo");
 
         // Check if the basket exists
         console.log("🔍 STEP 1: Recupero cestello con ID:", basketId);
@@ -1916,6 +1956,59 @@ export async function registerRoutes(app: Express): Promise<Server> {
       } else {
         // Per le altre operazioni utilizziamo il validator completo
         const parsedData = operationSchema.safeParse(req.body);
+        
+        console.log("VALIDAZIONE OPERAZIONE STANDARD - parsed:", JSON.stringify(parsedData, null, 2));
+
+        if (!parsedData.success) {
+          const errorMessage = fromZodError(parsedData.error).message;
+          console.error("Validation error for standard operation:", errorMessage);
+          return res.status(400).json({ message: errorMessage });
+        }
+
+        const { basketId, date } = parsedData.data;
+        console.log("Validazione operazione standard completata per cesta:", basketId);
+        
+        // VALIDAZIONI DATE per operazioni standard
+        console.log("Validazione date per operazione standard...");
+        
+        // Recupera tutte le operazioni esistenti per questa cesta
+        const existingOperations = await db
+          .select()
+          .from(operations)
+          .where(eq(operations.basketId, basketId))
+          .orderBy(sql`${operations.date} DESC`);
+        
+        console.log(`Trovate ${existingOperations.length} operazioni esistenti per cesta ${basketId}`);
+        
+        // Converti la data in formato stringa per confronti
+        const operationDateString = format(date, 'yyyy-MM-dd');
+        const operationDate = new Date(date);
+        
+        // Validazione 1: Non più di una operazione nella stessa data
+        const sameDate = existingOperations.find(op => op.date === operationDateString);
+        if (sameDate) {
+          const basket = await storage.getBasket(basketId);
+          const physicalNumber = basket?.physicalNumber || basketId;
+          throw new Error(`Esiste già un'operazione per la cesta ${physicalNumber} nella data ${operationDateString}. Ogni cesta può avere massimo una operazione per data.`);
+        }
+        
+        // Validazione 2: Data non anteriore alla ultima operazione
+        if (existingOperations.length > 0) {
+          const lastOperation = existingOperations[0]; // Prima operazione = più recente (ORDER BY date DESC)
+          const lastDate = new Date(lastOperation.date);
+          
+          console.log(`Ultima operazione: ${lastOperation.date}, Nuova operazione: ${operationDateString}`);
+          
+          if (operationDate < lastDate) {
+            const basket = await storage.getBasket(basketId);
+            const physicalNumber = basket?.physicalNumber || basketId;
+            throw new Error(`La data ${operationDateString} è anteriore all'ultima operazione (${lastOperation.date}) per la cesta ${physicalNumber}. Le operazioni devono essere inserite in ordine cronologico.`);
+          }
+        }
+        
+        console.log("✅ Validazioni date per operazione standard completate con successo");
+        
+        // Continua con la logica esistente per le operazioni standard
         if (!parsedData.success) {
           const errorMessage = fromZodError(parsedData.error).message;
           console.error("Validation error for standard operation:", errorMessage);

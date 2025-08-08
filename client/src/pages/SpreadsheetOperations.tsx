@@ -110,11 +110,56 @@ export default function SpreadsheetOperations() {
     return !(row as any).isNewRow;
   };
 
+  // Validazione date per evitare duplicati e date anteriori
+  const validateOperationDate = (basketId: number, date: string): { valid: boolean; error?: string } => {
+    const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === basketId);
+    
+    if (basketOperations.length === 0) {
+      return { valid: true }; // Nessuna operazione esistente, qualsiasi data è valida
+    }
+    
+    // Ordina per data per trovare l'ultima
+    const sortedOperations = basketOperations.sort((a: any, b: any) => {
+      const dateA = new Date(a.date).getTime();
+      const dateB = new Date(b.date).getTime();
+      return dateB - dateA; // Decrescente: più recente prima
+    });
+    
+    const operationDate = new Date(date);
+    const lastOperation = sortedOperations[0];
+    const lastDate = new Date(lastOperation.date);
+    
+    // Controllo 1: Data duplicata
+    const duplicateDate = basketOperations.find((op: any) => op.date === date);
+    if (duplicateDate) {
+      const basket = ((baskets as any[]) || []).find((b: any) => b.id === basketId);
+      const physicalNumber = basket?.physicalNumber || basketId;
+      return { 
+        valid: false, 
+        error: `Esiste già un'operazione per la cesta ${physicalNumber} nella data ${date}. Ogni cesta può avere massimo una operazione per data.` 
+      };
+    }
+    
+    // Controllo 2: Data anteriore all'ultima operazione
+    if (operationDate < lastDate) {
+      const basket = ((baskets as any[]) || []).find((b: any) => b.id === basketId);
+      const physicalNumber = basket?.physicalNumber || basketId;
+      return { 
+        valid: false, 
+        error: `La data ${date} è anteriore all'ultima operazione (${lastOperation.date}) per la cesta ${physicalNumber}. Le operazioni devono essere inserite in ordine cronologico.` 
+      };
+    }
+    
+    return { valid: true };
+  };
+
   // Validazione campi obbligatori per il form popup
-  const validateEditingForm = (): boolean => {
+  const validateEditingForm = (): { valid: boolean; errors: string[] } => {
+    const errors: string[] = [];
+    
     if (!editingForm) {
       console.log('🚫 VALIDAZIONE: editingForm è null');
-      return false;
+      return { valid: false, errors: ['Form non inizializzato'] };
     }
     
     console.log('🧮 VALIDAZIONE: Controllo form popup:', editingForm);
@@ -127,7 +172,15 @@ export default function SpreadsheetOperations() {
         date: editingForm.date,
         lotId: editingForm.lotId
       });
-      return false;
+      errors.push('Tutti i campi obbligatori devono essere compilati');
+    }
+    
+    // Validazione date se i campi base sono presenti
+    if (editingForm.basketId && editingForm.date) {
+      const dateValidation = validateOperationDate(editingForm.basketId, editingForm.date);
+      if (!dateValidation.valid && dateValidation.error) {
+        errors.push(dateValidation.error);
+      }
     }
     
     // Validazioni specifiche per tipo operazione
@@ -142,34 +195,44 @@ export default function SpreadsheetOperations() {
       // Per misura: peso campione, animali vivi, morti, peso totale sono obbligatori
       if (!editingForm.sampleWeight || editingForm.sampleWeight <= 0) {
         console.log('🚫 VALIDAZIONE: sampleWeight non valido:', editingForm.sampleWeight);
-        return false;
+        errors.push('Peso campione è obbligatorio e deve essere maggiore di 0');
       }
       if (!editingForm.liveAnimals || editingForm.liveAnimals <= 0) {
         console.log('🚫 VALIDAZIONE: liveAnimals non valido:', editingForm.liveAnimals);
-        return false;
+        errors.push('Numero animali vivi è obbligatorio e deve essere maggiore di 0');
       }
       if (editingForm.deadCount === null || editingForm.deadCount === undefined) {
         console.log('🚫 VALIDAZIONE: deadCount null/undefined:', editingForm.deadCount);
-        return false;
+        errors.push('Numero animali morti è obbligatorio');
       }
       if (!editingForm.totalWeight || editingForm.totalWeight <= 0) {
         console.log('🚫 VALIDAZIONE: totalWeight non valido:', editingForm.totalWeight);
-        return false;
+        errors.push('Peso totale è obbligatorio e deve essere maggiore di 0');
       }
     }
     
     if (selectedOperationType === 'peso') {
       // Per peso: solo peso totale è obbligatorio (numero animali viene preso dall'operazione precedente)
-      if (!editingForm.totalWeight || editingForm.totalWeight <= 0) return false;
+      if (!editingForm.totalWeight || editingForm.totalWeight <= 0) {
+        errors.push('Peso totale è obbligatorio e deve essere maggiore di 0');
+      }
     }
     
     if (['pulizia', 'trattamento', 'vagliatura'].includes(selectedOperationType)) {
       // Per altre operazioni: almeno il numero animali è obbligatorio
-      if (!editingForm.animalCount || editingForm.animalCount <= 0) return false;
+      if (!editingForm.animalCount || editingForm.animalCount <= 0) {
+        errors.push('Numero animali è obbligatorio e deve essere maggiore di 0');
+      }
     }
     
-    console.log('✅ VALIDAZIONE: Form popup valido!');
-    return true;
+    const isValid = errors.length === 0;
+    if (isValid) {
+      console.log('✅ VALIDAZIONE: Form popup valido!');
+    } else {
+      console.log('🚫 VALIDAZIONE: Errori trovati:', errors);
+    }
+    
+    return { valid: isValid, errors };
   };
 
   // Query per recuperare dati
@@ -181,10 +244,16 @@ export default function SpreadsheetOperations() {
     queryKey: ['/api/baskets'],
   });
 
-  // Query per TUTTE le operazioni senza limitazioni per Spreadsheet
-  const { data: operations } = useQuery({
-    queryKey: ['/api/operations', { spreadsheet: true }],
-    queryFn: () => apiRequest('/api/operations?pageSize=1000&sortBy=id&sortOrder=desc')
+  // Query per TUTTE le operazioni per Spreadsheet - BYPASS CACHE E LIMITAZIONI  
+  const { data: operations, isLoading: operationsLoading, error: operationsError } = useQuery({
+    queryKey: ['/api/operations', 'spreadsheet', 'unlimited'],
+    queryFn: () => {
+      console.log('🔄 SPREADSHEET: Caricamento TUTTE le operazioni senza limitazioni...');
+      // Usa l'endpoint operations diretto con parametri per bypassare cache e limitazioni
+      return apiRequest('/api/operations?pageSize=50000&sortBy=id&sortOrder=desc&force_refresh=true&original=true');
+    },
+    staleTime: 30000, // Cache for 30 seconds
+    refetchOnWindowFocus: false
   });
 
   const { data: sizes } = useQuery({
@@ -270,16 +339,32 @@ export default function SpreadsheetOperations() {
     }
   });
 
-  // Debug dettagliato per capire il problema
-  if ((operations as any[])?.length) {
-    console.log('🔍 SPREADSHEET: Caricate', (operations as any[])?.length, 'operazioni totali');
-    const ops13 = ((operations as any[]) || []).filter(op => op.basketId === 13);
-    console.log('🔍 CESTA 13 - Operazioni trovate:', ops13.map(op => `ID=${op.id}, tipo=${op.type}, animali=${op.animalCount}, data=${op.date}`));
-    if (ops13.length > 0) {
-      const sorted = ops13.sort((a, b) => b.id - a.id);
-      console.log('🔍 CESTA 13 - Dopo ordinamento:', sorted[0]);
+  // Debug per verificare le operazioni caricate (solo quando cambiano)
+  useEffect(() => {
+    if (operationsLoading) {
+      console.log('🔄 SPREADSHEET: Caricamento operazioni in corso...');
+      return;
     }
-  }
+    
+    if (operationsError) {
+      console.error('❌ SPREADSHEET: Errore nel caricamento operazioni:', operationsError);
+      return;
+    }
+    
+    if (operations && Array.isArray(operations) && operations.length > 0) {
+      console.log('✅ SPREADSHEET: Caricate', operations.length, 'operazioni totali');
+      const ops13 = operations.filter((op: any) => op.basketId === 13);
+      console.log('🔍 CESTA 13 - Operazioni trovate:', ops13.map((op: any) => `ID=${op.id}, tipo=${op.type}, animali=${op.animalCount}, data=${op.date}`));
+      if (ops13.length > 0) {
+        const sorted = ops13.sort((a: any, b: any) => b.id - a.id);
+        console.log('🔍 CESTA 13 - Operazione più recente selezionata:', sorted[0]);
+      } else {
+        console.warn('❌ CESTA 13 - NESSUNA OPERAZIONE TROVATA!');
+      }
+    } else if (operations !== undefined) {
+      console.warn('❌ SPREADSHEET: Nessuna operazione caricata o array vuoto');
+    }
+  }, [operations, operationsLoading, operationsError]);
   
   // Prepara i dati dei cestelli per il FLUPSY selezionato
   const eligibleBaskets: BasketData[] = ((baskets as any[]) || [])
@@ -449,6 +534,18 @@ export default function SpreadsheetOperations() {
   // Salva i dati dal form di editing e crea nuova riga
   const saveEditingForm = async () => {
     if (!editingForm) return;
+
+    // Validazione completa del form (include anche validazione date)
+    const validation = validateEditingForm();
+    if (!validation.valid) {
+      // Mostra tutti gli errori all'utente
+      toast({
+        title: "Errori di validazione",
+        description: validation.errors.join('; '),
+        variant: "destructive"
+      });
+      return;
+    }
 
     const originalRow = operationRows.find(r => r.basketId === editingForm.basketId);
     if (!originalRow) return;
@@ -1134,7 +1231,7 @@ export default function SpreadsheetOperations() {
 
               {/* Righe dati compatte */}
               {operationRows.map((row, index) => (
-                <React.Fragment key={`${row.basketId}-${index}-${(row as any).isNewRow ? 'new' : 'orig'}`}>
+                <div key={`${row.basketId}-${index}-${(row as any).isNewRow ? 'new' : 'orig'}`} className="contents">
                   <div
                     onMouseEnter={() => setHoveredBasketGroup(row.basketId)}
                     onMouseLeave={() => setHoveredBasketGroup(null)}
@@ -1427,7 +1524,7 @@ export default function SpreadsheetOperations() {
                       </div>
                     </div>
                   )}
-                </React.Fragment>
+                </div>
               ))}
               </div>
             </ScrollArea>
