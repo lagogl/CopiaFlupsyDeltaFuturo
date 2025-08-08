@@ -2010,14 +2010,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("✅ Validazioni date per operazione standard completate con successo");
         
         // Continua con la logica esistente per le operazioni standard
-        if (!parsedData.success) {
-          const errorMessage = fromZodError(parsedData.error).message;
-          console.error("Validation error for standard operation:", errorMessage);
-          return res.status(400).json({ message: errorMessage });
-        }
-
         const opData = parsedData.data;
-        const { cycleId, type } = opData; // basketId e date già dichiarati sopra
+        const { cycleId, type } = opData; // basketId and date already declared above
         console.log("Validazione operazione standard completata:", { basketId, cycleId, type });
 
         // Check if the basket exists
