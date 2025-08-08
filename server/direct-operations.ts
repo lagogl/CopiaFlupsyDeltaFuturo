@@ -341,12 +341,16 @@ export function implementDirectOperationRoute(app: Express) {
       // Per operazioni di tipo 'misura', considera la mortalità come prima
       else if (operationData.type === 'misura' && hasAnimalCount) {
         const hasMortality = operationData.deadCount && operationData.deadCount > 0;
+        const isSpreadsheetMode = (req.body as any)?._spreadsheetMode === true;
         
         if (hasMortality) {
           // Se c'è mortalità, utilizziamo il nuovo valore calcolato di animalCount (già presente in operationData)
           console.log(`IMPORTANTE: Per operazione 'misura' CON MORTALITÀ (${operationData.deadCount} animali), utilizziamo il conteggio animali aggiornato:`, operationData.animalCount);
+        } else if (isSpreadsheetMode) {
+          // Se è in modalità Spreadsheet, NON sovrascrivere i valori calcolati
+          console.log(`🟢 SPREADSHEET MODE: Mantengo i valori calcolati - animalCount: ${operationData.animalCount}, totalWeight: ${operationData.totalWeight}`);
         } else {
-          // Se non c'è mortalità, preserviamo il conteggio animali originale
+          // Se non c'è mortalità e non è Spreadsheet Mode, preserviamo il conteggio animali originale
           console.log(`IMPORTANTE: Per operazione 'misura' SENZA MORTALITÀ, preservato conteggio animali originale:`, originalAnimalCount);
           operationData.animalCount = originalAnimalCount;
         }

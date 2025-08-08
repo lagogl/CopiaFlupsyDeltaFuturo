@@ -739,7 +739,11 @@ export default function SpreadsheetOperations() {
         liveAnimals: row.liveAnimals,     // Numero animali vivi nel campione
         sampleWeight: row.sampleWeight,   // Peso campione in grammi
         totalSample: row.totalSample      // Totale campione (liveAnimals + deadCount)
-      })
+      }),
+      
+      // FLAG SPECIALE: Indica che questa richiesta arriva dal modulo Spreadsheet Operations
+      // e i valori calcolati NON devono essere sovrascritti dal backend
+      _spreadsheetMode: true
     };
     
     console.log('📋 Spreadsheet: Schema-compliant operation data:', {

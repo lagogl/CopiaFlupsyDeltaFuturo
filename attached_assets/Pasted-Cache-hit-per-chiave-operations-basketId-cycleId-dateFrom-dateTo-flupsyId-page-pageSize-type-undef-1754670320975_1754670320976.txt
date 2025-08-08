@@ -1,0 +1,214 @@
+Cache: hit per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_20_undefined"
+Operazioni recuperate dalla cache in 0ms
+Operazioni recuperate in 1ms (ottimizzato)
+4:24:00 PM [express] GET /api/operations 200 in 1ms :: [{"id":27,"date":"2025-08-08","type":"misura"…
+Server: Richiesta FLUPSY con includeStats = false
+4:24:00 PM [express] GET /api/flupsys 304 in 217ms :: [{"id":570,"name":"Flupsy 2 piccolo 10 ceste",…
+4:24:00 PM [express] GET /api/sizes 304 in 221ms :: [{"id":9,"code":"TP-1000","name":"TP-1000","minA…
+🚀 LOTTI: Cache HIT - recuperati in 0ms
+4:24:01 PM [express] GET /api/lots 304 in 432ms :: [{"id":1,"arrivalDate":"2025-08-06","supplier":"F…
+Cache notifiche: dati recuperati dalla cache per chiave "notifications_page_1_pageSize_20_type_null_unreadOnly_true"
+4:24:28 PM [express] GET /api/notifications 304 in 0ms :: {"success":true,"notifications":[],"pagina…
+============= DIRECT OPERATION ROUTE START =============
+Ricevuta richiesta per creazione diretta operazione:
+{
+  "basketId": 13,
+  "cycleId": 5,
+  "type": "misura",
+  "date": "2025-08-08",
+  "sizeId": 9,
+  "sgrId": null,
+  "lotId": 1,
+  "animalCount": 5000000,
+  "totalWeight": 333333,
+  "animalsPerKg": 15000,
+  "deadCount": 0,
+  "mortalityRate": null,
+  "notes": null,
+  "liveAnimals": 50,
+  "sampleWeight": 100,
+  "totalSample": 50
+}
+Conversione e validazione dei dati...
+Calcolato averageWeight: 66.66666666666667 da animalsPerKg: 15000
+Calcolo automatico della taglia in base a 15000 animali/kg...
+Trovata taglia appropriata per 15000 animali/kg: {
+  id: 20,
+  code: 'TP-3500',
+  name: 'TP-3500',
+  sizeMm: null,
+  minAnimalsPerKg: 12501,
+  maxAnimalsPerKg: 19000,
+  notes: '',
+  color: '#f9a8d4'
+}
+Aggiornamento automatico della taglia da 9 a 20 in base al peso
+IMPORTANTE: Per operazione 'misura' SENZA MORTALITÀ, preservato conteggio animali originale: 5000000
+Dati operazione dopo la normalizzazione:
+{
+  "basketId": 13,
+  "cycleId": 5,
+  "type": "misura",
+  "date": "2025-08-08",
+  "sizeId": 20,
+  "sgrId": null,
+  "lotId": 1,
+  "animalCount": 5000000,
+  "totalWeight": 333333,
+  "animalsPerKg": 15000,
+  "deadCount": 0,
+  "mortalityRate": null,
+  "notes": null,
+  "liveAnimals": 50,
+  "sampleWeight": 100,
+  "totalSample": 50,
+  "averageWeight": 66.66666666666667
+}
+Operazione standard - Verifica il cycleId...
+Tentativo inserimento standard nel database...
+Operazione creata con successo: {
+  id: 38,
+  date: '2025-08-08',
+  type: 'misura',
+  basketId: 13,
+  cycleId: 5,
+  sizeId: 20,
+  sgrId: null,
+  lotId: 1,
+  animalCount: 5000000,
+  totalWeight: 333333,
+  animalsPerKg: 15000,
+  averageWeight: 66.666664,
+  deadCount: 0,
+  mortalityRate: null,
+  notes: null,
+  metadata: null
+}
+🔔 GLOBAL BROADCAST: Invio operation_created {
+  operation: {
+    id: 38,
+    date: '2025-08-08',
+    type: 'misura',
+    basketId: 13,
+    cycleId: 5,
+    sizeId: 20,
+    sgrId: null,
+    lotId: 1,
+    animalCount: 5000000,
+    totalWeight: 333333,
+    animalsPerKg: 15000,
+    averageWeight: 66.666664,
+    deadCount: 0,
+    mortalityRate: null,
+    notes: null,
+    metadata: null
+  },
+  message: 'Nuova operazione di tipo misura registrata'
+}
+Broadcast message to 1 clients: {
+  type: 'operation_created',
+  data: {
+    operation: {
+      id: 38,
+      date: '2025-08-08',
+      type: 'misura',
+      basketId: 13,
+      cycleId: 5,
+      sizeId: 20,
+      sgrId: null,
+      lotId: 1,
+      animalCount: 5000000,
+      totalWeight: 333333,
+      animalsPerKg: 15000,
+      averageWeight: 66.666664,
+      deadCount: 0,
+      mortalityRate: null,
+      notes: null,
+      metadata: null
+    },
+    message: 'Nuova operazione di tipo misura registrata',
+    _brief: 'data object'
+  }
+}
+🔔 GLOBAL BROADCAST: Risultato 1 client raggianti
+============= DIRECT OPERATION ROUTE END =============
+4:24:38 PM [express] POST /api/direct-operations 201 in 3032ms :: {"id":38,"date":"2025-08-08","type…
+[SLOW API] POST /api/direct-operations - 3032ms
+Utilizzo implementazione ottimizzata per le operazioni
+Richiesta operazioni ottimizzata con opzioni: {
+  page: 1,
+  pageSize: 20,
+  cycleId: undefined,
+  flupsyId: undefined,
+  basketId: undefined,
+  dateFrom: undefined,
+  dateTo: undefined,
+  type: undefined
+}
+Cache: hit per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_20_undefined"
+Operazioni recuperate dalla cache in 0ms
+Operazioni recuperate in 1ms (ottimizzato)
+4:24:38 PM [express] GET /api/operations 200 in 2ms :: [{"id":27,"date":"2025-08-08","type":"misura"…
+Utilizzo implementazione ottimizzata per i cestelli
+Cache cestelli: hit per chiave "baskets_cycleId_flupsyId_includeAll_includeEmpty_page_pageSize_sortBy_sortOrder_state_undefined_undefined_false_false_1_50_id_asc_undefined"
+🚀 CESTELLI: Cache HIT - recuperati in 0ms
+Cestelli recuperati in 1ms (ottimizzato)
+4:24:38 PM [express] GET /api/baskets 200 in 1ms :: [{"id":1,"physicalNumber":1,"flupsyId":2516,"cyc…
+🚀 ENDPOINT UNIFICATO: Richiesta ricevuta
+🚀 OPERAZIONI UNIFICATE: Richiesta ricevuta
+🔄 CACHE MISS: Eseguendo query unificata...
+Utilizzo implementazione ottimizzata per i cestelli
+Cache cestelli: hit per chiave "baskets_cycleId_flupsyId_includeAll_includeEmpty_page_pageSize_sortBy_sortOrder_state_undefined_undefined_false_false_1_50_id_asc_undefined"
+🚀 CESTELLI: Cache HIT - recuperati in 0ms
+Cestelli recuperati in 3ms (ottimizzato)
+4:24:38 PM [express] GET /api/baskets 200 in 3ms :: [{"id":1,"physicalNumber":1,"flupsyId":2516,"cyc…
+Utilizzo implementazione ottimizzata per le operazioni
+Richiesta operazioni ottimizzata con opzioni: {
+  page: 1,
+  pageSize: 20,
+  cycleId: undefined,
+  flupsyId: undefined,
+  basketId: undefined,
+  dateFrom: undefined,
+  dateTo: undefined,
+  type: undefined
+}
+Cache: hit per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_20_undefined"
+Operazioni recuperate dalla cache in 0ms
+Operazioni recuperate in 1ms (ottimizzato)
+4:24:38 PM [express] GET /api/operations 200 in 1ms :: [{"id":27,"date":"2025-08-08","type":"misura"…
+Server: Richiesta FLUPSY con includeStats = false
+4:24:38 PM [express] GET /api/flupsys 304 in 221ms :: [{"id":570,"name":"Flupsy 2 piccolo 10 ceste",…
+Utilizzo implementazione ottimizzata per le operazioni
+Richiesta operazioni ottimizzata con opzioni: {
+  page: 1,
+  pageSize: 20,
+  cycleId: undefined,
+  flupsyId: undefined,
+  basketId: undefined,
+  dateFrom: undefined,
+  dateTo: undefined,
+  type: undefined
+}
+Cache: hit per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_20_undefined"
+Operazioni recuperate dalla cache in 0ms
+Operazioni recuperate in 1ms (ottimizzato)
+4:24:38 PM [express] GET /api/operations 200 in 2ms :: [{"id":27,"date":"2025-08-08","type":"misura"…
+Utilizzo implementazione ottimizzata per i cestelli
+Cache cestelli: hit per chiave "baskets_cycleId_flupsyId_includeAll_includeEmpty_page_pageSize_sortBy_sortOrder_state_undefined_undefined_false_false_1_50_id_asc_undefined"
+🚀 CESTELLI: Cache HIT - recuperati in 0ms
+Cestelli recuperati in 1ms (ottimizzato)
+4:24:38 PM [express] GET /api/baskets 200 in 1ms :: [{"id":1,"physicalNumber":1,"flupsyId":2516,"cyc…
+Utilizzo implementazione ottimizzata per i cestelli
+Cache cestelli: hit per chiave "baskets_cycleId_flupsyId_includeAll_includeEmpty_page_pageSize_sortBy_sortOrder_state_undefined_undefined_false_false_1_50_id_asc_undefined"
+🚀 CESTELLI: Cache HIT - recuperati in 0ms
+Cestelli recuperati in 1ms (ottimizzato)
+4:24:39 PM [express] GET /api/baskets 200 in 2ms :: [{"id":1,"physicalNumber":1,"flupsyId":2516,"cyc…
+Server: Richiesta FLUPSY con includeStats = false
+4:24:39 PM [express] GET /api/flupsys 304 in 216ms :: [{"id":570,"name":"Flupsy 2 piccolo 10 ceste",…
+✅ Query unificate completate in 2902ms
+🚀 UNIFIED: Dati salvati in cache - 3 operazioni, 20 cestelli
+4:24:41 PM [express] GET /api/operations-unified 200 in 2905ms :: {"success":true,"data":{"operation…
+[SLOW API] GET /api/operations-unified - 2905ms
+Cache notifiche: dati recuperati dalla cache per chiave "notifications_page_1_pageSize_20_type_null_unreadOnly_true"
+4:24:59 PM [express] GET /api/notifications 304 in 0ms :: {"success":true,"notifications":[],"pagina…
