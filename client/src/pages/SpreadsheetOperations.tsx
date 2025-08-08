@@ -1393,7 +1393,7 @@ export default function SpreadsheetOperations() {
                           setEditingForm({...editingForm, deadCount: value});
                         }}
                         className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
-                                 focus:outline-none focus:ring-2 focus:ring-blue-400
+                                 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-yellow-50
                                  touch-manipulation"
                         min="0"
                         placeholder="0"
@@ -1447,7 +1447,7 @@ export default function SpreadsheetOperations() {
                   </div>
 
                   {/* Riga 3: Risultati finali */}
-                  <div className="grid grid-cols-2 gap-3 items-end">
+                  <div className="grid grid-cols-3 gap-3 items-end">
                     <div>
                       <label className="text-xs text-gray-500 mb-1 block">Tot. Animali Calcolati</label>
                       <div className="h-8 px-2 text-sm bg-blue-50 border-2 border-blue-200 rounded flex items-center font-medium text-blue-800">
@@ -1462,6 +1462,25 @@ export default function SpreadsheetOperations() {
                       <div className="h-8 px-2 text-sm bg-blue-50 border-2 border-blue-200 rounded flex items-center font-medium text-blue-800">
                         {(editingForm.totalWeight && editingForm.sampleWeight && editingForm.liveAnimals && editingForm.liveAnimals > 0)
                           ? Math.round(((editingForm.totalWeight * editingForm.liveAnimals) / editingForm.sampleWeight) / (editingForm.totalWeight / 1000))
+                          : '-'}
+                      </div>
+                    </div>
+                    
+                    <div>
+                      <label className="text-xs text-gray-500 mb-1 block">Taglia (calcolata)</label>
+                      <div className="h-8 px-2 text-sm bg-green-50 border-2 border-green-200 rounded flex items-center font-medium text-green-800">
+                        {(editingForm.totalWeight && editingForm.sampleWeight && editingForm.liveAnimals && editingForm.liveAnimals > 0)
+                          ? (() => {
+                              const animalsPerKg = Math.round(((editingForm.totalWeight * editingForm.liveAnimals) / editingForm.sampleWeight) / (editingForm.totalWeight / 1000));
+                              const sizesArray = Array.isArray(sizes) ? sizes : [];
+                              const size = sizesArray.find((s: any) => 
+                                s.minAnimalsPerKg !== null && 
+                                s.maxAnimalsPerKg !== null &&
+                                animalsPerKg >= s.minAnimalsPerKg && 
+                                animalsPerKg <= s.maxAnimalsPerKg
+                              );
+                              return size?.code || 'N/A';
+                            })()
                           : '-'}
                       </div>
                     </div>
