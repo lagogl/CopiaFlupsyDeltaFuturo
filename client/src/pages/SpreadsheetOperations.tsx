@@ -97,6 +97,19 @@ export default function SpreadsheetOperations() {
   } | null>(null);
   const [editingPosition, setEditingPosition] = useState<{top: number, left: number} | null>(null);
 
+  // Stati per evidenziazione visiva operazioni associate
+  const [hoveredBasketGroup, setHoveredBasketGroup] = useState<number | null>(null);
+
+  // Funzione per identificare gruppi di righe associate (stesso basketId)
+  const getAssociatedRows = (basketId: number): OperationRowData[] => {
+    return operationRows.filter(row => row.basketId === basketId);
+  };
+
+  // Funzione per determinare se una riga è originale o nuova
+  const isOriginalRow = (row: OperationRowData): boolean => {
+    return !(row as any).isNewRow;
+  };
+
   // Validazione campi obbligatori per il form popup
   const validateEditingForm = (): boolean => {
     if (!editingForm) return false;
@@ -1004,14 +1017,48 @@ export default function SpreadsheetOperations() {
 
               {/* Righe dati compatte */}
               {operationRows.map((row, index) => (
-                <React.Fragment key={row.basketId}>
+                <React.Fragment key={`${row.basketId}-${index}-${(row as any).isNewRow ? 'new' : 'orig'}`}>
                   <div
-                    className={`flex border-b text-xs hover:bg-gray-50 items-center ${
+                    onMouseEnter={() => setHoveredBasketGroup(row.basketId)}
+                    onMouseLeave={() => setHoveredBasketGroup(null)}
+                    className={`relative flex border-b text-xs hover:bg-gray-50 items-center ${
                       row.status === 'error' ? 'bg-red-50' : 
                       row.status === 'saved' ? 'bg-green-50' : 
                       row.status === 'saving' ? 'bg-yellow-50' : 'bg-white'
+                    } ${
+                      getAssociatedRows(row.basketId).length > 1 ? 'bg-blue-50/20' : ''
+                    } ${
+                      hoveredBasketGroup === row.basketId ? 'bg-blue-100/40' : ''
                     }`}
                   >
+                    {/* Indicatore laterale colorato per operazioni associate */}
+                    {getAssociatedRows(row.basketId).length > 1 && (
+                      <div 
+                        className={`absolute left-0 top-0 bottom-0 w-1 ${
+                          isOriginalRow(row) 
+                            ? 'bg-blue-500' 
+                            : 'bg-green-500'
+                        }`}
+                        style={!isOriginalRow(row) ? {
+                          background: 'repeating-linear-gradient(to bottom, #10b981 0px, #10b981 3px, transparent 3px, transparent 6px)'
+                        } : {}}
+                      />
+                    )}
+
+                    {/* Badge di stato per operazioni associate */}
+                    {getAssociatedRows(row.basketId).length > 1 && (
+                      <div className="absolute -top-1 left-2 z-20">
+                        {isOriginalRow(row) ? (
+                          <Badge variant="outline" className="text-xs px-1 py-0 h-4 bg-blue-100 text-blue-700 border-blue-300 font-medium">
+                            ORIG
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-xs px-1 py-0 h-4 bg-green-100 text-green-700 border-green-300 font-medium">
+                            + NUOVA
+                          </Badge>
+                        )}
+                      </div>
+                    )}
                     {/* Colonna cestello fissa */}
                     <div 
                       style={{width: '70px'}}
