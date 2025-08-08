@@ -11,6 +11,7 @@ import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { ScrollArea } from "@/components/ui/scroll-area";
+import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Save, RotateCcw, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import "../styles/spreadsheet.css";
 
@@ -1373,9 +1374,33 @@ export default function SpreadsheetOperations() {
 
                     {/* CAMPO LOTTO - NON MODIFICABILE */}
                     <div style={{width: '50px'}} className="px-1 py-1 border-r bg-gray-100">
-                      <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center">
-                        L{row.lotId || '1'}
-                      </div>
+                      <TooltipProvider>
+                        <Tooltip>
+                          <TooltipTrigger asChild>
+                            <div className="w-full h-6 px-1 text-xs text-gray-600 rounded flex items-center cursor-help">
+                              L{row.lotId || '1'}
+                            </div>
+                          </TooltipTrigger>
+                          <TooltipContent>
+                            <div className="text-sm">
+                              {(() => {
+                                const lot = ((lots as any[]) || []).find((l: any) => l.id === (row.lotId || 1));
+                                if (lot) {
+                                  return (
+                                    <div className="space-y-1">
+                                      <div><strong>Lotto L{lot.id}</strong></div>
+                                      <div>Fornitore: {lot.supplier}</div>
+                                      <div>Data arrivo: {new Date(lot.arrivalDate).toLocaleDateString('it-IT')}</div>
+                                      {lot.supplierLotNumber && <div>Lotto fornitore: {lot.supplierLotNumber}</div>}
+                                    </div>
+                                  );
+                                }
+                                return <div>Informazioni lotto non disponibili</div>;
+                              })()}
+                            </div>
+                          </TooltipContent>
+                        </Tooltip>
+                      </TooltipProvider>
                     </div>
 
 
