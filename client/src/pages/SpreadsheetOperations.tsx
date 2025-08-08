@@ -759,42 +759,69 @@ export default function SpreadsheetOperations() {
     });
   };
 
-  // Salva tutte le righe valide (esclude quelle già salvate singolarmente)
+  // Salva SOLO le nuove operazioni create nella sessione corrente (esclude righe originali)
   const saveAllRows = async () => {
-    console.log('🔄 Spreadsheet: Inizio salvataggio di tutte le righe');
+    console.log('🔄 Spreadsheet: Inizio salvataggio SOLO nuove operazioni della sessione');
     console.log('📊 Spreadsheet: Righe totali:', operationRows.length);
     
-    const validRows = operationRows.filter(row => {
-      const errors = validateRow(row);
-      if (errors.length > 0) {
-        console.warn('⚠️ Spreadsheet: Riga non valida basketId:', row.basketId, 'errori:', errors);
-      }
-      return errors.length === 0;
-    });
+    // Prima filtra SOLO le righe che sono state create nella sessione corrente (isNewRow = true)
+    const newRowsInSession = operationRows.filter((row: any) => row.isNewRow === true);
+    console.log('🆕 Spreadsheet: Nuove righe create nella sessione:', newRowsInSession.length);
     
-    console.log('✅ Spreadsheet: Righe valide trovate:', validRows.length);
-    
-    const editingRows = validRows.filter(row => 
-      row.status === 'editing' && !savedRows.has(row.basketId)
-    );
-    console.log('📝 Spreadsheet: Righe da salvare (editing e non già salvate):', editingRows.length);
-    console.log('📋 Spreadsheet: Righe già salvate singolarmente:', Array.from(savedRows));
-    
-    if (editingRows.length === 0) {
-      console.log('ℹ️ Spreadsheet: Nessuna riga da salvare');
+    if (newRowsInSession.length === 0) {
+      console.log('ℹ️ Spreadsheet: Nessuna nuova operazione creata nella sessione');
       toast({
-        title: "Nessuna operazione da salvare",
-        description: "Tutte le righe sono già salvate o contengono errori",
+        title: "Nessuna nuova operazione da salvare",
+        description: "Non sono state create nuove operazioni in questa sessione. Usa il doppio click per creare nuove operazioni.",
       });
       return;
     }
     
-    for (const row of editingRows) {
-      console.log('🔄 Spreadsheet: Salvando riga basketId:', row.basketId);
+    // Poi filtra per validità e stato
+    const validNewRows = newRowsInSession.filter(row => {
+      const errors = validateRow(row);
+      if (errors.length > 0) {
+        console.warn('⚠️ Spreadsheet: Nuova riga non valida basketId:', row.basketId, 'errori:', errors);
+      }
+      return errors.length === 0;
+    });
+    
+    console.log('✅ Spreadsheet: Nuove righe valide trovate:', validNewRows.length);
+    
+    // Filtra quelle ancora da salvare (editing e non già salvate)
+    const unsavedNewRows = validNewRows.filter(row => 
+      row.status === 'editing' && !savedRows.has(row.basketId)
+    );
+    
+    console.log('📝 Spreadsheet: Nuove righe da salvare (editing e non già salvate):', unsavedNewRows.length);
+    console.log('📋 Spreadsheet: Righe già salvate singolarmente:', Array.from(savedRows));
+    
+    if (unsavedNewRows.length === 0) {
+      console.log('ℹ️ Spreadsheet: Tutte le nuove righe sono già state salvate o contengono errori');
+      toast({
+        title: "Nessuna operazione da salvare",
+        description: "Tutte le nuove operazioni sono già salvate o contengono errori",
+      });
+      return;
+    }
+    
+    // Mostra un messaggio di conferma con il numero di operazioni da salvare
+    toast({
+      title: "Salvataggio in corso...",
+      description: `Salvando ${unsavedNewRows.length} nuove operazioni create nella sessione`,
+    });
+    
+    for (const row of unsavedNewRows) {
+      console.log('🔄 Spreadsheet: Salvando nuova riga basketId:', row.basketId, 'cestello:', row.physicalNumber);
       await saveRow(row.basketId);
     }
     
-    console.log('✅ Spreadsheet: Salvataggio completato');
+    console.log('✅ Spreadsheet: Salvataggio di tutte le nuove operazioni completato');
+    
+    toast({
+      title: "Salvataggio completato",
+      description: `${unsavedNewRows.length} nuove operazioni salvate con successo`,
+    });
   };
 
   // Reset di tutte le righe
