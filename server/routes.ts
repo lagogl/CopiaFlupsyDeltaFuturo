@@ -2016,7 +2016,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
 
         const opData = parsedData.data;
-        const { basketId, cycleId, date, type } = opData;
+        const { cycleId, type } = opData; // basketId e date già dichiarati sopra
         console.log("Validazione operazione standard completata:", { basketId, cycleId, type });
 
         // Check if the basket exists
@@ -2045,8 +2045,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const formattedDate = format(new Date(date), 'yyyy-MM-dd');
 
         // Check if there's already an operation for this basket on the given date
-        const existingOperations = await storage.getOperationsByBasket(basketId);
-        const operationOnSameDate = existingOperations.find(op => 
+        // existingOperations già dichiarato sopra, lo riutilizziamo
+        const existingOperationsForComparison = await storage.getOperationsByBasket(basketId);
+        const operationOnSameDate = existingOperationsForComparison.find(op => 
           format(new Date(op.date), 'yyyy-MM-dd') === formattedDate
         );
 

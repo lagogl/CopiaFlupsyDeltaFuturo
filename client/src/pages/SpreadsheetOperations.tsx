@@ -97,8 +97,50 @@ export default function SpreadsheetOperations() {
   } | null>(null);
   const [editingPosition, setEditingPosition] = useState<{top: number, left: number} | null>(null);
 
+  // Refs per i campi del form per la navigazione automatica
+  const sampleWeightRef = useRef<HTMLInputElement>(null);
+  const liveAnimalsRef = useRef<HTMLInputElement>(null);
+  const deadCountRef = useRef<HTMLInputElement>(null);
+  const totalWeightRef = useRef<HTMLInputElement>(null);
+  const notesRef = useRef<HTMLTextAreaElement>(null);
+
   // Stati per evidenziazione visiva operazioni associate
   const [hoveredBasketGroup, setHoveredBasketGroup] = useState<number | null>(null);
+
+  // Funzione per navigazione automatica del cursore
+  const moveToNextField = (currentField: string, value: any) => {
+    // Per operazioni di tipo "misura"
+    if (selectedOperationType === 'misura') {
+      switch (currentField) {
+        case 'sampleWeight':
+          if (value && value > 0) {
+            setTimeout(() => liveAnimalsRef.current?.focus(), 50);
+          }
+          break;
+        case 'liveAnimals':
+          if (value && value > 0) {
+            setTimeout(() => deadCountRef.current?.focus(), 50);
+          }
+          break;
+        case 'deadCount':
+          if (value !== null && value !== undefined && value >= 0) {
+            setTimeout(() => totalWeightRef.current?.focus(), 50);
+          }
+          break;
+        case 'totalWeight':
+          if (value && value > 0) {
+            setTimeout(() => notesRef.current?.focus(), 50);
+          }
+          break;
+      }
+    }
+    // Per operazioni di tipo "peso"
+    else if (selectedOperationType === 'peso') {
+      if (currentField === 'totalWeight' && value && value > 0) {
+        setTimeout(() => notesRef.current?.focus(), 50);
+      }
+    }
+  };
 
   // Funzione per identificare gruppi di righe associate (stesso basketId)
   const getAssociatedRows = (basketId: number): OperationRowData[] => {
@@ -1610,11 +1652,13 @@ export default function SpreadsheetOperations() {
                     <div>
                       <label className="text-sm md:text-xs text-gray-600 mb-2 md:mb-1 block font-medium">Peso campione (g)</label>
                       <input
+                        ref={sampleWeightRef}
                         type="number"
                         value={editingForm.sampleWeight || ''}
                         onChange={(e) => {
                           const value = Number(e.target.value);
                           setEditingForm({...editingForm, sampleWeight: value});
+                          moveToNextField('sampleWeight', value);
                         }}
                         className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
                                  focus:outline-none focus:ring-2 focus:ring-blue-400 bg-yellow-50
@@ -1629,11 +1673,13 @@ export default function SpreadsheetOperations() {
                     <div>
                       <label className="text-sm md:text-xs text-gray-600 mb-2 md:mb-1 block font-medium">Vivi</label>
                       <input
+                        ref={liveAnimalsRef}
                         type="number"
                         value={editingForm.liveAnimals || ''}
                         onChange={(e) => {
                           const value = Number(e.target.value);
                           setEditingForm({...editingForm, liveAnimals: value});
+                          moveToNextField('liveAnimals', value);
                         }}
                         className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
                                  focus:outline-none focus:ring-2 focus:ring-blue-400 bg-yellow-50
@@ -1647,11 +1693,13 @@ export default function SpreadsheetOperations() {
                     <div>
                       <label className="text-sm md:text-xs text-gray-600 mb-2 md:mb-1 block font-medium">Morti</label>
                       <input
+                        ref={deadCountRef}
                         type="number"
                         value={editingForm.deadCount || ''}
                         onChange={(e) => {
                           const value = Number(e.target.value) || 0;
                           setEditingForm({...editingForm, deadCount: value});
+                          moveToNextField('deadCount', value);
                         }}
                         className="w-full h-10 md:h-8 px-3 md:px-2 text-base md:text-sm border rounded 
                                  focus:outline-none focus:ring-2 focus:ring-blue-400 bg-yellow-50
@@ -1693,11 +1741,13 @@ export default function SpreadsheetOperations() {
                     <div>
                       <label className="text-xs text-gray-600 mb-1 block">Peso totale (g)</label>
                       <input
+                        ref={totalWeightRef}
                         type="number"
                         value={editingForm.totalWeight || ''}
                         onChange={(e) => {
                           const value = Number(e.target.value);
                           setEditingForm({...editingForm, totalWeight: value});
+                          moveToNextField('totalWeight', value);
                         }}
                         className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="1"
@@ -1746,6 +1796,18 @@ export default function SpreadsheetOperations() {
                       </div>
                     </div>
                   </div>
+                  
+                  {/* Campo Note per operazioni misura */}
+                  <div>
+                    <label className="text-xs text-gray-600 mb-1 block">Note (opzionale)</label>
+                    <textarea
+                      ref={notesRef}
+                      value={editingForm.notes || ''}
+                      onChange={(e) => setEditingForm({...editingForm, notes: e.target.value})}
+                      className="w-full h-16 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
+                      placeholder="Note aggiuntive per questa operazione..."
+                    />
+                  </div>
                 </div>
               )}
 
@@ -1764,11 +1826,13 @@ export default function SpreadsheetOperations() {
                     <div>
                       <label className="text-xs text-gray-600 mb-1 block">Peso totale (g)</label>
                       <input
+                        ref={totalWeightRef}
                         type="number"
                         value={editingForm.totalWeight || ''}
                         onChange={(e) => {
                           const value = Number(e.target.value);
                           setEditingForm({...editingForm, totalWeight: value});
+                          moveToNextField('totalWeight', value);
                         }}
                         className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="1"
@@ -1817,6 +1881,18 @@ export default function SpreadsheetOperations() {
                           : '-'}
                       </div>
                     </div>
+                  </div>
+                  
+                  {/* Campo Note per operazioni peso */}
+                  <div>
+                    <label className="text-xs text-gray-600 mb-1 block">Note (opzionale)</label>
+                    <textarea
+                      ref={notesRef}
+                      value={editingForm.notes || ''}
+                      onChange={(e) => setEditingForm({...editingForm, notes: e.target.value})}
+                      className="w-full h-16 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 resize-none"
+                      placeholder="Note aggiuntive per questa operazione..."
+                    />
                   </div>
                 </div>
               )}
@@ -1873,7 +1949,7 @@ export default function SpreadsheetOperations() {
                 </button>
                 <button
                   onClick={saveEditingForm}
-                  disabled={!validateEditingForm()}
+                  disabled={!validateEditingForm().valid}
                   className={`px-3 py-1 md:px-3 md:py-1 max-md:px-4 max-md:py-3 
                            text-xs md:text-xs max-md:text-sm font-medium border rounded max-md:flex-1 max-md:h-12 
                            max-md:flex max-md:items-center max-md:justify-center
