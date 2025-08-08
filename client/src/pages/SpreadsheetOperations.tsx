@@ -59,18 +59,11 @@ interface OperationRowData {
   lastOperationType?: string;
 }
 
-// Tipi operazione per il modulo Spreadsheet (SOLO per ceste già attive - NO prima-attivazione)
-const operationTypeLabels = {
-  'peso': 'Peso',
-  'misura': 'Misura',
-  'pulizia': 'Pulizia',
-  'trattamento': 'Trattamento',
-  'vagliatura': 'Vagliatura',
-  'vendita': 'Vendita',
-  'selezione-vendita': 'Selezione Vendita',
-  'cessazione': 'Cessazione'
-  // NOTA: 'prima-attivazione' non è inclusa perché questo modulo è solo per ceste già attive
-};
+// Tipi operazione per il modulo Spreadsheet (SOLO Misura e Peso)
+const operationTypeOptions = [
+  { value: 'misura', label: 'Misura', color: 'blue', icon: '📏' },
+  { value: 'peso', label: 'Peso', color: 'green', icon: '⚖️' }
+];
 
 export default function SpreadsheetOperations() {
   const { toast } = useToast();
@@ -863,18 +856,37 @@ export default function SpreadsheetOperations() {
 
           <div className="flex items-center gap-2 min-w-0">
             <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Tipo Operazione</label>
-            <Select value={selectedOperationType} onValueChange={setSelectedOperationType}>
-              <SelectTrigger className="w-32 h-8 text-xs">
-                <SelectValue />
-              </SelectTrigger>
-              <SelectContent>
-                {Object.entries(operationTypeLabels).map(([value, label]) => (
-                  <SelectItem key={value} value={value}>
-                    {label}
-                  </SelectItem>
-                ))}
-              </SelectContent>
-            </Select>
+            <div className="flex gap-1">
+              {operationTypeOptions.map((option) => (
+                <label
+                  key={option.value}
+                  className={`
+                    flex items-center gap-1 px-3 py-1 rounded-md cursor-pointer transition-all text-xs font-medium
+                    border-2 min-w-0
+                    ${
+                      selectedOperationType === option.value
+                        ? option.color === 'blue'
+                          ? 'bg-blue-500 text-white border-blue-500 shadow-md transform scale-105'
+                          : 'bg-green-500 text-white border-green-500 shadow-md transform scale-105'
+                        : option.color === 'blue'
+                          ? 'bg-blue-50 text-blue-700 border-blue-200 hover:bg-blue-100'
+                          : 'bg-green-50 text-green-700 border-green-200 hover:bg-green-100'
+                    }
+                  `}
+                >
+                  <input
+                    type="radio"
+                    name="operationType"
+                    value={option.value}
+                    checked={selectedOperationType === option.value}
+                    onChange={(e) => setSelectedOperationType(e.target.value)}
+                    className="sr-only"
+                  />
+                  <span className="text-sm">{option.icon}</span>
+                  <span className="whitespace-nowrap">{option.label}</span>
+                </label>
+              ))}
+            </div>
           </div>
 
           <div className="flex items-center gap-2 min-w-0">
@@ -913,7 +925,7 @@ export default function SpreadsheetOperations() {
           {/* Header compatto */}
           <div className="bg-gray-50 border-b px-3 py-2">
             <h3 className="font-medium text-sm">
-              {((flupsys as any[]) || []).find((f: any) => f.id === selectedFlupsyId)?.name} - {operationTypeLabels[selectedOperationType as keyof typeof operationTypeLabels]}
+              {((flupsys as any[]) || []).find((f: any) => f.id === selectedFlupsyId)?.name} - {operationTypeOptions.find(opt => opt.value === selectedOperationType)?.label}
             </h3>
           </div>
           
