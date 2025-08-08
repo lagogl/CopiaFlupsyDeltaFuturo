@@ -202,6 +202,13 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ✓ Automatic calculation: animals/kg = 1000 ÷ average_weight
 ✓ Automatic size recalculation based on new animals/kg values
 ✓ Proper date handling: new operation uses selected operation date
+✓ **August 8, 2025**: Fixed critical data visibility bug in Spreadsheet Operations
+✓ Resolved race condition between operations loading and row initialization
+✓ Data now loads correctly showing real operation values instead of N/A and 0g
+✓ **August 8, 2025**: Implemented intelligent performance-based sorting system
+✓ Baskets automatically sorted by performance score: growth, population density, weight, recency
+✓ Visual performance indicators: 🏆 excellent (80%+), ⭐ good (60%+), ⚠️ average (40%+), 🔴 attention (<40%)
+✓ Best performing baskets appear at top for immediate identification
 
 ## Changelog
 
