@@ -1335,7 +1335,7 @@ export default function SpreadsheetOperations() {
                     <div style={{width: '70px'}} className="px-1 py-1 border-r flex items-center justify-center gap-1 min-h-[28px]">
                       {/* Pulsanti Salva e Undo solo per righe create (nuove) */}
                       {(row as any).isNewRow ? (
-                        <>
+                        <div className="contents">
                           {/* Pulsante Salva Singolo */}
                           <button
                             onClick={() => saveSingleRow(row.basketId)}
@@ -1367,7 +1367,7 @@ export default function SpreadsheetOperations() {
                           >
                             <RotateCcw className="h-2 w-2" />
                           </button>
-                        </>
+                        </div>
                       ) : (
                         // Per righe originali, mostra solo lo stato senza azioni
                         <div className="text-xs text-gray-500">Originale</div>
@@ -1402,7 +1402,7 @@ export default function SpreadsheetOperations() {
 
       {/* Form popup stile Excel per editing inline */}
       {editingRow !== null && editingForm && editingPosition && (
-        <>
+        <div>
           {/* Overlay molto trasparente per mantenere visibilità */}
           <div 
             className="fixed inset-0 bg-black bg-opacity-5 z-40"
@@ -1747,7 +1747,7 @@ export default function SpreadsheetOperations() {
               </div>
             </div>
           </div>
-        </>
+        </div>
       )}
     </div>
   );
