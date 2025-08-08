@@ -389,6 +389,9 @@ export default function SpreadsheetOperations() {
       isNewRow: true  // Marca questa come nuova riga modificabile
     };
     
+    console.log('🧮 EDITING FORM: Valori dal form popup:', editingForm);
+    console.log('🔄 NEW ROW PRIMA dei calcoli:', newRow);
+    
     // Applica calcoli automatici per misura
     if (selectedOperationType === 'misura') {
       const liveAnimals = newRow.liveAnimals || 0;
@@ -403,7 +406,9 @@ export default function SpreadsheetOperations() {
       // Per operazioni di misura, animalCount rappresenta il numero totale stimato di animali nel cestello
       if (sampleWeight > 0 && liveAnimals > 0 && totalWeight > 0) {
         // Stima il numero totale di animali: (animali vivi nel campione / peso campione) * peso totale cestello
-        newRow.animalCount = Math.round((liveAnimals / sampleWeight) * totalWeight);
+        const calculatedAnimalCount = Math.round((liveAnimals / sampleWeight) * totalWeight);
+        newRow.animalCount = calculatedAnimalCount;
+        console.log(`🧮 CALCOLO MISURA: animalCount = (${liveAnimals} / ${sampleWeight}) * ${totalWeight} = ${calculatedAnimalCount}`);
       }
       
       if (totalSample > 0) {
@@ -413,6 +418,7 @@ export default function SpreadsheetOperations() {
       if (sampleWeight > 0 && liveAnimals > 0) {
         const animalsPerKgValue = Math.round((liveAnimals / sampleWeight) * 1000);
         newRow.animalsPerKg = animalsPerKgValue;
+        console.log(`🧮 CALCOLO MISURA: animalsPerKg = (${liveAnimals} / ${sampleWeight}) * 1000 = ${animalsPerKgValue}`);
         
         // Calcola automaticamente la taglia usando la stessa logica del modulo Operazioni
         const sizesArray = Array.isArray(sizes) ? sizes : [];
@@ -421,7 +427,7 @@ export default function SpreadsheetOperations() {
           const selectedSize = findSizeByAnimalsPerKg(animalsPerKgValue, sizesArray);
           if (selectedSize) {
             newRow.sizeId = selectedSize.id;
-            console.log(`Taglia calcolata automaticamente: ${selectedSize.code} (ID: ${selectedSize.id})`);
+            console.log(`🧮 CALCOLO MISURA: Taglia calcolata automaticamente: ${selectedSize.code} (ID: ${selectedSize.id})`);
           }
         }
       }
@@ -456,6 +462,8 @@ export default function SpreadsheetOperations() {
 
     // Trova l'indice della riga originale
     const originalIndex = operationRows.findIndex(r => r.basketId === editingForm.basketId);
+    
+    console.log('✅ NEW ROW FINALE con calcoli completati:', newRow);
     
     // Inserisci la nuova riga subito dopo la riga originale
     setOperationRows(prev => {
