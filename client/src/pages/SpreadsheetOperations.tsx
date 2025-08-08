@@ -181,10 +181,10 @@ export default function SpreadsheetOperations() {
     queryKey: ['/api/baskets'],
   });
 
-  // Query per TUTTE le operazioni (senza limitazioni di paginazione) per Spreadsheet
+  // Query ottimizzata per operazioni recenti (ultime 100 per efficienza)
   const { data: operations } = useQuery({
-    queryKey: ['/api/operations', { spreadsheet: true }],
-    queryFn: () => apiRequest('/api/operations?pageSize=1000&spreadsheet=true')
+    queryKey: ['/api/operations', { recent: true }],
+    queryFn: () => apiRequest('/api/operations?pageSize=100&sortBy=id&sortOrder=desc')
   });
 
   const { data: sizes } = useQuery({
@@ -270,9 +270,10 @@ export default function SpreadsheetOperations() {
     }
   });
 
-  // Debug: verifica che abbiamo tutte le operazioni
-  console.log('🔍 SPREADSHEET: Operazioni totali caricate:', (operations as any[])?.length || 0);
-  console.log('🔍 SPREADSHEET: Prime 3 operazioni per debug:', (operations as any[])?.slice(0, 3));
+  // Solo log essenziale per debug
+  if ((operations as any[])?.length) {
+    console.log('📊 SPREADSHEET: Caricate', (operations as any[])?.length, 'operazioni recenti');
+  }
   
   // Prepara i dati dei cestelli per il FLUPSY selezionato
   const eligibleBaskets: BasketData[] = ((baskets as any[]) || [])
@@ -295,12 +296,9 @@ export default function SpreadsheetOperations() {
           })[0]
         : null;
       
-      // Debug: mostra quale operazione è stata selezionata
-      console.log(`🏀 CESTA ${basket.physicalNumber}: ${basketOperations.length} operazioni trovate`);
-      if (lastOp) {
-        console.log(`   ✅ Ultima operazione: ID=${lastOp.id}, tipo=${lastOp.type}, data=${lastOp.date}, animali=${lastOp.animalCount}`);
-      } else {
-        console.log(`   ❌ Nessuna operazione trovata`);
+      // Log debug solo se necessario
+      if (basketOperations.length === 0) {
+        console.warn(`⚠️ CESTA ${basket.physicalNumber}: Nessuna operazione trovata`);
       }
       
       return {
@@ -323,8 +321,8 @@ export default function SpreadsheetOperations() {
         const sizesArray = Array.isArray(sizes) ? sizes : [];
         
         // Calcola taglia corrente basandosi sulla logica del modulo Inventory
-        // Usa le stesse operazioni già filtrate per questa cesta
-        const lastOperationWithAnimalsPerKg = basketOperations
+        const basketOperationsForSize = ((operations as any[]) || []).filter((op: any) => op.basketId === basket.id);
+        const lastOperationWithAnimalsPerKg = basketOperationsForSize
           .filter((op: any) => op.animalsPerKg && op.animalsPerKg > 0)
           .sort((a: any, b: any) => {
             // Prima ordina per ID (più recente = ID più alto)
@@ -351,9 +349,10 @@ export default function SpreadsheetOperations() {
         const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
           Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : 0;
         
-        // Debug finale: mostra i valori che verranno usati per inizializzare la riga
-        console.log(`   📊 INIT RIGA ${basket.physicalNumber}: animalCount=${lastOp?.animalCount || 10000}, totalWeight=${lastOp?.totalWeight || 1000}, animalsPerKg=${lastOp?.animalsPerKg || 100}`);
-        console.log(`   📊 TAGLIA: currentSize=${currentSize}, lastOpType=${lastOp?.type}`);
+        // Debug ridotto
+        if (lastOp) {
+          console.log(`✅ CESTA ${basket.physicalNumber}: Ultima op. ${lastOp.type} (${lastOp.animalCount} animali)`);
+        }
         
         return {
           basketId: basket.id,
