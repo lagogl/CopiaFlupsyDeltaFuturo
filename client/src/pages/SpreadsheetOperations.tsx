@@ -489,7 +489,7 @@ export default function SpreadsheetOperations() {
         
         // Debug finale per verifica
         if (lastOp) {
-          console.log(`✅ INIT CESTA ${basket.physicalNumber}: Usando op. ID=${lastOp.id}, tipo=${lastOp.type}, animali=${lastOp.animalCount}`);
+          console.log(`✅ INIT CESTA ${basket.physicalNumber}: Usando op. ID=${(lastOp as any).id}, tipo=${lastOp.type}, animali=${lastOp.animalCount}`);
         } else {
           console.warn(`❌ INIT CESTA ${basket.physicalNumber}: Nessuna operazione trovata - usando valori default`);
         }
@@ -1454,10 +1454,10 @@ export default function SpreadsheetOperations() {
                                 <div className="pt-2 border-t space-y-1">
                                   <h5 className="font-semibold text-xs uppercase tracking-wide text-gray-600">Ciclo Attuale</h5>
                                   <div className="text-xs text-gray-600">
-                                    <div>ID Ciclo: {row.currentCycleId || 'N/A'}</div>
+                                    <div>ID Ciclo: {(row as any).currentCycleId || 'N/A'}</div>
                                     <div>Lotto: L{row.lotId || '1'}</div>
-                                    <div>Ultima operazione: {row.lastOperationDate ? 
-                                      new Date(row.lastOperationDate).toLocaleDateString('it-IT') : 'N/A'}</div>
+                                    <div>Ultima operazione: {(row as any).lastOperationDate ? 
+                                      new Date((row as any).lastOperationDate).toLocaleDateString('it-IT') : 'N/A'}</div>
                                   </div>
                                 </div>
                               </div>
