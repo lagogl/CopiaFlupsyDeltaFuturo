@@ -112,20 +112,50 @@ export default function SpreadsheetOperations() {
 
   // Validazione campi obbligatori per il form popup
   const validateEditingForm = (): boolean => {
-    if (!editingForm) return false;
+    if (!editingForm) {
+      console.log('🚫 VALIDAZIONE: editingForm è null');
+      return false;
+    }
+    
+    console.log('🧮 VALIDAZIONE: Controllo form popup:', editingForm);
     
     // Campi sempre obbligatori
     if (!editingForm.basketId || !editingForm.type || !editingForm.date || !editingForm.lotId) {
+      console.log('🚫 VALIDAZIONE: Campi base mancanti:', {
+        basketId: editingForm.basketId,
+        type: editingForm.type, 
+        date: editingForm.date,
+        lotId: editingForm.lotId
+      });
       return false;
     }
     
     // Validazioni specifiche per tipo operazione
     if (selectedOperationType === 'misura') {
+      console.log('🧮 VALIDAZIONE MISURA: Controllo campi specifici...', {
+        sampleWeight: editingForm.sampleWeight,
+        liveAnimals: editingForm.liveAnimals,
+        deadCount: editingForm.deadCount,
+        totalWeight: editingForm.totalWeight
+      });
+      
       // Per misura: peso campione, animali vivi, morti, peso totale sono obbligatori
-      if (!editingForm.sampleWeight || editingForm.sampleWeight <= 0) return false;
-      if (!editingForm.liveAnimals || editingForm.liveAnimals <= 0) return false;
-      if (editingForm.deadCount === null || editingForm.deadCount === undefined) return false;
-      if (!editingForm.totalWeight || editingForm.totalWeight <= 0) return false;
+      if (!editingForm.sampleWeight || editingForm.sampleWeight <= 0) {
+        console.log('🚫 VALIDAZIONE: sampleWeight non valido:', editingForm.sampleWeight);
+        return false;
+      }
+      if (!editingForm.liveAnimals || editingForm.liveAnimals <= 0) {
+        console.log('🚫 VALIDAZIONE: liveAnimals non valido:', editingForm.liveAnimals);
+        return false;
+      }
+      if (editingForm.deadCount === null || editingForm.deadCount === undefined) {
+        console.log('🚫 VALIDAZIONE: deadCount null/undefined:', editingForm.deadCount);
+        return false;
+      }
+      if (!editingForm.totalWeight || editingForm.totalWeight <= 0) {
+        console.log('🚫 VALIDAZIONE: totalWeight non valido:', editingForm.totalWeight);
+        return false;
+      }
     }
     
     if (selectedOperationType === 'peso') {
@@ -138,6 +168,7 @@ export default function SpreadsheetOperations() {
       if (!editingForm.animalCount || editingForm.animalCount <= 0) return false;
     }
     
+    console.log('✅ VALIDAZIONE: Form popup valido!');
     return true;
   };
 

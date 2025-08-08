@@ -1,0 +1,163 @@
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+🔄 Spreadsheet: Tentativo salvataggio riga basketId: 13
+📋 Spreadsheet: Schema-compliant operation data: 
+Object {basketId: 13, cycleId: 5, type: "misura", date: "2025-08-08", sizeId: 9, …}
+📦 Spreadsheet: Dati operazione preparati: 
+Object {basketId: 13, cycleId: 5, type: "misura", date: "2025-08-08", sizeId: 9, …}
+🔄 Spreadsheet: Inviando operazione con route diretta: 
+Object {basketId: 13, cycleId: 5, type: "misura", date: "2025-08-08", sizeId: 9, …}
+📦 Spreadsheet: Cestello trovato: 
+Object {id: 13, physicalNumber: 13, flupsyId: 2516, cycleCode: "C-5", state: "active", …}
+🔍 Spreadsheet: Tipo operazione: 
+Object {isPrimaAttivazione: false, isVendita: false, type: "misura"}
+📋 Spreadsheet: Stato cestello: 
+Object {isBasketAvailable: false, isBasketActive: true, state: "active"}
+USANDO ROUTE DIRETTA PER OPERAZIONE: 
+Object {basketId: 13, cycleId: 5, type: "misura", date: "2025-08-08", sizeId: 9, …}
+API Request: POST /api/direct-operations
+Ricevuto messaggio WebSocket: 
+Object {type: "operation_created", data: {…}}
+WebSocket trigger: invalidando query per "operation_created" 
+(4) ["/api/operations", "/api/baskets", "/api/cycles/active", "/api/cycles"]
+Query request to: /api/operations
+Query request to: /api/baskets
+🚨 OPERATION LISTENER: Ricevuta notifica operation_created! 
+Object {operation: {…}, message: "Nuova operazione di tipo misura registrata"}
+🚨 INVALIDATING CACHES...
+Query request to: /api/operations
+Query request to: /api/baskets
+Query request to: /api/flupsys
+🚀 UNIFIED: Caricamento dati unificati...
+Query request to: /api/baskets
+Query request to: /api/flupsys
+🚨 CACHE INVALIDATED - Showing toast
+API Response status: 201
+API Response data: {"id":33,"date":"2025-08-08","type":"misura","basketId":13,"cycleId":5,"sizeId":20,"sgrId":null,"lotId":1,"animalCount":5000000,"totalWeight":333333,"animalsPerKg":15000,"averageWeight":66.666664,"deadCount":0,"mortalityRate":null,"notes":null,"metadata":null}
+✅ Spreadsheet: Operazione creata con successo: 
+Object {id: 33, date: "2025-08-08", type: "misura", basketId: 13, cycleId: 5, …}
+✅ Spreadsheet: Success callback - operazione salvata: 
+Object {id: 33, date: "2025-08-08", type: "misura", basketId: 13, cycleId: 5, …}
+Query request to: /api/operations
+Query request to: /api/baskets
+✅ Spreadsheet: Riga salvata con successo
+✅ UNIFIED: Dati caricati 
+Object {operations: 3, fromCache: false}
+Stato iniziale operazioni: 
+(3) [{…}, {…}, {…}]
+Lotti disponibili: 
+Array [{…}]
+Lotto trovato per operazione 33: undefined
+Lotto trovato per operazione 4: undefined
+Lotto trovato per operazione 5: undefined
+Operazione di esempio: 
+Object {id: 4, date: "2025-08-06", type: "prima-attivazione", basketId: 3, cycleId: 4, …}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+Query request to: /api/flupsys
+Query request to: /api/baskets
+Query request to: /api/operations
+Query request to: /api/sizes
+Query request to: /api/lots
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+Taglia calcolata automaticamente: TP-7000 (ID: 24)
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+🔄 Spreadsheet: Inizio salvataggio SOLO nuove operazioni della sessione
+📊 Spreadsheet: Righe totali: 3
+🆕 Spreadsheet: Nuove righe create nella sessione: 1
+✅ Spreadsheet: Nuove righe valide trovate: 1
+📝 Spreadsheet: Nuove righe da salvare (editing e non già salvate): 1
+📋 Spreadsheet: Righe già salvate singolarmente: 
+Array []
+🔄 Spreadsheet: Salvando nuova riga basketId: 13 cestello: 13
+🔄 Spreadsheet: Tentativo salvataggio riga basketId: 13
+📋 Spreadsheet: Schema-compliant operation data: 
+Object {basketId: 13, cycleId: 5, type: "misura", date: "2025-08-08", sizeId: 9, …}
+📦 Spreadsheet: Dati operazione preparati: 
+Object {basketId: 13, cycleId: 5, type: "misura", date: "2025-08-08", sizeId: 9, …}
+🔄 Spreadsheet: Inviando operazione con route diretta: 
+Object {basketId: 13, cycleId: 5, type: "misura", date: "2025-08-08", sizeId: 9, …}
+📦 Spreadsheet: Cestello trovato: 
+Object {id: 13, physicalNumber: 13, flupsyId: 2516, cycleCode: "C-5", state: "active", …}
+🔍 Spreadsheet: Tipo operazione: 
+Object {isPrimaAttivazione: false, isVendita: false, type: "misura"}
+📋 Spreadsheet: Stato cestello: 
+Object {isBasketAvailable: false, isBasketActive: true, state: "active"}
+USANDO ROUTE DIRETTA PER OPERAZIONE: 
+Object {basketId: 13, cycleId: 5, type: "misura", date: "2025-08-08", sizeId: 9, …}
+API Request: POST /api/direct-operations
+Ricevuto messaggio WebSocket: 
+Object {type: "operation_created", data: {…}}
+WebSocket trigger: invalidando query per "operation_created" 
+(4) ["/api/operations", "/api/baskets", "/api/cycles/active", "/api/cycles"]
+Query request to: /api/operations
+Query request to: /api/baskets
+🚨 OPERATION LISTENER: Ricevuta notifica operation_created! 
+Object {operation: {…}, message: "Nuova operazione di tipo misura registrata"}
+🚨 INVALIDATING CACHES...
+Query request to: /api/operations
+Query request to: /api/baskets
+Query request to: /api/flupsys
+🚀 UNIFIED: Caricamento dati unificati...
+Query request to: /api/baskets
+Query request to: /api/flupsys
+🚨 CACHE INVALIDATED - Showing toast
+API Response status: 201
+API Response data: {"id":34,"date":"2025-08-08","type":"misura","basketId":13,"cycleId":5,"sizeId":20,"sgrId":null,"lotId":1,"animalCount":5000000,"totalWeight":333333,"animalsPerKg":15000,"averageWeight":66.666664,"deadCount":0,"mortalityRate":null,"notes":null,"metadata":null}
+✅ Spreadsheet: Operazione creata con successo: 
+Object {id: 34, date: "2025-08-08", type: "misura", basketId: 13, cycleId: 5, …}
+✅ Spreadsheet: Success callback - operazione salvata: 
+Object {id: 34, date: "2025-08-08", type: "misura", basketId: 13, cycleId: 5, …}
+Query request to: /api/operations
+Query request to: /api/baskets
+✅ Spreadsheet: Riga salvata con successo
+✅ Spreadsheet: Salvataggio di tutte le nuove operazioni completato
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+✅ UNIFIED: Dati caricati 
+Object {operations: 4, fromCache: false}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+API Request: GET /api/notifications?unreadOnly=true
+API Response status: 200
+API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+🔄 Spreadsheet: Inizio salvataggio SOLO nuove operazioni della sessione
+📊 Spreadsheet: Righe totali: 3
+🆕 Spreadsheet: Nuove righe create nella sessione: 1
+✅ Spreadsheet: Nuove righe valide trovate: 1
+📝 Spreadsheet: Nuove righe da salvare (editing e non già salvate): 0
+
