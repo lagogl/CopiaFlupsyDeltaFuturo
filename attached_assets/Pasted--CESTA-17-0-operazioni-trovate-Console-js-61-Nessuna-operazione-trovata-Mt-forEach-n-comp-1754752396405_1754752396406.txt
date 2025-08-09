@@ -1,0 +1,106 @@
+🏀 CESTA 17: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 18: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 19: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 20: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🔄 RIGHE: Ricalcolo per FLUPSY=2516, baskets=20, ops=0
+Console.js:61 🔍 DEBUG BASKETS: Tutti i cestelli disponibili: Array(20)
+Console.js:61 🔍 DEBUG FILTRO: Cerco cestelli con flupsyId=2516, state=active OR available
+Console.js:61 🔍 DEBUG RESULT: Trovati 20 cestelli dopo filtro
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: [{"id":41,"date":"2025-08-08","type":"misura","basketId":13,"cycleId":5,"sizeId":22,"sgrId":null,"lotId":1,"animalCount":90000,"totalWeight":18000,"animalsPerKg":5000,"averageWeight":200,"deadCount":2,"mortalityRate":3.85,"notes":null,"metadata":null,"basket":{"id":13,"physicalNumber":13,"flupsyId":2516,"cycleCode":"C-5","state":"active","currentCycleId":5,"nfcData":null,"row":"SX","position":3},"cycle":{"id":5,"basketId":13,"startDate":"2025-08-06","endDate":null,"state":"active"},"size":{"id":22,"code":"TP-5000","name":"TP-5000","sizeMm":null,"minAnimalsPerKg":3901,"maxAnimalsPerKg":7500,"notes":"","color":"#bfdbfe"},"sgr":null,"lot":{"id":1,"arrivalDate":"2025-08-06","supplier":"Fornitore di prova","supplierLotNumber":"1245LH","quality":"normali","animalCount":1500000,"weight":10000,"sizeId":13,"notes":"Noto opzionali","state":"active","active":true,"externalId":null,"description":null,"origin":null,"createdAt":"2025-08-06T15:53:43.180Z"},"hasMultipleLots":false},{"id":42,"date":"2025-08-09","type":"misura","basketId":13,"cycleId":5,"sizeId":24,"sgrId":null,"lotId":1,"animalCount":59800,"totalWeight":23000,"animalsPerKg":2600,"averageWeight":384.6154,"deadCount":2,"mortalityRate":7.14,"notes":null,"metadata":null,"basket":{"id":13,"physicalNumber":13,"flupsyId":2516,"cycleCode":"C-5","state":"active","currentCycleId":5,"nfcData":null,"row":"SX","position":3},"cycle":{"id":5,"basketId":13,"startDate":"2025-08-06","endDate":null,"state":"active"},"size":{"id":24,"code":"TP-7000","name":"TP-7000","sizeMm":null,"minAnimalsPerKg":2301,"maxAnimalsPerKg":3000,"notes":"","color":"#bbf7d0"},"sgr":null,"lot":{"id":1,"arrivalDate":"2025-08-06","supplier":"Fornitore di prova","supplierLotNumber":"1245LH","quality":"normali","animalCount":1500000,"weight":10000,"sizeId":13,"notes":"Noto opzionali","state":"active","active":true,"externalId":null,"description":null,"origin":null,"createdAt":"2025-08-06T15:53:43.180Z"},"hasMultipleLots":false},{"id":43,"date":"2025-08-08","type":"misura","basketId":3,"cycleId":4,"sizeId":27,"sgrId":null,"lotId":1,"animalCount":30002,"totalWeight":25003,"animalsPerKg":1200,"averageWeight":833.3333,"deadCount":2,"mortalityRate":14.29,"notes":null,"metadata":null,"basket":{"id":3,"physicalNumber":3,"flupsyId":2516,"cycleCode":"C-4","state":"active","currentCycleId":4,"nfcData":null,"row":"DX","position":3},"cycle":{"id":4,"basketId":3,"startDate":"2025-08-06","endDate":null,"state":"active"},"size":{"id":27,"code":"TP-10000","name":"TP-10000","sizeMm":null,"minAnimalsPerKg":801,"maxAnimalsPerKg":1200,"notes":"","color":"#fecaca"},"sgr":null,"lot":{"id":1,"arrivalDate":"2025-08-06","supplier":"Fornitore di prova","supplierLotNumber":"1245LH","quality":"normali","animalCount":1500000,"weight":10000,"sizeId":13,"notes":"Noto opzionali","state":"active","active":true,"externalId":null,"description":null,"origin":null,"createdAt":"2025-08-06T15:53:43.180Z"},"hasMultipleLots":false},{"id":4,"date":"2025-08-06","type":"prima-attivazione","basketId":3,"cycleId":4,"sizeId":20,"sgrId":null,"lotId":1,"animalCount":225000,"totalWeight":15000,"animalsPerKg":15000,"averageWeight":66.666664,"deadCount":10,"mortalityRate":6.25,"notes":null,"metadata":null,"basket":{"id":3,"physicalNumber":3,"flupsyId":2516,"cycleCode":"C-4","state":"active","currentCycleId":4,"nfcData":null,"row":"DX","position":3},"cycle":{"id":4,"basketId":3,"startDate":"2025-08-06","endDate":null,"state":"active"},"size":{"id":20,"code":"TP-3500","name":"TP-3500","sizeMm":null,"minAnimalsPerKg":12501,"maxAnimalsPerKg":19000,"notes":"","color":"#f9a8d4"},"sgr":null,"lot":{"id":1,"arrivalDate":"2025-08-06","supplier":"Fornitore di prova","supplierLotNumber":"1245LH","quality":"normali","animalCount":1500000,"weight":10000,"sizeId":13,"notes":"Noto opzionali","state":"active","active":true,"externalId":null,"description":null,"origin":null,"createdAt":"2025-08-06T15:53:43.180Z"},"hasMultipleLots":false},{"id":5,"date":"2025-08-06","type":"prima-attivazione","basketId":13,"cycleId":5,"sizeId":20,"sgrId":null,"lotId":1,"animalCount":5000000,"totalWeight":333333,"animalsPerKg":15000,"averageWeight":66.666664,"deadCount":0,"mortalityRate":10,"notes":null,"metadata":null,"basket":{"id":13,"physicalNumber":13,"flupsyId":2516,"cycleCode":"C-5","state":"active","currentCycleId":5,"nfcData":null,"row":"SX","position":3},"cycle":{"id":5,"basketId":13,"startDate":"2025-08-06","endDate":null,"state":"active"},"size":{"id":20,"code":"TP-3500","name":"TP-3500","sizeMm":null,"minAnimalsPerKg":12501,"maxAnimalsPerKg":19000,"notes":"","color":"#f9a8d4"},"sgr":null,"lot":{"id":1,"arrivalDate":"2025-08-06","supplier":"Fornitore di prova","supplierLotNumber":"1245LH","quality":"normali","animalCount":1500000,"weight":10000,"sizeId":13,"notes":"Noto opzionali","state":"active","active":true,"externalId":null,"description":null,"origin":null,"createdAt":"2025-08-06T15:53:43.180Z"},"hasMultipleLots":false}]
+Console.js:61 ✅ SPREADSHEET: Caricate 5 operazioni totali
+Console.js:61 🔍 CESTA 13 - Operazioni trovate: Array(3)
+Console.js:61 🔍 CESTA 13 - Operazione più recente selezionata: Object
+Console.js:61 🏀 CESTA 1: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 2: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 3: 2 operazioni trovate
+Console.js:61    📋 Operazioni: ID=43(misura), ID=4(prima-attivazione)
+Console.js:61    ✅ Selezionata: ID=43, tipo=misura, animali=30002
+Console.js:61 🏀 CESTA 4: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 5: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 6: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 7: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 8: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 9: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 10: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 11: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 12: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 13: 3 operazioni trovate
+Console.js:61    📋 Operazioni: ID=42(misura), ID=41(misura), ID=5(prima-attivazione)
+Console.js:61    ✅ Selezionata: ID=42, tipo=misura, animali=59800
+Console.js:61 🏀 CESTA 14: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 15: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 16: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 17: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 18: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 19: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🏀 CESTA 20: 0 operazioni trovate
+Console.js:61     ⚠️ Nessuna operazione trovata
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 🔄 RIGHE: Ricalcolo per FLUPSY=2516, baskets=20, ops=5
+Console.js:61 🔍 DEBUG BASKETS: Tutti i cestelli disponibili: Array(20)
+Console.js:61 🔍 DEBUG FILTRO: Cerco cestelli con flupsyId=2516, state=active OR available
+Console.js:61 🔍 DEBUG RESULT: Trovati 20 cestelli dopo filtro
+Console.js:61  ❌ INIT CESTA 1: Nessuna operazione trovata - usando valori default
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61  ❌ INIT CESTA 2: Nessuna operazione trovata - usando valori default
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61 ✅ INIT CESTA 3: Usando op. ID=43, tipo=misura, animali=30002
+Console.js:61    📊 Dati calcolati: currentSize=TP-10000, averageWeight=0.83, taglia operazione=TP-10000
+Console.js:61  ❌ INIT CESTA 4: Nessuna operazione trovata - usando valori default
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61  ❌ INIT CESTA 5: Nessuna operazione trovata - usando valori default
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61  ❌ INIT CESTA 6: Nessuna operazione trovata - usando valori default
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61  ❌ INIT CESTA 7: Nessuna operazione trovata - usando valori default
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61  ❌ INIT CESTA 8: Nessuna operazione trovata - usando valori default
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61  ❌ INIT CESTA 9: Nessuna operazione trovata - usando valori default
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61  ❌ INIT CESTA 10: Nessuna operazione trovata - usando valori default
+Mt.forEach.n.<computed> @ Console.js:61
+Console.js:61  ❌

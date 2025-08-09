@@ -265,11 +265,12 @@ export default function Operations() {
 
   // Log filter changes for debugging
   React.useEffect(() => {
-    console.log('🔍 FILTER CHANGE:', { 
+    console.log('🚀 FILTER CHANGE DEBUG v2:', { 
       flupsyFilter: filters.flupsyFilter,
       cycleStateFilter: filters.cycleStateFilter,
       basketsCount: baskets?.length,
-      cyclesCount: cycles?.length
+      cyclesCount: cycles?.length,
+      timestamp: new Date().toISOString()
     });
   }, [filters.flupsyFilter, filters.cycleStateFilter, baskets, cycles]);
   

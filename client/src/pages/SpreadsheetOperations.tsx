@@ -495,6 +495,13 @@ export default function SpreadsheetOperations() {
     console.log(`🔍 DEBUG FILTRO: Cerco cestelli con flupsyId=${selectedFlupsyId}, state=active OR available`);
     console.log(`🔍 DEBUG RESULT: Trovati ${eligibleBaskets.length} cestelli dopo filtro`);
     
+    // If no eligible baskets found, clear the rows immediately
+    if (selectedFlupsyId && eligibleBaskets.length === 0) {
+      console.log(`🚫 SPREADSHEET: FLUPSY ${selectedFlupsyId} has no baskets, clearing rows`);
+      setOperationRows([]);
+      return;
+    }
+    
     if (selectedFlupsyId && selectedOperationType && eligibleBaskets.length > 0 && operations && Array.isArray(operations)) {
       const newRows: OperationRowData[] = eligibleBaskets.map(basket => {
         const lastOp = basket.lastOperation;
