@@ -77,6 +77,10 @@ export default function SpreadsheetOperations() {
   const [operationRows, setOperationRows] = useState<OperationRowData[]>([]);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
   
+  // Stati per previsioni di crescita
+  const [targetSizeId, setTargetSizeId] = useState<number | null>(null);
+  const [targetWeeks, setTargetWeeks] = useState<number>(4);
+  
   // Stati per sistema Undo e salvataggio singolo
   const [originalRows, setOriginalRows] = useState<OperationRowData[]>([]);  // Backup per Undo
   const [savedRows, setSavedRows] = useState<Set<number>>(new Set());       // IDs righe già salvate
@@ -305,6 +309,11 @@ export default function SpreadsheetOperations() {
 
   const { data: lots } = useQuery({
     queryKey: ['/api/lots'],
+  });
+
+  // Query per dati SGR per calcoli previsioni
+  const { data: sgrData } = useQuery({
+    queryKey: ['/api/sgr'],
   });
 
   // Mutation per salvare operazioni - USA LA STESSA LOGICA DEL MODULO OPERATIONS STANDARD
@@ -578,6 +587,101 @@ export default function SpreadsheetOperations() {
     score += ageScore * 0.1;
 
     return Math.round(score * 100) / 100; // Arrotonda a 2 decimali
+  };
+
+  // **CALCOLO PREVISIONI DI CRESCITA**
+  const calculateGrowthPrediction = (basketId: number, targetSizeId: number, weeks: number): {
+    willReachTarget: boolean;
+    daysToTarget?: number;
+    projectedAnimalsPerKg?: number;
+    currentAnimalsPerKg?: number;
+  } => {
+    if (!targetSizeId || !weeks || !sgrData) {
+      return { willReachTarget: false };
+    }
+
+    // Trova operazione più recente della cesta
+    const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === basketId);
+    if (basketOperations.length === 0) {
+      return { willReachTarget: false };
+    }
+
+    // Ordina per data e prendi la più recente
+    const sortedOps = basketOperations.sort((a: any, b: any) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    const lastOp = sortedOps[0];
+
+    if (!lastOp.animalsPerKg || !lastOp.totalWeight || !lastOp.animalCount) {
+      return { willReachTarget: false };
+    }
+
+    // Trova taglia target
+    const targetSize = ((sizes as any[]) || []).find((s: any) => s.id === targetSizeId);
+    if (!targetSize) {
+      return { willReachTarget: false };
+    }
+
+    // Calcola SGR da usare (usa il primo disponibile per ora)
+    const sgrValue = ((sgrData as any[]) || [])[0]?.percentage || 2.0; // Default 2% mensile
+    const dailySgrRate = sgrValue / 30; // Converte da mensile a giornaliero
+
+    // Calcolo proiezione crescita
+    const currentWeight = lastOp.totalWeight / lastOp.animalCount; // Peso medio attuale per animale (in grammi)
+    const currentAnimalsPerKg = lastOp.animalsPerKg;
+    const targetMaxAnimalsPerKg = targetSize.maxAnimalsPerKg;
+
+    // Simula crescita giornaliera per trovare quando raggiungerà la taglia target
+    let projectedWeight = currentWeight;
+    let projectedAnimalsPerKg = currentAnimalsPerKg;
+    let daysProjected = 0;
+    const maxDays = weeks * 7;
+
+    while (daysProjected < maxDays) {
+      daysProjected++;
+      
+      // Applica crescita giornaliera: peso cresce del SGR%
+      projectedWeight = projectedWeight * (1 + dailySgrRate / 100);
+      
+      // Calcola nuovi animali/kg: quando peso aumenta, animali/kg diminuisce
+      projectedAnimalsPerKg = Math.round(1000 / projectedWeight);
+      
+      // Verifica se ha raggiunto la taglia target
+      if (projectedAnimalsPerKg <= targetMaxAnimalsPerKg) {
+        return {
+          willReachTarget: true,
+          daysToTarget: daysProjected,
+          projectedAnimalsPerKg,
+          currentAnimalsPerKg
+        };
+      }
+    }
+
+    return {
+      willReachTarget: false,
+      projectedAnimalsPerKg,
+      currentAnimalsPerKg
+    };
+  };
+
+  // Calcola animali totali che raggiungeranno il target
+  const calculateTargetTotals = (): { totalAnimals: number; basketCount: number } => {
+    if (!targetSizeId || !targetWeeks) {
+      return { totalAnimals: 0, basketCount: 0 };
+    }
+
+    let totalAnimals = 0;
+    let basketCount = 0;
+
+    operationRows.forEach(row => {
+      const prediction = calculateGrowthPrediction(row.basketId, targetSizeId, targetWeeks);
+      if (prediction.willReachTarget) {
+        totalAnimals += row.animalCount || 0;
+        basketCount++;
+      }
+    });
+
+    return { totalAnimals, basketCount };
   };
 
   // Aggiorna una singola cella
@@ -1289,6 +1393,64 @@ export default function SpreadsheetOperations() {
         </div>
       </div>
 
+      {/* Controlli Previsioni di Crescita */}
+      {selectedFlupsyId && (
+        <div className="bg-gradient-to-r from-purple-50 to-indigo-50 border border-purple-200 rounded-lg p-3 shadow-sm">
+          <div className="flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-purple-700">📈 Previsioni Crescita</span>
+            </div>
+            
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Taglia Target</label>
+              <Select value={targetSizeId?.toString() || ""} onValueChange={(value) => setTargetSizeId(Number(value))}>
+                <SelectTrigger className="w-32 h-8 text-xs">
+                  <SelectValue placeholder="Seleziona taglia" />
+                </SelectTrigger>
+                <SelectContent>
+                  {((sizes as any[]) || []).map((size: any) => (
+                    <SelectItem key={size.id} value={size.id.toString()}>
+                      {size.code}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="flex items-center gap-2">
+              <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Settimane</label>
+              <input
+                type="number"
+                min="1"
+                max="12"
+                value={targetWeeks}
+                onChange={(e) => setTargetWeeks(Number(e.target.value))}
+                className="w-16 h-8 px-2 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-400 text-center"
+              />
+            </div>
+
+            {/* Totalizzatore */}
+            {targetSizeId && targetWeeks > 0 && (
+              <div className="ml-auto flex items-center gap-4 bg-white rounded-lg px-3 py-2 border border-purple-200">
+                <div className="text-xs text-gray-600">
+                  Raggiungeranno <span className="font-medium text-purple-700">
+                    {((sizes as any[]) || []).find((s: any) => s.id === targetSizeId)?.code}
+                  </span> in {targetWeeks} settimane:
+                </div>
+                <div className="flex items-center gap-3">
+                  <div className="text-sm font-bold text-purple-700">
+                    {calculateTargetTotals().totalAnimals.toLocaleString()} animali
+                  </div>
+                  <div className="text-xs text-gray-500">
+                    ({calculateTargetTotals().basketCount} ceste)
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Tabella spreadsheet compatta */}
       {selectedFlupsyId && operationRows.length > 0 && (
         <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
@@ -1347,7 +1509,13 @@ export default function SpreadsheetOperations() {
                 </div>
 
               {/* Righe dati compatte */}
-              {operationRows.map((row, index) => (
+              {operationRows.map((row, index) => {
+                // Calcola previsione di crescita per questa cesta
+                const growthPrediction = targetSizeId && targetWeeks ? 
+                  calculateGrowthPrediction(row.basketId, targetSizeId, targetWeeks) : 
+                  { willReachTarget: false };
+
+                return (
                 <div key={`${row.basketId}-${index}-${(row as any).isNewRow ? 'new' : 'orig'}`} className="contents">
                   <div
                     onMouseEnter={() => setHoveredBasketGroup(row.basketId)}
@@ -1360,6 +1528,8 @@ export default function SpreadsheetOperations() {
                       getAssociatedRows(row.basketId).length > 1 ? 'bg-blue-50/20' : ''
                     } ${
                       hoveredBasketGroup === row.basketId ? 'bg-blue-100/40' : ''
+                    } ${
+                      growthPrediction.willReachTarget ? 'bg-gradient-to-r from-purple-50 to-purple-100 border-l-4 border-l-purple-500' : ''
                     }`}
                   >
                     {/* Indicatore laterale colorato per operazioni associate */}
@@ -1404,9 +1574,21 @@ export default function SpreadsheetOperations() {
                           const color = perfScore >= 80 ? 'text-green-600' : 
                                        perfScore >= 60 ? 'text-yellow-600' : 
                                        perfScore >= 40 ? 'text-orange-600' : 'text-red-600';
+                          
+                          // Informazioni previsione crescita per tooltip
+                          const predictionInfo = targetSizeId && targetWeeks ? 
+                            calculateGrowthPrediction(row.basketId, targetSizeId, targetWeeks) : null;
+                          
+                          let tooltipText = `Performance: ${perfScore.toFixed(1)}/100`;
+                          if (predictionInfo && predictionInfo.willReachTarget) {
+                            const targetSizeName = ((sizes as any[]) || []).find((s: any) => s.id === targetSizeId)?.code || 'Target';
+                            tooltipText += `\n📈 Raggiungerà ${targetSizeName} in ${predictionInfo.daysToTarget} giorni`;
+                          }
+                          
                           return (
-                            <span className={`text-xs font-bold ${color}`} title={`Performance: ${perfScore.toFixed(1)}/100`}>
+                            <span className={`text-xs font-bold ${color} ${predictionInfo?.willReachTarget ? 'animate-pulse' : ''}`} title={tooltipText}>
                               {perfScore >= 80 ? '🏆' : perfScore >= 60 ? '⭐' : perfScore >= 40 ? '⚠️' : '🔴'}
+                              {predictionInfo?.willReachTarget && <span className="ml-0.5 text-purple-600">📈</span>}
                             </span>
                           );
                         })()}
@@ -1814,7 +1996,8 @@ export default function SpreadsheetOperations() {
                     </div>
                   )}
                 </div>
-              ))}
+                );
+              })}
               </div>
             </ScrollArea>
           </div>

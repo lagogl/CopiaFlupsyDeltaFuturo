@@ -906,6 +906,10 @@ export class DbStorage implements IStorage {
     return await db.select().from(sizes);
   }
 
+  async getAllSgr(): Promise<Sgr[]> {
+    return await db.select().from(sgr).orderBy(sgr.month);
+  }
+
   async getSize(id: number): Promise<Size | undefined> {
     const results = await db.select().from(sizes).where(eq(sizes.id, id));
     return results[0];

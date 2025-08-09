@@ -2672,6 +2672,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
   
+  // API - Ottieni dati SGR per calcoli previsioni crescita
+  app.get("/api/sgr", async (req, res) => {
+    try {
+      const sgrData = await storage.getAllSgr();
+      return res.status(200).json(sgrData);
+    } catch (error) {
+      console.error('Errore nel recupero dei dati SGR:', error);
+      return res.status(500).json({ 
+        error: 'Errore nel recupero dei dati SGR',
+        message: error instanceof Error ? error.message : 'Errore sconosciuto'
+      });
+    }
+  });
+  
   // API - Ottieni giacenza alla data (totale fino al giorno precedente alla data richiesta)
   app.get("/api/diario/giacenza", async (req, res) => {
     try {

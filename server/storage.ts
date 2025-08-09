@@ -116,6 +116,7 @@ export interface IStorage {
   // Size methods
   getSizes(): Promise<Size[]>;
   getAllSizes(): Promise<Size[]>; // Added this method for FLUPSY units view
+  getAllSgr(): Promise<Sgr[]>; // Added this method for growth predictions
   getSize(id: number): Promise<Size | undefined>;
   getSizeByCode(code: string): Promise<Size | undefined>;
   createSize(size: InsertSize): Promise<Size>;
@@ -920,6 +921,11 @@ export class MemStorage implements IStorage {
   async getAllSizes(): Promise<Size[]> {
     // Added this method to support FLUPSY units view with main sizes data
     return Array.from(this.sizes.values());
+  }
+  
+  async getAllSgr(): Promise<Sgr[]> {
+    // Added this method to support growth predictions calculations
+    return Array.from(this.sgrs.values());
   }
   
   async getSize(id: number): Promise<Size | undefined> {
