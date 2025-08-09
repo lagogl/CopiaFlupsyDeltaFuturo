@@ -540,7 +540,9 @@ export default function SpreadsheetOperations() {
           : ((lastOp as any)?.size?.code || 'N/A');
         
         const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
-          Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : ((lastOp as any)?.averageWeight || 0);
+          Math.round((lastOp.totalWeight / lastOp.animalCount) * 1000) / 1000 : ((lastOp as any)?.averageWeight || 0);
+        
+        console.log(`📊 INIT CESTA ${basketPhysicalNumber}: Calcolo peso medio = ${lastOp?.totalWeight}g ÷ ${lastOp?.animalCount} = ${averageWeight}g`);
         
         // Debug finale per verifica
         if (lastOp) {
@@ -856,7 +858,7 @@ export default function SpreadsheetOperations() {
       if (animalCount > 0 && totalWeight > 0) {
         // Calcola peso medio: peso_totale ÷ numero_animali
         const averageWeight = totalWeight / animalCount;
-        newRow.averageWeight = Math.round(averageWeight * 100) / 100;
+        newRow.averageWeight = Math.round(averageWeight * 1000) / 1000;
         
         // Calcola animali/kg: 1000 ÷ peso_medio
         const animalsPerKgValue = Math.round(1000 / averageWeight);
