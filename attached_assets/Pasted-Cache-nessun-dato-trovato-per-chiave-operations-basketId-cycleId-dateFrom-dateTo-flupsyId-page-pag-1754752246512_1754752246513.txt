@@ -1,0 +1,41 @@
+Cache: nessun dato trovato per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_1000_undefined"
+Server: Richiesta FLUPSY con includeStats = false
+3:10:08 PM [express] GET /api/flupsys 304 in 216ms :: [{"id":570,"name":"Flupsy 2 piccolo 10 ceste",…
+Server: Richiesta FLUPSY con includeStats = false
+3:10:08 PM [express] GET /api/flupsys 304 in 218ms :: [{"id":570,"name":"Flupsy 2 piccolo 10 ceste",…
+3:10:08 PM [express] GET /api/sizes 304 in 225ms :: [{"id":27,"code":"TP-10000","name":"TP-10000","m…
+Cache: dati salvati con chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_1000_undefined", scadenza infinita (solo WebSocket invalidation)
+Query operazioni completata in 654ms: 5 risultati su 5 totali
+Operazioni recuperate in 655ms (ottimizzato)
+3:10:08 PM [express] GET /api/operations 200 in 655ms :: [{"id":42,"date":"2025-08-09","type":"misur…
+Utilizzo implementazione ottimizzata per i cestelli
+Cache cestelli: nessun dato trovato per chiave "baskets_cycleId_flupsyId_includeAll_includeEmpty_page_pageSize_sortBy_sortOrder_state_undefined_undefined_false_false_1_50_id_asc_undefined"
+🔄 CESTELLI: Cache MISS - query database necessaria
+Richiesta cestelli ottimizzata con opzioni: {
+  page: 1,
+  pageSize: 50,
+  state: undefined,
+  flupsyId: undefined,
+  cycleId: undefined,
+  includeEmpty: false,
+  sortBy: 'id',
+  sortOrder: 'asc',
+  includeAll: false
+}
+🚀 LOTTI: Cache HIT - recuperati in 0ms
+Utilizzo implementazione originale per le operazioni (legacy)
+3:10:11 PM [express] GET /api/sgr 304 in 225ms :: [{"id":8,"month":"agosto","percentage":8.3,"calcul…
+3:10:11 PM [express] GET /api/lots 304 in 430ms :: [{"id":1,"arrivalDate":"2025-08-06","supplier":"F…
+3:10:12 PM [express] GET /api/size-predictions 200 in 4030ms :: [{"id":-1754752212373,"basketId":3,"…
+[SLOW API] GET /api/size-predictions?size=TP-3000&days=14 - 4030ms
+Cache cestelli: dati salvati con chiave "baskets_cycleId_flupsyId_includeAll_includeEmpty_page_pageSize_sortBy_sortOrder_state_undefined_undefined_false_false_1_50_id_asc_undefined", scadenza in 600 secondi
+🚀 CESTELLI: Cache SAVED (20 cestelli) - WebSocket sync attivo
+Query cestelli completata in 1554ms: 20 risultati su 20 totali
+Risposta API paginata: pagina 1/1, 20 elementi su 20 totali
+Cestelli recuperati in 1555ms (ottimizzato)
+3:10:12 PM [express] GET /api/baskets 200 in 1555ms :: [{"id":1,"physicalNumber":1,"flupsyId":2516,"…
+[SLOW API] GET /api/baskets - 1556ms
+3:10:15 PM [express] GET /api/operations 304 in 3831ms :: [{"id":41,"date":"2025-08-08","type":"misu…
+[SLOW API] GET /api/operations?pageSize=50000&sortBy=id&sortOrder=desc&force_refresh=true&original=true - 3831ms
+Cache notifiche: dati recuperati dalla cache per chiave "notifications_page_1_pageSize_20_type_null_unreadOnly_true"
+3:10:35 PM [express] GET /api/notifications 304 in 0ms :: {"success":true,"notifications":[],"pagina…
