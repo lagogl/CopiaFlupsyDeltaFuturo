@@ -79,7 +79,12 @@ export default function SpreadsheetOperations() {
   
   // Stati per previsioni di crescita
   const [targetSizeId, setTargetSizeId] = useState<number | null>(null);
-  const [targetWeeks, setTargetWeeks] = useState<number>(4);
+  const [targetDate, setTargetDate] = useState<string>(() => {
+    // Imposta di default 4 settimane da oggi
+    const date = new Date();
+    date.setDate(date.getDate() + 28); // 4 settimane = 28 giorni
+    return date.toISOString().split('T')[0];
+  });
   
   // Stati per sistema Undo e salvataggio singolo
   const [originalRows, setOriginalRows] = useState<OperationRowData[]>([]);  // Backup per Undo
@@ -562,15 +567,24 @@ export default function SpreadsheetOperations() {
     return Math.round(score * 100) / 100; // Arrotonda a 2 decimali
   };
 
-  // **CALCOLO PREVISIONI DI CRESCITA**
-  const calculateGrowthPrediction = (basketId: number, targetSizeId: number, weeks: number): {
+  // **CALCOLO PREVISIONI DI CRESCITA CON DATA TARGET**
+  const calculateGrowthPrediction = (basketId: number, targetSizeId: number, targetDate: string): {
     willReachTarget: boolean;
     daysToTarget?: number;
     projectedAnimalsPerKg?: number;
     currentAnimalsPerKg?: number;
   } => {
-    if (!targetSizeId || !weeks || !sgrData) {
+    if (!targetSizeId || !targetDate || !sgrData) {
       return { willReachTarget: false };
+    }
+
+    // Calcola giorni disponibili dalla data odierna alla data target
+    const today = new Date();
+    const target = new Date(targetDate);
+    const daysAvailable = Math.floor((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    
+    if (daysAvailable <= 0) {
+      return { willReachTarget: false }; // Data target nel passato
     }
 
     // Trova operazione più recente della cesta
@@ -591,7 +605,7 @@ export default function SpreadsheetOperations() {
 
     // Trova taglia target
     const targetSize = ((sizes as any[]) || []).find((s: any) => s.id === targetSizeId);
-    if (!targetSize) {
+    if (!targetSize || !targetSize.minAnimalsPerKg) {
       return { willReachTarget: false };
     }
 
@@ -602,15 +616,24 @@ export default function SpreadsheetOperations() {
     // Calcolo proiezione crescita
     const currentWeight = lastOp.totalWeight / lastOp.animalCount; // Peso medio attuale per animale (in grammi)
     const currentAnimalsPerKg = lastOp.animalsPerKg;
-    const targetMaxAnimalsPerKg = targetSize.maxAnimalsPerKg;
+    const targetMinAnimalsPerKg = targetSize.minAnimalsPerKg; // USA MIN_ANIMALS_PER_KG come riferimento
+
+    // Verifica se ha già raggiunto la taglia target
+    if (currentAnimalsPerKg <= targetMinAnimalsPerKg) {
+      return {
+        willReachTarget: true,
+        daysToTarget: 0,
+        projectedAnimalsPerKg: currentAnimalsPerKg,
+        currentAnimalsPerKg
+      };
+    }
 
     // Simula crescita giornaliera per trovare quando raggiungerà la taglia target
     let projectedWeight = currentWeight;
     let projectedAnimalsPerKg = currentAnimalsPerKg;
     let daysProjected = 0;
-    const maxDays = weeks * 7;
 
-    while (daysProjected < maxDays) {
+    while (daysProjected < daysAvailable) {
       daysProjected++;
       
       // Applica crescita giornaliera: peso cresce del SGR%
@@ -619,8 +642,8 @@ export default function SpreadsheetOperations() {
       // Calcola nuovi animali/kg: quando peso aumenta, animali/kg diminuisce
       projectedAnimalsPerKg = Math.round(1000 / projectedWeight);
       
-      // Verifica se ha raggiunto la taglia target
-      if (projectedAnimalsPerKg <= targetMaxAnimalsPerKg) {
+      // Verifica se ha raggiunto la taglia target (usa minAnimalsPerKg)
+      if (projectedAnimalsPerKg <= targetMinAnimalsPerKg) {
         return {
           willReachTarget: true,
           daysToTarget: daysProjected,
@@ -630,8 +653,11 @@ export default function SpreadsheetOperations() {
       }
     }
 
+    // Alla data target, verifica se avrà raggiunto la taglia
+    const willReachByTargetDate = projectedAnimalsPerKg <= targetMinAnimalsPerKg;
+
     return {
-      willReachTarget: false,
+      willReachTarget: willReachByTargetDate,
       projectedAnimalsPerKg,
       currentAnimalsPerKg
     };
@@ -639,7 +665,7 @@ export default function SpreadsheetOperations() {
 
   // Calcola animali totali che raggiungeranno il target
   const calculateTargetTotals = (): { totalAnimals: number; basketCount: number } => {
-    if (!targetSizeId || !targetWeeks) {
+    if (!targetSizeId || !targetDate) {
       return { totalAnimals: 0, basketCount: 0 };
     }
 
@@ -647,7 +673,7 @@ export default function SpreadsheetOperations() {
     let basketCount = 0;
 
     operationRows.forEach(row => {
-      const prediction = calculateGrowthPrediction(row.basketId, targetSizeId, targetWeeks);
+      const prediction = calculateGrowthPrediction(row.basketId, targetSizeId, targetDate);
       if (prediction.willReachTarget) {
         totalAnimals += row.animalCount || 0;
         basketCount++;
@@ -1393,24 +1419,23 @@ export default function SpreadsheetOperations() {
             </div>
 
             <div className="flex items-center gap-2">
-              <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Settimane</label>
+              <label className="text-xs font-medium text-gray-600 whitespace-nowrap">Data Target</label>
               <input
-                type="number"
-                min="1"
-                max="12"
-                value={targetWeeks}
-                onChange={(e) => setTargetWeeks(Number(e.target.value))}
-                className="w-16 h-8 px-2 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-400 text-center"
+                type="date"
+                value={targetDate}
+                onChange={(e) => setTargetDate(e.target.value)}
+                min={new Date().toISOString().split('T')[0]} // Non permette date passate
+                className="w-32 h-8 px-2 text-xs border border-gray-300 rounded focus:outline-none focus:ring-1 focus:ring-purple-400"
               />
             </div>
 
             {/* Totalizzatore */}
-            {targetSizeId && targetWeeks > 0 && (
+            {targetSizeId && targetDate && (
               <div className="ml-auto flex items-center gap-4 bg-white rounded-lg px-3 py-2 border border-purple-200">
                 <div className="text-xs text-gray-600">
                   Raggiungeranno <span className="font-medium text-purple-700">
                     {((sizes as any[]) || []).find((s: any) => s.id === targetSizeId)?.code}
-                  </span> in {targetWeeks} settimane:
+                  </span> entro il {new Date(targetDate).toLocaleDateString('it-IT')}:
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-sm font-bold text-purple-700">
@@ -1486,8 +1511,8 @@ export default function SpreadsheetOperations() {
               {/* Righe dati compatte */}
               {operationRows.map((row, index) => {
                 // Calcola previsione di crescita per questa cesta
-                const growthPrediction = targetSizeId && targetWeeks ? 
-                  calculateGrowthPrediction(row.basketId, targetSizeId, targetWeeks) : 
+                const growthPrediction = targetSizeId && targetDate ? 
+                  calculateGrowthPrediction(row.basketId, targetSizeId, targetDate) : 
                   { willReachTarget: false };
 
                 return (

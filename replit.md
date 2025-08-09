@@ -28,6 +28,16 @@ Preferred communication style: Simple, everyday language.
 - **Implementation**: Conditional rendering for display-only fields showing formatted numbers while preserving editable input fields
 - **Result**: Enhanced readability for large numbers while maintaining functionality
 
+### Date-based Growth Predictions with Min Animals Per Kg Reference
+- **Issue**: User requested to replace weeks field with target date in growth predictions, using min_animals_per_kg as reference value
+- **Solution**: Replaced weeks input with date picker, updated calculation logic to use target date and min_animals_per_kg as threshold
+- **Implementation**: 
+  - Changed `targetWeeks` state to `targetDate` with default 4 weeks from current date
+  - Updated `calculateGrowthPrediction()` to calculate days between current date and target date
+  - Modified logic to use `targetSize.minAnimalsPerKg` instead of `maxAnimalsPerKg` as growth target threshold
+  - Updated UI to show "entro il [date]" instead of "in X settimane" in totalizer
+- **Result**: More precise date-based predictions with accurate size classification reference values
+
 ## System Architecture
 
 ### Frontend Architecture
