@@ -482,15 +482,15 @@ export default function SpreadsheetOperations() {
         
         const currentSize = lastOperationWithAnimalsPerKg?.animalsPerKg ? 
           findSizeFromAnimalsPerKg(lastOperationWithAnimalsPerKg.animalsPerKg)?.code || 'N/A' 
-          : (lastOp?.size?.code || 'N/A');
+          : ((lastOp as any)?.size?.code || 'N/A');
         
         const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
-          Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : (lastOp?.averageWeight || 0);
+          Math.round((lastOp.totalWeight / lastOp.animalCount) * 100) / 100 : ((lastOp as any)?.averageWeight || 0);
         
         // Debug finale per verifica
         if (lastOp) {
           console.log(`✅ INIT CESTA ${basket.physicalNumber}: Usando op. ID=${(lastOp as any).id}, tipo=${lastOp.type}, animali=${lastOp.animalCount}`);
-          console.log(`   📊 Dati calcolati: currentSize=${currentSize}, averageWeight=${averageWeight}, taglia operazione=${lastOp?.size?.code}`);
+          console.log(`   📊 Dati calcolati: currentSize=${currentSize}, averageWeight=${averageWeight}, taglia operazione=${(lastOp as any)?.size?.code}`);
         } else {
           console.warn(`❌ INIT CESTA ${basket.physicalNumber}: Nessuna operazione trovata - usando valori default`);
         }
@@ -1168,6 +1168,29 @@ export default function SpreadsheetOperations() {
         <div>
           <h1 className="text-2xl font-bold">Spreadsheet Operazioni</h1>
           <p className="text-sm text-gray-600">Inserimento rapido a foglio elettronico</p>
+          
+          {/* Legenda Performance */}
+          <div className="mt-2 flex items-center gap-4 p-2 bg-gray-50 rounded-md border">
+            <span className="text-xs font-medium text-gray-600">Performance:</span>
+            <div className="flex items-center gap-3 text-xs">
+              <div className="flex items-center gap-1">
+                <span className="text-green-600">🏆</span>
+                <span className="text-gray-600">Eccellente (80%+)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-yellow-600">⭐</span>
+                <span className="text-gray-600">Buona (60-79%)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-orange-600">⚠️</span>
+                <span className="text-gray-600">Media (40-59%)</span>
+              </div>
+              <div className="flex items-center gap-1">
+                <span className="text-red-600">🔴</span>
+                <span className="text-gray-600">Attenzione (&lt;40%)</span>
+              </div>
+            </div>
+          </div>
         </div>
         
         <div className="flex items-center gap-2">
