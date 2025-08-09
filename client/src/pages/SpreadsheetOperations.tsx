@@ -462,6 +462,7 @@ export default function SpreadsheetOperations() {
 
   // Inizializza le righe quando cambiano FLUPSY, tipo operazione o data
   useEffect(() => {
+    console.log(`🔄 RIGHE: Ricalcolo per FLUPSY=${selectedFlupsyId}, baskets=${eligibleBaskets.length}, ops=${Array.isArray(operations) ? operations.length : 0}`);
     if (selectedFlupsyId && selectedOperationType && eligibleBaskets.length > 0 && operations && Array.isArray(operations)) {
       const newRows: OperationRowData[] = eligibleBaskets.map(basket => {
         const lastOp = basket.lastOperation;
@@ -550,7 +551,7 @@ export default function SpreadsheetOperations() {
       // Reset righe salvate per nuova sessione
       setSavedRows(new Set());
     }
-  }, [selectedFlupsyId, selectedOperationType, operationDate, eligibleBaskets.length, sizes, operations]);
+  }, [selectedFlupsyId, selectedOperationType, operationDate, baskets, sizes, operations, lots]);
 
   // **CALCOLO PERFORMANCE INTELLIGENTE**
   const calculatePerformanceScore = (row: OperationRowData): number => {
