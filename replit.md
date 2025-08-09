@@ -7,14 +7,15 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ## Recent Changes (August 2025)
 
 ### FLUPSY Filtering Fix - Successfully Resolved
-- **Issue**: When selecting a FLUPSY without baskets, the spreadsheet operations module was incorrectly showing baskets from other FLUPSYs instead of displaying empty results
-- **Solution**: Fixed filtering logic in both `Operations.tsx` and `SpreadsheetOperations.tsx` to properly enforce FLUPSY-specific filtering
+- **Issue**: When selecting a FLUPSY, the spreadsheet operations module was showing all baskets from that FLUPSY instead of only baskets with active cycles
+- **Solution**: Enhanced filtering logic in `SpreadsheetOperations.tsx` to show only baskets with active cycles from the selected FLUPSY
 - **Key Changes**:
-  - Updated `filteredCycleIds` calculation in Operations.tsx to return empty array when selected FLUPSY has no baskets
-  - Added proper basket filtering logic that clears rows when no baskets found for selected FLUPSY
+  - Modified basket filtering to require: `flupsyId` match + `state=active` + `currentCycleId !== null`
+  - Added comprehensive debug logging to track filtering decisions
+  - Eliminated display of empty baskets without active cycles
   - Removed all auto-selection behavior as requested by user
-- **Result**: System now correctly shows only baskets/cycles from the selected FLUPSY, or empty view when FLUPSY has no baskets
-- **Testing**: Confirmed working with console debug logs showing proper filtering behavior
+- **Result**: System now correctly shows only baskets with active cycles from the selected FLUPSY (e.g., FLUPSY 2516 shows 2 active baskets instead of all 20)
+- **Testing**: Confirmed working with console debug logs showing "Trovati 2 cestelli con cicli attivi dopo filtro"
 
 ## System Architecture
 
