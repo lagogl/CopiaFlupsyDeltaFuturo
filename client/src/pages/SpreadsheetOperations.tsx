@@ -316,6 +316,34 @@ export default function SpreadsheetOperations() {
     queryKey: ['/api/sgr'],
   });
 
+  // Auto-selezione FLUPSY con cestelli attivi
+  useEffect(() => {
+    if (!selectedFlupsyId && baskets && flupsys && Array.isArray(baskets) && Array.isArray(flupsys)) {
+      // Trova il FLUPSY che ha cestelli attivi
+      const flupsyWithActiveBaskets = (flupsys as any[]).find((flupsy: any) => 
+        (baskets as any[]).some((basket: any) => 
+          basket.flupsyId === flupsy.id && 
+          basket.state === 'active' && 
+          basket.currentCycleId
+        )
+      );
+      
+      if (flupsyWithActiveBaskets) {
+        console.log(`🚀 AUTO-SELEZIONE: FLUPSY ${flupsyWithActiveBaskets.name} (ID: ${flupsyWithActiveBaskets.id})`);
+        setSelectedFlupsyId(flupsyWithActiveBaskets.id);
+      } else {
+        // Se non ci sono cestelli attivi, prendi il primo FLUPSY con cestelli
+        const flupsyWithBaskets = (flupsys as any[]).find((flupsy: any) => 
+          (baskets as any[]).some((basket: any) => basket.flupsyId === flupsy.id)
+        );
+        if (flupsyWithBaskets) {
+          console.log(`🚀 FALLBACK: FLUPSY ${flupsyWithBaskets.name} (ID: ${flupsyWithBaskets.id})`);
+          setSelectedFlupsyId(flupsyWithBaskets.id);
+        }
+      }
+    }
+  }, [baskets, flupsys, selectedFlupsyId]);
+
   // Mutation per salvare operazioni - USA LA STESSA LOGICA DEL MODULO OPERATIONS STANDARD
   const saveOperationMutation = useMutation({
     mutationFn: async (operationData: any) => {

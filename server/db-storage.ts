@@ -898,12 +898,14 @@ export class DbStorage implements IStorage {
 
   // SIZES
   async getSizes(): Promise<Size[]> {
-    return await db.select().from(sizes);
+    // Ordina per minAnimalsPerKg crescente (meno animali per kg = animali più grandi)
+    return await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
   }
   
   // Added this method to support FLUPSY units view with main sizes data
   async getAllSizes(): Promise<Size[]> {
-    return await db.select().from(sizes);
+    // Ordina per minAnimalsPerKg crescente (meno animali per kg = animali più grandi)
+    return await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
   }
 
   async getAllSgr(): Promise<Sgr[]> {

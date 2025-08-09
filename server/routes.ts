@@ -2651,7 +2651,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // API - Ottieni tutte le taglie disponibili
   app.get("/api/sizes", async (req, res) => {
     try {
-      const allSizes = await db.select().from(sizes).orderBy(sizes.code);
+      // Ordina per minAnimalsPerKg crescente (meno animali per kg = animali più grandi)
+      const allSizes = await db.select().from(sizes).orderBy(sizes.minAnimalsPerKg);
       
       // Formatta i risultati per l'uso nel frontend includendo i campi minAnimalsPerKg e maxAnimalsPerKg
       const formattedSizes = allSizes.map(size => ({
