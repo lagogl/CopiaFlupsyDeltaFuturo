@@ -1578,8 +1578,8 @@ export default function SpreadsheetOperations() {
                                        perfScore >= 40 ? 'text-orange-600' : 'text-red-600';
                           
                           // Informazioni previsione crescita per tooltip
-                          const predictionInfo = targetSizeId && targetWeeks ? 
-                            calculateGrowthPrediction(row.basketId, targetSizeId, targetWeeks) : null;
+                          const predictionInfo = targetSizeId && targetDate ? 
+                            calculateGrowthPrediction(row.basketId, targetSizeId, targetDate) : null;
                           
                           let tooltipText = `Performance: ${perfScore.toFixed(1)}/100`;
                           if (predictionInfo && predictionInfo.willReachTarget) {
