@@ -594,6 +594,113 @@ export default function SpreadsheetOperations() {
     return Math.round(score * 100) / 100; // Arrotonda a 2 decimali
   };
 
+  // **ANALISI AI PER CESTE CRITICHE**
+  const generateCriticalAnalysis = (row: OperationRowData): {
+    issues: string[];
+    recommendations: string[];
+    urgency: string;
+    urgencyReason: string;
+  } => {
+    const issues: string[] = [];
+    const recommendations: string[] = [];
+    let urgencyLevel = 'Normale';
+    let urgencyReason = '';
+
+    // Analizza le operazioni storiche per questa cesta
+    const basketOps = ((operations as any[]) || [])
+      .filter((op: any) => op.basketId === row.basketId)
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime());
+
+    // 1. ANALISI MORTALITÀ
+    const latestMortality = basketOps.find((op: any) => op.mortalityRate != null)?.mortalityRate || 0;
+    if (latestMortality >= 20) {
+      issues.push(`Mortalità critica: ${latestMortality.toFixed(1)}% (normale <5%)`);
+      recommendations.push('Controllo immediato delle condizioni ambientali');
+      recommendations.push('Verificare ossigenazione e temperatura dell\'acqua');
+      recommendations.push('Ispezione sanitaria degli animali');
+      urgencyLevel = 'CRITICA';
+      urgencyReason = 'Mortalità superiore al 20% richiede intervento immediato';
+    } else if (latestMortality >= 10) {
+      issues.push(`Mortalità elevata: ${latestMortality.toFixed(1)}% (normale <5%)`);
+      recommendations.push('Monitoraggio frequente delle condizioni');
+      urgencyLevel = 'Alta';
+      urgencyReason = 'Trend di mortalità preoccupante';
+    }
+
+    // 2. ANALISI TREND POPOLAZIONE
+    if (basketOps.length >= 2) {
+      const currentCount = basketOps[0]?.animalCount || 0;
+      const previousCount = basketOps[1]?.animalCount || 0;
+      
+      if (previousCount > 0 && currentCount < previousCount * 0.7) {
+        const loss = Math.round(((previousCount - currentCount) / previousCount) * 100);
+        issues.push(`Perdita significativa di popolazione: -${loss}% dall'ultima operazione`);
+        recommendations.push('Verificare accuratezza del conteggio');
+        recommendations.push('Indagare possibili cause di perdite massive');
+        if (urgencyLevel === 'Normale') {
+          urgencyLevel = 'Alta';
+          urgencyReason = 'Perdita anomala di popolazione';
+        }
+      }
+    }
+
+    // 3. ANALISI CRESCITA
+    const currentAnimalsPerKg = row.animalsPerKg || 0;
+    if (currentAnimalsPerKg > 50000) {
+      issues.push(`Crescita molto lenta: ${formatNumberWithSeparators(currentAnimalsPerKg)} anim/kg`);
+      recommendations.push('Valutare qualità del mangime');
+      recommendations.push('Controllare densità di popolazione');
+      if (urgencyLevel === 'Normale') urgencyLevel = 'Media';
+    }
+
+    // 4. ANALISI PESO MEDIO
+    const avgWeight = row.averageWeight || 0;
+    if (avgWeight < 0.01) {
+      issues.push(`Peso medio molto basso: ${avgWeight.toFixed(3)}g per animale`);
+      recommendations.push('Aumentare frequenza alimentazione');
+      recommendations.push('Verificare qualità nutrizionale del mangime');
+    }
+
+    // 5. ANALISI TEMPORALE
+    const daysSinceLastOp = row.lastOperationDate ? 
+      Math.floor((new Date().getTime() - new Date(row.lastOperationDate).getTime()) / (1000 * 60 * 60 * 24)) : 999;
+    
+    if (daysSinceLastOp > 14) {
+      issues.push(`Nessuna operazione da ${daysSinceLastOp} giorni`);
+      recommendations.push('Programmare controllo e misurazione');
+      if (urgencyLevel === 'Normale') urgencyLevel = 'Media';
+    }
+
+    // 6. ANALISI TREND PERFORMANCE
+    if (basketOps.length >= 3) {
+      const recent = basketOps.slice(0, 3);
+      const mortalityTrend = recent.map(op => op.mortalityRate || 0);
+      
+      if (mortalityTrend[0] > mortalityTrend[1] && mortalityTrend[1] > mortalityTrend[2]) {
+        issues.push('Trend di mortalità in peggioramento costante');
+        recommendations.push('Intervento preventivo immediato');
+        if (urgencyLevel !== 'CRITICA') urgencyLevel = 'Alta';
+      }
+    }
+
+    // Raccomandazioni generali se nessun problema specifico
+    if (issues.length === 0) {
+      issues.push('Performance complessiva sotto la media');
+      recommendations.push('Revisione generale delle condizioni di allevamento');
+    }
+
+    if (!urgencyReason) {
+      urgencyReason = 'Monitoraggio standard per miglioramento performance';
+    }
+
+    return {
+      issues,
+      recommendations,
+      urgency: urgencyLevel,
+      urgencyReason
+    };
+  };
+
   // **CALCOLO PREVISIONI DI CRESCITA CON DATA TARGET**
   const calculateGrowthPrediction = (basketId: number, targetSizeId: number, targetDate: string): {
     willReachTarget: boolean;
@@ -1749,16 +1856,87 @@ export default function SpreadsheetOperations() {
                           const predictionInfo = targetSizeId && targetDate && predictionsEnabled ? 
                             calculateGrowthPrediction(row.basketId, targetSizeId, targetDate) : null;
                           
-                          let tooltipText = `Performance: ${perfScore.toFixed(1)}/100`;
-                          if (predictionInfo && predictionInfo.willReachTarget) {
-                            const targetSizeName = ((sizes as any[]) || []).find((s: any) => s.id === targetSizeId)?.code || 'Target';
-                            tooltipText += `\n📈 Raggiungerà ${targetSizeName} in ${predictionInfo.daysToTarget} giorni`;
-                          }
+                          // Analisi AI per ceste critiche (performance < 40%)
+                          const criticalAnalysis = perfScore < 40 ? generateCriticalAnalysis(row) : null;
                           
                           return (
-                            <span className={`text-xs font-bold ${color}`} title={tooltipText}>
-                              {perfScore >= 80 ? '🏆' : perfScore >= 60 ? '⭐' : perfScore >= 40 ? '⚠️' : '🔴'}
-                            </span>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <span className={`text-xs font-bold ${color} cursor-help`}>
+                                    {perfScore >= 80 ? '🏆' : perfScore >= 60 ? '⭐' : perfScore >= 40 ? '⚠️' : '🔴'}
+                                  </span>
+                                </TooltipTrigger>
+                                {criticalAnalysis && (
+                                  <TooltipContent side="right" className="max-w-lg p-0 border-0 shadow-lg">
+                                    <div className="bg-white rounded-lg border shadow-xl overflow-hidden">
+                                      {/* Header critico */}
+                                      <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3">
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center">
+                                            🚨
+                                          </div>
+                                          <div>
+                                            <h4 className="font-semibold text-sm">Cesta #{row.physicalNumber} - ATTENZIONE</h4>
+                                            <p className="text-xs opacity-90">Performance critica: {perfScore.toFixed(1)}/100</p>
+                                          </div>
+                                        </div>
+                                      </div>
+
+                                      {/* Contenuto analisi */}
+                                      <div className="p-4 space-y-4">
+                                        {/* Problemi rilevati */}
+                                        <div className="space-y-2">
+                                          <h5 className="font-semibold text-xs uppercase tracking-wide text-red-600">🔍 Problemi Rilevati</h5>
+                                          <div className="space-y-1">
+                                            {criticalAnalysis.issues.map((issue, index) => (
+                                              <div key={index} className="flex items-start gap-2 p-2 bg-red-50 rounded text-xs">
+                                                <span className="text-red-500 mt-0.5">•</span>
+                                                <span className="text-red-700">{issue}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+
+                                        {/* Raccomandazioni */}
+                                        <div className="space-y-2">
+                                          <h5 className="font-semibold text-xs uppercase tracking-wide text-blue-600">💡 Raccomandazioni</h5>
+                                          <div className="space-y-1">
+                                            {criticalAnalysis.recommendations.map((rec, index) => (
+                                              <div key={index} className="flex items-start gap-2 p-2 bg-blue-50 rounded text-xs">
+                                                <span className="text-blue-500 mt-0.5">✓</span>
+                                                <span className="text-blue-700">{rec}</span>
+                                              </div>
+                                            ))}
+                                          </div>
+                                        </div>
+
+                                        {/* Urgenza */}
+                                        <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
+                                          <div className="flex items-center gap-2">
+                                            <span className="text-yellow-600">⚡</span>
+                                            <span className="font-semibold text-xs text-yellow-800">Livello Urgenza: {criticalAnalysis.urgency}</span>
+                                          </div>
+                                          <p className="text-xs text-yellow-700 mt-1">{criticalAnalysis.urgencyReason}</p>
+                                        </div>
+                                      </div>
+                                    </div>
+                                  </TooltipContent>
+                                )}
+                                {!criticalAnalysis && (
+                                  <TooltipContent>
+                                    <div className="text-sm">
+                                      Performance: {perfScore.toFixed(1)}/100
+                                      {predictionInfo && predictionInfo.willReachTarget && (
+                                        <div className="mt-1">
+                                          📈 Raggiungerà {((sizes as any[]) || []).find((s: any) => s.id === targetSizeId)?.code || 'target'} in {predictionInfo.daysToTarget} giorni
+                                        </div>
+                                      )}
+                                    </div>
+                                  </TooltipContent>
+                                )}
+                              </Tooltip>
+                            </TooltipProvider>
                           );
                         })()}
                       </div>
