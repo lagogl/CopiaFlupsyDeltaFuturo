@@ -610,8 +610,8 @@ export default function SpreadsheetOperations() {
     }
 
     // Calcola SGR da usare (usa il primo disponibile per ora)
-    const sgrValue = ((sgrData as any[]) || [])[0]?.percentage || 8.3; // Default dal database: 8.3% mensile
-    const dailySgrRate = sgrValue / 30; // Converte da mensile a giornaliero
+    const sgrValue = ((sgrData as any[]) || [])[0]?.percentage || 8.3; // Default dal database: 8.3% GIORNALIERO
+    const dailySgrRate = sgrValue; // Il valore SGR è già giornaliero!
 
     // Calcolo proiezione crescita
     const currentWeight = lastOp.totalWeight / lastOp.animalCount; // Peso medio attuale per animale (in grammi)
@@ -624,8 +624,8 @@ export default function SpreadsheetOperations() {
       targetMaxAnimalsPerKg,
       targetSizeCode: targetSize.code,
       currentWeight: currentWeight.toFixed(6),
-      sgrValue,
-      dailySgrRate: dailySgrRate.toFixed(6),
+      sgrValue: `${sgrValue}% GIORNALIERO`,
+      dailySgrRate: `${dailySgrRate}%`,
       daysAvailable,
       targetDate
     });
