@@ -6,6 +6,22 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Performance Optimizations - Successfully Completed
+
+### Average Weight Calculation Precision Fix
+- **Issue**: Cesta 20 showing "0g" in P.Medio(g) column instead of correct average weight (0.002g)
+- **Root Cause**: Rounding precision issue in weight calculation (0.002g rounded to 0g with 2-decimal precision)
+- **Solution**: Improved precision from 2 to 3 decimal places in `Math.round(weight * 1000) / 1000`
+- **Result**: All baskets now show correct average weight values, including very small weights like 0.002g
+
+### Debug Logging Performance Cleanup
+- **Issue**: Excessive console.log statements impacting page load performance across multiple components
+- **Solution**: Comprehensive debug logging cleanup while preserving critical error reporting
+- **Components Optimized**:
+  - `SpreadsheetOperations.tsx`: Removed detailed basket initialization, performance scoring, and operation processing logs
+  - `Baskets.tsx`: Removed verbose FLUPSY filtering, size calculation, and basket processing debug logs
+- **Result**: Significantly improved page load performance and reduced browser console noise
+
 ## System Architecture
 
 ### Frontend Architecture
@@ -39,6 +55,7 @@ Preferred communication style: Simple, everyday language.
 - **External Integration Flow**: Standardized JSON data exchange via API key authentication, with synchronization processes for data consistency and conflict resolution.
 - **Spreadsheet Operations Module**: Independent module with a mobile-first, editable cell interface for rapid data entry, real-time validation, auto-save, and batch operations. It includes dynamic size calculation, intelligent performance-based sorting of baskets, and visual performance indicators.
 - **Data Precision**: Improved precision for average weight calculations (3 decimal places).
+- **Performance Optimization**: Debug logging cleanup in SpreadsheetOperations and Baskets modules to improve page load speed.
 - **Manual Editing**: Enhanced functionality for manual input of mortality percentage and animals per kg, disabling automatic calculations when manual mode is active.
 - **Deployment Strategy**: Node.js 20 on Replit with PostgreSQL 16 for development; Vite/esbuild for production build with autoscale deployment.
 

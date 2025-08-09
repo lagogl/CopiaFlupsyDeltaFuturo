@@ -301,7 +301,6 @@ export default function SpreadsheetOperations() {
       );
       
       if (flupsyWithActiveBaskets) {
-        console.log(`🚀 AUTO-SELEZIONE: FLUPSY ${flupsyWithActiveBaskets.name} (ID: ${flupsyWithActiveBaskets.id})`);
         setSelectedFlupsyId(flupsyWithActiveBaskets.id);
       } else {
         // Se non ci sono cestelli attivi, prendi il primo FLUPSY con cestelli
@@ -309,7 +308,6 @@ export default function SpreadsheetOperations() {
           (baskets as any[]).some((basket: any) => basket.flupsyId === flupsy.id)
         );
         if (flupsyWithBaskets) {
-          console.log(`🚀 FALLBACK: FLUPSY ${flupsyWithBaskets.name} (ID: ${flupsyWithBaskets.id})`);
           setSelectedFlupsyId(flupsyWithBaskets.id);
         }
       }
@@ -319,26 +317,9 @@ export default function SpreadsheetOperations() {
   // Mutation per salvare operazioni - USA LA STESSA LOGICA DEL MODULO OPERATIONS STANDARD
   const saveOperationMutation = useMutation({
     mutationFn: async (operationData: any) => {
-      console.log('🔄 Spreadsheet: Inviando operazione con route diretta:', operationData);
-      
-      // Recupera informazioni sulla cesta (stessa logica del modulo Operations)
-      const basket = ((baskets as any[]) || []).find((b: any) => b.id === operationData.basketId);
-      console.log('📦 Spreadsheet: Cestello trovato:', basket);
-      
-      // Determina il tipo di operazione
-      const isPrimaAttivazione = operationData.type === 'prima-attivazione';
-      const isVendita = operationData.type === 'vendita' || operationData.type === 'selezione-vendita';
-      console.log('🔍 Spreadsheet: Tipo operazione:', { isPrimaAttivazione, isVendita, type: operationData.type });
-      
-      // Determina stato cestello
-      const isBasketAvailable = basket?.state === 'available';
-      const isBasketActive = basket?.state === 'active';
-      console.log('📋 Spreadsheet: Stato cestello:', { isBasketAvailable, isBasketActive, state: basket?.state });
-      
       try {
         // USA LA FUNZIONE createDirectOperation ESATTAMENTE COME IL MODULO OPERATIONS STANDARD
         const response = await createDirectOperation(operationData);
-        console.log('✅ Spreadsheet: Operazione creata con successo:', response);
         return response;
       } catch (error) {
         console.error('❌ Spreadsheet: Errore durante createDirectOperation:', error);
@@ -346,7 +327,6 @@ export default function SpreadsheetOperations() {
       }
     },
     onSuccess: (data, variables) => {
-      console.log('✅ Spreadsheet: Success callback - operazione salvata:', data);
       const basketId = variables.basketId;
       
       // Aggiorna lo stato della riga e traccia come salvata
@@ -525,7 +505,7 @@ export default function SpreadsheetOperations() {
         const scoreA = calculatePerformanceScore(a);
         const scoreB = calculatePerformanceScore(b);
         
-        console.log(`🏆 PERFORMANCE: Cesta ${a.physicalNumber} = ${scoreA.toFixed(1)}, Cesta ${b.physicalNumber} = ${scoreB.toFixed(1)}`);
+
         
         // Ordine decrescente: migliori performance prima
         return scoreB - scoreA;

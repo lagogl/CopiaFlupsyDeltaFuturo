@@ -354,12 +354,6 @@ export default function Baskets() {
       // Usa l'operazione più recente con animals_per_kg
       const operation = operationsWithAnimalsPerKg[0];
       calculatedSize = getSizeCodeFromAnimalsPerKg(operation.animalsPerKg);
-      console.log(`Cestello #${basket.physicalNumber}: animals_per_kg=${operation.animalsPerKg}, taglia=${calculatedSize}`);
-    } else {
-      console.log(`Cestello #${basket.physicalNumber}: nessuna operazione con animals_per_kg trovata, operazioni totali: ${basketOperations.length}`);
-      if (basketOperations.length > 0) {
-        console.log('Prima operazione:', basketOperations[0]);
-      }
     }
 
     // Data di attivazione: prima operazione
@@ -381,24 +375,12 @@ export default function Baskets() {
   const basketsArray = Array.isArray(baskets) ? baskets.map(calculateBasketData) : [];
   const flupsysArray = Array.isArray(flupsys) ? flupsys : [];
 
-  // Debug - controlla quanti cestelli hanno la taglia impostata
+  // Monitor baskets array for critical errors only
   useEffect(() => {
-    if (basketsArray.length > 0) {
-      const basketsWithSize = basketsArray.filter(basket => basket.size && basket.size.code);
-      const basketsWithoutSize = basketsArray.filter(basket => !basket.size || !basket.size.code);
-
-      console.log(`Cestelli con taglia: ${basketsWithSize.length}/${basketsArray.length}`);
-      console.log(`Cestelli senza taglia: ${basketsWithoutSize.length}/${basketsArray.length}`);
-
-      if (basketsWithoutSize.length > 0) {
-        console.log('Esempio cestello senza taglia:', basketsWithoutSize[0]);
-      }
-
-      if (basketsWithSize.length > 0) {
-        console.log('Esempio cestello con taglia:', basketsWithSize[0]);
-      }
+    if (basketsArray.length === 0 && baskets && Array.isArray(baskets) && baskets.length > 0) {
+      console.error('Baskets data processing failed: basketsArray is empty but source data exists');
     }
-  }, [basketsArray]);
+  }, [basketsArray, baskets]);
 
   // Funzione che calcola la differenza numerica tra due taglie (per ordinamento per somiglianza)
   const getSizeNumberFromCode = (sizeCode: string | undefined): number => {
@@ -419,8 +401,7 @@ export default function Baskets() {
     // Distanza numerica tra le taglie
     const distance = Math.abs(sizeNum - targetNum);
 
-    // Log per debug
-    console.log(`Calcolo distanza taglia: ${sizeCode} -> ${targetSizeCode}, distanza: ${distance}`);
+
 
     return distance;
   };
@@ -581,10 +562,7 @@ export default function Baskets() {
     const matchesFlupsy = flupsyFilter === 'all' || 
       String(basket.flupsyId) === flupsyFilter;
 
-    // Debug per il filtro FLUPSY
-    if (flupsyFilter !== 'all' && basket.physicalNumber === 1) {
-      console.log(`Debug filtro FLUPSY: flupsyFilter=${flupsyFilter}, basket.flupsyId=${basket.flupsyId}, String(basket.flupsyId)=${String(basket.flupsyId)}, matchesFlupsy=${matchesFlupsy}`);
-    }
+
 
     return matchesSearch && matchesState && matchesFlupsy;
   });
