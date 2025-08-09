@@ -85,6 +85,7 @@ export default function SpreadsheetOperations() {
     date.setDate(date.getDate() + 28); // 4 settimane = 28 giorni
     return date.toISOString().split('T')[0];
   });
+  const [predictionsEnabled, setPredictionsEnabled] = useState<boolean>(false); // Controlla se calcolare le previsioni
   
   // Stati per sistema Undo e salvataggio singolo
   const [originalRows, setOriginalRows] = useState<OperationRowData[]>([]);  // Backup per Undo
@@ -1449,8 +1450,23 @@ export default function SpreadsheetOperations() {
               />
             </div>
 
-            {/* Totalizzatore */}
+            {/* Pulsante Calcola Previsioni */}
             {targetSizeId && targetDate && (
+              <button
+                onClick={() => setPredictionsEnabled(!predictionsEnabled)}
+                className={`h-8 px-4 text-xs font-medium rounded-md flex items-center gap-2 transition-all ${
+                  predictionsEnabled 
+                    ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-md' 
+                    : 'bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-300'
+                }`}
+              >
+                <span>📊</span>
+                {predictionsEnabled ? 'Nascondi Previsioni' : 'Calcola Previsioni'}
+              </button>
+            )}
+
+            {/* Totalizzatore */}
+            {targetSizeId && targetDate && predictionsEnabled && (
               <div className="ml-auto flex items-center gap-4 bg-white rounded-lg px-3 py-2 border border-purple-200">
                 <div className="text-xs text-gray-600">
                   Raggiungeranno <span className="font-medium text-purple-700">
@@ -1530,8 +1546,8 @@ export default function SpreadsheetOperations() {
 
               {/* Righe dati compatte */}
               {operationRows.map((row, index) => {
-                // Calcola previsione di crescita per questa cesta
-                const growthPrediction = targetSizeId && targetDate ? 
+                // Calcola previsione di crescita per questa cesta (solo se abilitato)
+                const growthPrediction = targetSizeId && targetDate && predictionsEnabled ? 
                   calculateGrowthPrediction(row.basketId, targetSizeId, targetDate) : 
                   { willReachTarget: false };
 
@@ -1597,8 +1613,8 @@ export default function SpreadsheetOperations() {
                                        perfScore >= 60 ? 'text-yellow-600' : 
                                        perfScore >= 40 ? 'text-orange-600' : 'text-red-600';
                           
-                          // Informazioni previsione crescita per tooltip
-                          const predictionInfo = targetSizeId && targetDate ? 
+                          // Informazioni previsione crescita per tooltip (solo se abilitato)
+                          const predictionInfo = targetSizeId && targetDate && predictionsEnabled ? 
                             calculateGrowthPrediction(row.basketId, targetSizeId, targetDate) : null;
                           
                           let tooltipText = `Performance: ${perfScore.toFixed(1)}/100`;
