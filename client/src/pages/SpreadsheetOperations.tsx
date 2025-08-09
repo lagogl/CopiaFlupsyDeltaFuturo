@@ -519,6 +519,12 @@ export default function SpreadsheetOperations() {
     }
   }, [selectedFlupsyId, selectedOperationType, operationDate, baskets, sizes, operations, lots]);
 
+  // **FUNZIONE UTILITY PER FORMATTAZIONE NUMERICA**
+  const formatNumberWithSeparators = (value: number | null | undefined): string => {
+    if (!value || value === 0) return '0';
+    return value.toLocaleString('it-IT'); // Separatore di migliaia italiano (punto)
+  };
+
   // **CALCOLO PERFORMANCE INTELLIGENTE**
   const calculatePerformanceScore = (row: OperationRowData): number => {
     let score = 0;
@@ -1408,7 +1414,7 @@ export default function SpreadsheetOperations() {
                 </div>
                 <div className="flex items-center gap-3">
                   <div className="text-sm font-bold text-purple-700">
-                    {calculateTargetTotals().totalAnimals.toLocaleString()} animali
+                    {formatNumberWithSeparators(calculateTargetTotals().totalAnimals)} animali
                   </div>
                   <div className="text-xs text-gray-500">
                     ({calculateTargetTotals().basketCount} ceste)
@@ -1627,11 +1633,11 @@ export default function SpreadsheetOperations() {
                                     </div>
                                     <div className="bg-purple-50 p-2 rounded">
                                       <div className="text-gray-600">Animali</div>
-                                      <div className="font-semibold text-purple-600">{row.animalCount || 'N/A'}</div>
+                                      <div className="font-semibold text-purple-600">{row.animalCount ? formatNumberWithSeparators(row.animalCount) : 'N/A'}</div>
                                     </div>
                                     <div className="bg-orange-50 p-2 rounded">
                                       <div className="text-gray-600">Animali/kg</div>
-                                      <div className="font-semibold text-orange-600">{row.animalsPerKg || 'N/A'}</div>
+                                      <div className="font-semibold text-orange-600">{row.animalsPerKg ? formatNumberWithSeparators(row.animalsPerKg) : 'N/A'}</div>
                                     </div>
                                   </div>
                                 </div>
@@ -1675,7 +1681,7 @@ export default function SpreadsheetOperations() {
                                             </div>
                                             <div className="text-gray-500">
                                               {new Date(op.date).toLocaleDateString('it-IT')}
-                                              {op.animalCount && ` • ${op.animalCount.toLocaleString()} animali`}
+                                              {op.animalCount && ` • ${formatNumberWithSeparators(op.animalCount)} animali`}
                                             </div>
                                           </div>
                                           {index === 0 && (
@@ -1779,47 +1785,58 @@ export default function SpreadsheetOperations() {
 
 
 
-                    {/* Campi editabili */}
+                    {/* Campi editabili - Animali */}
                     <div style={{width: '70px'}} className="px-1 py-1 border-r">
-                      <input
-                        type="number"
-                        value={row.animalCount || ''}
-                        onChange={(e) => updateCell(row.basketId, 'animalCount', Number(e.target.value))}
-                        className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
-                        }`}
-                        disabled={!(row as any).isNewRow}
-                        min="0"
-                        placeholder="0"
-                      />
+                      {(row as any).isNewRow ? (
+                        <input
+                          type="number"
+                          value={row.animalCount || ''}
+                          onChange={(e) => updateCell(row.basketId, 'animalCount', Number(e.target.value))}
+                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                          min="0"
+                          placeholder="0"
+                        />
+                      ) : (
+                        <div className="w-full h-6 px-1 text-xs rounded bg-gray-100 cursor-not-allowed flex items-center text-right">
+                          {row.animalCount ? formatNumberWithSeparators(row.animalCount) : '0'}
+                        </div>
+                      )}
                     </div>
 
+                    {/* Peso Tot(g) */}
                     <div style={{width: '80px'}} className="px-1 py-1 border-r">
-                      <input
-                        type="number"
-                        value={row.totalWeight || ''}
-                        onChange={(e) => updateCell(row.basketId, 'totalWeight', Number(e.target.value))}
-                        className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
-                        }`}
-                        disabled={!(row as any).isNewRow}
-                        min="0"
-                        placeholder="0"
-                      />
+                      {(row as any).isNewRow ? (
+                        <input
+                          type="number"
+                          value={row.totalWeight || ''}
+                          onChange={(e) => updateCell(row.basketId, 'totalWeight', Number(e.target.value))}
+                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                          min="0"
+                          placeholder="0"
+                        />
+                      ) : (
+                        <div className="w-full h-6 px-1 text-xs rounded bg-gray-100 cursor-not-allowed flex items-center text-right">
+                          {row.totalWeight ? formatNumberWithSeparators(row.totalWeight) : '0'}
+                        </div>
+                      )}
                     </div>
 
+                    {/* Anim/kg */}
                     <div style={{width: '65px'}} className="px-1 py-1 border-r">
-                      <input
-                        type="number"
-                        value={row.animalsPerKg || ''}
-                        onChange={(e) => updateCell(row.basketId, 'animalsPerKg', Number(e.target.value))}
-                        className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                          (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
-                        }`}
-                        disabled={!(row as any).isNewRow}
-                        min="0"
-                        placeholder="0"
-                      />
+                      {(row as any).isNewRow ? (
+                        <input
+                          type="number"
+                          value={row.animalsPerKg || ''}
+                          onChange={(e) => updateCell(row.basketId, 'animalsPerKg', Number(e.target.value))}
+                          className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                          min="0"
+                          placeholder="0"
+                        />
+                      ) : (
+                        <div className="w-full h-6 px-1 text-xs rounded bg-gray-100 cursor-not-allowed flex items-center text-right">
+                          {row.animalsPerKg ? formatNumberWithSeparators(row.animalsPerKg) : '0'}
+                        </div>
+                      )}
                     </div>
 
                     {/* PESO CAMPIONE per operazioni peso e misura */}

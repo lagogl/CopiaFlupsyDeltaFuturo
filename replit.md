@@ -22,6 +22,12 @@ Preferred communication style: Simple, everyday language.
   - `Baskets.tsx`: Removed verbose FLUPSY filtering, size calculation, and basket processing debug logs
 - **Result**: Significantly improved page load performance and reduced browser console noise
 
+### Thousand Separators Implementation
+- **Issue**: User requested thousand separators for numeric columns (Animali, Peso Tot(g), Anim/kg) in SpreadsheetOperations
+- **Solution**: Added `formatNumberWithSeparators()` utility function using Italian locale formatting (`.toLocaleString('it-IT')`)
+- **Implementation**: Conditional rendering for display-only fields showing formatted numbers while preserving editable input fields
+- **Result**: Enhanced readability for large numbers while maintaining functionality
+
 ## System Architecture
 
 ### Frontend Architecture
