@@ -263,28 +263,76 @@ export default function Operations() {
   // Alias for SGR data (for consistency in naming)
   const sgrs = sgrData;
 
-  // Auto-select a FLUPSY with active baskets if "all" is selected and no active cycles are found
+  // Auto-select a FLUPSY with active cycles when appropriate
   React.useEffect(() => {
-    if (filters.flupsyFilter === 'all' && baskets && flupsys && cycles && !isLoadingUnified) {
-      // Check if there are any active cycles at all
-      const activeCycles = cycles.filter((c: any) => c.state === 'active');
+    console.log('🔍 AUTO-SELECT: Effect triggered', { 
+      hasBaskets: !!baskets, 
+      hasFlupsys: !!flupsys, 
+      hasCycles: !!cycles, 
+      isLoading: isLoadingUnified,
+      currentFilter: filters.flupsyFilter 
+    });
+    
+    if (baskets && flupsys && cycles && !isLoadingUnified) {
+      // If user selects a specific FLUPSY that has no active cycles, switch to "all"
+      if (filters.flupsyFilter !== 'all') {
+        const selectedFlupsyId = parseInt(filters.flupsyFilter);
+        const flupsyBaskets = baskets.filter((b: any) => b.flupsyId === selectedFlupsyId);
+        const activeBasketsInFlupsy = flupsyBaskets.filter((b: any) => b.state === 'active');
+        
+        console.log(`🔍 AUTO-SELECT: Checking FLUPSY ${selectedFlupsyId}`, {
+          totalBaskets: flupsyBaskets.length,
+          activeBaskets: activeBasketsInFlupsy.length
+        });
+        
+        if (activeBasketsInFlupsy.length === 0) {
+          console.log(`📍 AUTO-SELECT: FLUPSY ${selectedFlupsyId} has no active baskets (${flupsyBaskets.length} total baskets), switching to "all"`);
+          // Add a small delay to ensure this doesn't cause infinite loops
+          setTimeout(() => {
+            setFlupsyFilter('all');
+          }, 50);
+          return;
+        }
+      }
       
-      // Find the first FLUPSY that has active baskets
-      const flupsyWithActiveBaskets = flupsys.find((flupsy: any) => {
-        const flupsyBaskets = baskets.filter((b: any) => b.flupsyId === flupsy.id);
-        const activeBaskets = flupsyBaskets.filter((b: any) => b.state === 'active');
-        return activeBaskets.length > 0;
-      });
-
-      // Auto-select only if there are active baskets and the current filter shows no results
-      if (flupsyWithActiveBaskets && activeCycles.length > 0) {
-        console.log(`📍 Auto-selecting FLUPSY with active baskets: ${flupsyWithActiveBaskets.name}`);
-        // Small delay to ensure this runs only once
-        setTimeout(() => {
-          if (filters.flupsyFilter === 'all') {
-            setFlupsyFilter(flupsyWithActiveBaskets.id.toString());
+      // If "all" is selected and it's the first load, auto-select FLUPSY with active cycles
+      if (filters.flupsyFilter === 'all') {
+        const activeCycles = cycles.filter((c: any) => c.state === 'active');
+        
+        console.log(`🔍 AUTO-SELECT: "all" selected, found ${activeCycles.length} active cycles`);
+        
+        if (activeCycles.length > 0) {
+          // Find FLUPSY with most active cycles for better user experience
+          const flupsyActiveCounts = new Map();
+          
+          activeCycles.forEach((cycle: any) => {
+            const basket = baskets.find((b: any) => b.id === cycle.basketId);
+            if (basket) {
+              const count = flupsyActiveCounts.get(basket.flupsyId) || 0;
+              flupsyActiveCounts.set(basket.flupsyId, count + 1);
+            }
+          });
+          
+          console.log('🔍 AUTO-SELECT: FLUPSY active counts:', Object.fromEntries(flupsyActiveCounts));
+          
+          // Get FLUPSY with most active cycles
+          let maxCount = 0;
+          let bestFlupsyId = null;
+          flupsyActiveCounts.forEach((count, flupsyId) => {
+            if (count > maxCount) {
+              maxCount = count;
+              bestFlupsyId = flupsyId;
+            }
+          });
+          
+          if (bestFlupsyId) {
+            const bestFlupsy = flupsys.find((f: any) => f.id === bestFlupsyId);
+            console.log(`📍 AUTO-SELECT: Auto-selecting FLUPSY with most active cycles: ${bestFlupsy?.name} (${maxCount} cycles)`);
+            setTimeout(() => {
+              setFlupsyFilter(bestFlupsyId.toString());
+            }, 100);
           }
-        }, 100);
+        }
       }
     }
   }, [baskets, flupsys, cycles, isLoadingUnified, filters.flupsyFilter]);
