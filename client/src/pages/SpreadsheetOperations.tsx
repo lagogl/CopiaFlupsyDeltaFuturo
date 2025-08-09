@@ -479,24 +479,27 @@ export default function SpreadsheetOperations() {
         
 
         
+        // Cast lastOp per accedere a tutte le proprietà
+        const fullOp = lastOp as any;
+        
         return {
           basketId: basket.id,
           physicalNumber: basket.physicalNumber,
           type: selectedOperationType,
           date: operationDate,
-          // CAMPI OBBLIGATORI con valori predefiniti validi
-          lotId: ((lots as any[]) || [])[0]?.id || null,  // Lotto predefinito (primo disponibile)
-          animalCount: lastOp?.animalCount || 10000,
-          totalWeight: lastOp?.totalWeight || 1000,
-          animalsPerKg: lastOp?.animalsPerKg || 100,
-          deadCount: 0, // Sempre inizializza a 0 per evitare errori null
-          mortalityRate: 0, // Inizializza mortalità a 0
-          notes: '',
-          // Campi specifici per misura (IDENTICI AL MODULO OPERATIONS)
-          liveAnimals: selectedOperationType === 'misura' ? 50 : null,  // Animali vivi nel campione
-          sampleWeight: (selectedOperationType === 'misura' || selectedOperationType === 'peso') ? 100 : null,  // Peso campione in grammi
-          totalSample: selectedOperationType === 'misura' ? 50 : null,  // Totale campione (calcolato automaticamente)
-          sizeId: selectedOperationType === 'misura' ? sizesArray[0]?.id : null,
+          // CAMPI OBBLIGATORI - usa dati reali da ultima operazione se esiste
+          lotId: fullOp?.lotId || ((lots as any[]) || [])[0]?.id || null,
+          animalCount: fullOp?.animalCount || null,
+          totalWeight: fullOp?.totalWeight || null,
+          animalsPerKg: fullOp?.animalsPerKg || null,
+          deadCount: fullOp?.deadCount || null,
+          mortalityRate: fullOp?.mortalityRate || null,
+          notes: fullOp?.notes || '',
+          // Campi specifici per misura - usa dati reali se disponibili
+          liveAnimals: (selectedOperationType === 'misura' && fullOp?.liveAnimals) ? fullOp.liveAnimals : null,
+          sampleWeight: ((selectedOperationType === 'misura' || selectedOperationType === 'peso') && fullOp?.sampleWeight) ? fullOp.sampleWeight : null,
+          totalSample: (selectedOperationType === 'misura' && fullOp?.totalSample) ? fullOp.totalSample : null,
+          sizeId: fullOp?.sizeId || null,
           status: 'editing',
           errors: [],
           // Dati aggiuntivi cesta
@@ -2011,54 +2014,63 @@ export default function SpreadsheetOperations() {
                     {/* PESO CAMPIONE per operazioni peso e misura */}
                     {(selectedOperationType === 'peso' || selectedOperationType === 'misura') && (
                       <div style={{width: '60px'}} className="px-1 py-1 border-r bg-yellow-50">
-                        <input
-                          type="number"
-                          value={row.sampleWeight || ''}
-                          onChange={(e) => updateCell(row.basketId, 'sampleWeight', Number(e.target.value))}
-                          className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                            (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
-                          }`}
-                          disabled={!(row as any).isNewRow}
-                          min="0"
-                          placeholder="0"
-                          required
-                        />
+                        {(row as any).isNewRow ? (
+                          <input
+                            type="number"
+                            value={row.sampleWeight || ''}
+                            onChange={(e) => updateCell(row.basketId, 'sampleWeight', Number(e.target.value))}
+                            className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                            min="0"
+                            placeholder="0"
+                            required
+                          />
+                        ) : (
+                          <div className="w-full h-6 px-1 text-xs rounded bg-gray-100 cursor-not-allowed flex items-center text-right">
+                            {row.sampleWeight || '-'}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* ANIMALI VIVI solo per misura */}
                     {selectedOperationType === 'misura' && (
                       <div style={{width: '50px'}} className="px-1 py-1 border-r bg-yellow-50">
-                        <input
-                          type="number"
-                          value={row.liveAnimals || ''}
-                          onChange={(e) => updateCell(row.basketId, 'liveAnimals', Number(e.target.value))}
-                          className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                            (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
-                          }`}
-                          disabled={!(row as any).isNewRow}
-                          min="0"
-                          placeholder="0"
-                          required
-                        />
+                        {(row as any).isNewRow ? (
+                          <input
+                            type="number"
+                            value={row.liveAnimals || ''}
+                            onChange={(e) => updateCell(row.basketId, 'liveAnimals', Number(e.target.value))}
+                            className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                            min="0"
+                            placeholder="0"
+                            required
+                          />
+                        ) : (
+                          <div className="w-full h-6 px-1 text-xs rounded bg-gray-100 cursor-not-allowed flex items-center text-right">
+                            {row.liveAnimals || '-'}
+                          </div>
+                        )}
                       </div>
                     )}
 
                     {/* ANIMALI MORTI per misura */}
                     {selectedOperationType === 'misura' && (
                       <div style={{width: '50px'}} className="px-1 py-1 border-r bg-yellow-50">
-                        <input
-                          type="number"
-                          value={row.deadCount !== null && row.deadCount !== undefined ? row.deadCount : 0}
-                          onChange={(e) => updateCell(row.basketId, 'deadCount', Number(e.target.value) || 0)}
-                          className={`w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded ${
-                            (row as any).isNewRow ? 'bg-white' : 'bg-gray-100 cursor-not-allowed'
-                          }`}
-                          disabled={!(row as any).isNewRow}
-                          min="0"
-                          placeholder="0"
-                          required
-                        />
+                        {(row as any).isNewRow ? (
+                          <input
+                            type="number"
+                            value={row.deadCount !== null && row.deadCount !== undefined ? row.deadCount : ''}
+                            onChange={(e) => updateCell(row.basketId, 'deadCount', Number(e.target.value) || 0)}
+                            className="w-full h-6 px-1 text-xs border-0 focus:outline-none focus:ring-1 focus:ring-blue-400 rounded bg-white"
+                            min="0"
+                            placeholder="0"
+                            required
+                          />
+                        ) : (
+                          <div className="w-full h-6 px-1 text-xs rounded bg-gray-100 cursor-not-allowed flex items-center text-right">
+                            {row.deadCount !== null && row.deadCount !== undefined ? row.deadCount : '-'}
+                          </div>
+                        )}
                       </div>
                     )}
 
