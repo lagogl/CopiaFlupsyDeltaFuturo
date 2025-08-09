@@ -205,20 +205,11 @@ export default function SpreadsheetOperations() {
     const errors: string[] = [];
     
     if (!editingForm) {
-      console.log('🚫 VALIDAZIONE: editingForm è null');
       return { valid: false, errors: ['Form non inizializzato'] };
     }
     
-    console.log('🧮 VALIDAZIONE: Controllo form popup:', editingForm);
-    
     // Campi sempre obbligatori
     if (!editingForm.basketId || !editingForm.type || !editingForm.date || !editingForm.lotId) {
-      console.log('🚫 VALIDAZIONE: Campi base mancanti:', {
-        basketId: editingForm.basketId,
-        type: editingForm.type, 
-        date: editingForm.date,
-        lotId: editingForm.lotId
-      });
       errors.push('Tutti i campi obbligatori devono essere compilati');
     }
     
@@ -232,28 +223,17 @@ export default function SpreadsheetOperations() {
     
     // Validazioni specifiche per tipo operazione
     if (selectedOperationType === 'misura') {
-      console.log('🧮 VALIDAZIONE MISURA: Controllo campi specifici...', {
-        sampleWeight: editingForm.sampleWeight,
-        liveAnimals: editingForm.liveAnimals,
-        deadCount: editingForm.deadCount,
-        totalWeight: editingForm.totalWeight
-      });
-      
       // Per misura: peso campione, animali vivi, morti, peso totale sono obbligatori
       if (!editingForm.sampleWeight || editingForm.sampleWeight <= 0) {
-        console.log('🚫 VALIDAZIONE: sampleWeight non valido:', editingForm.sampleWeight);
         errors.push('Peso campione è obbligatorio e deve essere maggiore di 0');
       }
       if (!editingForm.liveAnimals || editingForm.liveAnimals <= 0) {
-        console.log('🚫 VALIDAZIONE: liveAnimals non valido:', editingForm.liveAnimals);
         errors.push('Numero animali vivi è obbligatorio e deve essere maggiore di 0');
       }
       if (editingForm.deadCount === null || editingForm.deadCount === undefined) {
-        console.log('🚫 VALIDAZIONE: deadCount null/undefined:', editingForm.deadCount);
         errors.push('Numero animali morti è obbligatorio');
       }
       if (!editingForm.totalWeight || editingForm.totalWeight <= 0) {
-        console.log('🚫 VALIDAZIONE: totalWeight non valido:', editingForm.totalWeight);
         errors.push('Peso totale è obbligatorio e deve essere maggiore di 0');
       }
     }
@@ -272,14 +252,7 @@ export default function SpreadsheetOperations() {
       }
     }
     
-    const isValid = errors.length === 0;
-    if (isValid) {
-      console.log('✅ VALIDAZIONE: Form popup valido!');
-    } else {
-      console.log('🚫 VALIDAZIONE: Errori trovati:', errors);
-    }
-    
-    return { valid: isValid, errors };
+    return { valid: errors.length === 0, errors };
   };
 
   // Query per recuperare dati
@@ -295,7 +268,6 @@ export default function SpreadsheetOperations() {
   const { data: operations, isLoading: operationsLoading, error: operationsError } = useQuery({
     queryKey: ['/api/operations', 'spreadsheet', 'unlimited'],
     queryFn: () => {
-      console.log('🔄 SPREADSHEET: Caricamento TUTTE le operazioni senza limitazioni...');
       // Usa l'endpoint operations diretto con parametri per bypassare cache e limitazioni
       return apiRequest('/api/operations?pageSize=50000&sortBy=id&sortOrder=desc&force_refresh=true&original=true');
     },
@@ -400,7 +372,7 @@ export default function SpreadsheetOperations() {
       });
     },
     onError: (error: any, variables) => {
-      console.error('❌ Spreadsheet: Error callback:', error, variables);
+      console.error('❌ Spreadsheet: Error callback:', error.message);
       const basketId = variables.basketId;
       
       // Aggiorna lo stato della riga con errore
@@ -419,32 +391,12 @@ export default function SpreadsheetOperations() {
     }
   });
 
-  // Debug per verificare le operazioni caricate (solo quando cambiano)
+  // Debug per verificare errori nelle operazioni (solo errori critici)
   useEffect(() => {
-    if (operationsLoading) {
-      console.log('🔄 SPREADSHEET: Caricamento operazioni in corso...');
-      return;
-    }
-    
     if (operationsError) {
       console.error('❌ SPREADSHEET: Errore nel caricamento operazioni:', operationsError);
-      return;
     }
-    
-    if (operations && Array.isArray(operations) && operations.length > 0) {
-      console.log('✅ SPREADSHEET: Caricate', operations.length, 'operazioni totali');
-      const ops13 = operations.filter((op: any) => op.basketId === 13);
-      console.log('🔍 CESTA 13 - Operazioni trovate:', ops13.map((op: any) => `ID=${op.id}, tipo=${op.type}, animali=${op.animalCount}, data=${op.date}`));
-      if (ops13.length > 0) {
-        const sorted = ops13.sort((a: any, b: any) => b.id - a.id);
-        console.log('🔍 CESTA 13 - Operazione più recente selezionata:', sorted[0]);
-      } else {
-        console.warn('❌ CESTA 13 - NESSUNA OPERAZIONE TROVATA!');
-      }
-    } else if (operations !== undefined) {
-      console.warn('❌ SPREADSHEET: Nessuna operazione caricata o array vuoto');
-    }
-  }, [operations, operationsLoading, operationsError]);
+  }, [operationsError]);
   
   // Inizializza le righe quando cambiano FLUPSY, tipo operazione o data
   useEffect(() => {
@@ -475,13 +427,9 @@ export default function SpreadsheetOperations() {
             })[0]
           : null;
         
-        // Debug dettagliato per ogni cesta
-        console.log(`🏀 CESTA ${basket.physicalNumber}: ${basketOperations.length} operazioni trovate`);
-        if (basketOperations.length > 0) {
-          console.log(`   📋 Operazioni: ${basketOperations.map(op => `ID=${op.id}(${op.type})`).join(', ')}`);
-          console.log(`   ✅ Selezionata: ID=${lastOp?.id}, tipo=${lastOp?.type}, animali=${lastOp?.animalCount}`);
-        } else {
-          console.warn(`   ⚠️ Nessuna operazione trovata`);
+        // Log solo per errori critici
+        if (basketOperations.length === 0) {
+          console.warn(`⚠️ CESTA ${basket.physicalNumber}: Nessuna operazione trovata`);
         }
         
         return {
@@ -496,14 +444,13 @@ export default function SpreadsheetOperations() {
       })
       .sort((a, b) => a.physicalNumber - b.physicalNumber);
 
-    console.log(`🔄 RIGHE: Ricalcolo per FLUPSY=${selectedFlupsyId}, baskets=${eligibleBaskets.length}, ops=${Array.isArray(operations) ? operations.length : 0}`);
-    console.log(`🔍 DEBUG BASKETS: Tutti i cestelli disponibili:`, ((baskets as any[]) || []).map((b: any) => `ID=${b.id}, flupsyId=${b.flupsyId}, numero=${b.physicalNumber}, state=${b.state}, currentCycleId=${b.currentCycleId}`));
-    console.log(`🔍 DEBUG FILTRO: Cerco cestelli con flupsyId=${selectedFlupsyId}, state=active AND currentCycleId non null`);
-    console.log(`🔍 DEBUG RESULT: Trovati ${eligibleBaskets.length} cestelli con cicli attivi dopo filtro`);
+    // Log solo se nessun cestello trovato
+    if (selectedFlupsyId && eligibleBaskets.length === 0) {
+      console.log(`🔍 DEBUG RESULT: Trovati ${eligibleBaskets.length} cestelli con cicli attivi dopo filtro per FLUPSY=${selectedFlupsyId}`);
+    }
     
     // If no eligible baskets found, clear the rows immediately
     if (selectedFlupsyId && eligibleBaskets.length === 0) {
-      console.log(`🚫 SPREADSHEET: FLUPSY ${selectedFlupsyId} has no baskets, clearing rows`);
       setOperationRows([]);
       return;
     }
@@ -542,15 +489,7 @@ export default function SpreadsheetOperations() {
         const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
           Math.round((lastOp.totalWeight / lastOp.animalCount) * 1000) / 1000 : ((lastOp as any)?.averageWeight || 0);
         
-        console.log(`📊 INIT CESTA ${basket.physicalNumber}: Calcolo peso medio = ${lastOp?.totalWeight}g ÷ ${lastOp?.animalCount} = ${averageWeight}g`);
-        
-        // Debug finale per verifica
-        if (lastOp) {
-          console.log(`✅ INIT CESTA ${basket.physicalNumber}: Usando op. ID=${(lastOp as any).id}, tipo=${lastOp.type}, animali=${lastOp.animalCount}`);
-          console.log(`   📊 Dati calcolati: currentSize=${currentSize}, averageWeight=${averageWeight}, taglia operazione=${(lastOp as any)?.size?.code}`);
-        } else {
-          console.warn(`❌ INIT CESTA ${basket.physicalNumber}: Nessuna operazione trovata - usando valori default`);
-        }
+
         
         return {
           basketId: basket.id,
