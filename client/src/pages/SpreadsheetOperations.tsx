@@ -449,11 +449,11 @@ export default function SpreadsheetOperations() {
   // Inizializza le righe quando cambiano FLUPSY, tipo operazione o data
   useEffect(() => {
     // Prepara i dati dei cestelli per il FLUPSY selezionato
+    // Include tutti i cestelli del FLUPSY (attivi E disponibili) per permettere operazioni su tutti
     const eligibleBaskets: BasketData[] = ((baskets as any[]) || [])
       .filter((basket: any) => 
         basket.flupsyId === selectedFlupsyId && 
-        basket.state === 'active' && 
-        basket.currentCycleId
+        (basket.state === 'active' || basket.state === 'available')
       )
       .map((basket: any) => {
         const flupsy = ((flupsys as any[]) || []).find((f: any) => f.id === basket.flupsyId);
@@ -492,7 +492,7 @@ export default function SpreadsheetOperations() {
 
     console.log(`🔄 RIGHE: Ricalcolo per FLUPSY=${selectedFlupsyId}, baskets=${eligibleBaskets.length}, ops=${Array.isArray(operations) ? operations.length : 0}`);
     console.log(`🔍 DEBUG BASKETS: Tutti i cestelli disponibili:`, ((baskets as any[]) || []).map((b: any) => `ID=${b.id}, flupsyId=${b.flupsyId}, numero=${b.physicalNumber}, state=${b.state}`));
-    console.log(`🔍 DEBUG FILTRO: Cerco cestelli con flupsyId=${selectedFlupsyId}, state=active, con currentCycleId`);
+    console.log(`🔍 DEBUG FILTRO: Cerco cestelli con flupsyId=${selectedFlupsyId}, state=active OR available`);
     console.log(`🔍 DEBUG RESULT: Trovati ${eligibleBaskets.length} cestelli dopo filtro`);
     
     if (selectedFlupsyId && selectedOperationType && eligibleBaskets.length > 0 && operations && Array.isArray(operations)) {
