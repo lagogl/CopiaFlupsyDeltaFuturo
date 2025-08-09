@@ -610,7 +610,7 @@ export default function SpreadsheetOperations() {
     }
 
     // Calcola SGR da usare (usa il primo disponibile per ora)
-    const sgrValue = ((sgrData as any[]) || [])[0]?.percentage || 2.0; // Default 2% mensile
+    const sgrValue = ((sgrData as any[]) || [])[0]?.percentage || 8.3; // Default dal database: 8.3% mensile
     const dailySgrRate = sgrValue / 30; // Converte da mensile a giornaliero
 
     // Calcolo proiezione crescita
@@ -618,8 +618,20 @@ export default function SpreadsheetOperations() {
     const currentAnimalsPerKg = lastOp.animalsPerKg;
     const targetMinAnimalsPerKg = targetSize.minAnimalsPerKg; // USA MIN_ANIMALS_PER_KG come riferimento
 
+    // DEBUG: Log dei valori per debugging
+    console.log(`🔍 PREVISIONE CRESCITA Cesta ${basketId}:`, {
+      currentAnimalsPerKg,
+      targetMinAnimalsPerKg,
+      currentWeight: currentWeight.toFixed(6),
+      sgrValue,
+      dailySgrRate: dailySgrRate.toFixed(6),
+      daysAvailable,
+      targetDate
+    });
+
     // Verifica se ha già raggiunto la taglia target
     if (currentAnimalsPerKg <= targetMinAnimalsPerKg) {
+      console.log(`✅ Cesta ${basketId} ha già raggiunto il target`);
       return {
         willReachTarget: true,
         daysToTarget: 0,
@@ -633,7 +645,7 @@ export default function SpreadsheetOperations() {
     let projectedAnimalsPerKg = currentAnimalsPerKg;
     let daysProjected = 0;
 
-    while (daysProjected < daysAvailable) {
+    while (daysProjected < daysAvailable && projectedAnimalsPerKg > targetMinAnimalsPerKg) {
       daysProjected++;
       
       // Applica crescita giornaliera: peso cresce del SGR%
@@ -642,8 +654,14 @@ export default function SpreadsheetOperations() {
       // Calcola nuovi animali/kg: quando peso aumenta, animali/kg diminuisce
       projectedAnimalsPerKg = Math.round(1000 / projectedWeight);
       
+      // Log ogni settimana per debugging
+      if (daysProjected % 7 === 0) {
+        console.log(`📈 Cesta ${basketId} - Giorno ${daysProjected}: ${projectedAnimalsPerKg} anim/kg (peso: ${projectedWeight.toFixed(6)}g)`);
+      }
+      
       // Verifica se ha raggiunto la taglia target (usa minAnimalsPerKg)
       if (projectedAnimalsPerKg <= targetMinAnimalsPerKg) {
+        console.log(`🎯 Cesta ${basketId} raggiungerà target in ${daysProjected} giorni`);
         return {
           willReachTarget: true,
           daysToTarget: daysProjected,
@@ -655,6 +673,7 @@ export default function SpreadsheetOperations() {
 
     // Alla data target, verifica se avrà raggiunto la taglia
     const willReachByTargetDate = projectedAnimalsPerKg <= targetMinAnimalsPerKg;
+    console.log(`📊 Cesta ${basketId} finale: ${projectedAnimalsPerKg} anim/kg, raggiungerà target: ${willReachByTargetDate}`);
 
     return {
       willReachTarget: willReachByTargetDate,
