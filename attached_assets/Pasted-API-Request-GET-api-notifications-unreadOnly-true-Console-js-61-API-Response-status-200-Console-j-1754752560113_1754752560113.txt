@@ -1,0 +1,22 @@
+API Request: GET /api/notifications?unreadOnly=true
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 3
+Console.js:61 API Request: GET /api/notifications?unreadOnly=true
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+Console.js:61 🔄 RIGHE: Ricalcolo per FLUPSY=570, baskets=0, ops=5
+Console.js:61 🔍 DEBUG BASKETS: Tutti i cestelli disponibili: (20) ['ID=1, flupsyId=2516, numero=1, state=available', 'ID=2, flupsyId=2516, numero=2, state=available', 'ID=3, flupsyId=2516, numero=3, state=active', 'ID=4, flupsyId=2516, numero=4, state=available', 'ID=5, flupsyId=2516, numero=5, state=available', 'ID=6, flupsyId=2516, numero=6, state=available', 'ID=7, flupsyId=2516, numero=7, state=available', 'ID=8, flupsyId=2516, numero=8, state=available', 'ID=9, flupsyId=2516, numero=9, state=available', 'ID=10, flupsyId=2516, numero=10, state=available', 'ID=11, flupsyId=2516, numero=11, state=available', 'ID=12, flupsyId=2516, numero=12, state=available', 'ID=13, flupsyId=2516, numero=13, state=active', 'ID=14, flupsyId=2516, numero=14, state=available', 'ID=15, flupsyId=2516, numero=15, state=available', 'ID=16, flupsyId=2516, numero=16, state=available', 'ID=17, flupsyId=2516, numero=17, state=available', 'ID=18, flupsyId=2516, numero=18, state=available', 'ID=19, flupsyId=2516, numero=19, state=available', 'ID=20, flupsyId=2516, numero=20, state=available']
+Console.js:61 🔍 DEBUG FILTRO: Cerco cestelli con flupsyId=570, state=active OR available
+Console.js:61 🔍 DEBUG RESULT: Trovati 0 cestelli dopo filtro
+Console.js:61 🚫 SPREADSHEET: FLUPSY 570 has no baskets, clearing rows
+Console.js:61 API Request: GET /api/notifications?unreadOnly=true
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}

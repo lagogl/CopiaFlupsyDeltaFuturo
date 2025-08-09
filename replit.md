@@ -4,6 +4,18 @@
 
 The FLUPSY Management System is a comprehensive web application for managing aquaculture operations, specifically designed for monitoring and controlling FLUPSY (Floating Upwelling System) installations. The system provides real-time tracking of baskets, cycles, operations, and inventory management for shellfish cultivation.
 
+## Recent Changes (August 2025)
+
+### FLUPSY Filtering Fix - Successfully Resolved
+- **Issue**: When selecting a FLUPSY without baskets, the spreadsheet operations module was incorrectly showing baskets from other FLUPSYs instead of displaying empty results
+- **Solution**: Fixed filtering logic in both `Operations.tsx` and `SpreadsheetOperations.tsx` to properly enforce FLUPSY-specific filtering
+- **Key Changes**:
+  - Updated `filteredCycleIds` calculation in Operations.tsx to return empty array when selected FLUPSY has no baskets
+  - Added proper basket filtering logic that clears rows when no baskets found for selected FLUPSY
+  - Removed all auto-selection behavior as requested by user
+- **Result**: System now correctly shows only baskets/cycles from the selected FLUPSY, or empty view when FLUPSY has no baskets
+- **Testing**: Confirmed working with console debug logs showing proper filtering behavior
+
 ## System Architecture
 
 ### Frontend Architecture
