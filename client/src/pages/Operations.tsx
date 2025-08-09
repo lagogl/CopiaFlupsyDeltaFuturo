@@ -263,79 +263,15 @@ export default function Operations() {
   // Alias for SGR data (for consistency in naming)
   const sgrs = sgrData;
 
-  // Auto-select a FLUPSY with active cycles when appropriate
+  // Log filter changes for debugging
   React.useEffect(() => {
-    console.log('🔍 AUTO-SELECT: Effect triggered', { 
-      hasBaskets: !!baskets, 
-      hasFlupsys: !!flupsys, 
-      hasCycles: !!cycles, 
-      isLoading: isLoadingUnified,
-      currentFilter: filters.flupsyFilter 
+    console.log('🔍 FILTER CHANGE:', { 
+      flupsyFilter: filters.flupsyFilter,
+      cycleStateFilter: filters.cycleStateFilter,
+      basketsCount: baskets?.length,
+      cyclesCount: cycles?.length
     });
-    
-    if (baskets && flupsys && cycles && !isLoadingUnified) {
-      // If user selects a specific FLUPSY that has no active cycles, switch to "all"
-      if (filters.flupsyFilter !== 'all') {
-        const selectedFlupsyId = parseInt(filters.flupsyFilter);
-        const flupsyBaskets = baskets.filter((b: any) => b.flupsyId === selectedFlupsyId);
-        const activeBasketsInFlupsy = flupsyBaskets.filter((b: any) => b.state === 'active');
-        
-        console.log(`🔍 AUTO-SELECT: Checking FLUPSY ${selectedFlupsyId}`, {
-          totalBaskets: flupsyBaskets.length,
-          activeBaskets: activeBasketsInFlupsy.length
-        });
-        
-        if (activeBasketsInFlupsy.length === 0) {
-          console.log(`📍 AUTO-SELECT: FLUPSY ${selectedFlupsyId} has no active baskets (${flupsyBaskets.length} total baskets), switching to "all"`);
-          // Add a small delay to ensure this doesn't cause infinite loops
-          setTimeout(() => {
-            setFlupsyFilter('all');
-          }, 50);
-          return;
-        }
-      }
-      
-      // If "all" is selected and it's the first load, auto-select FLUPSY with active cycles
-      if (filters.flupsyFilter === 'all') {
-        const activeCycles = cycles.filter((c: any) => c.state === 'active');
-        
-        console.log(`🔍 AUTO-SELECT: "all" selected, found ${activeCycles.length} active cycles`);
-        
-        if (activeCycles.length > 0) {
-          // Find FLUPSY with most active cycles for better user experience
-          const flupsyActiveCounts = new Map();
-          
-          activeCycles.forEach((cycle: any) => {
-            const basket = baskets.find((b: any) => b.id === cycle.basketId);
-            if (basket) {
-              const count = flupsyActiveCounts.get(basket.flupsyId) || 0;
-              flupsyActiveCounts.set(basket.flupsyId, count + 1);
-            }
-          });
-          
-          console.log('🔍 AUTO-SELECT: FLUPSY active counts:', Object.fromEntries(flupsyActiveCounts));
-          
-          // Get FLUPSY with most active cycles
-          let maxCount = 0;
-          let bestFlupsyId = null;
-          flupsyActiveCounts.forEach((count, flupsyId) => {
-            if (count > maxCount) {
-              maxCount = count;
-              bestFlupsyId = flupsyId;
-            }
-          });
-          
-          if (bestFlupsyId) {
-            const bestFlupsy = flupsys.find((f: any) => f.id === bestFlupsyId);
-            console.log(`📍 AUTO-SELECT: Auto-selecting FLUPSY with most active cycles: ${bestFlupsy?.name} (${maxCount} cycles)`);
-            setTimeout(() => {
-              setFlupsyFilter(bestFlupsyId.toString());
-            }, 100);
-          }
-        }
-      }
-    }
-  }, [baskets, flupsys, cycles, isLoadingUnified, filters.flupsyFilter]);
+  }, [filters.flupsyFilter, filters.cycleStateFilter, baskets, cycles]);
   
   // Estrai i parametri dall'URL se presenti
   useEffect(() => {
@@ -990,8 +926,40 @@ export default function Operations() {
   const filteredCycleIds = useMemo(() => {
     if (!cycles || !baskets) return [];
     
-    return cycles
+    // First, apply FLUPSY filter to get valid cycles
+    let validCycles = cycles;
+    
+    // If a specific FLUPSY is selected, only include cycles from baskets in that FLUPSY
+    if (filters.flupsyFilter !== 'all') {
+      const selectedFlupsyId = parseInt(filters.flupsyFilter);
+      const flupsyBaskets = baskets.filter((b: any) => b.flupsyId === selectedFlupsyId);
+      const flupsyBasketIds = flupsyBaskets.map((b: any) => b.id);
+      
+      console.log(`🔍 FILTER: FLUPSY ${selectedFlupsyId} selected`, {
+        flupsyBaskets: flupsyBaskets.length,
+        basketIds: flupsyBasketIds
+      });
+      
+      // If no baskets in this FLUPSY, return empty array immediately
+      if (flupsyBasketIds.length === 0) {
+        console.log(`🚫 FILTER: No baskets found for FLUPSY ${selectedFlupsyId}, returning empty array`);
+        return [];
+      }
+      
+      // Filter cycles to only those from baskets in the selected FLUPSY
+      validCycles = cycles.filter((cycle: any) => flupsyBasketIds.includes(cycle.basketId));
+    }
+    
+    return validCycles
       .filter((cycle: any) => {
+        // First check cycle state filter - this is critical
+        const matchesCycleState = filters.cycleStateFilter === 'all' || 
+          (filters.cycleStateFilter === 'active' && cycle.state === 'active') ||
+          (filters.cycleStateFilter === 'closed' && cycle.state === 'closed');
+        
+        // If cycle state doesn't match, exclude immediately
+        if (!matchesCycleState) return false;
+        
         // Only keep cycles that have operations that match the filter criteria
         const cycleOps = operations?.filter((op: any) => op.cycleId === cycle.id) || [];
         if (cycleOps.length === 0) return false;
@@ -1004,29 +972,16 @@ export default function Operations() {
         const matchesDate = filters.dateFilter === '' || 
           cycleOps.some((op: any) => format(new Date(op.date), 'yyyy-MM-dd') === filters.dateFilter);
         
-        // Get basket for this cycle
-        const basket = baskets.find((b: any) => b.id === cycle.basketId);
-        
-        // Check if the basket's FLUPSY matches the FLUPSY filter
-        const matchesFlupsy = filters.flupsyFilter === 'all' || 
-          (basket && basket.flupsyId.toString() === filters.flupsyFilter);
-        
         // Check if the cycle matches the cycle filter
         const matchesCycle = filters.cycleFilter === 'all' || 
           cycle.id.toString() === filters.cycleFilter;
         
-        // Check if the cycle state matches the cycle state filter
-        const matchesCycleState = filters.cycleStateFilter === 'all' || 
-          (filters.cycleStateFilter === 'active' && cycle.state === 'active') ||
-          (filters.cycleStateFilter === 'closed' && cycle.state === 'closed');
-        
         // Check if any operation matches the search term
         const matchesSearch = filters.searchTerm === '' || 
           `${cycle.id}`.includes(filters.searchTerm) || 
-          (basket && `${basket.physicalNumber}`.includes(filters.searchTerm)) ||
           cycleOps.some((op: any) => `${op.basketId}`.includes(filters.searchTerm));
         
-        return matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesCycleState && matchesSearch;
+        return matchesType && matchesDate && matchesCycle && matchesSearch;
       })
       .map((cycle: any) => cycle.id);
   }, [cycles, baskets, operations, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, filters.searchTerm]);
