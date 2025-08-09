@@ -1267,50 +1267,51 @@ export default function SpreadsheetOperations() {
   };
 
   return (
-    <div className="container mx-auto py-4 space-y-3">
+    <div className="container mx-auto py-2 space-y-2">
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold">Spreadsheet Operazioni</h1>
-          <p className="text-sm text-gray-600">Inserimento rapido a foglio elettronico</p>
+        <div className="flex-1">
+          <h1 className="text-xl font-bold">Spreadsheet Operazioni</h1>
+          <p className="text-xs text-gray-600">Inserimento rapido a foglio elettronico</p>
           
-          {/* Legenda Performance */}
-          <div className="mt-2 flex items-center gap-4 p-2 bg-gray-50 rounded-md border">
-            <span className="text-xs font-medium text-gray-600">Performance:</span>
-            <div className="flex items-center gap-3 text-xs">
-              <div className="flex items-center gap-1">
+          {/* Legenda Performance ottimizzata */}
+          <div className="mt-1 flex items-center gap-3 p-1.5 bg-gray-50 rounded-md border text-xs">
+            <span className="font-medium text-gray-600">Performance:</span>
+            <div className="flex items-center gap-2">
+              <div className="flex items-center gap-0.5">
                 <span className="text-green-600">🏆</span>
                 <span className="text-gray-600">Eccellente (80%+)</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
                 <span className="text-yellow-600">⭐</span>
                 <span className="text-gray-600">Buona (60-79%)</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
                 <span className="text-orange-600">⚠️</span>
                 <span className="text-gray-600">Media (40-59%)</span>
               </div>
-              <div className="flex items-center gap-1">
+              <div className="flex items-center gap-0.5">
                 <span className="text-red-600">🔴</span>
                 <span className="text-gray-600">Attenzione (&lt;40%)</span>
               </div>
             </div>
-          </div>
-        </div>
-        
-        <div className="flex items-center gap-2">
-          <div className="px-2 py-1 bg-green-100 text-green-800 text-xs font-medium rounded">
-            {stats.saved}/{stats.total} salvate
-          </div>
-          {stats.errors > 0 && (
-            <div className="px-2 py-1 bg-red-100 text-red-800 text-xs font-medium rounded">
-              {stats.errors} errori
+            
+            {/* Statistiche salvate integrate */}
+            <div className="flex items-center gap-2 ml-auto">
+              <div className="px-2 py-0.5 bg-green-100 text-green-800 text-xs font-medium rounded">
+                {stats.saved}/{stats.total} salvate
+              </div>
+              {stats.errors > 0 && (
+                <div className="px-2 py-0.5 bg-red-100 text-red-800 text-xs font-medium rounded">
+                  {stats.errors} errori
+                </div>
+              )}
             </div>
-          )}
+          </div>
         </div>
       </div>
 
       {/* Controlli compatti */}
-      <div className="bg-white border rounded-lg p-3 shadow-sm">
+      <div className="bg-white border rounded-lg p-2 shadow-sm">
         <div className="flex items-center gap-3 flex-wrap">
           <div className="flex items-center gap-2 min-w-0">
             <label className="text-xs font-medium text-gray-600 whitespace-nowrap">FLUPSY</label>
@@ -1528,8 +1529,6 @@ export default function SpreadsheetOperations() {
                       getAssociatedRows(row.basketId).length > 1 ? 'bg-blue-50/20' : ''
                     } ${
                       hoveredBasketGroup === row.basketId ? 'bg-blue-100/40' : ''
-                    } ${
-                      growthPrediction.willReachTarget ? 'bg-gradient-to-r from-purple-50 to-purple-100 border-l-4 border-l-purple-500' : ''
                     }`}
                   >
                     {/* Indicatore laterale colorato per operazioni associate */}
@@ -1563,7 +1562,11 @@ export default function SpreadsheetOperations() {
                     {/* Colonna cestello fissa */}
                     <div 
                       style={{width: '70px'}}
-                      className="px-2 py-1 border-r flex items-center font-medium text-gray-700 bg-white sticky left-0 z-10 shadow-r cursor-pointer hover:bg-blue-50 transition-colors"
+                      className={`px-2 py-1 border-r flex items-center font-medium text-gray-700 sticky left-0 z-10 shadow-r cursor-pointer transition-colors ${
+                        growthPrediction.willReachTarget 
+                          ? 'bg-green-100 hover:bg-green-200' 
+                          : 'bg-white hover:bg-blue-50'
+                      }`}
                       onDoubleClick={(e) => handleDoubleClick(row.basketId, e)}
                       title="Doppio click per modificare operazione"
                     >
@@ -1586,9 +1589,8 @@ export default function SpreadsheetOperations() {
                           }
                           
                           return (
-                            <span className={`text-xs font-bold ${color} ${predictionInfo?.willReachTarget ? 'animate-pulse' : ''}`} title={tooltipText}>
+                            <span className={`text-xs font-bold ${color}`} title={tooltipText}>
                               {perfScore >= 80 ? '🏆' : perfScore >= 60 ? '⭐' : perfScore >= 40 ? '⚠️' : '🔴'}
-                              {predictionInfo?.willReachTarget && <span className="ml-0.5 text-purple-600">📈</span>}
                             </span>
                           );
                         })()}
