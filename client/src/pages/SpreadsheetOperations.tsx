@@ -2047,8 +2047,8 @@ export default function SpreadsheetOperations() {
                                   </span>
                                 </TooltipTrigger>
                                 {criticalAnalysis && (
-                                  <TooltipContent side="right" className="max-w-lg p-0 border-0 shadow-lg">
-                                    <div className="bg-white rounded-lg border shadow-xl overflow-hidden">
+                                  <TooltipContent side="left" sideOffset={10} className="max-w-lg p-0 border-0 shadow-lg" style={{zIndex: 9999}}>
+                                    <div className="bg-white rounded-lg border shadow-xl overflow-hidden" style={{zIndex: 9999}}>
                                       {/* Header critico */}
                                       <div className="bg-gradient-to-r from-red-500 to-red-600 text-white px-4 py-3">
                                         <div className="flex items-center gap-2">
@@ -2140,8 +2140,8 @@ export default function SpreadsheetOperations() {
                                   </TooltipContent>
                                 )}
                                 {!criticalAnalysis && (
-                                  <TooltipContent className="max-w-sm p-0 border-0 shadow-lg">
-                                    <div className="bg-white rounded-lg border shadow-xl overflow-hidden">
+                                  <TooltipContent side="left" sideOffset={10} className="max-w-sm p-0 border-0 shadow-lg" style={{zIndex: 9999}}>
+                                    <div className="bg-white rounded-lg border shadow-xl overflow-hidden" style={{zIndex: 9999}}>
                                       {/* Header normale */}
                                       <div className={`px-4 py-3 text-white ${
                                         perfScore >= 80 ? 'bg-gradient-to-r from-green-500 to-green-600' :
