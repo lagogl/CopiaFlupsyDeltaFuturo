@@ -1099,11 +1099,25 @@ export default function Operations() {
             onClick={async () => {
               try {
                 setIsRefreshingData(true);
+                console.log('🔄 REFRESH: Invalidando tutte le cache...');
+                
+                // Invalida tutte le cache prima di fare il refetch
+                queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/operations-unified'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+                queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+                
+                // Forza il refetch con parametri per bypassare cache
                 await Promise.all([
+                  refetchUnified(),
                   refetchOperations(),
                   refetchCycles(),
                   refetchBaskets()
                 ]);
+                
+                console.log('🔄 REFRESH: Cache invalidate e dati aggiornati');
                 
                 toast({
                   title: "Aggiornamento completato",
@@ -1111,6 +1125,7 @@ export default function Operations() {
                   variant: "default"
                 });
               } catch (error) {
+                console.error('🔄 REFRESH: Errore durante aggiornamento:', error);
                 toast({
                   title: "Errore durante l'aggiornamento",
                   description: "Si è verificato un problema durante l'aggiornamento dei dati",
