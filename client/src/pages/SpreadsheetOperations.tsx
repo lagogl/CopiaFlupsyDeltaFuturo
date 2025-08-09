@@ -1454,14 +1454,14 @@ export default function SpreadsheetOperations() {
             {targetSizeId && targetDate && (
               <button
                 onClick={() => setPredictionsEnabled(!predictionsEnabled)}
-                className={`h-8 px-4 text-xs font-medium rounded-md flex items-center gap-2 transition-all ${
+                className={`h-8 px-3 text-xs font-medium rounded-md flex items-center gap-1 transition-all ${
                   predictionsEnabled 
                     ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-md' 
                     : 'bg-purple-100 text-purple-700 hover:bg-purple-200 border border-purple-300'
                 }`}
               >
                 <span>📊</span>
-                {predictionsEnabled ? 'Nascondi Previsioni' : 'Calcola Previsioni'}
+                {predictionsEnabled ? 'Nascondi' : 'Calcola'}
               </button>
             )}
 
