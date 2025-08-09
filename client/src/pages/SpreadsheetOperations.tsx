@@ -463,6 +463,10 @@ export default function SpreadsheetOperations() {
       .sort((a, b) => a.physicalNumber - b.physicalNumber);
 
     console.log(`🔄 RIGHE: Ricalcolo per FLUPSY=${selectedFlupsyId}, baskets=${eligibleBaskets.length}, ops=${Array.isArray(operations) ? operations.length : 0}`);
+    console.log(`🔍 DEBUG BASKETS: Tutti i cestelli disponibili:`, ((baskets as any[]) || []).map((b: any) => `ID=${b.id}, flupsyId=${b.flupsyId}, numero=${b.physicalNumber}, state=${b.state}`));
+    console.log(`🔍 DEBUG FILTRO: Cerco cestelli con flupsyId=${selectedFlupsyId}, state=active, con currentCycleId`);
+    console.log(`🔍 DEBUG RESULT: Trovati ${eligibleBaskets.length} cestelli dopo filtro`);
+    
     if (selectedFlupsyId && selectedOperationType && eligibleBaskets.length > 0 && operations && Array.isArray(operations)) {
       const newRows: OperationRowData[] = eligibleBaskets.map(basket => {
         const lastOp = basket.lastOperation;
