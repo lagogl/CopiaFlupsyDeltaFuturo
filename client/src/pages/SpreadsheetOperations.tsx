@@ -418,50 +418,50 @@ export default function SpreadsheetOperations() {
     }
   }, [operations, operationsLoading, operationsError]);
   
-  // Prepara i dati dei cestelli per il FLUPSY selezionato
-  const eligibleBaskets: BasketData[] = ((baskets as any[]) || [])
-    .filter((basket: any) => 
-      basket.flupsyId === selectedFlupsyId && 
-      basket.state === 'active' && 
-      basket.currentCycleId
-    )
-    .map((basket: any) => {
-      const flupsy = ((flupsys as any[]) || []).find((f: any) => f.id === basket.flupsyId);
-      // Recupera TUTTE le operazioni per questa cesta per trovare davvero l'ultima
-      const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === basket.id);
-      const lastOp = basketOperations.length > 0 
-        ? basketOperations.sort((a: any, b: any) => {
-            // Prima ordina per ID (più recente = ID più alto)
-            const idDiff = b.id - a.id;
-            if (idDiff !== 0) return idDiff;
-            // Se gli ID sono uguali, ordina per data
-            return new Date(b.date).getTime() - new Date(a.date).getTime();
-          })[0]
-        : null;
-      
-      // Debug dettagliato per ogni cesta
-      console.log(`🏀 CESTA ${basket.physicalNumber}: ${basketOperations.length} operazioni trovate`);
-      if (basketOperations.length > 0) {
-        console.log(`   📋 Operazioni: ${basketOperations.map(op => `ID=${op.id}(${op.type})`).join(', ')}`);
-        console.log(`   ✅ Selezionata: ID=${lastOp?.id}, tipo=${lastOp?.type}, animali=${lastOp?.animalCount}`);
-      } else {
-        console.warn(`   ⚠️ Nessuna operazione trovata`);
-      }
-      
-      return {
-        id: basket.id,
-        physicalNumber: basket.physicalNumber,
-        flupsyId: basket.flupsyId,
-        currentCycleId: basket.currentCycleId,
-        state: basket.state,
-        flupsyName: flupsy?.name,
-        lastOperation: lastOp
-      };
-    })
-    .sort((a, b) => a.physicalNumber - b.physicalNumber);
-
   // Inizializza le righe quando cambiano FLUPSY, tipo operazione o data
   useEffect(() => {
+    // Prepara i dati dei cestelli per il FLUPSY selezionato
+    const eligibleBaskets: BasketData[] = ((baskets as any[]) || [])
+      .filter((basket: any) => 
+        basket.flupsyId === selectedFlupsyId && 
+        basket.state === 'active' && 
+        basket.currentCycleId
+      )
+      .map((basket: any) => {
+        const flupsy = ((flupsys as any[]) || []).find((f: any) => f.id === basket.flupsyId);
+        // Recupera TUTTE le operazioni per questa cesta per trovare davvero l'ultima
+        const basketOperations = ((operations as any[]) || []).filter((op: any) => op.basketId === basket.id);
+        const lastOp = basketOperations.length > 0 
+          ? basketOperations.sort((a: any, b: any) => {
+              // Prima ordina per ID (più recente = ID più alto)
+              const idDiff = b.id - a.id;
+              if (idDiff !== 0) return idDiff;
+              // Se gli ID sono uguali, ordina per data
+              return new Date(b.date).getTime() - new Date(a.date).getTime();
+            })[0]
+          : null;
+        
+        // Debug dettagliato per ogni cesta
+        console.log(`🏀 CESTA ${basket.physicalNumber}: ${basketOperations.length} operazioni trovate`);
+        if (basketOperations.length > 0) {
+          console.log(`   📋 Operazioni: ${basketOperations.map(op => `ID=${op.id}(${op.type})`).join(', ')}`);
+          console.log(`   ✅ Selezionata: ID=${lastOp?.id}, tipo=${lastOp?.type}, animali=${lastOp?.animalCount}`);
+        } else {
+          console.warn(`   ⚠️ Nessuna operazione trovata`);
+        }
+        
+        return {
+          id: basket.id,
+          physicalNumber: basket.physicalNumber,
+          flupsyId: basket.flupsyId,
+          currentCycleId: basket.currentCycleId,
+          state: basket.state,
+          flupsyName: flupsy?.name,
+          lastOperation: lastOp
+        };
+      })
+      .sort((a, b) => a.physicalNumber - b.physicalNumber);
+
     console.log(`🔄 RIGHE: Ricalcolo per FLUPSY=${selectedFlupsyId}, baskets=${eligibleBaskets.length}, ops=${Array.isArray(operations) ? operations.length : 0}`);
     if (selectedFlupsyId && selectedOperationType && eligibleBaskets.length > 0 && operations && Array.isArray(operations)) {
       const newRows: OperationRowData[] = eligibleBaskets.map(basket => {
@@ -1036,7 +1036,8 @@ export default function SpreadsheetOperations() {
         : r
     ));
     
-    const basket = eligibleBaskets.find(b => b.id === basketId);
+    // Trova il cestello dai dati caricati
+    const basket = ((baskets as any[]) || []).find((b: any) => b.id === basketId);
     if (!basket) {
       console.error('❌ Spreadsheet: Cestello non trovato per basketId:', basketId);
       return;
