@@ -86,6 +86,8 @@ export default function SpreadsheetOperations() {
     return date.toISOString().split('T')[0];
   });
   const [predictionsEnabled, setPredictionsEnabled] = useState<boolean>(false); // Controlla se calcolare le previsioni
+  const [showPredictionPopup, setShowPredictionPopup] = useState<boolean>(false); // Controlla popup previsioni
+  const [predictionSummary, setPredictionSummary] = useState<any>(null); // Dati sintesi previsioni
   
   // Stati per sistema Undo e salvataggio singolo
   const [originalRows, setOriginalRows] = useState<OperationRowData[]>([]);  // Backup per Undo
@@ -1278,6 +1280,105 @@ export default function SpreadsheetOperations() {
     })));
   };
 
+  // Calcola sintesi previsioni per popup
+  const calculatePredictionSummary = () => {
+    if (!targetSizeId || !targetDate) return;
+
+    const summary = {
+      targetSizeInfo: ((sizes as any[]) || []).find((s: any) => s.id === targetSizeId),
+      totalAnimalsAtTarget: 0,
+      basketsSummary: [] as any[],
+      sizeBreakdown: {} as any
+    };
+
+    // Calcola per ogni cestello
+    operationRows.forEach(row => {
+      const prediction = calculateGrowthPrediction(row.basketId, targetSizeId, targetDate);
+      
+      if (prediction.willReachTarget) {
+        // Calcola animali disponibili al target (stima basata su crescita)
+        const animalsAtTarget = row.animalCount || 0;
+        
+        const currentAnimalsPerKg = row.animalsPerKg || 0;
+        const currentSize = ((sizes as any[]) || []).find((s: any) => 
+          currentAnimalsPerKg >= s.minAnimalsPerKg && currentAnimalsPerKg <= s.maxAnimalsPerKg
+        );
+        
+        // Usa projectedAnimalsPerKg come valore finale stimato
+        const finalAnimalsPerKg = prediction.projectedAnimalsPerKg || currentAnimalsPerKg;
+        const finalSize = ((sizes as any[]) || []).find((s: any) => 
+          finalAnimalsPerKg >= s.minAnimalsPerKg && finalAnimalsPerKg <= s.maxAnimalsPerKg
+        );
+
+        summary.totalAnimalsAtTarget += animalsAtTarget;
+        
+        summary.basketsSummary.push({
+          basketNumber: row.physicalNumber,
+          currentAnimals: row.animalCount,
+          animalsAtTarget: animalsAtTarget,
+          currentSize: currentSize?.code || 'N/A',
+          finalSize: finalSize?.code || 'N/A',
+          daysToTarget: prediction.daysToTarget || 0
+        });
+
+        // Breakdown per taglia finale
+        const finalSizeCode = finalSize?.code || 'N/A';
+        if (!summary.sizeBreakdown[finalSizeCode]) {
+          summary.sizeBreakdown[finalSizeCode] = 0;
+        }
+        summary.sizeBreakdown[finalSizeCode] += animalsAtTarget;
+      }
+    });
+
+    setPredictionSummary(summary);
+  };
+
+  // Esporta dati in Excel
+  const exportToExcel = () => {
+    if (!predictionSummary) return;
+
+    const data = [
+      ['Sintesi Previsioni di Crescita'],
+      ['Target:', predictionSummary.targetSizeInfo?.code || 'N/A'],
+      ['Data Target:', targetDate],
+      [''],
+      ['Cestello', 'Animali Attuali', 'Animali al Target', 'Taglia Attuale', 'Taglia Finale', 'Giorni al Target'],
+      ...predictionSummary.basketsSummary.map((basket: any) => [
+        `#${basket.basketNumber}`,
+        basket.currentAnimals,
+        basket.animalsAtTarget,
+        basket.currentSize,
+        basket.finalSize,
+        basket.daysToTarget
+      ]),
+      [''],
+      ['TOTALE ANIMALI AL TARGET:', predictionSummary.totalAnimalsAtTarget],
+      [''],
+      ['Breakdown per Taglia Finale:'],
+      ...Object.entries(predictionSummary.sizeBreakdown).map(([size, count]) => [size, count])
+    ];
+
+    // Crea CSV
+    const csvContent = data.map(row => row.join(',')).join('\n');
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const link = document.createElement('a');
+    
+    if (link.download !== undefined) {
+      const url = URL.createObjectURL(blob);
+      link.setAttribute('href', url);
+      link.setAttribute('download', `previsioni_crescita_${targetDate}.csv`);
+      link.style.visibility = 'hidden';
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+    }
+
+    toast({
+      title: "Export completato",
+      description: "File CSV scaricato con successo",
+    });
+  };
+
   // Calcola statistiche
   const stats = {
     total: operationRows.length,
@@ -1453,7 +1554,14 @@ export default function SpreadsheetOperations() {
             {/* Pulsante Calcola Previsioni */}
             {targetSizeId && targetDate && (
               <button
-                onClick={() => setPredictionsEnabled(!predictionsEnabled)}
+                onClick={() => {
+                  setPredictionsEnabled(!predictionsEnabled);
+                  if (!predictionsEnabled) {
+                    // Calcola sintesi quando si abilitano le previsioni
+                    calculatePredictionSummary();
+                    setShowPredictionPopup(true);
+                  }
+                }}
                 className={`h-8 px-3 text-xs font-medium rounded-md flex items-center gap-1 transition-all ${
                   predictionsEnabled 
                     ? 'bg-purple-600 text-white hover:bg-purple-700 shadow-md' 
@@ -2470,6 +2578,113 @@ export default function SpreadsheetOperations() {
                   ✓ Salva
                 </button>
               </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Popup Sintesi Previsioni */}
+      {showPredictionPopup && predictionSummary && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl max-w-4xl w-full max-h-[90vh] overflow-hidden">
+            {/* Header */}
+            <div className="bg-gradient-to-r from-purple-600 to-indigo-600 text-white p-4 flex items-center justify-between">
+              <div>
+                <h3 className="text-lg font-bold">📊 Sintesi Previsioni di Crescita</h3>
+                <p className="text-sm opacity-90">
+                  Target: {predictionSummary.targetSizeInfo?.code} - Data: {targetDate}
+                </p>
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  onClick={exportToExcel}
+                  className="px-3 py-1 bg-green-500 hover:bg-green-600 rounded text-sm font-medium transition-colors"
+                >
+                  📄 Esporta Excel
+                </button>
+                <button
+                  onClick={() => setShowPredictionPopup(false)}
+                  className="p-1 hover:bg-white/20 rounded transition-colors"
+                >
+                  ✕
+                </button>
+              </div>
+            </div>
+
+            {/* Contenuto */}
+            <div className="p-6 overflow-y-auto max-h-[70vh]">
+              {/* Totale */}
+              <div className="bg-gradient-to-r from-green-50 to-blue-50 border border-green-200 rounded-lg p-4 mb-6">
+                <div className="text-center">
+                  <h4 className="text-2xl font-bold text-green-700">
+                    {formatNumberWithSeparators(predictionSummary.totalAnimalsAtTarget)}
+                  </h4>
+                  <p className="text-sm text-gray-600">Animali totali disponibili al target</p>
+                </div>
+              </div>
+
+              {/* Breakdown per Taglia */}
+              <div className="mb-6">
+                <h5 className="font-semibold text-gray-800 mb-3">Breakdown per Taglia Finale</h5>
+                <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                  {Object.entries(predictionSummary.sizeBreakdown).map(([size, count]: [string, any]) => (
+                    <div key={size} className="bg-gray-50 border rounded-lg p-3 text-center">
+                      <div className="font-bold text-lg text-purple-600">
+                        {formatNumberWithSeparators(count)}
+                      </div>
+                      <div className="text-xs text-gray-600">{size}</div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+
+              {/* Tabella Dettaglio Cestelli */}
+              <div>
+                <h5 className="font-semibold text-gray-800 mb-3">Dettaglio per Cestello</h5>
+                <div className="overflow-x-auto">
+                  <table className="w-full border border-gray-200 rounded-lg overflow-hidden">
+                    <thead className="bg-gray-50">
+                      <tr>
+                        <th className="px-4 py-2 text-left text-xs font-medium text-gray-600">Cestello</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-600">Animali Attuali</th>
+                        <th className="px-4 py-2 text-right text-xs font-medium text-gray-600">Animali al Target</th>
+                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-600">Taglia Attuale</th>
+                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-600">Taglia Finale</th>
+                        <th className="px-4 py-2 text-center text-xs font-medium text-gray-600">Giorni</th>
+                      </tr>
+                    </thead>
+                    <tbody className="divide-y divide-gray-200">
+                      {predictionSummary.basketsSummary.map((basket: any, index: number) => (
+                        <tr key={index} className="hover:bg-gray-50">
+                          <td className="px-4 py-2 font-medium">#{basket.basketNumber}</td>
+                          <td className="px-4 py-2 text-right">{formatNumberWithSeparators(basket.currentAnimals)}</td>
+                          <td className="px-4 py-2 text-right font-bold text-green-600">
+                            {formatNumberWithSeparators(basket.animalsAtTarget)}
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                              {basket.currentSize}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-center">
+                            <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
+                              {basket.finalSize}
+                            </span>
+                          </td>
+                          <td className="px-4 py-2 text-center">{basket.daysToTarget}</td>
+                        </tr>
+                      ))}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+
+              {predictionSummary.basketsSummary.length === 0 && (
+                <div className="text-center py-8 text-gray-500">
+                  <p>Nessun cestello raggiungerà il target nella data selezionata.</p>
+                  <p className="text-sm">Prova con una data più lontana nel futuro.</p>
+                </div>
+              )}
             </div>
           </div>
         </div>
