@@ -540,7 +540,7 @@ export default function SpreadsheetOperations() {
   const calculatePerformanceScore = (row: OperationRowData): number => {
     let score = 0;
     
-    // 1. CRESCITA - Taglia (40% del punteggio)
+    // 1. CRESCITA - Taglia (30% del punteggio)
     // Taglie più grandi = animali cresciuti meglio = migliore performance
     const sizeScore = (() => {
       const size = row.currentSize;
@@ -550,25 +550,46 @@ export default function SpreadsheetOperations() {
       if (size === 'TP-1000' || size === 'TP-1500') return 40; // Taglia piccola
       return 20; // N/A o sconosciuta
     })();
-    score += sizeScore * 0.4;
+    score += sizeScore * 0.3;
 
-    // 2. DENSITÀ POPOLAZIONE - Numero animali (30% del punteggio)
+    // 2. DENSITÀ POPOLAZIONE - Numero animali (25% del punteggio)
     // Più animali = maggiore produttività = migliore performance
     const animalCount = row.animalCount || 0;
     const populationScore = Math.min(100, (animalCount / 100000) * 100); // 100k animali = 100%
-    score += populationScore * 0.3;
+    score += populationScore * 0.25;
 
-    // 3. PESO MEDIO - Peso per animale (20% del punteggio)  
+    // 3. PESO MEDIO - Peso per animale (15% del punteggio)  
     // Animali più pesanti = migliore crescita = migliore performance
     const weightScore = Math.min(100, ((row.averageWeight || 0) / 1000) * 100); // 1g = 100%
-    score += weightScore * 0.2;
+    score += weightScore * 0.15;
 
-    // 4. ETÀ CICLO - Operazioni recenti (10% del punteggio)
+    // 4. MORTALITÀ - Fattore critico (25% del punteggio)
+    // Mortalità bassa = migliore performance, mortalità alta = penalità severa
+    const mortalityRate = (() => {
+      // Cerca ultima operazione con mortalità per questa cesta
+      const basketOps = ((operations as any[]) || []).filter((op: any) => op.basketId === row.basketId);
+      const lastOpWithMortality = basketOps
+        .filter((op: any) => op.mortalityRate != null && op.mortalityRate >= 0)
+        .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+      
+      return lastOpWithMortality?.mortalityRate || 0;
+    })();
+    
+    const mortalityScore = (() => {
+      if (mortalityRate >= 20) return 0;   // >20% = CRITICO (0 punti)
+      if (mortalityRate >= 15) return 20;  // 15-20% = ALTO (20 punti)
+      if (mortalityRate >= 10) return 40;  // 10-15% = MEDIO-ALTO (40 punti)
+      if (mortalityRate >= 5) return 70;   // 5-10% = ACCETTABILE (70 punti)
+      return 100;                          // <5% = OTTIMO (100 punti)
+    })();
+    score += mortalityScore * 0.25;
+
+    // 5. ETÀ CICLO - Operazioni recenti (5% del punteggio)
     // Operazioni più recenti = ciclo più attivo = migliore gestione
     const daysSinceLastOp = row.lastOperationDate ? 
       Math.floor((new Date().getTime() - new Date(row.lastOperationDate).getTime()) / (1000 * 60 * 60 * 24)) : 30;
     const ageScore = Math.max(0, 100 - (daysSinceLastOp * 5)); // -5 punti per giorno
-    score += ageScore * 0.1;
+    score += ageScore * 0.05;
 
     return Math.round(score * 100) / 100; // Arrotonda a 2 decimali
   };
