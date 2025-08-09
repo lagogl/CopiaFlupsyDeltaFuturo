@@ -28,15 +28,17 @@ Preferred communication style: Simple, everyday language.
 - **Implementation**: Conditional rendering for display-only fields showing formatted numbers while preserving editable input fields
 - **Result**: Enhanced readability for large numbers while maintaining functionality
 
-### Date-based Growth Predictions with Min Animals Per Kg Reference
-- **Issue**: User requested to replace weeks field with target date in growth predictions, using min_animals_per_kg as reference value
-- **Solution**: Replaced weeks input with date picker, updated calculation logic to use target date and min_animals_per_kg as threshold
+### Date-based Growth Predictions with Correct SGR Calculation
+- **Issue**: Growth predictions were incorrect due to SGR calculation error and wrong size threshold reference
+- **Root Cause**: SGR values in database were already daily percentages, but code was dividing by 30 treating them as monthly
+- **Solution**: Fixed SGR calculation and corrected size threshold logic
 - **Implementation**: 
-  - Changed `targetWeeks` state to `targetDate` with default 4 weeks from current date
-  - Updated `calculateGrowthPrediction()` to calculate days between current date and target date
-  - Modified logic to use `targetSize.minAnimalsPerKg` instead of `maxAnimalsPerKg` as growth target threshold
-  - Updated UI to show "entro il [date]" instead of "in X settimane" in totalizer
-- **Result**: More precise date-based predictions with accurate size classification reference values
+  - Changed `targetWeeks` state to `targetDate` with date picker interface
+  - Fixed SGR calculation: removed division by 30 since database values are already daily percentages
+  - Corrected logic to use `targetSize.maxAnimalsPerKg` instead of `minAnimalsPerKg` as growth target threshold
+  - Updated calculation: animals must drop BELOW max threshold to reach target size
+  - Added detailed debug logging for growth prediction verification
+- **Result**: Accurate growth predictions showing realistic timeframes (e.g., Cesta #20 reaches TP-2800 in 10 days with 8.3% daily SGR)
 
 ## System Architecture
 
