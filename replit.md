@@ -40,6 +40,22 @@ Preferred communication style: Simple, everyday language.
   - Added detailed debug logging for growth prediction verification
 - **Result**: Accurate growth predictions showing realistic timeframes (e.g., Cesta #20 reaches TP-2800 in 10 days with 8.3% daily SGR)
 
+### AI-Enhanced Performance Scoring with Predictive Trend Analysis
+- **Feature**: Implemented intelligent trend analysis using AI to enhance performance scoring algorithm
+- **Innovation**: Added predictive trend multiplier that analyzes historical data patterns to adjust performance scores
+- **Algorithm Enhancement**:
+  - **Mortality Trend Analysis**: Detects patterns in mortality rates across last 3 operations with severe penalties for increasing trends
+  - **Population Trend Monitoring**: Identifies significant population losses (>15% = penalty, >30% = severe penalty)
+  - **Weight Growth Patterns**: Rewards consistent weight gain trends and penalizes weight loss
+  - **Operation Frequency Analysis**: Considers management activity level (more frequent operations = better score)
+- **Scoring Multipliers**:
+  - Trend in miglioramento: +8% to +15% bonus
+  - Trend stabile: neutral (1.0x)
+  - Trend in peggioramento: -15% penalty
+  - Trend critico: -25% penalty
+- **Smart Tooltips Integration**: All ceste show detailed trend analysis in tooltips (critical ceste get enhanced analysis with specific recommendations)
+- **Result**: More accurate performance scoring that considers trajectory, not just current state, helping operators anticipate problems before they become critical
+
 ## System Architecture
 
 ### Frontend Architecture

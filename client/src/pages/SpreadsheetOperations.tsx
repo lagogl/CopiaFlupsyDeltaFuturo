@@ -591,7 +591,183 @@ export default function SpreadsheetOperations() {
     const ageScore = Math.max(0, 100 - (daysSinceLastOp * 5)); // -5 punti per giorno
     score += ageScore * 0.05;
 
-    return Math.round(score * 100) / 100; // Arrotonda a 2 decimali
+    // **ANALISI PREDITTIVA TREND** - Nuovo fattore AI
+    const trendAnalysis = analyzeTrendPrediction(row);
+    const trendMultiplier = trendAnalysis.multiplier;
+    const finalScore = score * trendMultiplier;
+
+    return Math.round(finalScore * 100) / 100; // Arrotonda a 2 decimali
+  };
+
+  // **ANALISI PREDITTIVA TREND - AI ENHANCEMENT**
+  const analyzeTrendPrediction = (row: OperationRowData): {
+    trend: 'miglioramento' | 'stabile' | 'peggioramento' | 'critico';
+    multiplier: number;
+    confidence: number;
+    details: string;
+  } => {
+    // Recupera le ultime 5 operazioni per questa cesta (ordinate dalla più recente)
+    const basketOps = ((operations as any[]) || [])
+      .filter((op: any) => op.basketId === row.basketId)
+      .sort((a: any, b: any) => new Date(b.date).getTime() - new Date(a.date).getTime())
+      .slice(0, 5);
+
+    // Se non ci sono abbastanza dati storici, applica moltiplicatore neutro
+    if (basketOps.length < 2) {
+      return {
+        trend: 'stabile',
+        multiplier: 1.0,
+        confidence: 0,
+        details: 'Dati insufficienti per analisi trend'
+      };
+    }
+
+    let trendScore = 0;
+    let indicators = 0;
+    let details: string[] = [];
+
+    // 1. TREND MORTALITÀ (peso massimo)
+    const mortalityValues = basketOps
+      .filter(op => op.mortalityRate != null)
+      .map(op => op.mortalityRate)
+      .slice(0, 3); // Ultime 3 operazioni con mortalità
+
+    if (mortalityValues.length >= 2) {
+      const recent = mortalityValues[0];
+      const previous = mortalityValues[1];
+      const older = mortalityValues.length > 2 ? mortalityValues[2] : previous;
+
+      // Calcola trend mortalità
+      if (recent > previous && previous >= older) {
+        // Peggioramento costante
+        const increase = recent - older;
+        if (increase > 10) {
+          trendScore -= 3; // Penalità severa
+          details.push(`Mortalità in peggioramento grave: +${increase.toFixed(1)}%`);
+        } else if (increase > 5) {
+          trendScore -= 2; // Penalità media
+          details.push(`Mortalità in peggioramento: +${increase.toFixed(1)}%`);
+        } else {
+          trendScore -= 1; // Penalità lieve
+          details.push(`Leggero peggioramento mortalità: +${increase.toFixed(1)}%`);
+        }
+      } else if (recent < previous && previous > older) {
+        // Miglioramento
+        const decrease = older - recent;
+        if (decrease > 5) {
+          trendScore += 2; // Bonus importante
+          details.push(`Mortalità in forte miglioramento: -${decrease.toFixed(1)}%`);
+        } else {
+          trendScore += 1; // Bonus moderato
+          details.push(`Mortalità in miglioramento: -${decrease.toFixed(1)}%`);
+        }
+      }
+      indicators++;
+    }
+
+    // 2. TREND POPOLAZIONE (crescita animali)
+    const animalCounts = basketOps
+      .filter(op => op.animalCount != null && op.animalCount > 0)
+      .map(op => op.animalCount)
+      .slice(0, 3);
+
+    if (animalCounts.length >= 2) {
+      const recent = animalCounts[0];
+      const previous = animalCounts[1];
+      
+      const changePercent = ((recent - previous) / previous) * 100;
+      
+      if (changePercent < -30) {
+        // Perdita massiva di popolazione
+        trendScore -= 3;
+        details.push(`Perdita massiva popolazione: ${changePercent.toFixed(1)}%`);
+      } else if (changePercent < -15) {
+        // Perdita significativa
+        trendScore -= 2;
+        details.push(`Perdita popolazione: ${changePercent.toFixed(1)}%`);
+      } else if (changePercent > 10) {
+        // Crescita positiva (improbabile ma possibile)
+        trendScore += 1;
+        details.push(`Crescita popolazione: +${changePercent.toFixed(1)}%`);
+      }
+      indicators++;
+    }
+
+    // 3. TREND PESO MEDIO (crescita individuale)
+    const weightValues = basketOps
+      .filter(op => op.averageWeight != null && op.averageWeight > 0)
+      .map(op => op.averageWeight)
+      .slice(0, 3);
+
+    if (weightValues.length >= 2) {
+      const recent = weightValues[0];
+      const previous = weightValues[1];
+      const older = weightValues.length > 2 ? weightValues[2] : previous;
+
+      // Verifica trend crescita peso
+      if (recent > previous && previous >= older) {
+        const growth = ((recent - older) / older) * 100;
+        if (growth > 20) {
+          trendScore += 2; // Crescita eccellente
+          details.push(`Crescita peso eccellente: +${growth.toFixed(1)}%`);
+        } else if (growth > 10) {
+          trendScore += 1; // Crescita buona
+          details.push(`Buona crescita peso: +${growth.toFixed(1)}%`);
+        }
+      } else if (recent < previous) {
+        // Perdita peso (problema serio)
+        const loss = ((previous - recent) / previous) * 100;
+        trendScore -= 2;
+        details.push(`Perdita peso preoccupante: -${loss.toFixed(1)}%`);
+      }
+      indicators++;
+    }
+
+    // 4. TREND TEMPORALE (frequenza operazioni)
+    if (basketOps.length >= 3) {
+      const dates = basketOps.map(op => new Date(op.date));
+      const daysBetween1 = Math.floor((dates[0].getTime() - dates[1].getTime()) / (1000 * 60 * 60 * 24));
+      const daysBetween2 = Math.floor((dates[1].getTime() - dates[2].getTime()) / (1000 * 60 * 60 * 24));
+
+      if (daysBetween1 > daysBetween2 * 2) {
+        // Operazioni sempre più rade
+        trendScore -= 1;
+        details.push('Frequenza operazioni in diminuzione');
+      } else if (daysBetween1 < daysBetween2 * 0.5) {
+        // Operazioni più frequenti (gestione attiva)
+        trendScore += 1;
+        details.push('Gestione più attiva e frequente');
+      }
+      indicators++;
+    }
+
+    // Calcola il moltiplicatore finale basato sul trend score
+    let multiplier = 1.0;
+    let trend: 'miglioramento' | 'stabile' | 'peggioramento' | 'critico' = 'stabile';
+    
+    if (trendScore >= 3) {
+      multiplier = 1.15; // Bonus +15% per trend molto positivo
+      trend = 'miglioramento';
+    } else if (trendScore >= 1) {
+      multiplier = 1.08; // Bonus +8% per trend positivo
+      trend = 'miglioramento';
+    } else if (trendScore <= -4) {
+      multiplier = 0.75; // Penalità -25% per trend molto negativo
+      trend = 'critico';
+    } else if (trendScore <= -2) {
+      multiplier = 0.85; // Penalità -15% per trend negativo
+      trend = 'peggioramento';
+    }
+
+    // Calcola confidenza basata sul numero di indicatori
+    const confidence = Math.min(100, (indicators / 4) * 100);
+
+    return {
+      trend,
+      multiplier,
+      confidence,
+      details: details.length > 0 ? details.join('; ') : 'Trend stabile senza variazioni significative'
+    };
   };
 
   // **ANALISI AI PER CESTE CRITICHE**
@@ -1859,6 +2035,9 @@ export default function SpreadsheetOperations() {
                           // Analisi AI per ceste critiche (performance < 40%)
                           const criticalAnalysis = perfScore < 40 ? generateCriticalAnalysis(row) : null;
                           
+                          // Analisi trend per tutte le ceste (per tooltip)
+                          const trendData = analyzeTrendPrediction(row);
+                          
                           return (
                             <TooltipProvider>
                               <Tooltip>
@@ -1911,6 +2090,43 @@ export default function SpreadsheetOperations() {
                                           </div>
                                         </div>
 
+                                        {/* Analisi Trend AI */}
+                                        <div className={`p-3 border-l-4 rounded ${
+                                          trendData.trend === 'miglioramento' ? 'bg-green-50 border-green-400' :
+                                          trendData.trend === 'peggioramento' ? 'bg-orange-50 border-orange-400' :
+                                          trendData.trend === 'critico' ? 'bg-red-50 border-red-400' :
+                                          'bg-gray-50 border-gray-400'
+                                        }`}>
+                                          <div className="flex items-center gap-2">
+                                            <span className={
+                                              trendData.trend === 'miglioramento' ? 'text-green-600' :
+                                              trendData.trend === 'peggioramento' ? 'text-orange-600' :
+                                              trendData.trend === 'critico' ? 'text-red-600' :
+                                              'text-gray-600'
+                                            }>
+                                              {trendData.trend === 'miglioramento' ? '📈' :
+                                               trendData.trend === 'peggioramento' ? '📉' :
+                                               trendData.trend === 'critico' ? '⚠️' : '➡️'}
+                                            </span>
+                                            <span className={`font-semibold text-xs ${
+                                              trendData.trend === 'miglioramento' ? 'text-green-800' :
+                                              trendData.trend === 'peggioramento' ? 'text-orange-800' :
+                                              trendData.trend === 'critico' ? 'text-red-800' :
+                                              'text-gray-800'
+                                            }`}>
+                                              Trend AI: {trendData.trend.toUpperCase()} ({(trendData.multiplier * 100).toFixed(0)}%)
+                                            </span>
+                                          </div>
+                                          <p className={`text-xs mt-1 ${
+                                            trendData.trend === 'miglioramento' ? 'text-green-700' :
+                                            trendData.trend === 'peggioramento' ? 'text-orange-700' :
+                                            trendData.trend === 'critico' ? 'text-red-700' :
+                                            'text-gray-700'
+                                          }`}>
+                                            {trendData.details}
+                                          </p>
+                                        </div>
+
                                         {/* Urgenza */}
                                         <div className="p-3 bg-yellow-50 border-l-4 border-yellow-400 rounded">
                                           <div className="flex items-center gap-2">
@@ -1924,14 +2140,77 @@ export default function SpreadsheetOperations() {
                                   </TooltipContent>
                                 )}
                                 {!criticalAnalysis && (
-                                  <TooltipContent>
-                                    <div className="text-sm">
-                                      Performance: {perfScore.toFixed(1)}/100
-                                      {predictionInfo && predictionInfo.willReachTarget && (
-                                        <div className="mt-1">
-                                          📈 Raggiungerà {((sizes as any[]) || []).find((s: any) => s.id === targetSizeId)?.code || 'target'} in {predictionInfo.daysToTarget} giorni
+                                  <TooltipContent className="max-w-sm p-0 border-0 shadow-lg">
+                                    <div className="bg-white rounded-lg border shadow-xl overflow-hidden">
+                                      {/* Header normale */}
+                                      <div className={`px-4 py-3 text-white ${
+                                        perfScore >= 80 ? 'bg-gradient-to-r from-green-500 to-green-600' :
+                                        perfScore >= 60 ? 'bg-gradient-to-r from-yellow-500 to-yellow-600' :
+                                        'bg-gradient-to-r from-orange-500 to-orange-600'
+                                      }`}>
+                                        <div className="flex items-center gap-2">
+                                          <div className="h-8 w-8 bg-white/20 rounded-full flex items-center justify-center">
+                                            {perfScore >= 80 ? '🏆' : perfScore >= 60 ? '⭐' : '⚠️'}
+                                          </div>
+                                          <div>
+                                            <h4 className="font-semibold text-sm">Cesta #{row.physicalNumber}</h4>
+                                            <p className="text-xs opacity-90">Performance: {perfScore.toFixed(1)}/100</p>
+                                          </div>
                                         </div>
-                                      )}
+                                      </div>
+
+                                      {/* Contenuto */}
+                                      <div className="p-4 space-y-3">
+                                        {/* Analisi Trend AI */}
+                                        <div className={`p-3 border-l-4 rounded ${
+                                          trendData.trend === 'miglioramento' ? 'bg-green-50 border-green-400' :
+                                          trendData.trend === 'peggioramento' ? 'bg-orange-50 border-orange-400' :
+                                          trendData.trend === 'critico' ? 'bg-red-50 border-red-400' :
+                                          'bg-gray-50 border-gray-400'
+                                        }`}>
+                                          <div className="flex items-center gap-2">
+                                            <span className={
+                                              trendData.trend === 'miglioramento' ? 'text-green-600' :
+                                              trendData.trend === 'peggioramento' ? 'text-orange-600' :
+                                              trendData.trend === 'critico' ? 'text-red-600' :
+                                              'text-gray-600'
+                                            }>
+                                              {trendData.trend === 'miglioramento' ? '📈' :
+                                               trendData.trend === 'peggioramento' ? '📉' :
+                                               trendData.trend === 'critico' ? '⚠️' : '➡️'}
+                                            </span>
+                                            <span className={`font-semibold text-xs ${
+                                              trendData.trend === 'miglioramento' ? 'text-green-800' :
+                                              trendData.trend === 'peggioramento' ? 'text-orange-800' :
+                                              trendData.trend === 'critico' ? 'text-red-800' :
+                                              'text-gray-800'
+                                            }`}>
+                                              Trend AI: {trendData.trend.toUpperCase()} ({(trendData.multiplier * 100).toFixed(0)}%)
+                                            </span>
+                                          </div>
+                                          <p className={`text-xs mt-1 ${
+                                            trendData.trend === 'miglioramento' ? 'text-green-700' :
+                                            trendData.trend === 'peggioramento' ? 'text-orange-700' :
+                                            trendData.trend === 'critico' ? 'text-red-700' :
+                                            'text-gray-700'
+                                          }`}>
+                                            {trendData.details}
+                                          </p>
+                                        </div>
+
+                                        {/* Previsioni crescita */}
+                                        {predictionInfo && predictionInfo.willReachTarget && (
+                                          <div className="p-3 bg-blue-50 border-l-4 border-blue-400 rounded">
+                                            <div className="flex items-center gap-2">
+                                              <span className="text-blue-600">📈</span>
+                                              <span className="font-semibold text-xs text-blue-800">Previsione Crescita</span>
+                                            </div>
+                                            <p className="text-xs text-blue-700 mt-1">
+                                              Raggiungerà {((sizes as any[]) || []).find((s: any) => s.id === targetSizeId)?.code || 'target'} in {predictionInfo.daysToTarget} giorni
+                                            </p>
+                                          </div>
+                                        )}
+                                      </div>
                                     </div>
                                   </TooltipContent>
                                 )}
