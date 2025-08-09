@@ -147,6 +147,8 @@ export default function Operations() {
     cycleStateFilter: 'active',
     viewMode: 'cycles' as 'table' | 'cycles'
   });
+
+
   
   // Non estraiamo più i filtri in variabili locali perché non rimangono sincronizzate
   // quando i filtri cambiano. Useremo direttamente filters.searchTerm, ecc.
@@ -260,6 +262,32 @@ export default function Operations() {
   
   // Alias for SGR data (for consistency in naming)
   const sgrs = sgrData;
+
+  // Auto-select a FLUPSY with active baskets if "all" is selected and no active cycles are found
+  React.useEffect(() => {
+    if (filters.flupsyFilter === 'all' && baskets && flupsys && cycles && !isLoadingUnified) {
+      // Check if there are any active cycles at all
+      const activeCycles = cycles.filter((c: any) => c.state === 'active');
+      
+      // Find the first FLUPSY that has active baskets
+      const flupsyWithActiveBaskets = flupsys.find((flupsy: any) => {
+        const flupsyBaskets = baskets.filter((b: any) => b.flupsyId === flupsy.id);
+        const activeBaskets = flupsyBaskets.filter((b: any) => b.state === 'active');
+        return activeBaskets.length > 0;
+      });
+
+      // Auto-select only if there are active baskets and the current filter shows no results
+      if (flupsyWithActiveBaskets && activeCycles.length > 0) {
+        console.log(`📍 Auto-selecting FLUPSY with active baskets: ${flupsyWithActiveBaskets.name}`);
+        // Small delay to ensure this runs only once
+        setTimeout(() => {
+          if (filters.flupsyFilter === 'all') {
+            setFlupsyFilter(flupsyWithActiveBaskets.id.toString());
+          }
+        }, 100);
+      }
+    }
+  }, [baskets, flupsys, cycles, isLoadingUnified, filters.flupsyFilter]);
   
   // Estrai i parametri dall'URL se presenti
   useEffect(() => {
@@ -1196,11 +1224,35 @@ export default function Operations() {
                 </SelectTrigger>
                 <SelectContent>
                   <SelectItem value="all">Tutti i FLUPSY</SelectItem>
-                  {flupsys?.map((flupsy: any) => (
-                    <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
-                      {flupsy.name}
-                    </SelectItem>
-                  ))}
+                  {flupsys?.map((flupsy: any) => {
+                    // Conta i cestelli attivi per questo FLUPSY
+                    const flupsyBaskets = baskets?.filter((b: any) => b.flupsyId === flupsy.id) || [];
+                    const activeBaskets = flupsyBaskets.filter((b: any) => b.state === 'active').length;
+                    const totalBaskets = flupsyBaskets.length;
+                    
+                    return (
+                      <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
+                        <div className="flex justify-between items-center w-full">
+                          <span>{flupsy.name}</span>
+                          <span className="text-xs text-gray-500 ml-2">
+                            {activeBaskets > 0 ? (
+                              <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                                {activeBaskets} attivi
+                              </span>
+                            ) : totalBaskets > 0 ? (
+                              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">
+                                {totalBaskets} disponibili
+                              </span>
+                            ) : (
+                              <span className="px-1.5 py-0.5 bg-red-100 text-red-500 rounded">
+                                nessun cestello
+                              </span>
+                            )}
+                          </span>
+                        </div>
+                      </SelectItem>
+                    );
+                  })}
                 </SelectContent>
               </Select>
             </div>
@@ -2073,7 +2125,40 @@ export default function Operations() {
           <div className="space-y-4">
             {filteredCycleIds.length === 0 ? (
               <div className="bg-white rounded-lg shadow p-8 text-center">
-                <p className="text-gray-500">Nessun ciclo trovato con i criteri selezionati</p>
+                {filters.flupsyFilter !== 'all' ? (
+                  <div className="space-y-2">
+                    <p className="text-gray-500 font-medium">Nessun ciclo attivo trovato per il FLUPSY selezionato</p>
+                    <p className="text-sm text-gray-400">
+                      Il FLUPSY "{flupsys?.find(f => f.id.toString() === filters.flupsyFilter)?.name}" 
+                      non ha cestelli con cicli attivi al momento.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setFlupsyFilter('all')}
+                      className="mt-3"
+                    >
+                      Mostra tutti i FLUPSY con cicli attivi
+                    </Button>
+                  </div>
+                ) : filters.cycleStateFilter === 'active' ? (
+                  <div className="space-y-2">
+                    <p className="text-gray-500 font-medium">Nessun ciclo attivo trovato</p>
+                    <p className="text-sm text-gray-400">
+                      Non ci sono cicli attivi al momento. Prova a cambiare i filtri o verifica che ci siano cestelli attivi.
+                    </p>
+                    <Button 
+                      variant="outline" 
+                      size="sm" 
+                      onClick={() => setCycleStateFilter('all')}
+                      className="mt-3"
+                    >
+                      Mostra tutti i cicli
+                    </Button>
+                  </div>
+                ) : (
+                  <p className="text-gray-500">Nessun ciclo trovato con i criteri selezionati</p>
+                )}
               </div>
             ) : (
               filteredCycleIds.map((cycleId) => {
