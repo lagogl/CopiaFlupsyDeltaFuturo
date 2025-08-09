@@ -605,7 +605,7 @@ export default function SpreadsheetOperations() {
 
     // Trova taglia target
     const targetSize = ((sizes as any[]) || []).find((s: any) => s.id === targetSizeId);
-    if (!targetSize || !targetSize.minAnimalsPerKg) {
+    if (!targetSize || !targetSize.maxAnimalsPerKg) {
       return { willReachTarget: false };
     }
 
@@ -616,12 +616,13 @@ export default function SpreadsheetOperations() {
     // Calcolo proiezione crescita
     const currentWeight = lastOp.totalWeight / lastOp.animalCount; // Peso medio attuale per animale (in grammi)
     const currentAnimalsPerKg = lastOp.animalsPerKg;
-    const targetMinAnimalsPerKg = targetSize.minAnimalsPerKg; // USA MIN_ANIMALS_PER_KG come riferimento
+    const targetMaxAnimalsPerKg = targetSize.maxAnimalsPerKg; // USA MAX_ANIMALS_PER_KG come soglia da superare
 
     // DEBUG: Log dei valori per debugging
     console.log(`🔍 PREVISIONE CRESCITA Cesta ${basketId}:`, {
       currentAnimalsPerKg,
-      targetMinAnimalsPerKg,
+      targetMaxAnimalsPerKg,
+      targetSizeCode: targetSize.code,
       currentWeight: currentWeight.toFixed(6),
       sgrValue,
       dailySgrRate: dailySgrRate.toFixed(6),
@@ -629,9 +630,9 @@ export default function SpreadsheetOperations() {
       targetDate
     });
 
-    // Verifica se ha già raggiunto la taglia target
-    if (currentAnimalsPerKg <= targetMinAnimalsPerKg) {
-      console.log(`✅ Cesta ${basketId} ha già raggiunto il target`);
+    // Verifica se ha già raggiunto la taglia target (deve essere SOTTO il max)
+    if (currentAnimalsPerKg <= targetMaxAnimalsPerKg) {
+      console.log(`✅ Cesta ${basketId} ha già raggiunto il target ${targetSize.code}`);
       return {
         willReachTarget: true,
         daysToTarget: 0,
@@ -645,7 +646,7 @@ export default function SpreadsheetOperations() {
     let projectedAnimalsPerKg = currentAnimalsPerKg;
     let daysProjected = 0;
 
-    while (daysProjected < daysAvailable && projectedAnimalsPerKg > targetMinAnimalsPerKg) {
+    while (daysProjected < daysAvailable && projectedAnimalsPerKg > targetMaxAnimalsPerKg) {
       daysProjected++;
       
       // Applica crescita giornaliera: peso cresce del SGR%
@@ -659,9 +660,9 @@ export default function SpreadsheetOperations() {
         console.log(`📈 Cesta ${basketId} - Giorno ${daysProjected}: ${projectedAnimalsPerKg} anim/kg (peso: ${projectedWeight.toFixed(6)}g)`);
       }
       
-      // Verifica se ha raggiunto la taglia target (usa minAnimalsPerKg)
-      if (projectedAnimalsPerKg <= targetMinAnimalsPerKg) {
-        console.log(`🎯 Cesta ${basketId} raggiungerà target in ${daysProjected} giorni`);
+      // Verifica se ha raggiunto la taglia target (deve essere SOTTO il max)
+      if (projectedAnimalsPerKg <= targetMaxAnimalsPerKg) {
+        console.log(`🎯 Cesta ${basketId} raggiungerà target ${targetSize.code} in ${daysProjected} giorni`);
         return {
           willReachTarget: true,
           daysToTarget: daysProjected,
@@ -672,8 +673,8 @@ export default function SpreadsheetOperations() {
     }
 
     // Alla data target, verifica se avrà raggiunto la taglia
-    const willReachByTargetDate = projectedAnimalsPerKg <= targetMinAnimalsPerKg;
-    console.log(`📊 Cesta ${basketId} finale: ${projectedAnimalsPerKg} anim/kg, raggiungerà target: ${willReachByTargetDate}`);
+    const willReachByTargetDate = projectedAnimalsPerKg <= targetMaxAnimalsPerKg;
+    console.log(`📊 Cesta ${basketId} finale: ${projectedAnimalsPerKg} anim/kg, raggiungerà target ${targetSize.code}: ${willReachByTargetDate}`);
 
     return {
       willReachTarget: willReachByTargetDate,
