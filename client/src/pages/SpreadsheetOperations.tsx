@@ -449,12 +449,18 @@ export default function SpreadsheetOperations() {
   // Inizializza le righe quando cambiano FLUPSY, tipo operazione o data
   useEffect(() => {
     // Prepara i dati dei cestelli per il FLUPSY selezionato
-    // Include tutti i cestelli del FLUPSY (attivi E disponibili) per permettere operazioni su tutti
+    // Include SOLO i cestelli con cicli attivi dal FLUPSY selezionato
     const eligibleBaskets: BasketData[] = ((baskets as any[]) || [])
-      .filter((basket: any) => 
-        basket.flupsyId === selectedFlupsyId && 
-        (basket.state === 'active' || basket.state === 'available')
-      )
+      .filter((basket: any) => {
+        // Il cestello deve appartenere al FLUPSY selezionato
+        if (basket.flupsyId !== selectedFlupsyId) return false;
+        
+        // Il cestello deve avere uno stato attivo
+        if (basket.state !== 'active') return false;
+        
+        // Il cestello deve avere un ciclo attivo (currentCycleId non null)
+        return basket.currentCycleId !== null;
+      })
       .map((basket: any) => {
         const flupsy = ((flupsys as any[]) || []).find((f: any) => f.id === basket.flupsyId);
         // Recupera TUTTE le operazioni per questa cesta per trovare davvero l'ultima
@@ -491,9 +497,9 @@ export default function SpreadsheetOperations() {
       .sort((a, b) => a.physicalNumber - b.physicalNumber);
 
     console.log(`🔄 RIGHE: Ricalcolo per FLUPSY=${selectedFlupsyId}, baskets=${eligibleBaskets.length}, ops=${Array.isArray(operations) ? operations.length : 0}`);
-    console.log(`🔍 DEBUG BASKETS: Tutti i cestelli disponibili:`, ((baskets as any[]) || []).map((b: any) => `ID=${b.id}, flupsyId=${b.flupsyId}, numero=${b.physicalNumber}, state=${b.state}`));
-    console.log(`🔍 DEBUG FILTRO: Cerco cestelli con flupsyId=${selectedFlupsyId}, state=active OR available`);
-    console.log(`🔍 DEBUG RESULT: Trovati ${eligibleBaskets.length} cestelli dopo filtro`);
+    console.log(`🔍 DEBUG BASKETS: Tutti i cestelli disponibili:`, ((baskets as any[]) || []).map((b: any) => `ID=${b.id}, flupsyId=${b.flupsyId}, numero=${b.physicalNumber}, state=${b.state}, currentCycleId=${b.currentCycleId}`));
+    console.log(`🔍 DEBUG FILTRO: Cerco cestelli con flupsyId=${selectedFlupsyId}, state=active AND currentCycleId non null`);
+    console.log(`🔍 DEBUG RESULT: Trovati ${eligibleBaskets.length} cestelli con cicli attivi dopo filtro`);
     
     // If no eligible baskets found, clear the rows immediately
     if (selectedFlupsyId && eligibleBaskets.length === 0) {
