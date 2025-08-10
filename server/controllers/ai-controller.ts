@@ -83,7 +83,7 @@ export function registerAIRoutes(app: Express) {
       };
 
       // Chiamata AI
-      const prediction = await AIService.predictiveGrowth.analyzePredictiveGrowth(growthData);
+      const prediction = await AIService.predictiveGrowth(basketId, targetSizeId, days);
 
       res.json({
         success: true,
@@ -241,9 +241,7 @@ export function registerAIRoutes(app: Express) {
         })
       );
 
-      const anomalies = await AIService.analytics.detectAnomalies({
-        baskets: basketsWithOperations
-      });
+      const anomalies = await AIService.anomalyDetection(flupsyId, days);
 
       res.json({
         success: true,
@@ -292,12 +290,7 @@ export function registerAIRoutes(app: Express) {
           price: 12
         }));
 
-      const businessAnalysis = await AIService.analytics.analyzeBusinessPatterns({
-        operations: recentOperations,
-        cycles: recentCycles,
-        sales: salesData,
-        timeframe: `${days} giorni`
-      });
+      const businessAnalysis = await AIService.businessAnalytics(days);
 
       res.json({
         success: true,
@@ -380,7 +373,7 @@ export function registerAIRoutes(app: Express) {
         }
       };
 
-      const sustainabilityAnalysis = await AIService.sustainability.analyzeSustainability(sustainabilityData);
+      const sustainabilityAnalysis = await AIService.sustainabilityAnalysis(flupsyId ? Number(flupsyId) : undefined, days);
 
       res.json({
         success: true,
