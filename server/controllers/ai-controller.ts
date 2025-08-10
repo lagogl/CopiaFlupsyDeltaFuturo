@@ -26,23 +26,27 @@ export function registerAIRoutes(app: Express) {
     try {
       const { flupsyId, basketIds, basketId, targetSizeId, days = 30 } = req.body;
 
+      console.log('Ricevuta richiesta AI predittiva:', { flupsyId, basketIds, basketId, targetSizeId, days });
+      
       // Supporta sia analisi singola che per FLUPSY intera
-      if (!flupsyId && !basketId && !basketIds) {
+      if (!flupsyId && !basketId) {
         return res.status(400).json({ success: false, error: 'flupsyId o basketId richiesto' });
       }
 
       let basketsToAnalyze: any[] = [];
       
-      if (flupsyId && basketIds) {
+      if (flupsyId) {
         // Analisi per FLUPSY intera
         basketsToAnalyze = await db.select()
           .from(baskets)
           .where(eq(baskets.flupsyId, flupsyId));
+        console.log(`Trovati ${basketsToAnalyze.length} cestelli per FLUPSY ${flupsyId}`);
       } else if (basketId) {
         // Analisi per singolo cestello (retrocompatibilità)
         basketsToAnalyze = await db.select()
           .from(baskets)
           .where(eq(baskets.id, basketId));
+        console.log(`Analisi singolo cestello ${basketId}`);
       }
 
       if (basketsToAnalyze.length === 0) {

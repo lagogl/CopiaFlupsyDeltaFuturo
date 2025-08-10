@@ -48,7 +48,7 @@ interface SustainabilityAnalysis {
 
 export default function AIDashboard() {
   const [selectedBasket, setSelectedBasket] = useState<number | null>(null);
-  const [selectedFlupsy, setSelectedFlupsy] = useState<number | null>(null);
+  const [selectedFlupsy, setSelectedFlupsy] = useState<number | null>(2516); // Default FLUPSY per test
   const [timeframe, setTimeframe] = useState<string>('7');
   
   const queryClient = useQueryClient();
@@ -71,7 +71,7 @@ export default function AIDashboard() {
 
   // Mutation per analisi predittiva
   const predictiveAnalysisMutation = useMutation({
-    mutationFn: (data: { basketId: number; targetSizeId?: number; days?: number }) =>
+    mutationFn: (data: { flupsyId?: number; basketIds?: number[]; basketId?: number; targetSizeId?: number; days?: number }) =>
       apiRequest("/api/ai/predictive-growth", { method: "POST", body: JSON.stringify(data) }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/ai/predictive-growth'] });
@@ -97,17 +97,23 @@ export default function AIDashboard() {
   });
 
   const handlePredictiveAnalysis = () => {
+    console.log('Analisi predittiva avviata con:', { selectedFlupsy, timeframe });
     if (selectedFlupsy) {
       // Analisi per tutti i cestelli del FLUPSY selezionato
       const flupsyBaskets = (baskets as any[])?.filter(basket => basket.flupsyId === selectedFlupsy);
-      if (flupsyBaskets && flupsyBaskets.length > 0) {
-        predictiveAnalysisMutation.mutate({ 
-          flupsyId: selectedFlupsy,
-          basketIds: flupsyBaskets.map(b => b.id), // Tutti i cestelli del FLUPSY
-          targetSizeId: 22, // TP-2800 (taglia commerciale standard)
-          days: parseInt(timeframe) || 30 
-        });
-      }
+      console.log('Cestelli trovati per FLUPSY:', flupsyBaskets);
+      
+      const payload = { 
+        flupsyId: selectedFlupsy,
+        basketIds: flupsyBaskets?.map(b => b.id) || [],
+        targetSizeId: 22, // TP-2800 (taglia commerciale standard)
+        days: parseInt(timeframe) || 30 
+      };
+      
+      console.log('Payload API:', payload);
+      predictiveAnalysisMutation.mutate(payload);
+    } else {
+      console.error('Nessun FLUPSY selezionato');
     }
   };
 
