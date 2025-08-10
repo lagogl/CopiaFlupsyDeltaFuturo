@@ -1,31 +1,25 @@
-import React from 'react';
-
 interface PageHeaderProps {
   title: string;
-  className?: string;
-  showLogo?: boolean;
-  children?: React.ReactNode;
+  subtitle?: string;
+  logoUrl?: string;
 }
 
-export default function PageHeader({ 
-  title, 
-  className = "text-2xl font-condensed font-bold text-gray-800", 
-  showLogo = true,
-  children 
-}: PageHeaderProps) {
+export default function PageHeader({ title, subtitle, logoUrl = "/mito_logo.png" }: PageHeaderProps) {
   return (
-    <div className="flex items-center gap-3">
-      {showLogo && (
-        <img 
-          src="/mito_logo.png" 
-          alt="MITO SRL Logo" 
-          className="h-16 w-auto"
-        />
-      )}
-      <h1 className={className}>
-        {title}
-      </h1>
-      {children}
+    <div className="flex items-center gap-3 mb-6">
+      <div>
+        <h1 className="text-3xl font-bold tracking-tight">{title}</h1>
+        {subtitle && (
+          <p className="text-lg text-muted-foreground mt-1">{subtitle}</p>
+        )}
+      </div>
+      <img 
+        src={logoUrl} 
+        alt="MITO SRL Logo" 
+        className="h-8 w-auto ml-auto"
+      />
     </div>
   );
 }
+
+export { PageHeader };

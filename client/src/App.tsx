@@ -54,6 +54,8 @@ import AdvancedSales from "@/pages/AdvancedSales";
 import FattureInCloudConfig from "@/pages/FattureInCloudConfig";
 // Importazione AI Dashboard
 import AIDashboard from "@/pages/AIDashboard";
+// Importazione Giacenze Range
+import GiacenzeRange from "@/pages/GiacenzeRange";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -115,6 +117,7 @@ function Router() {
       <ProtectedRoute path="/eco-impact" component={EcoImpact}/>
       <ProtectedRoute path="/sales-reports" component={SalesReports}/>
       <ProtectedRoute path="/ai-dashboard" component={AIDashboard}/>
+      <ProtectedRoute path="/giacenze-range" component={GiacenzeRange}/>
       
       {/* Redirezione per pagine rimosse */}
       <Route path="/tp3000-forecast">

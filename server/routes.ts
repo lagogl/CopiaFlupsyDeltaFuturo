@@ -2423,6 +2423,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
     }
   });
 
+  // === Giacenze Range API routes ===
+  
+  // Endpoint principale per calcolo giacenze personalizzate tra due date
+  app.get("/api/giacenze/range", async (req, res) => {
+    const { getGiacenzeRange } = await import('./controllers/giacenze-controller.js');
+    await getGiacenzeRange(req, res);
+  });
+
+  // Endpoint per riepilogo rapido giacenze
+  app.get("/api/giacenze/summary", async (req, res) => {
+    const { getGiacenzeSummary } = await import('./controllers/giacenze-controller.js');
+    await getGiacenzeSummary(req, res);
+  });
+
   // === Diario di Bordo API routes ===
   
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
