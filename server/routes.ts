@@ -15,6 +15,7 @@ import {
   sizes,
   operations
 } from "../shared/schema";
+import { registerAIRoutes } from "./controllers/ai-controller";
 import { 
   getNotificationSettings, 
   updateNotificationSetting
@@ -354,6 +355,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // === Sequence reset routes ===
   app.post("/api/sequences/reset", SequenceController.resetSequence);
+
+  // === AI Routes ===
+  registerAIRoutes(app);
   app.get("/api/sequences/info", SequenceController.getSequencesInfo);
   
   // === Basket routes ===

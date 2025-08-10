@@ -52,6 +52,8 @@ import AmministrazioneUtilita from "@/pages/AmministrazioneUtilita";
 // Importazione modulo vendite avanzate
 import AdvancedSales from "@/pages/AdvancedSales";
 import FattureInCloudConfig from "@/pages/FattureInCloudConfig";
+// Importazione AI Dashboard
+import AIDashboard from "@/pages/AIDashboard";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -112,6 +114,7 @@ function Router() {
       <ProtectedRoute path="/amministrazione-utilita" component={AmministrazioneUtilita} requiredRole="admin" />
       <ProtectedRoute path="/eco-impact" component={EcoImpact}/>
       <ProtectedRoute path="/sales-reports" component={SalesReports}/>
+      <ProtectedRoute path="/ai-dashboard" component={AIDashboard}/>
       
       {/* Redirezione per pagine rimosse */}
       <Route path="/tp3000-forecast">

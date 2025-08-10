@@ -7,7 +7,7 @@ import {
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
   ChevronRight, LayoutDashboard, PieChart, BarChart, Filter,
   FileJson, Download, Database, Leaf, LogOut, LayoutGrid,
-  CloudIcon, Table
+  CloudIcon, Table, Brain
 } from "lucide-react";
 import useIsMobile from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
@@ -142,6 +142,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       icon: <PieChart className="h-5 w-5" />,
       color: 'text-purple-600',
       items: [
+        { icon: <Brain className="h-5 w-5 mr-2 text-purple-600" />, label: "AI Dashboard", path: "/ai-dashboard" },
         { icon: <BarChart className="h-5 w-5 mr-2 text-purple-600" />, label: "Statistiche", path: "/statistics" },
         { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: "Indici SGR", path: "/sgr" },
         { icon: <PieChart className="h-5 w-5 mr-2 text-purple-600" />, label: "Report di Vendita", path: "/sales-reports" },
