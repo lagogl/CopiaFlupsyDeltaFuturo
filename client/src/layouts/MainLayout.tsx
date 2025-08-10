@@ -7,7 +7,7 @@ import {
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
   ChevronRight, LayoutDashboard, PieChart, BarChart, Filter,
   FileJson, Download, Database, Leaf, LogOut, LayoutGrid,
-  CloudIcon, Table, Brain
+  CloudIcon, Table, Brain, CalendarDays
 } from "lucide-react";
 import useIsMobile from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
@@ -133,6 +133,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <RefreshCw className="h-5 w-5 mr-2 text-orange-600" />, label: "Cicli Produttivi", path: "/cycles" },
         { icon: <Scale className="h-5 w-5 mr-2 text-orange-600" />, label: "Tabella Taglie", path: "/sizes" },
         { icon: <Boxes className="h-5 w-5 mr-2 text-orange-600" />, label: "Inventario Giacenze", path: "/inventory" },
+        { icon: <CalendarDays className="h-5 w-5 mr-2 text-orange-600" />, label: "Calcolo Giacenze Range", path: "/giacenze-range" },
         { icon: <FileJson className="h-5 w-5 mr-2 text-orange-600" />, label: "Esportazione", path: "/export" }
       ]
     },
