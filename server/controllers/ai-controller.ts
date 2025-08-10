@@ -90,12 +90,9 @@ export function registerAIRoutes(app: Express) {
         prediction,
         metadata: {
           basketId,
-          currentData: {
-            weight: lastOperation?.totalWeight,
-            animalsPerKg: lastOperation?.animalsPerKg,
-            lastUpdate: lastOperation?.date
-          },
-          environmentalConditions: environment
+          targetSizeId,
+          days,
+          provider: 'deepseek_ai'
         }
       });
 
@@ -247,9 +244,9 @@ export function registerAIRoutes(app: Express) {
         success: true,
         anomalies,
         metadata: {
-          analyzedBaskets: basketsWithOperations.length,
           timeframe: `${days} giorni`,
-          flupsyId: flupsyId || 'tutti'
+          flupsyId: flupsyId || 'tutti',
+          provider: 'deepseek_ai'
         }
       });
 
@@ -297,9 +294,7 @@ export function registerAIRoutes(app: Express) {
         analysis: businessAnalysis,
         metadata: {
           timeframe: `${days} giorni`,
-          operationsAnalyzed: recentOperations.length,
-          cyclesAnalyzed: recentCycles.length,
-          salesAnalyzed: salesData.length
+          provider: 'deepseek_ai'
         }
       });
 
@@ -381,9 +376,7 @@ export function registerAIRoutes(app: Express) {
         metadata: {
           timeframe: `${days} giorni`,
           flupsyId: flupsyId || 'tutti',
-          operationsAnalyzed: sustainabilityOps.length,
-          environmentalReadings: environmentalData.length,
-          totalProduction: `${(totalProduction / 1000).toFixed(2)} kg`
+          provider: 'deepseek_ai'
         }
       });
 
