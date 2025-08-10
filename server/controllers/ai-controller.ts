@@ -21,75 +21,68 @@ export function registerAIRoutes(app: Express) {
     }
   });
 
-  // Modulo 1: Previsioni di crescita avanzate
+  // Modulo 1: Previsioni di crescita avanzate (per FLUPSY intera)
   app.post("/api/ai/predictive-growth", async (req: Request, res: Response) => {
     try {
-      const { basketId, targetSizeId, days = 30 } = req.body;
+      const { flupsyId, basketIds, basketId, targetSizeId, days = 30 } = req.body;
 
-      if (!basketId) {
-        return res.status(400).json({ success: false, error: 'basketId richiesto' });
+      // Supporta sia analisi singola che per FLUPSY intera
+      if (!flupsyId && !basketId && !basketIds) {
+        return res.status(400).json({ success: false, error: 'flupsyId o basketId richiesto' });
       }
 
-      // Recupera dati del cestello
-      const basketData = await db.select()
-        .from(baskets)
-        .where(eq(baskets.id, basketId))
-        .limit(1);
-
-      if (basketData.length === 0) {
-        return res.status(404).json({ success: false, error: 'Cestello non trovato' });
+      let basketsToAnalyze: any[] = [];
+      
+      if (flupsyId && basketIds) {
+        // Analisi per FLUPSY intera
+        basketsToAnalyze = await db.select()
+          .from(baskets)
+          .where(eq(baskets.flupsyId, flupsyId));
+      } else if (basketId) {
+        // Analisi per singolo cestello (retrocompatibilità)
+        basketsToAnalyze = await db.select()
+          .from(baskets)
+          .where(eq(baskets.id, basketId));
       }
 
-      // Recupera operazioni recenti per lo storico
-      const recentOperations = await db.select()
-        .from(operations)
-        .where(eq(operations.basketId, basketId))
-        .orderBy(desc(operations.date))
-        .limit(10);
+      if (basketsToAnalyze.length === 0) {
+        return res.status(404).json({ success: false, error: 'Nessun cestello trovato' });
+      }
 
-      // Recupera dati ambientali recenti
-      const environmentalData = await db.select()
-        .from(sgrGiornalieri)
-        .orderBy(desc(sgrGiornalieri.recordDate))
-        .limit(7); // Ultima settimana
-
-      // Prepara dati per AI
-      const avgEnvironmental = environmentalData.reduce((acc, curr) => ({
-        temperature: acc.temperature + (curr.temperature || 0),
-        ph: acc.ph + (curr.pH || 0),
-        oxygen: acc.oxygen + (curr.oxygen || 0),
-        salinity: acc.salinity + (curr.salinity || 0),
-      }), { temperature: 0, ph: 0, oxygen: 0, salinity: 0 });
-
-      const envCount = environmentalData.length || 1;
-      const environment = {
-        temperature: avgEnvironmental.temperature / envCount,
-        ph: avgEnvironmental.ph / envCount,
-        oxygen: avgEnvironmental.oxygen / envCount,
-        salinity: avgEnvironmental.salinity / envCount,
-      };
-
-      const lastOperation = recentOperations[0];
-      const growthData: PredictiveGrowthData = {
-        basketId,
-        currentWeight: lastOperation?.totalWeight || 0,
-        currentAnimalsPerKg: lastOperation?.animalsPerKg || 0,
-        environmentalData: environment,
-        historicalGrowth: recentOperations.map(op => ({
-          date: op.date.toString(),
-          weight: op.totalWeight || 0,
-          animalsPerKg: op.animalsPerKg || 0,
-        }))
-      };
-
-      // Chiamata AI
-      const prediction = await AIService.predictiveGrowth(basketId, targetSizeId, days);
+      // Chiamata AI per ogni cestello del FLUPSY
+      const basketPredictions = [];
+      for (const basket of basketsToAnalyze.slice(0, 5)) { // Limita a 5 cestelli per performance
+        const prediction = await AIService.predictiveGrowth(basket.id, targetSizeId, days);
+        basketPredictions.push({
+          basketId: basket.id,
+          basketNumber: basket.physicalNumber,
+          prediction
+        });
+      }
 
       res.json({
         success: true,
-        prediction,
+        prediction: {
+          flupsyId,
+          basketPredictions,
+          summary: {
+            totalBaskets: basketsToAnalyze.length,
+            analyzedBaskets: basketPredictions.length,
+            avgGrowthRate: basketPredictions.reduce((sum, bp) => 
+              sum + (bp.prediction?.predictions?.[0]?.confidence || 0), 0) / basketPredictions.length,
+            insights: [
+              `Analisi completata per ${basketPredictions.length} cestelli del FLUPSY`,
+              flupsyId ? `FLUPSY ID: ${flupsyId}` : 'Analisi singola'
+            ],
+            recommendations: [
+              'Monitoraggio continuo raccomandato per tutti i cestelli',
+              'Considera sincronizzazione operazioni tra cestelli'
+            ]
+          }
+        },
         metadata: {
-          basketId,
+          flupsyId,
+          basketIds: basketsToAnalyze.map(b => b.id),
           targetSizeId,
           days,
           provider: 'deepseek_ai'

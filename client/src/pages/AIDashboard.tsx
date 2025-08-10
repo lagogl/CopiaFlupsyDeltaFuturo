@@ -97,8 +97,17 @@ export default function AIDashboard() {
   });
 
   const handlePredictiveAnalysis = () => {
-    if (selectedBasket) {
-      predictiveAnalysisMutation.mutate({ basketId: selectedBasket, days: 30 });
+    if (selectedFlupsy) {
+      // Analisi per tutti i cestelli del FLUPSY selezionato
+      const flupsyBaskets = (baskets as any[])?.filter(basket => basket.flupsyId === selectedFlupsy);
+      if (flupsyBaskets && flupsyBaskets.length > 0) {
+        predictiveAnalysisMutation.mutate({ 
+          flupsyId: selectedFlupsy,
+          basketIds: flupsyBaskets.map(b => b.id), // Tutti i cestelli del FLUPSY
+          targetSizeId: 22, // TP-2800 (taglia commerciale standard)
+          days: parseInt(timeframe) || 30 
+        });
+      }
     }
   };
 
@@ -245,7 +254,7 @@ export default function AIDashboard() {
             <CardContent className="space-y-4">
               <Button 
                 onClick={handlePredictiveAnalysis}
-                disabled={!selectedBasket || predictiveAnalysisMutation.isPending}
+                disabled={!selectedFlupsy || predictiveAnalysisMutation.isPending}
                 className="w-full"
               >
                 {predictiveAnalysisMutation.isPending ? (
@@ -259,54 +268,89 @@ export default function AIDashboard() {
               </Button>
 
               {(predictiveAnalysisMutation.data as any)?.prediction && (
-                <div className="bg-blue-50 p-4 rounded-lg space-y-3">
-                  <h4 className="font-semibold text-blue-900">Risultati Analisi Predittiva</h4>
+                <div className="bg-blue-50 p-4 rounded-lg space-y-4">
+                  <h4 className="font-semibold text-blue-900">
+                    Analisi Predittiva FLUPSY - {(flupsys as any[])?.find(f => f.id === selectedFlupsy)?.name}
+                  </h4>
                   
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    <div>
-                      <p className="text-sm font-medium">Tasso di Crescita Previsto</p>
-                      <p className="text-lg font-bold text-green-600">
-                        {((predictiveAnalysisMutation.data as any).prediction.predictedGrowthRate * 100).toFixed(2)}%/giorno
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium">Confidenza</p>
-                      <p className="text-lg font-bold">
-                        {((predictiveAnalysisMutation.data as any).prediction.confidence * 100).toFixed(1)}%
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium">Data Raccolta Ottimale</p>
-                      <p className="text-lg font-bold text-orange-600">
-                        {new Date((predictiveAnalysisMutation.data as any).prediction.optimalHarvestDate).toLocaleDateString('it-IT')}
-                      </p>
-                    </div>
-                    
-                    <div>
-                      <p className="text-sm font-medium">Raggiungimento Taglia Target</p>
-                      <p className="text-lg font-bold text-blue-600">
-                        {new Date((predictiveAnalysisMutation.data as any).prediction.targetSizeDate).toLocaleDateString('it-IT')}
-                      </p>
-                    </div>
-                  </div>
-
-                  {(predictiveAnalysisMutation.data as any)?.prediction?.growthFactors?.length > 0 && (
-                    <div>
-                      <h5 className="font-medium mb-2">Fattori di Crescita</h5>
-                      <div className="space-y-2">
-                        {(predictiveAnalysisMutation.data as any).prediction.growthFactors.map((factor: any, index: number) => (
-                          <div key={index} className="flex justify-between items-center p-2 bg-white rounded border">
-                            <span className="text-sm font-medium">{factor.factor}</span>
-                            <div className="flex items-center gap-2">
-                              <Badge variant={factor.impact > 0 ? 'default' : 'destructive'}>
-                                {factor.impact > 0 ? '+' : ''}{(factor.impact * 100).toFixed(1)}%
-                              </Badge>
-                            </div>
-                          </div>
-                        ))}
+                  {/* Riepilogo FLUPSY */}
+                  {(predictiveAnalysisMutation.data as any).prediction.summary && (
+                    <div className="bg-white p-4 rounded-lg">
+                      <h5 className="font-medium mb-3">Riepilogo Analisi FLUPSY</h5>
+                      <div className="grid grid-cols-2 md:grid-cols-3 gap-4 mb-4">
+                        <div className="text-center p-3 bg-blue-50 rounded">
+                          <p className="text-2xl font-bold text-blue-600">
+                            {(predictiveAnalysisMutation.data as any).prediction.summary.totalBaskets}
+                          </p>
+                          <p className="text-sm text-gray-600">Cestelli Totali</p>
+                        </div>
+                        <div className="text-center p-3 bg-green-50 rounded">
+                          <p className="text-2xl font-bold text-green-600">
+                            {(predictiveAnalysisMutation.data as any).prediction.summary.analyzedBaskets}
+                          </p>
+                          <p className="text-sm text-gray-600">Analizzati</p>
+                        </div>
+                        <div className="text-center p-3 bg-purple-50 rounded">
+                          <p className="text-2xl font-bold text-purple-600">
+                            {((predictiveAnalysisMutation.data as any).prediction.summary.avgGrowthRate * 100).toFixed(1)}%
+                          </p>
+                          <p className="text-sm text-gray-600">Confidenza Media</p>
+                        </div>
                       </div>
+                    </div>
+                  )}
+
+                  {/* Dettagli per singolo cestello */}
+                  {(predictiveAnalysisMutation.data as any).prediction.basketPredictions && (
+                    <div className="space-y-3">
+                      <h5 className="font-medium">Analisi per Cestello</h5>
+                      {(predictiveAnalysisMutation.data as any).prediction.basketPredictions.map((basketPred: any, index: number) => (
+                        <div key={index} className="bg-white p-4 rounded-lg border">
+                          <div className="flex justify-between items-center mb-3">
+                            <h6 className="font-medium">Cesta #{basketPred.basketNumber}</h6>
+                            <Badge variant="outline">ID: {basketPred.basketId}</Badge>
+                          </div>
+                          
+                          {basketPred.prediction?.predictions && (
+                            <div className="space-y-2 max-h-40 overflow-y-auto">
+                              {basketPred.prediction.predictions.slice(0, 5).map((pred: any, idx: number) => (
+                                <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
+                                  <span>Giorno {pred.days}</span>
+                                  <div className="flex items-center gap-2">
+                                    <span>{pred.predictedWeight}g</span>
+                                    <Badge size="sm" variant={pred.confidence > 0.7 ? 'default' : 'secondary'}>
+                                      {(pred.confidence * 100).toFixed(0)}%
+                                    </Badge>
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          )}
+                        </div>
+                      ))}
+                    </div>
+                  )}
+
+                  {/* Insights e raccomandazioni */}
+                  {(predictiveAnalysisMutation.data as any).prediction.summary?.insights && (
+                    <div className="bg-green-50 p-3 rounded">
+                      <h5 className="font-medium text-green-800 mb-2">Insights AI</h5>
+                      <ul className="space-y-1">
+                        {(predictiveAnalysisMutation.data as any).prediction.summary.insights.map((insight: string, index: number) => (
+                          <li key={index} className="text-sm text-green-700">• {insight}</li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {(predictiveAnalysisMutation.data as any).prediction.summary?.recommendations && (
+                    <div className="bg-orange-50 p-3 rounded">
+                      <h5 className="font-medium text-orange-800 mb-2">Raccomandazioni</h5>
+                      <ul className="space-y-1">
+                        {(predictiveAnalysisMutation.data as any).prediction.summary.recommendations.map((rec: string, index: number) => (
+                          <li key={index} className="text-sm text-orange-700">• {rec}</li>
+                        ))}
+                      </ul>
                     </div>
                   )}
                 </div>
