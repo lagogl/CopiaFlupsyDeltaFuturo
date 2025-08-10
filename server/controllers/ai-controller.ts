@@ -27,6 +27,7 @@ export function registerAIRoutes(app: Express) {
       const { flupsyId, basketIds, basketId, targetSizeId, days = 30 } = req.body;
 
       console.log('Ricevuta richiesta AI predittiva:', { flupsyId, basketIds, basketId, targetSizeId, days });
+      console.log('Body completo ricevuto:', req.body);
       
       // Supporta sia analisi singola che per FLUPSY intera
       if (!flupsyId && !basketId) {

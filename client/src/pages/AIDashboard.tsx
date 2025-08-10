@@ -72,7 +72,11 @@ export default function AIDashboard() {
   // Mutation per analisi predittiva
   const predictiveAnalysisMutation = useMutation({
     mutationFn: (data: { flupsyId?: number; basketIds?: number[]; basketId?: number; targetSizeId?: number; days?: number }) =>
-      apiRequest("/api/ai/predictive-growth", { method: "POST", body: JSON.stringify(data) }),
+      apiRequest({
+        url: "/api/ai/predictive-growth",
+        method: "POST",
+        body: data
+      }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['/api/ai/predictive-growth'] });
     }
