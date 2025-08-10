@@ -1,40 +1,47 @@
 import OpenAI from "openai";
 import { AutonomousAIService } from "./autonomous-ai-service";
 
-// Configurazione DeepSeek AI - Corretta secondo documentazione ufficiale
+// Configurazione DeepSeek AI secondo documentazione ufficiale v1
+// URL: https://api-docs.deepseek.com/
 const AI_API_KEY = process.env.OPENAI_API_KEY;
-const AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.deepseek.com';
-const AI_MODEL = process.env.AI_MODEL || 'deepseek-chat';
+const AI_BASE_URL = 'https://api.deepseek.com'; // URL fisso come da documentazione
+const AI_MODEL = 'deepseek-chat'; // Punta a DeepSeek-V3-0324
 
-// Configurazione specifica per DeepSeek secondo documentazione ufficiale
-console.log('🔧 Configurazione DeepSeek:', { 
+console.log('🔧 DeepSeek Official Config:', { 
   baseURL: AI_BASE_URL, 
   model: AI_MODEL,
   hasApiKey: !!AI_API_KEY,
-  apiKeyPrefix: AI_API_KEY?.slice(0, 8) + '...'
+  keyStatus: AI_API_KEY ? `${AI_API_KEY.slice(0, 8)}...${AI_API_KEY.slice(-4)}` : 'MISSING'
 });
 
 // Client DeepSeek configurato con ricaricamento dinamico
 let aiClient: OpenAI | null = null;
 
 function initializeAIClient() {
-  // Forza lettura diretta dell'API key aggiornata
-  const currentApiKey = process.env.OPENAI_API_KEY || "24be444e109345f696b99ac043772c8f";
+  const currentApiKey = process.env.OPENAI_API_KEY;
   try {
     if (currentApiKey && currentApiKey.length > 10) {
+      // Configurazione esatta come documentazione DeepSeek
       aiClient = new OpenAI({
         apiKey: currentApiKey,
         baseURL: AI_BASE_URL,
-        timeout: 10000
+        timeout: 15000,
+        defaultHeaders: {
+          'Content-Type': 'application/json'
+        }
       });
-      console.log('✅ DeepSeek AI configurato correttamente con API key:', currentApiKey.slice(0, 8) + '...');
+      console.log('✅ DeepSeek client initialized:', {
+        baseURL: AI_BASE_URL,
+        model: AI_MODEL,
+        keyPrefix: currentApiKey.slice(0, 8) + '...'
+      });
       return true;
     } else {
-      console.log('⚠️ API key non trovata o non valida');
+      console.log('⚠️ DeepSeek API key missing or invalid');
       return false;
     }
   } catch (error) {
-    console.log('⚠️ Errore configurazione DeepSeek:', error);
+    console.log('⚠️ DeepSeek initialization error:', error.message);
     return false;
   }
 }
@@ -529,19 +536,32 @@ export class AIService {
         initializeAIClient();
       }
 
-      // Test rapido di connessione DeepSeek con logging dettagliato
-      console.log('🔍 Test connessione DeepSeek con:', { baseURL: AI_BASE_URL, model: AI_MODEL });
+      // Test connessione DeepSeek con diagnostica completa
+      console.log('🔍 DeepSeek Connection Test:', { 
+        baseURL: AI_BASE_URL, 
+        model: AI_MODEL,
+        apiKeyCheck: currentApiKey ? `${currentApiKey.slice(0, 12)}...${currentApiKey.slice(-8)}` : 'MISSING'
+      });
       
-      const response = await Promise.race([
+      const testResponse = await Promise.race([
         aiClient.chat.completions.create({
           model: AI_MODEL,
-          messages: [{ role: "user", content: "Test connessione" }],
-          max_tokens: 5
+          messages: [
+            { role: "system", content: "You are a helpful assistant." },
+            { role: "user", content: "Hello!" }
+          ],
+          stream: false,
+          max_tokens: 10
         }),
-        new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
+        new Promise((_, reject) => setTimeout(() => reject(new Error('DeepSeek API Timeout')), 8000))
       ]);
 
-      console.log('✅ DeepSeek AI Health Check riuscito:', response);
+      console.log('✅ DeepSeek CONNECTION SUCCESS:', { 
+        model: testResponse.model,
+        usage: testResponse.usage,
+        response: testResponse.choices[0].message.content.slice(0, 50) + '...'
+      });
+      
       return {
         status: 'connected',
         model: AI_MODEL,
