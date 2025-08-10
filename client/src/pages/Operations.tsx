@@ -1390,6 +1390,156 @@ export default function Operations() {
         </div>
       </div>
 
+      {/* Sezione Riassunto Totali */}
+      {!isLoadingOperations && !isLoadingCycles && !isLoadingBaskets && filteredOperations?.length > 0 && (() => {
+        // Calcola i totali dai movimenti visualizzati
+        const totals = {
+          totalOperations: filteredOperations.length,
+          totalAnimals: 0,
+          totalWeight: 0,
+          bySize: {} as Record<string, { animals: number; operations: number; weight: number }>,
+          byType: {} as Record<string, { animals: number; operations: number; weight: number }>
+        };
+
+        filteredOperations.forEach((op: any) => {
+          const animalCount = op.animalCount || 0;
+          const weight = op.totalWeight || 0;
+          const sizeCode = op.size?.code || 'Non specificata';
+          const opType = op.type || 'unknown';
+
+          // Calcolo corretto degli animali secondo la logica di business:
+          // ENTRATE: prima-attivazione, ripopolamento (+)
+          // USCITE: vendita, cessazione (-)
+          // ALTRE: misura, peso, pulizia, vagliatura, dismissione (non modificano il totale)
+          let animalMovement = 0;
+          if (['prima-attivazione', 'ripopolamento'].includes(opType)) {
+            animalMovement = animalCount; // Entrate positive
+          } else if (['vendita', 'cessazione'].includes(opType)) {
+            animalMovement = -animalCount; // Uscite negative
+          }
+          // Per le altre operazioni (misura, vagliatura, etc.) animalMovement rimane 0
+
+          totals.totalAnimals += animalMovement;
+          totals.totalWeight += weight;
+
+          // Raggruppamento per taglia
+          if (!totals.bySize[sizeCode]) {
+            totals.bySize[sizeCode] = { animals: 0, operations: 0, weight: 0 };
+          }
+          totals.bySize[sizeCode].animals += animalMovement;
+          totals.bySize[sizeCode].operations += 1;
+          totals.bySize[sizeCode].weight += weight;
+
+          // Raggruppamento per tipo operazione
+          if (!totals.byType[opType]) {
+            totals.byType[opType] = { animals: 0, operations: 0, weight: 0 };
+          }
+          totals.byType[opType].animals += animalMovement;
+          totals.byType[opType].operations += 1;
+          totals.byType[opType].weight += weight;
+        });
+
+        const typeLabels = {
+          'misura': 'Misura',
+          'prima-attivazione': 'Prima Attivazione',
+          'dismissione': 'Dismissione',
+          'vendita': 'Vendita',
+          'vagliatura': 'Vagliatura',
+          'pulizia': 'Pulizia',
+          'trattamento': 'Trattamento'
+        };
+
+        return (
+          <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg shadow-sm border border-blue-100 p-6 mb-6">
+            <div className="flex items-center gap-2 mb-4">
+              <BarChart3 className="h-5 w-5 text-blue-600" />
+              <h3 className="text-lg font-semibold text-gray-800">
+                Riassunto Movimenti Visualizzati
+              </h3>
+              <span className="px-2 py-1 bg-blue-100 text-blue-700 rounded-full text-sm font-medium">
+                {totals.totalOperations} operazioni
+              </span>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+              {/* Totali generali */}
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                  <Hash className="h-4 w-4 text-green-600" />
+                  Totali Generali
+                </h4>
+                <div className="space-y-2">
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Animali:</span>
+                    <span className="font-medium text-green-700">
+                      {totals.totalAnimals.toLocaleString('it-IT')}
+                    </span>
+                  </div>
+                  <div className="flex justify-between">
+                    <span className="text-sm text-gray-600">Peso totale:</span>
+                    <span className="font-medium text-green-700">
+                      {totals.totalWeight > 0 ? `${totals.totalWeight.toLocaleString('it-IT')} g` : '-'}
+                    </span>
+                  </div>
+                </div>
+              </div>
+
+              {/* Suddivisione per taglia */}
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                  <Ruler className="h-4 w-4 text-orange-600" />
+                  Per Taglia
+                </h4>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {Object.entries(totals.bySize)
+                    .sort(([,a], [,b]) => b.animals - a.animals)
+                    .map(([size, data]) => (
+                      <div key={size} className="flex justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className={`px-2 py-0.5 rounded text-xs font-medium ${
+                            size.includes('TP-') ? 'bg-orange-100 text-orange-700' : 'bg-gray-100 text-gray-600'
+                          }`}>
+                            {size}
+                          </span>
+                          <span className="text-gray-500">({data.operations} op.)</span>
+                        </div>
+                        <span className="font-medium text-orange-700">
+                          {data.animals.toLocaleString('it-IT')}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+
+              {/* Suddivisione per tipo operazione */}
+              <div className="bg-white rounded-lg p-4 shadow-sm">
+                <h4 className="font-medium text-gray-700 mb-3 flex items-center gap-2">
+                  <Activity className="h-4 w-4 text-purple-600" />
+                  Per Tipologia
+                </h4>
+                <div className="space-y-2 max-h-32 overflow-y-auto">
+                  {Object.entries(totals.byType)
+                    .sort(([,a], [,b]) => b.animals - a.animals)
+                    .map(([type, data]) => (
+                      <div key={type} className="flex justify-between text-sm">
+                        <div className="flex items-center gap-2">
+                          <span className="text-gray-700">
+                            {typeLabels[type] || type}
+                          </span>
+                          <span className="text-gray-500">({data.operations})</span>
+                        </div>
+                        <span className="font-medium text-purple-700">
+                          {data.animals.toLocaleString('it-IT')}
+                        </span>
+                      </div>
+                    ))}
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
+
       {/* View Mode Content (Table or Cycles) */}
       {isLoadingOperations || isLoadingCycles || isLoadingBaskets ? (
         <div className="bg-white rounded-lg shadow p-8 text-center">
