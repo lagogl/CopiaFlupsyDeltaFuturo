@@ -10,8 +10,9 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { apiRequest } from "@/lib/queryClient";
 
 interface AIHealthStatus {
-  status: 'connected' | 'error';
+  status: 'connected' | 'autonomous' | 'offline' | 'not_configured' | 'error';
   model: string;
+  provider: string;
 }
 
 interface PredictiveAnalysis {
@@ -127,8 +128,13 @@ export default function AIDashboard() {
             </CardTitle>
             <CardDescription>Connessione e stato dei moduli AI integrati</CardDescription>
           </div>
-          <Badge variant={(aiHealth as AIHealthStatus)?.status === 'connected' ? 'default' : 'destructive'}>
-            {healthLoading ? 'Verificando...' : (aiHealth as AIHealthStatus)?.status === 'connected' ? 'Connesso' : 'Disconnesso'}
+          <Badge variant={
+            (aiHealth as AIHealthStatus)?.status === 'connected' ? 'default' : 
+            (aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'secondary' : 'destructive'
+          }>
+            {healthLoading ? 'Verificando...' : 
+             (aiHealth as AIHealthStatus)?.status === 'connected' ? 'Connesso (Esterno)' : 
+             (aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'Autonomo (Interno)' : 'Offline'}
           </Badge>
         </CardHeader>
         <CardContent>
@@ -137,12 +143,16 @@ export default function AIDashboard() {
               <div className="text-center p-4 border rounded-lg">
                 <Brain className="h-8 w-8 mx-auto mb-2 text-blue-500" />
                 <h3 className="font-semibold">Modulo Predittivo</h3>
-                <p className="text-sm text-gray-600">Analisi crescita avanzata</p>
+                <p className="text-sm text-gray-600">
+                  {(aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'Algoritmi interni attivi' : 'Analisi crescita avanzata'}
+                </p>
               </div>
               <div className="text-center p-4 border rounded-lg">
                 <BarChart3 className="h-8 w-8 mx-auto mb-2 text-green-500" />
                 <h3 className="font-semibold">Analytics AI</h3>
-                <p className="text-sm text-gray-600">Business Intelligence</p>
+                <p className="text-sm text-gray-600">
+                  {(aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'Analisi statistiche integrate' : 'Business Intelligence'}
+                </p>
               </div>
               <div className="text-center p-4 border rounded-lg">
                 <Leaf className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
