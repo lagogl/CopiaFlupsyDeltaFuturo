@@ -50,11 +50,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth(); // Aggiungiamo l'hook useAuth
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
-    'operational': true,
-    'monitoring': true,
-    'inventory': true,
-    'analysis': true,
-    'system': true
+    'operational': false,
+    'monitoring': false,
+    'inventory': false,
+    'analysis': false,
+    'sales': false,
+    'system': false
   });
 
   // Effetto per gestire la sidebar in base alla pagina e al dispositivo
