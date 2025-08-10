@@ -40,6 +40,16 @@ Preferred communication style: Simple, everyday language.
   - Added detailed debug logging for growth prediction verification
 - **Result**: Accurate growth predictions showing realistic timeframes (e.g., Cesta #20 reaches TP-2800 in 10 days with 8.3% daily SGR)
 
+### Stock Range Calculation Database Cleanup (August 2025)
+- **Issue**: Custom date range stock calculations showing incorrect values due to phantom operations
+- **Root Cause**: Database contained 7 "phantom" operations (IDs 4, 5, 41-45) dated 6-9 August that were visible to the giacenze calculator but not in the operations interface
+- **Solution**: Identified and removed erroneous operations from database
+- **Technical Details**: 
+  - Phantom operations were creating false stock entries (5.225.000 animals for Aug 1-6 range when no real operations existed)
+  - Operations IDs 4, 5, 41-45 were test data that should not have been present
+  - Cleaned database now contains only legitimate operations starting from ID 46 (August 9+)
+- **Result**: Stock range calculations now correctly show 0 animals for periods with no actual operations, ensuring data integrity
+
 ### AI System Integration - DeepSeek with Autonomous Fallback (COMPLETED)
 - **Status**: ✅ INTEGRAZIONE PERFETTA SECONDO SPECIFICHE UFFICIALI DeepSeek
 - **Implementation**: 
