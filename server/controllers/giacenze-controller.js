@@ -99,21 +99,8 @@ async function calculateGiacenzeForRange(startDate, endDate, flupsyId) {
     );
   }
 
-  const operationsInRange = await db.select({
-    id: operations.id,
-    date: operations.date,
-    type: operations.type,
-    animalCount: operations.animalCount,
-    totalWeight: operations.totalWeight,
-    basketId: operations.basketId,
-    basketNumber: baskets.number,
-    flupsyId: baskets.flupsyId,
-    flupsyName: flupsys.name,
-    sizeId: operations.sizeId,
-    sizeCode: sizes.code,
-    sizeName: sizes.name,
-    animalsPerKg: operations.animalsPerKg
-  })
+  // Semplicemente query più semplice per evitare problemi di join
+  const operationsInRange = await db.select()
   .from(operations)
   .leftJoin(baskets, eq(operations.basketId, baskets.id))
   .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
@@ -139,75 +126,87 @@ async function calculateGiacenzeForRange(startDate, endDate, flupsyId) {
   const giacenzeByFlupsy = new Map();
   const operationsByDate = new Map();
 
-  // Elabora ogni operazione
-  operationsInRange.forEach(op => {
-    const animalCount = op.animalCount || 0;
-    const dateKey = op.date;
+  // Elabora ogni operazione - la query restituisce oggetti con nested properties
+  operationsInRange.forEach(row => {
+    const op = row.operations;
+    const basket = row.baskets;
+    const flupsy = row.flupsys;
+    const size = row.sizes;
+    
+    const animalCount = op?.animalCount || 0;
+    const dateKey = op?.date;
+    const operationType = op?.type;
     
     // Raggruppa per tipo operazione
-    if (giacenzeByType.hasOwnProperty(op.type)) {
+    if (operationType && giacenzeByType.hasOwnProperty(operationType)) {
       // Le operazioni che riducono le giacenze
-      if (['cessazione', 'vendita'].includes(op.type)) {
-        giacenzeByType[op.type] += animalCount;
-      } else if (['prima-attivazione', 'ripopolamento'].includes(op.type)) {
+      if (['cessazione', 'vendita'].includes(operationType)) {
+        giacenzeByType[operationType] += animalCount;
+      } else if (['prima-attivazione', 'ripopolamento'].includes(operationType)) {
         // Le operazioni che aumentano le giacenze
-        giacenzeByType[op.type] += animalCount;
+        giacenzeByType[operationType] += animalCount;
       }
       // Altre operazioni (misura, peso, pulizia, vagliatura) non modificano le giacenze
     }
 
     // Raggruppa per taglia
-    if (op.sizeCode && animalCount > 0) {
-      const currentSize = giacenzeBySize.get(op.sizeCode) || {
-        code: op.sizeCode,
-        name: op.sizeName,
+    const sizeCode = size?.code;
+    const sizeName = size?.name;
+    if (sizeCode && animalCount > 0) {
+      const currentSize = giacenzeBySize.get(sizeCode) || {
+        code: sizeCode,
+        name: sizeName,
         entrate: 0,
         uscite: 0,
         giacenza: 0
       };
 
-      if (['prima-attivazione', 'ripopolamento'].includes(op.type)) {
+      if (['prima-attivazione', 'ripopolamento'].includes(operationType)) {
         currentSize.entrate += animalCount;
-      } else if (['cessazione', 'vendita'].includes(op.type)) {
+      } else if (['cessazione', 'vendita'].includes(operationType)) {
         currentSize.uscite += animalCount;
       }
 
       currentSize.giacenza = currentSize.entrate - currentSize.uscite;
-      giacenzeBySize.set(op.sizeCode, currentSize);
+      giacenzeBySize.set(sizeCode, currentSize);
     }
 
     // Raggruppa per FLUPSY
-    if (op.flupsyId && op.flupsyName) {
-      const currentFlupsy = giacenzeByFlupsy.get(op.flupsyId) || {
-        id: op.flupsyId,
-        name: op.flupsyName,
+    const flupsyId = basket?.flupsyId;
+    const flupsyName = flupsy?.name;
+    if (flupsyId && flupsyName) {
+      const currentFlupsy = giacenzeByFlupsy.get(flupsyId) || {
+        id: flupsyId,
+        name: flupsyName,
         entrate: 0,
         uscite: 0,
         giacenza: 0
       };
 
-      if (['prima-attivazione', 'ripopolamento'].includes(op.type)) {
+      if (['prima-attivazione', 'ripopolamento'].includes(operationType)) {
         currentFlupsy.entrate += animalCount;
-      } else if (['cessazione', 'vendita'].includes(op.type)) {
+      } else if (['cessazione', 'vendita'].includes(operationType)) {
         currentFlupsy.uscite += animalCount;
       }
 
       currentFlupsy.giacenza = currentFlupsy.entrate - currentFlupsy.uscite;
-      giacenzeByFlupsy.set(op.flupsyId, currentFlupsy);
+      giacenzeByFlupsy.set(flupsyId, currentFlupsy);
     }
 
     // Raggruppa per data
-    if (!operationsByDate.has(dateKey)) {
+    if (dateKey && !operationsByDate.has(dateKey)) {
       operationsByDate.set(dateKey, []);
     }
-    operationsByDate.get(dateKey).push({
-      id: op.id,
-      type: op.type,
-      animalCount,
-      basketNumber: op.basketNumber,
-      flupsyName: op.flupsyName,
-      sizeCode: op.sizeCode
-    });
+    if (dateKey) {
+      operationsByDate.get(dateKey).push({
+        id: op?.id,
+        type: operationType,
+        animalCount,
+        basketNumber: basket?.physicalNumber,
+        flupsyName: flupsyName,
+        sizeCode: sizeCode
+      });
+    }
   });
 
   // Calcola giacenza totale
