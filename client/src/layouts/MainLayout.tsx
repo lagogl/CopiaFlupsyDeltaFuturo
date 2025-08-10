@@ -184,7 +184,12 @@ export default function MainLayout({ children }: MainLayoutProps) {
               className="p-1 rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-white">
               <Menu className="h-6 w-6" />
             </button>
-            <h1 className="text-xl font-condensed font-bold">FLUPSY Delta Futuro</h1>
+            <img 
+              src="/mito_logo.png" 
+              alt="MITO SRL Logo" 
+              className="h-8 w-auto"
+            />
+            <h1 className="text-xl font-condensed font-bold">FLUPSY Ecotapes/Delta Futuro</h1>
           </div>
           <div className="flex-1 flex justify-center">
             <MarineWeather />
