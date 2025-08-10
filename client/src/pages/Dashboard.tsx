@@ -16,6 +16,7 @@ import { useTooltip } from '@/contexts/TooltipContext';
 import { Button } from '@/components/ui/button';
 import { RefreshCw, AlertCircle } from 'lucide-react';
 import { useFilterPersistence } from '@/hooks/useFilterPersistence';
+import PageHeader from '@/components/PageHeader';
 
 export default function Dashboard() {
   const { isFirstTimeUser, registerTooltip, showTooltip } = useTooltip();
@@ -232,12 +233,7 @@ export default function Dashboard() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h2 
-          ref={dashboardTitleRef} 
-          className="text-2xl font-condensed font-bold text-gray-800"
-        >
-          Dashboard
-        </h2>
+        <PageHeader title="Dashboard" />
         
         <div className="flex items-center gap-2">
           {needsRefresh && (

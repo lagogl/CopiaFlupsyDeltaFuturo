@@ -56,6 +56,19 @@ Preferred communication style: Simple, everyday language.
 - **Smart Tooltips Integration**: All ceste show detailed trend analysis in tooltips (critical ceste get enhanced analysis with specific recommendations)
 - **Result**: More accurate performance scoring that considers trajectory, not just current state, helping operators anticipate problems before they become critical
 
+### Logo Integration and Branding Update
+- **Requirement**: User requested MITO SRL logo placement after page titles throughout application
+- **Implementation**: 
+  - Created reusable `PageHeader` component for consistent logo placement
+  - Updated application title from "FLUPSY Delta Futuro" to "FLUPSY Ecotapes/Delta Futuro"
+  - Moved logo from header navigation to appear after each page title (e.g., "Dashboard [LOGO]")
+  - Integrated logo into Dashboard page using new PageHeader component
+- **Technical Details**:
+  - Logo file: `/mito_logo.png` (MITO SRL transparent background logo)
+  - Component: `client/src/components/PageHeader.tsx` for reusable title+logo pattern
+  - Default logo size: h-8 w-auto for optimal visibility
+- **Result**: Consistent branding across all pages with MITO SRL logo prominently displayed after page titles
+
 ## System Architecture
 
 ### Frontend Architecture
