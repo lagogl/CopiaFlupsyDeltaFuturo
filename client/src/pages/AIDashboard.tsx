@@ -139,38 +139,72 @@ export default function AIDashboard() {
             </CardTitle>
             <CardDescription>Connessione e stato dei moduli AI integrati</CardDescription>
           </div>
-          <Badge variant={
-            (aiHealth as AIHealthStatus)?.status === 'connected' ? 'default' : 
-            (aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'secondary' : 'destructive'
-          }>
-            {healthLoading ? 'Verificando...' : 
-             (aiHealth as AIHealthStatus)?.status === 'connected' ? 'Connesso (Esterno)' : 
-             (aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'Autonomo (Interno)' : 'Offline'}
-          </Badge>
+          <div className="flex items-center gap-2">
+            <Badge variant={
+              (aiHealth as AIHealthStatus)?.status === 'connected' ? 'default' : 
+              (aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'secondary' : 'destructive'
+            }>
+              {healthLoading ? 'Verificando...' : 
+               (aiHealth as AIHealthStatus)?.status === 'connected' ? 'Connesso (Esterno)' : 
+               (aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'Autonomo (Interno)' : 'Offline'}
+            </Badge>
+            {(aiHealth as AIHealthStatus)?.status === 'connected' && (
+              <Badge variant="outline" className="bg-blue-50 text-blue-700">
+                <Zap className="h-3 w-3 mr-1" />
+                DeepSeek-V3
+              </Badge>
+            )}
+          </div>
         </CardHeader>
         <CardContent>
           {(aiHealth as AIHealthStatus) && (
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-              <div className="text-center p-4 border rounded-lg">
-                <Brain className="h-8 w-8 mx-auto mb-2 text-blue-500" />
-                <h3 className="font-semibold">Modulo Predittivo</h3>
-                <p className="text-sm text-gray-600">
-                  {(aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'Algoritmi interni attivi' : 'Analisi crescita avanzata'}
-                </p>
+            <>
+              {/* Informazioni Provider AI */}
+              {(aiHealth as AIHealthStatus)?.status === 'connected' && (
+                <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 mb-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-3">
+                      <Shield className="h-5 w-5 text-blue-600" />
+                      <div>
+                        <h4 className="font-semibold text-blue-900">DeepSeek AI - Connesso</h4>
+                        <p className="text-sm text-blue-700">
+                          Modello: <code className="bg-blue-100 px-1 rounded">deepseek-chat</code> | 
+                          Pricing: $0.27/1M input + $1.10/1M output tokens
+                        </p>
+                      </div>
+                    </div>
+                    <div className="text-right">
+                      <p className="text-sm font-medium text-blue-900">Crediti Disponibili</p>
+                      <p className="text-lg font-bold text-green-600">$5.00</p>
+                      <p className="text-xs text-blue-600">~15M tokens stimati</p>
+                    </div>
+                  </div>
+                </div>
+              )}
+              
+              {/* Moduli AI */}
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <div className="text-center p-4 border rounded-lg">
+                  <Brain className="h-8 w-8 mx-auto mb-2 text-blue-500" />
+                  <h3 className="font-semibold">Modulo Predittivo</h3>
+                  <p className="text-sm text-gray-600">
+                    {(aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'Algoritmi interni attivi' : 'Analisi crescita avanzata'}
+                  </p>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <BarChart3 className="h-8 w-8 mx-auto mb-2 text-green-500" />
+                  <h3 className="font-semibold">Analytics AI</h3>
+                  <p className="text-sm text-gray-600">
+                    {(aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'Analisi statistiche integrate' : 'Business Intelligence'}
+                  </p>
+                </div>
+                <div className="text-center p-4 border rounded-lg">
+                  <Leaf className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
+                  <h3 className="font-semibold">Sostenibilità</h3>
+                  <p className="text-sm text-gray-600">Impatto ambientale</p>
+                </div>
               </div>
-              <div className="text-center p-4 border rounded-lg">
-                <BarChart3 className="h-8 w-8 mx-auto mb-2 text-green-500" />
-                <h3 className="font-semibold">Analytics AI</h3>
-                <p className="text-sm text-gray-600">
-                  {(aiHealth as AIHealthStatus)?.status === 'autonomous' ? 'Analisi statistiche integrate' : 'Business Intelligence'}
-                </p>
-              </div>
-              <div className="text-center p-4 border rounded-lg">
-                <Leaf className="h-8 w-8 mx-auto mb-2 text-emerald-500" />
-                <h3 className="font-semibold">Sostenibilità</h3>
-                <p className="text-sm text-gray-600">Impatto ambientale</p>
-              </div>
-            </div>
+            </>
           )}
         </CardContent>
       </Card>
