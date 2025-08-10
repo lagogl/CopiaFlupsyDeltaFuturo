@@ -15,9 +15,6 @@ export default function PageHeader({
 }: PageHeaderProps) {
   return (
     <div className="flex items-center gap-3">
-      <h1 className={className}>
-        {title}
-      </h1>
       {showLogo && (
         <img 
           src="/mito_logo.png" 
@@ -25,6 +22,9 @@ export default function PageHeader({
           className="h-16 w-auto"
         />
       )}
+      <h1 className={className}>
+        {title}
+      </h1>
       {children}
     </div>
   );
