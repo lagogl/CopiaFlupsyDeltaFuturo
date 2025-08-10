@@ -22,7 +22,7 @@ export default function PageHeader({
         <img 
           src="/mito_logo.png" 
           alt="MITO SRL Logo" 
-          className="h-11 w-auto"
+          className="h-16 w-auto"
         />
       )}
       {children}
