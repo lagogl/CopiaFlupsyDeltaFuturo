@@ -286,34 +286,53 @@ export default function AIDashboard() {
                     </div>
                   )}
 
-                  {/* Dettagli per singolo cestello */}
+                  {/* Tabella Predizioni Compatta */}
                   {(predictiveAnalysisMutation.data as any).prediction.basketPredictions && (
-                    <div className="space-y-3">
-                      <h5 className="font-medium">Analisi per Cestello</h5>
-                      {(predictiveAnalysisMutation.data as any).prediction.basketPredictions.map((basketPred: any, index: number) => (
-                        <div key={index} className="bg-white p-4 rounded-lg border">
-                          <div className="flex justify-between items-center mb-3">
-                            <h6 className="font-medium">Cesta #{basketPred.basketNumber}</h6>
-                            <Badge variant="outline">ID: {basketPred.basketId}</Badge>
-                          </div>
-                          
-                          {basketPred.prediction?.predictions && (
-                            <div className="space-y-2 max-h-40 overflow-y-auto">
-                              {basketPred.prediction.predictions.slice(0, 5).map((pred: any, idx: number) => (
-                                <div key={idx} className="flex justify-between items-center p-2 bg-gray-50 rounded text-sm">
-                                  <span>Giorno {pred.days}</span>
-                                  <div className="flex items-center gap-2">
-                                    <span>{pred.predictedWeight}g</span>
-                                    <Badge variant={pred.confidence > 0.7 ? 'default' : 'secondary'}>
-                                      {(pred.confidence * 100).toFixed(0)}%
-                                    </Badge>
-                                  </div>
-                                </div>
+                    <div className="bg-white rounded-lg border overflow-hidden">
+                      <div className="px-4 py-3 bg-gray-50 border-b">
+                        <h5 className="font-medium">Predizioni Crescita - {timeframe} giorni</h5>
+                      </div>
+                      
+                      <div className="overflow-x-auto">
+                        <table className="w-full text-sm">
+                          <thead className="bg-gray-50 border-b">
+                            <tr>
+                              <th className="px-3 py-2 text-left font-medium">Cesta</th>
+                              {Array.from({length: parseInt(timeframe)}, (_, i) => (
+                                <th key={i} className="px-2 py-2 text-center font-medium">G{i+1}</th>
                               ))}
-                            </div>
-                          )}
-                        </div>
-                      ))}
+                              <th className="px-3 py-2 text-center font-medium">Confidenza</th>
+                            </tr>
+                          </thead>
+                          <tbody>
+                            {(predictiveAnalysisMutation.data as any).prediction.basketPredictions.map((basketPred: any, index: number) => (
+                              <tr key={index} className="border-b hover:bg-gray-50">
+                                <td className="px-3 py-2 font-medium">
+                                  <div className="flex items-center gap-2">
+                                    <span>#{basketPred.basketNumber}</span>
+                                    <Badge variant="outline" className="text-xs">ID:{basketPred.basketId}</Badge>
+                                  </div>
+                                </td>
+                                {basketPred.prediction?.predictions?.map((pred: any, idx: number) => (
+                                  <td key={idx} className="px-2 py-2 text-center">
+                                    <div className="flex flex-col">
+                                      <span className="font-medium">{pred.predictedWeight}g</span>
+                                      <span className="text-xs text-gray-500">{pred.predictedAnimalsPerKg}/kg</span>
+                                    </div>
+                                  </td>
+                                ))}
+                                <td className="px-3 py-2 text-center">
+                                  {basketPred.prediction?.predictions?.length > 0 && (
+                                    <Badge variant={basketPred.prediction.predictions[basketPred.prediction.predictions.length - 1].confidence > 0.7 ? 'default' : 'secondary'}>
+                                      {(basketPred.prediction.predictions[basketPred.prediction.predictions.length - 1].confidence * 100).toFixed(0)}%
+                                    </Badge>
+                                  )}
+                                </td>
+                              </tr>
+                            ))}
+                          </tbody>
+                        </table>
+                      </div>
                     </div>
                   )}
 
