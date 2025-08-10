@@ -1,8 +1,15 @@
 import OpenAI from "openai";
 
-// the newest OpenAI model is "gpt-4o" which was released May 13, 2024. do not change this unless explicitly requested by the user
-const openai = new OpenAI({ 
-  apiKey: process.env.OPENAI_API_KEY 
+// Configurazione AI flessibile - supporta OpenAI e API compatibili come Qwen
+const AI_PROVIDER = process.env.AI_PROVIDER || 'openai'; // 'openai' o 'qwen'
+const AI_API_KEY = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
+const AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.openai.com/v1';
+const AI_MODEL = process.env.AI_MODEL || (AI_PROVIDER === 'qwen' ? 'qwen-turbo' : 'gpt-4o');
+
+// Client universale compatibile con OpenAI e Qwen
+const aiClient = new OpenAI({ 
+  apiKey: AI_API_KEY,
+  baseURL: AI_BASE_URL
 });
 
 export interface PredictiveGrowthData {
@@ -88,8 +95,8 @@ export class PredictiveGrowthAI {
         }
       `;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+      const response = await aiClient.chat.completions.create({
+        model: AI_MODEL,
         messages: [
           {
             role: "system",
@@ -164,8 +171,8 @@ export class PredictiveGrowthAI {
         }
       `;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+      const response = await aiClient.chat.completions.create({
+        model: AI_MODEL,
         messages: [
           {
             role: "system",
@@ -237,8 +244,8 @@ export class AnalyticsAI {
         }
       `;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+      const response = await aiClient.chat.completions.create({
+        model: AI_MODEL,
         messages: [
           {
             role: "system",
@@ -305,8 +312,8 @@ export class AnalyticsAI {
         }
       `;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+      const response = await aiClient.chat.completions.create({
+        model: AI_MODEL,
         messages: [
           {
             role: "system",
@@ -377,8 +384,8 @@ export class SustainabilityAI {
         }
       `;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+      const response = await aiClient.chat.completions.create({
+        model: AI_MODEL,
         messages: [
           {
             role: "system",
@@ -446,8 +453,8 @@ export class SustainabilityAI {
         }
       `;
 
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
+      const response = await aiClient.chat.completions.create({
+        model: AI_MODEL,
         messages: [
           {
             role: "system",
@@ -481,23 +488,30 @@ export class AIService {
   /**
    * Health check per verificare che OpenAI sia configurato correttamente
    */
-  static async healthCheck(): Promise<{ status: string; model: string }> {
+  static async healthCheck(): Promise<{ status: string; model: string; provider: string }> {
     try {
-      const response = await openai.chat.completions.create({
-        model: "gpt-4o",
-        messages: [{ role: "user", content: "Test connection" }],
-        max_tokens: 10
+      if (!AI_API_KEY) {
+        return { status: 'not_configured', model: 'none', provider: AI_PROVIDER };
+      }
+
+      const response = await aiClient.chat.completions.create({
+        model: AI_MODEL,
+        messages: [{ role: "user", content: "Test" }],
+        max_tokens: 5
       });
       
       return {
         status: 'connected',
-        model: 'gpt-4o'
+        model: AI_MODEL,
+        provider: AI_PROVIDER
       };
     } catch (error) {
       console.error('AI Health Check fallito:', error);
+      // Modalità fallback - sistema funziona anche senza AI
       return {
-        status: 'error',
-        model: 'none'
+        status: 'offline',
+        model: 'fallback',
+        provider: AI_PROVIDER
       };
     }
   }

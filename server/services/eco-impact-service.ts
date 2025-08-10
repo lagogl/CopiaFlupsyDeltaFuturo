@@ -102,10 +102,10 @@ export class EcoImpactService {
       const categories = await this.getImpactCategories();
       const factors = await this.getImpactFactors();
       
-      // Parametri per il calcolo dell'impatto
+      // Parametri per il calcolo dell'impatto (usa valori standardizzati)
       const parameters = {
-        basketCount: operation.basketCount || 1,
-        duration: operation.duration || 30, // Durata in minuti
+        basketCount: 1, // Impatto base per cestello
+        duration: 30, // Durata standard in minuti
         // Altri parametri specifici dell'operazione...
       };
       
@@ -129,11 +129,13 @@ export class EcoImpactService {
         impactsToSave.push({
           operationId,
           categoryId: category.id,
-          factorId: factor.id,
-          value: calculatedImpacts[categoryCode],
+          impactValue: calculatedImpacts[categoryCode],
+          baselineValue: factor.value, // Usa il valore del fattore come baseline
+          improvementPercentage: 0, // Nessun miglioramento di default
           metadata: { 
             calculated: true,
-            parameters
+            parameters,
+            factorId: factor.id // Salva l'ID del fattore nei metadata
           }
         });
       }
@@ -218,7 +220,7 @@ export class EcoImpactService {
             .where(eq(impactCategories.id, impact.categoryId));
           
           if (category && category.code in totalImpacts) {
-            totalImpacts[category.code] += impact.value;
+            totalImpacts[category.code] += impact.impactValue || 0;
           }
         }
       }
