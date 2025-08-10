@@ -84,28 +84,74 @@ async function calculateGiacenzeForRange(startDate, endDate, flupsyId) {
   
   console.log(`📊 Calcolo giacenze dal ${startDateStr} al ${endDateStr}`);
   
-  // Query per ottenere tutte le operazioni nel range di date
-  // Include solo operazioni che impattano le giacenze
-  let whereClause = and(
-    gte(operations.date, startDateStr),
-    lte(operations.date, endDateStr)
+  // Prima, otteniamo tutti i cicli che erano attivi durante il range di date
+  // Un ciclo è considerato attivo se:
+  // 1. Ha iniziato prima/durante il range E non ha finito prima dell'inizio del range
+  // 2. Oppure ha iniziato durante il range
+  let cycleWhereClause = or(
+    // Cicli iniziati prima del range e ancora attivi (endDate null) o finiti dopo l'inizio
+    and(
+      lte(cycles.startDate, endDateStr),
+      or(
+        isNull(cycles.endDate),
+        gte(cycles.endDate, startDateStr)
+      )
+    ),
+    // Cicli iniziati durante il range
+    and(
+      gte(cycles.startDate, startDateStr),
+      lte(cycles.startDate, endDateStr)
+    )
   );
-  
+
   // Aggiungi filtro FLUPSY se specificato
   if (flupsyId) {
-    whereClause = and(
-      whereClause,
+    cycleWhereClause = and(
+      cycleWhereClause,
       eq(baskets.flupsyId, parseInt(flupsyId))
     );
   }
 
-  // Semplicemente query più semplice per evitare problemi di join
+  // Ottieni i cicli attivi durante il range
+  const activeCycles = await db.select({
+    cycleId: cycles.id,
+    basketId: cycles.basketId,
+    startDate: cycles.startDate,
+    endDate: cycles.endDate,
+    flupsyId: baskets.flupsyId,
+    flupsyName: flupsys.name,
+    basketNumber: baskets.physicalNumber
+  })
+  .from(cycles)
+  .leftJoin(baskets, eq(cycles.basketId, baskets.id))
+  .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+  .where(cycleWhereClause);
+
+  console.log(`🔄 Cicli attivi nel range: ${activeCycles.length}`);
+
+  // Ora otteniamo tutte le operazioni per questi cicli che sono avvenute nel range
+  const cycleIds = activeCycles.map(c => c.cycleId);
+  let operationsWhereClause;
+  
+  if (cycleIds.length > 0) {
+    operationsWhereClause = and(
+      gte(operations.date, startDateStr),
+      lte(operations.date, endDateStr),
+      sql`${operations.cycleId} IN (${sql.join(cycleIds, sql`, `)})`
+    );
+  } else {
+    // Nessun ciclo attivo, nessuna operazione da considerare
+    console.log(`⚠️ Nessun ciclo attivo trovato nel range specificato`);
+    operationsWhereClause = sql`1 = 0`; // Condizione sempre falsa
+  }
+
+  // Ottieni le operazioni per i cicli attivi nel range
   const operationsInRange = await db.select()
   .from(operations)
   .leftJoin(baskets, eq(operations.basketId, baskets.id))
   .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
   .leftJoin(sizes, eq(operations.sizeId, sizes.id))
-  .where(whereClause)
+  .where(operationsWhereClause)
   .orderBy(operations.date);
 
   console.log(`📋 Operazioni trovate nel range: ${operationsInRange.length}`);
@@ -231,6 +277,7 @@ async function calculateGiacenzeForRange(startDate, endDate, flupsyId) {
   console.log(`   Giacenza netta: ${totaleGiacenza.toLocaleString()}`);
   console.log(`   Taglie attive: ${dettaglioTaglie.length}`);
   console.log(`   FLUPSY coinvolti: ${dettaglioFlupsys.length}`);
+  console.log(`   Cicli considerati: ${activeCycles.length}`);
 
   return {
     totale_giacenza: totaleGiacenza,
@@ -248,8 +295,16 @@ async function calculateGiacenzeForRange(startDate, endDate, flupsyId) {
     statistiche: {
       numero_operazioni: operationsInRange.length,
       giorni_analizzati: operationsByDate.size,
-      media_giornaliera: operationsByDate.size > 0 ? Math.round(operationsInRange.length / operationsByDate.size) : 0
-    }
+      media_giornaliera: operationsByDate.size > 0 ? Math.round(operationsInRange.length / operationsByDate.size) : 0,
+      cicli_considerati: activeCycles.length
+    },
+    dettaglio_cicli: activeCycles.map(c => ({
+      cycleId: c.cycleId,
+      basketNumber: c.basketNumber,
+      flupsyName: c.flupsyName,
+      startDate: c.startDate,
+      endDate: c.endDate
+    }))
   };
 }
 

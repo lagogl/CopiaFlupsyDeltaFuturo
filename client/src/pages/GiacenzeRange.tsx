@@ -181,7 +181,7 @@ export default function GiacenzeRange() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               >
                 <option value="">Tutti i FLUPSY</option>
-                {flupsysList?.map((flupsy: any) => (
+                {(flupsysList as any)?.map?.((flupsy: any) => (
                   <option key={flupsy.id} value={flupsy.id}>
                     {flupsy.name}
                   </option>
@@ -315,6 +315,20 @@ export default function GiacenzeRange() {
                   </div>
                 </div>
               </div>
+              
+              {/* Info sui cicli considerati */}
+              {giacenzeData.data.statistiche && 'cicli_considerati' in giacenzeData.data.statistiche && (
+                <div className="mt-4 p-3 bg-blue-50 rounded-lg">
+                  <div className="flex items-center gap-2 mb-2">
+                    <div className="text-sm font-medium text-blue-800">
+                      Cicli considerati nel calcolo: {(giacenzeData.data.statistiche as any).cicli_considerati}
+                    </div>
+                  </div>
+                  <div className="text-xs text-blue-600">
+                    Include i cicli attivi durante il periodo (anche se chiusi prima della data di fine)
+                  </div>
+                </div>
+              )}
             </CardContent>
           </Card>
 
