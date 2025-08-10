@@ -3,13 +3,30 @@ import OpenAI from "openai";
 // Configurazione AI flessibile - supporta OpenAI e API compatibili come Qwen
 const AI_PROVIDER = process.env.AI_PROVIDER || 'openai'; // 'openai' o 'qwen'
 const AI_API_KEY = process.env.AI_API_KEY || process.env.OPENAI_API_KEY;
-const AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.openai.com/v1';
-const AI_MODEL = process.env.AI_MODEL || (AI_PROVIDER === 'qwen' ? 'qwen-turbo' : 'gpt-4o');
+
+// URL corretto per Qwen.ai
+let AI_BASE_URL;
+if (AI_PROVIDER === 'qwen') {
+  // Usa sempre l'endpoint corretto di DashScope per Qwen
+  AI_BASE_URL = 'https://dashscope.aliyuncs.com/compatible-mode/v1';
+} else {
+  // Per OpenAI usa l'URL configurato o quello di default
+  AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.openai.com/v1';
+  
+  // Correggi URL malformato se necessario per OpenAI
+  if (process.env.AI_BASE_URL && !process.env.AI_BASE_URL.startsWith('http')) {
+    AI_BASE_URL = 'https://' + process.env.AI_BASE_URL;
+  }
+}
+
+// Modelli disponibili per Qwen.ai
+const AI_MODEL = process.env.AI_MODEL || (AI_PROVIDER === 'qwen' ? 'qwen-plus' : 'gpt-4o');
 
 // Client universale compatibile con OpenAI e Qwen
 const aiClient = new OpenAI({ 
   apiKey: AI_API_KEY,
-  baseURL: AI_BASE_URL
+  baseURL: AI_BASE_URL,
+  timeout: 10000 // Timeout di 10 secondi
 });
 
 export interface PredictiveGrowthData {
@@ -494,12 +511,15 @@ export class AIService {
         return { status: 'not_configured', model: 'none', provider: AI_PROVIDER };
       }
 
+      console.log(`Configurazione AI: Provider=${AI_PROVIDER}, Model=${AI_MODEL}, BaseURL=${AI_BASE_URL}`);
+      
       const response = await aiClient.chat.completions.create({
         model: AI_MODEL,
-        messages: [{ role: "user", content: "Test" }],
+        messages: [{ role: "user", content: "Test connessione" }],
         max_tokens: 5
       });
       
+      console.log('AI Health Check riuscito:', response.choices[0]?.message?.content || 'OK');
       return {
         status: 'connected',
         model: AI_MODEL,
