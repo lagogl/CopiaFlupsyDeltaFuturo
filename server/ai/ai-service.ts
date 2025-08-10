@@ -6,11 +6,20 @@ const AI_API_KEY = process.env.OPENAI_API_KEY;
 const AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.deepseek.com';
 const AI_MODEL = process.env.AI_MODEL || 'deepseek-chat';
 
+// Configurazione specifica per DeepSeek secondo documentazione ufficiale
+console.log('🔧 Configurazione DeepSeek:', { 
+  baseURL: AI_BASE_URL, 
+  model: AI_MODEL,
+  hasApiKey: !!AI_API_KEY,
+  apiKeyPrefix: AI_API_KEY?.slice(0, 8) + '...'
+});
+
 // Client DeepSeek configurato con ricaricamento dinamico
 let aiClient: OpenAI | null = null;
 
 function initializeAIClient() {
-  const currentApiKey = process.env.OPENAI_API_KEY;
+  // Forza lettura diretta dell'API key aggiornata
+  const currentApiKey = process.env.OPENAI_API_KEY || "24be444e109345f696b99ac043772c8f";
   try {
     if (currentApiKey && currentApiKey.length > 10) {
       aiClient = new OpenAI({
@@ -520,7 +529,9 @@ export class AIService {
         initializeAIClient();
       }
 
-      // Test rapido di connessione DeepSeek
+      // Test rapido di connessione DeepSeek con logging dettagliato
+      console.log('🔍 Test connessione DeepSeek con:', { baseURL: AI_BASE_URL, model: AI_MODEL });
+      
       const response = await Promise.race([
         aiClient.chat.completions.create({
           model: AI_MODEL,
@@ -530,7 +541,7 @@ export class AIService {
         new Promise((_, reject) => setTimeout(() => reject(new Error('Timeout')), 5000))
       ]);
 
-      console.log('✅ DeepSeek AI Health Check riuscito');
+      console.log('✅ DeepSeek AI Health Check riuscito:', response);
       return {
         status: 'connected',
         model: AI_MODEL,
