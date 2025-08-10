@@ -6,20 +6,32 @@ const AI_API_KEY = process.env.OPENAI_API_KEY;
 const AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.deepseek.com';
 const AI_MODEL = process.env.AI_MODEL || 'deepseek-chat';
 
-// Client DeepSeek configurato
+// Client DeepSeek configurato con ricaricamento dinamico
 let aiClient: OpenAI | null = null;
-try {
-  if (AI_API_KEY) {
-    aiClient = new OpenAI({
-      apiKey: AI_API_KEY,
-      baseURL: AI_BASE_URL,
-      timeout: 10000
-    });
-    console.log('✅ DeepSeek AI configurato correttamente');
+
+function initializeAIClient() {
+  const currentApiKey = process.env.OPENAI_API_KEY;
+  try {
+    if (currentApiKey && currentApiKey.length > 10) {
+      aiClient = new OpenAI({
+        apiKey: currentApiKey,
+        baseURL: AI_BASE_URL,
+        timeout: 10000
+      });
+      console.log('✅ DeepSeek AI configurato correttamente con API key:', currentApiKey.slice(0, 8) + '...');
+      return true;
+    } else {
+      console.log('⚠️ API key non trovata o non valida');
+      return false;
+    }
+  } catch (error) {
+    console.log('⚠️ Errore configurazione DeepSeek:', error);
+    return false;
   }
-} catch (error) {
-  console.log('⚠️ DeepSeek non configurato, modalità autonoma attiva');
 }
+
+// Inizializza immediatamente
+initializeAIClient();
 
 export interface PredictiveGrowthData {
   basketId: number;
@@ -493,16 +505,19 @@ export class AIService {
   // Utilizzo del servizio AI autonomo
 
   /**
-   * Health check per DeepSeek AI
+   * Health check per DeepSeek AI con reinizializzazione dinamica
    */
   static async healthCheck(): Promise<{ status: string; model: string; provider: string }> {
     try {
-      if (!AI_API_KEY) {
+      // Ricarica sempre la API key e reinizializza se necessario
+      const currentApiKey = process.env.OPENAI_API_KEY;
+      if (!currentApiKey) {
         return { status: 'not_configured', model: 'none', provider: 'deepseek' };
       }
 
+      // Forza reinizializzazione se client non presente
       if (!aiClient) {
-        return { status: 'autonomous', model: 'internal', provider: 'flupsy_ai' };
+        initializeAIClient();
       }
 
       // Test rapido di connessione DeepSeek
