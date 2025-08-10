@@ -186,23 +186,31 @@ app.use((req, res, next) => {
   let port = parseInt(process.env.PORT || "5000");
   const maxPortAttempts = 10;
   
-  const startServer = (attemptPort: number, attempts: number = 0) => {
-    if (attempts >= maxPortAttempts) {
-      console.error(`Failed to start server after ${maxPortAttempts} attempts`);
-      process.exit(1);
-      return;
-    }
-
-    server.listen(attemptPort, "0.0.0.0", () => {
-      log(`${app.get("env")} server serving on port ${attemptPort}`);
-    }).on('error', (err: any) => {
-      if (err.code === 'EADDRINUSE') {
-        console.log(`Port ${attemptPort} is busy, trying port ${attemptPort + 1}...`);
-        startServer(attemptPort + 1, attempts + 1);
-      } else {
-        console.error('Server error:', err);
-        process.exit(1);
+  const startServer = (attemptPort: number, attempts: number = 0): Promise<void> => {
+    return new Promise((resolve, reject) => {
+      if (attempts >= maxPortAttempts) {
+        const error = new Error(`Failed to start server after ${maxPortAttempts} attempts`);
+        console.error(error.message);
+        reject(error);
+        return;
       }
+
+      const serverInstance = server.listen(attemptPort, "0.0.0.0", () => {
+        log(`${app.get("env")} server serving on port ${attemptPort}`);
+        resolve();
+      });
+
+      serverInstance.on('error', (err: any) => {
+        if (err.code === 'EADDRINUSE') {
+          console.log(`Port ${attemptPort} is busy, trying port ${attemptPort + 1}...`);
+          startServer(attemptPort + 1, attempts + 1)
+            .then(resolve)
+            .catch(reject);
+        } else {
+          console.error('Server error:', err);
+          reject(err);
+        }
+      });
     });
   };
 
@@ -215,5 +223,13 @@ app.use((req, res, next) => {
     });
   });
 
-  startServer(port);
+  // Start the server with proper error handling
+  try {
+    // Small delay to ensure all initialization is complete
+    await new Promise(resolve => setTimeout(resolve, 1000));
+    await startServer(port);
+  } catch (error) {
+    console.error('Failed to start server:', error);
+    process.exit(1);
+  }
 })();
