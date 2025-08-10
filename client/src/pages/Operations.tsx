@@ -141,7 +141,6 @@ export default function Operations() {
   const [filters, setFilters] = useFilterPersistence('operations', {
     searchTerm: '',
     typeFilter: 'all',
-    dateFilter: '',
     flupsyFilter: 'all',
     cycleFilter: 'all',
     cycleStateFilter: 'active',
@@ -156,7 +155,6 @@ export default function Operations() {
   // Funzioni aggiornate per impostare i filtri
   const setSearchTerm = (value: string) => setFilters(prev => ({ ...prev, searchTerm: value }));
   const setTypeFilter = (value: string) => setFilters(prev => ({ ...prev, typeFilter: value }));
-  const setDateFilter = (value: string) => setFilters(prev => ({ ...prev, dateFilter: value }));
   const setFlupsyFilter = (value: string) => setFilters(prev => ({ ...prev, flupsyFilter: value }));
   const setCycleFilter = (value: string) => setFilters(prev => ({ ...prev, cycleFilter: value }));
   const setCycleStateFilter = (value: string) => setFilters(prev => ({ ...prev, cycleStateFilter: value }));
@@ -1226,11 +1224,24 @@ export default function Operations() {
                   <SelectItem value="selezione-vendita">Selezione per Vendita</SelectItem>
                 </SelectContent>
               </Select>
-              <Input 
-                type="date" 
-                value={filters.dateFilter} 
-                onChange={(e) => setDateFilter(e.target.value)}
-              />
+              <div className="flex items-center space-x-2">
+                <Input 
+                  type="date" 
+                  value={filters.dateFilter} 
+                  onChange={(e) => setDateFilter(e.target.value)}
+                  className="w-40"
+                />
+                {filters.dateFilter && (
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setDateFilter('')}
+                    className="px-2"
+                  >
+                    ✕
+                  </Button>
+                )}
+              </div>
             </div>
           </div>
           
