@@ -1,9 +1,9 @@
 import OpenAI from "openai";
 import { AutonomousAIService } from "./autonomous-ai-service";
 
-// Configurazione DeepSeek AI
+// Configurazione DeepSeek AI - Corretta secondo documentazione ufficiale
 const AI_API_KEY = process.env.OPENAI_API_KEY;
-const AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.deepseek.com/v1';
+const AI_BASE_URL = process.env.AI_BASE_URL || 'https://api.deepseek.com';
 const AI_MODEL = process.env.AI_MODEL || 'deepseek-chat';
 
 // Client DeepSeek configurato
