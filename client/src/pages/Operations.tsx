@@ -94,7 +94,9 @@ interface Operation {
 import { 
   Eye, Search, Filter, Pencil, Plus, Trash2, AlertTriangle, Copy, 
   ArrowDown, ArrowUp, RotateCw, Calendar, Box, Target, Check,
-  ArrowUpDown, ArrowDownUp, MoreVertical, MapPin, ArrowRightCircle
+  ArrowUpDown, ArrowDownUp, MoreVertical, MapPin, ArrowRightCircle,
+  BarChart3, Hash, Ruler, Activity, Edit, Trash, Info, FileText, 
+  ChevronDown, ChevronUp, Beaker, ShoppingCart, Scissors
 } from 'lucide-react';
 import { toast } from '@/hooks/use-toast';
 import { Input } from '@/components/ui/input';
@@ -1439,7 +1441,7 @@ export default function Operations() {
           totals.byType[opType].weight += weight;
         });
 
-        const typeLabels = {
+        const typeLabels: Record<string, string> = {
           'misura': 'Misura',
           'prima-attivazione': 'Prima Attivazione',
           'dismissione': 'Dismissione',
@@ -1524,7 +1526,7 @@ export default function Operations() {
                       <div key={type} className="flex justify-between text-sm">
                         <div className="flex items-center gap-2">
                           <span className="text-gray-700">
-                            {typeLabels[type] || type}
+                            {typeLabels[type as keyof typeof typeLabels] || type}
                           </span>
                           <span className="text-gray-500">({data.operations})</span>
                         </div>
