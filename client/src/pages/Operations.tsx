@@ -137,10 +137,30 @@ export default function Operations() {
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
   });
   
+  // Reset del filtro data se presente nel localStorage per questa release
+  React.useEffect(() => {
+    const savedFilters = localStorage.getItem('app_filters_operations');
+    if (savedFilters) {
+      try {
+        const parsedFilters = JSON.parse(savedFilters);
+        if (parsedFilters.dateFilter) {
+          // Reset solo il campo dateFilter per permettere la visualizzazione di tutte le operazioni
+          localStorage.setItem('app_filters_operations', JSON.stringify({
+            ...parsedFilters,
+            dateFilter: ''
+          }));
+        }
+      } catch (e) {
+        console.error('Errore reset filtro data:', e);
+      }
+    }
+  }, []);
+
   // Filtri persistenti usando il nostro hook personalizzato
   const [filters, setFilters] = useFilterPersistence('operations', {
     searchTerm: '',
     typeFilter: 'all',
+    dateFilter: '',
     flupsyFilter: 'all',
     cycleFilter: 'all',
     cycleStateFilter: 'active',
@@ -155,6 +175,7 @@ export default function Operations() {
   // Funzioni aggiornate per impostare i filtri
   const setSearchTerm = (value: string) => setFilters(prev => ({ ...prev, searchTerm: value }));
   const setTypeFilter = (value: string) => setFilters(prev => ({ ...prev, typeFilter: value }));
+  const setDateFilter = (value: string) => setFilters(prev => ({ ...prev, dateFilter: value }));
   const setFlupsyFilter = (value: string) => setFilters(prev => ({ ...prev, flupsyFilter: value }));
   const setCycleFilter = (value: string) => setFilters(prev => ({ ...prev, cycleFilter: value }));
   const setCycleStateFilter = (value: string) => setFilters(prev => ({ ...prev, cycleStateFilter: value }));
@@ -1227,16 +1248,18 @@ export default function Operations() {
               <div className="flex items-center space-x-2">
                 <Input 
                   type="date" 
-                  value={filters.dateFilter} 
+                  value={filters.dateFilter || ''}
                   onChange={(e) => setDateFilter(e.target.value)}
                   className="w-40"
+                  placeholder="Filtra per data"
                 />
                 {filters.dateFilter && (
                   <Button
                     variant="outline"
                     size="sm"
                     onClick={() => setDateFilter('')}
-                    className="px-2"
+                    className="px-2 text-red-600 hover:text-red-700"
+                    title="Rimuovi filtro data per vedere tutte le operazioni"
                   >
                     ✕
                   </Button>
