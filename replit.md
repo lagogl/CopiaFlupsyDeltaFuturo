@@ -53,7 +53,15 @@ Preferred communication style: Simple, everyday language.
   - **Business Analytics**: Intelligent insights and recommendations for operational optimization
 - **Configuration**: Uses `OPENAI_API_KEY` environment variable with DeepSeek endpoint (https://api.deepseek.com/v1)
 - **Reliability**: Automatic fallback ensures 100% uptime regardless of external AI service availability
+- **Analysis Scope**: FLUPSY-level analysis only - analyzes entire FLUPSY units with detailed breakdown by individual baskets
 - **Result**: Enhanced AI capabilities with guaranteed system reliability and continuous operation
+
+### AI Dashboard Interface Optimization
+- **Issue**: User interface included unnecessary basket selection since AI analysis is FLUPSY-wide only  
+- **Solution**: Removed individual basket selection from AI Dashboard interface, streamlined to FLUPSY + timeframe selection only
+- **Frontend Integration**: Fixed critical API call format issue - corrected from `JSON.stringify(data)` to proper `body: data` structure
+- **Backend Verification**: Confirmed AI system works perfectly via curl testing - returns detailed 7-day predictions for 5 baskets per FLUPSY
+- **Result**: Clean, focused AI Dashboard interface that reflects the FLUPSY-level analysis approach with working frontend-backend integration
 
 ### AI-Enhanced Performance Scoring with Predictive Trend Analysis  
 - **Feature**: Implemented intelligent trend analysis using AI to enhance performance scoring algorithm

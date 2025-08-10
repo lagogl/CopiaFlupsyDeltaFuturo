@@ -47,7 +47,6 @@ interface SustainabilityAnalysis {
 }
 
 export default function AIDashboard() {
-  const [selectedBasket, setSelectedBasket] = useState<number | null>(null);
   const [selectedFlupsy, setSelectedFlupsy] = useState<number | null>(2516); // Default FLUPSY per test
   const [timeframe, setTimeframe] = useState<string>('7');
   
@@ -57,11 +56,6 @@ export default function AIDashboard() {
   const { data: aiHealth, isLoading: healthLoading } = useQuery({
     queryKey: ['/api/ai/health'],
     refetchInterval: 30000 // Refresh ogni 30 secondi
-  });
-
-  // Query per cestelli disponibili
-  const { data: baskets } = useQuery({
-    queryKey: ['/api/baskets', { includeAll: true }]
   });
 
   // Query per FLUPSY disponibili
@@ -103,13 +97,11 @@ export default function AIDashboard() {
   const handlePredictiveAnalysis = () => {
     console.log('Analisi predittiva avviata con:', { selectedFlupsy, timeframe });
     if (selectedFlupsy) {
-      // Analisi per tutti i cestelli del FLUPSY selezionato
-      const flupsyBaskets = (baskets as any[])?.filter(basket => basket.flupsyId === selectedFlupsy);
-      console.log('Cestelli trovati per FLUPSY:', flupsyBaskets);
-      
+      // Analisi per FLUPSY intera (tutti i cestelli)
+      // Nota: Il backend caricherà automaticamente tutti i cestelli del FLUPSY
       const payload = { 
         flupsyId: selectedFlupsy,
-        basketIds: flupsyBaskets?.map(b => b.id) || [],
+        basketIds: [], // Il backend caricherà automaticamente tutti i cestelli
         targetSizeId: 22, // TP-2800 (taglia commerciale standard)
         days: parseInt(timeframe) || 30 
       };
@@ -190,23 +182,7 @@ export default function AIDashboard() {
           <CardDescription>Seleziona parametri per l'analisi AI</CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-            <div>
-              <label className="text-sm font-medium mb-2 block">Cestello</label>
-              <Select value={selectedBasket?.toString() || ""} onValueChange={(value) => setSelectedBasket(parseInt(value))}>
-                <SelectTrigger>
-                  <SelectValue placeholder="Seleziona cestello" />
-                </SelectTrigger>
-                <SelectContent>
-                  {(baskets as any[])?.map((basket: any) => (
-                    <SelectItem key={basket.id} value={basket.id.toString()}>
-                      Cesta #{basket.physicalNumber}
-                    </SelectItem>
-                  ))}
-                </SelectContent>
-              </Select>
-            </div>
-            
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="text-sm font-medium mb-2 block">FLUPSY</label>
               <Select value={selectedFlupsy?.toString() || ""} onValueChange={(value) => setSelectedFlupsy(parseInt(value))}>
@@ -328,7 +304,7 @@ export default function AIDashboard() {
                                   <span>Giorno {pred.days}</span>
                                   <div className="flex items-center gap-2">
                                     <span>{pred.predictedWeight}g</span>
-                                    <Badge size="sm" variant={pred.confidence > 0.7 ? 'default' : 'secondary'}>
+                                    <Badge variant={pred.confidence > 0.7 ? 'default' : 'secondary'}>
                                       {(pred.confidence * 100).toFixed(0)}%
                                     </Badge>
                                   </div>

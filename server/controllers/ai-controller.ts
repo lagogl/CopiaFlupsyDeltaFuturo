@@ -37,11 +37,20 @@ export function registerAIRoutes(app: Express) {
       let basketsToAnalyze: any[] = [];
       
       if (flupsyId) {
-        // Analisi per FLUPSY intera
-        basketsToAnalyze = await db.select()
+        // Analisi per FLUPSY intera - solo cestelli attivi con cicli attivi
+        basketsToAnalyze = await db.select({
+          id: baskets.id,
+          physicalNumber: baskets.physicalNumber,
+          flupsyId: baskets.flupsyId,
+          state: baskets.state
+        })
           .from(baskets)
-          .where(eq(baskets.flupsyId, flupsyId));
-        console.log(`Trovati ${basketsToAnalyze.length} cestelli per FLUPSY ${flupsyId}`);
+          .innerJoin(cycles, eq(baskets.id, cycles.basketId))
+          .where(and(
+            eq(baskets.flupsyId, flupsyId),
+            eq(cycles.state, 'active')
+          ));
+        console.log(`Trovati ${basketsToAnalyze.length} cestelli ATTIVI per FLUPSY ${flupsyId}`);
       } else if (basketId) {
         // Analisi per singolo cestello (retrocompatibilità)
         basketsToAnalyze = await db.select()
@@ -54,9 +63,9 @@ export function registerAIRoutes(app: Express) {
         return res.status(404).json({ success: false, error: 'Nessun cestello trovato' });
       }
 
-      // Chiamata AI per ogni cestello del FLUPSY
+      // Chiamata AI per ogni cestello ATTIVO del FLUPSY
       const basketPredictions = [];
-      for (const basket of basketsToAnalyze.slice(0, 5)) { // Limita a 5 cestelli per performance
+      for (const basket of basketsToAnalyze) { // Analizza tutti i cestelli attivi trovati
         const prediction = await AIService.predictiveGrowth(basket.id, targetSizeId, days);
         basketPredictions.push({
           basketId: basket.id,
