@@ -46,8 +46,17 @@ function initializeAIClient() {
   }
 }
 
-// Inizializza immediatamente
+// Inizializza immediatamente e ricarica ogni volta
 initializeAIClient();
+
+// Ricarica periodica del client per aggiornamenti API key
+setInterval(() => {
+  const newApiKey = process.env.OPENAI_API_KEY;
+  if (newApiKey && (!aiClient || newApiKey !== AI_API_KEY)) {
+    console.log('🔄 Rilevato aggiornamento API key, ricarico DeepSeek client...');
+    initializeAIClient();
+  }
+}, 10000); // Controlla ogni 10 secondi
 
 export interface PredictiveGrowthData {
   basketId: number;
