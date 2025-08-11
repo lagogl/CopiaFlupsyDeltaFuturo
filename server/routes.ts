@@ -1797,9 +1797,46 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       const formattedDate = format(new Date(date), 'yyyy-MM-dd');
       
+      // Prima crea o trova un lotto appropriato
+      let lotId = null;
+      
+      // Cerca un lotto attivo disponibile o crea uno nuovo
+      const existingLots = await db.select().from(schema.lots)
+        .where(eq(schema.lots.state, 'active'))
+        .orderBy(desc(schema.lots.arrivalDate))
+        .limit(1);
+      
+      if (existingLots.length > 0) {
+        lotId = existingLots[0].id;
+        console.log(`🔍 Utilizzo lotto esistente ID: ${lotId}`);
+      } else {
+        // Crea un nuovo lotto per questa prima attivazione
+        await db.insert(schema.lots).values({
+          arrivalDate: formattedDate,
+          supplier: 'Creazione Automatica',
+          supplierLotNumber: `AUTO-${Date.now()}`,
+          animalCount: animalCount,
+          weight: totalWeight,
+          sizeId: sizeId,
+          notes: `Lotto creato automaticamente per operazione di prima attivazione - ${notes || ''}`,
+          state: 'active',
+          active: true
+        });
+        
+        // Recupera l'ID del lotto appena creato
+        const [createdLot] = await db.select().from(schema.lots)
+          .where(eq(schema.lots.supplierLotNumber, `AUTO-${Date.now()}`))
+          .orderBy(desc(schema.lots.id))
+          .limit(1);
+        
+        lotId = createdLot.id;
+        console.log(`🆕 Nuovo lotto creato ID: ${lotId}`);
+      }
+      
       // Creazione senza .returning() per evitare deadlock
       await db.insert(schema.cycles).values({
         basketId: basketId,
+        lotId: lotId,
         startDate: formattedDate,
         endDate: null,
         state: 'active'
@@ -1819,10 +1856,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         currentCycleId: newCycle.id
       }).where(eq(schema.baskets.id, basketId));
       
-      // Crea operazione senza .returning()
+      // Crea operazione senza .returning() con riferimento al lotto
       await db.insert(schema.operations).values({
         basketId,
         cycleId: newCycle.id,
+        lotId: lotId,
         type: 'prima-attivazione',
         date: formattedDate,
         animalCount: animalCount || null,
@@ -1867,13 +1905,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
         }
         
-        // Crea ciclo direttamente nel database
+        // Prima crea o trova un lotto appropriato
+        let lotId = null;
+        
+        // Cerca un lotto attivo disponibile o crea uno nuovo
+        const existingLots = await db.select().from(schema.lots)
+          .where(eq(schema.lots.state, 'active'))
+          .orderBy(desc(schema.lots.arrivalDate))
+          .limit(1);
+        
+        if (existingLots.length > 0) {
+          lotId = existingLots[0].id;
+          console.log(`🔍 Utilizzo lotto esistente ID: ${lotId}`);
+        } else {
+          // Crea un nuovo lotto per questa prima attivazione
+          const newLot = await db.insert(schema.lots).values({
+            arrivalDate: formattedDate,
+            supplier: 'Creazione Automatica',
+            supplierLotNumber: `AUTO-${Date.now()}`,
+            animalCount: animalCount,
+            weight: totalWeight,
+            sizeId: sizeId,
+            notes: `Lotto creato automaticamente per operazione di prima attivazione - ${notes || ''}`,
+            state: 'active',
+            active: true
+          });
+          
+          // Recupera l'ID del lotto appena creato
+          const [createdLot] = await db.select().from(schema.lots)
+            .where(eq(schema.lots.supplierLotNumber, `AUTO-${Date.now()}`))
+            .orderBy(desc(schema.lots.id))
+            .limit(1);
+          
+          lotId = createdLot.id;
+          console.log(`🆕 Nuovo lotto creato ID: ${lotId}`);
+        }
+        
+        // Crea ciclo con riferimento al lotto
         const formattedDate = format(new Date(date), 'yyyy-MM-dd');
         const [newCycle] = await db.insert(schema.cycles).values({
           basketId: basketId,
           startDate: formattedDate,
           endDate: null,
-          state: 'active'
+          state: 'active',
+          lotId: lotId
         }).returning();
         
         // Aggiorna cestello
@@ -1883,10 +1958,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           cycleCode: `${basket.physicalNumber}-${basket.flupsyId}-${date.substring(2,4)}${date.substring(5,7)}`
         }).where(eq(schema.baskets.id, basketId));
         
-        // Crea operazione
+        // Crea operazione con riferimento al lotto
         const [operation] = await db.insert(schema.operations).values({
           basketId,
           cycleId: newCycle.id,
+          lotId: lotId,
           type: 'prima-attivazione',
           date: formattedDate,
           animalCount: animalCount || null,

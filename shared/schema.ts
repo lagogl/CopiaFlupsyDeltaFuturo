@@ -244,6 +244,7 @@ export const operations = pgTable("operations", {
 export const cycles = pgTable("cycles", {
   id: serial("id").primaryKey(),
   basketId: integer("basket_id").notNull(), // reference to the basket
+  lotId: integer("lot_id"), // reference to the lot
   startDate: date("start_date").notNull(),
   endDate: date("end_date"),
   state: text("state").notNull().default("active"), // active, closed
