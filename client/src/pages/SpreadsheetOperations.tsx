@@ -475,7 +475,7 @@ export default function SpreadsheetOperations() {
           : ((lastOp as any)?.size?.code || 'N/A');
         
         const averageWeight = lastOp?.animalCount && lastOp?.totalWeight ? 
-          Math.round((lastOp.totalWeight / lastOp.animalCount) * 1000) / 1000 : ((lastOp as any)?.averageWeight || 0);
+          Math.round((lastOp.totalWeight / lastOp.animalCount) * 1000 * 1000) / 1000 : ((lastOp as any)?.averageWeight || 0);
         
 
         

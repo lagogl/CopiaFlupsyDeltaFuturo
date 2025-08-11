@@ -322,7 +322,8 @@ export default function Baskets() {
         calculatedSize: null,
         calculatedAnimalCount: null,
         activationDate: null,
-        lotId: null
+        lotId: null,
+        cycleCode: basket.currentCycleId ? `CICLO-${basket.currentCycleId}` : null
       };
     }
 
@@ -337,7 +338,8 @@ export default function Baskets() {
         calculatedSize: null,
         calculatedAnimalCount: null,
         activationDate: null,
-        lotId: null
+        lotId: null,
+        cycleCode: basket.currentCycleId ? `CICLO-${basket.currentCycleId}` : null
       };
     }
 
@@ -367,7 +369,8 @@ export default function Baskets() {
       activationDate,
       lotId: latestOperation.lotId || null,
       lastOperationDate: latestOperation.date,
-      lastOperationType: latestOperation.type
+      lastOperationType: latestOperation.type,
+      cycleCode: basket.currentCycleId ? `CICLO-${basket.currentCycleId}` : null
     };
   };
 
