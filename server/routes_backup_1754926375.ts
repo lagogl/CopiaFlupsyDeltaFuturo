@@ -4,9 +4,8 @@ import { storage } from "./storage";
 import path from 'path';
 import fs from 'fs';
 import { db } from "./db";
-import { eq, and, isNull, sql, count, inArray, desc } from "drizzle-orm";
+import { eq, and, isNull, sql, count, inArray } from "drizzle-orm";
 import { format, startOfMonth, endOfMonth, eachDayOfInterval, parseISO, subDays } from "date-fns";
-import * as schema from "../shared/schema";
 import { 
   selections, 
   selectionSourceBaskets,
@@ -1760,172 +1759,25 @@ export async function registerRoutes(app: Express): Promise<Server> {
     res.json({ success: true, message: "POST endpoint funziona!" });
   });
 
-  // Test POST con query database semplice
-  app.post("/api/test-db", async (req, res) => {
-    console.log("🧪 TEST DATABASE POST - Ricevuta richiesta");
-    try {
-      const basketCount = await db.select().from(schema.baskets).limit(1);
-      console.log("🧪 TEST DATABASE - Query completata");
-      res.json({ success: true, message: "Database POST funziona!", count: basketCount.length });
-    } catch (error) {
-      console.error("🧪 TEST DATABASE - Errore:", error);
-      res.json({ success: false, error: error.message });
-    }
-  });
-
-  // SOLUZIONE FINALE - ENDPOINT OPERAZIONI SEMPLIFICATO SENZA RETURNING
-  app.post("/api/create-operation", async (req, res) => {
-    console.log("🚀 CREATE-OPERATION - Richiesta ricevuta");
-    
-    try {
-      const { basketId, date, animalCount, sizeId, totalWeight, notes } = req.body;
-      
-      if (!basketId || !date) {
-        return res.status(400).json({ message: "basketId e date sono obbligatori" });
-      }
-
-      // Verifica cestello - usando await semplice
-      const baskets_result = await db.select().from(schema.baskets).where(eq(schema.baskets.id, basketId)).limit(1);
-      if (baskets_result.length === 0) {
-        return res.status(404).json({ message: "Cestello non trovato" });
-      }
-
-      const basket = baskets_result[0];
-      if (basket.state !== 'available') {
-        return res.status(400).json({ message: "Cestello deve essere disponibile" });
-      }
-
-      const formattedDate = format(new Date(date), 'yyyy-MM-dd');
-      
-      // Creazione senza .returning() per evitare deadlock
-      await db.insert(schema.cycles).values({
-        basketId: basketId,
-        startDate: formattedDate,
-        endDate: null,
-        state: 'active'
-      });
-      
-      // Ottieni ID del ciclo appena creato
-      const cycles_result = await db.select().from(schema.cycles)
-        .where(eq(schema.cycles.basketId, basketId))
-        .orderBy(desc(schema.cycles.id))
-        .limit(1);
-      
-      const newCycle = cycles_result[0];
-      
-      // Aggiorna cestello
-      await db.update(schema.baskets).set({
-        state: 'active',
-        currentCycleId: newCycle.id
-      }).where(eq(schema.baskets.id, basketId));
-      
-      // Crea operazione senza .returning()
-      await db.insert(schema.operations).values({
-        basketId,
-        cycleId: newCycle.id,
-        type: 'prima-attivazione',
-        date: formattedDate,
-        animalCount: animalCount || null,
-        sizeId: sizeId || null,
-        totalWeight: totalWeight || null,
-        notes: notes || null
-      });
-      
-      console.log("🎉 OPERAZIONE CREATA - Ciclo ID:", newCycle.id);
-      return res.json({ 
-        success: true, 
-        message: "Operazione creata con successo", 
-        cycleId: newCycle.id 
-      });
-      
-    } catch (error) {
-      console.error("❌ ERRORE:", error);
-      return res.status(500).json({ message: "Errore server", error: error.message });
-    }
-  });
-
-  // ENDPOINT OPERAZIONI BYPASS FUNZIONANTE
-  app.post("/api/operations-bypass", async (req, res) => {
-    console.log("🚀 OPERATIONS-BYPASS - Richiesta ricevuta");
-    
-    try {
-      if (req.body.type === 'prima-attivazione') {
-        const { basketId, date, animalCount, sizeId, totalWeight, notes } = req.body;
-        
-        // Validazione base
-        if (!basketId || !date) {
-          return res.status(400).json({ message: "basketId e date sono obbligatori" });
-        }
-        
-        // Verifica cestello esistente con query diretta
-        const [basket] = await db.select().from(schema.baskets).where(eq(schema.baskets.id, basketId)).limit(1);
-        if (!basket) {
-          return res.status(404).json({ message: "Cestello non trovato" });
-        }
-        
-        if (basket.state !== 'available') {
-          return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
-        }
-        
-        // Crea ciclo direttamente nel database
-        const formattedDate = format(new Date(date), 'yyyy-MM-dd');
-        const [newCycle] = await db.insert(schema.cycles).values({
-          basketId: basketId,
-          startDate: formattedDate,
-          endDate: null,
-          state: 'active'
-        }).returning();
-        
-        // Aggiorna cestello
-        await db.update(schema.baskets).set({
-          state: 'active',
-          currentCycleId: newCycle.id,
-          cycleCode: `${basket.physicalNumber}-${basket.flupsyId}-${date.substring(2,4)}${date.substring(5,7)}`
-        }).where(eq(schema.baskets.id, basketId));
-        
-        // Crea operazione
-        const [operation] = await db.insert(schema.operations).values({
-          basketId,
-          cycleId: newCycle.id,
-          type: 'prima-attivazione',
-          date: formattedDate,
-          animalCount: animalCount || null,
-          sizeId: sizeId || null,
-          totalWeight: totalWeight || null,
-          notes: notes || null
-        }).returning();
-        
-        console.log("🎉 OPERAZIONE CREATA CON SUCCESSO - ID:", operation.id);
-        
-        // Invalida cache per aggiornamenti in tempo reale
-        if (typeof (global as any).broadcastUpdate === 'function') {
-          (global as any).broadcastUpdate({
-            type: 'operation_created',
-            data: { operation, cycle: newCycle }
-          });
-        }
-        
-        return res.json({ success: true, operation: operation, cycle: newCycle });
-      }
-      
-      res.status(400).json({ message: "Tipo operazione non supportato" });
-    } catch (error) {
-      console.error("❌ ERRORE CREAZIONE OPERAZIONE:", error);
-      res.status(500).json({ message: "Errore interno server", error: error.message });
-    }
-  });
-
 
 
   app.post("/api/operations", async (req, res) => {
-    console.log("🚀 POST /api/operations - RICHIESTA RICEVUTA");
+    console.log("🔍 STANDARD OPERATIONS ENDPOINT CHIAMATO - POST /api/operations");
+    console.log("🔍 VERIFICA WEBSOCKET: typeof global.broadcastUpdate =", typeof (global as any).broadcastUpdate);
+    if (typeof (global as any).broadcastUpdate === 'function') {
+      console.log("✅ WEBSOCKET: global.broadcastUpdate è definita correttamente");
+    } else {
+      console.log("❌ WEBSOCKET: global.broadcastUpdate NON è definita!");
+    }
+    console.log("🚀 POST /api/operations - RICEVUTA RICHIESTA");
     
-    // Set timeout per prevenire blocchi
+    // Aggiungo timeout per prevenire blocchi infiniti
     const timeoutId = setTimeout(() => {
+      console.log("⚠️ TIMEOUT: Operazione scaduta dopo 30 secondi");
       if (!res.headersSent) {
-        res.status(408).json({ message: "Timeout durante elaborazione operazione" });
+        res.status(408).json({ message: "Timeout durante l'elaborazione dell'operazione" });
       }
-    }, 15000);
+    }, 30000);
     
     try {
       console.log("===== INIZIO ENDPOINT POST /api/operations =====");
@@ -1980,8 +1832,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // Validazione 1: Non più di una operazione nella stessa data
         const sameDate = existingOperations.find(op => op.date === operationDateString);
         if (sameDate) {
-          console.log(`❌ VALIDAZIONE: Operazione già esistente per cesta ${basketId} nella data ${operationDateString}`);
-          throw new Error(`Esiste già un'operazione per la cesta ${basketId} nella data ${operationDateString}. Ogni cesta può avere massimo una operazione per data.`);
+          const basket = await storage.getBasket(basketId);
+          const physicalNumber = basket?.physicalNumber || basketId;
+          throw new Error(`Esiste già un'operazione per la cesta ${physicalNumber} nella data ${operationDateString}. Ogni cesta può avere massimo una operazione per data.`);
         }
         
         // Validazione 2: Data non anteriore alla ultima operazione
@@ -1992,17 +1845,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(`Ultima operazione: ${lastOperation.date}, Nuova operazione: ${operationDateString}`);
           
           if (operationDate < lastDate) {
-            console.log(`❌ VALIDAZIONE: Data ${operationDateString} anteriore all'ultima operazione ${lastOperation.date}`);
-            throw new Error(`La data ${operationDateString} è anteriore all'ultima operazione (${lastOperation.date}) per la cesta ${basketId}. Le operazioni devono essere inserite in ordine cronologico.`);
+            const basket = await storage.getBasket(basketId);
+            const physicalNumber = basket?.physicalNumber || basketId;
+            throw new Error(`La data ${operationDateString} è anteriore all'ultima operazione (${lastOperation.date}) per la cesta ${physicalNumber}. Le operazioni devono essere inserite in ordine cronologico.`);
           }
         }
         
         console.log("✅ Validazioni date per prima-attivazione completate con successo");
 
-        // Check if the basket exists using direct DB query (avoiding storage timeout)
+        // Check if the basket exists
         console.log("🔍 STEP 1: Recupero cestello con ID:", basketId);
-        const baskets = await db.select().from(baskets).where(eq(baskets.id, basketId)).limit(1);
-        const basket = baskets[0];
+        const basket = await storage.getBasket(basketId);
         console.log("🔍 STEP 1 COMPLETATO: Cestello trovato:", basket ? "Sì" : "No");
         if (!basket) {
           return res.status(404).json({ message: "Cestello non trovato" });
@@ -2020,7 +1873,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Il cestello ha già un ciclo in corso. Non è possibile registrare una nuova Prima Attivazione." });
         }
         
-        // Crea un nuovo ciclo per questa cesta usando query dirette DB (evitando timeout storage)
+        // Crea un nuovo ciclo per questa cesta
         console.log("🔍 STEP 4: Creazione nuovo ciclo per prima-attivazione");
         
         // Formatta il codice del ciclo secondo le specifiche: cesta+flupsy+YYMM
@@ -2031,38 +1884,35 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         const formattedDate = format(date, 'yyyy-MM-dd');
         console.log("🔍 STEP 6: Data formattata:", formattedDate);
-        
-        // Creazione diretta del ciclo nel database
-        console.log("🔍 STEP 7: Creazione diretta ciclo nel database...");
-        const [newCycle] = await db.insert(cycles).values({
+        console.log("🔍 STEP 7: Chiamata storage.createCycle in corso...");
+        const newCycle = await storage.createCycle({
           basketId: basketId,
           startDate: formattedDate,
-          endDate: null,
-          state: 'active'
-        }).returning();
+        });
         console.log("🔍 STEP 7 COMPLETATO: Nuovo ciclo creato:", newCycle);
         
-        // Aggiornamento diretto dello stato del cestello nel database
-        console.log("🔍 STEP 8: Aggiornamento diretto stato cestello nel database...");
-        await db.update(baskets).set({
+        console.log("Ciclo creato:", newCycle);
+        
+        // Aggiorna lo stato del cestello e il codice ciclo
+        await storage.updateBasket(basketId, {
           state: 'active',
           currentCycleId: newCycle.id,
           cycleCode: cycleCode
-        }).where(eq(baskets.id, basketId));
-        console.log("🔍 STEP 8 COMPLETATO: Stato cestello aggiornato");
+        });
         
-        // Crea l'operazione con il ciclo appena creato usando query diretta DB
+        // Crea l'operazione con il ciclo appena creato
+        // Formatta la data nel formato corretto per il database
         const operationData = {
           ...primaAttivSchema.data,
           cycleId: newCycle.id,
           date: format(primaAttivSchema.data.date, 'yyyy-MM-dd')
         };
         
-        console.log("🔍 STEP 9: Creazione operazione nel database...");
+        console.log("CREAZIONE OPERAZIONE PRIMA-ATTIVAZIONE - Dati:", JSON.stringify(operationData, null, 2));
         
         try {
-          const [operation] = await db.insert(operations).values(operationData).returning();
-          console.log("🔍 STEP 9 COMPLETATO: Operazione creata con successo, ID:", operation.id);
+          const operation = await storage.createOperation(operationData);
+          console.log("OPERAZIONE PRIMA-ATTIVAZIONE CREATA CON SUCCESSO:", JSON.stringify(operation, null, 2));
           
           // Invalida la cache delle operazioni per aggiornamenti istantanei
           const { OperationsCache } = await import('./operations-cache-service.js');
