@@ -432,6 +432,26 @@ export default function SpreadsheetOperations() {
       })
       .sort((a, b) => a.physicalNumber - b.physicalNumber);
 
+    // Debug dettagliato per capire il problema dei cestelli mancanti
+    console.log(`🔍 DEBUG FILTRO: FLUPSY selezionato=${selectedFlupsyId}`);
+    console.log(`🔍 DEBUG FILTRO: Cestelli totali disponibili=${(baskets as any[])?.length || 0}`);
+    console.log(`🔍 DEBUG FILTRO: Cestelli dopo filtro FLUPSY=${eligibleBaskets.length}`);
+    
+    // Log dei cestelli che non passano il filtro
+    if (baskets && Array.isArray(baskets)) {
+      const skippedBaskets = (baskets as any[]).filter((basket: any) => {
+        const flupsyMatch = basket.flupsyId === selectedFlupsyId;
+        const stateMatch = basket.state === 'active';
+        const cycleMatch = basket.currentCycleId !== null;
+        
+        if (!flupsyMatch || !stateMatch || !cycleMatch) {
+          console.log(`🚫 CESTELLO ESCLUSO: #${basket.physicalNumber} - FLUPSY:${basket.flupsyId}(${flupsyMatch}) STATE:${basket.state}(${stateMatch}) CYCLE:${basket.currentCycleId}(${cycleMatch})`);
+          return true;
+        }
+        return false;
+      });
+    }
+    
     // Log solo se nessun cestello trovato
     if (selectedFlupsyId && eligibleBaskets.length === 0) {
       console.log(`🔍 DEBUG RESULT: Trovati ${eligibleBaskets.length} cestelli con cicli attivi dopo filtro per FLUPSY=${selectedFlupsyId}`);
