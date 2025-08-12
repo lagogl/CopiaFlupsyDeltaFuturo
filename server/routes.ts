@@ -1995,13 +1995,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // === GESTIONE OPERAZIONI MISURA ===
       if (req.body.type === 'misura') {
-        const { basketId, cycleId, date, animalCount, totalWeight, notes } = req.body;
+        const { basketId, date, animalCount, totalWeight, notes } = req.body;
         
-        console.log("🔍 MISURA - Validazione parametri:", { basketId, cycleId, date, animalCount, totalWeight });
+        console.log("🔍 MISURA - Validazione parametri:", { basketId, date, animalCount, totalWeight });
         
         // Validazione base
-        if (!basketId || !cycleId || !date) {
-          return res.status(400).json({ message: "basketId, cycleId e date sono obbligatori" });
+        if (!basketId || !date) {
+          return res.status(400).json({ message: "basketId e date sono obbligatori per operazioni misura" });
         }
         
         // Verifica cestello esistente
@@ -2010,10 +2010,20 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Cestello non trovato" });
         }
         
+        if (basket.state !== 'active') {
+          return res.status(400).json({ message: "Il cestello deve essere attivo per operazioni di misura" });
+        }
+        
+        // Usa il ciclo attivo del cestello (non creare uno nuovo!)
+        const cycleId = basket.currentCycleId;
+        if (!cycleId) {
+          return res.status(400).json({ message: "Cestello non ha un ciclo attivo" });
+        }
+        
         // Verifica ciclo esistente
         const [cycle] = await db.select().from(schema.cycles).where(eq(schema.cycles.id, cycleId)).limit(1);
         if (!cycle) {
-          return res.status(404).json({ message: "Ciclo non trovato" });
+          return res.status(404).json({ message: "Ciclo attivo non trovato" });
         }
         
         const formattedDate = format(new Date(date), 'yyyy-MM-dd');
@@ -2030,10 +2040,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
           notes: notes || null
         });
         
-        console.log("🎉 OPERAZIONE MISURA CREATA - Cestello:", basketId, "Ciclo:", cycleId);
+        console.log("🎉 OPERAZIONE MISURA CREATA - Cestello:", basketId, "Ciclo attivo:", cycleId);
         return res.json({ 
           success: true, 
-          message: "Operazione misura creata con successo" 
+          message: "Operazione misura creata con successo",
+          cycleId: cycleId
         });
       }
       
