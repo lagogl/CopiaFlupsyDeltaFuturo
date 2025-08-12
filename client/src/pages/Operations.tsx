@@ -1910,6 +1910,7 @@ export default function Operations() {
                             // Altrimenti calcola il peso medio da animalCount e totalWeight
                             if (op.animalCount && op.totalWeight && op.animalCount > 0) {
                               const avgWeightMg = (op.totalWeight / op.animalCount) * 1000;
+                              console.log(`Calcolo peso medio per operazione ${op.id}: ${op.totalWeight}g / ${op.animalCount} animali * 1000 = ${avgWeightMg}mg`);
                               return avgWeightMg.toLocaleString('it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3});
                             }
                             
