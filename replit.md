@@ -27,11 +27,17 @@ Preferred communication style: Simple, everyday language.
 - **Data Integrity**: All operations now create proper cycles, update basket states, and maintain referential integrity
 - **Status**: ✅ FULLY RESOLVED - Operations endpoint completely operational
 
-### Average Weight Calculation Precision Fix
-- **Issue**: Cesta 20 showing "0g" in P.Medio(g) column instead of correct average weight (0.002g)
-- **Root Cause**: Rounding precision issue in weight calculation (0.002g rounded to 0g with 2-decimal precision)
-- **Solution**: Improved precision from 2 to 3 decimal places in `Math.round(weight * 1000) / 1000`
-- **Result**: All baskets now show correct average weight values, including very small weights like 0.002g
+### Average Weight Calculation Fix (August 2025) - COMPLETED
+- **Issue**: Operations showing "-" in P.M.(MG) column instead of calculated average weight values
+- **Root Cause**: Operations had `animalsPerKg` as null, but calculation logic only used animalsPerKg method
+- **Technical Analysis**: Database operations contained valid `animalCount` and `totalWeight` values:
+  - Operation 1: 180,000 animals, 45g → should calculate 0.250mg average weight
+  - Operation 2: 220,000 animals, 55g → should calculate 0.250mg average weight  
+  - Operation 3: 250,000 animals, 62g → should calculate 0.248mg average weight
+- **Solution**: Updated `client/src/pages/Operations.tsx` line 1907-1921 with fallback calculation
+- **Implementation**: Added logic to calculate from `(totalWeight / animalCount) * 1000` when `animalsPerKg` is null
+- **Backward Compatibility**: Maintained original animalsPerKg calculation method as fallback
+- **Result**: ✅ P.M.(MG) column now displays correct average weight values in milligrams
 
 ### Debug Logging Performance Cleanup
 - **Issue**: Excessive console.log statements impacting page load performance across multiple components

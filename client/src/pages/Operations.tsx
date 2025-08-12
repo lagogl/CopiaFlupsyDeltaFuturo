@@ -1901,7 +1901,21 @@ export default function Operations() {
                           {op.totalWeight ? parseFloat(op.totalWeight).toLocaleString('it-IT', {minimumFractionDigits: 0, maximumFractionDigits: 0}) : '-'}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm text-gray-500">
-                          {op.animalsPerKg && op.animalsPerKg > 0 ? (1000000 / op.animalsPerKg).toLocaleString('it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3}) : '-'}
+                          {(() => {
+                            // Prima prova con animalsPerKg se disponibile (per retrocompatibilità)
+                            if (op.animalsPerKg && op.animalsPerKg > 0) {
+                              return (1000000 / op.animalsPerKg).toLocaleString('it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3});
+                            }
+                            
+                            // Altrimenti calcola il peso medio da animalCount e totalWeight
+                            if (op.animalCount && op.totalWeight && op.animalCount > 0) {
+                              const avgWeightMg = (op.totalWeight / op.animalCount) * 1000;
+                              return avgWeightMg.toLocaleString('it-IT', {minimumFractionDigits: 3, maximumFractionDigits: 3});
+                            }
+                            
+                            // Se non abbiamo i dati necessari, mostra '-'
+                            return '-';
+                          })()}
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
