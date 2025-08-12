@@ -32,13 +32,13 @@ import * as ScreeningController from "./controllers/screening-controller";
 import * as EmailController from "./controllers/email-controller";
 import * as TelegramController from "./controllers/telegram-controller";
 import * as NotificationController from "./controllers/notification-controller";
-import { diarioController } from "./controllers/index";
+// import { diarioController } from "./controllers/index";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
-import { getOperationsUnified, invalidateUnifiedCache } from "./controllers/operations-unified-controller";
-import { updateBasketPosition } from "./controllers/basket-position-controller";
-import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
+// import { getOperationsUnified, invalidateUnifiedCache } from "./controllers/operations-unified-controller";
+// import { updateBasketPosition } from "./controllers/basket-position-controller";
+// import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
 import { validateBasketRow, validateBasketPosition } from "./utils/validation";
 import { checkDatabaseIntegrityHandler } from "./controllers/database-integrity-controller";
 import fattureInCloudRouter from "./controllers/fatture-in-cloud-controller";
@@ -1535,7 +1535,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Unified operations endpoint - combines all data in single call
   app.get("/api/operations-unified", async (req, res) => {
     console.log('🚀 ENDPOINT UNIFICATO: Richiesta ricevuta');
-    await getOperationsUnified(req, res);
+    // await getOperationsUnified(req, res);
+    res.status(501).json({ error: "Operations unified endpoint temporarily disabled" });
   });
   
   app.get("/api/operations", async (req, res) => {
@@ -2169,7 +2170,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
             });
             
             // Invalida cache unificata per aggiornamento istantaneo
-            invalidateUnifiedCache();
+            // invalidateUnifiedCache();
             console.log("🚨 Cache unificata invalidata dopo prima-attivazione");
           } else {
             console.error("❌ WEBSOCKET NON TROVATO: global.broadcastUpdate non è una funzione!");
@@ -2666,13 +2667,17 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Diario di Bordo API routes ===
   
   // API - Ottieni tutti i dati del mese in una singola chiamata (ottimizzato)
-  app.get("/api/diario/month-data", diarioController.getMonthData);
+  app.get("/api/diario/month-data", async (req, res) => {
+    res.status(501).json({ error: "Diario controller temporarily disabled" });
+  });
   
   // API per il controllo dell'integrità del database
   app.get("/api/database/integrity-check", checkDatabaseIntegrityHandler);
   
   // API - Esporta il calendario in formato CSV
-  app.get("/api/diario/calendar-csv", diarioController.exportCalendarCsv);
+  app.get("/api/diario/calendar-csv", async (req, res) => {
+    res.status(501).json({ error: "Diario calendar CSV export temporarily disabled" });
+  });
   
   // API - [VECCHIO ENDPOINT - DA RIMUOVERE QUANDO IL NUOVO SARÀ TESTATO]
   app.get("/api/diario/month-data-old", async (req, res) => {
@@ -7342,10 +7347,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
 
   // === Route per gestione posizione cestelli ===
-  app.put("/api/baskets/:id/position", updateBasketPosition);
+  // app.put("/api/baskets/:id/position", updateBasketPosition);
 
   // Endpoint per ottenere le posizioni disponibili in un flupsy
-  app.get("/api/flupsys/:id/available-positions", getFlupsyAvailablePositions);
+  // app.get("/api/flupsys/:id/available-positions", getFlupsyAvailablePositions);
 
   // Middleware anti-cache per API critiche
   function forceNoCacheHeaders(res: any) {
