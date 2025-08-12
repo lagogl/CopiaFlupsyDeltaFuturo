@@ -1776,6 +1776,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // SOLUZIONE FINALE - ENDPOINT OPERAZIONI SEMPLIFICATO SENZA RETURNING
   app.post("/api/create-operation", async (req, res) => {
     console.log("🚀 CREATE-OPERATION - Richiesta ricevuta");
+    console.log("🚀 CREATE-OPERATION - Body:", JSON.stringify(req.body, null, 2));
     
     try {
       const { basketId, date, animalCount, sizeId, totalWeight, notes } = req.body;
@@ -1791,8 +1792,16 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       const basket = baskets_result[0];
-      if (basket.state !== 'available') {
-        return res.status(400).json({ message: "Cestello deve essere disponibile" });
+      
+      // Controllo stato cestello in base al tipo operazione
+      if (req.body.type === 'prima-attivazione') {
+        if (basket.state !== 'available') {
+          return res.status(400).json({ message: "Cestello deve essere disponibile per prima attivazione" });
+        }
+      } else if (req.body.type === 'misura') {
+        if (basket.state !== 'active') {
+          return res.status(400).json({ message: "Cestello deve essere attivo per operazioni di misura" });
+        }
       }
 
       const formattedDate = format(new Date(date), 'yyyy-MM-dd');
@@ -1982,6 +1991,50 @@ export async function registerRoutes(app: Express): Promise<Server> {
         }
         
         return res.json({ success: true, operation: operation, cycle: newCycle });
+      }
+      
+      // === GESTIONE OPERAZIONI MISURA ===
+      if (req.body.type === 'misura') {
+        const { basketId, cycleId, date, animalCount, totalWeight, notes } = req.body;
+        
+        console.log("🔍 MISURA - Validazione parametri:", { basketId, cycleId, date, animalCount, totalWeight });
+        
+        // Validazione base
+        if (!basketId || !cycleId || !date) {
+          return res.status(400).json({ message: "basketId, cycleId e date sono obbligatori" });
+        }
+        
+        // Verifica cestello esistente
+        const [basket] = await db.select().from(schema.baskets).where(eq(schema.baskets.id, basketId)).limit(1);
+        if (!basket) {
+          return res.status(404).json({ message: "Cestello non trovato" });
+        }
+        
+        // Verifica ciclo esistente
+        const [cycle] = await db.select().from(schema.cycles).where(eq(schema.cycles.id, cycleId)).limit(1);
+        if (!cycle) {
+          return res.status(404).json({ message: "Ciclo non trovato" });
+        }
+        
+        const formattedDate = format(new Date(date), 'yyyy-MM-dd');
+        
+        // Crea operazione misura senza .returning() per evitare deadlock
+        await db.insert(schema.operations).values({
+          basketId,
+          cycleId,
+          lotId: cycle.lotId,
+          type: 'misura',
+          date: formattedDate,
+          animalCount: animalCount || null,
+          totalWeight: totalWeight || null,
+          notes: notes || null
+        });
+        
+        console.log("🎉 OPERAZIONE MISURA CREATA - Cestello:", basketId, "Ciclo:", cycleId);
+        return res.json({ 
+          success: true, 
+          message: "Operazione misura creata con successo" 
+        });
       }
       
       res.status(400).json({ message: "Tipo operazione non supportato" });
