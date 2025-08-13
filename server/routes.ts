@@ -389,7 +389,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         
         // Se è richiesto un refresh forzato, pulisci il cache
         if (forceRefresh) {
-          const { BasketsCache } = await import('./baskets-cache-service.js');
+          const { BasketsCache } = await import('./baskets-cache-service');
           BasketsCache.clear();
           console.log("Cache cestelli pulito per force_refresh");
         }
@@ -2205,7 +2205,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("🔍 STEP 9 COMPLETATO: Operazione creata con successo, ID:", operation.id);
           
           // Invalida la cache delle operazioni per aggiornamenti istantanei
-          const { OperationsCache } = await import('./operations-cache-service.js');
+          const { OperationsCache } = await import('./operations-cache-service');
           OperationsCache.clear();
           console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
           
@@ -2382,7 +2382,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           const newOperation = await storage.createOperation(operationData);
           
           // Invalida la cache delle operazioni per aggiornamenti istantanei
-          const { OperationsCache } = await import('./operations-cache-service.js');
+          const { OperationsCache } = await import('./operations-cache-service');
           OperationsCache.clear();
           console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
           
@@ -2438,7 +2438,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log("OPERAZIONE CREATA CON SUCCESSO:", JSON.stringify(newOperation, null, 2));
           
           // Invalida la cache delle operazioni per aggiornamenti istantanei
-          const { OperationsCache } = await import('./operations-cache-service.js');
+          const { OperationsCache } = await import('./operations-cache-service');
           OperationsCache.clear();
           console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
           
@@ -5363,7 +5363,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Invalidazione cache dopo azzeramento completo
           try {
-            const { BasketsCache } = await import('./baskets-cache-service.js');
+            const { BasketsCache } = await import('./baskets-cache-service');
             const { CyclesCache } = await import('./controllers/cycles-controller-optimized.js');
             
             BasketsCache.clear();

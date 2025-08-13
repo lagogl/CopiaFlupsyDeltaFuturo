@@ -1,23 +1,35 @@
 /**
- * Servizio di cache per i cestelli
+ * Servizio di cache per le operazioni
  * 
- * Questo servizio fornisce un sistema di caching per l'endpoint GET /api/baskets
+ * Questo servizio fornisce un sistema di caching per l'endpoint GET /api/operations
  * per migliorare significativamente i tempi di risposta.
  */
 
-class BasketsCacheService {
+interface CacheItem {
+  data: any;
+  expiresAt: number;
+}
+
+interface CacheStats {
+  size: number;
+  validEntries: number;
+  expiredEntries: number;
+}
+
+class OperationsCacheService {
+  private cache: Map<string, CacheItem>;
+  private ttl: number;
+
   constructor() {
     this.cache = new Map();
-    this.ttl = 600; // 10 minuti (in secondi) - esteso per ridurre query DB
-    console.log('Servizio cache cestelli inizializzato con cache estesa (10 minuti)');
+    this.ttl = Infinity; // Cache infinita - aggiornamenti solo via WebSocket invalidation
+    console.log('Servizio cache operazioni inizializzato con cache infinita - aggiornamenti solo via WebSocket');
   }
 
   /**
    * Genera una chiave di cache basata sui parametri di filtro
-   * @param {Object} filters - I filtri applicati alla query
-   * @returns {string} - La chiave di cache
    */
-  generateCacheKey(filters = {}) {
+  generateCacheKey(filters: Record<string, any> = {}): string {
     // Converti i filtri in una stringa stabile (ordine alfabetico delle chiavi)
     const filterKeys = Object.keys(filters).sort();
     const filterValues = filterKeys.map(key => {
@@ -29,52 +41,48 @@ class BasketsCacheService {
       return String(value);
     });
     
-    return `baskets_${filterKeys.join('_')}_${filterValues.join('_')}`;
+    return `operations_${filterKeys.join('_')}_${filterValues.join('_')}`;
   }
 
   /**
    * Salva i risultati nella cache
-   * @param {string} key - La chiave di cache
-   * @param {Object} data - I dati da memorizzare
    */
-  set(key, data) {
-    const expiresAt = Date.now() + (this.ttl * 1000);
+  set(key: string, data: any): void {
+    const expiresAt = this.ttl === Infinity ? Infinity : Date.now() + (this.ttl * 1000);
     this.cache.set(key, {
       data,
       expiresAt
     });
-    console.log(`Cache cestelli: dati salvati con chiave "${key}", scadenza in ${this.ttl} secondi`);
+    const ttlMsg = this.ttl === Infinity ? 'infinita (solo WebSocket invalidation)' : `${this.ttl} secondi`;
+    console.log(`Cache: dati salvati con chiave "${key}", scadenza ${ttlMsg}`);
   }
 
   /**
    * Recupera i dati dalla cache se presenti e non scaduti
-   * @param {string} key - La chiave di cache
-   * @returns {Object|null} - I dati memorizzati o null se non trovati/scaduti
    */
-  get(key) {
+  get(key: string): any | null {
     const cachedItem = this.cache.get(key);
     
     if (!cachedItem) {
-      console.log(`Cache cestelli: nessun dato trovato per chiave "${key}"`);
+      console.log(`Cache: nessun dato trovato per chiave "${key}"`);
       return null;
     }
     
     // Verifica se la cache è scaduta
     if (Date.now() > cachedItem.expiresAt) {
-      console.log(`Cache cestelli: dati scaduti per chiave "${key}"`);
+      console.log(`Cache: dati scaduti per chiave "${key}"`);
       this.cache.delete(key);
       return null;
     }
     
-    console.log(`Cache cestelli: hit per chiave "${key}"`);
+    console.log(`Cache: hit per chiave "${key}"`);
     return cachedItem.data;
   }
 
   /**
    * Elimina tutte le chiavi di cache che iniziano con un prefisso specifico
-   * @param {string} prefix - Il prefisso da cercare
    */
-  deleteByPrefix(prefix) {
+  deleteByPrefix(prefix: string): void {
     let count = 0;
     for (const key of this.cache.keys()) {
       if (key.startsWith(prefix)) {
@@ -82,32 +90,30 @@ class BasketsCacheService {
         count++;
       }
     }
-    console.log(`Cache cestelli: eliminate ${count} chiavi con prefisso "${prefix}"`);
+    console.log(`Cache: eliminate ${count} chiavi con prefisso "${prefix}"`);
   }
 
   /**
    * Elimina una chiave specifica dalla cache
-   * @param {string} key - La chiave da eliminare
    */
-  delete(key) {
+  delete(key: string): void {
     const deleted = this.cache.delete(key);
-    console.log(`Cache cestelli: chiave "${key}" ${deleted ? 'eliminata' : 'non trovata'}`);
+    console.log(`Cache: chiave "${key}" ${deleted ? 'eliminata' : 'non trovata'}`);
   }
 
   /**
    * Svuota l'intera cache
    */
-  clear() {
+  clear(): void {
     const size = this.cache.size;
     this.cache.clear();
-    console.log(`Cache cestelli: svuotata (${size} chiavi eliminate)`);
+    console.log(`Cache: svuotata (${size} chiavi eliminate)`);
   }
 
   /**
    * Restituisce statistiche sulla cache
-   * @returns {Object} - Statistiche sulla cache
    */
-  getStats() {
+  getStats(): CacheStats {
     const now = Date.now();
     let validEntries = 0;
     let expiredEntries = 0;
@@ -129,4 +135,4 @@ class BasketsCacheService {
 }
 
 // Esporta un'istanza singleton del servizio
-export const BasketsCache = new BasketsCacheService();
+export const OperationsCache = new OperationsCacheService();
