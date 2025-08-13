@@ -488,9 +488,15 @@ export class DbStorage implements IStorage {
     const operationData = { ...operation };
     
     try {
-      // Convert any dates to string format
+      // Convert any dates to string format - FIX TIMEZONE BUG
       if (typeof operation.date === 'object' && operation.date && 'toISOString' in operation.date) {
-        operationData.date = operation.date.toISOString().split('T')[0];
+        // Usa il fuso orario locale invece di UTC per evitare il bug del giorno precedente
+        const date = operation.date as Date;
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        operationData.date = `${year}-${month}-${day}`;
+        console.log(`🗓️ TIMEZONE FIX: Converted ${date.toISOString()} to ${operationData.date} (local date)`);
       }
       
       // Log dopo la conversione della data
