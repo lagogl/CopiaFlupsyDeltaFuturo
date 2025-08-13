@@ -1,139 +1,10 @@
 # FLUPSY Management System
 
 ## Overview
-The FLUPSY Management System is a comprehensive web application for managing aquaculture operations, specifically designed for monitoring and controlling FLUPSY (Floating Upwelling System) installations. The system provides real-time tracking of baskets, cycles, operations, and inventory management for shellfish cultivation. Its main purpose is to optimize aquaculture processes, provide growth forecasting, mortality tracking, and integrate with external systems for seamless data flow.
+The FLUPSY Management System is a comprehensive web application for managing aquaculture operations, specifically designed for monitoring and controlling FLUPSY (Floating Upwelling System) installations. Its main purpose is to optimize aquaculture processes, providing real-time tracking of baskets, cycles, operations, and inventory management for shellfish cultivation. Key capabilities include growth forecasting, mortality tracking, and integration with external systems for seamless data flow. The system aims to enhance operational efficiency and provide intelligent insights for aquaculture management.
 
 ## User Preferences
 Preferred communication style: Simple, everyday language.
-
-## Recent Performance Optimizations - Successfully Completed
-
-### POST Operations Timeout Resolution (August 2025) - COMPLETED
-- **Issue**: Critical timeout issue with POST /api/operations endpoint causing 30+ second deadlocks and failed operation creation
-- **Root Cause**: Drizzle ORM `.returning()` queries causing PostgreSQL database deadlocks during INSERT operations
-- **Comprehensive Debugging Process**: 
-  - Systematic endpoint testing revealed routing conflicts and database transaction issues
-  - Identified specific problem with complex multi-table INSERT operations with `.returning()`
-  - Server response analysis showed queries blocked before first log statement execution
-- **Technical Solution**: 
-  - Implemented `/api/create-operation` endpoint without `.returning()` statements
-  - Replaced with separate SELECT queries to retrieve inserted record IDs
-  - Added proper schema imports (`import * as schema from "../shared/schema"`)
-  - Fixed missing `desc` import from drizzle-orm for ORDER BY operations
-- **Performance Results**:
-  - New endpoint: 200-4000ms response time (acceptable for complex operations)
-  - Successful operation creation: basketId 3, cycleId 3, 200,000 animals
-  - Database persistence confirmed across server restarts
-- **Data Integrity**: All operations now create proper cycles, update basket states, and maintain referential integrity
-- **Status**: ✅ FULLY RESOLVED - Operations endpoint completely operational
-
-### Average Weight Calculation Fix (August 2025) - COMPLETED
-- **Issue**: Operations showing "-" in P.M.(MG) column instead of calculated average weight values
-- **Root Cause**: Operations had `animalsPerKg` as null, but calculation logic only used animalsPerKg method
-- **Technical Analysis**: Database operations contained valid `animalCount` and `totalWeight` values:
-  - Operation 1: 180,000 animals, 45g → should calculate 0.250mg average weight
-  - Operation 2: 220,000 animals, 55g → should calculate 0.250mg average weight  
-  - Operation 3: 250,000 animals, 62g → should calculate 0.248mg average weight
-- **Solution**: Updated `client/src/pages/Operations.tsx` line 1907-1921 with fallback calculation
-- **Implementation**: Added logic to calculate from `(totalWeight / animalCount) * 1000` when `animalsPerKg` is null
-- **Backward Compatibility**: Maintained original animalsPerKg calculation method as fallback
-- **Result**: ✅ P.M.(MG) column now displays correct average weight values in milligrams
-
-### Debug Logging Performance Cleanup
-- **Issue**: Excessive console.log statements impacting page load performance across multiple components
-- **Solution**: Comprehensive debug logging cleanup while preserving critical error reporting
-- **Components Optimized**:
-  - `SpreadsheetOperations.tsx`: Removed detailed basket initialization, performance scoring, and operation processing logs
-  - `Baskets.tsx`: Removed verbose FLUPSY filtering, size calculation, and basket processing debug logs
-- **Result**: Significantly improved page load performance and reduced browser console noise
-
-### Thousand Separators Implementation
-- **Issue**: User requested thousand separators for numeric columns (Animali, Peso Tot(g), Anim/kg) in SpreadsheetOperations
-- **Solution**: Added `formatNumberWithSeparators()` utility function using Italian locale formatting (`.toLocaleString('it-IT')`)
-- **Implementation**: Conditional rendering for display-only fields showing formatted numbers while preserving editable input fields
-- **Result**: Enhanced readability for large numbers while maintaining functionality
-
-### Date-based Growth Predictions with Correct SGR Calculation
-- **Issue**: Growth predictions were incorrect due to SGR calculation error and wrong size threshold reference
-- **Root Cause**: SGR values in database were already daily percentages, but code was dividing by 30 treating them as monthly
-- **Solution**: Fixed SGR calculation and corrected size threshold logic
-- **Implementation**: 
-  - Changed `targetWeeks` state to `targetDate` with date picker interface
-  - Fixed SGR calculation: removed division by 30 since database values are already daily percentages
-  - Corrected logic to use `targetSize.maxAnimalsPerKg` instead of `minAnimalsPerKg` as growth target threshold
-  - Updated calculation: animals must drop BELOW max threshold to reach target size
-  - Added detailed debug logging for growth prediction verification
-- **Result**: Accurate growth predictions showing realistic timeframes (e.g., Cesta #20 reaches TP-2800 in 10 days with 8.3% daily SGR)
-
-### Stock Range Calculation Database Cleanup (August 2025)
-- **Issue**: Custom date range stock calculations showing incorrect values due to phantom operations
-- **Root Cause**: Database contained 7 "phantom" operations (IDs 4, 5, 41-45) dated 6-9 August that were visible to the giacenze calculator but not in the operations interface
-- **Solution**: Identified and removed erroneous operations from database
-- **Technical Details**: 
-  - Phantom operations were creating false stock entries (5.225.000 animals for Aug 1-6 range when no real operations existed)
-  - Operations IDs 4, 5, 41-45 were test data that should not have been present
-  - Cleaned database now contains only legitimate operations starting from ID 46 (August 9+)
-- **Result**: Stock range calculations now correctly show 0 animals for periods with no actual operations, ensuring data integrity
-
-### AI System Integration - DeepSeek with Autonomous Fallback (COMPLETED)
-- **Status**: ✅ INTEGRAZIONE PERFETTA SECONDO SPECIFICHE UFFICIALI DeepSeek
-- **Implementation**: 
-  - **Primary AI**: DeepSeek-V3 (deepseek-chat) configurato con specifiche ufficiali da https://api-docs.deepseek.com/
-  - **Endpoint**: https://api.deepseek.com/chat/completions (URL fisso come da documentazione)
-  - **Authentication**: Bearer token con header Content-Type application/json
-  - **Fallback System**: Algoritmi autonomi garantiscono operatività continua al 100%
-  - **Test Diagnostico**: Sistema rileva automaticamente stato API key e connettività DeepSeek
-- **AI Capabilities**:
-  - **Predictive Growth Analysis**: Analisi predittiva crescita con fattori ambientali
-  - **Anomaly Detection**: Identificazione anomalie crescita, mortalità, operazioni
-  - **Sustainability Analysis**: Valutazione impatto ambientale e certificazioni
-  - **Business Analytics**: Insights intelligenti per ottimizzazione operativa
-- **Current Status**: 
-  - **API Integration**: ✅ PERFETTA (conforme a documentazione ufficiale DeepSeek)
-  - **Authentication**: ✅ CONNESSO - API key valida autenticata con successo
-  - **Active Model**: DeepSeek-V3 (deepseek-chat) completamente operativo
-  - **Pricing**: $0.27/1M input + $1.10/1M output tokens (post-promo pricing 2025)
-  - **Available Credits**: $5.00 (~15M tokens stimati)
-  - **Autonomous Fallback**: ✅ ATTIVO (garantisce affidabilità 100%)
-- **Analysis Scope**: FLUPSY-level analysis - analizza intere unità FLUPSY con breakdown per cestelli
-- **Result**: Sistema ibrido perfettamente operativo - DeepSeek-V3 connesso + fallback autonomo affidabile
-- **Dashboard Enhancement**: Aggiunta sezione informativa per provider AI, modello in uso, pricing e crediti disponibili
-
-### AI Dashboard Interface Optimization
-- **Issue**: User interface included unnecessary basket selection since AI analysis is FLUPSY-wide only  
-- **Solution**: Removed individual basket selection from AI Dashboard interface, streamlined to FLUPSY + timeframe selection only
-- **Frontend Integration**: Fixed critical API call format issue - corrected from `JSON.stringify(data)` to proper `body: data` structure
-- **Backend Verification**: Confirmed AI system works perfectly via curl testing - returns detailed 7-day predictions for 5 baskets per FLUPSY
-- **Result**: Clean, focused AI Dashboard interface that reflects the FLUPSY-level analysis approach with working frontend-backend integration
-
-### AI-Enhanced Performance Scoring with Predictive Trend Analysis  
-- **Feature**: Implemented intelligent trend analysis using AI to enhance performance scoring algorithm
-- **Innovation**: Added predictive trend multiplier that analyzes historical data patterns to adjust performance scores
-- **Algorithm Enhancement**:
-  - **Mortality Trend Analysis**: Detects patterns in mortality rates across last 3 operations with severe penalties for increasing trends
-  - **Population Trend Monitoring**: Identifies significant population losses (>15% = penalty, >30% = severe penalty)
-  - **Weight Growth Patterns**: Rewards consistent weight gain trends and penalizes weight loss
-  - **Operation Frequency Analysis**: Considers management activity level (more frequent operations = better score)
-- **Scoring Multipliers**:
-  - Trend in miglioramento: +8% to +15% bonus
-  - Trend stabile: neutral (1.0x)
-  - Trend in peggioramento: -15% penalty
-  - Trend critico: -25% penalty
-- **Smart Tooltips Integration**: All ceste show detailed trend analysis in tooltips (critical ceste get enhanced analysis with specific recommendations)
-- **Result**: More accurate performance scoring that considers trajectory, not just current state, helping operators anticipate problems before they become critical
-
-### Logo Integration and Branding Update
-- **Requirement**: User requested MITO SRL logo placement after page titles throughout application
-- **Implementation**: 
-  - Created reusable `PageHeader` component for consistent logo placement
-  - Updated application title from "FLUPSY Delta Futuro" to "FLUPSY Ecotapes/Delta Futuro"
-  - Moved logo from header navigation to appear after each page title (e.g., "Dashboard [LOGO]")
-  - Integrated logo into Dashboard page using new PageHeader component
-- **Technical Details**:
-  - Logo file: `/mito_logo.png` (MITO SRL transparent background logo)
-  - Component: `client/src/components/PageHeader.tsx` for reusable title+logo pattern
-  - Default logo size: h-8 w-auto for optimal visibility
-- **Result**: Consistent branding across all pages with MITO SRL logo prominently displayed after page titles
 
 ## System Architecture
 
@@ -142,12 +13,12 @@ Preferred communication style: Simple, everyday language.
 - **Styling**: Tailwind CSS with shadcn/ui components
 - **State Management**: TanStack Query for server state management
 - **Build Tool**: Vite
-- **UI Components**: Radix UI primitives with custom shadcn/ui components, designed for a compact, professional, and mobile-first spreadsheet-like interface. Visual enhancements include color-coded basket performance indicators and consistent styling.
+- **UI/UX Decisions**: Designed for a compact, professional, and mobile-first spreadsheet-like interface. Includes color-coded basket performance indicators, consistent styling, and a focus on readability with features like thousand separators for numeric columns. Enhanced input precision for average weight calculations (3 decimal places).
 
 ### Backend Architecture
 - **Runtime**: Node.js with Express.js
 - **Language**: TypeScript with ES modules
-- **Database ORM**: Drizzle ORM with PostgreSQL
+- **Database ORM**: Drizzle ORM
 - **API Architecture**: RESTful API with external API integration
 - **Real-time Communication**: WebSocket implementation for live updates
 
@@ -155,26 +26,26 @@ Preferred communication style: Simple, everyday language.
 - **Primary Database**: PostgreSQL 16
 - **ORM**: Drizzle ORM with type-safe queries
 - **Schema Management**: Drizzle Kit for migrations
-- **External Integration**: Separate external database connection for data synchronization
+- **External Integration**: Supports separate external database connections for data synchronization.
 
 ### Key Components
 - **Core Entities**: FLUPSY Systems, Baskets, Cycles, Operations (cleaning, screening, weighing), Lots, Selections/Screenings.
 - **Business Logic**: Inventory Management, Growth Forecasting (SGR calculations), Mortality Tracking, External Data Synchronization, Quality Control.
 - **Integration Components**: External API, Data Import/Export (JSON), WebSocket Server, Database Consistency Manager.
+- **AI Integration**: Hybrid system integrating DeepSeek-V3 for predictive growth analysis, anomaly detection, sustainability analysis, and business analytics. Includes an autonomous fallback system for continuous operation. AI analysis is FLUPSY-level, providing insights across entire units with basket breakdown. Features AI-enhanced performance scoring with predictive trend analysis based on mortality, population, weight growth, and operation frequency.
 
 ### System Design Choices
-- **Data Flow**: User input processed via React components, TanStack Query, Express API, and Drizzle ORM to PostgreSQL. Real-time updates via WebSocket. External data synchronized via API.
-- **Operation Workflow**: User-created operations are validated, processed server-side, trigger WebSocket notifications, and update inventory calculations.
-- **External Integration Flow**: Standardized JSON data exchange via API key authentication, with synchronization processes for data consistency and conflict resolution.
-- **Spreadsheet Operations Module**: Independent module with a mobile-first, editable cell interface for rapid data entry, real-time validation, auto-save, and batch operations. It includes dynamic size calculation, intelligent performance-based sorting of baskets, and visual performance indicators.
-- **Data Precision**: Improved precision for average weight calculations (3 decimal places).
-- **Performance Optimization**: Debug logging cleanup in SpreadsheetOperations and Baskets modules to improve page load speed.
-- **Manual Editing**: Enhanced functionality for manual input of mortality percentage and animals per kg, disabling automatic calculations when manual mode is active.
+- **Data Flow**: User input flows from React components to PostgreSQL via TanStack Query, Express API, and Drizzle ORM. Real-time updates occur via WebSocket. External data is synchronized via API.
+- **Operation Workflow**: Validated user operations are processed server-side, trigger WebSocket notifications, and update inventory calculations.
+- **External Integration Flow**: Standardized JSON data exchange with API key authentication, including processes for data consistency and conflict resolution.
+- **Spreadsheet Operations Module**: Independent module featuring a mobile-first, editable cell interface for rapid data entry, real-time validation, auto-save, and batch operations. It includes dynamic size calculation, intelligent performance-based sorting of baskets, and visual performance indicators.
+- **Manual Editing**: Enhanced functionality for manual input of mortality percentage and animals per kg, with automatic calculations disabled when manual mode is active.
 - **Deployment Strategy**: Node.js 20 on Replit with PostgreSQL 16 for development; Vite/esbuild for production build with autoscale deployment.
+- **Branding**: MITO SRL logo integrated consistently after page titles using a reusable `PageHeader` component.
 
 ## External Dependencies
 
-### Core Dependencies
+### Core Libraries
 - `@tanstack/react-query`
 - `drizzle-orm`
 - `@neondatabase/serverless`
@@ -182,18 +53,19 @@ Preferred communication style: Simple, everyday language.
 - `pg`
 - `ws`
 
-### UI Dependencies
+### UI Libraries
 - `@radix-ui/***`
 - `tailwindcss`
 - `lucide-react`
 - `react-hook-form`
 - `@hookform/resolvers`
 
-### Development Dependencies
+### Development Tools
 - `typescript`
 - `vite`
 - `tsx`
 - `drizzle-kit`
 
 ### Third-party Integrations
+- DeepSeek API (for AI capabilities)
 - Fatture in Cloud (for client and DDT management, via OAuth2 authentication and API)
