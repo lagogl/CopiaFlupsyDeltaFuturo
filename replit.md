@@ -6,6 +6,9 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 ## User Preferences
 Preferred communication style: Simple, everyday language.
 
+## Recent Changes
+- **Tooltip Positioning Fix (August 13, 2025)**: Fixed performance indicator tooltips in SpreadsheetOperations.tsx that were appearing hidden on the left side. Changed positioning from `side="left"` to `side="right"` for better visibility and user experience.
+
 ## System Architecture
 
 ### Frontend Architecture
