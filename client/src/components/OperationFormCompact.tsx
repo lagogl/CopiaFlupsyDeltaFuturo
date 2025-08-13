@@ -526,31 +526,39 @@ export default function OperationFormCompact({
       basketsLoaded: !!baskets
     });
     
-    if (watchBasketId && selectedBasket && !watchType) {
+    if (watchBasketId && selectedBasket) {
       const isReallyAvailable = selectedBasket.state === 'available' && !basketHasActiveCycle;
       const isActiveWithCycle = selectedBasket.state === 'active' || basketHasActiveCycle;
       
-      if (isReallyAvailable) {
-        // Cestello disponibile: imposta "Prima Attivazione"
-        console.log('🚀 Cestello disponibile - impostando Prima Attivazione');
-        form.setValue('type', 'prima-attivazione');
-      } else if (isActiveWithCycle) {
-        // Cestello con ciclo attivo: imposta "Misura" e trova la prima attivazione
-        console.log('🚀 Cestello con ciclo attivo - impostando Misura e cercando Prima Attivazione');
-        form.setValue('type', 'misura');
+      // AUTO-IMPOSTA SEMPRE IL CICLO ATTIVO SE PRESENTE
+      if (selectedBasket.currentCycleId && form.getValues('cycleId') !== selectedBasket.currentCycleId) {
+        console.log('🔄 Impostazione ciclo automatica:', selectedBasket.currentCycleId);
+        form.setValue('cycleId', selectedBasket.currentCycleId);
+      }
+      
+      // AUTO-IMPOSTA IL TIPO DI OPERAZIONE SOLO SE NON È GIÀ IMPOSTATO
+      if (!watchType) {
+        if (isReallyAvailable) {
+          // Cestello disponibile: imposta "Prima Attivazione"
+          console.log('🚀 Cestello disponibile - impostando Prima Attivazione');
+          form.setValue('type', 'prima-attivazione');
+        } else if (isActiveWithCycle) {
+          // Cestello con ciclo attivo: imposta "Misura"
+          console.log('🚀 Cestello con ciclo attivo - impostando Misura');
+          form.setValue('type', 'misura');
+        }
+      }
+      
+      // AUTO-IMPOSTA IL LOTTO DALLA PRIMA ATTIVAZIONE PER OPERAZIONI SU CICLI ATTIVI
+      if (isActiveWithCycle && operations && operations.length > 0) {
+        const firstActivationOp = operations.find((op: any) => 
+          op.basketId === watchBasketId && 
+          op.type === 'prima-attivazione'
+        );
         
-        // Trova l'operazione di prima attivazione per questo ciclo
-        if (operations && operations.length > 0) {
-          const firstActivationOp = operations.find((op: any) => 
-            op.basketId === watchBasketId && 
-            op.type === 'prima-attivazione'
-          );
-          
-          if (firstActivationOp) {
-            console.log('✅ Trovata Prima Attivazione:', firstActivationOp);
-            // Imposta il lotto della prima attivazione (non modificabile)
-            form.setValue('lotId', firstActivationOp.lotId);
-          }
+        if (firstActivationOp && form.getValues('lotId') !== firstActivationOp.lotId) {
+          console.log('✅ Trovata Prima Attivazione - impostazione lotto:', firstActivationOp);
+          form.setValue('lotId', firstActivationOp.lotId);
         }
       }
     }
