@@ -190,6 +190,12 @@ function BasketCard({
                   {formatNumberWithCommas(lastOperation.animalsPerKg)}
                 </div>
               )}
+              {lastOperation.animalCount && (
+                <div>
+                  <span className="font-medium">Animali totali:</span>{' '}
+                  {formatNumberWithCommas(lastOperation.animalCount)}
+                </div>
+              )}
               {lot && (
                 <div>
                   <span className="font-medium">Lotto:</span>{' '}
@@ -468,16 +474,24 @@ export default function QuickOperations() {
         // Conteggio operazioni per tipo
         stats.operationsByType[lastOperation.type] = (stats.operationsByType[lastOperation.type] || 0) + 1;
 
-        // Calcolo animali stimati (se abbiamo animali/kg)
-        if (lastOperation.animalsPerKg) {
-          // Stima animali basata sull'ultimo peso registrato
-          const estimatedWeight = 1; // 1 kg come peso di riferimento
-          const estimatedAnimals = lastOperation.animalsPerKg * estimatedWeight;
-          stats.totalAnimals += estimatedAnimals;
+        // Calcolo animali - usa animalCount se disponibile, altrimenti stima da animalsPerKg
+        let animalCount = 0;
+        if (lastOperation.animalCount) {
+          animalCount = lastOperation.animalCount;
+        } else if (lastOperation.animalsPerKg && lastOperation.totalWeight) {
+          // Stima basata su peso totale e animali per kg
+          animalCount = Math.round((lastOperation.totalWeight / 1000) * lastOperation.animalsPerKg);
+        } else if (lastOperation.animalsPerKg) {
+          // Stima basata su 1kg di riferimento
+          animalCount = lastOperation.animalsPerKg;
+        }
+
+        if (animalCount > 0) {
+          stats.totalAnimals += animalCount;
 
           // Raggruppa per taglia
           const sizeKey = lastOperation.sizeId ? `Taglia-${lastOperation.sizeId}` : 'Non specificato';
-          stats.animalsBySize[sizeKey] = (stats.animalsBySize[sizeKey] || 0) + estimatedAnimals;
+          stats.animalsBySize[sizeKey] = (stats.animalsBySize[sizeKey] || 0) + animalCount;
         }
 
         // Peso medio
@@ -579,66 +593,80 @@ export default function QuickOperations() {
                 if (!totalizers) return <div className="text-sm text-gray-500">Caricamento statistiche...</div>;
 
                 return (
-                  <div className="bg-white rounded-lg p-4 shadow-sm border">
-                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
-                      {/* Statistiche base */}
-                      <div>
-                        <div className="font-medium text-gray-700 mb-1">Ceste</div>
-                        <div><strong>Attive:</strong> {totalizers.activeCycles}</div>
-                        <div><strong>Filtrate:</strong> {totalizers.totalBaskets}</div>
-                        <div><strong>Selezionate:</strong> {totalizers.selectedBaskets}</div>
-                      </div>
-
-                      {/* Animali per taglia */}
-                      <div>
-                        <div className="font-medium text-gray-700 mb-1">Animali (stima)</div>
-                        <div><strong>Totale:</strong> {formatNumberWithCommas(Math.round(totalizers.totalAnimals))}</div>
-                        {Object.entries(totalizers.animalsBySize).slice(0, 3).map(([size, count]) => (
-                          <div key={size} className="text-xs">
-                            <strong>{size}:</strong> {formatNumberWithCommas(Math.round(count))}
+                  <div className="space-y-3">
+                    {/* Riepilogo principale */}
+                    <div className="bg-gradient-to-r from-blue-50 to-indigo-50 rounded-lg p-4 border border-blue-200">
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-blue-600">{totalizers.totalBaskets}</div>
+                          <div className="text-sm text-gray-600">Ceste Filtrate</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-green-600">{formatNumberWithCommas(Math.round(totalizers.totalAnimals))}</div>
+                          <div className="text-sm text-gray-600">Animali Totali</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-purple-600">
+                            {totalizers.averageWeights.length > 0 ? 
+                              formatNumberWithCommas(Math.round(totalizers.averageWeights.reduce((a, b) => a + b, 0) / totalizers.averageWeights.length)) 
+                              : 0}
                           </div>
-                        ))}
-                      </div>
-
-                      {/* Pesi medi */}
-                      <div>
-                        <div className="font-medium text-gray-700 mb-1">Pesi</div>
-                        {totalizers.averageWeights.length > 0 ? (
-                          <>
-                            <div><strong>Peso medio:</strong> {formatNumberWithCommas(Math.round(totalizers.averageWeights.reduce((a, b) => a + b, 0) / totalizers.averageWeights.length))} mg</div>
-                            <div className="text-xs"><strong>Min:</strong> {formatNumberWithCommas(Math.round(Math.min(...totalizers.averageWeights)))} mg</div>
-                            <div className="text-xs"><strong>Max:</strong> {formatNumberWithCommas(Math.round(Math.max(...totalizers.averageWeights)))} mg</div>
-                          </>
-                        ) : (
-                          <div className="text-gray-500">Nessun dato peso</div>
-                        )}
-                      </div>
-
-                      {/* Operazioni */}
-                      <div>
-                        <div className="font-medium text-gray-700 mb-1">Operazioni</div>
-                        <div><strong>Totali:</strong> {totalizers.totalOperations}</div>
-                        {Object.entries(totalizers.operationsByType).map(([type, count]) => (
-                          <div key={type} className="text-xs">
-                            <strong>{getOperationTypeLabel(type)}:</strong> {count}
-                          </div>
-                        ))}
+                          <div className="text-sm text-gray-600">Peso Medio (mg)</div>
+                        </div>
+                        <div className="text-center">
+                          <div className="text-2xl font-bold text-orange-600">{totalizers.totalOperations}</div>
+                          <div className="text-sm text-gray-600">Operazioni Totali</div>
+                        </div>
                       </div>
                     </div>
 
-                    {/* Distribuzione per FLUPSY */}
-                    {Object.keys(totalizers.cyclesByFlupsy).length > 1 && (
-                      <div className="mt-3 pt-3 border-t">
-                        <div className="font-medium text-gray-700 mb-2">Distribuzione per FLUPSY</div>
-                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
-                          {Object.entries(totalizers.cyclesByFlupsy).map(([flupsyName, count]) => (
-                            <div key={flupsyName}>
-                              <strong>{flupsyName}:</strong> {count} ceste
+                    {/* Dettagli animali per taglia */}
+                    {Object.keys(totalizers.animalsBySize).length > 0 && (
+                      <div className="bg-white rounded-lg p-3 border">
+                        <div className="font-medium text-gray-700 mb-2">Distribuzione Animali per Taglia</div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-sm">
+                          {Object.entries(totalizers.animalsBySize).map(([size, count]) => (
+                            <div key={size} className="flex justify-between">
+                              <span>{size}:</span>
+                              <span className="font-medium">{formatNumberWithCommas(Math.round(count))}</span>
                             </div>
                           ))}
                         </div>
                       </div>
                     )}
+
+                    {/* Dettagli operazioni e FLUPSY */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                      {/* Operazioni per tipo */}
+                      {Object.keys(totalizers.operationsByType).length > 0 && (
+                        <div className="bg-white rounded-lg p-3 border">
+                          <div className="font-medium text-gray-700 mb-2">Operazioni per Tipo</div>
+                          <div className="space-y-1 text-sm">
+                            {Object.entries(totalizers.operationsByType).map(([type, count]) => (
+                              <div key={type} className="flex justify-between">
+                                <span>{getOperationTypeLabel(type)}:</span>
+                                <span className="font-medium">{count}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Distribuzione per FLUPSY */}
+                      {Object.keys(totalizers.cyclesByFlupsy).length > 0 && (
+                        <div className="bg-white rounded-lg p-3 border">
+                          <div className="font-medium text-gray-700 mb-2">Distribuzione per FLUPSY</div>
+                          <div className="space-y-1 text-sm">
+                            {Object.entries(totalizers.cyclesByFlupsy).map(([flupsyName, count]) => (
+                              <div key={flupsyName} className="flex justify-between">
+                                <span>{flupsyName}:</span>
+                                <span className="font-medium">{count} ceste</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      )}
+                    </div>
                   </div>
                 );
               })()}
@@ -665,8 +693,8 @@ export default function QuickOperations() {
             Reimposta filtri
           </Button>
         </div>
-      ) : (
-        <div className={`grid ${view === 'grid' ? 'grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4' : 'grid-cols-1'} gap-4`}>
+      ) : view === 'grid' ? (
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-4">
           {filteredBaskets.map((basket: Basket) => {
             const { flupsy, lastOperation, cycle, lot } = getBasketData(basket.id);
             return (
@@ -684,6 +712,119 @@ export default function QuickOperations() {
               />
             );
           })}
+        </div>
+      ) : (
+        /* Vista Lista - Layout tabulare */
+        <div className="bg-white rounded-lg shadow-sm overflow-hidden">
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead className="bg-gray-50 border-b">
+                <tr>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Cesta</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FLUPSY</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Stato</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Animali</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Ultima Op.</th>
+                  <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Azioni</th>
+                </tr>
+              </thead>
+              <tbody className="bg-white divide-y divide-gray-200">
+                {filteredBaskets.map((basket: Basket) => {
+                  const { flupsy, lastOperation, cycle, lot } = getBasketData(basket.id);
+                  const daysSinceLastOp = lastOperation ? Math.floor((new Date().getTime() - new Date(lastOperation.date).getTime()) / (1000 * 3600 * 24)) : null;
+                  
+                  // Calcola numero animali per questa cesta
+                  let animalCount = 0;
+                  if (lastOperation?.animalCount) {
+                    animalCount = lastOperation.animalCount;
+                  } else if (lastOperation?.animalsPerKg && lastOperation?.totalWeight) {
+                    animalCount = Math.round((lastOperation.totalWeight / 1000) * lastOperation.animalsPerKg);
+                  } else if (lastOperation?.animalsPerKg) {
+                    animalCount = lastOperation.animalsPerKg;
+                  }
+
+                  return (
+                    <tr key={basket.id} className={`hover:bg-gray-50 ${selectedBaskets.includes(basket.id) ? 'bg-blue-50' : ''}`}>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex items-center">
+                          <Checkbox 
+                            checked={selectedBaskets.includes(basket.id)}
+                            onCheckedChange={() => handleSelectBasket(basket.id)}
+                            className="mr-3"
+                          />
+                          <div>
+                            <div className="text-sm font-medium text-gray-900">#{basket.physicalNumber}</div>
+                            <div className="text-sm text-gray-500">
+                              {basket.row && basket.position ? `${basket.row}-${basket.position}` : 'Posizione non definita'}
+                            </div>
+                          </div>
+                        </div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">{flupsy?.name || `FLUPSY #${basket.flupsyId}`}</div>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <Badge variant={daysSinceLastOp && daysSinceLastOp > 7 ? "destructive" : "secondary"} className="text-xs">
+                          {daysSinceLastOp === null ? 'Nessuna op.' : `${daysSinceLastOp}g fa`}
+                        </Badge>
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="text-sm text-gray-900">
+                          {animalCount > 0 ? formatNumberWithCommas(animalCount) : '-'}
+                        </div>
+                        {lastOperation?.animalsPerKg && (
+                          <div className="text-xs text-gray-500">{formatNumberWithCommas(lastOperation.animalsPerKg)}/kg</div>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        {lastOperation ? (
+                          <div className="flex items-center space-x-2">
+                            <Badge variant="outline" className={getOperationTypeColor(lastOperation.type)}>
+                              {getOperationTypeLabel(lastOperation.type)}
+                            </Badge>
+                            <Button 
+                              variant="ghost" 
+                              size="sm" 
+                              className="h-6 w-6 p-0 text-red-500 hover:text-red-700"
+                              onClick={() => handleDeleteOperation(lastOperation.id)}
+                            >
+                              <svg xmlns="http://www.w3.org/2000/svg" width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                <path d="M3 6h18"></path>
+                                <path d="M19 6v14c0 1-1 2-2 2H7c-1 0-2-1-2-2V6"></path>
+                                <path d="M8 6V4c0-1 1-2 2-2h4c1 0 2 1 2 2v2"></path>
+                              </svg>
+                            </Button>
+                          </div>
+                        ) : (
+                          <span className="text-xs text-gray-400">Nessuna</span>
+                        )}
+                      </td>
+                      <td className="px-4 py-4 whitespace-nowrap">
+                        <div className="flex space-x-1">
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="h-7 text-xs px-2"
+                            onClick={() => handleQuickOperation(basket.id, 'misura')}
+                          >
+                            Misura
+                          </Button>
+                          <Button 
+                            size="sm" 
+                            variant="outline"
+                            className="h-7 text-xs px-2"
+                            onClick={() => handleQuickOperation(basket.id, 'pulizia')}
+                          >
+                            Pulizia
+                          </Button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
         </div>
       )}
       
