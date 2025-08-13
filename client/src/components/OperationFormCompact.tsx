@@ -820,10 +820,13 @@ export default function OperationFormCompact({
       return;
     }
     
-    // Formatta i valori
+    // Formatta i valori - FIX TIMEZONE BUG
     const formattedValues = {
       ...values,
-      date: values.date instanceof Date ? values.date : new Date(values.date),
+      // Converti la data in formato YYYY-MM-DD senza timezone issues
+      date: values.date instanceof Date ? 
+        `${values.date.getFullYear()}-${String(values.date.getMonth() + 1).padStart(2, '0')}-${String(values.date.getDate()).padStart(2, '0')}` :
+        values.date,
       animalCount: values.animalCount ? Number(values.animalCount) : null,
       animalsPerKg: values.animalsPerKg ? Number(values.animalsPerKg) : null,
       totalWeight: values.totalWeight ? Number(values.totalWeight) : null,
