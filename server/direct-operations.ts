@@ -253,9 +253,15 @@ export function implementDirectOperationRoute(app: Express) {
       // 2. Assicurati che i tipi di dati siano corretti
       console.log("Conversione e validazione dei dati...");
       
-      // Converti la data in formato stringa se necessario
+      // Converti la data in formato stringa se necessario - FIX TIMEZONE BUG
       if (operationData.date && typeof operationData.date === 'object' && operationData.date.toISOString) {
-        operationData.date = operationData.date.toISOString().split('T')[0];
+        // Usa il fuso orario locale invece di UTC per evitare il bug del giorno precedente
+        const date = new Date(operationData.date);
+        const year = date.getFullYear();
+        const month = String(date.getMonth() + 1).padStart(2, '0');
+        const day = String(date.getDate()).padStart(2, '0');
+        operationData.date = `${year}-${month}-${day}`;
+        console.log(`🗓️ DIRECT OPERATIONS TIMEZONE FIX: Converted ${date.toISOString()} to ${operationData.date} (local date)`);
       }
       
       // Converti gli ID a numeri
