@@ -443,13 +443,21 @@ export function implementDirectOperationRoute(app: Express) {
           
           console.log("Operazione creata con successo:", newOperation[0]);
           
-          // 4. Aggiorna lo stato del cestello
+          // 4. Genera il cicle code nel formato corretto: numeroCesta-numeroFlupsy-YYMM
+          const operationYear = new Date(operationData.date).getFullYear();
+          const operationMonth = new Date(operationData.date).getMonth() + 1; // getMonth() restituisce 0-11
+          const yearMonth = `${operationYear.toString().slice(-2)}${operationMonth.toString().padStart(2, '0')}`;
+          const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${yearMonth}`;
+          
+          console.log(`Generato cycle code: ${cycleCode} (cesta ${basket.physicalNumber}, flupsy ${basket.flupsyId}, periodo ${yearMonth})`);
+          
+          // 5. Aggiorna lo stato del cestello
           console.log("Aggiornamento stato cestello...");
           const updatedBasket = await tx.update(baskets)
             .set({ 
               state: 'active',
               currentCycleId: cycleId,
-              cycleCode: `C-${cycleId}`
+              cycleCode: cycleCode
             })
             .where(eq(baskets.id, operationData.basketId))
             .returning();
