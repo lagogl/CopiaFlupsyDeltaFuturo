@@ -593,7 +593,28 @@ export function implementDirectOperationRoute(app: Express) {
           }
         }
         
-        // 5. Inserisci direttamente nel database
+        // 5. CALCOLO AUTOMATICO TAGLIA PER OPERAZIONI PESO (prima dell'inserimento)
+        if (operationData.type === 'peso' && operationData.totalWeight && operationData.animalCount && operationData.animalCount > 0) {
+          // Calcola il peso medio per animale in grammi
+          const averageWeightGrams = operationData.totalWeight / operationData.animalCount;
+          // Converte in animali per kg (1000g = 1kg)
+          const calculatedAnimalsPerKg = Math.round(1000 / averageWeightGrams);
+          
+          console.log(`PESO: Calcolo taglia automatica - ${operationData.totalWeight}g / ${operationData.animalCount} animali = ${averageWeightGrams}g/animale = ${calculatedAnimalsPerKg} animali/kg`);
+          
+          // Trova la taglia appropriata
+          const appropriateSizeId = await findSizeIdByAnimalsPerKg(calculatedAnimalsPerKg);
+          
+          if (appropriateSizeId) {
+            operationData.sizeId = appropriateSizeId;
+            operationData.animalsPerKg = calculatedAnimalsPerKg;
+            console.log(`PESO: Taglia automatica assegnata: ID ${appropriateSizeId} (${calculatedAnimalsPerKg} animali/kg)`);
+          } else {
+            console.warn(`PESO: Impossibile trovare taglia appropriata per ${calculatedAnimalsPerKg} animali/kg`);
+          }
+        }
+        
+        // 6. Inserisci direttamente nel database
         console.log("Tentativo inserimento standard nel database...");
         
         // Esecuzione dell'inserimento
