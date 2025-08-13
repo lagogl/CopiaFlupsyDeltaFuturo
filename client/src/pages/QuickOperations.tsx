@@ -13,6 +13,7 @@ import { Checkbox } from '@/components/ui/checkbox';
 import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getBasketColorBySize } from '@/lib/utils';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { useToast } from '@/hooks/use-toast';
+import OperationFormCompact from '@/components/OperationFormCompact';
 
 // Tipi che useremo 
 interface Basket {
@@ -262,8 +263,8 @@ export default function QuickOperations() {
   });
   
   // Filtriamo solo le ceste con cicli attivi
-  const activeCycles = cycles ? cycles.filter((c: Cycle) => c.state === 'active') : [];
-  const basketsWithActiveCycles = baskets ? baskets.filter((b: Basket) => b.currentCycleId !== null) : [];
+  const activeCycles = cycles ? (cycles as Cycle[]).filter((c: Cycle) => c.state === 'active') : [];
+  const basketsWithActiveCycles = baskets ? (baskets as Basket[]).filter((b: Basket) => b.currentCycleId !== null) : [];
   
   // Gestisce basket filtrati in base ai criteri selezionati
   const filteredBaskets = basketsWithActiveCycles.filter((basket: Basket) => {
@@ -274,7 +275,7 @@ export default function QuickOperations() {
     
     // Filtra per giorni dall'ultima operazione
     if (filterDays !== 'all') {
-      const basketOperations = operations ? operations.filter((op: Operation) => op.basketId === basket.id) : [];
+      const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === basket.id) : [];
       if (basketOperations.length === 0) return true; // Nessuna operazione conta come "vecchia"
       
       const sortedOps = [...basketOperations].sort((a, b) => 
@@ -330,10 +331,10 @@ export default function QuickOperations() {
 
   // Gestisce click su operazione rapida
   const handleQuickOperation = (basketId: number, operationType: string) => {
-    const basket = baskets?.find((b: Basket) => b.id === basketId);
+    const basket = baskets ? (baskets as Basket[]).find((b: Basket) => b.id === basketId) : undefined;
     if (!basket) return;
     
-    const basketOperations = operations ? operations.filter((op: Operation) => op.basketId === basketId) : [];
+    const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === basketId) : [];
     const sortedOps = [...basketOperations].sort((a, b) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
@@ -354,7 +355,7 @@ export default function QuickOperations() {
   // Mutazione per cancellare un'operazione
   const deleteOperationMutation = useMutation({
     mutationFn: (id: number) => {
-      return apiRequest('DELETE', `/api/operations/${id}`);
+      return apiRequest('DELETE', `/api/operations/${id}`, {});
     },
     onSuccess: () => {
       // Invalida la cache delle operazioni per ricaricare i dati
@@ -406,22 +407,88 @@ export default function QuickOperations() {
   
   // Recupera i dati associati a una cesta
   const getBasketData = (basketId: number) => {
-    const basket = baskets?.find((b: Basket) => b.id === basketId);
+    const basket = baskets ? (baskets as Basket[]).find((b: Basket) => b.id === basketId) : undefined;
     if (!basket) return { basket: null };
     
-    const flupsy = flupsys?.find((f: Flupsy) => f.id === basket.flupsyId);
+    const flupsy = flupsys ? (flupsys as Flupsy[]).find((f: Flupsy) => f.id === basket.flupsyId) : undefined;
     
-    const basketOperations = operations ? operations.filter((op: Operation) => op.basketId === basketId) : [];
+    const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === basketId) : [];
     const sortedOps = [...basketOperations].sort((a, b) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
     const lastOperation = sortedOps.length > 0 ? sortedOps[0] : undefined;
     
-    const cycle = cycles?.find((c: Cycle) => c.id === basket.currentCycleId);
+    const cycle = cycles ? (cycles as Cycle[]).find((c: Cycle) => c.id === basket.currentCycleId) : undefined;
     
-    const lot = lastOperation?.lotId ? lots?.find((l: Lot) => l.id === lastOperation.lotId) : undefined;
+    const lot = lastOperation?.lotId && lots ? (lots as Lot[]).find((l: Lot) => l.id === lastOperation.lotId) : undefined;
     
     return { basket, flupsy, lastOperation, cycle, lot };
+  };
+
+  // Calcola statistiche aggregate per i cestelli visualizzati
+  const calculateTotalizers = () => {
+    if (!filteredBaskets || !operations) return null;
+
+    const stats = {
+      totalBaskets: filteredBaskets.length,
+      selectedBaskets: selectedBaskets.length,
+      totalAnimals: 0,
+      animalsBySize: {} as Record<string, number>,
+      averageWeights: [] as number[],
+      totalOperations: 0,
+      operationsByType: {} as Record<string, number>,
+      totalWeight: 0,
+      activeCycles: 0,
+      cyclesByFlupsy: {} as Record<string, number>
+    };
+
+    filteredBaskets.forEach((basket: Basket) => {
+      // Conteggio cicli attivi
+      if (basket.currentCycleId) {
+        stats.activeCycles++;
+      }
+
+      // Conteggio per FLUPSY
+      const flupsy = flupsys ? (flupsys as Flupsy[]).find((f: Flupsy) => f.id === basket.flupsyId) : undefined;
+      if (flupsy) {
+        stats.cyclesByFlupsy[flupsy.name] = (stats.cyclesByFlupsy[flupsy.name] || 0) + 1;
+      }
+
+      // Operazioni per questa cesta
+      const basketOperations = (operations as Operation[]).filter((op: Operation) => op.basketId === basket.id);
+      stats.totalOperations += basketOperations.length;
+
+      // Ultima operazione con dati rilevanti
+      const sortedOps = [...basketOperations].sort((a, b) => 
+        new Date(b.date).getTime() - new Date(a.date).getTime()
+      );
+      const lastOperation = sortedOps.find(op => op.animalsPerKg || op.averageWeight);
+
+      if (lastOperation) {
+        // Conteggio operazioni per tipo
+        stats.operationsByType[lastOperation.type] = (stats.operationsByType[lastOperation.type] || 0) + 1;
+
+        // Calcolo animali stimati (se abbiamo animali/kg)
+        if (lastOperation.animalsPerKg) {
+          // Stima animali basata sull'ultimo peso registrato
+          const estimatedWeight = 1; // 1 kg come peso di riferimento
+          const estimatedAnimals = lastOperation.animalsPerKg * estimatedWeight;
+          stats.totalAnimals += estimatedAnimals;
+
+          // Raggruppa per taglia
+          const sizeKey = lastOperation.sizeId ? `Taglia-${lastOperation.sizeId}` : 'Non specificato';
+          stats.animalsBySize[sizeKey] = (stats.animalsBySize[sizeKey] || 0) + estimatedAnimals;
+        }
+
+        // Peso medio
+        if (lastOperation.averageWeight) {
+          stats.averageWeights.push(lastOperation.averageWeight);
+          stats.totalWeight += lastOperation.averageWeight;
+        }
+      }
+    });
+
+    return stats;
   };
   
   const isLoading = basketsLoading || flupsysLoading || operationsLoading || cyclesLoading || lotsLoading;
@@ -457,11 +524,11 @@ export default function QuickOperations() {
             </SelectTrigger>
             <SelectContent>
               <SelectItem value="all">Tutte le unità</SelectItem>
-              {flupsys?.map((flupsy: Flupsy) => (
+              {flupsys ? (flupsys as Flupsy[]).map((flupsy: Flupsy) => (
                 <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
                   {flupsy.name}
                 </SelectItem>
-              ))}
+              )) : []}
             </SelectContent>
           </Select>
         </div>
@@ -507,11 +574,74 @@ export default function QuickOperations() {
 
             </TabsContent>
             <TabsContent value="info" className="pt-2">
-              <div className="text-sm">
-                <div><strong>Ceste attive:</strong> {basketsWithActiveCycles.length}</div>
-                <div><strong>Filtrate:</strong> {filteredBaskets.length}</div>
-                <div><strong>Selezionate:</strong> {selectedBaskets.length}</div>
-              </div>
+              {(() => {
+                const totalizers = calculateTotalizers();
+                if (!totalizers) return <div className="text-sm text-gray-500">Caricamento statistiche...</div>;
+
+                return (
+                  <div className="bg-white rounded-lg p-4 shadow-sm border">
+                    <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                      {/* Statistiche base */}
+                      <div>
+                        <div className="font-medium text-gray-700 mb-1">Ceste</div>
+                        <div><strong>Attive:</strong> {totalizers.activeCycles}</div>
+                        <div><strong>Filtrate:</strong> {totalizers.totalBaskets}</div>
+                        <div><strong>Selezionate:</strong> {totalizers.selectedBaskets}</div>
+                      </div>
+
+                      {/* Animali per taglia */}
+                      <div>
+                        <div className="font-medium text-gray-700 mb-1">Animali (stima)</div>
+                        <div><strong>Totale:</strong> {formatNumberWithCommas(Math.round(totalizers.totalAnimals))}</div>
+                        {Object.entries(totalizers.animalsBySize).slice(0, 3).map(([size, count]) => (
+                          <div key={size} className="text-xs">
+                            <strong>{size}:</strong> {formatNumberWithCommas(Math.round(count))}
+                          </div>
+                        ))}
+                      </div>
+
+                      {/* Pesi medi */}
+                      <div>
+                        <div className="font-medium text-gray-700 mb-1">Pesi</div>
+                        {totalizers.averageWeights.length > 0 ? (
+                          <>
+                            <div><strong>Peso medio:</strong> {formatNumberWithCommas(Math.round(totalizers.averageWeights.reduce((a, b) => a + b, 0) / totalizers.averageWeights.length))} mg</div>
+                            <div className="text-xs"><strong>Min:</strong> {formatNumberWithCommas(Math.round(Math.min(...totalizers.averageWeights)))} mg</div>
+                            <div className="text-xs"><strong>Max:</strong> {formatNumberWithCommas(Math.round(Math.max(...totalizers.averageWeights)))} mg</div>
+                          </>
+                        ) : (
+                          <div className="text-gray-500">Nessun dato peso</div>
+                        )}
+                      </div>
+
+                      {/* Operazioni */}
+                      <div>
+                        <div className="font-medium text-gray-700 mb-1">Operazioni</div>
+                        <div><strong>Totali:</strong> {totalizers.totalOperations}</div>
+                        {Object.entries(totalizers.operationsByType).map(([type, count]) => (
+                          <div key={type} className="text-xs">
+                            <strong>{getOperationTypeLabel(type)}:</strong> {count}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+
+                    {/* Distribuzione per FLUPSY */}
+                    {Object.keys(totalizers.cyclesByFlupsy).length > 1 && (
+                      <div className="mt-3 pt-3 border-t">
+                        <div className="font-medium text-gray-700 mb-2">Distribuzione per FLUPSY</div>
+                        <div className="grid grid-cols-2 md:grid-cols-3 gap-2 text-xs">
+                          {Object.entries(totalizers.cyclesByFlupsy).map(([flupsyName, count]) => (
+                            <div key={flupsyName}>
+                              <strong>{flupsyName}:</strong> {count} ceste
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                );
+              })()}
             </TabsContent>
           </Tabs>
         </div>
@@ -570,13 +700,13 @@ export default function QuickOperations() {
             <div className="py-4 space-y-4">
               {(() => {
                 // Recuperiamo i dati necessari
-                const basket = baskets?.find((b: Basket) => b.id === selectedBasketId);
-                const basketOperations = operations ? operations.filter((op: Operation) => op.basketId === selectedBasketId) : [];
+                const basket = baskets ? (baskets as Basket[]).find((b: Basket) => b.id === selectedBasketId) : undefined;
+                const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === selectedBasketId) : [];
                 const sortedOps = [...basketOperations].sort((a, b) => 
                   new Date(b.date).getTime() - new Date(a.date).getTime()
                 );
                 const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
-                const cycle = cycles?.find((c: Cycle) => c.id === basket?.currentCycleId);
+                const cycle = cycles ? (cycles as Cycle[]).find((c: Cycle) => c.id === basket?.currentCycleId) : undefined;
                 
                 if (!basket || !cycle) {
                   return <div>Errore nel caricamento dei dati della cesta</div>;
