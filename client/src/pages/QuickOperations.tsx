@@ -859,7 +859,7 @@ export default function QuickOperations() {
   };
   
   // Gestisce operazione su multiple ceste
-  const handleBulkOperation = (operationType: string) => {
+  const handleBulkOperation = async (operationType: string) => {
     if (selectedBaskets.length === 0) {
       toast({
         title: 'Nessuna cesta selezionata',
@@ -869,10 +869,115 @@ export default function QuickOperations() {
       return;
     }
     
-    toast({
-      title: 'Operazione di gruppo attivata',
-      description: `${selectedBaskets.length} ceste selezionate - Operazione: ${operationType}`,
-    });
+    if (operationType === 'duplicate') {
+      // Mostra toast di inizio processo
+      toast({
+        title: 'Duplicazione in corso...',
+        description: `Duplicando l'ultima operazione per ${selectedBaskets.length} cestelli`,
+      });
+      
+      let successCount = 0;
+      let errorCount = 0;
+      const errors: string[] = [];
+      
+      // Esegui la duplicazione per ogni cestello selezionato
+      for (const basketId of selectedBaskets) {
+        try {
+          const basket = baskets?.find((b: Basket) => b.id === basketId);
+          if (!basket) {
+            errors.push(`Cestello ID ${basketId} non trovato`);
+            errorCount++;
+            continue;
+          }
+          
+          // Trova l'ultima operazione per questo cestello
+          const basketOperations = operations ? operations.filter((op: Operation) => op.basketId === basketId) : [];
+          const sortedOps = [...basketOperations].sort((a, b) => 
+            new Date(b.date).getTime() - new Date(a.date).getTime()
+          );
+          const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
+          
+          if (!lastOperation) {
+            errors.push(`Cestello ${basket.physicalNumber}: nessuna operazione precedente`);
+            errorCount++;
+            continue;
+          }
+          
+          // Prepara i dati per la duplicazione
+          const duplicateData = {
+            type: lastOperation.type,
+            date: new Date().toISOString().split('T')[0], // Data odierna
+            basketId: basketId,
+            cycleId: lastOperation.cycleId,
+            lotId: lastOperation.lotId,
+            animalCount: lastOperation.animalCount,
+            totalWeight: lastOperation.totalWeight,
+            averageWeight: lastOperation.averageWeight,
+            deadCount: lastOperation.deadCount || 0,
+            notes: `🔄 Ripetizione operazione ${lastOperation.type} del ${lastOperation.date}`
+          };
+          
+          // Invio richiesta API per creare la nuova operazione
+          const response = await fetch('/api/direct-operations', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(duplicateData),
+          });
+          
+          if (!response.ok) {
+            const errorData = await response.json();
+            errors.push(`Cestello ${basket.physicalNumber}: ${errorData.error || 'Errore sconosciuto'}`);
+            errorCount++;
+          } else {
+            successCount++;
+          }
+          
+        } catch (error) {
+          const basket = baskets?.find((b: Basket) => b.id === basketId);
+          const basketNum = basket?.physicalNumber || basketId;
+          errors.push(`Cestello ${basketNum}: ${error instanceof Error ? error.message : 'Errore sconosciuto'}`);
+          errorCount++;
+        }
+      }
+      
+      // Invalida cache per ricaricare dati
+      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      
+      // Mostra risultati finali
+      if (successCount > 0 && errorCount === 0) {
+        toast({
+          title: 'Duplicazione completata!',
+          description: `${successCount} operazioni duplicate con successo`,
+        });
+      } else if (successCount > 0 && errorCount > 0) {
+        toast({
+          title: 'Duplicazione parziale',
+          description: `${successCount} successi, ${errorCount} errori. Controlla la console per dettagli`,
+          variant: 'destructive'
+        });
+        console.error('Errori durante duplicazione:', errors);
+      } else {
+        toast({
+          title: 'Duplicazione fallita',
+          description: `Nessuna operazione duplicata. ${errorCount} errori`,
+          variant: 'destructive'
+        });
+        console.error('Errori durante duplicazione:', errors);
+      }
+      
+      // Deseleziona tutti i cestelli
+      setSelectedBaskets([]);
+      
+    } else {
+      // Per altri tipi di operazione (misura, peso) mantieni il comportamento precedente
+      toast({
+        title: 'Operazione di gruppo attivata',
+        description: `${selectedBaskets.length} ceste selezionate - Operazione: ${operationType}`,
+      });
+    }
   };
   
   // Recupera i dati associati a una cesta
