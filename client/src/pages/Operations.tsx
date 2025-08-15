@@ -280,17 +280,25 @@ export default function Operations() {
   // Extract all data from unified response
   const operations = unifiedData?.operations || [];
   
-  // Debug operazioni estratte
-  React.useEffect(() => {
-    if (operations.length > 0) {
-      console.log('📋 OPERATIONS EXTRACTED from unified:', operations.length);
-      const pesoOps = operations.filter(op => op.type === 'peso');
-      console.log('📋 PESO OPERATIONS in React state:', pesoOps.length);
-      pesoOps.forEach(op => {
-        console.log(`📋 Peso op ID ${op.id}: basketId=${op.basketId}, cycleId=${op.cycleId}`);
-      });
-    }
-  }, [operations]);
+  // Debug immediato per capire il problema
+  console.log('🚑🚑🚑 UNIFIED DATA DEBUG:', {
+    hasUnifiedData: !!unifiedData,
+    operationsLength: unifiedData?.operations?.length || 0,
+    extractedLength: operations.length,
+    unifiedDataKeys: unifiedData ? Object.keys(unifiedData) : 'no data'
+  });
+  
+  if (unifiedData?.operations) {
+    console.log('🚑 UNIFIED OPERATIONS IDs:', unifiedData.operations.map(op => op.id));
+    const unifiedPesoOps = unifiedData.operations.filter(op => op.type === 'peso');
+    console.log('🚑 PESO OPS in UNIFIED:', unifiedPesoOps.length, unifiedPesoOps.map(op => op.id));
+  }
+  
+  if (operations.length > 0) {
+    console.log('📋 EXTRACTED OPERATIONS IDs:', operations.map(op => op.id));
+    const extractedPesoOps = operations.filter(op => op.type === 'peso');
+    console.log('📋 PESO OPS EXTRACTED:', extractedPesoOps.length, extractedPesoOps.map(op => op.id));
+  }
   const baskets = unifiedData?.baskets || [];
   const cycles = unifiedData?.cycles || [];
   const flupsys = unifiedData?.flupsys || [];
@@ -648,7 +656,12 @@ export default function Operations() {
     if (!operations || !cycles || !lots || !sizes || !flupsys) return {};
     
     // Log dello stato dei dati delle operazioni prima dell'elaborazione
-    console.log("Stato iniziale operazioni:", operations.map(op => ({
+    console.log("Stato iniziale operazioni:", operations);
+    console.log("IDs operazioni:", operations.map(op => op.id));
+    const pesoCount = operations.filter(op => op.type === 'peso').length;
+    console.log(`PESO operations count: ${pesoCount}`);
+    
+    console.log("Mapping operazioni:", operations.map(op => ({
       id: op.id,
       type: op.type,
       cycleId: op.cycleId,
