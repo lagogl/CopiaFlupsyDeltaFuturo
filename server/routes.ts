@@ -140,82 +140,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
   });
   
   // ===== ROUTE DI ELIMINAZIONE DI EMERGENZA =====
-  console.log("🗑️ Registrazione route di eliminazione di emergenza");
-  app.post('/api/emergency-delete/:id', async (req, res) => {
-    console.log("🚨🚨🚨 EMERGENCY DELETE ROUTE CHIAMATA! 🚨🚨🚨");
-    try {
-      const id = parseInt(req.params.id);
-      console.log(`🚨 EMERGENCY DELETE: Eliminazione operazione ID: ${id}`);
-      
-      if (isNaN(id)) {
-        console.log("🚨 EMERGENCY DELETE: ID non valido");
-        return res.status(400).json({ message: "Invalid operation ID" });
-      }
-
-      // Prima verifica se l'operazione esiste
-      console.log(`🔍 EMERGENCY DELETE: Verifica esistenza operazione ${id}`);
-      const existingOperation = await db.select().from(operations).where(eq(operations.id, id)).limit(1);
-      
-      if (!existingOperation || existingOperation.length === 0) {
-        console.log(`❌ EMERGENCY DELETE: Operazione ${id} non trovata nel database`);
-        return res.status(404).json({ message: "Operation not found" });
-      }
-      
-      const operation = existingOperation[0];
-      console.log(`✅ EMERGENCY DELETE: Operazione trovata - Tipo: ${operation.type}, Cestello: ${operation.basketId}`);
-
-      // Eliminazione diretta dal database (bypass dello storage per operazioni da app esterne)
-      console.log(`🗑️ EMERGENCY DELETE: Eliminazione diretta dal database per operazione ${id}`);
-      const deleteResult = await db.delete(operations).where(eq(operations.id, id)).returning();
-      
-      if (deleteResult && deleteResult.length > 0) {
-        console.log(`✅ EMERGENCY DELETE: Operazione ${id} eliminata con successo dal database`);
-        
-        // INVALIDAZIONE CACHE DOPO ELIMINAZIONE
-        invalidateUnifiedCache();
-        console.log(`🗑️ EMERGENCY DELETE: Cache unificata invalidata dopo eliminazione operazione ${id}`);
-        
-        // Invalida anche la cache delle operazioni
-        try {
-          const { OperationsCache } = await import('./operations-cache-service.js');
-          OperationsCache.clear();
-          console.log('🔄 EMERGENCY DELETE: Cache operazioni invalidata');
-        } catch (cacheError) {
-          console.warn('⚠️ EMERGENCY DELETE: Errore nell\'invalidazione cache operazioni:', cacheError);
-        }
-        
-        // Invio notifica WebSocket per aggiornamento real-time
-        if (req.app.locals.webSocketServer) {
-          req.app.locals.webSocketServer.broadcastMessage('operation_deleted', {
-            operationId: id,
-            basketId: operation.basketId,
-            operationType: operation.type,
-            message: `Operazione ${operation.type} (ID: ${id}) eliminata con successo`
-          });
-          console.log(`📡 EMERGENCY DELETE: Notifica WebSocket inviata per operazione ${id}`);
-        }
-        
-        return res.json({ 
-          success: true, 
-          message: "Operation deleted successfully",
-          id,
-          operationType: operation.type,
-          basketId: operation.basketId,
-          deletedData: deleteResult[0],
-          timestamp: new Date().toISOString()
-        });
-      } else {
-        console.log(`❌ EMERGENCY DELETE: Eliminazione fallita per operazione ${id}`);
-        return res.status(500).json({ message: "Failed to delete operation from database" });
-      }
-    } catch (error) {
-      console.error("🚨 EMERGENCY DELETE ERROR:", error);
-      return res.status(500).json({ 
-        message: "Internal server error during operation deletion",
-        error: error instanceof Error ? error.message : "Unknown error"
-      });
-    }
-  });
+  // ROUTE ELIMINATA - Ora gestita da direct-operations.ts per evitare duplicazioni
+  console.log("🗑️ Route di eliminazione di emergenza gestita da direct-operations.ts");
 
   // Route di test per verificare il routing
   app.get('/api/test-delete/:id', async (req, res) => {
