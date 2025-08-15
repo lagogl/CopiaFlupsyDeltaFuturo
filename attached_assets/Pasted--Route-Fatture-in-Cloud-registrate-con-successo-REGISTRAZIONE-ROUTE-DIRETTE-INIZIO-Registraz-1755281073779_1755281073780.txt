@@ -1,0 +1,90 @@
+✅ Route Fatture in Cloud registrate con successo
+🚀 REGISTRAZIONE ROUTE DIRETTE - INIZIO
+Registrazione della route diretta per le operazioni (/api/direct-operations)
+🧪 Registrazione route TEST: /api/test-delete/:id
+🗑️ Registrazione route CACHE INVALIDATION: /api/operations-cache-clear
+🗑️ Registrazione route DELETE: /api/emergency-delete/:id
+Route diretta per le operazioni registrata con successo
+🤖 Route AI registrate con successo
+WebSocket server initialized at /ws path
+Registrazione dell'handler per le notifiche di vagliatura...
+Handler per le notifiche di vagliatura registrato con successo
+6:01:50 PM [express] development server serving on port 5000
+Inizializzazione del sistema di pianificazione email...
+📧 Scheduler email inizializzato con successo
+Pianificazione email attivata: invio giornaliero alle 18:00
+Scheduler email inizializzato con successo
+🌱 Inizializzazione notifiche di crescita...
+Timer notifiche crescita: prossima esecuzione 8/16/2025, 12:00:00 AM
+Richiesta di tutti i cicli con includeAll=true
+Utilizzo implementazione ottimizzata per le operazioni
+Richiesta operazioni ottimizzata con opzioni: {
+  page: 1,
+  pageSize: 20,
+  cycleId: undefined,
+  flupsyId: undefined,
+  basketId: undefined,
+  dateFrom: undefined,
+  dateTo: undefined,
+  type: undefined
+}
+Cache: nessun dato trovato per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_20_undefined"
+Utilizzo implementazione ottimizzata per i cestelli
+Richiesta di tutti i cestelli (per dashboard o visualizzatore FLUPSY)
+Cache cestelli: nessun dato trovato per chiave "baskets_cycleId_flupsyId_includeAll_includeEmpty_page_pageSize_sortBy_sortOrder_state_undefined_undefined_true_false_1_1000_id_asc_undefined"
+🔄 CESTELLI: Cache MISS - query database necessaria
+Richiesta cestelli ottimizzata con opzioni: {
+  page: 1,
+  pageSize: 1000,
+  state: undefined,
+  flupsyId: undefined,
+  cycleId: undefined,
+  includeEmpty: false,
+  sortBy: 'id',
+  sortOrder: 'asc',
+  includeAll: true
+}
+Cache cicli: nessun dato trovato per chiave "includeAll_true_page_1_pageSize_10_sortBy_startDate_sortOrder_desc"
+WebSocket client connected
+Cache: dati salvati con chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_20_undefined", scadenza 60 secondi
+Query operazioni completata in 652ms: 11 risultati su 11 totali
+Operazioni recuperate in 654ms (ottimizzato)
+6:01:53 PM [express] GET /api/operations 200 in 660ms :: [{"id":34,"date":"2025-08-15","type":"peso"…
+Recupero tutti i cicli senza paginazione (richiesto da dashboard)
+Recupero tutti i cestelli senza paginazione (richiesto da dashboard o visualizzatore FLUPSY)
+Restituiti tutti i 3 cicli (includeAll=true)
+Cicli recuperati in 3047ms (ottimizzato)
+Cicli recuperati in 3055ms
+Restituisco tutti i 3 cicli (includeAll=true)
+6:01:56 PM [express] GET /api/cycles 200 in 3059ms :: [{"id":1,"basketId":1,"lotId":1,"startDate":"2…
+[SLOW API] GET /api/cycles?includeAll=true - 3058ms
+Cache cestelli: dati salvati con chiave "baskets_cycleId_flupsyId_includeAll_includeEmpty_page_pageSize_sortBy_sortOrder_state_undefined_undefined_true_false_1_1000_id_asc_undefined", scadenza in 600 secondi
+🚀 CESTELLI: Cache SAVED (7 cestelli) - WebSocket sync attivo
+Query cestelli completata in 3052ms: 7 risultati su 7 totali
+Risposta API paginata: pagina 1/1, 7 elementi su 7 totali
+Cestelli recuperati in 3055ms (ottimizzato)
+6:01:56 PM [express] GET /api/baskets 200 in 3055ms :: [{"id":1,"physicalNumber":101,"flupsyId":570,…
+[SLOW API] GET /api/baskets?includeAll=true - 3056ms
+Utilizzo implementazione ottimizzata per le operazioni
+Richiesta operazioni ottimizzata con opzioni: {
+  page: 1,
+  pageSize: 1000,
+  cycleId: undefined,
+  flupsyId: undefined,
+  basketId: undefined,
+  dateFrom: undefined,
+  dateTo: undefined,
+  type: undefined
+}
+Cache: nessun dato trovato per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_1000_undefined"
+Cache: dati salvati con chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_1000_undefined", scadenza 60 secondi
+Query operazioni completata in 648ms: 11 risultati su 11 totali
+Operazioni recuperate in 650ms (ottimizzato)
+6:01:57 PM [express] GET /api/operations 200 in 651ms :: [{"id":34,"date":"2025-08-15","type":"peso"…
+🚀 ENDPOINT UNIFICATO: Richiesta ricevuta
+🚀 OPERAZIONI UNIFICATE: Richiesta ricevuta
+🔄 CACHE MISS: Eseguendo query unificata...
+✅ Query unificate completate in 4066ms
+🚀 UNIFIED: Dati salvati in cache - 11 operazioni, 7 cestelli
+6:04:00 PM [express] GET /api/operations-unified 200 in 4069ms :: {"success":true,"data":{"operation…
+[SLOW API] GET /api/operations-unified - 4069ms
