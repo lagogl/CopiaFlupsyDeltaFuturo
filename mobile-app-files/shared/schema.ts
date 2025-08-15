@@ -74,18 +74,21 @@ export const operations = pgTable("operations", {
   type: text("type", { enum: operationTypes }).notNull(),
   basketId: integer("basket_id").notNull(),
   cycleId: integer("cycle_id"),
+  sizeId: integer("size_id"), // reference to the size
+  sgrId: integer("sgr_id"), // reference to the SGR
   lotId: integer("lot_id"),
   animalCount: integer("animal_count"),
-  mortalityCount: integer("mortality_count").default(0),
-  averageWeight: real("average_weight"),
-  totalWeight: real("total_weight"),
-  size: text("size"),
+  totalWeight: real("total_weight"), // in grams
+  animalsPerKg: integer("animals_per_kg"), // CRITICO per calcoli automatici
+  averageWeight: real("average_weight"), // in milligrams, calculated: 1,000,000 / animalsPerKg
+  deadCount: integer("dead_count"), // numero di animali morti
+  mortalityRate: real("mortality_rate"), // percentuale di mortalità
   notes: text("notes"),
   operatorName: text("operator_name"),
   temperature: real("temperature"),
   createdAt: timestamp("created_at").notNull().defaultNow(),
   updatedAt: timestamp("updated_at"),
-  metadata: text("metadata"),
+  metadata: text("metadata"), // metadati aggiuntivi in formato JSON
 });
 
 // Lots (Lotti)
@@ -104,11 +107,13 @@ export const lots = pgTable("lots", {
 // Size Categories (Taglie)
 export const sizes = pgTable("sizes", {
   id: serial("id").primaryKey(),
-  code: text("code").notNull().unique(),
+  code: text("code").notNull().unique(), // e.g., TP-180, TP-200, TP-315, etc.
   name: text("name").notNull(),
-  minWeight: real("min_weight"),
-  maxWeight: real("max_weight"),
-  description: text("description"),
+  sizeMm: real("size_mm"), // size in millimeters
+  minAnimalsPerKg: integer("min_animals_per_kg"), // CRITICO per calcolo automatico taglia
+  maxAnimalsPerKg: integer("max_animals_per_kg"), // CRITICO per calcolo automatico taglia
+  notes: text("notes"),
+  color: text("color"), // colore HEX per visualizzazione grafica
   active: boolean("active").notNull().default(true),
 });
 
@@ -118,10 +123,13 @@ export const insertOperationSchema = createInsertSchema(operations)
   .extend({
     // Validazioni specifiche per app mobile operatori
     type: z.enum(["peso", "misura"]), // Solo peso e misura per operatori
-    averageWeight: z.number().positive().optional(),
-    totalWeight: z.number().positive().optional(),
-    animalCount: z.number().int().positive().optional(),
-    size: z.string().optional(),
+    totalWeight: z.number().positive().optional(), // Peso totale in grammi
+    animalCount: z.number().int().positive().optional(), // Numero animali
+    animalsPerKg: z.number().int().positive().optional(), // CRITICO per calcoli automatici
+    averageWeight: z.number().positive().optional(), // Calcolato automaticamente
+    sizeId: z.number().int().positive().optional(), // Calcolato automaticamente
+    operatorName: z.string().min(1).optional(), // Nome operatore
+    notes: z.string().optional(),
   });
 
 export type InsertOperation = z.infer<typeof insertOperationSchema>;
