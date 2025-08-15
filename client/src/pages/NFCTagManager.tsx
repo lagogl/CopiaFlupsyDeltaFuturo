@@ -440,23 +440,46 @@ export default function NFCTagManager() {
         if (timeSinceLastRefresh > 5000) {
           console.log('App tornata in primo piano dopo programmazione NFC, refresh automatico');
           queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+          queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
           setLastRefreshTime(now);
         }
       }
     };
 
+    // Refresh automatico periodico ogni 30 secondi per sincronizzazione cross-device
+    const interval = setInterval(() => {
+      const now = Date.now();
+      const timeSinceLastRefresh = now - lastRefreshTime;
+      
+      // Solo se sono passati più di 30 secondi dall'ultimo refresh manuale
+      if (timeSinceLastRefresh > 30000) {
+        console.log('Refresh automatico periodico per sincronizzazione');
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        setLastRefreshTime(now);
+      }
+    }, 30000); // Ogni 30 secondi
+
     document.addEventListener('visibilitychange', handleVisibilityChange);
-    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+      clearInterval(interval);
+    };
   }, [lastRefreshTime, queryClient]);
 
-  // Gestisce il refresh manuale della lista
+  // Gestisce il refresh manuale della lista con invalidazione forzata
   const handleRefresh = () => {
+    // Invalida tutte le cache correlate
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
     queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+    
+    // Forza il refetch immediato
+    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    
     setLastRefreshTime(Date.now());
     toast({
       title: "Lista aggiornata",
-      description: "I dati dei cestelli sono stati ricaricati.",
+      description: "I dati dei cestelli sono stati ricaricati dal server.",
     });
   };
 
@@ -475,40 +498,46 @@ export default function NFCTagManager() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="flex flex-col gap-4 sm:grid sm:grid-cols-2 md:grid-cols-3">
-            {/* Ricerca */}
-            <div className="relative">
-              <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
-              <Input 
-                className="pl-10"
-                placeholder="Cerca per numero o posizione..." 
-                value={searchTerm}
-                onChange={(e) => setSearchTerm(e.target.value)}
-              />
+          <div className="space-y-4">
+            <div className="flex flex-col gap-4 lg:flex-row lg:gap-4">
+              {/* Ricerca */}
+              <div className="relative flex-1">
+                <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
+                <Input 
+                  className="pl-10"
+                  placeholder="Cerca per numero o posizione..." 
+                  value={searchTerm}
+                  onChange={(e) => setSearchTerm(e.target.value)}
+                />
+              </div>
+              
+              {/* Filtro */}
+              <div className="lg:w-64">
+                <Select value={filter} onValueChange={setFilter}>
+                  <SelectTrigger>
+                    <SelectValue placeholder="Filtra per stato NFC" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="all">Tutti i cestelli</SelectItem>
+                    <SelectItem value="with-nfc">Con tag NFC</SelectItem>
+                    <SelectItem value="without-nfc">Senza tag NFC</SelectItem>
+                  </SelectContent>
+                </Select>
+              </div>
             </div>
             
-            {/* Filtro */}
-            <Select value={filter} onValueChange={setFilter}>
-              <SelectTrigger>
-                <SelectValue placeholder="Filtra per stato NFC" />
-              </SelectTrigger>
-              <SelectContent>
-                <SelectItem value="all">Tutti i cestelli</SelectItem>
-                <SelectItem value="with-nfc">Con tag NFC</SelectItem>
-                <SelectItem value="without-nfc">Senza tag NFC</SelectItem>
-              </SelectContent>
-            </Select>
-            
-            {/* Pulsante Refresh */}
-            <Button
-              variant="outline"
-              onClick={handleRefresh}
-              disabled={basketsLoading}
-              className="w-full bg-blue-50 hover:bg-blue-100 border-blue-200"
-            >
-              <RefreshCwIcon className={`mr-2 h-4 w-4 ${basketsLoading ? 'animate-spin' : ''}`} />
-              Aggiorna Lista
-            </Button>
+            {/* Pulsante Refresh - Sempre visibile */}
+            <div className="flex justify-center">
+              <Button
+                variant="outline"
+                onClick={handleRefresh}
+                disabled={basketsLoading}
+                className="bg-blue-50 hover:bg-blue-100 border-blue-200 px-6 py-2"
+              >
+                <RefreshCwIcon className={`mr-2 h-4 w-4 ${basketsLoading ? 'animate-spin' : ''}`} />
+                {basketsLoading ? 'Aggiornamento...' : 'Aggiorna Lista'}
+              </Button>
+            </div>
           </div>
         </CardContent>
       </Card>
