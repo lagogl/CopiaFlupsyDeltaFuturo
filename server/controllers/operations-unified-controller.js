@@ -13,6 +13,11 @@ let unifiedCache = {
   ttl: 30000, // 30 secondi
 };
 
+// Forza un refresh immediato invalidando la cache
+console.log('🔄 FORCE REFRESH: Cache unificata invalidata al startup');
+unifiedCache.data = null;
+unifiedCache.timestamp = null;
+
 export async function getOperationsUnified(req, res) {
   try {
     console.log('🚀 OPERAZIONI UNIFICATE: Richiesta ricevuta');
