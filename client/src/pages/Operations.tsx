@@ -238,12 +238,12 @@ export default function Operations() {
     isLoading: isLoadingUnified, 
     refetch: refetchUnified 
   } = useQuery({
-    queryKey: ['/api/operations-unified', Math.random()], // Chiave completamente random per debug
+    queryKey: ['UNIFIED_OPERATIONS_EXCLUSIVE', Date.now()], // Chiave unica per evitare conflitti
     staleTime: 0,
-    cacheTime: 0,
+    gcTime: 0,
     refetchInterval: false,
-    refetchOnWindowFocus: false, // Disabilitato per evitare loop
-    retry: false, // Disabilita retry per debug
+    refetchOnWindowFocus: false,
+    retry: false
     queryFn: async () => {
       console.log('🚀🚀🚀 FETCHING UNIFIED DATA 🚀🚀🚀');
       try {
@@ -277,18 +277,23 @@ export default function Operations() {
     }
   });
   
-  // Extract all data from unified response
-  const operations = unifiedData?.operations || [];
+  // FORZA l'uso dei dati unificati - non permettere override da altre query
+  const operations = React.useMemo(() => {
+    return unifiedData?.operations || [];
+  }, [unifiedData?.operations]);
   
-  // DEBUG DIRETTO - DEVE APPARIRE!
-  console.log('=== OPERATIONS DEBUG ===');
-  console.log('unifiedData exists:', !!unifiedData);
-  if (unifiedData) {
-    console.log('unifiedData.operations length:', unifiedData.operations?.length || 'undefined');
-    console.log('unifiedData keys:', Object.keys(unifiedData));
+  // DEBUG FINALE
+  console.log('=== FINAL OPERATIONS DEBUG ===');
+  console.log('Unified data exists:', !!unifiedData);
+  console.log('Operations from unified:', unifiedData?.operations?.length || 0);
+  console.log('Final operations array:', operations.length);
+  if (unifiedData?.operations) {
+    const unifiedPeso = unifiedData.operations.filter(op => op.type === 'peso');
+    console.log('PESO in unified data:', unifiedPeso.length, '- IDs:', unifiedPeso.map(op => op.id));
   }
-  console.log('extracted operations length:', operations.length);
-  console.log('========================');
+  const finalPeso = operations.filter(op => op.type === 'peso');
+  console.log('PESO in final operations:', finalPeso.length, '- IDs:', finalPeso.map(op => op.id));
+  console.log('================================');
   const baskets = unifiedData?.baskets || [];
   const cycles = unifiedData?.cycles || [];
   const flupsys = unifiedData?.flupsys || [];
