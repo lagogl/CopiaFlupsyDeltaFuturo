@@ -1,0 +1,88 @@
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+websocket.ts:60 Debug WebSocket URL construction: Object
+websocket.ts:106 Tentativo di connessione WebSocket: wss://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/ws
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:136 Query request to: /api/baskets?includeAll=true
+queryClient.ts:136 Query request to: /api/cycles?includeAll=true
+queryClient.ts:136 Query request to: /api/operations?includeAll=true
+queryClient.ts:136 Query request to: /api/lots?includeAll=true
+queryClient.ts:44 API Response status: 200
+VM12:6 SW registered with scope:  https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+websocket.ts:157 WebSocket connesso
+websocket.ts:170 Ricevuto messaggio WebSocket: Object
+queryClient.ts:136 Query request to: /api/flupsys
+queryClient.ts:136 Query request to: /api/flupsys?includeAll=true
+queryClient.ts:136 Query request to: /api/operations?includeAll=true&pageSize=1000
+queryClient.ts:136 Query request to: /api/sizes
+queryClient.ts:136 Query request to: /api/size-predictions?size=TP-3000&days=14
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:44 API Response status: 200
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:44 API Response status: 200
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:44 API Response status: 200
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+Operations.tsx:607 Stato iniziale operazioni: Array(0)
+Operations.tsx:616 Lotti disponibili: Array(0)
+Operations.tsx:234 🚀 UNIFIED: Caricamento dati unificati...
+Operations.tsx:289 🚀 FILTER CHANGE DEBUG v2: Object
+Operations.tsx:607 Stato iniziale operazioni: Array(0)
+Operations.tsx:616 Lotti disponibili: Array(0)
+Operations.tsx:289 🚀 FILTER CHANGE DEBUG v2: Object
+Operations.tsx:607 Stato iniziale operazioni: Array(0)
+Operations.tsx:616 Lotti disponibili: Array(0)
+Operations.tsx:240 ✅ UNIFIED: Dati caricati Object
+Operations.tsx:607 Stato iniziale operazioni: Array(10)
+Operations.tsx:616 Lotti disponibili: Array(3)
+Operations.tsx:636 Lotto trovato per operazione 11: undefined
+Operations.tsx:636 Lotto trovato per operazione 8: undefined
+Operations.tsx:636 Lotto trovato per operazione 7: undefined
+Operations.tsx:636 Lotto trovato per operazione 6: undefined
+Operations.tsx:636 Lotto trovato per operazione 4: undefined
+Operations.tsx:636 Lotto trovato per operazione 5: undefined
+Operations.tsx:636 Lotto trovato per operazione 1: undefined
+Operations.tsx:636 Lotto trovato per operazione 3: undefined
+Operations.tsx:636 Lotto trovato per operazione 2: undefined
+Operations.tsx:677 Propagato lotto 'undefined' all'operazione 32 (forward)
+Operations.tsx:790 Operazione di esempio: Object
+Operations.tsx:1913 Calcolo peso medio per operazione 4: 50g / 175000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 5: 62g / 215000 animali * 1000 = 0.28837209302325584mg
+Operations.tsx:1913 Calcolo peso medio per operazione 6: 70g / 245000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 1: 45g / 180000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 2: 55g / 220000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 3: 62g / 250000 animali * 1000 = 0.248mg
+Operations.tsx:289 🚀 FILTER CHANGE DEBUG v2: Object
+Operations.tsx:1913 Calcolo peso medio per operazione 4: 50g / 175000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 5: 62g / 215000 animali * 1000 = 0.28837209302325584mg
+Operations.tsx:1913 Calcolo peso medio per operazione 6: 70g / 245000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 1: 45g / 180000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 2: 55g / 220000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 3: 62g / 250000 animali * 1000 = 0.248mg
+Operations.tsx:1913 Calcolo peso medio per operazione 4: 50g / 175000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 5: 62g / 215000 animali * 1000 = 0.28837209302325584mg
+Operations.tsx:1913 Calcolo peso medio per operazione 6: 70g / 245000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 1: 45g / 180000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 2: 55g / 220000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 3: 62g / 250000 animali * 1000 = 0.248mg
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:44 API Response status: 200
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:44 API Response status: 200
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:44 API Response status: 200
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+[NEW] Explain Console errors by using Copilot in Edge: click
+         
+         to explain an error. 
+        Learn more
+        Don't show again
+stallwart.build.js:1 stallwart: failed ping 1
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:44 API Response status: 200
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}

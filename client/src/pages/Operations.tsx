@@ -255,6 +255,8 @@ export default function Operations() {
         
         console.log('✅✅✅ UNIFIED DATA RECEIVED ✅✅✅');
         console.log('Total operations:', result.data?.operations?.length || 0);
+        console.log('🔍 RAW API RESPONSE:', result);
+        console.log('🔍 All operation IDs:', result.data?.operations?.map(op => op.id) || []);
         
         if (result.data?.operations) {
           const pesoOps = result.data.operations.filter(op => op.type === 'peso');
@@ -277,6 +279,18 @@ export default function Operations() {
   
   // Extract all data from unified response
   const operations = unifiedData?.operations || [];
+  
+  // Debug operazioni estratte
+  React.useEffect(() => {
+    if (operations.length > 0) {
+      console.log('📋 OPERATIONS EXTRACTED from unified:', operations.length);
+      const pesoOps = operations.filter(op => op.type === 'peso');
+      console.log('📋 PESO OPERATIONS in React state:', pesoOps.length);
+      pesoOps.forEach(op => {
+        console.log(`📋 Peso op ID ${op.id}: basketId=${op.basketId}, cycleId=${op.cycleId}`);
+      });
+    }
+  }, [operations]);
   const baskets = unifiedData?.baskets || [];
   const cycles = unifiedData?.cycles || [];
   const flupsys = unifiedData?.flupsys || [];
