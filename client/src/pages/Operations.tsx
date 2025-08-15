@@ -238,11 +238,12 @@ export default function Operations() {
     isLoading: isLoadingUnified, 
     refetch: refetchUnified 
   } = useQuery({
-    queryKey: ['/api/operations-unified', Date.now()], // Chiave dinamica per forzare refresh
-    staleTime: 0, // Nessuna cache - aggiornamenti immediati per debug peso operations
-    cacheTime: 0, // Nessuna cache in memoria
+    queryKey: ['/api/operations-unified', Math.random()], // Chiave completamente random per debug
+    staleTime: 0,
+    cacheTime: 0,
     refetchInterval: false,
-    refetchOnWindowFocus: true, // Refresh al focus per debug
+    refetchOnWindowFocus: false, // Disabilitato per evitare loop
+    retry: false, // Disabilita retry per debug
     queryFn: async () => {
       console.log('🚀🚀🚀 FETCHING UNIFIED DATA 🚀🚀🚀');
       try {

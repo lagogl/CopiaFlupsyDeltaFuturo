@@ -1,0 +1,73 @@
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+Richiesta di tutti i cicli con includeAll=true
+Cache cicli: dati scaduti per chiave "includeAll_true_page_1_pageSize_10_sortBy_startDate_sortOrder_desc"
+Utilizzo implementazione ottimizzata per le operazioni
+Richiesta operazioni ottimizzata con opzioni: {
+  page: 1,
+  pageSize: 20,
+  cycleId: undefined,
+  flupsyId: undefined,
+  basketId: undefined,
+  dateFrom: undefined,
+  dateTo: undefined,
+  type: undefined
+}
+Cache: dati scaduti per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_20_undefined"
+Utilizzo implementazione ottimizzata per i cestelli
+Richiesta di tutti i cestelli (per dashboard o visualizzatore FLUPSY)
+Cache cestelli: hit per chiave "baskets_cycleId_flupsyId_includeAll_includeEmpty_page_pageSize_sortBy_sortOrder_state_undefined_undefined_true_false_1_1000_id_asc_undefined"
+🚀 CESTELLI: Cache HIT - recuperati in 0ms
+Cestelli recuperati in 13ms (ottimizzato)
+5:56:20 PM [express] GET /api/baskets 200 in 18ms :: [{"id":1,"physicalNumber":101,"flupsyId":570,"c…
+WebSocket client connected
+Recupero tutti i cicli senza paginazione (richiesto da dashboard)
+Restituiti tutti i 3 cicli (includeAll=true)
+Cicli recuperati in 3110ms (ottimizzato)
+Cicli recuperati in 3114ms
+Restituisco tutti i 3 cicli (includeAll=true)
+5:56:23 PM [express] GET /api/cycles 200 in 3115ms :: [{"id":1,"basketId":1,"lotId":1,"startDate":"2…
+[SLOW API] GET /api/cycles?includeAll=true - 3134ms
+Cache: dati salvati con chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_20_undefined", scadenza 60 secondi
+Query operazioni completata in 4435ms: 11 risultati su 11 totali
+[PERFORMANCE] Query operazioni lenta: 4435ms
+Operazioni recuperate in 4447ms (ottimizzato)
+5:56:24 PM [express] GET /api/operations 200 in 4448ms :: [{"id":34,"date":"2025-08-15","type":"peso…
+[SLOW API] GET /api/operations?includeAll=true - 4448ms
+Utilizzo implementazione ottimizzata per le operazioni
+Richiesta operazioni ottimizzata con opzioni: {
+  page: 1,
+  pageSize: 1000,
+  cycleId: undefined,
+  flupsyId: undefined,
+  basketId: undefined,
+  dateFrom: undefined,
+  dateTo: undefined,
+  type: undefined
+}
+Cache: dati scaduti per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_1000_undefined"
+Cache: dati salvati con chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_1000_undefined", scadenza 60 secondi
+Query operazioni completata in 653ms: 11 risultati su 11 totali
+Operazioni recuperate in 654ms (ottimizzato)
+5:56:25 PM [express] GET /api/operations 200 in 654ms :: [{"id":34,"date":"2025-08-15","type":"peso"…
