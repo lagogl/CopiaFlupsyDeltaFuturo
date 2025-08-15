@@ -177,7 +177,7 @@ export default function Operations() {
     dateFilter: '',
     flupsyFilter: 'all',
     cycleFilter: 'all',
-    cycleStateFilter: 'active',
+    cycleStateFilter: 'all', // CAMBIATO da 'active' a 'all' per mostrare tutte le operazioni
     viewMode: 'cycles' as 'table' | 'cycles'
   });
 
