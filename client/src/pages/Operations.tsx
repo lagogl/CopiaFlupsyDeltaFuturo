@@ -119,18 +119,17 @@ import { useLocation, useSearch } from 'wouter';
 import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 
 export default function Operations() {
+  console.log('🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨');
   const queryClient = useQueryClient();
   
-  // FORCE REFRESH per debug peso operations - versione più aggressiva
+  // Test semplice per verificare se il componente si carica
   React.useEffect(() => {
-    console.log('🔄 AGGRESSIVE REFRESH: Pulizia completa cache per debug peso operations');
-    // Pulisce completamente tutte le cache
+    console.log('🔥🔥🔥 OPERATIONS COMPONENT MOUNTED 🔥🔥🔥');
+    console.log('QueryClient disponibile:', !!queryClient);
+    
+    // Clear semplice senza timeout per evitare problemi di timing
     queryClient.clear();
-    // Force refetch immediato
-    setTimeout(() => {
-      console.log('🔄 FORCE REFETCH dopo clear completo');
-      refetchUnified();
-    }, 100);
+    console.log('✅ Cache pulita completamente');
   }, []); // Solo al mount del componente
 
   // WebSocket listeners per aggiornamenti real-time
@@ -245,22 +244,33 @@ export default function Operations() {
     refetchInterval: false,
     refetchOnWindowFocus: true, // Refresh al focus per debug
     queryFn: async () => {
-      console.log('🚀 UNIFIED: Caricamento dati unificati...');
-      const response = await fetch('/api/operations-unified');
-      if (!response.ok) {
-        throw new Error('Errore nel caricamento dei dati unificati');
+      console.log('🚀🚀🚀 FETCHING UNIFIED DATA 🚀🚀🚀');
+      try {
+        const response = await fetch('/api/operations-unified');
+        if (!response.ok) {
+          throw new Error(`HTTP Error: ${response.status}`);
+        }
+        const result = await response.json();
+        
+        console.log('✅✅✅ UNIFIED DATA RECEIVED ✅✅✅');
+        console.log('Total operations:', result.data?.operations?.length || 0);
+        
+        if (result.data?.operations) {
+          const pesoOps = result.data.operations.filter(op => op.type === 'peso');
+          console.log('🎯🎯🎯 PESO OPERATIONS FOUND:', pesoOps.length);
+          console.log('Peso operations details:', pesoOps.map(op => ({
+            id: op.id, 
+            basketId: op.basketId, 
+            date: op.date,
+            animalCount: op.animalCount
+          })));
+        }
+        
+        return result.data;
+      } catch (error) {
+        console.error('❌❌❌ UNIFIED FETCH ERROR:', error);
+        throw error;
       }
-      const result = await response.json();
-      console.log('✅ UNIFIED: Dati caricati', { 
-        operations: result.data.operations.length, 
-        fromCache: result.fromCache,
-        pesoOperations: result.data.operations.filter(op => op.type === 'peso').length
-      });
-      
-      // DEBUG: Log delle operazioni peso per identificare il problema
-      const pesoOps = result.data.operations.filter(op => op.type === 'peso');
-      console.log('🔍 DEBUG: Operazioni peso ricevute dal backend:', pesoOps.map(op => ({id: op.id, basketId: op.basketId, date: op.date})));
-      return result.data;
     }
   });
   
