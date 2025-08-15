@@ -3,7 +3,8 @@
 
 import { neon } from "@neondatabase/serverless";
 import { drizzle } from "drizzle-orm/neon-http";
-import { eq, pgTable, serial, integer, real, text, date, timestamp, boolean } from "drizzle-orm/pg-core";
+import { eq } from "drizzle-orm";
+import { pgTable, serial, integer, real, text, date } from "drizzle-orm/pg-core";
 
 // Schema minimo necessario per operazioni peso (usa lo stesso database)
 const operations = pgTable("operations", {
