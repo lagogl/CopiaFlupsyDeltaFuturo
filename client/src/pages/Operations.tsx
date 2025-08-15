@@ -121,12 +121,24 @@ import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 export default function Operations() {
   const queryClient = useQueryClient();
   
+  // FORCE REFRESH per debug peso operations
+  React.useEffect(() => {
+    console.log('🔄 FORCE REFRESH: Invalidazione completa cache per debug peso operations');
+    queryClient.invalidateQueries();
+    // Force refetch dopo un momento
+    setTimeout(() => {
+      console.log('🔄 FORCE REFETCH dopo invalidazione');
+      refetchUnified();
+    }, 500);
+  }, []); // Solo al mount del componente
+
   // WebSocket listeners per aggiornamenti real-time
   useWebSocketMessage('operation_created', () => {
     console.log('📋 OPERATIONS: Nuova operazione creata, aggiorno lista');
     // Invalida tutte le query delle operazioni per forzare l'aggiornamento
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
     queryClient.invalidateQueries({ queryKey: ['/api/operations-optimized'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations-unified'] });
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
     queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
   });
@@ -227,9 +239,9 @@ export default function Operations() {
     refetch: refetchUnified 
   } = useQuery({
     queryKey: ['/api/operations-unified'],
-    staleTime: 30 * 1000, // 30 seconds cache - faster updates
+    staleTime: 0, // Nessuna cache - aggiornamenti immediati per debug peso operations
     refetchInterval: false,
-    refetchOnWindowFocus: false,
+    refetchOnWindowFocus: true, // Refresh al focus per debug
     queryFn: async () => {
       console.log('🚀 UNIFIED: Caricamento dati unificati...');
       const response = await fetch('/api/operations-unified');
