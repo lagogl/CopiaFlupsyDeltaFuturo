@@ -55,6 +55,7 @@ export function setupBasketsCacheInvalidation(app) {
       const isBasketMutation = (
         (req.method === 'POST' && req.path.includes('/api/baskets')) ||
         (req.method === 'PUT' && req.path.includes('/api/baskets')) ||
+        (req.method === 'PATCH' && req.path.includes('/api/baskets')) ||
         (req.method === 'DELETE' && req.path.includes('/api/baskets')) ||
         (req.method === 'POST' && req.path.includes('/api/operations')) ||
         (req.method === 'POST' && req.path.includes('/api/cycles')) ||
