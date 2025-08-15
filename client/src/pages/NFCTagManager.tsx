@@ -39,7 +39,7 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from '@/components/ui/form';
-import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon } from 'lucide-react';
+import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon, RefreshCwIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 
 interface Basket {
@@ -82,6 +82,7 @@ export default function NFCTagManager() {
   const [selectedBasketForPosition, setSelectedBasketForPosition] = useState<Basket | null>(null);
   const [availablePositionsData, setAvailablePositionsData] = useState<AvailablePositions | null>(null);
   const [selectedRow, setSelectedRow] = useState<string>("");
+  const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
   
   // Form per l'assegnazione della posizione
   const positionForm = useForm<PositionFormData>({
@@ -207,6 +208,10 @@ export default function NFCTagManager() {
   const handleWriteSuccess = () => {
     setIsWriterOpen(false);
     setSelectedBasketId(null);
+    
+    // Invalida la cache per ricaricare i cestelli
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    setLastRefreshTime(Date.now());
     
     // Mostra una notifica di successo
     toast({
@@ -423,6 +428,38 @@ export default function NFCTagManager() {
     return 'Non assegnata';
   };
   
+  // Gestisce il refresh automatico quando l'app torna in primo piano (importante per mobile/NFC)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (!document.hidden) {
+        // L'app è tornata in primo piano, verifica se è passato abbastanza tempo
+        const now = Date.now();
+        const timeSinceLastRefresh = now - lastRefreshTime;
+        
+        // Refresh automatico se sono passati più di 5 secondi
+        if (timeSinceLastRefresh > 5000) {
+          console.log('App tornata in primo piano dopo programmazione NFC, refresh automatico');
+          queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+          setLastRefreshTime(now);
+        }
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange);
+  }, [lastRefreshTime, queryClient]);
+
+  // Gestisce il refresh manuale della lista
+  const handleRefresh = () => {
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+    setLastRefreshTime(Date.now());
+    toast({
+      title: "Lista aggiornata",
+      description: "I dati dei cestelli sono stati ricaricati.",
+    });
+  };
+
   // Trova il cestello selezionato
   const selectedBasket = baskets.find(b => b.id === selectedBasketId);
 
@@ -438,7 +475,7 @@ export default function NFCTagManager() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-3">
+          <div className="grid gap-4 md:grid-cols-4">
             {/* Ricerca */}
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -461,6 +498,17 @@ export default function NFCTagManager() {
                 <SelectItem value="without-nfc">Senza tag NFC</SelectItem>
               </SelectContent>
             </Select>
+            
+            {/* Pulsante Refresh */}
+            <Button
+              variant="outline"
+              onClick={handleRefresh}
+              disabled={basketsLoading}
+              className="w-full bg-blue-50 hover:bg-blue-100"
+            >
+              <RefreshCwIcon className={`mr-2 h-4 w-4 ${basketsLoading ? 'animate-spin' : ''}`} />
+              Aggiorna Lista
+            </Button>
           </div>
         </CardContent>
       </Card>
