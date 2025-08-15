@@ -177,7 +177,7 @@ export default function Operations() {
     dateFilter: '',
     flupsyFilter: 'all',
     cycleFilter: 'all',
-    cycleStateFilter: 'all', // CAMBIATO da 'active' a 'all' per mostrare tutte le operazioni
+    cycleStateFilter: 'active', // Ripristinato - mostra solo cicli attivi come richiesto
     viewMode: 'cycles' as 'table' | 'cycles'
   });
 
@@ -251,8 +251,13 @@ export default function Operations() {
       const result = await response.json();
       console.log('✅ UNIFIED: Dati caricati', { 
         operations: result.data.operations.length, 
-        fromCache: result.fromCache 
+        fromCache: result.fromCache,
+        pesoOperations: result.data.operations.filter(op => op.type === 'peso').length
       });
+      
+      // DEBUG: Log delle operazioni peso per identificare il problema
+      const pesoOps = result.data.operations.filter(op => op.type === 'peso');
+      console.log('🔍 DEBUG: Operazioni peso ricevute dal backend:', pesoOps.map(op => ({id: op.id, basketId: op.basketId, date: op.date})));
       return result.data;
     }
   });
