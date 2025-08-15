@@ -10,11 +10,11 @@ import { sql, eq, and, or, between, desc, inArray } from 'drizzle-orm';
 let unifiedCache = {
   data: null,
   timestamp: null,
-  ttl: 30000, // 30 secondi
+  ttl: 30000, // 30 secondi - cache riattivata dopo fix
 };
 
-// Forza un refresh immediato invalidando la cache
-console.log('🔄 FORCE REFRESH: Cache unificata invalidata al startup');
+// Cache ripristinata dopo fix problema peso operations
+console.log('✅ Cache unificata ripristinata con TTL 30s dopo aver risolto il problema peso operations');
 unifiedCache.data = null;
 unifiedCache.timestamp = null;
 
