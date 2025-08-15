@@ -81,6 +81,51 @@ export function implementDirectOperationRoute(app: Express) {
     return res.json({ message: "Test route funziona!", id, timestamp: new Date().toISOString() });
   });
   
+  // ===== ROUTE DI INVALIDAZIONE CACHE =====
+  console.log("🗑️ Registrazione route CACHE INVALIDATION: /api/operations-cache-clear");
+  app.post('/api/operations-cache-clear', async (req, res) => {
+    console.log("🔄🔄🔄 CACHE INVALIDATION ROUTE CHIAMATA! 🔄🔄🔄");
+    try {
+      // Invalida la cache delle operazioni
+      const { OperationsCache } = await import('./operations-cache-service.js');
+      OperationsCache.clear();
+      console.log('🗑️ Cache operazioni completamente invalidata');
+      
+      // Invalida anche la cache unificata se presente
+      try {
+        const { invalidateUnifiedCache } = await import('./routes.js');
+        invalidateUnifiedCache();
+        console.log('🔄 Cache unificata invalidata');
+      } catch (error) {
+        console.warn('⚠️ Errore nell\'invalidazione cache unificata:', error);
+      }
+      
+      // Invia notifica WebSocket per refresh delle interfacce
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('cache_cleared', {
+          cacheType: 'operations',
+          timestamp: new Date().toISOString(),
+          message: 'Cache operazioni invalidata - refresh richiesto'
+        });
+        console.log('📡 Notifica WebSocket di cache clearing inviata');
+      }
+      
+      return res.json({
+        success: true,
+        message: 'Operations cache cleared successfully',
+        timestamp: new Date().toISOString(),
+        cleared: ['operations_cache', 'unified_cache']
+      });
+    } catch (error) {
+      console.error('❌ Errore durante l\'invalidazione cache:', error);
+      return res.status(500).json({
+        success: false,
+        message: 'Error clearing operations cache',
+        error: error instanceof Error ? error.message : 'Unknown error'
+      });
+    }
+  });
+  
   // ===== ROUTE DI ELIMINAZIONE DIRETTA =====
   console.log("🗑️ Registrazione route DELETE: /api/emergency-delete/:id");
   app.post('/api/emergency-delete/:id', async (req, res) => {
