@@ -475,7 +475,7 @@ export default function NFCTagManager() {
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <div className="grid gap-4 md:grid-cols-4">
+          <div className="flex flex-col gap-4 sm:grid sm:grid-cols-2 md:grid-cols-3">
             {/* Ricerca */}
             <div className="relative">
               <SearchIcon className="absolute left-3 top-1/2 transform -translate-y-1/2 text-muted-foreground h-4 w-4" />
@@ -504,7 +504,7 @@ export default function NFCTagManager() {
               variant="outline"
               onClick={handleRefresh}
               disabled={basketsLoading}
-              className="w-full bg-blue-50 hover:bg-blue-100"
+              className="w-full bg-blue-50 hover:bg-blue-100 border-blue-200"
             >
               <RefreshCwIcon className={`mr-2 h-4 w-4 ${basketsLoading ? 'animate-spin' : ''}`} />
               Aggiorna Lista
