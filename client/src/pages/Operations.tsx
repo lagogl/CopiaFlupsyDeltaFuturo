@@ -121,15 +121,16 @@ import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 export default function Operations() {
   const queryClient = useQueryClient();
   
-  // FORCE REFRESH per debug peso operations
+  // FORCE REFRESH per debug peso operations - versione più aggressiva
   React.useEffect(() => {
-    console.log('🔄 FORCE REFRESH: Invalidazione completa cache per debug peso operations');
-    queryClient.invalidateQueries();
-    // Force refetch dopo un momento
+    console.log('🔄 AGGRESSIVE REFRESH: Pulizia completa cache per debug peso operations');
+    // Pulisce completamente tutte le cache
+    queryClient.clear();
+    // Force refetch immediato
     setTimeout(() => {
-      console.log('🔄 FORCE REFETCH dopo invalidazione');
+      console.log('🔄 FORCE REFETCH dopo clear completo');
       refetchUnified();
-    }, 500);
+    }, 100);
   }, []); // Solo al mount del componente
 
   // WebSocket listeners per aggiornamenti real-time
@@ -238,8 +239,9 @@ export default function Operations() {
     isLoading: isLoadingUnified, 
     refetch: refetchUnified 
   } = useQuery({
-    queryKey: ['/api/operations-unified'],
+    queryKey: ['/api/operations-unified', Date.now()], // Chiave dinamica per forzare refresh
     staleTime: 0, // Nessuna cache - aggiornamenti immediati per debug peso operations
+    cacheTime: 0, // Nessuna cache in memoria
     refetchInterval: false,
     refetchOnWindowFocus: true, // Refresh al focus per debug
     queryFn: async () => {
