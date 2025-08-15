@@ -889,6 +889,13 @@ export default function Operations() {
   const filteredOperations = useMemo(() => {
     if (!operations || !cycles || !lots) return [];
     
+    // Debug specifico per peso operations
+    const allPesoOps = operations.filter(op => op.type === 'peso');
+    console.log('🔍 FILTRO DEBUG - Peso operations in operations array:', allPesoOps.length);
+    allPesoOps.forEach(op => {
+      console.log(`💾 Peso operation ID ${op.id}: basketId=${op.basketId}, cycleId=${op.cycleId}, date=${op.date}`);
+    });
+    
     // Filtriamo prima le operazioni secondo i criteri
     const filtered = operations.filter((op: any) => {
       // Filter by search term
@@ -924,6 +931,56 @@ export default function Operations() {
       
       return matchesSearch && matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesCycleState;
     });
+    
+    // Debug peso operations dopo il filtro
+    const filteredPesoOps = filtered.filter(op => op.type === 'peso');
+    console.log('🚨 FILTRO DEBUG - Peso operations dopo il filtro:', filteredPesoOps.length);
+    filteredPesoOps.forEach(op => {
+      console.log(`✅ Peso operation ID ${op.id} RIMASTA dopo filtro: basketId=${op.basketId}, cycleId=${op.cycleId}`);
+    });
+    
+    // Se mancano peso operations, debug ciascun filtro
+    if (allPesoOps.length > filteredPesoOps.length) {
+      console.log('❌ PROBLEMA FILTRO - Peso operations filtrate via:');
+      allPesoOps.forEach(op => {
+        if (!filteredPesoOps.find(f => f.id === op.id)) {
+          // Questa operazione è stata filtrata, debugghiamo perché
+          const matchesSearch = filters.searchTerm === '' || 
+            `${op.basketId}`.includes(filters.searchTerm) || 
+            `${op.cycleId}`.includes(filters.searchTerm) ||
+            (op.basket && `${op.basket.physicalNumber}`.includes(filters.searchTerm));
+          const matchesType = filters.typeFilter === 'all' || op.type === filters.typeFilter;
+          const matchesDate = filters.dateFilter === '' || 
+            format(new Date(op.date), 'yyyy-MM-dd') === filters.dateFilter;
+          const associatedBasket = baskets?.find((b: any) => b.id === op.basketId);
+          const matchesFlupsy = filters.flupsyFilter === 'all' || 
+            (associatedBasket && associatedBasket.flupsyId.toString() === filters.flupsyFilter);
+          const matchesCycle = filters.cycleFilter === 'all' || 
+            op.cycleId.toString() === filters.cycleFilter;
+          const cycle = cycles.find((c: any) => c.id === op.cycleId);
+          const matchesCycleState = filters.cycleStateFilter === 'all' || 
+            (filters.cycleStateFilter === 'active' && cycle && cycle.state === 'active') ||
+            (filters.cycleStateFilter === 'closed' && cycle && cycle.state === 'closed');
+            
+          console.log(`❌ Peso operation ID ${op.id} filtrata:`, {
+            searchTerm: filters.searchTerm,
+            matchesSearch,
+            matchesType,
+            typeFilter: filters.typeFilter,
+            matchesDate, 
+            dateFilter: filters.dateFilter,
+            matchesFlupsy,
+            flupsyFilter: filters.flupsyFilter,
+            associatedBasket: associatedBasket?.id,
+            matchesCycle,
+            cycleFilter: filters.cycleFilter, 
+            matchesCycleState,
+            cycleStateFilter: filters.cycleStateFilter,
+            cycleState: cycle?.state
+          });
+        }
+      });
+    }
     
     // Prima arricchisciamo le operazioni con le informazioni di lotto necessarie
     // Raggruppiamo le operazioni per ciclo per propagare le informazioni dei lotti
@@ -969,8 +1026,19 @@ export default function Operations() {
     // Appiattisci di nuovo l'array delle operazioni con tutti i lotti propagati
     const enrichedOperations = Object.values(opsByCycle).flat();
     
+    // Debug finale prima del return
+    const finalPesoOps = enrichedOperations.filter(op => op.type === 'peso');
+    console.log('🎯 FILTRO DEBUG FINALE - Peso operations da restituire:', finalPesoOps.length);
+    finalPesoOps.forEach(op => {
+      console.log(`🎯 Peso operation ID ${op.id} FINALE: basketId=${op.basketId}, cycleId=${op.cycleId}`);
+    });
+    
     // Ora applichiamo l'ordinamento alle operazioni già arricchite
-    return sortData(enrichedOperations);
+    const sortedData = sortData(enrichedOperations);
+    const sortedPesoOps = sortedData.filter(op => op.type === 'peso');
+    console.log('🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento:', sortedPesoOps.length);
+    
+    return sortedData;
     
   }, [operations, cycles, lots, filters.searchTerm, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, sortConfig]);
   
