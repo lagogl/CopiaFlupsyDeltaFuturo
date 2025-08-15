@@ -243,7 +243,7 @@ export default function Operations() {
     gcTime: 0,
     refetchInterval: false,
     refetchOnWindowFocus: false,
-    retry: false
+    retry: false,
     queryFn: async () => {
       console.log('🚀🚀🚀 FETCHING UNIFIED DATA 🚀🚀🚀');
       try {
