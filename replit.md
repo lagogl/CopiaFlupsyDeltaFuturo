@@ -7,6 +7,7 @@ The FLUPSY Management System is a comprehensive web application for managing aqu
 Preferred communication style: Simple, everyday language.
 
 ## Recent Changes
+- **PWA Configuration Added (August 15, 2025)**: Configured the application as a Progressive Web App (PWA) to enable smartphone installation while maintaining full desktop compatibility. Added service worker, web manifest, install prompt component, and all necessary meta tags. Users can now install the app directly from their smartphone browser for offline access and enhanced NFC functionality.
 - **Application Startup Issues Resolved (August 15, 2025)**: Fixed critical port conflict errors and JavaScript/TypeScript import issues. Converted cache services from JavaScript to TypeScript, resolved EADDRINUSE port 5000 conflicts, and ensured all optimizations and database connections work properly. System now runs reliably without startup errors.
 - **Tooltip Positioning Fix (August 13, 2025)**: Fixed performance indicator tooltips in SpreadsheetOperations.tsx that were appearing hidden on the left side. Changed positioning from `side="left"` to `side="right"` for better visibility and user experience.
 
@@ -44,7 +45,8 @@ Preferred communication style: Simple, everyday language.
 - **External Integration Flow**: Standardized JSON data exchange with API key authentication, including processes for data consistency and conflict resolution.
 - **Spreadsheet Operations Module**: Independent module featuring a mobile-first, editable cell interface for rapid data entry, real-time validation, auto-save, and batch operations. It includes dynamic size calculation, intelligent performance-based sorting of baskets, and visual performance indicators.
 - **Manual Editing**: Enhanced functionality for manual input of mortality percentage and animals per kg, with automatic calculations disabled when manual mode is active.
-- **Deployment Strategy**: Node.js 20 on Replit with PostgreSQL 16 for development; Vite/esbuild for production build with autoscale deployment.
+- **PWA Implementation**: Full Progressive Web App configuration enabling smartphone installation while maintaining desktop compatibility. Includes service worker for offline capabilities, web manifest for app-like experience, and install prompt for seamless mobile deployment. Optimized for NFC functionality on mobile devices.
+- **Deployment Strategy**: Node.js 20 on Replit with PostgreSQL 16 for development; Vite/esbuild for production build with autoscale deployment. PWA assets automatically served for mobile installation.
 - **Branding**: MITO SRL logo integrated consistently after page titles using a reusable `PageHeader` component.
 
 ## External Dependencies

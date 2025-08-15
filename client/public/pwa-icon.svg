@@ -1,0 +1,28 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" fill="none">
+  <!-- Background circolare -->
+  <rect width="512" height="512" rx="96" fill="#1976d2"/>
+  
+  <!-- Icon principale - onde stilizzate per FLUPSY -->
+  <g transform="translate(64, 128)">
+    <!-- Onda principale -->
+    <path d="M32 128s64-128 160-128 128 128 160 128 64-128 160-128" 
+          stroke="white" stroke-width="24" fill="none" stroke-linecap="round"/>
+    
+    <!-- Onda secondaria -->
+    <path d="M32 192s64-96 160-96 128 96 160 96 64-96 160-96" 
+          stroke="white" stroke-width="20" fill="none" stroke-linecap="round" opacity="0.8"/>
+    
+    <!-- Onda terziaria -->
+    <path d="M32 240s64-64 160-64 128 64 160 64 64-64 160-64" 
+          stroke="white" stroke-width="16" fill="none" stroke-linecap="round" opacity="0.6"/>
+    
+    <!-- Elementi cestelli stilizzati -->
+    <circle cx="128" cy="96" r="12" fill="white" opacity="0.9"/>
+    <circle cx="256" cy="160" r="12" fill="white" opacity="0.9"/>
+    <circle cx="384" cy="96" r="12" fill="white" opacity="0.9"/>
+  </g>
+  
+  <!-- Testo FLUPSY -->
+  <text x="256" y="420" font-family="Arial, sans-serif" font-size="48" font-weight="bold" 
+        fill="white" text-anchor="middle">FLUPSY</text>
+</svg>

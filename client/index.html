@@ -3,15 +3,48 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <meta name="description" content="FLUPSY Delta Futuro - Gestione e monitoraggio unità FLUPSY per acquacoltura" />
+    <meta name="description" content="FLUPSY Delta Futuro - Sistema di gestione e monitoraggio per unità FLUPSY per acquacoltura intelligente" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#1976d2" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="default" />
+    <meta name="apple-mobile-web-app-title" content="FLUPSY" />
+    <meta name="application-name" content="FLUPSY" />
+    <meta name="mobile-web-app-capable" content="yes" />
+    
+    <!-- Favicon and Icons -->
     <link rel="icon" type="image/svg+xml" href="data:image/svg+xml;base64,PHN2ZyB4bWxucz0iaHR0cDovL3d3dy53My5vcmcvMjAwMC9zdmciIHdpZHRoPSIyNCIgaGVpZ2h0PSIyNCIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IiMxOTc2ZDIiIHN0cm9rZS13aWR0aD0iMiIgc3Ryb2tlLWxpbmVjYXA9InJvdW5kIiBzdHJva2UtbGluZWpvaW49InJvdW5kIiBjbGFzcz0ibHVjaWRlIGx1Y2lkZS13YXZlcy1zaW5lIj48cGF0aCBkPSJNMiAxMnM0LTggMTAtOCA4IDggMTAgOCI+PC9wYXRoPjwvc3ZnPg==" />
+    <link rel="apple-touch-icon" href="/pwa-icon-192.png" />
+    <link rel="icon" type="image/png" sizes="192x192" href="/pwa-icon-192.png" />
+    <link rel="icon" type="image/png" sizes="512x512" href="/pwa-icon-512.png" />
+    
+    <!-- PWA Manifest -->
+    <link rel="manifest" href="/manifest.json" />
+    
+    <!-- Fonts -->
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Roboto:wght@300;400;500;700&family=Roboto+Condensed:wght@400;700&display=swap" rel="stylesheet">
+    
     <title>FLUPSY Delta Futuro</title>
   </head>
   <body>
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
+    
+    <!-- PWA Service Worker Registration -->
+    <script>
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', function() {
+          navigator.serviceWorker.register('/sw.js')
+            .then(function(registration) {
+              console.log('SW registered with scope: ', registration.scope);
+            }, function(err) {
+              console.log('SW registration failed: ', err);
+            });
+        });
+      }
+    </script>
   </body>
 </html>

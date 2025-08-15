@@ -12,6 +12,7 @@ import {
 import useIsMobile from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
 import NotificationBell from "@/components/NotificationBell";
+import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { useAuth } from "@/hooks/use-auth";
 import { 
   DropdownMenu,
@@ -323,6 +324,8 @@ export default function MainLayout({ children }: MainLayoutProps) {
         {/* Main Content */}
         <main className={`flex-1 overflow-y-auto bg-gray-100 p-1 md:p-3 ${sidebarOpen ? "md:ml-0" : "ml-0"} transition-all duration-300 w-full`}>
           <div className={`transition-all duration-300 ${isMobile && sidebarOpen ? 'opacity-50' : 'opacity-100'} space-y-2`}>
+            {/* PWA Install Prompt */}
+            <PWAInstallPrompt />
             {children}
           </div>
         </main>
