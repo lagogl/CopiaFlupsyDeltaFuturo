@@ -280,25 +280,15 @@ export default function Operations() {
   // Extract all data from unified response
   const operations = unifiedData?.operations || [];
   
-  // Debug immediato per capire il problema
-  console.log('🚑🚑🚑 UNIFIED DATA DEBUG:', {
-    hasUnifiedData: !!unifiedData,
-    operationsLength: unifiedData?.operations?.length || 0,
-    extractedLength: operations.length,
-    unifiedDataKeys: unifiedData ? Object.keys(unifiedData) : 'no data'
-  });
-  
-  if (unifiedData?.operations) {
-    console.log('🚑 UNIFIED OPERATIONS IDs:', unifiedData.operations.map(op => op.id));
-    const unifiedPesoOps = unifiedData.operations.filter(op => op.type === 'peso');
-    console.log('🚑 PESO OPS in UNIFIED:', unifiedPesoOps.length, unifiedPesoOps.map(op => op.id));
+  // DEBUG DIRETTO - DEVE APPARIRE!
+  console.log('=== OPERATIONS DEBUG ===');
+  console.log('unifiedData exists:', !!unifiedData);
+  if (unifiedData) {
+    console.log('unifiedData.operations length:', unifiedData.operations?.length || 'undefined');
+    console.log('unifiedData keys:', Object.keys(unifiedData));
   }
-  
-  if (operations.length > 0) {
-    console.log('📋 EXTRACTED OPERATIONS IDs:', operations.map(op => op.id));
-    const extractedPesoOps = operations.filter(op => op.type === 'peso');
-    console.log('📋 PESO OPS EXTRACTED:', extractedPesoOps.length, extractedPesoOps.map(op => op.id));
-  }
+  console.log('extracted operations length:', operations.length);
+  console.log('========================');
   const baskets = unifiedData?.baskets || [];
   const cycles = unifiedData?.cycles || [];
   const flupsys = unifiedData?.flupsys || [];
