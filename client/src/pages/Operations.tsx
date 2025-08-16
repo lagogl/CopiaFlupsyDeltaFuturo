@@ -267,8 +267,11 @@ export default function Operations() {
         
         console.log('✅✅✅ UNIFIED DATA RECEIVED ✅✅✅');
         console.log('Total operations:', result.data?.operations?.length || 0);
-        console.log('🔍 RAW API RESPONSE:', result);
-        console.log('🔍 All operation IDs:', result.data?.operations?.map(op => op.id) || []);
+        
+        // DEBUG: Log the actual raw response to find where phantom data comes from
+        if (result.data?.operations?.length > 0) {
+          console.error('🚨 PHANTOM DATA SOURCE:', result);
+        }
         
         
         if (result.data?.operations) {
@@ -292,13 +295,7 @@ export default function Operations() {
   
   // FORZA l'uso dei dati unificati - con fallback in caso di errore
   const operations = React.useMemo(() => {
-    const ops = unifiedData?.operations || [];
-    // FORCE EMPTY ARRAY if DB should be empty
-    if (ops.length > 0) {
-      console.warn('⚠️ PHANTOM OPERATIONS DETECTED:', ops.length, 'operations when DB has 0');
-      return []; // FORCE EMPTY to fix phantom data
-    }
-    return ops;
+    return unifiedData?.operations || [];
   }, [unifiedData?.operations]);
 
   // Gestione errori - mostra interfaccia anche in caso di problemi
