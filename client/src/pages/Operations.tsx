@@ -132,6 +132,66 @@ export default function Operations() {
     console.log('✅ Cache pulita completamente');
   }, []); // Solo al mount del componente
 
+  // Funzione per reset completo cache (DEBUG)
+  const handleCompleteReset = async () => {
+    try {
+      console.log('🧹 INIZIO RESET COMPLETO CACHE');
+      
+      // 1. Pulizia React Query cache
+      console.log('1. Pulizia cache React Query...');
+      queryClient.clear();
+      
+      // 2. Pulizia localStorage
+      console.log('2. Pulizia localStorage...');
+      const keysToRemove = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key) {
+          keysToRemove.push(key);
+        }
+      }
+      keysToRemove.forEach(key => localStorage.removeItem(key));
+      console.log(`   Rimosso ${keysToRemove.length} chiavi dal localStorage`);
+      
+      // 3. Pulizia sessionStorage
+      console.log('3. Pulizia sessionStorage...');
+      sessionStorage.clear();
+      
+      // 4. Invalidazione cache server
+      console.log('4. Invalidazione cache server...');
+      await fetch('/api/cache/invalidate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          keys: ['operations', 'baskets', 'cycles', 'flupsys', 'sizes', 'lots', 'sgr', 'unified']
+        })
+      });
+      
+      // 5. Forza refresh dati
+      console.log('5. Refresh forzato dati...');
+      await refetchUnified();
+      
+      console.log('✅ RESET COMPLETO COMPLETATO');
+      
+      toast({
+        title: "Reset Cache Completato",
+        description: "Tutte le cache sono state pulite e i dati ricaricati",
+        duration: 3000
+      });
+      
+    } catch (error) {
+      console.error('❌ Errore durante reset cache:', error);
+      toast({
+        title: "Errore Reset Cache",
+        description: "Si è verificato un errore durante la pulizia delle cache",
+        variant: "destructive",
+        duration: 3000
+      });
+    }
+  };
+
   // WebSocket listeners per aggiornamenti real-time
   useWebSocketMessage('operation_created', () => {
     console.log('📋 OPERATIONS: Nuova operazione creata, aggiorno lista');
@@ -1337,6 +1397,16 @@ export default function Operations() {
           }}>
             <Plus className="h-4 w-4 mr-1" />
             Nuova Operazione
+          </Button>
+          
+          {/* Pulsante Debug Reset Cache */}
+          <Button 
+            onClick={handleCompleteReset}
+            variant="destructive"
+            className="bg-red-600 hover:bg-red-700"
+          >
+            <Trash2 className="h-4 w-4 mr-1" />
+            Reset Cache
           </Button>
         </div>
       </div>
