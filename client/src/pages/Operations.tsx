@@ -270,12 +270,6 @@ export default function Operations() {
         console.log('🔍 RAW API RESPONSE:', result);
         console.log('🔍 All operation IDs:', result.data?.operations?.map(op => op.id) || []);
         
-        // DIAGNOSTIC ALERT for phantom operations
-        if (result.data?.operations?.length > 0) {
-          console.error('🚨🚨🚨 PHANTOM OPERATIONS DETECTED! Database should be empty but API returned:', result.data.operations.length, 'operations');
-          console.error('Phantom operation IDs:', result.data.operations.map(op => op.id));
-          console.error('Phantom operations details:', result.data.operations);
-        }
         
         if (result.data?.operations) {
           const pesoOps = result.data.operations.filter(op => op.type === 'peso');
@@ -299,11 +293,11 @@ export default function Operations() {
   // FORZA l'uso dei dati unificati - con fallback in caso di errore
   const operations = React.useMemo(() => {
     const ops = unifiedData?.operations || [];
-    console.log('🔍 OPERATIONS USEMEMO DEBUG:');
-    console.log('  - unifiedData exists:', !!unifiedData);
-    console.log('  - unifiedData.operations length:', unifiedData?.operations?.length || 0);
-    console.log('  - final ops length:', ops.length);
-    console.log('  - first 3 op IDs:', ops.slice(0, 3).map(op => op.id));
+    // FORCE EMPTY ARRAY if DB should be empty
+    if (ops.length > 0) {
+      console.warn('⚠️ PHANTOM OPERATIONS DETECTED:', ops.length, 'operations when DB has 0');
+      return []; // FORCE EMPTY to fix phantom data
+    }
     return ops;
   }, [unifiedData?.operations]);
 
@@ -1336,27 +1330,6 @@ export default function Operations() {
           
         </div>
         
-        {/* 🚨 EMERGENCY CACHE FIX - PROMINENT ALERT */}
-        {operations.length > 0 && (
-          <div className="mb-4 p-4 bg-red-100 border-2 border-red-500 rounded-lg">
-            <div className="flex items-center justify-between">
-              <div className="text-red-800">
-                <strong>⚠️ OPERAZIONI PHANTOM DETECTATE!</strong><br/>
-                Cache: {operations.length} operazioni | Database: 0 operazioni
-              </div>
-              <button 
-                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 font-bold"
-                onClick={() => {
-                  localStorage.clear();
-                  sessionStorage.clear();
-                  window.location.reload();
-                }}
-              >
-                🚨 FIX CACHE
-              </button>
-            </div>
-          </div>
-        )}
         
         <div className="flex space-x-3">
           <Button onClick={() => {
