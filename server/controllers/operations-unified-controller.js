@@ -10,7 +10,7 @@ import { sql, eq, and, or, between, desc, inArray } from 'drizzle-orm';
 let unifiedCache = {
   data: null,
   timestamp: null,
-  ttl: 30000, // 30 secondi - cache riattivata dopo fix
+  ttl: 300000, // 5 minuti - cache più lunga per ridurre carico
 };
 
 // Cache ripristinata dopo fix problema peso operations
@@ -37,7 +37,7 @@ export async function getOperationsUnified(req, res) {
     console.log('🔄 CACHE MISS: Eseguendo query unificata...');
     const startTime = Date.now();
 
-    // Execute separate optimized queries in parallel
+    // SEMPLIFICATO: solo query essenziali, nessun filtro complesso
     const [
       operationsData,
       basketsData,
@@ -47,25 +47,25 @@ export async function getOperationsUnified(req, res) {
       lotsData,
       sgrData
     ] = await Promise.all([
-      // Operations query
+      // Operations query - solo ordinamento semplice
       db.select().from(operations).orderBy(desc(operations.date)),
       
-      // Baskets query  
+      // Baskets query - query semplice
       db.select().from(baskets),
       
-      // Cycles query
+      // Cycles query - query semplice
       db.select().from(cycles),
       
-      // Flupsys query
+      // Flupsys query - query semplice
       db.select().from(flupsys),
       
-      // Sizes query
+      // Sizes query - query semplice
       db.select().from(sizes),
       
-      // Lots query
+      // Lots query - query semplice  
       db.select().from(lots),
       
-      // SGR query
+      // SGR query - query semplice
       db.select().from(sgr)
     ]);
 

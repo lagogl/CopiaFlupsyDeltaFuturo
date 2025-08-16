@@ -236,18 +236,30 @@ export default function Operations() {
   const { 
     data: unifiedData, 
     isLoading: isLoadingUnified, 
-    refetch: refetchUnified 
+    refetch: refetchUnified,
+    error: unifiedError
   } = useQuery({
-    queryKey: ['UNIFIED_OPERATIONS_EXCLUSIVE', Date.now()], // Chiave unica per evitare conflitti
-    staleTime: 0,
-    gcTime: 0,
+    queryKey: ['operations-unified'], // Chiave semplice e stabile
+    staleTime: 60000, // 1 minuto
+    gcTime: 300000, // 5 minuti
     refetchInterval: false,
     refetchOnWindowFocus: false,
-    retry: false,
+    retry: 2,
     queryFn: async () => {
       console.log('🚀🚀🚀 FETCHING UNIFIED DATA 🚀🚀🚀');
       try {
-        const response = await fetch('/api/operations-unified');
+        const controller = new AbortController();
+        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secondi timeout
+        
+        const response = await fetch('/api/operations-unified', {
+          signal: controller.signal,
+          headers: {
+            'Accept': 'application/json',
+            'Content-Type': 'application/json'
+          }
+        });
+        clearTimeout(timeoutId);
+        
         if (!response.ok) {
           throw new Error(`HTTP Error: ${response.status}`);
         }
@@ -277,10 +289,27 @@ export default function Operations() {
     }
   });
   
-  // FORZA l'uso dei dati unificati - non permettere override da altre query
+  // FORZA l'uso dei dati unificati - con fallback in caso di errore
   const operations = React.useMemo(() => {
     return unifiedData?.operations || [];
   }, [unifiedData?.operations]);
+
+  // Gestione errori - mostra interfaccia anche in caso di problemi
+  React.useEffect(() => {
+    if (unifiedError) {
+      console.error('❌ ERRORE QUERY UNIFICATA:', unifiedError);
+      toast({
+        title: "Problema di connessione",
+        description: "Ricarica la pagina o riprova tra qualche secondo.",
+        variant: "destructive",
+        duration: 5000
+      });
+    }
+  }, [unifiedError]);
+
+  // Stato di caricamento migliorato - mostra interfaccia base anche durante il caricamento
+  const showLoadingFallback = isLoadingUnified && !unifiedData;
+  const hasData = unifiedData && !isLoadingUnified;
   
   // DEBUG FINALE
   console.log('=== FINAL OPERATIONS DEBUG ===');
