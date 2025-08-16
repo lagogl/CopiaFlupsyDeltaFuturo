@@ -1,0 +1,969 @@
+10The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+FlupsyDeltaFuturo:1  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+stripe.js:1  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+value @ stripe.js:1
+value @ stripe.js:1
+value @ stripe.js:1
+value @ stripe.js:1
+value @ stripe.js:1
+(anonymous) @ stripe.js:1
+e @ stripe.js:1
+Vf @ stripe.js:1
+(anonymous) @ stripe.js:1
+Yf @ stripe.js:1
+value @ stripe.js:1
+e @ stripe.js:1
+H_ @ stripe.js:1
+v @ _app-15dea0b614f2a790.js:1
+(anonymous) @ _app-15dea0b614f2a790.js:1
+Promise.then
+S @ _app-15dea0b614f2a790.js:1
+(anonymous) @ _app-15dea0b614f2a790.js:20
+(anonymous) @ _app-15dea0b614f2a790.js:28
+(anonymous) @ _app-15dea0b614f2a790.js:23
+(anonymous) @ _app-15dea0b614f2a790.js:28
+a @ _app-15dea0b614f2a790.js:28
+(anonymous) @ _app-15dea0b614f2a790.js:20
+(anonymous) @ main-ba700ffe51757411.js:1
+n @ main-ba700ffe51757411.js:1
+u @ main-ba700ffe51757411.js:1
+(anonymous) @ main-ba700ffe51757411.js:1
+(anonymous) @ main-ba700ffe51757411.js:1
+(anonymous) @ _app-15dea0b614f2a790.js:20
+oO @ framework-a13a900cf5efc667.js:1
+uB @ framework-a13a900cf5efc667.js:1
+u_ @ framework-a13a900cf5efc667.js:1
+r6 @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uO @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+js?id=AW-11411994397:127  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+Mc @ js?id=AW-11411994397:127
+(anonymous) @ js?id=AW-11411994397:518
+(anonymous) @ js?id=AW-11411994397:517
+n @ _app-15dea0b614f2a790.js:13
+setTimeout
+(anonymous) @ _app-15dea0b614f2a790.js:13
+Rc @ js?id=AW-11411994397:128
+Jy @ js?id=AW-11411994397:517
+Ly @ js?id=AW-11411994397:521
+Py @ js?id=AW-11411994397:525
+Xy @ js?id=AW-11411994397:528
+FJ @ js?id=AW-11411994397:696
+f @ js?id=AW-11411994397:697
+(anonymous) @ js?id=AW-11411994397:699
+qn @ js?id=AW-11411994397:319
+wp @ js?id=AW-11411994397:339
+HJ @ js?id=AW-11411994397:699
+v @ js?id=AW-11411994397:358
+zn @ js?id=AW-11411994397:321
+br @ js?id=AW-11411994397:358
+(anonymous) @ js?id=AW-11411994397:362
+(anonymous) @ js?id=AW-11411994397:360
+config @ js?id=AW-11411994397:609
+uD @ js?id=AW-11411994397:617
+(anonymous) @ js?id=AW-11411994397:623
+(anonymous) @ index.js:49
+(anonymous) @ index.js:86
+(anonymous) @ protos.js:262
+(anonymous) @ index.js:27
+n @ _app-15dea0b614f2a790.js:13
+script
+(anonymous) @ index.js:44
+(anonymous) @ protos.js:261
+(anonymous) @ index.js:59
+(anonymous) @ protos.js:322
+(anonymous) @ index.ts:171
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+(anonymous) @ ajs-destination.bundle.8e6b895db75187c55313.js:1
+(anonymous) @ event-queue.js:50
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ event-queue.js:30
+(anonymous) @ index.ts:410
+(anonymous) @ index.ts:408
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ index.ts:404
+(anonymous) @ index.ts:200
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+ne @ index.ts:116
+(anonymous) @ index.ts:304
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+re @ index.ts:239
+(anonymous) @ index.ts:338
+Promise.then
+(anonymous) @ index.ts:339
+t @ index.ts:307
+n @ index.ts:337
+(anonymous) @ index.ts:389
+(anonymous) @ index.ts:393
+(anonymous) @ standalone-analytics.ts:53
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+se @ standalone-analytics.ts:49
+(anonymous) @ standalone.ts:69
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+de @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+js?id=AW-11411994397:127  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+Mc @ js?id=AW-11411994397:127
+(anonymous) @ js?id=AW-11411994397:518
+(anonymous) @ js?id=AW-11411994397:517
+n @ _app-15dea0b614f2a790.js:13
+setTimeout
+(anonymous) @ _app-15dea0b614f2a790.js:13
+Rc @ js?id=AW-11411994397:128
+Jy @ js?id=AW-11411994397:517
+Ly @ js?id=AW-11411994397:521
+Py @ js?id=AW-11411994397:525
+Xy @ js?id=AW-11411994397:528
+FJ @ js?id=AW-11411994397:696
+f @ js?id=AW-11411994397:697
+(anonymous) @ js?id=AW-11411994397:699
+qn @ js?id=AW-11411994397:319
+wp @ js?id=AW-11411994397:339
+HJ @ js?id=AW-11411994397:699
+v @ js?id=AW-11411994397:358
+zn @ js?id=AW-11411994397:321
+br @ js?id=AW-11411994397:358
+(anonymous) @ js?id=AW-11411994397:362
+(anonymous) @ js?id=AW-11411994397:360
+config @ js?id=AW-11411994397:609
+uD @ js?id=AW-11411994397:617
+(anonymous) @ js?id=AW-11411994397:623
+(anonymous) @ index.js:49
+(anonymous) @ index.js:86
+(anonymous) @ protos.js:262
+(anonymous) @ index.js:27
+n @ _app-15dea0b614f2a790.js:13
+script
+(anonymous) @ index.js:44
+(anonymous) @ protos.js:261
+(anonymous) @ index.js:59
+(anonymous) @ protos.js:322
+(anonymous) @ index.ts:171
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+(anonymous) @ ajs-destination.bundle.8e6b895db75187c55313.js:1
+(anonymous) @ event-queue.js:50
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ event-queue.js:30
+(anonymous) @ index.ts:410
+(anonymous) @ index.ts:408
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ index.ts:404
+(anonymous) @ index.ts:200
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+ne @ index.ts:116
+(anonymous) @ index.ts:304
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+re @ index.ts:239
+(anonymous) @ index.ts:338
+Promise.then
+(anonymous) @ index.ts:339
+t @ index.ts:307
+n @ index.ts:337
+(anonymous) @ index.ts:389
+(anonymous) @ index.ts:393
+(anonymous) @ standalone-analytics.ts:53
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+se @ standalone-analytics.ts:49
+(anonymous) @ standalone.ts:69
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+de @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+js?id=AW-11411994397:518  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+q @ js?id=AW-11411994397:518
+(anonymous) @ js?id=AW-11411994397:519
+(anonymous) @ js?id=AW-11411994397:517
+n @ _app-15dea0b614f2a790.js:13
+setTimeout
+(anonymous) @ _app-15dea0b614f2a790.js:13
+Rc @ js?id=AW-11411994397:128
+Jy @ js?id=AW-11411994397:517
+Ly @ js?id=AW-11411994397:521
+Py @ js?id=AW-11411994397:525
+Xy @ js?id=AW-11411994397:528
+FJ @ js?id=AW-11411994397:696
+f @ js?id=AW-11411994397:697
+(anonymous) @ js?id=AW-11411994397:699
+qn @ js?id=AW-11411994397:319
+wp @ js?id=AW-11411994397:339
+HJ @ js?id=AW-11411994397:699
+v @ js?id=AW-11411994397:358
+zn @ js?id=AW-11411994397:321
+br @ js?id=AW-11411994397:358
+(anonymous) @ js?id=AW-11411994397:362
+(anonymous) @ js?id=AW-11411994397:360
+config @ js?id=AW-11411994397:609
+uD @ js?id=AW-11411994397:617
+(anonymous) @ js?id=AW-11411994397:623
+(anonymous) @ index.js:49
+(anonymous) @ index.js:86
+(anonymous) @ protos.js:262
+(anonymous) @ index.js:27
+n @ _app-15dea0b614f2a790.js:13
+script
+(anonymous) @ index.js:44
+(anonymous) @ protos.js:261
+(anonymous) @ index.js:59
+(anonymous) @ protos.js:322
+(anonymous) @ index.ts:171
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+(anonymous) @ ajs-destination.bundle.8e6b895db75187c55313.js:1
+(anonymous) @ event-queue.js:50
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ event-queue.js:30
+(anonymous) @ index.ts:410
+(anonymous) @ index.ts:408
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+(anonymous) @ index.ts:404
+(anonymous) @ index.ts:200
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+ne @ index.ts:116
+(anonymous) @ index.ts:304
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+s @ tslib.es6.js:73
+Promise.then
+a @ tslib.es6.js:76
+(anonymous) @ tslib.es6.js:76
+u @ tslib.es6.js:72
+re @ index.ts:239
+(anonymous) @ index.ts:338
+Promise.then
+(anonymous) @ index.ts:339
+t @ index.ts:307
+n @ index.ts:337
+(anonymous) @ index.ts:389
+(anonymous) @ index.ts:393
+(anonymous) @ standalone-analytics.ts:53
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+se @ standalone-analytics.ts:49
+(anonymous) @ standalone.ts:69
+(anonymous) @ tslib.es6.js:103
+(anonymous) @ tslib.es6.js:108
+(anonymous) @ tslib.es6.js:80
+u @ tslib.es6.js:72
+de @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+(anonymous) @ sdk.min.js:1
+recaptcha__it.js:664  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+(anonymous) @ recaptcha__it.js:664
+(anonymous) @ recaptcha__it.js:1494
+(anonymous) @ recaptcha__it.js:636
+(anonymous) @ recaptcha__it.js:556
+(anonymous) @ recaptcha__it.js:58
+WR @ recaptcha__it.js:1074
+(anonymous) @ recaptcha__it.js:333
+(anonymous) @ recaptcha__it.js:687
+(anonymous) @ recaptcha__it.js:265
+(anonymous) @ recaptcha__it.js:266
+(anonymous) @ recaptcha__it.js:727
+(anonymous) @ recaptcha__it.js:266
+(anonymous) @ recaptcha__it.js:1515
+(anonymous) @ recaptcha__it.js:1525
+recaptcha__it.js:703  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+(anonymous) @ recaptcha__it.js:703
+(anonymous) @ recaptcha__it.js:94
+(anonymous) @ recaptcha__it.js:721
+(anonymous) @ recaptcha__it.js:662
+(anonymous) @ recaptcha__it.js:545
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:632
+(anonymous) @ recaptcha__it.js:721
+(anonymous) @ recaptcha__it.js:108
+(anonymous) @ recaptcha__it.js:662
+(anonymous) @ recaptcha__it.js:545
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:632
+(anonymous) @ recaptcha__it.js:108
+(anonymous) @ recaptcha__it.js:1358
+(anonymous) @ recaptcha__it.js:662
+(anonymous) @ recaptcha__it.js:545
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:632
+(anonymous) @ recaptcha__it.js:1358
+(anonymous) @ recaptcha__it.js:1512
+Promise.then
+(anonymous) @ recaptcha__it.js:1511
+Promise.then
+(anonymous) @ recaptcha__it.js:1511
+(anonymous) @ recaptcha__it.js:662
+(anonymous) @ recaptcha__it.js:545
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:632
+(anonymous) @ recaptcha__it.js:1511
+(anonymous) @ recaptcha__it.js:1162
+(anonymous) @ recaptcha__it.js:1514
+(anonymous) @ recaptcha__it.js:681
+(anonymous) @ 6747e1e9-749b0ee9329a6dc0.js:1
+Promise.then
+(anonymous) @ recaptcha__it.js:687
+(anonymous) @ recaptcha__it.js:265
+(anonymous) @ recaptcha__it.js:266
+(anonymous) @ recaptcha__it.js:727
+(anonymous) @ recaptcha__it.js:266
+(anonymous) @ recaptcha__it.js:1515
+(anonymous) @ recaptcha__it.js:1525
+recaptcha__it.js:703  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+(anonymous) @ recaptcha__it.js:703
+(anonymous) @ recaptcha__it.js:94
+(anonymous) @ recaptcha__it.js:721
+(anonymous) @ recaptcha__it.js:662
+(anonymous) @ recaptcha__it.js:545
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:632
+(anonymous) @ recaptcha__it.js:721
+(anonymous) @ recaptcha__it.js:108
+(anonymous) @ recaptcha__it.js:662
+(anonymous) @ recaptcha__it.js:545
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:632
+(anonymous) @ recaptcha__it.js:108
+(anonymous) @ recaptcha__it.js:1358
+(anonymous) @ recaptcha__it.js:662
+(anonymous) @ recaptcha__it.js:545
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:632
+(anonymous) @ recaptcha__it.js:1358
+(anonymous) @ recaptcha__it.js:1512
+Promise.then
+(anonymous) @ recaptcha__it.js:1511
+Promise.then
+(anonymous) @ recaptcha__it.js:1511
+(anonymous) @ recaptcha__it.js:662
+(anonymous) @ recaptcha__it.js:545
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:442
+(anonymous) @ recaptcha__it.js:632
+(anonymous) @ recaptcha__it.js:1511
+(anonymous) @ recaptcha__it.js:1162
+(anonymous) @ recaptcha__it.js:1514
+(anonymous) @ recaptcha__it.js:681
+(anonymous) @ 6747e1e9-749b0ee9329a6dc0.js:1
+Promise.then
+(anonymous) @ recaptcha__it.js:687
+(anonymous) @ recaptcha__it.js:265
+(anonymous) @ recaptcha__it.js:266
+(anonymous) @ recaptcha__it.js:727
+(anonymous) @ recaptcha__it.js:266
+(anonymous) @ recaptcha__it.js:1515
+(anonymous) @ recaptcha__it.js:1525
+stripe.js:1  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+value @ stripe.js:1
+value @ stripe.js:1
+value @ stripe.js:1
+n @ _app-15dea0b614f2a790.js:13
+setTimeout
+(anonymous) @ _app-15dea0b614f2a790.js:13
+t @ stripe.js:1
+(anonymous) @ stripe.js:1
+t @ stripe.js:1
+(anonymous) @ stripe.js:1
+n @ _app-15dea0b614f2a790.js:13
+setTimeout
+(anonymous) @ _app-15dea0b614f2a790.js:13
+e @ stripe.js:1
+Ae @ stripe.js:1
+9877 @ stripe.js:1
+e @ stripe.js:1
+(anonymous) @ stripe.js:1
+(anonymous) @ stripe.js:1
+framework-a13a900cf5efc667.js:1  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+e @ framework-a13a900cf5efc667.js:1
+e @ framework-a13a900cf5efc667.js:1
+e @ framework-a13a900cf5efc667.js:1
+oK @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+oQ @ framework-a13a900cf5efc667.js:1
+oq @ framework-a13a900cf5efc667.js:1
+10The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+10The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+_app-15dea0b614f2a790.js:13 
+      /////////////////////
+   ///////////////////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////        Curious and driven?
+  ///////////////@@@@@@@///////        Work with us!
+  ///////////////@@@@@@@///////
+  ///////////////@@@@@@@///////        https://join.replit.com/hack.with.us
+  ////////@@@@@@@//////////////
+  ////////@@@@@@@//////////////
+  ////////@@@@@@#//////////////
+   ///////////////////////////
+      /////////////////////
+      
+FlupsyDeltaFuturo:1  The source list for the Content Security Policy directive 'default-src' contains an invalid source: ''unsafe-dynamic''. It will be ignored.
+FlupsyDeltaFuturo:1  The Content-Security-Policy directive 'default-src' contains 'report-uri' as a source expression. Did you want to add it as a directive and forget a semicolon?
+FlupsyDeltaFuturo:1  The source list for Content Security Policy directive 'default-src' contains a source with an invalid path: '/api/4509669501698048/security/?sentry_key=7eb3d90eb4660416caf507087367e67e'. The query component, including the '?', will be ignored.
+_app-15dea0b614f2a790.js:13 [LaunchDarkly] LaunchDarkly client initialized
+17Tracking Prevention blocked access to storage for <URL>.
+framework-a13a900cf5efc667.js:1  Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'ambient-light-sensor'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'battery'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'execution-while-not-rendered'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'execution-while-out-of-viewport'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'layout-animations'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'legacy-image-formats'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'navigation-override'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'oversized-images'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'publickey-credentials'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'speaker-selection'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'unoptimized-images'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'unsized-media'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Unrecognized feature: 'pointer-lock'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Allow attribute will take precedence over 'allowfullscreen'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+framework-a13a900cf5efc667.js:1  Allow attribute will take precedence over 'allowpaymentrequest'.
+_ @ framework-a13a900cf5efc667.js:1
+(anonymous) @ framework-a13a900cf5efc667.js:1
+uD @ framework-a13a900cf5efc667.js:1
+uI @ framework-a13a900cf5efc667.js:1
+uM @ framework-a13a900cf5efc667.js:1
+uS @ framework-a13a900cf5efc667.js:1
+C @ framework-a13a900cf5efc667.js:1
+z @ framework-a13a900cf5efc667.js:1
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Error while parsing the 'sandbox' attribute: 'allow-downloads-without-user-activation' is an invalid sandbox flag.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'ambient-light-sensor'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'battery'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'execution-while-not-rendered'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'execution-while-out-of-viewport'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'layout-animations'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'legacy-image-formats'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'navigation-override'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'oversized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'publickey-credentials'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'speaker-selection'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'unoptimized-images'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Unrecognized feature: 'unsized-media'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Allow attribute will take precedence over 'allowfullscreen'.
+workspace_iframe.html?initialPath=%2F&id=%3Arb8%3A:32  Allow attribute will take precedence over 'allowpaymentrequest'.
+client:536  WebSocket connection to 'wss://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/?token=t2DpxdqDMJQk' failed: 
+setupWebSocket @ client:536
+(anonymous) @ client:531
+client:536  Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=t2DpxdqDMJQk' is invalid.
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)
+setupWebSocket @ client:536
+fallback @ client:509
+(anonymous) @ client:555
+websocket.ts:60 Debug WebSocket URL construction: {protocol: 'https:', host: 'b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev', hostname: 'b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev', port: '', href: 'https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/'}
+websocket.ts:106 Tentativo di connessione WebSocket: wss://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/ws
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:136 Query request to: /api/baskets?includeAll=true
+queryClient.ts:136 Query request to: /api/cycles?includeAll=true
+queryClient.ts:136 Query request to: /api/operations?includeAll=true
+queryClient.ts:136 Query request to: /api/lots?includeAll=true
+queryClient.ts:44 API Response status: 200
+web-client-content-script.js:2  Uncaught TypeError: Failed to execute 'observe' on 'MutationObserver': parameter 1 is not of type 'Node'.
+    at HTMLIFrameElement.<anonymous> (web-client-content-script.js:2:534973)
+(anonymous) @ web-client-content-script.js:2
+(index):212 SW registered with scope:  https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+websocket.ts:157 WebSocket connesso
+websocket.ts:170 Ricevuto messaggio WebSocket: {type: 'connection', message: 'Connesso al server in tempo reale'}
+3sw.js:62  Uncaught (in promise) TypeError: Failed to execute 'put' on 'Cache': Vary header contains *
+    at sw.js:62:21
+(anonymous) @ sw.js:62
+Promise.then
+(anonymous) @ sw.js:61
+Promise.then
+(anonymous) @ sw.js:50
+Promise.then
+(anonymous) @ sw.js:43
+queryClient.ts:136 Query request to: /api/flupsys
+queryClient.ts:136 Query request to: /api/flupsys?includeAll=true
+queryClient.ts:136 Query request to: /api/operations?includeAll=true&pageSize=1000
+queryClient.ts:136 Query request to: /api/sizes
+queryClient.ts:136 Query request to: /api/size-predictions?size=TP-3000&days=14
+Operations.tsx:607 Stato iniziale operazioni: []
+Operations.tsx:616 Lotti disponibili: []
+Operations.tsx:234 🚀 UNIFIED: Caricamento dati unificati...
+Operations.tsx:289 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'all', basketsCount: 0, cyclesCount: 0, timestamp: '2025-08-16T13:54:18.288Z'}
+Operations.tsx:607 Stato iniziale operazioni: []
+Operations.tsx:616 Lotti disponibili: []
+Operations.tsx:289 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'all', basketsCount: 0, cyclesCount: 0, timestamp: '2025-08-16T13:54:18.360Z'}
+Operations.tsx:607 Stato iniziale operazioni: []
+Operations.tsx:616 Lotti disponibili: []
+Operations.tsx:240 ✅ UNIFIED: Dati caricati {operations: 10, fromCache: false}
+Operations.tsx:607 Stato iniziale operazioni: (10) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+Operations.tsx:616 Lotti disponibili: (3) [{…}, {…}, {…}]
+Operations.tsx:636 Lotto trovato per operazione 11: undefined
+Operations.tsx:636 Lotto trovato per operazione 8: undefined
+Operations.tsx:636 Lotto trovato per operazione 7: undefined
+Operations.tsx:636 Lotto trovato per operazione 6: undefined
+Operations.tsx:636 Lotto trovato per operazione 4: undefined
+Operations.tsx:636 Lotto trovato per operazione 5: undefined
+Operations.tsx:636 Lotto trovato per operazione 1: undefined
+Operations.tsx:636 Lotto trovato per operazione 3: undefined
+Operations.tsx:636 Lotto trovato per operazione 2: undefined
+Operations.tsx:677 Propagato lotto 'undefined' all'operazione 32 (forward)
+Operations.tsx:790 Operazione di esempio: {id: 32, date: '2025-08-15', type: 'peso', basketId: 1, cycleId: 1, …}
+Operations.tsx:1913 Calcolo peso medio per operazione 4: 50g / 175000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 5: 62g / 215000 animali * 1000 = 0.28837209302325584mg
+Operations.tsx:1913 Calcolo peso medio per operazione 6: 70g / 245000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 1: 45g / 180000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 2: 55g / 220000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 3: 62g / 250000 animali * 1000 = 0.248mg
+Operations.tsx:289 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'all', basketsCount: 7, cyclesCount: 3, timestamp: '2025-08-16T13:54:18.504Z'}
+Operations.tsx:1913 Calcolo peso medio per operazione 4: 50g / 175000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 5: 62g / 215000 animali * 1000 = 0.28837209302325584mg
+Operations.tsx:1913 Calcolo peso medio per operazione 6: 70g / 245000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 1: 45g / 180000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 2: 55g / 220000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 3: 62g / 250000 animali * 1000 = 0.248mg
+Operations.tsx:1913 Calcolo peso medio per operazione 4: 50g / 175000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 5: 62g / 215000 animali * 1000 = 0.28837209302325584mg
+Operations.tsx:1913 Calcolo peso medio per operazione 6: 70g / 245000 animali * 1000 = 0.28571428571428575mg
+Operations.tsx:1913 Calcolo peso medio per operazione 1: 45g / 180000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 2: 55g / 220000 animali * 1000 = 0.25mg
+Operations.tsx:1913 Calcolo peso medio per operazione 3: 62g / 250000 animali * 1000 = 0.248mg
+sw.js:62  Uncaught (in promise) TypeError: Failed to execute 'put' on 'Cache': Vary header contains *
+    at sw.js:62:21
+(anonymous) @ sw.js:62
+Promise.then
+(anonymous) @ sw.js:61
+Promise.then
+(anonymous) @ sw.js:50
+Promise.then
+(anonymous) @ sw.js:43
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:44 API Response status: 200
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
