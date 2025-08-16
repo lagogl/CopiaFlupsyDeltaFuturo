@@ -348,10 +348,11 @@ export default function Operations() {
           })));
         }
         
-        return result.data;
+        return result.data || { operations: [], baskets: [], cycles: [], flupsys: [], sizes: [], lots: [], sgr: [] };
       } catch (error) {
         console.error('❌❌❌ UNIFIED FETCH ERROR:', error);
-        throw error;
+        // Ritorna dati vuoti invece di far fallire
+        return { operations: [], baskets: [], cycles: [], flupsys: [], sizes: [], lots: [], sgr: [] };
       }
     }
   });
@@ -1413,14 +1414,15 @@ export default function Operations() {
             Nuova Operazione
           </Button>
           
-          {/* Pulsante Debug Reset Cache */}
+          {/* Pulsante Debug Reset Cache - SEMPRE VISIBILE per Edge */}
           <Button 
             onClick={handleCompleteReset}
             variant="destructive"
-            className="bg-red-600 hover:bg-red-700"
+            size="sm"
+            className="bg-red-600 hover:bg-red-700 text-white font-bold border-2 border-red-800 shadow-lg"
           >
-            <Trash2 className="h-4 w-4 mr-1" />
-            Reset Cache
+            <Trash2 className="h-4 w-4 mr-2" />
+            🧹 PULISCI CACHE
           </Button>
         </div>
       </div>
