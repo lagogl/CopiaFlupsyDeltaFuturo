@@ -270,6 +270,13 @@ export default function Operations() {
         console.log('🔍 RAW API RESPONSE:', result);
         console.log('🔍 All operation IDs:', result.data?.operations?.map(op => op.id) || []);
         
+        // DIAGNOSTIC ALERT for phantom operations
+        if (result.data?.operations?.length > 0) {
+          console.error('🚨🚨🚨 PHANTOM OPERATIONS DETECTED! Database should be empty but API returned:', result.data.operations.length, 'operations');
+          console.error('Phantom operation IDs:', result.data.operations.map(op => op.id));
+          console.error('Phantom operations details:', result.data.operations);
+        }
+        
         if (result.data?.operations) {
           const pesoOps = result.data.operations.filter(op => op.type === 'peso');
           console.log('🎯🎯🎯 PESO OPERATIONS FOUND:', pesoOps.length);
@@ -291,7 +298,13 @@ export default function Operations() {
   
   // FORZA l'uso dei dati unificati - con fallback in caso di errore
   const operations = React.useMemo(() => {
-    return unifiedData?.operations || [];
+    const ops = unifiedData?.operations || [];
+    console.log('🔍 OPERATIONS USEMEMO DEBUG:');
+    console.log('  - unifiedData exists:', !!unifiedData);
+    console.log('  - unifiedData.operations length:', unifiedData?.operations?.length || 0);
+    console.log('  - final ops length:', ops.length);
+    console.log('  - first 3 op IDs:', ops.slice(0, 3).map(op => op.id));
+    return ops;
   }, [unifiedData?.operations]);
 
   // Gestione errori - mostra interfaccia anche in caso di problemi
@@ -1320,6 +1333,45 @@ export default function Operations() {
               </>
             )}
           </Button>
+          
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="ml-2 bg-red-100 hover:bg-red-200 border-red-300 text-red-700" 
+            onClick={async () => {
+              try {
+                console.log('🚨 CACHE DEBUG: Avvio pulizia aggressiva cache...');
+                
+                // Pulizia aggressiva React Query
+                queryClient.clear();
+                queryClient.invalidateQueries();
+                queryClient.refetchQueries();
+                
+                // Pulizia localStorage/sessionStorage
+                localStorage.clear();
+                sessionStorage.clear();
+                
+                // Forza invalidazione cache server
+                await fetch('/api/cache/invalidate', { method: 'POST' });
+                
+                // Refresh pagina completo
+                window.location.reload();
+                
+                console.log('🚨 CACHE DEBUG: Pulizia completata, ricaricando pagina...');
+              } catch (error) {
+                console.error('Errore pulizia cache:', error);
+              }
+            }}
+          >
+            🚨 DEBUG CACHE
+          </Button>
+          
+          <div className="ml-4 text-sm text-gray-600">
+            DB: {unifiedData?.pagination?.totalOperations || 0} ops | Cache: {operations.length} ops
+            {(unifiedData?.pagination?.totalOperations !== operations.length) && (
+              <span className="ml-2 text-red-600 font-bold">⚠️ MISMATCH!</span>
+            )}
+          </div>
         </div>
         <div className="flex space-x-3">
           <Button onClick={() => {
