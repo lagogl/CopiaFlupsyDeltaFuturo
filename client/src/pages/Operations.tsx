@@ -1336,51 +1336,27 @@ export default function Operations() {
           
         </div>
         
-        {/* DEBUG CACHE SECTION - PROMINENT POSITION */}
-        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-4">
-              <div className="text-sm text-gray-700">
-                📊 <strong>DB:</strong> {unifiedData?.pagination?.totalOperations || 0} operazioni | 
-                <strong>Cache:</strong> {operations.length} operazioni
-                {(unifiedData?.pagination?.totalOperations !== operations.length) && (
-                  <span className="ml-2 text-red-600 font-bold text-base">⚠️ MISMATCH DETECTATO!</span>
-                )}
+        {/* 🚨 EMERGENCY CACHE FIX - PROMINENT ALERT */}
+        {operations.length > 0 && (
+          <div className="mb-4 p-4 bg-red-100 border-2 border-red-500 rounded-lg">
+            <div className="flex items-center justify-between">
+              <div className="text-red-800">
+                <strong>⚠️ OPERAZIONI PHANTOM DETECTATE!</strong><br/>
+                Cache: {operations.length} operazioni | Database: 0 operazioni
               </div>
-            </div>
-            <Button 
-              variant="destructive" 
-              size="sm" 
-              className="bg-red-600 hover:bg-red-700 text-white font-bold"
-              onClick={async () => {
-                try {
-                  console.log('🚨 CACHE DEBUG: Avvio pulizia aggressiva cache...');
-                  
-                  // Pulizia aggressiva React Query
-                  queryClient.clear();
-                  queryClient.invalidateQueries();
-                  queryClient.refetchQueries();
-                  
-                  // Pulizia localStorage/sessionStorage
+              <button 
+                className="bg-red-600 text-white px-4 py-2 rounded hover:bg-red-700 font-bold"
+                onClick={() => {
                   localStorage.clear();
                   sessionStorage.clear();
-                  
-                  // Forza invalidazione cache server
-                  await fetch('/api/cache/invalidate', { method: 'POST' });
-                  
-                  // Refresh pagina completo
                   window.location.reload();
-                  
-                  console.log('🚨 CACHE DEBUG: Pulizia completata, ricaricando pagina...');
-                } catch (error) {
-                  console.error('Errore pulizia cache:', error);
-                }
-              }}
-            >
-              🚨 RISOLVI CACHE PHANTOM
-            </Button>
+                }}
+              >
+                🚨 FIX CACHE
+              </button>
+            </div>
           </div>
-        </div>
+        )}
         
         <div className="flex space-x-3">
           <Button onClick={() => {
