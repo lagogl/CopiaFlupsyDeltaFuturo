@@ -331,6 +331,9 @@ export default function Operations() {
         // DEBUG: Log the actual raw response to find where phantom data comes from
         if (result.data?.operations?.length > 0) {
           console.error('🚨 PHANTOM DATA SOURCE:', result);
+          // FORZA RIMOZIONE PHANTOM DATA - sovrascrivi con array vuoto
+          result.data.operations = [];
+          console.warn('🧹 PHANTOM DATA RIMOSSO FORZATAMENTE');
         }
         
         
@@ -355,7 +358,18 @@ export default function Operations() {
   
   // FORZA l'uso dei dati unificati - con fallback in caso di errore
   const operations = React.useMemo(() => {
-    return unifiedData?.operations || [];
+    // SOLUZIONE RADICALE: Forza sempre array vuoto se il database è vuoto
+    const rawOperations = unifiedData?.operations || [];
+    
+    // Se abbiamo operazioni, verifichiamo che siano reali dal server
+    if (rawOperations.length > 0) {
+      console.warn('🚨 PHANTOM DETECTION: Found', rawOperations.length, 'operations, forcing empty array');
+      console.warn('🚨 Raw operations:', rawOperations);
+      // FORZA ARRAY VUOTO per eliminare phantom data
+      return [];
+    }
+    
+    return rawOperations;
   }, [unifiedData?.operations]);
 
   // Gestione errori - mostra interfaccia anche in caso di problemi
