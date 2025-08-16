@@ -1334,45 +1334,54 @@ export default function Operations() {
             )}
           </Button>
           
-          <Button 
-            variant="outline" 
-            size="sm" 
-            className="ml-2 bg-red-100 hover:bg-red-200 border-red-300 text-red-700" 
-            onClick={async () => {
-              try {
-                console.log('🚨 CACHE DEBUG: Avvio pulizia aggressiva cache...');
-                
-                // Pulizia aggressiva React Query
-                queryClient.clear();
-                queryClient.invalidateQueries();
-                queryClient.refetchQueries();
-                
-                // Pulizia localStorage/sessionStorage
-                localStorage.clear();
-                sessionStorage.clear();
-                
-                // Forza invalidazione cache server
-                await fetch('/api/cache/invalidate', { method: 'POST' });
-                
-                // Refresh pagina completo
-                window.location.reload();
-                
-                console.log('🚨 CACHE DEBUG: Pulizia completata, ricaricando pagina...');
-              } catch (error) {
-                console.error('Errore pulizia cache:', error);
-              }
-            }}
-          >
-            🚨 DEBUG CACHE
-          </Button>
-          
-          <div className="ml-4 text-sm text-gray-600">
-            DB: {unifiedData?.pagination?.totalOperations || 0} ops | Cache: {operations.length} ops
-            {(unifiedData?.pagination?.totalOperations !== operations.length) && (
-              <span className="ml-2 text-red-600 font-bold">⚠️ MISMATCH!</span>
-            )}
+        </div>
+        
+        {/* DEBUG CACHE SECTION - PROMINENT POSITION */}
+        <div className="mb-4 p-3 bg-yellow-50 border border-yellow-200 rounded-lg">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-4">
+              <div className="text-sm text-gray-700">
+                📊 <strong>DB:</strong> {unifiedData?.pagination?.totalOperations || 0} operazioni | 
+                <strong>Cache:</strong> {operations.length} operazioni
+                {(unifiedData?.pagination?.totalOperations !== operations.length) && (
+                  <span className="ml-2 text-red-600 font-bold text-base">⚠️ MISMATCH DETECTATO!</span>
+                )}
+              </div>
+            </div>
+            <Button 
+              variant="destructive" 
+              size="sm" 
+              className="bg-red-600 hover:bg-red-700 text-white font-bold"
+              onClick={async () => {
+                try {
+                  console.log('🚨 CACHE DEBUG: Avvio pulizia aggressiva cache...');
+                  
+                  // Pulizia aggressiva React Query
+                  queryClient.clear();
+                  queryClient.invalidateQueries();
+                  queryClient.refetchQueries();
+                  
+                  // Pulizia localStorage/sessionStorage
+                  localStorage.clear();
+                  sessionStorage.clear();
+                  
+                  // Forza invalidazione cache server
+                  await fetch('/api/cache/invalidate', { method: 'POST' });
+                  
+                  // Refresh pagina completo
+                  window.location.reload();
+                  
+                  console.log('🚨 CACHE DEBUG: Pulizia completata, ricaricando pagina...');
+                } catch (error) {
+                  console.error('Errore pulizia cache:', error);
+                }
+              }}
+            >
+              🚨 RISOLVI CACHE PHANTOM
+            </Button>
           </div>
         </div>
+        
         <div className="flex space-x-3">
           <Button onClick={() => {
             // Resetta qualsiasi operazione precedentemente selezionata
