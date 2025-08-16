@@ -1,0 +1,101 @@
+PESO in final operations: 0 - IDs: []
+index-Czg5BrTt.js:884 ================================
+index-Czg5BrTt.js:884 Stato iniziale operazioni: []
+index-Czg5BrTt.js:884 IDs operazioni: []
+index-Czg5BrTt.js:884 PESO operations count: 0
+index-Czg5BrTt.js:884 Mapping operazioni: []
+index-Czg5BrTt.js:884 Lotti disponibili: []
+index-Czg5BrTt.js:884 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+index-Czg5BrTt.js:884 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+index-Czg5BrTt.js:884 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+index-Czg5BrTt.js:884 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+index-Czg5BrTt.js:884 🚀🚀🚀 FETCHING UNIFIED DATA 🚀🚀🚀
+index-Czg5BrTt.js:884 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'active', basketsCount: 0, cyclesCount: 0, timestamp: '2025-08-16T13:52:17.380Z'}
+index-Czg5BrTt.js:884 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+index-Czg5BrTt.js:884 === FINAL OPERATIONS DEBUG ===
+index-Czg5BrTt.js:884 Unified data exists: false
+index-Czg5BrTt.js:884 Operations from unified: 0
+index-Czg5BrTt.js:884 Final operations array: 0
+index-Czg5BrTt.js:884 PESO in final operations: 0 - IDs: []
+index-Czg5BrTt.js:884 ================================
+index-Czg5BrTt.js:884 Stato iniziale operazioni: []
+index-Czg5BrTt.js:884 IDs operazioni: []
+index-Czg5BrTt.js:884 PESO operations count: 0
+index-Czg5BrTt.js:884 Mapping operazioni: []
+index-Czg5BrTt.js:884 Lotti disponibili: []
+index-Czg5BrTt.js:884 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+index-Czg5BrTt.js:884 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+index-Czg5BrTt.js:884 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+index-Czg5BrTt.js:884 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+index-Czg5BrTt.js:884 ✅✅✅ UNIFIED DATA RECEIVED ✅✅✅
+index-Czg5BrTt.js:884 Total operations: 0
+index-Czg5BrTt.js:884 🔍 RAW API RESPONSE: {success: true, data: {…}, fromCache: true, cacheAge: 528}
+index-Czg5BrTt.js:884 🔍 All operation IDs: []
+index-Czg5BrTt.js:884 🎯🎯🎯 PESO OPERATIONS FOUND: 0
+index-Czg5BrTt.js:884 Peso operations details: []
+index-Czg5BrTt.js:884 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+index-Czg5BrTt.js:884 === FINAL OPERATIONS DEBUG ===
+index-Czg5BrTt.js:884 Unified data exists: false
+index-Czg5BrTt.js:884 Operations from unified: 0
+index-Czg5BrTt.js:884 Final operations array: 0
+index-Czg5BrTt.js:884 PESO in final operations: 0 - IDs: []
+index-Czg5BrTt.js:884 ================================
+index-Czg5BrTt.js:884 Stato iniziale operazioni: []
+index-Czg5BrTt.js:884 IDs operazioni: []
+index-Czg5BrTt.js:884 PESO operations count: 0
+index-Czg5BrTt.js:884 Mapping operazioni: []
+index-Czg5BrTt.js:884 Lotti disponibili: []
+index-Czg5BrTt.js:884 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+index-Czg5BrTt.js:884 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+index-Czg5BrTt.js:884 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+index-Czg5BrTt.js:884 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+index-Czg5BrTt.js:884 🚀🚀🚀 FETCHING UNIFIED DATA 🚀🚀🚀
+index-Czg5BrTt.js:884 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'active', basketsCount: 0, cyclesCount: 0, timestamp: '2025-08-16T13:52:17.408Z'}
+index-Czg5BrTt.js:884 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+index-Czg5BrTt.js:884 === FINAL OPERATIONS DEBUG ===
+index-Czg5BrTt.js:884 Unified data exists: false
+index-Czg5BrTt.js:884 Operations from unified: 0
+index-Czg5BrTt.js:884 Final operations array: 0
+index-Czg5BrTt.js:884 PESO in final operations: 0 - IDs: []
+index-Czg5BrTt.js:884 ================================
+index-Czg5BrTt.js:884 Stato iniziale operazioni: []
+index-Czg5BrTt.js:884 IDs operazioni: []
+index-Czg5BrTt.js:884 PESO operations count: 0
+index-Czg5BrTt.js:884 Mapping operazioni: []
+index-Czg5BrTt.js:884 Lotti disponibili: []
+index-Czg5BrTt.js:884 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+index-Czg5BrTt.js:884 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+index-Czg5BrTt.js:884 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+index-Czg5BrTt.js:884 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+index-Czg5BrTt.js:884 ✅✅✅ UNIFIED DATA RECEIVED ✅✅✅
+index-Czg5BrTt.js:884 Total operations: 0
+index-Czg5BrTt.js:884 🔍 RAW API RESPONSE: {success: true, data: {…}, fromCache: true, cacheAge: 528}
+index-Czg5BrTt.js:884 🔍 All operation IDs: []
+index-Czg5BrTt.js:884 🎯🎯🎯 PESO OPERATIONS FOUND: 0
+index-Czg5BrTt.js:884 Peso operations details: []
+index-Czg5BrTt.js:884 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+index-Czg5BrTt.js:884 === FINAL OPERATIONS DEBUG ===
+index-Czg5BrTt.js:884 Unified data exists: false
+index-Czg5BrTt.js:884 Operations from unified: 0
+index-Czg5BrTt.js:884 Final operations array: 0
+index-Czg5BrTt.js:884 PESO in final operations: 0 - IDs: []
+index-Czg5BrTt.js:884 ================================
+index-Czg5BrTt.js:884 Stato iniziale operazioni: []
+index-Czg5BrTt.js:884 IDs operazioni: []
+index-Czg5BrTt.js:884 PESO operations count: 0
+index-Czg5BrTt.js:884 Mapping operazioni: []
+index-Czg5BrTt.js:884 Lotti disponibili: []
+index-Czg5BrTt.js:884 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+index-Czg5BrTt.js:884 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+index-Czg5BrTt.js:884 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+index-Czg5BrTt.js:884 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+index-Czg5BrTt.js:884 🚀🚀🚀 FETCHING UNIFIED DATA 🚀🚀🚀
+index-Czg5BrTt.js:884 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'active', basketsCount: 0, cyclesCount: 0, timestamp: '2025-08-16T13:52:17.434Z'}
+index-Czg5BrTt.js:884 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+index-Czg5BrTt.js:884 === FINAL OPERATIONS DEBUG ===
+index-Czg5BrTt.js:884 Unified data exists: false
+index-Czg5BrTt.js:884 Operations from unified: 0
+index-Czg5BrTt.js:884 Final operations array: 0
+index-Czg5BrTt.js:884 PESO in final operations: 0 - IDs: []
+index-Czg5BrTt.js:884 ================================
+index-Czg5BrTt.js:884 Stato iniziale operazioni: []
