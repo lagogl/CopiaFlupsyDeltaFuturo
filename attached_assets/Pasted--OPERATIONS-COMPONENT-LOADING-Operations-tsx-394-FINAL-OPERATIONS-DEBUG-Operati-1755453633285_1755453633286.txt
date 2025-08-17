@@ -1,0 +1,102 @@
+🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: true
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:400 PESO in unified data: 0 - IDs: []
+Operations.tsx:403 PESO in final operations: 0 - IDs: []
+Operations.tsx:404 ================================
+Operations.tsx:762 Stato iniziale operazioni: []
+Operations.tsx:763 IDs operazioni: []
+Operations.tsx:765 PESO operations count: 0
+Operations.tsx:767 Mapping operazioni: []
+Operations.tsx:776 Lotti disponibili: (2) [{…}, {…}]
+Operations.tsx:1024 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+Operations.tsx:1067 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+Operations.tsx:1161 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+Operations.tsx:1169 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+Operations.tsx:127 🔥🔥🔥 OPERATIONS COMPONENT MOUNTED 🔥🔥🔥
+Operations.tsx:128 QueryClient disponibile: true
+Operations.tsx:132 ✅ Cache pulita completamente
+Operations.tsx:309 🚀🚀🚀 FETCHING UNIFIED DATA 🚀🚀🚀
+Operations.tsx:444 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'all', basketsCount: 50, cyclesCount: 0, timestamp: '2025-08-17T18:00:12.505Z'}
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: false
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:403 PESO in final operations: 0 - IDs: []
+Operations.tsx:404 ================================
+Operations.tsx:762 Stato iniziale operazioni: []
+Operations.tsx:763 IDs operazioni: []
+Operations.tsx:765 PESO operations count: 0
+Operations.tsx:767 Mapping operazioni: []
+Operations.tsx:776 Lotti disponibili: []
+Operations.tsx:1024 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+Operations.tsx:1067 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+Operations.tsx:1161 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+Operations.tsx:1169 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+Operations.tsx:444 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'all', basketsCount: 0, cyclesCount: 0, timestamp: '2025-08-17T18:00:12.526Z'}
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: false
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:403 PESO in final operations: 0 - IDs: []
+Operations.tsx:404 ================================
+Operations.tsx:762 Stato iniziale operazioni: []
+Operations.tsx:763 IDs operazioni: []
+Operations.tsx:765 PESO operations count: 0
+Operations.tsx:767 Mapping operazioni: []
+Operations.tsx:776 Lotti disponibili: []
+Operations.tsx:1024 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+Operations.tsx:1067 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+Operations.tsx:1161 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+Operations.tsx:1169 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+Operations.tsx:444 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'all', basketsCount: 0, cyclesCount: 0, timestamp: '2025-08-17T18:00:12.584Z'}
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: false
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:403 PESO in final operations: 0 - IDs: []
+Operations.tsx:404 ================================
+Operations.tsx:762 Stato iniziale operazioni: []
+Operations.tsx:763 IDs operazioni: []
+Operations.tsx:765 PESO operations count: 0
+Operations.tsx:767 Mapping operazioni: []
+Operations.tsx:776 Lotti disponibili: []
+Operations.tsx:1024 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+Operations.tsx:1067 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+Operations.tsx:1161 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+Operations.tsx:1169 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+Operations.tsx:328 ✅✅✅ UNIFIED DATA RECEIVED ✅✅✅
+Operations.tsx:329 Total operations: 0
+Operations.tsx:342 🎯🎯🎯 PESO OPERATIONS FOUND: 0
+Operations.tsx:343 Peso operations details: []
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: true
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:400 PESO in unified data: 0 - IDs: []
+Operations.tsx:403 PESO in final operations: 0 - IDs: []
+Operations.tsx:404 ================================
+Operations.tsx:762 Stato iniziale operazioni: []
+Operations.tsx:763 IDs operazioni: []
+Operations.tsx:765 PESO operations count: 0
+Operations.tsx:767 Mapping operazioni: []
+Operations.tsx:776 Lotti disponibili: (2) [{…}, {…}]
+Operations.tsx:1024 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+Operations.tsx:1067 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+Operations.tsx:1161 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+Operations.tsx:1169 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+Operations.tsx:444 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'all', basketsCount: 50, cyclesCount: 0, timestamp: '2025-08-17T18:00:12.637Z'}
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: true
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:400 PESO in unified data: 0 - IDs: []
+Operations.tsx:403 PESO in final operations: 0 - IDs: []
+Operations.tsx:404 ================================

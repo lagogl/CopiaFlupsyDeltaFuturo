@@ -5,10 +5,11 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta name="description" content="FLUPSY Delta Futuro - Sistema di gestione e monitoraggio per unità FLUPSY per acquacoltura intelligente" />
     
-    <!-- Cache-busting headers for Replit preview -->
+    <!-- Cache-busting headers for Replit preview - AGGIORNATO 17:55 -->
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
+    <meta name="cache-bust" content="v2025-08-17-1755" />
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#1976d2" />
@@ -38,16 +39,18 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- PWA Service Worker Registration -->
+    <!-- PWA Service Worker Registration - TEMPORANEAMENTE DISABILITATO PER DEBUG -->
     <script>
+      // Service Worker temporaneamente disabilitato per evitare cache persistente
+      console.log('🚨 SERVICE WORKER DISABILITATO TEMPORANEAMENTE PER DEBUG 🚨');
+      
+      // Cancella service worker esistente se presente
       if ('serviceWorker' in navigator) {
-        window.addEventListener('load', function() {
-          navigator.serviceWorker.register('/sw.js')
-            .then(function(registration) {
-              console.log('SW registered with scope: ', registration.scope);
-            }, function(err) {
-              console.log('SW registration failed: ', err);
-            });
+        navigator.serviceWorker.getRegistrations().then(function(registrations) {
+          for(let registration of registrations) {
+            registration.unregister();
+            console.log('🗑️ Service Worker disabilitato:', registration.scope);
+          }
         });
       }
     </script>

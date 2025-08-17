@@ -1,0 +1,55 @@
+🎯🎯🎯 PESO OPERATIONS FOUND: 0
+Operations.tsx:343 Peso operations details: Array(0)
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: true
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:400 PESO in unified data: 0 - IDs: Array(0)
+Operations.tsx:403 PESO in final operations: 0 - IDs: Array(0)
+Operations.tsx:404 ================================
+Operations.tsx:762 Stato iniziale operazioni: Array(0)
+Operations.tsx:763 IDs operazioni: Array(0)
+Operations.tsx:765 PESO operations count: 0
+Operations.tsx:767 Mapping operazioni: Array(0)
+Operations.tsx:776 Lotti disponibili: Array(2)
+Operations.tsx:1024 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+Operations.tsx:1067 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+Operations.tsx:1161 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+Operations.tsx:1169 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+Operations.tsx:444 🚀 FILTER CHANGE DEBUG v2: Object
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: true
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:400 PESO in unified data: 0 - IDs: Array(0)
+Operations.tsx:403 PESO in final operations: 0 - IDs: Array(0)
+Operations.tsx:404 ================================
+operations:217 SW registered with scope:  https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: true
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:400 PESO in unified data: 0 - IDs: Array(0)
+Operations.tsx:403 PESO in final operations: 0 - IDs: Array(0)
+Operations.tsx:404 ================================
+operations:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+websocket.ts:157 WebSocket connesso
+websocket.ts:170 Ricevuto messaggio WebSocket: Object
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: true
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:400 PESO in unified data: 0 - IDs: Array(0)
+Operations.tsx:403 PESO in final operations: 0 - IDs: Array(0)
+Operations.tsx:404 ================================
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:394 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:395 Unified data exists: true
+Operations.tsx:396 Operations from unified: 0
+Operations.tsx:397 Final operations array: 0
+Operations.tsx:400 PESO in unified data: 0 - IDs: Array(0)
+Operations.tsx:403 PESO in final operations: 0 - IDs: Array(0)
