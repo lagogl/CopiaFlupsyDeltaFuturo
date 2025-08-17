@@ -14,6 +14,16 @@ app.use(express.urlencoded({ extended: false }));
 // Rendi disponibile globalmente per l'uso nei controller
 globalThis.app = app;
 
+// Middleware per cache-busting nella preview di Replit
+app.use((req, res, next) => {
+  // Forza no-cache per tutte le risorse nella preview di Replit
+  res.header('Cache-Control', 'no-cache, no-store, must-revalidate, max-age=0');
+  res.header('Pragma', 'no-cache');
+  res.header('Expires', '0');
+  res.header('ETag', Date.now().toString());
+  next();
+});
+
 app.use((req, res, next) => {
   const start = Date.now();
   const path = req.path;
