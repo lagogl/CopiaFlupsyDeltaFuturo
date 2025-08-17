@@ -1,5 +1,5 @@
-// Service Worker per FLUPSY PWA - Versione aggiornata 2025-08-17
-const CACHE_NAME = 'flupsy-v2025-08-17';
+// Service Worker per FLUPSY PWA - Versione aggiornata 2025-08-17-fix
+const CACHE_NAME = 'flupsy-v2025-08-17-cache-fix';
 const urlsToCache = [
   '/',
   '/manifest.json',
@@ -38,6 +38,12 @@ self.addEventListener('activate', function(event) {
 
 // Intercettazione delle richieste di rete
 self.addEventListener('fetch', function(event) {
+  // Non cachare richieste API o POST
+  if (event.request.url.includes('/api/') || event.request.method !== 'GET') {
+    event.respondWith(fetch(event.request));
+    return;
+  }
+
   event.respondWith(
     caches.match(event.request)
       .then(function(response) {
@@ -56,7 +62,7 @@ self.addEventListener('fetch', function(event) {
           // Clona la risposta
           var responseToCache = response.clone();
 
-          // Aggiunge la risorsa alla cache
+          // Aggiunge la risorsa alla cache solo per risorse statiche
           caches.open(CACHE_NAME)
             .then(function(cache) {
               cache.put(event.request, responseToCache);
