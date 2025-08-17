@@ -1162,69 +1162,17 @@ export default function Operations() {
     
   }, [operations, cycles, lots, filters.searchTerm, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, sortConfig]);
   
-  // Get filtered cycles based on selected filters
+  // Get filtered cycles based on selected filters - TEMPORANEO: MOSTRA TUTTI I CICLI
   const filteredCycleIds = useMemo(() => {
     if (!cycles || !baskets) return [];
     
-    // First, apply FLUPSY filter to get valid cycles
-    let validCycles = cycles;
+    // TEMPORANEO: Restituisci tutti i cicli per debug
+    console.log('🔍 TUTTI I CICLI DISPONIBILI:', cycles.map(c => ({id: c.id, basketId: c.basketId, state: c.state})));
+    console.log('🔍 TUTTE LE OPERAZIONI DISPONIBILI:', operations?.map(op => ({id: op.id, type: op.type, basketId: op.basketId, cycleId: op.cycleId})));
+    console.log('🔍 TUTTI I CESTELLI DISPONIBILI:', baskets.map(b => ({id: b.id, physicalNumber: b.physicalNumber, flupsyId: b.flupsyId})));
     
-    // If a specific FLUPSY is selected, only include cycles from baskets in that FLUPSY
-    if (filters.flupsyFilter !== 'all') {
-      const selectedFlupsyId = parseInt(filters.flupsyFilter);
-      const flupsyBaskets = baskets.filter((b: any) => b.flupsyId === selectedFlupsyId);
-      const flupsyBasketIds = flupsyBaskets.map((b: any) => b.id);
-      
-      console.log(`🔍 FILTER: FLUPSY ${selectedFlupsyId} selected`, {
-        flupsyBaskets: flupsyBaskets.length,
-        basketIds: flupsyBasketIds
-      });
-      
-      // If no baskets in this FLUPSY, return empty array immediately
-      if (flupsyBasketIds.length === 0) {
-        console.log(`🚫 FILTER: No baskets found for FLUPSY ${selectedFlupsyId}, returning empty array`);
-        return [];
-      }
-      
-      // Filter cycles to only those from baskets in the selected FLUPSY
-      validCycles = cycles.filter((cycle: any) => flupsyBasketIds.includes(cycle.basketId));
-    }
-    
-    return validCycles
-      .filter((cycle: any) => {
-        // First check cycle state filter - this is critical
-        const matchesCycleState = filters.cycleStateFilter === 'all' || 
-          (filters.cycleStateFilter === 'active' && cycle.state === 'active') ||
-          (filters.cycleStateFilter === 'closed' && cycle.state === 'closed');
-        
-        // If cycle state doesn't match, exclude immediately
-        if (!matchesCycleState) return false;
-        
-        // Only keep cycles that have operations that match the filter criteria
-        const cycleOps = operations?.filter((op: any) => op.cycleId === cycle.id) || [];
-        if (cycleOps.length === 0) return false;
-        
-        // Check if any operation matches the type filter
-        const matchesType = filters.typeFilter === 'all' || 
-          cycleOps.some((op: any) => op.type === filters.typeFilter);
-        
-        // Check if any operation matches the date filter
-        const matchesDate = filters.dateFilter === '' || 
-          cycleOps.some((op: any) => format(new Date(op.date), 'yyyy-MM-dd') === filters.dateFilter);
-        
-        // Check if the cycle matches the cycle filter
-        const matchesCycle = filters.cycleFilter === 'all' || 
-          cycle.id.toString() === filters.cycleFilter;
-        
-        // Check if any operation matches the search term
-        const matchesSearch = filters.searchTerm === '' || 
-          `${cycle.id}`.includes(filters.searchTerm) || 
-          cycleOps.some((op: any) => `${op.basketId}`.includes(filters.searchTerm));
-        
-        return matchesType && matchesDate && matchesCycle && matchesSearch;
-      })
-      .map((cycle: any) => cycle.id);
-  }, [cycles, baskets, operations, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, filters.searchTerm]);
+    return cycles.map((cycle: any) => cycle.id);
+  }, [cycles, baskets, operations]);
 
   const getOperationTypeBadge = (type: string) => {
     let bgColor = 'bg-blue-100 text-blue-800';
