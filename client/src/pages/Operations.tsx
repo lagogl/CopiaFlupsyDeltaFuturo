@@ -300,7 +300,7 @@ export default function Operations() {
   const searchParams = useSearch();
   
   // SEMPLIFICATO: Usa query separate come SpreadsheetOperations
-  const { data: operations, isLoading: operationsLoading, error: operationsError } = useQuery({
+  const { data: operations = [], isLoading: operationsLoading, error: operationsError } = useQuery({
     queryKey: ['/api/operations', { includeAll: true, pageSize: 1000 }],
     staleTime: 60000,
   });
@@ -315,32 +315,32 @@ export default function Operations() {
     console.log('   - Data length:', operations?.length);
   }, [operations, operationsLoading, operationsError]);
 
-  const { data: baskets } = useQuery({
+  const { data: baskets = [] } = useQuery({
     queryKey: ['/api/baskets', { includeAll: true }],
     staleTime: 60000,
   });
 
-  const { data: cycles } = useQuery({
+  const { data: cycles = [] } = useQuery({
     queryKey: ['/api/cycles', { includeAll: true }],
     staleTime: 60000,
   });
 
-  const { data: lots } = useQuery({
+  const { data: lots = [] } = useQuery({
     queryKey: ['/api/lots'],
     staleTime: 60000,
   });
 
-  const { data: sizes } = useQuery({
+  const { data: sizes = [] } = useQuery({
     queryKey: ['/api/sizes'],
     staleTime: 60000,
   });
 
-  const { data: flupsys } = useQuery({
+  const { data: flupsys = [] } = useQuery({
     queryKey: ['/api/flupsys'],
     staleTime: 60000,
   });
 
-  const { data: sgrs } = useQuery({
+  const { data: sgrs = [] } = useQuery({
     queryKey: ['/api/sgr'],
     staleTime: 60000,
   });
@@ -854,10 +854,10 @@ export default function Operations() {
   
   // Function to get SGR data for a specific month
   const getSgrForMonth = (date: Date) => {
-    if (!sgrData || sgrData.length === 0) return null;
+    if (!sgrs || sgrs.length === 0) return null;
     
     const month = format(date, 'MMMM', { locale: it }).toLowerCase();
-    return sgrData.find((sgr: any) => sgr.month.toLowerCase() === month);
+    return sgrs.find((sgr: any) => sgr.month.toLowerCase() === month);
   };
   
   // Function to calculate theoretical growth based on SGR
@@ -1161,13 +1161,8 @@ export default function Operations() {
                 queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
                 queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
                 
-                // Forza il refetch con parametri per bypassare cache
-                await Promise.all([
-                  refetchUnified(),
-                  refetchOperations(),
-                  refetchCycles(),
-                  refetchBaskets()
-                ]);
+                // Aspetta che le invalidazioni si propaghino
+                await new Promise(resolve => setTimeout(resolve, 100));
                 
                 console.log('🔄 REFRESH: Cache invalidate e dati aggiornati');
                 
