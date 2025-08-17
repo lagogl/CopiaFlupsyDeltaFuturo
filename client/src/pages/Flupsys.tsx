@@ -67,12 +67,30 @@ export default function Flupsys() {
     activeBasketPercentage?: number;
   }
   
-  // Fetching FLUPSY units with additional statistics
+  // Force refresh counter for preview cache busting
+  const [refreshCounter, setRefreshCounter] = useState(0);
+  
+  // Auto-detect Replit preview and force refresh periodically
+  useEffect(() => {
+    const isReplitPreview = window.self !== window.top || 
+                           window.location.hostname.includes('replit.dev') ||
+                           window.location.hostname.includes('replit.app');
+    
+    if (isReplitPreview) {
+      console.log("🔍 Rilevata preview Replit - attivando refresh automatico");
+      const interval = setInterval(() => {
+        setRefreshCounter(prev => prev + 1);
+      }, 60000); // Refresh ogni minuto per la preview
+      
+      return () => clearInterval(interval);
+    }
+  }, []);
 
+  // Fetching FLUPSY units with additional statistics
   const { data: flupsys = [], isLoading, refetch } = useQuery<EnhancedFlupsy[]>({
-    queryKey: ['/api/flupsys'],
+    queryKey: ['/api/flupsys', refreshCounter],
     queryFn: async () => {
-      const response = await fetch('/api/flupsys?includeStats=true');
+      const response = await fetch(`/api/flupsys?includeStats=true&_v=${refreshCounter}&_t=${Date.now()}`);
       if (!response.ok) {
         throw new Error('Errore nel caricamento dei FLUPSY');
       }
@@ -446,11 +464,18 @@ export default function Flupsys() {
             variant="outline" 
             size="sm" 
             className="flex items-center h-8 mr-2"
-            onClick={() => window.location.reload()}
-            title="Ricarica completa della pagina"
+            onClick={() => {
+              setRefreshCounter(prev => prev + 1);
+              queryClient.removeQueries({ queryKey: ['/api/flupsys'] });
+              toast({
+                title: "Refresh forzato",
+                description: "Interfaccia aggiornata per preview Replit",
+              });
+            }}
+            title="Forza refresh interfaccia (preview Replit)"
           >
             <RefreshCw className="h-3 w-3 mr-1" />
-            Ricarica Pagina
+            Force Refresh
           </Button>
           <div className="flex items-center bg-muted rounded-md p-1 mr-2">
             <Button
