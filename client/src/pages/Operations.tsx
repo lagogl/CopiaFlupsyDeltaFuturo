@@ -307,6 +307,7 @@ export default function Operations() {
         const controller = new AbortController();
         const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secondi timeout
         
+        console.log('🌐 FETCH: Calling /api/operations-unified...');
         const response = await fetch('/api/operations-unified', {
           signal: controller.signal,
           headers: {
@@ -315,14 +316,19 @@ export default function Operations() {
           }
         });
         clearTimeout(timeoutId);
+        console.log('🌐 FETCH: Response received, status:', response.status, 'ok:', response.ok);
         
         if (!response.ok) {
           throw new Error(`HTTP Error: ${response.status}`);
         }
         const result = await response.json();
         
-        console.log('✅✅✅ UNIFIED DATA RECEIVED ✅✅✅');
-        console.log('Total operations:', result.data?.operations?.length || 0);
+        console.log('✅ UNIFIED DATA - Operations received:', result.data?.operations?.length || 0);
+        if (result.data?.operations?.length > 0) {
+          result.data.operations.forEach(op => {
+            console.log(`Operation ID ${op.id}: type=${op.type}, basketId=${op.basketId}, date=${op.date}`);
+          });
+        }
         
 
         
@@ -338,6 +344,10 @@ export default function Operations() {
   // Usa i dati unificati dal server
   const operations = React.useMemo(() => {
     const rawOperations = unifiedData?.operations || [];
+    console.log('📊 Operations useMemo:', rawOperations.length, 'operations');
+    rawOperations.forEach(op => {
+      console.log(`📊 Operation ${op.id}: ${op.type}, basket ${op.basketId}, date ${op.date}`);
+    });
     return rawOperations;
   }, [unifiedData?.operations]);
 
@@ -974,10 +984,20 @@ export default function Operations() {
   
   // Filter operations - TEMPORANEO: BYPASS TUTTI I FILTRI
   const filteredOperations = useMemo(() => {
-    if (!operations || !cycles || !lots) return [];
+    if (!operations || !cycles || !lots) {
+      console.log('🚨 FILTER: Missing data - operations:', !!operations, 'cycles:', !!cycles, 'lots:', !!lots);
+      return [];
+    }
+    
+    console.log('🔍 FILTER: Processing', operations.length, 'operations');
     
     // TEMPORANEO: Restituisci tutte le operazioni senza filtri
-    return sortData(operations);
+    const sorted = sortData(operations);
+    console.log('🔍 FILTER: Returning', sorted.length, 'sorted operations');
+    sorted.forEach(op => {
+      console.log(`🔍 Final operation ${op.id}: ${op.type}, basket ${op.basketId}`);
+    });
+    return sorted;
     
   }, [operations, cycles, lots, filters.searchTerm, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, sortConfig]);
   
