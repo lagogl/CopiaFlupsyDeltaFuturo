@@ -442,6 +442,16 @@ export default function Flupsys() {
             )}
             Cache
           </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center h-8 mr-2"
+            onClick={() => window.location.reload()}
+            title="Ricarica completa della pagina"
+          >
+            <RefreshCw className="h-3 w-3 mr-1" />
+            Ricarica Pagina
+          </Button>
           <div className="flex items-center bg-muted rounded-md p-1 mr-2">
             <Button
               variant={viewMode === 'cards' ? "default" : "ghost"} 
