@@ -963,10 +963,10 @@ export default function Operations() {
     });
   };
   
-  // Filter operations - TEMPORANEO: BYPASS TUTTI I FILTRI
+  // Filter operations - SEMPLIFICATO: IGNORA DIPENDENZA DA LOTS
   const filteredOperations = useMemo(() => {
-    if (!operations || !cycles || !lots) {
-      console.log('🚨 FILTER: Missing data - operations:', !!operations, 'cycles:', !!cycles, 'lots:', !!lots);
+    if (!operations || !cycles) {
+      console.log('🚨 FILTER: Missing data - operations:', !!operations, 'cycles:', !!cycles);
       return [];
     }
     
@@ -980,7 +980,7 @@ export default function Operations() {
     });
     return sorted;
     
-  }, [operations, cycles, lots, filters.searchTerm, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, sortConfig]);
+  }, [operations, cycles, filters.searchTerm, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, sortConfig]);
   
   // Get filtered cycles based on selected filters
   const filteredCycleIds = useMemo(() => {
