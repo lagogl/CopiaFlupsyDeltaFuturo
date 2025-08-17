@@ -157,7 +157,7 @@ export default function Operations() {
       
       // 4. Invalidazione cache server
       console.log('4. Invalidazione cache server...');
-      await fetch('/api/cache/invalidate', {
+      const response = await fetch('/api/cache/invalidate', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json'
@@ -167,9 +167,12 @@ export default function Operations() {
         })
       });
       
-      // 5. Forza refresh dati con query separate
-      console.log('5. Refresh forzato dati...');
-      await queryClient.invalidateQueries();
+      if (!response.ok) {
+        throw new Error(`Server cache invalidation failed: ${response.status}`);
+      }
+      
+      // 5. Semplice refresh della pagina per pulire tutto
+      console.log('5. Refresh pagina...');
       
       console.log('✅ RESET COMPLETO COMPLETATO');
       
@@ -179,13 +182,19 @@ export default function Operations() {
         duration: 3000
       });
       
+      // Refresh pagina dopo 1 secondo per vedere il toast
+      setTimeout(() => {
+        window.location.reload();
+      }, 1500);
+      
     } catch (error) {
       console.error('❌ Errore durante reset cache:', error);
+      console.error('❌ Stack trace:', error.stack);
       toast({
         title: "Errore Reset Cache",
-        description: "Si è verificato un errore durante la pulizia delle cache",
+        description: `Si è verificato un errore: ${error.message}`,
         variant: "destructive",
-        duration: 3000
+        duration: 5000
       });
     }
   };
