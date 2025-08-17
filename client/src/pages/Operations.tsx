@@ -233,7 +233,7 @@ export default function Operations() {
     dateFilter: '',
     flupsyFilter: 'all',
     cycleFilter: 'all',
-    cycleStateFilter: 'active', // Ripristinato - mostra solo cicli attivi come richiesto
+    cycleStateFilter: 'all', // Temporaneamente su 'all' per debug
     viewMode: 'cycles' as 'table' | 'cycles'
   });
 
