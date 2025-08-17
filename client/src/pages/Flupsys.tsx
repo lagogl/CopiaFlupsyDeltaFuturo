@@ -67,30 +67,14 @@ export default function Flupsys() {
     activeBasketPercentage?: number;
   }
   
-  // Force refresh counter for preview cache busting
+  // Force refresh counter for preview cache busting (simplified)
   const [refreshCounter, setRefreshCounter] = useState(0);
-  
-  // Auto-detect Replit preview and force refresh periodically
-  useEffect(() => {
-    const isReplitPreview = window.self !== window.top || 
-                           window.location.hostname.includes('replit.dev') ||
-                           window.location.hostname.includes('replit.app');
-    
-    if (isReplitPreview) {
-      console.log("🔍 Rilevata preview Replit - attivando refresh automatico");
-      const interval = setInterval(() => {
-        setRefreshCounter(prev => prev + 1);
-      }, 60000); // Refresh ogni minuto per la preview
-      
-      return () => clearInterval(interval);
-    }
-  }, []);
 
   // Fetching FLUPSY units with additional statistics
   const { data: flupsys = [], isLoading, refetch } = useQuery<EnhancedFlupsy[]>({
     queryKey: ['/api/flupsys', refreshCounter],
     queryFn: async () => {
-      const response = await fetch(`/api/flupsys?includeStats=true&_v=${refreshCounter}&_t=${Date.now()}`);
+      const response = await fetch('/api/flupsys?includeStats=true');
       if (!response.ok) {
         throw new Error('Errore nel caricamento dei FLUPSY');
       }
