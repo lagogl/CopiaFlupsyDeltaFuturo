@@ -1,0 +1,59 @@
+IDs operazioni: Array(0)
+Operations.tsx:690 PESO operations count: 0
+Operations.tsx:692 Mapping operazioni: Array(0)
+Operations.tsx:701 Lotti disponibili: Array(0)
+Operations.tsx:949 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+Operations.tsx:992 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+Operations.tsx:1086 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+Operations.tsx:1094 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+Operations.tsx:369 🚀 FILTER CHANGE DEBUG v2: Object
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:319 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:320 Unified data exists: false
+Operations.tsx:321 Operations from unified: 0
+Operations.tsx:322 Final operations array: 0
+Operations.tsx:328 PESO in final operations: 0 - IDs: Array(0)
+Operations.tsx:329 ================================
+Operations.tsx:687 Stato iniziale operazioni: Array(0)
+Operations.tsx:688 IDs operazioni: Array(0)
+Operations.tsx:690 PESO operations count: 0
+Operations.tsx:692 Mapping operazioni: Array(0)
+Operations.tsx:701 Lotti disponibili: Array(0)
+Operations.tsx:949 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+Operations.tsx:992 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+Operations.tsx:1086 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+Operations.tsx:1094 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+Operations.tsx:268 ✅✅✅ UNIFIED DATA RECEIVED ✅✅✅
+Operations.tsx:269 Total operations: 0
+Operations.tsx:279 🎯🎯🎯 PESO OPERATIONS FOUND: 0
+Operations.tsx:280 Peso operations details: Array(0)
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:319 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:320 Unified data exists: true
+Operations.tsx:321 Operations from unified: 0
+Operations.tsx:322 Final operations array: 0
+Operations.tsx:325 PESO in unified data: 0 - IDs: Array(0)
+Operations.tsx:328 PESO in final operations: 0 - IDs: Array(0)
+Operations.tsx:329 ================================
+Operations.tsx:687 Stato iniziale operazioni: Array(0)
+Operations.tsx:688 IDs operazioni: Array(0)
+Operations.tsx:690 PESO operations count: 0
+Operations.tsx:692 Mapping operazioni: Array(0)
+Operations.tsx:701 Lotti disponibili: Array(0)
+Operations.tsx:949 🔍 FILTRO DEBUG - Peso operations in operations array: 0
+Operations.tsx:992 🚨 FILTRO DEBUG - Peso operations dopo il filtro: 0
+Operations.tsx:1086 🎯 FILTRO DEBUG FINALE - Peso operations da restituire: 0
+Operations.tsx:1094 🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento: 0
+Operations.tsx:369 🚀 FILTER CHANGE DEBUG v2: Object
+Operations.tsx:122 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:319 === FINAL OPERATIONS DEBUG ===
+Operations.tsx:320 Unified data exists: true
+Operations.tsx:321 Operations from unified: 0
+Operations.tsx:322 Final operations array: 0
+Operations.tsx:325 PESO in unified data: 0 - IDs: Array(0)
+Operations.tsx:328 PESO in final operations: 0 - IDs: Array(0)
+Operations.tsx:329 ================================
+stallwart.build.js:1 stallwart: failed ping 1
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:44 API Response status: 200
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}

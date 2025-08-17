@@ -319,21 +319,8 @@ export default function Operations() {
     staleTime: 60000,
   });
 
-  // Simula i dati unificati
-  const unifiedData = React.useMemo(() => {
-    if (!operations || !baskets || !cycles) return null;
-    return {
-      operations: operations || [],
-      baskets: baskets || [],
-      cycles: cycles || [],
-      lots: lots || [],
-      sizes: sizes || [],
-      flupsys: flupsys || [],
-      sgr: []
-    };
-  }, [operations, baskets, cycles, lots, sizes, flupsys]);
-
-  const isLoadingUnified = !operations || !baskets || !cycles;
+  // Usa direttamente i dati dalle query separate
+  const isLoadingAny = !operations || !baskets || !cycles;
   
   // Debug delle operazioni ricevute
   React.useEffect(() => {
@@ -348,9 +335,9 @@ export default function Operations() {
   // Gestione errori - mostra interfaccia anche in caso di problemi
 
 
-  // Stato di caricamento migliorato - mostra interfaccia base anche durante il caricamento
-  const showLoadingFallback = isLoadingUnified && !unifiedData;
-  const hasData = unifiedData && !isLoadingUnified;
+  // Stato di caricamento migliorato
+  const showLoadingFallback = isLoadingAny;
+  const hasData = !isLoadingAny;
   
 
   // I dati sono già disponibili dalle query separate
@@ -359,33 +346,21 @@ export default function Operations() {
   
   // Update pagination state when data changes
   React.useEffect(() => {
-    if (unifiedData?.pagination) {
-      setTotalOperations(unifiedData.pagination.totalOperations);
-      setTotalPages(Math.ceil(unifiedData.pagination.totalOperations / pageSize));
-    } else if (operations.length > 0) {
-      // Fallback pagination logic
+    if (operations?.length > 0) {
       setTotalOperations(operations.length);
       setTotalPages(Math.ceil(operations.length / pageSize));
     }
-  }, [unifiedData, operations, pageSize]);
+  }, [operations, pageSize]);
   
-  // Loading states - all unified
-  const isLoadingOperations = isLoadingUnified;
-  const isLoadingBaskets = isLoadingUnified;
-  const isLoadingCycles = isLoadingUnified;
-  const isLoadingFlupsys = isLoadingUnified;
-  const isLoadingSizes = isLoadingUnified;
-  const isLoadingLots = isLoadingUnified;
-  const isLoadingSgr = isLoadingUnified;
+  // Loading states
+  const isLoadingOperations = isLoadingAny;
+  const isLoadingBaskets = isLoadingAny;
+  const isLoadingCycles = isLoadingAny;
+  const isLoadingFlupsys = !flupsys;
+  const isLoadingSizes = !sizes;
+  const isLoadingLots = !lots;
   
-  // Refetch functions - all unified
-  const refetchOperations = refetchUnified;
-  const refetchBaskets = refetchUnified;
-  const refetchCycles = refetchUnified;
-  const refetchFlupsys = refetchUnified;
-  
-  // Alias for SGR data (for consistency in naming)
-  const sgrs = sgrData;
+  // Refetch functions sono gestite automaticamente da TanStack Query
 
   // Log filter changes for debugging
   React.useEffect(() => {
