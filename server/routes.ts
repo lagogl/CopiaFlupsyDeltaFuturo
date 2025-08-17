@@ -4771,7 +4771,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       if (totalFreePositions === 0) {
         return res.json({ 
           success: true,
-          message: "Il FLUPSY è già completamente popolato, nessuna nuova cesta creata." 
+          alreadyPopulated: true,
+          message: "Il FLUPSY è già completamente popolato, nessuna nuova cesta creata.",
+          totalCreated: 0
         });
       }
       

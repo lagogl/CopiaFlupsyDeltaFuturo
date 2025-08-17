@@ -226,11 +226,20 @@ export default function Flupsys() {
       setPopulateResult(data.message || "FLUPSY popolato con successo");
       setPopulateError(null);
       
-      toast({
-        title: "Operazione completata",
-        description: data.message || "FLUPSY popolato con successo",
-        variant: "success",
-      });
+      // Distingui tra popolamento effettivo e FLUPSY già popolato
+      if (data.alreadyPopulated) {
+        toast({
+          title: "Nessuna modifica necessaria",
+          description: data.message || "Il FLUPSY è già completamente popolato",
+          variant: "default",
+        });
+      } else {
+        toast({
+          title: "Popolamento completato",
+          description: data.message || `FLUPSY popolato con successo - ${data.totalCreated || 0} nuovi cestelli creati`,
+          variant: "success",
+        });
+      }
     },
     onError: (error: any) => {
       // Utilizza direttamente la proprietà responseMessage che abbiamo aggiunto in queryClient
@@ -872,14 +881,23 @@ export default function Flupsys() {
                               <Button
                                 variant="ghost"
                                 size="icon"
-                                className="text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-500 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20"
+                                className={
+                                  (flupsy.freePositions === 0 || (flupsy.maxPositions - (flupsy.totalBaskets || 0)) === 0)
+                                    ? "text-gray-400 hover:text-gray-500 hover:bg-gray-100/50 dark:text-gray-500 dark:hover:text-gray-400 dark:hover:bg-gray-800/20"
+                                    : "text-emerald-600 hover:text-emerald-700 hover:bg-emerald-100/50 dark:text-emerald-500 dark:hover:text-emerald-400 dark:hover:bg-emerald-900/20"
+                                }
                                 onClick={() => handlePopulateFlupsy(flupsy)}
                               >
-                                <RefreshCw className="h-4 w-4" />
+                                <RefreshCw className={`h-4 w-4 ${(flupsy.freePositions === 0 || (flupsy.maxPositions - (flupsy.totalBaskets || 0)) === 0) ? 'opacity-50' : ''}`} />
                               </Button>
                             </TooltipTrigger>
                             <TooltipContent>
-                              <p>Popola automaticamente il FLUPSY con nuovi cestelli</p>
+                              <p>
+                                {(flupsy.freePositions === 0 || (flupsy.maxPositions - (flupsy.totalBaskets || 0)) === 0)
+                                  ? "FLUPSY già completamente popolato" 
+                                  : `Popola automaticamente il FLUPSY (${flupsy.freePositions || (flupsy.maxPositions - (flupsy.totalBaskets || 0))} posizioni libere)`
+                                }
+                              </p>
                             </TooltipContent>
                           </Tooltip>
                         </TooltipProvider>
