@@ -157,18 +157,30 @@ export default function Operations() {
       
       // 4. Invalidazione cache server
       console.log('4. Invalidazione cache server...');
-      const response = await fetch('/api/cache/invalidate', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json'
-        },
-        body: JSON.stringify({
-          keys: ['operations', 'baskets', 'cycles', 'flupsys', 'sizes', 'lots', 'sgr']
-        })
-      });
-      
-      if (!response.ok) {
-        throw new Error(`Server cache invalidation failed: ${response.status}`);
+      try {
+        const response = await fetch('/api/cache/invalidate', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json'
+          },
+          body: JSON.stringify({
+            keys: ['operations', 'baskets', 'cycles', 'flupsys', 'sizes', 'lots', 'sgr']
+          })
+        });
+        
+        console.log('   Response status:', response.status);
+        
+        if (!response.ok) {
+          const errorText = await response.text();
+          console.error('   Response error:', errorText);
+          throw new Error(`Server cache invalidation failed: ${response.status} - ${errorText}`);
+        }
+        
+        const result = await response.json();
+        console.log('   Cache invalidation result:', result);
+      } catch (fetchError) {
+        console.error('   Fetch error:', fetchError);
+        throw new Error(`Errore durante la chiamata al server: ${fetchError instanceof Error ? fetchError.message : 'Errore sconosciuto'}`);
       }
       
       // 5. Semplice refresh della pagina per pulire tutto
@@ -189,10 +201,11 @@ export default function Operations() {
       
     } catch (error) {
       console.error('❌ Errore durante reset cache:', error);
-      console.error('❌ Stack trace:', error.stack);
+      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
+      console.error('❌ Dettagli errore:', errorMessage);
       toast({
         title: "Errore Reset Cache",
-        description: `Si è verificato un errore: ${error.message}`,
+        description: `Si è verificato un errore durante la pulizia delle cache`,
         variant: "destructive",
         duration: 5000
       });
