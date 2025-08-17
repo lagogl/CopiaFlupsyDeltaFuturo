@@ -324,6 +324,7 @@ export default function Operations() {
   
   // Debug delle operazioni ricevute
   React.useEffect(() => {
+    console.log('🚨 VERSIONE MODIFICATA - OPERATIONS.TSX AGGIORNATO 🚨');
     if (operations) {
       console.log('📊 Operations loaded:', operations.length, 'operations');
       operations.forEach(op => {
