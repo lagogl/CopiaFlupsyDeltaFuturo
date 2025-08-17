@@ -122,15 +122,11 @@ export default function Operations() {
   console.log('🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨');
   const queryClient = useQueryClient();
   
-  // Test semplice per verificare se il componente si carica
+  // Log di debug per il componente
   React.useEffect(() => {
-    console.log('🔥🔥🔥 OPERATIONS COMPONENT MOUNTED 🔥🔥🔥');
+    console.log('🔥 OPERATIONS COMPONENT MOUNTED 🔥');
     console.log('QueryClient disponibile:', !!queryClient);
-    
-    // Clear semplice senza timeout per evitare problemi di timing
-    queryClient.clear();
-    console.log('✅ Cache pulita completamente');
-  }, []); // Solo al mount del componente
+  }, []);
 
   // Funzione per reset completo cache (DEBUG)
   const handleCompleteReset = async () => {
@@ -328,12 +324,15 @@ export default function Operations() {
         console.log('✅✅✅ UNIFIED DATA RECEIVED ✅✅✅');
         console.log('Total operations:', result.data?.operations?.length || 0);
         
-        // DEBUG: Log the actual raw response to find where phantom data comes from
+        // Log operazioni trovate per debug
         if (result.data?.operations?.length > 0) {
-          console.error('🚨 PHANTOM DATA SOURCE:', result);
-          // FORZA RIMOZIONE PHANTOM DATA - sovrascrivi con array vuoto
-          result.data.operations = [];
-          console.warn('🧹 PHANTOM DATA RIMOSSO FORZATAMENTE');
+          console.log('🎯 Operazioni trovate:', result.data.operations.length);
+          console.log('Dettagli operazioni:', result.data.operations.map(op => ({
+            id: op.id,
+            type: op.type,
+            basketId: op.basketId,
+            date: op.date
+          })));
         }
         
         
@@ -357,19 +356,10 @@ export default function Operations() {
     }
   });
   
-  // FORZA l'uso dei dati unificati - con fallback in caso di errore
+  // Usa i dati unificati dal server
   const operations = React.useMemo(() => {
-    // SOLUZIONE RADICALE: Forza sempre array vuoto se il database è vuoto
     const rawOperations = unifiedData?.operations || [];
-    
-    // Se abbiamo operazioni, verifichiamo che siano reali dal server
-    if (rawOperations.length > 0) {
-      console.warn('🚨 PHANTOM DETECTION: Found', rawOperations.length, 'operations, forcing empty array');
-      console.warn('🚨 Raw operations:', rawOperations);
-      // FORZA ARRAY VUOTO per eliminare phantom data
-      return [];
-    }
-    
+    console.log('📊 Operazioni elaborate dal server:', rawOperations.length);
     return rawOperations;
   }, [unifiedData?.operations]);
 
