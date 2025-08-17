@@ -4710,6 +4710,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Endpoint per forzare l'aggiornamento delle statistiche FLUPSY
+  app.post("/api/flupsys/refresh-stats", async (req, res) => {
+    try {
+      console.log("🔄 Forzando aggiornamento statistiche FLUPSY...");
+      
+      // Invalida cache cestelli
+      try {
+        const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller.js");
+        if (typeof invalidateBasketsCache === 'function') {
+          invalidateBasketsCache();
+          console.log("✅ Cache cestelli invalidata");
+        } else {
+          console.log("⚠️ Funzione invalidateCache non trovata");
+        }
+      } catch (error) {
+        console.log("⚠️ Errore invalidazione cache cestelli:", error.message);
+      }
+
+      // Invalida cache cicli se esiste
+      try {
+        const { invalidateCache: invalidateCyclesCache } = await import("./controllers/cycles-controller.js");
+        invalidateCyclesCache();
+        console.log("✅ Cache cicli invalidata");
+      } catch (error) {
+        console.log("⚠️ Errore invalidazione cache cicli:", error.message);
+      }
+
+      // Invalida cache operazioni se esiste
+      try {
+        const { invalidateCache: invalidateOperationsCache } = await import("./controllers/operations-unified-controller.js");
+        invalidateOperationsCache();
+        console.log("✅ Cache operazioni invalidata");
+      } catch (error) {
+        console.log("⚠️ Errore invalidazione cache operazioni:", error.message);
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Statistiche FLUPSY aggiornate con successo" 
+      });
+    } catch (error) {
+      console.error("Errore durante l'aggiornamento statistiche FLUPSY:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Errore durante l'aggiornamento delle statistiche" 
+      });
+    }
+  });
   
   // Endpoint per popolare automaticamente un FLUPSY con ceste in tutte le posizioni libere
   app.post("/api/flupsys/:id/populate", async (req, res) => {
@@ -4887,6 +4936,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           message: `${newBaskets.length} cestelli creati nel FLUPSY ${flupsy.name}`
         });
         console.log(`🚀 POBLAMENTO: Notifica WebSocket inviata per ${newBaskets.length} cestelli`);
+      }
+
+      // Invalida anche la cache dei cestelli nel server per aggiornamenti immediati
+      try {
+        const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller.js");
+        if (typeof invalidateBasketsCache === 'function') {
+          invalidateBasketsCache();
+          console.log("✅ Cache cestelli invalidata dopo popolamento FLUPSY");
+        } else {
+          console.log("⚠️ Funzione invalidateCache non trovata nel controller cestelli");
+        }
+      } catch (error) {
+        console.log("⚠️ Impossibile invalidare cache cestelli:", error.message);
       }
 
       // Restituisci il risultato

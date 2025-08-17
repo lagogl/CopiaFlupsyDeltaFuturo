@@ -220,8 +220,11 @@ export default function Flupsys() {
       method: 'POST'
     }),
     onSuccess: (data: any) => {
+      // Invalida tutte le cache relative ai FLUPSY e cestelli
       queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
       queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      // Forza anche un refetch immediato per aggiornare le statistiche
+      queryClient.refetchQueries({ queryKey: ['/api/flupsys'] });
       
       setPopulateResult(data.message || "FLUPSY popolato con successo");
       setPopulateError(null);
@@ -265,7 +268,31 @@ export default function Flupsys() {
       });
     }
   });
-  
+
+  // Refresh stats mutation
+  const refreshStatsMutation = useMutation({
+    mutationFn: () => apiRequest({
+      url: '/api/flupsys/refresh-stats',
+      method: 'POST'
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      toast({
+        title: "Statistiche aggiornate",
+        description: "Le statistiche dei FLUPSY sono state aggiornate con successo",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'aggiornamento delle statistiche",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Handling delete button click
   const handleDelete = (flupsy: Flupsy) => {
     setDeletingFlupsy(flupsy);
@@ -397,6 +424,21 @@ export default function Flupsys() {
           >
             <RefreshCw className="h-4 w-4 mr-1" />
             Aggiorna
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm" 
+            className="flex items-center h-9"
+            onClick={() => refreshStatsMutation.mutate()}
+            disabled={refreshStatsMutation.isPending}
+            title="Forza aggiornamento cache server"
+          >
+            {refreshStatsMutation.isPending ? (
+              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-1"></div>
+            ) : (
+              <RefreshCw className="h-4 w-4 mr-1" />
+            )}
+            Cache
           </Button>
         </div>
         <div className="flex items-center gap-2">
