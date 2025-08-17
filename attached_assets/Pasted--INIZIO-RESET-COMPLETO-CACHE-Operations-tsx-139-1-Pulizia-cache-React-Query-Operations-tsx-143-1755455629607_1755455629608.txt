@@ -1,0 +1,100 @@
+🧹 INIZIO RESET COMPLETO CACHE
+Operations.tsx:139 1. Pulizia cache React Query...
+Operations.tsx:143 2. Pulizia localStorage...
+Operations.tsx:152    Rimosso 0 chiavi dal localStorage
+Operations.tsx:155 3. Pulizia sessionStorage...
+Operations.tsx:159 4. Invalidazione cache server...
+Operations.tsx:171 5. Refresh forzato dati...
+Operations.tsx:183 ❌ Errore durante reset cache: ReferenceError: refetchUnified is not defined
+    at handleCompleteReset (Operations.tsx:172:7)
+handleCompleteReset @ Operations.tsx:183
+await in handleCompleteReset
+callCallback2 @ chunk-RPCDYKBN.js?v=4d944aba:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=4d944aba:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=4d944aba:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=4d944aba:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=4d944aba:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=4d944aba:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=4d944aba:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=4d944aba:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=4d944aba:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=4d944aba:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=4d944aba:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=4d944aba:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=4d944aba:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=4d944aba:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=4d944aba:5449Understand this error
+sw.js:62 Uncaught (in promise) TypeError: Failed to execute 'put' on 'Cache': Request method 'POST' is unsupported
+    at sw.js:62:21
+(anonymous) @ sw.js:62
+Promise.then
+(anonymous) @ sw.js:61
+Promise.then
+(anonymous) @ sw.js:50
+Promise.then
+(anonymous) @ sw.js:43Understand this error
+Operations.tsx:124 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:962 🚨 FILTER: Missing data - operations: false cycles: false
+queryClient.ts:36 API Request: GET /api/notifications?unreadOnly=true
+queryClient.ts:136 Query request to: /api/operations?includeAll=true&pageSize=1000
+Operations.tsx:301 🔍 QUERY DEBUG - Operations Query Status:
+Operations.tsx:302    - Loading: true
+Operations.tsx:303    - Error: null
+Operations.tsx:304    - Data type: undefined
+Operations.tsx:305    - Data value: undefined
+Operations.tsx:306    - Data length: undefined
+queryClient.ts:136 Query request to: /api/baskets?includeAll=true
+queryClient.ts:136 Query request to: /api/cycles?includeAll=true
+queryClient.ts:136 Query request to: /api/lots
+queryClient.ts:136 Query request to: /api/sizes
+queryClient.ts:136 Query request to: /api/flupsys
+queryClient.ts:136 Query request to: /api/sgr
+Operations.tsx:344 🚨 VERSIONE MODIFICATA - OPERATIONS.TSX AGGIORNATO 🚨
+Operations.tsx:385 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'active', basketsCount: undefined, cyclesCount: undefined, timestamp: '2025-08-17T18:33:39.423Z'}
+queryClient.ts:44 API Response status: 200
+queryClient.ts:77 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+Operations.tsx:124 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+2Operations.tsx:124 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+sw.js:62 Uncaught (in promise) TypeError: Failed to execute 'put' on 'Cache': Vary header contains *
+    at sw.js:62:21
+(anonymous) @ sw.js:62
+Promise.then
+(anonymous) @ sw.js:61
+Promise.then
+(anonymous) @ sw.js:50
+Promise.then
+(anonymous) @ sw.js:43Understand this error
+Operations.tsx:124 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:962 🚨 FILTER: Missing data - operations: true cycles: false
+2sw.js:62 Uncaught (in promise) TypeError: Failed to execute 'put' on 'Cache': Vary header contains *
+    at sw.js:62:21
+(anonymous) @ sw.js:62
+Promise.then
+(anonymous) @ sw.js:61
+Promise.then
+(anonymous) @ sw.js:50
+Promise.then
+(anonymous) @ sw.js:43Understand this error
+Operations.tsx:301 🔍 QUERY DEBUG - Operations Query Status:
+Operations.tsx:302    - Loading: false
+Operations.tsx:303    - Error: null
+Operations.tsx:304    - Data type: object
+Operations.tsx:305    - Data value: [{…}]
+Operations.tsx:306    - Data length: 1
+Operations.tsx:344 🚨 VERSIONE MODIFICATA - OPERATIONS.TSX AGGIORNATO 🚨
+Operations.tsx:346 📊 Operations loaded: 1 operations
+Operations.tsx:348 📊 Operation 1: prima-attivazione, basket 3, date 2025-08-01
+Operations.tsx:124 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:124 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:703 Stato iniziale operazioni: [{…}]
+Operations.tsx:704 IDs operazioni: [1]
+Operations.tsx:706 PESO operations count: 0
+Operations.tsx:708 Mapping operazioni: [{…}]
+Operations.tsx:717 Lotti disponibili: (2) [{…}, {…}]
+Operations.tsx:737 Lotto trovato per operazione 1: undefined
+Operations.tsx:966 🔍 FILTER: Processing 1 operations
+Operations.tsx:891 Operazione di esempio: {id: 1, date: '2025-08-01', type: 'prima-attivazione', basketId: 3, cycleId: 1, …}
+Operations.tsx:970 🔍 FILTER: Returning 1 sorted operations
+Operations.tsx:972 🔍 Final operation 1: prima-attivazione, basket 3
+Operations.tsx:385 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'active', basketsCount: 30, cyclesCount: 1, timestamp: '2025-08-17T18:33:39.734Z'}
+Operations.tsx:124 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨

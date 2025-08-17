@@ -9,7 +9,7 @@
     <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate" />
     <meta http-equiv="Pragma" content="no-cache" />
     <meta http-equiv="Expires" content="0" />
-    <meta name="cache-bust" content="v2025-08-17-1830-cache-fix" />
+    <meta name="cache-bust" content="v2025-08-17-1834-sw-disabled" />
     
     <!-- PWA Meta Tags -->
     <meta name="theme-color" content="#1976d2" />
@@ -39,22 +39,29 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- PWA Service Worker Registration - RIABILITATO CON VERSIONE AGGIORNATA -->
+    <!-- PWA Service Worker Registration - TEMPORANEAMENTE DISABILITATO PER CACHE FIX -->
     <script>
       if ('serviceWorker' in navigator) {
         window.addEventListener('load', function() {
-          // Cancella service worker vecchio prima di registrare il nuovo
+          // Disregistra tutti i service worker per evitare cache problems
           navigator.serviceWorker.getRegistrations().then(function(registrations) {
             return Promise.all(registrations.map(function(registration) {
+              console.log('🗑️ Disregistrazione Service Worker:', registration.scope);
               return registration.unregister();
             }));
           }).then(function() {
-            // Registra il service worker aggiornato
-            return navigator.serviceWorker.register('/sw.js');
-          }).then(function(registration) {
-            console.log('✅ SW aggiornato registrato con scope:', registration.scope);
+            console.log('✅ Tutti i Service Worker sono stati disregistrati');
+            // Forza pulizia cache browser
+            if ('caches' in window) {
+              caches.keys().then(function(names) {
+                return Promise.all(names.map(function(name) {
+                  console.log('🗑️ Eliminazione cache:', name);
+                  return caches.delete(name);
+                }));
+              });
+            }
           }).catch(function(err) {
-            console.log('❌ SW registration failed:', err);
+            console.log('❌ Errore durante disregistrazione SW:', err);
           });
         });
       }
