@@ -4759,6 +4759,55 @@ export async function registerRoutes(app: Express): Promise<Server> {
       });
     }
   });
+
+  // Endpoint specifico per invalidare la cache dei lotti
+  app.post("/api/lots/refresh-cache", async (req, res) => {
+    try {
+      console.log("🔄 Forzando aggiornamento cache lotti...");
+      
+      // Invalida tutte le cache possibili che potrebbero influenzare i lotti
+      try {
+        const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller.js");
+        if (typeof invalidateBasketsCache === 'function') {
+          invalidateBasketsCache();
+          console.log("✅ Cache cestelli invalidata");
+        }
+      } catch (error) {
+        console.log("⚠️ Errore invalidazione cache cestelli:", error.message);
+      }
+
+      // Invalida cache cicli
+      try {
+        const { invalidateCache: invalidateCyclesCache } = await import("./controllers/cycles-controller.js");
+        if (typeof invalidateCyclesCache === 'function') {
+          invalidateCyclesCache();
+          console.log("✅ Cache cicli invalidata");
+        }
+      } catch (error) {
+        console.log("⚠️ Errore invalidazione cache cicli:", error.message);
+      }
+
+      // Forza WebSocket broadcast per refresh frontend
+      if (typeof (global as any).broadcastUpdate === 'function') {
+        (global as any).broadcastUpdate('cache_invalidated', {
+          type: 'all',
+          message: 'Cache del server aggiornate'
+        });
+        console.log("✅ Notifica WebSocket inviata per refresh cache");
+      }
+
+      res.json({ 
+        success: true, 
+        message: "Cache lotti aggiornate con successo" 
+      });
+    } catch (error) {
+      console.error("Errore durante l'aggiornamento cache lotti:", error);
+      res.status(500).json({ 
+        success: false, 
+        message: "Errore durante l'aggiornamento delle cache" 
+      });
+    }
+  });
   
   // Endpoint per popolare automaticamente un FLUPSY con ceste in tutte le posizioni libere
   app.post("/api/flupsys/:id/populate", async (req, res) => {

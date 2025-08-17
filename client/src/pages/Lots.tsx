@@ -200,6 +200,30 @@ export default function Lots() {
     }
   });
 
+  // Refresh lots cache mutation
+  const refreshLotsCacheMutation = useMutation({
+    mutationFn: () => apiRequest({
+      url: '/api/lots/refresh-cache',
+      method: 'POST'
+    }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['/api/lots/optimized'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/lots'] });
+      toast({
+        title: "Cache aggiornata",
+        description: "La cache dei lotti è stata aggiornata con successo",
+        variant: "default",
+      });
+    },
+    onError: (error: any) => {
+      toast({
+        title: "Errore",
+        description: error.message || "Errore durante l'aggiornamento della cache",
+        variant: "destructive",
+      });
+    }
+  });
+
   // Function to handle sort click
   const handleSortClick = (field: string) => {
     if (sortField === field) {
@@ -387,6 +411,20 @@ export default function Lots() {
           >
             <RefreshCw className="h-4 w-4 mr-1" />
             Aggiorna
+          </Button>
+          <Button 
+            variant="outline" 
+            size="sm"
+            className="mr-2"
+            onClick={() => {
+              // Hard refresh - forza ricaricamento completo
+              queryClient.clear();
+              window.location.reload();
+            }}
+            title="Ricarica completa della pagina"
+          >
+            <RefreshCw className="h-4 w-4 mr-1" />
+            Ricarica
           </Button>
           <Button onClick={() => setIsCreateDialogOpen(true)}>
             <Plus className="h-4 w-4 mr-1" />
