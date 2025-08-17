@@ -1,4 +1,7 @@
 import React, { useState, useMemo, useEffect } from 'react';
+
+// 🚨 VERSIONE AGGIORNATA - 17:55 - MODIFICA VISIBILE 🚨
+console.log('🚨 OPERATIONS.TSX CARICATO - VERSIONE AGGIORNATA 17:55 🚨');
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { format, addDays, parseISO, differenceInDays } from 'date-fns';
 import { it } from 'date-fns/locale';
