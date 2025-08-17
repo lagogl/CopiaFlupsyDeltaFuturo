@@ -163,13 +163,13 @@ export default function Operations() {
           'Content-Type': 'application/json'
         },
         body: JSON.stringify({
-          keys: ['operations', 'baskets', 'cycles', 'flupsys', 'sizes', 'lots', 'sgr', 'unified']
+          keys: ['operations', 'baskets', 'cycles', 'flupsys', 'sizes', 'lots', 'sgr']
         })
       });
       
-      // 5. Forza refresh dati
+      // 5. Forza refresh dati con query separate
       console.log('5. Refresh forzato dati...');
-      await refetchUnified();
+      await queryClient.invalidateQueries();
       
       console.log('✅ RESET COMPLETO COMPLETATO');
       
