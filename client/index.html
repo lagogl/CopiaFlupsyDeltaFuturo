@@ -39,18 +39,23 @@
     <div id="root"></div>
     <script type="module" src="/src/main.tsx"></script>
     
-    <!-- PWA Service Worker Registration - TEMPORANEAMENTE DISABILITATO PER DEBUG -->
+    <!-- PWA Service Worker Registration - RIABILITATO CON VERSIONE AGGIORNATA -->
     <script>
-      // Service Worker temporaneamente disabilitato per evitare cache persistente
-      console.log('🚨 SERVICE WORKER DISABILITATO TEMPORANEAMENTE PER DEBUG 🚨');
-      
-      // Cancella service worker esistente se presente
       if ('serviceWorker' in navigator) {
-        navigator.serviceWorker.getRegistrations().then(function(registrations) {
-          for(let registration of registrations) {
-            registration.unregister();
-            console.log('🗑️ Service Worker disabilitato:', registration.scope);
-          }
+        window.addEventListener('load', function() {
+          // Cancella service worker vecchio prima di registrare il nuovo
+          navigator.serviceWorker.getRegistrations().then(function(registrations) {
+            return Promise.all(registrations.map(function(registration) {
+              return registration.unregister();
+            }));
+          }).then(function() {
+            // Registra il service worker aggiornato
+            return navigator.serviceWorker.register('/sw.js');
+          }).then(function(registration) {
+            console.log('✅ SW aggiornato registrato con scope:', registration.scope);
+          }).catch(function(err) {
+            console.log('❌ SW registration failed:', err);
+          });
         });
       }
     </script>

@@ -1,5 +1,5 @@
-// Service Worker per FLUPSY PWA
-const CACHE_NAME = 'flupsy-v1';
+// Service Worker per FLUPSY PWA - Versione aggiornata 2025-08-17
+const CACHE_NAME = 'flupsy-v2025-08-17';
 const urlsToCache = [
   '/',
   '/manifest.json',
