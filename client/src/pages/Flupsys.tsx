@@ -425,23 +425,23 @@ export default function Flupsys() {
             <RefreshCw className="h-4 w-4 mr-1" />
             Aggiorna
           </Button>
+        </div>
+        <div className="flex items-center gap-2">
           <Button 
             variant="outline" 
             size="sm" 
-            className="flex items-center h-9"
+            className="flex items-center h-8"
             onClick={() => refreshStatsMutation.mutate()}
             disabled={refreshStatsMutation.isPending}
             title="Forza aggiornamento cache server"
           >
             {refreshStatsMutation.isPending ? (
-              <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-primary mr-1"></div>
+              <div className="animate-spin rounded-full h-3 w-3 border-b-2 border-primary mr-1"></div>
             ) : (
-              <RefreshCw className="h-4 w-4 mr-1" />
+              <RefreshCw className="h-3 w-3 mr-1" />
             )}
             Cache
           </Button>
-        </div>
-        <div className="flex items-center gap-2">
           <div className="flex items-center bg-muted rounded-md p-1 mr-2">
             <Button
               variant={viewMode === 'cards' ? "default" : "ghost"} 
