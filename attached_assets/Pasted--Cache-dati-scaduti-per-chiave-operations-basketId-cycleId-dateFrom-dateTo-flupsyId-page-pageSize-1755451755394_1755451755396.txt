@@ -1,0 +1,38 @@
+}
+Cache: dati scaduti per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_1000_undefined"
+Cache: dati salvati con chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_1000_undefined", scadenza 60 secondi
+Query operazioni completata in 2487ms: 1 risultati su 1 totali
+[PERFORMANCE] Query operazioni lenta: 2487ms
+Operazioni recuperate in 2487ms (ottimizzato)
+5:27:42 PM [express] GET /api/operations 200 in 2489ms :: [{"id":1,"date":"2025-08-01","type":"prima…
+[SLOW API] GET /api/operations?includeAll=true&pageSize=1000 - 2489ms
+Richiesta di tutti i cicli con includeAll=true
+Utilizzo implementazione ottimizzata per i cestelli
+Richiesta di tutti i cestelli (per dashboard o visualizzatore FLUPSY)
+Cache cestelli: hit per chiave "baskets_cycleId_flupsyId_includeAll_includeEmpty_page_pageSize_sortBy_sortOrder_state_undefined_undefined_true_false_1_1000_id_asc_undefined"
+🚀 CESTELLI: Cache HIT - recuperati in 0ms
+Cestelli recuperati in 1ms (ottimizzato)
+5:28:25 PM [express] GET /api/baskets 200 in 2ms :: [{"id":1,"physicalNumber":1,"flupsyId":570,"cycl…
+Cache cicli: dati scaduti per chiave "includeAll_true_page_1_pageSize_10_sortBy_startDate_sortOrder_desc"
+Utilizzo implementazione ottimizzata per le operazioni
+Richiesta operazioni ottimizzata con opzioni: {
+  page: 1,
+  pageSize: 1000,
+  cycleId: undefined,
+  flupsyId: undefined,
+  basketId: undefined,
+  dateFrom: undefined,
+  dateTo: undefined,
+  type: undefined
+}
+Cache: hit per chiave "operations_basketId_cycleId_dateFrom_dateTo_flupsyId_page_pageSize_type_undefined_undefined_undefined_undefined_undefined_1_1000_undefined"
+Operazioni recuperate dalla cache in 1ms
+Operazioni recuperate in 2ms (ottimizzato)
+5:28:25 PM [express] GET /api/operations 200 in 2ms :: [{"id":1,"date":"2025-08-01","type":"prima-at…
+Recupero tutti i cicli senza paginazione (richiesto da dashboard)
+Restituiti tutti i 1 cicli (includeAll=true)
+Cicli recuperati in 3042ms (ottimizzato)
+Cicli recuperati in 3043ms
+Restituisco tutti i 1 cicli (includeAll=true)
+5:28:28 PM [express] GET /api/cycles 200 in 3044ms :: [{"id":1,"basketId":3,"lotId":null,"startDate"…
+[SLOW API] GET /api/cycles?includeAll=true - 3044ms

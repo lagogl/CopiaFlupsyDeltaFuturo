@@ -288,93 +288,74 @@ export default function Operations() {
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
   
-  // Unified query that loads all operations data in a single call
-  const { 
-    data: unifiedData, 
-    isLoading: isLoadingUnified, 
-    refetch: refetchUnified,
-    error: unifiedError
-  } = useQuery({
-    queryKey: ['operations-unified'], // Chiave semplice e stabile
-    staleTime: 60000, // 1 minuto
-    gcTime: 300000, // 5 minuti
-    refetchInterval: false,
-    refetchOnWindowFocus: false,
-    retry: 2,
-    queryFn: async () => {
-      console.log('🚀🚀🚀 FETCHING UNIFIED DATA 🚀🚀🚀');
-      try {
-        const controller = new AbortController();
-        const timeoutId = setTimeout(() => controller.abort(), 10000); // 10 secondi timeout
-        
-        console.log('🌐 FETCH: Calling /api/operations-unified...');
-        const response = await fetch('/api/operations-unified', {
-          signal: controller.signal,
-          headers: {
-            'Accept': 'application/json',
-            'Content-Type': 'application/json'
-          }
-        });
-        clearTimeout(timeoutId);
-        console.log('🌐 FETCH: Response received, status:', response.status, 'ok:', response.ok);
-        
-        if (!response.ok) {
-          throw new Error(`HTTP Error: ${response.status}`);
-        }
-        const result = await response.json();
-        
-        console.log('✅ UNIFIED DATA - Operations received:', result.data?.operations?.length || 0);
-        if (result.data?.operations?.length > 0) {
-          result.data.operations.forEach(op => {
-            console.log(`Operation ID ${op.id}: type=${op.type}, basketId=${op.basketId}, date=${op.date}`);
-          });
-        }
-        
-
-        
-        return result.data || { operations: [], baskets: [], cycles: [], flupsys: [], sizes: [], lots: [], sgr: [] };
-      } catch (error) {
-        console.error('❌❌❌ UNIFIED FETCH ERROR:', error);
-        // Ritorna dati vuoti invece di far fallire
-        return { operations: [], baskets: [], cycles: [], flupsys: [], sizes: [], lots: [], sgr: [] };
-      }
-    }
+  // SEMPLIFICATO: Usa query separate come SpreadsheetOperations
+  const { data: operations } = useQuery({
+    queryKey: ['/api/operations', { includeAll: true, pageSize: 1000 }],
+    staleTime: 60000,
   });
-  
-  // Usa i dati unificati dal server
-  const operations = React.useMemo(() => {
-    const rawOperations = unifiedData?.operations || [];
-    console.log('📊 Operations useMemo:', rawOperations.length, 'operations');
-    rawOperations.forEach(op => {
-      console.log(`📊 Operation ${op.id}: ${op.type}, basket ${op.basketId}, date ${op.date}`);
-    });
-    return rawOperations;
-  }, [unifiedData?.operations]);
 
-  // Gestione errori - mostra interfaccia anche in caso di problemi
+  const { data: baskets } = useQuery({
+    queryKey: ['/api/baskets', { includeAll: true }],
+    staleTime: 60000,
+  });
+
+  const { data: cycles } = useQuery({
+    queryKey: ['/api/cycles', { includeAll: true }],
+    staleTime: 60000,
+  });
+
+  const { data: lots } = useQuery({
+    queryKey: ['/api/lots'],
+    staleTime: 60000,
+  });
+
+  const { data: sizes } = useQuery({
+    queryKey: ['/api/sizes'],
+    staleTime: 60000,
+  });
+
+  const { data: flupsys } = useQuery({
+    queryKey: ['/api/flupsys'],
+    staleTime: 60000,
+  });
+
+  // Simula i dati unificati
+  const unifiedData = React.useMemo(() => {
+    if (!operations || !baskets || !cycles) return null;
+    return {
+      operations: operations || [],
+      baskets: baskets || [],
+      cycles: cycles || [],
+      lots: lots || [],
+      sizes: sizes || [],
+      flupsys: flupsys || [],
+      sgr: []
+    };
+  }, [operations, baskets, cycles, lots, sizes, flupsys]);
+
+  const isLoadingUnified = !operations || !baskets || !cycles;
+  
+  // Debug delle operazioni ricevute
   React.useEffect(() => {
-    if (unifiedError) {
-      console.error('❌ ERRORE QUERY UNIFICATA:', unifiedError);
-      toast({
-        title: "Problema di connessione",
-        description: "Ricarica la pagina o riprova tra qualche secondo.",
-        variant: "destructive",
-        duration: 5000
+    if (operations) {
+      console.log('📊 Operations loaded:', operations.length, 'operations');
+      operations.forEach(op => {
+        console.log(`📊 Operation ${op.id}: ${op.type}, basket ${op.basketId}, date ${op.date}`);
       });
     }
-  }, [unifiedError]);
+  }, [operations]);
+
+  // Gestione errori - mostra interfaccia anche in caso di problemi
+
 
   // Stato di caricamento migliorato - mostra interfaccia base anche durante il caricamento
   const showLoadingFallback = isLoadingUnified && !unifiedData;
   const hasData = unifiedData && !isLoadingUnified;
   
 
-  const baskets = unifiedData?.baskets || [];
-  const cycles = unifiedData?.cycles || [];
-  const flupsys = unifiedData?.flupsys || [];
-  const sizes = unifiedData?.sizes || [];
-  const lots = unifiedData?.lots || [];
-  const sgrData = unifiedData?.sgr || [];
+  // I dati sono già disponibili dalle query separate
+  // Non serve più estrarli da unifiedData
+  // lots e sizes sono già disponibili dalle query separate
   
   // Update pagination state when data changes
   React.useEffect(() => {
