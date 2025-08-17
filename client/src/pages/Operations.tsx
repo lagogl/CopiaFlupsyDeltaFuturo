@@ -292,10 +292,20 @@ export default function Operations() {
   const searchParams = useSearch();
   
   // SEMPLIFICATO: Usa query separate come SpreadsheetOperations
-  const { data: operations } = useQuery({
+  const { data: operations, isLoading: operationsLoading, error: operationsError } = useQuery({
     queryKey: ['/api/operations', { includeAll: true, pageSize: 1000 }],
     staleTime: 60000,
   });
+
+  // Debug Query React Query
+  React.useEffect(() => {
+    console.log('🔍 QUERY DEBUG - Operations Query Status:');
+    console.log('   - Loading:', operationsLoading);
+    console.log('   - Error:', operationsError);
+    console.log('   - Data type:', typeof operations);
+    console.log('   - Data value:', operations);
+    console.log('   - Data length:', operations?.length);
+  }, [operations, operationsLoading, operationsError]);
 
   const { data: baskets } = useQuery({
     queryKey: ['/api/baskets', { includeAll: true }],
@@ -319,6 +329,11 @@ export default function Operations() {
 
   const { data: flupsys } = useQuery({
     queryKey: ['/api/flupsys'],
+    staleTime: 60000,
+  });
+
+  const { data: sgrs } = useQuery({
+    queryKey: ['/api/sgr'],
     staleTime: 60000,
   });
 

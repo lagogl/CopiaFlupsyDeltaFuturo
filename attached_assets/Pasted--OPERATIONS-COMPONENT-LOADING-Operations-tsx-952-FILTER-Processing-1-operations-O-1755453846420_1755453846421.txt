@@ -1,0 +1,94 @@
+🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:952 🔍 FILTER: Processing 1 operations
+Operations.tsx:877 Operazione di esempio: 
+{id: 1, date: '2025-08-01', type: 'prima-attivazione', basketId: 3, cycleId: 1, …}
+Operations.tsx:956 🔍 FILTER: Returning 1 sorted operations
+Operations.tsx:958 🔍 Final operation 1: prima-attivazione, basket 3
+Operations.tsx:130 🔥 OPERATIONS COMPONENT MOUNTED 🔥
+Operations.tsx:131 QueryClient disponibile: true
+queryClient.ts:136 Query request to: /api/lots
+Operations.tsx:330 🚨 VERSIONE MODIFICATA - OPERATIONS.TSX AGGIORNATO 🚨
+Operations.tsx:332 📊 Operations loaded: 1 operations
+Operations.tsx:334 📊 Operation 1: prima-attivazione, basket 3, date 2025-08-01
+Operations.tsx:371 🚀 FILTER CHANGE DEBUG v2: 
+{flupsyFilter: 'all', cycleStateFilter: 'all', basketsCount: 30, cyclesCount: 1, timestamp: '2025-08-17T18:03:47.721Z'}
+2
+Operations.tsx:125 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:125 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:689 Stato iniziale operazioni: 
+[{…}]
+Operations.tsx:690 IDs operazioni: 
+[1]
+Operations.tsx:692 PESO operations count: 0
+Operations.tsx:694 Mapping operazioni: 
+[{…}]
+Operations.tsx:703 Lotti disponibili: 
+(2) [{…}, {…}]
+Operations.tsx:723 Lotto trovato per operazione 1: undefined
+Operations.tsx:125 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:689 Stato iniziale operazioni: 
+[{…}]
+Operations.tsx:690 IDs operazioni: 
+[1]
+Operations.tsx:692 PESO operations count: 0
+Operations.tsx:694 Mapping operazioni: 
+[{…}]
+Operations.tsx:703 Lotti disponibili: 
+(2) [{…}, {…}]
+Operations.tsx:723 Lotto trovato per operazione 1: undefined
+Operations.tsx:2851 Uncaught ReferenceError: sgrs is not defined
+    at Operations.tsx:2851:37
+    at Operations.tsx:2908:35
+    at Array.map (<anonymous>)
+    at Operations (Operations.tsx:2406:32)
+Operations.tsx:125 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:689 Stato iniziale operazioni: 
+[{…}]
+Operations.tsx:690 IDs operazioni: 
+[1]
+Operations.tsx:692 PESO operations count: 0
+Operations.tsx:694 Mapping operazioni: 
+[{…}]
+Operations.tsx:703 Lotti disponibili: 
+(2) [{…}, {…}]
+Operations.tsx:723 Lotto trovato per operazione 1: undefined
+Operations.tsx:125 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Operations.tsx:689 Stato iniziale operazioni: 
+[{…}]
+Operations.tsx:690 IDs operazioni: 
+[1]
+Operations.tsx:692 PESO operations count: 0
+Operations.tsx:694 Mapping operazioni: 
+[{…}]
+Operations.tsx:703 Lotti disponibili: 
+(2) [{…}, {…}]
+Operations.tsx:723 Lotto trovato per operazione 1: undefined
+Operations.tsx:2851 Uncaught ReferenceError: sgrs is not defined
+    at Operations.tsx:2851:37
+    at Operations.tsx:2908:35
+    at Array.map (<anonymous>)
+    at Operations (Operations.tsx:2406:32)
+chunk-RPCDYKBN.js?v=4d944aba:14032 The above error occurred in the <Operations> component:
+
+    at Operations (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/pages/Operations.tsx:69:24)
+    at Route (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4d944aba:323:16)
+    at ProtectedRoute (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/lib/protected-route.tsx:22:3)
+    at Switch (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.…/home/runner/workspace/node_modules/.vite/deps/wouter.js?v=4d944aba:379:17)
+    at Router
+    at div
+    at main
+    at div
+    at div
+    at MainLayout (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/layouts/MainLayout.tsx:71:38)
+    at TooltipProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/contexts/TooltipContext.tsx:20:35)
+    at AuthProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/src/hooks/use-auth.tsx:21:32)
+    at QueryClientProvider (https://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.…rkspace/node_modules/.vite/deps/@tanstack_react-query.js?v=4d944aba:2805:3)
+    at App
+
+Consider adding an error boundary to your tree to customize error handling behavior.
+Visit https://reactjs.org/link/error-boundaries to learn more about error boundaries.
+chunk-RPCDYKBN.js?v=4d944aba:9129 Uncaught ReferenceError: sgrs is not defined
+    at Operations.tsx:2851:37
+    at Operations.tsx:2908:35
+    at Array.map (<anonymous>)
+    at Operations (Operations.tsx:2406:32)
