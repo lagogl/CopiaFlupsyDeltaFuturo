@@ -324,28 +324,7 @@ export default function Operations() {
         console.log('✅✅✅ UNIFIED DATA RECEIVED ✅✅✅');
         console.log('Total operations:', result.data?.operations?.length || 0);
         
-        // Log operazioni trovate per debug
-        if (result.data?.operations?.length > 0) {
-          console.log('🎯 Operazioni trovate:', result.data.operations.length);
-          console.log('Dettagli operazioni:', result.data.operations.map(op => ({
-            id: op.id,
-            type: op.type,
-            basketId: op.basketId,
-            date: op.date
-          })));
-        }
-        
-        
-        if (result.data?.operations) {
-          const pesoOps = result.data.operations.filter(op => op.type === 'peso');
-          console.log('🎯🎯🎯 PESO OPERATIONS FOUND:', pesoOps.length);
-          console.log('Peso operations details:', pesoOps.map(op => ({
-            id: op.id, 
-            basketId: op.basketId, 
-            date: op.date,
-            animalCount: op.animalCount
-          })));
-        }
+
         
         return result.data || { operations: [], baskets: [], cycles: [], flupsys: [], sizes: [], lots: [], sgr: [] };
       } catch (error) {
@@ -359,7 +338,6 @@ export default function Operations() {
   // Usa i dati unificati dal server
   const operations = React.useMemo(() => {
     const rawOperations = unifiedData?.operations || [];
-    console.log('📊 Operazioni elaborate dal server:', rawOperations.length);
     return rawOperations;
   }, [unifiedData?.operations]);
 
@@ -380,18 +358,7 @@ export default function Operations() {
   const showLoadingFallback = isLoadingUnified && !unifiedData;
   const hasData = unifiedData && !isLoadingUnified;
   
-  // DEBUG FINALE
-  console.log('=== FINAL OPERATIONS DEBUG ===');
-  console.log('Unified data exists:', !!unifiedData);
-  console.log('Operations from unified:', unifiedData?.operations?.length || 0);
-  console.log('Final operations array:', operations.length);
-  if (unifiedData?.operations) {
-    const unifiedPeso = unifiedData.operations.filter(op => op.type === 'peso');
-    console.log('PESO in unified data:', unifiedPeso.length, '- IDs:', unifiedPeso.map(op => op.id));
-  }
-  const finalPeso = operations.filter(op => op.type === 'peso');
-  console.log('PESO in final operations:', finalPeso.length, '- IDs:', finalPeso.map(op => op.id));
-  console.log('================================');
+
   const baskets = unifiedData?.baskets || [];
   const cycles = unifiedData?.cycles || [];
   const flupsys = unifiedData?.flupsys || [];
@@ -1005,160 +972,12 @@ export default function Operations() {
     });
   };
   
-  // Filter operations
+  // Filter operations - TEMPORANEO: BYPASS TUTTI I FILTRI
   const filteredOperations = useMemo(() => {
     if (!operations || !cycles || !lots) return [];
     
-    // Debug specifico per peso operations
-    const allPesoOps = operations.filter(op => op.type === 'peso');
-    console.log('🔍 FILTRO DEBUG - Peso operations in operations array:', allPesoOps.length);
-    allPesoOps.forEach(op => {
-      console.log(`💾 Peso operation ID ${op.id}: basketId=${op.basketId}, cycleId=${op.cycleId}, date=${op.date}`);
-    });
-    
-    // Filtriamo prima le operazioni secondo i criteri
-    const filtered = operations.filter((op: any) => {
-      // Filter by search term
-      const matchesSearch = filters.searchTerm === '' || 
-        `${op.basketId}`.includes(filters.searchTerm) || 
-        `${op.cycleId}`.includes(filters.searchTerm) ||
-        (op.basket && `${op.basket.physicalNumber}`.includes(filters.searchTerm));
-      
-      // Filter by operation type
-      const matchesType = filters.typeFilter === 'all' || op.type === filters.typeFilter;
-      
-      // Filter by date
-      const matchesDate = filters.dateFilter === '' || 
-        format(new Date(op.date), 'yyyy-MM-dd') === filters.dateFilter;
-      
-      // Filter by FLUPSY (baskets belong to a FLUPSY)
-      const matchesFlupsy = filters.flupsyFilter === 'all' || (() => {
-        // Cerca il basket associato all'operazione
-        const associatedBasket = baskets?.find((b: any) => b.id === op.basketId);
-        // Verifica se il basket appartiene al flupsy selezionato
-        return associatedBasket && associatedBasket.flupsyId.toString() === filters.flupsyFilter;
-      })();
-      
-      // Filter by cycle
-      const matchesCycle = filters.cycleFilter === 'all' || 
-        op.cycleId.toString() === filters.cycleFilter;
-      
-      // Filter by cycle state
-      const cycle = cycles.find((c: any) => c.id === op.cycleId);
-      const matchesCycleState = filters.cycleStateFilter === 'all' || 
-        (filters.cycleStateFilter === 'active' && cycle && cycle.state === 'active') ||
-        (filters.cycleStateFilter === 'closed' && cycle && cycle.state === 'closed');
-      
-      return matchesSearch && matchesType && matchesDate && matchesFlupsy && matchesCycle && matchesCycleState;
-    });
-    
-    // Debug peso operations dopo il filtro
-    const filteredPesoOps = filtered.filter(op => op.type === 'peso');
-    console.log('🚨 FILTRO DEBUG - Peso operations dopo il filtro:', filteredPesoOps.length);
-    filteredPesoOps.forEach(op => {
-      console.log(`✅ Peso operation ID ${op.id} RIMASTA dopo filtro: basketId=${op.basketId}, cycleId=${op.cycleId}`);
-    });
-    
-    // Se mancano peso operations, debug ciascun filtro
-    if (allPesoOps.length > filteredPesoOps.length) {
-      console.log('❌ PROBLEMA FILTRO - Peso operations filtrate via:');
-      allPesoOps.forEach(op => {
-        if (!filteredPesoOps.find(f => f.id === op.id)) {
-          // Questa operazione è stata filtrata, debugghiamo perché
-          const matchesSearch = filters.searchTerm === '' || 
-            `${op.basketId}`.includes(filters.searchTerm) || 
-            `${op.cycleId}`.includes(filters.searchTerm) ||
-            (op.basket && `${op.basket.physicalNumber}`.includes(filters.searchTerm));
-          const matchesType = filters.typeFilter === 'all' || op.type === filters.typeFilter;
-          const matchesDate = filters.dateFilter === '' || 
-            format(new Date(op.date), 'yyyy-MM-dd') === filters.dateFilter;
-          const associatedBasket = baskets?.find((b: any) => b.id === op.basketId);
-          const matchesFlupsy = filters.flupsyFilter === 'all' || 
-            (associatedBasket && associatedBasket.flupsyId.toString() === filters.flupsyFilter);
-          const matchesCycle = filters.cycleFilter === 'all' || 
-            op.cycleId.toString() === filters.cycleFilter;
-          const cycle = cycles.find((c: any) => c.id === op.cycleId);
-          const matchesCycleState = filters.cycleStateFilter === 'all' || 
-            (filters.cycleStateFilter === 'active' && cycle && cycle.state === 'active') ||
-            (filters.cycleStateFilter === 'closed' && cycle && cycle.state === 'closed');
-            
-          console.log(`❌ Peso operation ID ${op.id} filtrata:`, {
-            searchTerm: filters.searchTerm,
-            matchesSearch,
-            matchesType,
-            typeFilter: filters.typeFilter,
-            matchesDate, 
-            dateFilter: filters.dateFilter,
-            matchesFlupsy,
-            flupsyFilter: filters.flupsyFilter,
-            associatedBasket: associatedBasket?.id,
-            matchesCycle,
-            cycleFilter: filters.cycleFilter, 
-            matchesCycleState,
-            cycleStateFilter: filters.cycleStateFilter,
-            cycleState: cycle?.state
-          });
-        }
-      });
-    }
-    
-    // Prima arricchisciamo le operazioni con le informazioni di lotto necessarie
-    // Raggruppiamo le operazioni per ciclo per propagare le informazioni dei lotti
-    const opsByCycle: { [key: string]: any[] } = {};
-    
-    filtered.forEach((op: any) => {
-      const cycleId = op.cycleId.toString();
-      if (!opsByCycle[cycleId]) {
-        opsByCycle[cycleId] = [];
-      }
-      opsByCycle[cycleId].push(op);
-    });
-    
-    // Propaga le informazioni di lotto all'interno di ciascun ciclo
-    Object.keys(opsByCycle).forEach(cycleId => {
-      if (opsByCycle[cycleId].length > 0) {
-        let lastKnownLot = null;
-        
-        // Prima passata in avanti - propaga il lotto dalle operazioni precedenti
-        for (let i = 0; i < opsByCycle[cycleId].length; i++) {
-          if (opsByCycle[cycleId][i].lot) {
-            lastKnownLot = opsByCycle[cycleId][i].lot;
-          } else if (lastKnownLot && (!opsByCycle[cycleId][i].lot || !opsByCycle[cycleId][i].lotId)) {
-            // Se questa operazione non ha un lotto ma abbiamo un lotto noto dallo stesso ciclo
-            opsByCycle[cycleId][i].lot = lastKnownLot;
-            opsByCycle[cycleId][i].lotId = lastKnownLot.id;
-          }
-        }
-        
-        // Seconda passata all'indietro - propaga il lotto dalle operazioni successive
-        lastKnownLot = null;
-        for (let i = opsByCycle[cycleId].length - 1; i >= 0; i--) {
-          if (opsByCycle[cycleId][i].lot) {
-            lastKnownLot = opsByCycle[cycleId][i].lot;
-          } else if (lastKnownLot && (!opsByCycle[cycleId][i].lot || !opsByCycle[cycleId][i].lotId)) {
-            opsByCycle[cycleId][i].lot = lastKnownLot;
-            opsByCycle[cycleId][i].lotId = lastKnownLot.id;
-          }
-        }
-      }
-    });
-    
-    // Appiattisci di nuovo l'array delle operazioni con tutti i lotti propagati
-    const enrichedOperations = Object.values(opsByCycle).flat();
-    
-    // Debug finale prima del return
-    const finalPesoOps = enrichedOperations.filter(op => op.type === 'peso');
-    console.log('🎯 FILTRO DEBUG FINALE - Peso operations da restituire:', finalPesoOps.length);
-    finalPesoOps.forEach(op => {
-      console.log(`🎯 Peso operation ID ${op.id} FINALE: basketId=${op.basketId}, cycleId=${op.cycleId}`);
-    });
-    
-    // Ora applichiamo l'ordinamento alle operazioni già arricchite
-    const sortedData = sortData(enrichedOperations);
-    const sortedPesoOps = sortedData.filter(op => op.type === 'peso');
-    console.log('🔄 FILTRO DEBUG DOPO SORT - Peso operations dopo ordinamento:', sortedPesoOps.length);
-    
-    return sortedData;
+    // TEMPORANEO: Restituisci tutte le operazioni senza filtri
+    return sortData(operations);
     
   }, [operations, cycles, lots, filters.searchTerm, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, sortConfig]);
   
@@ -1193,20 +1012,6 @@ export default function Operations() {
         
         // Find operations for this cycle
         const cycleOps = operations?.filter((op: any) => op.cycleId === cycle.id) || [];
-        
-        // DEBUG: Forza l'inclusione del ciclo 1 per test
-        if (cycle.id === 1) {
-          console.log('🔍 CICLO 1 DEBUG:', {
-            cycleId: cycle.id,
-            basketId: cycle.basketId,
-            state: cycle.state,
-            cycleOpsFound: cycleOps.length,
-            cycleOps: cycleOps.map(op => ({id: op.id, type: op.type, cycleId: op.cycleId})),
-            allOperations: operations?.map(op => ({id: op.id, type: op.type, cycleId: op.cycleId}))
-          });
-          return true; // Forza inclusione del ciclo 1
-        }
-        
         if (cycleOps.length === 0) return false;
         
         // Check if any operation matches the type filter
