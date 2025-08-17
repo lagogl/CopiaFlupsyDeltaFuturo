@@ -8,6 +8,7 @@ import { sql, eq, and, between } from 'drizzle-orm';
 import { broadcastMessage } from './websocket';
 import { BasketsCache } from './baskets-cache-service.js';
 import { OperationsCache } from './operations-cache-service.js';
+import { invalidateUnifiedCache } from './controllers/operations-unified-controller.js';
 
 /**
  * Trova automaticamente il sizeId corretto in base al numero di animali per kg.
@@ -515,7 +516,8 @@ export function implementDirectOperationRoute(app: Express) {
             console.log("🗑️ DIRECT-OPERATIONS: Invalidando cache del server...");
             BasketsCache.clear();
             OperationsCache.clear();
-            console.log("✅ DIRECT-OPERATIONS: Cache cestelli e operazioni invalidate");
+            invalidateUnifiedCache(); // Invalida anche la cache unificata operations
+            console.log("✅ DIRECT-OPERATIONS: Cache cestelli, operazioni e cache unificata invalidate");
             
             console.log("🚨 DIRECT-OPERATIONS: Invio notifica WebSocket per nuova operazione");
             const result = broadcastMessage('operation_created', {
@@ -610,7 +612,17 @@ export function implementDirectOperationRoute(app: Express) {
           
           console.log("Cestello aggiornato:", updatedBasket[0]);
           
-          // 4. Notifica via WebSocket
+          // 4. Invalidazione cache del server e notifica WebSocket
+          try {
+            console.log("🗑️ DIRECT-OPERATIONS: Invalidando cache del server...");
+            BasketsCache.clear();
+            OperationsCache.clear();
+            invalidateUnifiedCache(); // Invalida anche la cache unificata operations
+            console.log("✅ DIRECT-OPERATIONS: Cache cestelli, operazioni e cache unificata invalidate");
+          } catch (cacheError) {
+            console.error("❌ DIRECT-OPERATIONS: Errore nell'invalidazione cache:", cacheError);
+          }
+          
           if (typeof (global as any).broadcastUpdate === 'function') {
             try {
               console.log("Invio notifica WebSocket per operazione di chiusura");
@@ -679,6 +691,17 @@ export function implementDirectOperationRoute(app: Express) {
         
         const createdOperation = insertResult[0];
         console.log("Operazione creata con successo:", createdOperation);
+        
+        // Invalidazione cache del server
+        try {
+          console.log("🗑️ DIRECT-OPERATIONS: Invalidando cache del server...");
+          BasketsCache.clear();
+          OperationsCache.clear();
+          invalidateUnifiedCache(); // Invalida anche la cache unificata operations
+          console.log("✅ DIRECT-OPERATIONS: Cache cestelli, operazioni e cache unificata invalidate");
+        } catch (cacheError) {
+          console.error("❌ DIRECT-OPERATIONS: Errore nell'invalidazione cache:", cacheError);
+        }
         
         // Notifica via WebSocket se disponibile
         if (typeof (global as any).broadcastUpdate === 'function') {
