@@ -751,6 +751,17 @@ export default function Operations() {
       // Arricchisci i dati prima di aggiungerli al gruppo
       let enrichedOp = { ...op };
       
+      // Arricchisci i dati del cestello se non presente ma c'è basketId
+      if (!enrichedOp.basket && enrichedOp.basketId && baskets) {
+        const matchingBasket = baskets.find((b: any) => b.id === enrichedOp.basketId);
+        if (matchingBasket) {
+          enrichedOp.basket = matchingBasket;
+          console.log(`Cestello trovato per operazione ${op.id}: ID ${matchingBasket.id}, physicalNumber ${matchingBasket.physicalNumber}`);
+        } else {
+          console.log(`Cestello non trovato per operazione ${op.id} con basketId ${enrichedOp.basketId}`);
+        }
+      }
+      
       // Arricchisci i dati del lotto se non presente ma c'è l'ID
       if (!enrichedOp.lot && enrichedOp.lotId && lots) {
         const matchingLot = lots.find((l: any) => l.id === enrichedOp.lotId);
@@ -978,7 +989,7 @@ export default function Operations() {
     });
   };
   
-  // Filter operations - SEMPLIFICATO: IGNORA DIPENDENZA DA LOTS
+  // Filter operations - ARRICCHITE CON DATI CESTELLO
   const filteredOperations = useMemo(() => {
     if (!operations || !cycles) {
       console.log('🚨 FILTER: Missing data - operations:', !!operations, 'cycles:', !!cycles);
@@ -987,15 +998,42 @@ export default function Operations() {
     
     console.log('🔍 FILTER: Processing', operations.length, 'operations');
     
-    // TEMPORANEO: Restituisci tutte le operazioni senza filtri
-    const sorted = sortData(operations);
+    // Arricchisci tutte le operazioni con i dati del cestello
+    const enrichedOperations = operations.map((op: any) => {
+      let enrichedOp = { ...op };
+      
+      // Arricchisci i dati del cestello se non presente ma c'è basketId
+      if (!enrichedOp.basket && enrichedOp.basketId && baskets) {
+        const matchingBasket = baskets.find((b: any) => b.id === enrichedOp.basketId);
+        if (matchingBasket) {
+          enrichedOp.basket = matchingBasket;
+        }
+      }
+      
+      // Arricchisci i dati del lotto se non presente ma c'è l'ID
+      if (!enrichedOp.lot && enrichedOp.lotId && lots) {
+        const matchingLot = lots.find((l: any) => l.id === enrichedOp.lotId);
+        if (matchingLot) {
+          enrichedOp.lot = matchingLot;
+        }
+      }
+      
+      // Arricchisci i dati della taglia se non presente ma c'è l'ID
+      if (!enrichedOp.size && enrichedOp.sizeId && sizes) {
+        enrichedOp.size = sizes.find((s: any) => s.id === enrichedOp.sizeId);
+      }
+      
+      return enrichedOp;
+    });
+    
+    const sorted = sortData(enrichedOperations);
     console.log('🔍 FILTER: Returning', sorted.length, 'sorted operations');
     sorted.forEach(op => {
-      console.log(`🔍 Final operation ${op.id}: ${op.type}, basket ${op.basketId}`);
+      console.log(`🔍 Final operation ${op.id}: ${op.type}, basket ${op.basketId} (physicalNumber: ${op.basket?.physicalNumber || 'N/A'})`);
     });
     return sorted;
     
-  }, [operations, cycles, filters.searchTerm, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, sortConfig]);
+  }, [operations, cycles, baskets, lots, sizes, filters.searchTerm, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, sortConfig]);
   
   // Get filtered cycles based on selected filters
   const filteredCycleIds = useMemo(() => {
