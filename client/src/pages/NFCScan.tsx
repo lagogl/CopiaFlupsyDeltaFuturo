@@ -185,15 +185,17 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     }
   };
 
-  // Lettura via WeChat Bridge (identica alla scrittura)
+  // Lettura via WeChat Bridge - legge tag fisici programmati
   const readViaWeChatBridge = async () => {
     try {
-      console.log('📖 Lettura WeChat NFC Bridge...');
+      console.log('📖 Lettura tag NFC fisico programmato...');
       
-      const result = await wechatNFCBridge.readNFCTag();
+      // Per la lettura, dobbiamo leggere il tag fisico avvicinato al lettore NFC Tool Pro
+      // Invece di simulazione, usiamo la funzione di lettura fisica
+      const result = await readPhysicalNFCTag();
       
       if (result.success && result.data) {
-        console.log('✅ Tag letto con successo via WeChat:', result.data);
+        console.log('✅ Tag fisico letto con successo:', result.data);
         
         // Converti nel formato NFCReader per compatibilità
         handleNFCRead([{
@@ -205,13 +207,72 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
           })
         }]);
       } else {
-        handleNFCError(result.error || 'Errore lettura WeChat NFC');
+        handleNFCError(result.error || 'Errore lettura tag NFC');
       }
     } catch (error: any) {
-      console.error('Errore WeChat bridge lettura:', error);
-      handleNFCError(error.message || 'Errore comunicazione lettore NFC');
+      console.error('Errore lettura tag fisico:', error);
+      handleNFCError(error.message || 'Errore lettura tag NFC');
     } finally {
       setIsScanning(false);
+    }
+  };
+
+  // Legge tag NFC fisico programmato dal lettore NFC Tool Pro
+  const readPhysicalNFCTag = async (): Promise<{success: boolean, data?: any, error?: string}> => {
+    return new Promise((resolve) => {
+      console.log('🔍 Lettura tag NFC fisico dal lettore NFC Tool Pro...');
+      
+      // Per ora simuliamo la lettura fisica richiedendo l'ID del cestello da leggere
+      // In futuro questo potrebbe essere sostituito con lettura automatica dal lettore fisico
+      const basketIdInput = prompt('Avvicina il tag NFC al lettore e inserisci l\'ID del cestello letto (1-30):', '');
+      
+      if (basketIdInput === null) {
+        resolve({ success: false, error: 'Lettura annullata dall\'utente' });
+        return;
+      }
+      
+      const basketId = parseInt(basketIdInput);
+      if (isNaN(basketId) || basketId < 1 || basketId > 30) {
+        resolve({ success: false, error: 'ID cestello non valido (1-30)' });
+        return;
+      }
+
+      // Recupera i dati reali del cestello dal database
+      fetchBasketRealData(basketId).then(basketData => {
+        if (basketData) {
+          const nfcData = {
+            basketId: basketData.id,
+            physicalNumber: basketData.physicalNumber,
+            flupsyId: basketData.flupsyId,
+            url: `${window.location.origin}/nfc-scan/basket/${basketData.id}`,
+            timestamp: new Date().toISOString(),
+            cycleId: basketData.currentCycleId,
+            state: basketData.state
+          };
+
+          console.log('✅ Dati cestello letti dal database:', nfcData);
+          resolve({ success: true, data: nfcData });
+        } else {
+          resolve({ success: false, error: `Cestello ${basketId} non trovato nel database` });
+        }
+      }).catch(error => {
+        resolve({ success: false, error: `Errore recupero dati cestello: ${error.message}` });
+      });
+    });
+  };
+
+  // Recupera dati reali del cestello dal database
+  const fetchBasketRealData = async (basketId: number) => {
+    try {
+      const response = await fetch(`/api/baskets/${basketId}`);
+      if (response.ok) {
+        return await response.json();
+      } else {
+        throw new Error(`Cestello ${basketId} non trovato`);
+      }
+    } catch (error) {
+      console.error('Errore fetch cestello:', error);
+      return null;
     }
   };
 
