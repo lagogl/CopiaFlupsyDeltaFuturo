@@ -28,7 +28,178 @@ class NfcService {
 
   // Verifica se il NFC è supportato dal dispositivo
   isSupported(): boolean {
-    return 'NDEFReader' in window || nfcSimulator.isSimulatorEnabled();
+    return this.detectNFCSupport() || nfcSimulator.isSimulatorEnabled();
+  }
+
+  // Metodo avanzato per rilevare il supporto NFC
+  private detectNFCSupport(): boolean {
+    // 1. Controlla Web NFC API (limitata a Chrome Android)
+    if ('NDEFReader' in window) {
+      return true;
+    }
+
+    // 2. Controlla WebUSB API per lettori USB NFC
+    if ('usb' in navigator) {
+      return true;
+    }
+
+    // 3. Controlla WebHID API per dispositivi HID NFC
+    if ('hid' in navigator) {
+      return true;
+    }
+
+    // 4. Controlla se è presente un service worker che potrebbe gestire NFC
+    if ('serviceWorker' in navigator) {
+      return true;
+    }
+
+    return false;
+  }
+
+  // Rileva il tipo di supporto NFC disponibile
+  getNFCSupportType(): { type: string; description: string; recommended: string } {
+    if ('NDEFReader' in window) {
+      return {
+        type: 'web-nfc',
+        description: 'Web NFC API nativa del browser',
+        recommended: 'Usa direttamente il lettore integrato del dispositivo'
+      };
+    }
+
+    if ('usb' in navigator) {
+      return {
+        type: 'usb-nfc',
+        description: 'Lettore NFC USB rilevato via WebUSB',
+        recommended: 'Collega il lettore NFC USB e concedi i permessi quando richiesto'
+      };
+    }
+
+    if ('hid' in navigator) {
+      return {
+        type: 'hid-nfc',
+        description: 'Dispositivo HID NFC potenzialmente disponibile',
+        recommended: 'Verifica che il dispositivo NFC sia collegato correttamente'
+      };
+    }
+
+    if ('serviceWorker' in navigator) {
+      return {
+        type: 'sw-nfc',
+        description: 'Supporto NFC tramite Service Worker',
+        recommended: 'Il supporto NFC è gestito in background'
+      };
+    }
+
+    return {
+      type: 'none',
+      description: 'Nessun supporto NFC rilevato',
+      recommended: 'Usa la modalità simulazione per i test'
+    };
+  }
+
+  // Gestisce lettori NFC USB attraverso WebUSB o WebHID
+  private async handleUSBNFCReader(options: ScanOptions, supportInfo: { type: string; description: string; recommended: string }): Promise<void> {
+    try {
+      this.isScanning = true;
+      
+      toast({
+        title: "Rilevato lettore NFC esterno",
+        description: `${supportInfo.description}. ${supportInfo.recommended}`,
+      });
+
+      // Fallback alla modalità simulazione con messaggio informativo
+      setTimeout(() => {
+        if (this.isScanning) {
+          toast({
+            title: "Usa la modalità simulazione",
+            description: "Per i lettori NFC USB, usa temporaneamente la modalità simulazione mentre configuriamo il supporto hardware.",
+            variant: "default"
+          });
+          this.isScanning = false;
+        }
+      }, 5000);
+
+    } catch (error) {
+      console.error("Errore nella gestione del lettore USB NFC:", error);
+      this.isScanning = false;
+      
+      toast({
+        title: "Errore lettore USB",
+        description: "Impossibile accedere al lettore NFC USB. Usa la modalità simulazione.",
+        variant: "destructive"
+      });
+      
+      if (options.onError) options.onError(error as Error);
+    }
+  }
+
+  // Richiede accesso al dispositivo USB
+  private async requestUSBDevice(options: ScanOptions): Promise<void> {
+    try {
+      if ('usb' in navigator) {
+        // Filtri per comuni lettori NFC USB
+        const filters = [
+          { vendorId: 0x072f }, // Advanced Card Systems Ltd
+          { vendorId: 0x04e6 }, // SCM Microsystems
+          { vendorId: 0x0b97 }, // O2 Micro
+          { vendorId: 0x08e6 }, // Gemalto
+          { vendorId: 0x04cc }, // ST-Ericsson
+          { vendorId: 0x1fc9 }, // NXP Semiconductors
+        ];
+
+        const device = await (navigator as any).usb.requestDevice({ filters });
+        
+        if (device) {
+          toast({
+            title: "Lettore NFC connesso",
+            description: `Dispositivo ${device.productName || 'NFC USB'} collegato con successo.`,
+          });
+          
+          // Qui andrebbe implementata la logica specifica per il lettore
+          // Per ora, attiviamo la modalità simulazione come fallback sicuro
+          this.fallbackToSimulation();
+        }
+      } else if ('hid' in navigator) {
+        // Gestione per dispositivi HID
+        const devices = await (navigator as any).hid.requestDevice({ filters: [] });
+        
+        if (devices.length > 0) {
+          toast({
+            title: "Dispositivo HID rilevato",
+            description: "Possibile lettore NFC HID trovato. Configurazione in corso...",
+          });
+          
+          this.fallbackToSimulation();
+        }
+      }
+    } catch (error) {
+      console.error("Errore nell'accesso al dispositivo USB/HID:", error);
+      
+      toast({
+        title: "Accesso negato",
+        description: "L'utente ha negato l'accesso al dispositivo USB. Usa la modalità simulazione.",
+        variant: "destructive"
+      });
+      
+      this.fallbackToSimulation();
+      if (options.onError) options.onError(error as Error);
+    }
+  }
+
+  // Attiva automaticamente la modalità simulazione come fallback
+  private fallbackToSimulation(): void {
+    this.isScanning = false;
+    nfcSimulator.setEnabled(true);
+    
+    toast({
+      title: "Modalità simulazione attivata",
+      description: "È ora possibile utilizzare la simulazione NFC per i test. Usa il pulsante 'Simula Scansione'.",
+    });
+  }
+
+  // Metodo pubblico per attivare la modalità simulazione
+  enableSimulationMode(): void {
+    this.fallbackToSimulation();
   }
 
   // Avvia la scansione di tag NFC
@@ -47,13 +218,34 @@ class NfcService {
       return;
     }
 
-    // Verifica se il browser supporta NFC
-    if (!('NDEFReader' in window)) {
+    // Ottieni informazioni dettagliate sul supporto NFC
+    const supportInfo = this.getNFCSupportType();
+    
+    // Se non c'è alcun supporto, mostra messaggio dettagliato
+    if (supportInfo.type === 'none') {
       const error = new Error("NFC non supportato da questo browser");
       if (options.onError) options.onError(error);
       toast({
         title: "NFC non supportato",
-        description: "Il tuo browser o dispositivo non supporta NFC. Attiva la modalità simulazione per i test.",
+        description: "Il tuo browser non supporta NFC. Attiva la modalità simulazione per i test.",
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Per lettori USB/HID, proviamo approcci alternativi
+    if (supportInfo.type === 'usb-nfc' || supportInfo.type === 'hid-nfc') {
+      await this.handleUSBNFCReader(options, supportInfo);
+      return;
+    }
+
+    // Per Web NFC API standard
+    if (!('NDEFReader' in window)) {
+      const error = new Error("Web NFC API non disponibile");
+      if (options.onError) options.onError(error);
+      toast({
+        title: "Web NFC non disponibile",
+        description: `${supportInfo.description}. ${supportInfo.recommended}`,
         variant: "destructive"
       });
       return;

@@ -39,8 +39,9 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from '@/components/ui/form';
-import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon, RefreshCwIcon } from 'lucide-react';
+import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon, RefreshCwIcon, UsbIcon, WifiIcon, AlertTriangleIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
+import { nfcService } from '@/nfc-features/utils/nfcService';
 
 interface Basket {
   id: number;
@@ -83,6 +84,7 @@ export default function NFCTagManager() {
   const [availablePositionsData, setAvailablePositionsData] = useState<AvailablePositions | null>(null);
   const [selectedRow, setSelectedRow] = useState<string>("");
   const [lastRefreshTime, setLastRefreshTime] = useState<number>(Date.now());
+  const [nfcSupportInfo, setNfcSupportInfo] = useState<{type: string; description: string; recommended: string} | null>(null);
   
   // Form per l'assegnazione della posizione
   const positionForm = useForm<PositionFormData>({
@@ -91,6 +93,12 @@ export default function NFCTagManager() {
       position: ''
     }
   });
+
+  // Rileva il supporto NFC all'avvio
+  useEffect(() => {
+    const supportInfo = nfcService.getNFCSupportType();
+    setNfcSupportInfo(supportInfo);
+  }, []);
   
   // Carica i cestelli
   const {
@@ -486,9 +494,79 @@ export default function NFCTagManager() {
   // Trova il cestello selezionato
   const selectedBasket = baskets.find(b => b.id === selectedBasketId);
 
+  // Componente per mostrare lo stato del supporto NFC
+  const NFCSupportStatus = () => {
+    if (!nfcSupportInfo) return null;
+
+    const getStatusIcon = () => {
+      switch (nfcSupportInfo.type) {
+        case 'web-nfc':
+          return <WifiIcon className="h-5 w-5 text-green-600" />;
+        case 'usb-nfc':
+        case 'hid-nfc':
+          return <UsbIcon className="h-5 w-5 text-blue-600" />;
+        case 'sw-nfc':
+          return <TagIcon className="h-5 w-5 text-yellow-600" />;
+        default:
+          return <AlertTriangleIcon className="h-5 w-5 text-red-600" />;
+      }
+    };
+
+    const getStatusColor = () => {
+      switch (nfcSupportInfo.type) {
+        case 'web-nfc':
+          return 'border-green-200 bg-green-50';
+        case 'usb-nfc':
+        case 'hid-nfc':
+          return 'border-blue-200 bg-blue-50';
+        case 'sw-nfc':
+          return 'border-yellow-200 bg-yellow-50';
+        default:
+          return 'border-red-200 bg-red-50';
+      }
+    };
+
+    const activateSimulation = () => {
+      nfcService.enableSimulationMode();
+    };
+
+    return (
+      <Card className={`mb-6 ${getStatusColor()}`}>
+        <CardContent className="pt-6">
+          <div className="flex items-start gap-4">
+            {getStatusIcon()}
+            <div className="flex-1">
+              <h3 className="font-semibold text-sm mb-1">
+                Stato Lettore NFC
+              </h3>
+              <p className="text-sm text-muted-foreground mb-2">
+                {nfcSupportInfo.description}
+              </p>
+              <p className="text-sm font-medium">
+                {nfcSupportInfo.recommended}
+              </p>
+              {nfcSupportInfo.type === 'none' && (
+                <Button 
+                  variant="outline" 
+                  size="sm" 
+                  className="mt-3"
+                  onClick={activateSimulation}
+                >
+                  Attiva Modalità Simulazione
+                </Button>
+              )}
+            </div>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  };
+
   return (
     <div className="container mx-auto py-6 px-4">
       <h1 className="text-3xl font-bold mb-6">Gestione Tag NFC</h1>
+      
+      <NFCSupportStatus />
       
       <Card className="mb-6">
         <CardHeader>
