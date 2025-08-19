@@ -155,38 +155,76 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     fetchBasketData();
   }, [scannedBasketId]);
   
-  // Avvia la scansione NFC
+  // Avvia la scansione NFC (STESSA LOGICA del modulo di scrittura funzionante)
   const startScan = async () => {
     console.log("Avvio scansione NFC");
     setIsScanning(true);
     setScanError(null);
     
-    // Se su PC e WeChat è disponibile, usa WeChat Bridge
-    if (!isMobile && nfcMode === 'wechat') {
-      try {
-        console.log('🔄 Avvio scansione WeChat NFC Bridge...');
-        const result = await wechatNFCBridge.readNFCTag();
-        
-        if (result.success && result.data) {
-          // Simula il formato dei dati NFCReader per compatibilità
-          handleNFCRead([{
-            recordType: 'text',
-            data: JSON.stringify({
-              id: result.data.basketId,
-              number: result.data.physicalNumber,
-              redirectTo: result.data.url
-            })
-          }]);
-        } else {
-          handleNFCError(result.error || 'Errore lettura WeChat NFC');
-        }
-      } catch (error: any) {
-        console.error('Errore WeChat NFC:', error);
-        handleNFCError(error.message || 'Errore WeChat NFC Bridge');
+    try {
+      // 1. Prova WeChat NFC Bridge se disponibile (STESSA LOGICA DI NFCWriter)
+      if (wechatNFCBridge.isWeChatAvailable()) {
+        console.log('🔄 Usando WeChat NFC Bridge per lettura...');
+        await readViaWeChatBridge();
+        return;
       }
-      return; // Non eseguire NFCReader nativo dopo WeChat
+
+      // 2. Usa Web NFC API standard se disponibile  
+      if ('NDEFReader' in window) {
+        await handleNativeNFC();
+        return;
+      }
+
+      // 3. Fallback su simulazione
+      await handleSimulationFallback();
+
+    } catch (error: any) {
+      console.error('Errore durante la lettura NFC:', error);
+      handleNFCError(error.message || 'Errore durante la lettura del tag NFC');
+      setIsScanning(false);
     }
-    // Per mobile o altri casi, il sistema nativo viene gestito dal componente NFCReader
+  };
+
+  // Lettura via WeChat Bridge (identica alla scrittura)
+  const readViaWeChatBridge = async () => {
+    try {
+      console.log('📖 Lettura WeChat NFC Bridge...');
+      
+      const result = await wechatNFCBridge.readNFCTag();
+      
+      if (result.success && result.data) {
+        console.log('✅ Tag letto con successo via WeChat:', result.data);
+        
+        // Converti nel formato NFCReader per compatibilità
+        handleNFCRead([{
+          recordType: 'text',
+          data: JSON.stringify({
+            id: result.data.basketId,
+            number: result.data.physicalNumber,
+            redirectTo: result.data.url
+          })
+        }]);
+      } else {
+        handleNFCError(result.error || 'Errore lettura WeChat NFC');
+      }
+    } catch (error: any) {
+      console.error('Errore WeChat bridge lettura:', error);
+      handleNFCError(error.message || 'Errore comunicazione lettore NFC');
+    } finally {
+      setIsScanning(false);
+    }
+  };
+
+  // Gestione NFC nativo (per mobile)
+  const handleNativeNFC = async () => {
+    // Questa logica viene gestita dal componente NFCReader per mobile
+    console.log('🔄 Avvio lettura NFC nativa...');
+  };
+
+  // Fallback simulazione
+  const handleSimulationFallback = async () => {
+    console.log('🎭 Avvio simulazione NFC...');
+    // Logica simulazione se necessaria
   };
   
   // Interrompe la scansione NFC
