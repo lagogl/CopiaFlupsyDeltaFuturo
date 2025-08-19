@@ -3,6 +3,8 @@ import { useLocation } from 'wouter';
 import { useToast } from '@/hooks/use-toast';
 import NFCReader from '@/components/NFCReader';
 import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getSizeColor } from '@/lib/utils';
+import { wechatNFCBridge } from '@/nfc-features/utils/wechatNFCBridge';
+import { bluetoothNFCDetector } from '@/nfc-features/utils/bluetoothNFCDetector';
 
 // UI Components
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
@@ -90,6 +92,33 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     typeof navigator !== 'undefined' ? navigator.userAgent : ''
   );
   
+  // Determina quale sistema NFC utilizzare
+  const [nfcMode, setNfcMode] = useState<'wechat' | 'native' | 'unavailable'>('unavailable');
+  
+  useEffect(() => {
+    // Su PC: priorità a WeChat Bridge se disponibile
+    if (!isMobile) {
+      if (wechatNFCBridge.isWeChatAvailable()) {
+        setNfcMode('wechat');
+        wechatNFCBridge.initialize();
+      } else if ('NDEFReader' in window) {
+        setNfcMode('native');
+      } else {
+        setNfcMode('unavailable');
+      }
+    } else {
+      // Su mobile: priorità al lettore nativo
+      if ('NDEFReader' in window) {
+        setNfcMode('native');
+      } else if (wechatNFCBridge.isWeChatAvailable()) {
+        setNfcMode('wechat');
+        wechatNFCBridge.initialize();
+      } else {
+        setNfcMode('unavailable');
+      }
+    }
+  }, [isMobile]);
+  
   // Se c'è un ID nei parametri, carica subito i dettagli del cestello
   useEffect(() => {
     if (params?.id) {
@@ -129,10 +158,36 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   }, [scannedBasketId]);
   
   // Avvia la scansione NFC
-  const startScan = () => {
+  const startScan = async () => {
     console.log("Avvio scansione NFC");
     setIsScanning(true);
     setScanError(null);
+    
+    // Se su PC e WeChat è disponibile, usa WeChat Bridge
+    if (!isMobile && nfcMode === 'wechat') {
+      try {
+        console.log('🔄 Avvio scansione WeChat NFC Bridge...');
+        const result = await wechatNFCBridge.readNFCTag();
+        
+        if (result.success && result.data) {
+          // Simula il formato dei dati NFCReader per compatibilità
+          handleNFCRead([{
+            recordType: 'text',
+            data: JSON.stringify({
+              id: result.data.basketId,
+              number: result.data.physicalNumber,
+              redirectTo: result.data.url
+            })
+          }]);
+        } else {
+          handleNFCError(result.error || 'Errore lettura WeChat NFC');
+        }
+      } catch (error: any) {
+        console.error('Errore WeChat NFC:', error);
+        handleNFCError(error.message || 'Errore WeChat NFC Bridge');
+      }
+    }
+    // Altrimenti usa il sistema nativo (gestito da NFCReader component)
   };
   
   // Interrompe la scansione NFC
@@ -273,7 +328,9 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
             <CardDescription className="text-center">
               {isMobile ? 
                 "Tocca per iniziare e avvicina il telefono al tag" :
-                "Avvicina il telefono al tag NFC della cesta per visualizzare i dati"
+                nfcMode === 'wechat' ? 
+                  "Utilizzo WeChat bridge - Avvicina il tag al lettore NFC Tool Pro" :
+                  "Avvicina il dispositivo al tag NFC della cesta per visualizzare i dati"
               }
             </CardDescription>
           </CardHeader>
@@ -293,7 +350,9 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                 <p className="text-center text-muted-foreground mb-6">
                   {isMobile ? 
                     "Posiziona il telefono vicino al tag NFC della cesta..." :
-                    "Avvicina il dispositivo al tag NFC..."
+                    nfcMode === 'wechat' ?
+                      "Utilizzo WeChat bridge - Posiziona il tag vicino al lettore NFC Tool Pro..." :
+                      "Avvicina il dispositivo al tag NFC..."
                   }
                 </p>
                 <Button 
@@ -352,9 +411,14 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                 {!isMobile && (
                   <Alert className="mt-6">
                     <InfoIcon className="h-4 w-4" />
-                    <AlertTitle>Modalità desktop</AlertTitle>
+                    <AlertTitle>
+                      {nfcMode === 'wechat' ? 'WeChat Bridge rilevato' : 'Modalità desktop'}
+                    </AlertTitle>
                     <AlertDescription>
-                      Stai utilizzando un dispositivo desktop. La scansione NFC è disponibile solo su dispositivi mobili compatibili.
+                      {nfcMode === 'wechat' ? 
+                        'Sistema NFC Tool Pro disponibile tramite WeChat bridge. Assicurati che WeChat e NFC Tool Pro siano attivi.' :
+                        'Stai utilizzando un dispositivo desktop. La scansione NFC è disponibile solo su dispositivi mobili compatibili.'
+                      }
                     </AlertDescription>
                   </Alert>
                 )}
