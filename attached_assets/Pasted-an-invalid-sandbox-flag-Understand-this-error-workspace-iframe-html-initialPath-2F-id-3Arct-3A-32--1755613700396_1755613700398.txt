@@ -1,0 +1,75 @@
+an invalid sandbox flag.Understand this error
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'ambient-light-sensor'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'battery'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'execution-while-not-rendered'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'execution-while-out-of-viewport'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'layout-animations'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'legacy-image-formats'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'navigation-override'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'oversized-images'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'publickey-credentials'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'speaker-selection'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'unoptimized-images'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Unrecognized feature: 'unsized-media'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Allow attribute will take precedence over 'allowfullscreen'.Understand this warning
+workspace_iframe.html?initialPath=%2F&id=%3Arct%3A:32 Allow attribute will take precedence over 'allowpaymentrequest'.Understand this warning
+Network.js:227 WebSocket connection to 'wss://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/?token=yLJ2yFvaOkzd' failed: 
+t @ Network.js:227Understand this error
+Network.js:227 Uncaught (in promise) SyntaxError: Failed to construct 'WebSocket': The URL 'wss://localhost:undefined/?token=yLJ2yFvaOkzd' is invalid.
+    at new t (Network.js:227:18)
+    at setupWebSocket (client:536:19)
+    at fallback (client:509:16)
+    at WebSocket.<anonymous> (client:555:7)Understand this error
+Console.js:61 Debug WebSocket URL construction: Object
+Console.js:61 Tentativo di connessione WebSocket: wss://b5f7b2b2-7c79-4404-86f2-12d51201d795-00-1vlov0b4e7kj3.sisko.replit.dev/ws
+Console.js:61 API Request: GET /api/notifications?unreadOnly=true
+Console.js:61 Query request to: /api/baskets?includeAll=true
+Console.js:61 Query request to: /api/cycles?includeAll=true
+Console.js:61 Query request to: /api/operations?includeAll=true
+Console.js:61 Query request to: /api/lots?includeAll=true
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+Console.js:61 ✅ Tutti i Service Worker sono stati disregistrati
+Console.js:61 WebSocket connesso
+Console.js:61 Ricevuto messaggio WebSocket: Object
+FlupsyDeltaFuturo:1 Banner not shown: beforeinstallpromptevent.preventDefault() called. The page must call beforeinstallpromptevent.prompt() to show the banner.
+Console.js:61 Query request to: /api/flupsys
+Console.js:61 Query request to: /api/flupsys?includeAll=true
+Console.js:61 Query request to: /api/operations?includeAll=true&pageSize=1000
+Console.js:61 Query request to: /api/sizes
+Console.js:61 Query request to: /api/size-predictions?size=TP-3000&days=14
+Console.js:61 🔍 FlupsyScan - Rilevamento NFC: Object
+Console.js:61 🔧 WeChat Bridge disponibile (modalità desktop)
+Console.js:61 WeChat NFC Bridge inizializzato con successo
+Console.js:61 ⚙️ Forzatura WeChat Bridge per compatibilità NFC Tool Pro
+Console.js:61 Avvio scansione NFC
+Console.js:61 🔧 WeChat Bridge disponibile (modalità desktop)
+Console.js:61 🔄 Usando WeChat NFC Bridge per lettura...
+Console.js:61 📖 Lettura WeChat NFC Bridge...
+Console.js:61 🔍 Tentativo lettura NFC via WeChat bridge...
+Console.js:61 🖥️ Modalità desktop - lettura con bridge NFC Tool Pro
+Console.js:61 🔌 Tentativo lettura da bridge NFC Tool Pro: http://localhost:8089/nfc/read
+localhost:8089/nfc/read:1  Failed to load resource: net::ERR_CONNECTION_REFUSEDUnderstand this error
+Console.js:61 Bridge diretto non disponibile per lettura, usando simulazione
+Console.js:61 🔄 SIMULAZIONE LETTURA WECHAT NFC BRIDGE
+Console.js:61 📱 Lettore: NFC Tool Pro (WeChat Bridge)
+Network.js:219  Uncaught (in promise) TypeError: Failed to fetch
+    at window.fetch (Network.js:219:37)
+    at Object.apply (injected.js:253:39)
+    at WeChatNFCBridge.readViaBridge (wechatNFCBridge.ts:378:30)
+    at WeChatNFCBridge.readNFCTag (wechatNFCBridge.ts:349:27)
+    at readViaWeChatBridge (NFCScan.tsx:194:44)
+    at startScan (NFCScan.tsx:168:15)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=4d944aba:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=4d944aba:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=4d944aba:3733:39)
+    at invokeGuardedCallbackAndCatchFirstError (chunk-RPCDYKBN.js?v=4d944aba:3736:33)Understand this error
+Console.js:61 Errore NFC: Lettura annullata dall'utente
+Mt.forEach.n.<computed> @ Console.js:61Understand this error
+Console.js:61 API Request: GET /api/notifications?unreadOnly=true
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
+stallwart.build.js:1 stallwart: failed ping 1
+stallwart.build.js:1 stallwart: failed ping 2
+stallwart.build.js:1 stallwart: failed ping 3
+stallwart.build.js:1 stallwart: failed ping 4

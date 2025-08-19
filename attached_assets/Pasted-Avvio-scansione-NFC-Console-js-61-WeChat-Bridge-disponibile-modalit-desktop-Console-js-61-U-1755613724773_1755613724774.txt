@@ -1,0 +1,65 @@
+Avvio scansione NFC
+Console.js:61 🔧 WeChat Bridge disponibile (modalità desktop)
+Console.js:61 🔄 Usando WeChat NFC Bridge per lettura...
+Console.js:61 📖 Lettura WeChat NFC Bridge...
+Console.js:61 🔍 Tentativo lettura NFC via WeChat bridge...
+Console.js:61 🖥️ Modalità desktop - lettura con bridge NFC Tool Pro
+Console.js:61 🔌 Tentativo lettura da bridge NFC Tool Pro: http://localhost:8089/nfc/read
+injected.js:253  POST http://localhost:8089/nfc/read net::ERR_CONNECTION_REFUSED
+window.fetch @ Network.js:219
+apply @ injected.js:253
+readViaBridge @ wechatNFCBridge.ts:378
+readNFCTag @ wechatNFCBridge.ts:349
+readViaWeChatBridge @ NFCScan.tsx:194
+startScan @ NFCScan.tsx:168
+callCallback2 @ chunk-RPCDYKBN.js?v=4d944aba:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=4d944aba:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=4d944aba:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=4d944aba:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=4d944aba:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=4d944aba:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=4d944aba:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=4d944aba:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=4d944aba:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=4d944aba:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=4d944aba:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=4d944aba:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=4d944aba:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=4d944aba:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=4d944aba:5449Understand this error
+Console.js:61 Bridge diretto non disponibile per lettura, usando simulazione
+Console.js:61 🔄 SIMULAZIONE LETTURA WECHAT NFC BRIDGE
+Console.js:61 📱 Lettore: NFC Tool Pro (WeChat Bridge)
+Network.js:219  Uncaught (in promise) TypeError: Failed to fetch
+    at window.fetch (Network.js:219:37)
+    at Object.apply (injected.js:253:39)
+    at WeChatNFCBridge.readViaBridge (wechatNFCBridge.ts:378:30)
+    at WeChatNFCBridge.readNFCTag (wechatNFCBridge.ts:349:27)
+    at readViaWeChatBridge (NFCScan.tsx:194:44)
+    at startScan (NFCScan.tsx:168:15)
+    at HTMLUnknownElement.callCallback2 (chunk-RPCDYKBN.js?v=4d944aba:3674:22)
+    at Object.invokeGuardedCallbackDev (chunk-RPCDYKBN.js?v=4d944aba:3699:24)
+    at invokeGuardedCallback (chunk-RPCDYKBN.js?v=4d944aba:3733:39)
+    at invokeGuardedCallbackAndCatchFirstError (chunk-RPCDYKBN.js?v=4d944aba:3736:33)
+window.fetch @ Network.js:219
+apply @ injected.js:253
+readViaBridge @ wechatNFCBridge.ts:378
+readNFCTag @ wechatNFCBridge.ts:349
+readViaWeChatBridge @ NFCScan.tsx:194
+startScan @ NFCScan.tsx:168
+callCallback2 @ chunk-RPCDYKBN.js?v=4d944aba:3674
+invokeGuardedCallbackDev @ chunk-RPCDYKBN.js?v=4d944aba:3699
+invokeGuardedCallback @ chunk-RPCDYKBN.js?v=4d944aba:3733
+invokeGuardedCallbackAndCatchFirstError @ chunk-RPCDYKBN.js?v=4d944aba:3736
+executeDispatch @ chunk-RPCDYKBN.js?v=4d944aba:7014
+processDispatchQueueItemsInOrder @ chunk-RPCDYKBN.js?v=4d944aba:7034
+processDispatchQueue @ chunk-RPCDYKBN.js?v=4d944aba:7043
+dispatchEventsForPlugins @ chunk-RPCDYKBN.js?v=4d944aba:7051
+(anonymous) @ chunk-RPCDYKBN.js?v=4d944aba:7174
+batchedUpdates$1 @ chunk-RPCDYKBN.js?v=4d944aba:18913
+batchedUpdates @ chunk-RPCDYKBN.js?v=4d944aba:3579
+dispatchEventForPluginEventSystem @ chunk-RPCDYKBN.js?v=4d944aba:7173
+dispatchEventWithEnableCapturePhaseSelectiveHydrationWithoutDiscreteEventReplay @ chunk-RPCDYKBN.js?v=4d944aba:5478
+dispatchEvent @ chunk-RPCDYKBN.js?v=4d944aba:5472
+dispatchDiscreteEvent @ chunk-RPCDYKBN.js?v=4d944aba:5449Understand this error
+Console.js:61 Errore NFC: Lettura annullata dall'utente
