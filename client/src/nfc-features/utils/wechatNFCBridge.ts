@@ -26,6 +26,7 @@ interface NFCWriteData {
 export class WeChatNFCBridge {
   private config: WeChatNFCConfig | null = null;
   private initialized = false;
+  private bridgeUrl: string | null = null;
 
   /**
    * Verifica se WeChat è disponibile come bridge
@@ -121,19 +122,30 @@ export class WeChatNFCBridge {
    */
   private async initializeAlternativeBridge(): Promise<boolean> {
     try {
-      // Tenta connessione diretta con NFC Tool Pro via WebSocket o HTTP
-      const bridgeUrl = 'ws://localhost:8089'; // Porta comune per NFC Tool Pro bridge
+      // Tenta connessione diretta con NFC Tool Pro via diverse porte
+      const bridgeUrls = [
+        'ws://localhost:8089',  // Porta comune NFC Tool Pro
+        'ws://localhost:8080',  // Porta alternativa
+        'ws://localhost:3001',  // Porta WebSocket comune
+        'http://localhost:8089', // HTTP bridge
+        'http://localhost:8080', // HTTP alternativo
+      ];
       
-      // Test connessione bridge
-      const testConnection = await this.testBridgeConnection(bridgeUrl);
-      if (testConnection) {
-        console.log('Bridge alternativo NFC Tool Pro connesso');
-        this.initialized = true;
-        return true;
+      console.log('🔍 Ricerca lettore NFC Tool Pro fisico...');
+      
+      for (const url of bridgeUrls) {
+        console.log(`⚡ Test connessione: ${url}`);
+        const testConnection = await this.testBridgeConnection(url);
+        if (testConnection) {
+          console.log(`✅ NFC Tool Pro fisico trovato su: ${url}`);
+          this.bridgeUrl = url;
+          this.initialized = true;
+          return true;
+        }
       }
 
-      // Fallback: modalità simulazione avanzata con logging WeChat
-      console.log('Modalità simulazione WeChat NFC attivata');
+      // Se non trova hardware fisico, modalità simulazione
+      console.log('⚠️ Lettore NFC Tool Pro fisico non trovato, attivazione modalità simulazione');
       this.initialized = true;
       return true;
 
@@ -149,22 +161,36 @@ export class WeChatNFCBridge {
   private async testBridgeConnection(url: string): Promise<boolean> {
     return new Promise((resolve) => {
       try {
-        const ws = new WebSocket(url);
-        const timeout = setTimeout(() => {
-          ws.close();
-          resolve(false);
-        }, 3000);
+        // Test WebSocket se l'URL inizia con ws://
+        if (url.startsWith('ws://')) {
+          const ws = new WebSocket(url);
+          const timeout = setTimeout(() => {
+            ws.close();
+            resolve(false);
+          }, 3000);
 
-        ws.onopen = () => {
-          clearTimeout(timeout);
-          ws.close();
-          resolve(true);
-        };
+          ws.onopen = () => {
+            clearTimeout(timeout);
+            ws.close();
+            resolve(true);
+          };
 
-        ws.onerror = () => {
-          clearTimeout(timeout);
+          ws.onerror = () => {
+            clearTimeout(timeout);
+            resolve(false);
+          };
+        } 
+        // Test HTTP per endpoint bridge
+        else if (url.startsWith('http://')) {
+          fetch(url + '/status', { 
+            method: 'GET',
+            signal: AbortSignal.timeout(3000)
+          })
+          .then(response => resolve(response.ok))
+          .catch(() => resolve(false));
+        } else {
           resolve(false);
-        };
+        }
       } catch {
         resolve(false);
       }
@@ -311,11 +337,29 @@ export class WeChatNFCBridge {
     try {
       console.log('🔍 Tentativo lettura NFC via WeChat bridge...');
       
-      // Su desktop, simula l'uso di NFC Tool Pro con input utente
+      // Su desktop, tenta prima connessione hardware reale
       const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
       if (isDesktop) {
-        console.log('🖥️ Modalità desktop - simulazione NFC Tool Pro tramite WeChat');
+        console.log('🖥️ Modalità desktop - tentativo connessione NFC Tool Pro hardware');
+        
+        // Prova prima la connessione al lettore fisico se configurato
+        if (this.bridgeUrl) {
+          console.log(`🔌 Tentativo lettura da lettore fisico: ${this.bridgeUrl}`);
+          
+          try {
+            const hardwareResult = await this.readFromHardwareBridge(this.bridgeUrl);
+            if (hardwareResult.success) {
+              console.log('✅ Tag letto da lettore fisico NFC Tool Pro');
+              return hardwareResult;
+            }
+          } catch (error) {
+            console.log('⚠️ Lettore fisico non risponde, passaggio a simulazione');
+          }
+        }
+        
+        // Fallback: simulazione solo se hardware non disponibile
+        console.log('🖥️ Simulazione NFC Tool Pro (hardware non trovato)');
         
         return new Promise((resolve) => {
           setTimeout(() => {
@@ -370,13 +414,96 @@ export class WeChatNFCBridge {
   }
 
   /**
+   * Legge dati dal bridge hardware fisico
+   */
+  private async readFromHardwareBridge(url: string): Promise<WeChatNFCResult> {
+    try {
+      if (url.startsWith('ws://')) {
+        // Connessione WebSocket per lettura in tempo reale
+        return new Promise((resolve, reject) => {
+          const ws = new WebSocket(url);
+          const timeout = setTimeout(() => {
+            ws.close();
+            reject(new Error('Timeout connessione lettore'));
+          }, 10000);
+
+          ws.onopen = () => {
+            console.log('🔌 Connesso al lettore NFC Tool Pro');
+            // Invia comando di lettura
+            ws.send(JSON.stringify({ command: 'read', timeout: 5000 }));
+          };
+
+          ws.onmessage = (event) => {
+            clearTimeout(timeout);
+            try {
+              const data = JSON.parse(event.data);
+              if (data.success && data.tagData) {
+                resolve({
+                  success: true,
+                  data: {
+                    basketId: data.tagData.basketId,
+                    physicalNumber: data.tagData.physicalNumber,
+                    flupsyId: data.tagData.flupsyId,
+                    url: data.tagData.url,
+                    timestamp: new Date().toISOString()
+                  }
+                });
+              } else {
+                resolve({ success: false, error: data.error || 'Nessun tag rilevato' });
+              }
+            } catch (e) {
+              resolve({ success: false, error: 'Errore parsing risposta lettore' });
+            }
+            ws.close();
+          };
+
+          ws.onerror = () => {
+            clearTimeout(timeout);
+            resolve({ success: false, error: 'Errore comunicazione lettore' });
+          };
+        });
+      } else if (url.startsWith('http://')) {
+        // Connessione HTTP per bridge REST
+        const response = await fetch(url + '/nfc/read', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ timeout: 5000 }),
+          signal: AbortSignal.timeout(10000)
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          if (data.success && data.tagData) {
+            return {
+              success: true,
+              data: {
+                basketId: data.tagData.basketId,
+                physicalNumber: data.tagData.physicalNumber,
+                flupsyId: data.tagData.flupsyId,
+                url: data.tagData.url,
+                timestamp: new Date().toISOString()
+              }
+            };
+          }
+        }
+        return { success: false, error: 'Nessun tag rilevato dal lettore fisico' };
+      }
+    } catch (error) {
+      return { success: false, error: `Errore lettore fisico: ${error}` };
+    }
+
+    return { success: false, error: 'Protocollo bridge non supportato' };
+  }
+
+  /**
    * Ottiene lo stato del bridge WeChat
    */
-  getStatus(): { available: boolean; initialized: boolean; method: string } {
+  getStatus(): { available: boolean; initialized: boolean; method: string; hardwareConnected: boolean } {
     return {
       available: this.isWeChatAvailable(),
       initialized: this.initialized,
-      method: this.isWeChatAvailable() ? 'WeChat SDK' : 'Bridge alternativo'
+      method: this.bridgeUrl ? 'Hardware NFC Tool Pro' : (this.isWeChatAvailable() ? 'WeChat SDK' : 'Bridge alternativo'),
+      hardwareConnected: !!this.bridgeUrl
     };
   }
 
