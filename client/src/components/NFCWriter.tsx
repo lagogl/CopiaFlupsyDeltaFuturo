@@ -1,8 +1,9 @@
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/dialog';
-import { AlertCircle, CheckCircle, XCircle, WifiIcon } from 'lucide-react';
+import { AlertCircle, CheckCircle, XCircle, WifiIcon, AlertTriangle } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
+import { nfcService } from '@/nfc-features/utils/nfcService';
 
 interface NFCWriterProps {
   basketId: number;
@@ -178,19 +179,31 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
     return (
       <div className="py-6 flex flex-col items-center justify-center space-y-4">
         <DialogHeader>
-          <DialogTitle className="text-center">NFC non supportato</DialogTitle>
+          <DialogTitle className="text-center">Configurazione NFC</DialogTitle>
           <DialogDescription className="text-center">
-            Questo dispositivo non supporta la tecnologia NFC. Utilizza un dispositivo compatibile con NFC per programmare i tag.
+            Il sistema ha rilevato che il supporto NFC nativo non è disponibile. 
+            Puoi utilizzare modalità alternative come lettori USB o simulazione per test.
           </DialogDescription>
         </DialogHeader>
         
         <div className="flex items-center justify-center p-4">
-          <XCircle className="h-16 w-16 text-red-500" />
+          <AlertTriangle className="h-16 w-16 text-yellow-500" />
         </div>
         
-        <Button variant="ghost" onClick={onCancel}>
-          Chiudi
-        </Button>
+        <div className="flex space-x-2">
+          <Button 
+            variant="outline" 
+            onClick={() => {
+              nfcService.enableSimulationMode();
+              onCancel();
+            }}
+          >
+            Attiva Simulazione
+          </Button>
+          <Button variant="ghost" onClick={onCancel}>
+            Chiudi
+          </Button>
+        </div>
       </div>
     );
   }
