@@ -107,6 +107,7 @@ function Router() {
       <ProtectedRoute path="/nfc-scan/basket/:id" component={NFCScan}/>
       <ProtectedRoute path="/nfc-prima-attivazione" component={NFCPrimaAttivazione}/>
       <ProtectedRoute path="/nfc-tags" component={NFCTagManager}/>
+      <ProtectedRoute path="/gestione-tag-nfc" component={NFCTagManager}/>
       <ProtectedRoute path="/grow-journey" component={GrowJourney}/>
       <ProtectedRoute path="/basket-selection" component={BasketSelection}/>
       <ProtectedRoute path="/backup" component={BackupPage} requiredRole="admin" />
