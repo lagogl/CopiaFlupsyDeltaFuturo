@@ -31,12 +31,22 @@ export class WeChatNFCBridge {
    * Verifica se WeChat è disponibile come bridge
    */
   isWeChatAvailable(): boolean {
-    // Verifica se siamo in un ambiente WeChat o se WeChat JS SDK è disponibile
-    return typeof window !== 'undefined' && (
-      (window as any).wx !== undefined ||
-      (window as any).WeixinJSBridge !== undefined ||
-      navigator.userAgent.includes('MicroMessenger')
-    );
+    // Per testing, forziamo la disponibilità su desktop
+    if (typeof window !== 'undefined') {
+      const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      // Su desktop, simula WeChat disponibile per testing
+      if (isDesktop) {
+        console.log('🔧 WeChat Bridge disponibile (modalità desktop)');
+        return true;
+      }
+      
+      // Su mobile, verifica WeChat reale
+      return (window as any).wx !== undefined || 
+             (window as any).WeixinJSBridge !== undefined ||
+             navigator.userAgent.includes('MicroMessenger');
+    }
+    return false;
   }
 
   /**
@@ -301,16 +311,52 @@ export class WeChatNFCBridge {
     try {
       console.log('🔍 Tentativo lettura NFC via WeChat bridge...');
       
-      // Simulazione lettura avanzata
+      // Su desktop, simula l'uso di NFC Tool Pro con input utente
+      const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      
+      if (isDesktop) {
+        console.log('🖥️ Modalità desktop - simulazione NFC Tool Pro tramite WeChat');
+        
+        return new Promise((resolve) => {
+          setTimeout(() => {
+            // Chiedi all'utente di inserire l'ID del cestello da simulare
+            const basketIdInput = prompt('Simulazione NFC Tool Pro:\nInserisci ID cestello da leggere (1-30):', '1');
+            
+            if (basketIdInput === null) {
+              resolve({ success: false, error: 'Lettura annullata dall\'utente' });
+              return;
+            }
+            
+            const basketId = parseInt(basketIdInput);
+            if (isNaN(basketId) || basketId < 1 || basketId > 30) {
+              resolve({ success: false, error: 'ID cestello non valido (1-30)' });
+              return;
+            }
+
+            // Simula un tag NFC con dati realistici
+            const mockNFCData = {
+              basketId: basketId,
+              physicalNumber: basketId,
+              flupsyId: 570,
+              url: `${window.location.origin}/nfc-scan/basket/${basketId}`,
+              timestamp: new Date().toISOString()
+            };
+
+            console.log('✅ Tag NFC simulato letto:', mockNFCData);
+            resolve({
+              success: true,
+              data: mockNFCData
+            });
+          }, 1000);
+        });
+      }
+      
+      // Simulazione lettura per mobile/altri casi
       return new Promise((resolve) => {
         setTimeout(() => {
           resolve({
-            success: true,
-            data: {
-              method: 'wechat-read',
-              tagDetected: false,
-              message: 'Avvicina il tag NFC al lettore NFC Tool Pro'
-            }
+            success: false,
+            error: 'WeChat NFC non implementato per mobile - utilizzare lettore nativo'
           });
         }, 1000);
       });
