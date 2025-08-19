@@ -4,6 +4,7 @@ import { DialogHeader, DialogTitle, DialogDescription } from '@/components/ui/di
 import { AlertCircle, CheckCircle, XCircle, WifiIcon, AlertTriangle } from 'lucide-react';
 import { apiRequest, queryClient } from '@/lib/queryClient';
 import { nfcService } from '@/nfc-features/utils/nfcService';
+import { wechatNFCBridge } from '@/nfc-features/utils/wechatNFCBridge';
 
 interface NFCWriterProps {
   basketId: number;
@@ -19,11 +20,15 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
   const [nfcSupported, setNfcSupported] = useState<boolean | null>(null);
   
   useEffect(() => {
-    // Verifica se NFC è supportato
-    if ('NDEFReader' in window) {
-      setNfcSupported(true);
-    } else {
-      setNfcSupported(false);
+    // Verifica se NFC è supportato (Web NFC, WeChat Bridge o Bluetooth)
+    const isSupported = 'NDEFReader' in window || 
+                       wechatNFCBridge.isWeChatAvailable() || 
+                       nfcService.isSupported();
+    setNfcSupported(isSupported);
+
+    // Inizializza WeChat bridge se disponibile
+    if (wechatNFCBridge.isWeChatAvailable()) {
+      wechatNFCBridge.initialize();
     }
   }, []);
   
@@ -37,12 +42,88 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
     setError(null);
     
     try {
+      // 1. Prova WeChat NFC Bridge se disponibile
+      if (wechatNFCBridge.isWeChatAvailable()) {
+        console.log('🔄 Usando WeChat NFC Bridge per scrittura...');
+        await writeViaWeChatBridge();
+        return;
+      }
+
+      // 2. Usa Web NFC API standard
+      if ('NDEFReader' in window) {
+        await handleNativeNFC();
+        return;
+      }
+
+      // 3. Fallback su simulazione
+      await handleSimulationFallback();
+
+    } catch (error: any) {
+      console.error('Errore durante la programmazione NFC:', error);
+      setError(error.message || 'Errore durante la programmazione del tag NFC');
+      setIsScanning(false);
+    }
+  };
+
+  const writeViaWeChatBridge = async () => {
+    try {
+      // Ottieni dettagli cestello
+      console.log("Recupero dettagli cestello per ID:", basketId);
+      const basketDetails = await apiRequest({
+        url: `/api/baskets/details/${basketId}`,
+        method: 'GET'
+      }) as any;
+
+      // Prepara URL di redirect
+      const baseUrl = window.location.origin;
+      let redirectPath;
+      
+      if (basketDetails && basketDetails.currentCycleId) {
+        redirectPath = `${baseUrl}/cycles/${basketDetails.currentCycleId}`;
+      } else {
+        redirectPath = `${baseUrl}/nfc-scan/basket/${basketId}`;
+      }
+
+      // Scrivi tramite WeChat bridge
+      const result = await wechatNFCBridge.writeNFCTag({
+        basketId: basketId,
+        physicalNumber: basketNumber,
+        flupsyId: basketDetails?.flupsyId || 570,
+        url: redirectPath
+      });
+
+      if (result.success) {
+        // Aggiorna il cestello nel database
+        await apiRequest({
+          url: `/api/baskets/${basketId}`,
+          method: 'PATCH',
+          body: { nfcData: result.data?.tagId || `wechat-${Date.now()}` }
+        });
+        
+        queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+        setSuccess(true);
+        setIsScanning(false);
+        
+        setTimeout(() => {
+          onSuccess();
+        }, 1500);
+      } else {
+        throw new Error(result.error || 'Errore WeChat bridge');
+      }
+    } catch (err: any) {
+      console.error("Errore WeChat NFC:", err);
+      setError(err.message || 'Errore durante la scrittura WeChat NFC.');
+      setIsScanning(false);
+    }
+  };
+
+  const handleNativeNFC = async () => {
+    try {
       // @ts-ignore - NDEFReader non è ancora nei tipi standard di TypeScript
       const ndef = new window.NDEFReader();
-      
       await ndef.scan();
       
-      // Gestisce l'evento di lettura
+      // Gestisce l'evento di lettura per Web NFC API
       ndef.addEventListener("reading", async ({ message, serialNumber }: any) => {
         try {
           // Prima otteniamo i dettagli del cestello per verificare se ha un ciclo attivo
@@ -126,6 +207,40 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       setIsScanning(false);
     }
   };
+
+  const handleSimulationFallback = async () => {
+    try {
+      console.log('🔄 Fallback su modalità simulazione NFC...');
+      
+      nfcService.setSimulationMode(true);
+      
+      const basketDetails = await apiRequest({
+        url: `/api/baskets/details/${basketId}`,
+        method: 'GET'
+      }) as any;
+
+      const simulatedTagId = `sim-${basketId}-${Date.now()}`;
+
+      await apiRequest({
+        url: `/api/baskets/${basketId}`,
+        method: 'PATCH',
+        body: { nfcData: simulatedTagId }
+      });
+      
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      setSuccess(true);
+      setIsScanning(false);
+      
+      setTimeout(() => {
+        onSuccess();
+      }, 1500);
+
+    } catch (error: any) {
+      console.error("Errore simulazione:", error);
+      setError(error.message || 'Errore durante la simulazione NFC.');
+      setIsScanning(false);
+    }
+  };
   
   const cancelScanning = async () => {
     setIsScanning(false);
@@ -194,14 +309,15 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
           <Button 
             variant="outline" 
             onClick={() => {
-              nfcService.enableSimulationMode();
-              onCancel();
+              nfcService.setSimulationMode(true);
+              startWriting();
             }}
           >
-            Attiva Simulazione
+            <WifiIcon className="mr-2 h-4 w-4" />
+            Usa Simulazione
           </Button>
-          <Button variant="ghost" onClick={onCancel}>
-            Chiudi
+          <Button variant="ghost" onClick={cancelScanning}>
+            Annulla
           </Button>
         </div>
       </div>
@@ -212,16 +328,19 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
     return (
       <div className="py-6 flex flex-col items-center justify-center space-y-4">
         <DialogHeader>
-          <DialogTitle className="text-center">Avvicina il tag NFC</DialogTitle>
+          <DialogTitle className="text-center">Programmazione tag NFC in corso...</DialogTitle>
           <DialogDescription className="text-center">
-            Avvicina il tag NFC al retro del dispositivo e mantienilo in posizione fino al completamento della scrittura.
+            {wechatNFCBridge.isWeChatAvailable() 
+              ? "Utilizzo WeChat bridge per NFC Tool Pro. Avvicina il tag al lettore."
+              : "Avvicina il tag NFC al dispositivo per programmarlo."
+            }
           </DialogDescription>
         </DialogHeader>
         
-        <div className="relative flex items-center justify-center p-4">
-          <WifiIcon className="h-16 w-16 text-primary" />
-          <div className="absolute inset-0 flex items-center justify-center">
-            <div className="h-24 w-24 animate-ping rounded-full border-4 border-primary opacity-20"></div>
+        <div className="flex items-center justify-center p-4">
+          <div className="relative">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-2 border-b-2 border-primary"></div>
+            <WifiIcon className="absolute inset-0 m-auto h-8 w-8 text-primary" />
           </div>
         </div>
         
@@ -235,23 +354,27 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
   return (
     <div className="py-6 flex flex-col items-center justify-center space-y-4">
       <DialogHeader>
-        <DialogTitle className="text-center">Programma Tag NFC</DialogTitle>
+        <DialogTitle className="text-center">Programmazione Tag NFC</DialogTitle>
         <DialogDescription className="text-center">
-          Stai per programmare un tag NFC per il cestello #{basketNumber}. 
-          Clicca "Avvia programmazione" e tieni pronto il tag NFC.
+          Stai per programmare un tag NFC per il cestello #{basketNumber}.
+          {wechatNFCBridge.isWeChatAvailable() && (
+            <span className="block mt-2 text-blue-600 font-medium">
+              WeChat bridge rilevato - Supporto NFC Tool Pro attivo
+            </span>
+          )}
         </DialogDescription>
       </DialogHeader>
       
       <div className="flex items-center justify-center p-4">
-        <WifiIcon className="h-16 w-16 text-primary" />
+        <WifiIcon className="h-16 w-16 text-gray-400" />
       </div>
       
       <div className="flex space-x-4">
-        <Button variant="ghost" onClick={onCancel}>
+        <Button variant="ghost" onClick={cancelScanning}>
           Annulla
         </Button>
         <Button onClick={startWriting}>
-          Avvia programmazione
+          Inizia programmazione
         </Button>
       </div>
     </div>

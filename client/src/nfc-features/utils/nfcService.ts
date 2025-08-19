@@ -3,6 +3,8 @@
 
 import { toast } from "@/hooks/use-toast";
 import { nfcSimulator, type NfcTag } from "./nfcSimulator";
+import { bluetoothNFCDetector } from './bluetoothNFCDetector';
+import { wechatNFCBridge } from './wechatNFCBridge';
 
 type ScanOptions = {
   onReading?: (tag: NfcTag) => void;
@@ -36,6 +38,20 @@ class NfcService {
     // 1. Controlla Web NFC API (limitata a Chrome Android)
     if ('NDEFReader' in window) {
       return true;
+    }
+
+    // 2. Controlla WeChat NFC Bridge
+    if (wechatNFCBridge.isWeChatAvailable()) {
+      return true;
+    }
+
+    // 3. Controlla Bluetooth NFC  
+    try {
+      if (bluetoothNFCDetector.isBluetoothAvailable()) {
+        return true;
+      }
+    } catch (error) {
+      console.log('Bluetooth NFC non disponibile:', error);
     }
 
     // 2. Controlla WebUSB API per lettori USB NFC
