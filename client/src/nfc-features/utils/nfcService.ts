@@ -66,6 +66,15 @@ class NfcService {
       };
     }
 
+    // Controllo per lettori Bluetooth NFC
+    if ('bluetooth' in navigator) {
+      return {
+        type: 'bluetooth-nfc',
+        description: 'Sistema Bluetooth disponibile - NFC Tool Pro rilevabile',
+        recommended: 'Lettore NFC professionale Bluetooth disponibile. Verifica connessione e attiva il software bridge per l\'integrazione web.'
+      };
+    }
+
     if ('usb' in navigator) {
       return {
         type: 'usb-nfc',
@@ -92,8 +101,8 @@ class NfcService {
 
     return {
       type: 'none',
-      description: 'Nessun supporto NFC rilevato',
-      recommended: 'Usa la modalità simulazione per i test'
+      description: 'Nessun supporto NFC rilevato dal browser',
+      recommended: 'Per lettori Bluetooth: associa manualmente nel sistema operativo. Per test immediati: usa la modalità simulazione.'
     };
   }
 

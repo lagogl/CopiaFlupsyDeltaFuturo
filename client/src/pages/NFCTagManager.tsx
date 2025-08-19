@@ -39,9 +39,10 @@ import {
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { Form, FormField, FormItem, FormLabel, FormMessage, FormControl } from '@/components/ui/form';
-import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon, RefreshCwIcon, UsbIcon, WifiIcon, AlertTriangleIcon } from 'lucide-react';
+import { TagIcon, SearchIcon, PlusCircleIcon, InfoIcon, MapPinIcon, RefreshCwIcon, UsbIcon, WifiIcon, AlertTriangleIcon, BluetoothIcon } from 'lucide-react';
 import { useForm } from 'react-hook-form';
 import { nfcService } from '@/nfc-features/utils/nfcService';
+import BluetoothNFCGuide from '@/components/BluetoothNFCGuide';
 
 interface Basket {
   id: number;
@@ -475,19 +476,24 @@ export default function NFCTagManager() {
   }, [lastRefreshTime, queryClient]);
 
   // Gestisce il refresh manuale della lista con invalidazione forzata
-  const handleRefresh = () => {
+  const handleRefresh = async () => {
+    // Rimuovi tutto dalla cache per forzare il refetch completo
+    queryClient.removeQueries({ queryKey: ['/api/baskets'] });
+    queryClient.removeQueries({ queryKey: ['/api/flupsys'] });
+    queryClient.removeQueries({ queryKey: ['/api/operations'] });
+    
     // Invalida tutte le cache correlate
     queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
     queryClient.invalidateQueries({ queryKey: ['/api/flupsys'] });
     queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
     
     // Forza il refetch immediato
-    queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
+    await queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
     
     setLastRefreshTime(Date.now());
     toast({
-      title: "Lista aggiornata",
-      description: "I dati dei cestelli sono stati ricaricati dal server.",
+      title: "Cache pulita e lista aggiornata",
+      description: "Tutti i dati sono stati ricaricati dal server.",
     });
   };
 
@@ -502,6 +508,8 @@ export default function NFCTagManager() {
       switch (nfcSupportInfo.type) {
         case 'web-nfc':
           return <WifiIcon className="h-5 w-5 text-green-600" />;
+        case 'bluetooth-nfc':
+          return <BluetoothIcon className="h-5 w-5 text-blue-600" />;
         case 'usb-nfc':
         case 'hid-nfc':
           return <UsbIcon className="h-5 w-5 text-blue-600" />;
@@ -516,6 +524,8 @@ export default function NFCTagManager() {
       switch (nfcSupportInfo.type) {
         case 'web-nfc':
           return 'border-green-200 bg-green-50';
+        case 'bluetooth-nfc':
+          return 'border-blue-200 bg-blue-50';
         case 'usb-nfc':
         case 'hid-nfc':
           return 'border-blue-200 bg-blue-50';
