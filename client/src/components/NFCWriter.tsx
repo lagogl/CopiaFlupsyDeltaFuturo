@@ -38,25 +38,28 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
       return;
     }
     
+    // Controlla se siamo su PC - NFC non disponibile su desktop
+    const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isDesktop) {
+      setError('⚠️ Funzione NFC non disponibile su PC. Utilizza un dispositivo mobile con NFC integrato per programmare i tag.');
+      return;
+    }
+    
     setIsScanning(true);
     setError(null);
     
     try {
-      // 1. Prova WeChat NFC Bridge se disponibile
-      if (wechatNFCBridge.isWeChatAvailable()) {
-        console.log('🔄 Usando WeChat NFC Bridge per scrittura...');
-        await writeViaWeChatBridge();
-        return;
-      }
-
-      // 2. Usa Web NFC API standard
+      // Usa Web NFC API nativa del dispositivo mobile
       if ('NDEFReader' in window) {
+        console.log('📱 Usando lettore NFC integrato del dispositivo...');
         await handleNativeNFC();
         return;
       }
 
-      // 3. Fallback su simulazione
-      await handleSimulationFallback();
+      // Fallback se Web NFC non disponibile
+      setError('NFC non è disponibile su questo dispositivo. Assicurati che il NFC sia attivo nelle impostazioni.');
+      setIsScanning(false);
 
     } catch (error: any) {
       console.error('Errore durante la programmazione NFC:', error);

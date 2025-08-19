@@ -97,23 +97,18 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   const [nfcMode, setNfcMode] = useState<'wechat' | 'native' | 'unavailable'>('unavailable');
   
   useEffect(() => {
-    // Usa la stessa logica di rilevamento NFC del modulo NFCTagManager che funziona
-    const supportInfo = nfcService.getNFCSupportType();
-    console.log('🔍 FlupsyScan - Rilevamento NFC:', supportInfo);
+    // Rilevamento NFC basato su dispositivo
+    const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     
-    if (supportInfo.type === 'wechat-bridge' || supportInfo.type === 'bluetooth-bridge') {
-      setNfcMode('wechat');
-      wechatNFCBridge.initialize();
-      console.log('✅ WeChat/Bluetooth Bridge attivato per FlupsyScan');
-      console.log('🔧 Forzo utilizzo lettore fisico NFC Tool Pro rilevato');
-    } else if (supportInfo.type === 'native' && isMobile) {
+    if (isDesktop) {
+      setNfcMode('unavailable');
+      console.log('🖥️ PC rilevato - NFC non disponibile');
+    } else if ('NDEFReader' in window && isMobile) {
       setNfcMode('native');
-      console.log('✅ Lettore nativo attivato per mobile');
+      console.log('📱 NFC nativo mobile disponibile');
     } else {
-      // Forza WeChat bridge anche se non rilevato correttamente (per compatibilità con NFC Tool Pro)
-      setNfcMode('wechat');
-      wechatNFCBridge.initialize();
-      console.log('⚙️ Forzatura WeChat Bridge per compatibilità NFC Tool Pro');
+      setNfcMode('unavailable');
+      console.log('❌ NFC non supportato su questo dispositivo');
     }
   }, [isMobile]);
   
@@ -161,22 +156,26 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     setIsScanning(true);
     setScanError(null);
     
+    // Controlla se siamo su PC - NFC non disponibile su desktop
+    const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isDesktop) {
+      handleNFCError('⚠️ Funzione NFC non disponibile su PC. Utilizza un dispositivo mobile con NFC integrato per leggere i tag.');
+      setIsScanning(false);
+      return;
+    }
+    
     try {
-      // 1. Prova WeChat NFC Bridge se disponibile (STESSA LOGICA DI NFCWriter)
-      if (wechatNFCBridge.isWeChatAvailable()) {
-        console.log('🔄 Usando WeChat NFC Bridge per lettura...');
-        await readViaWeChatBridge();
-        return;
-      }
-
-      // 2. Usa Web NFC API standard se disponibile  
+      // Usa Web NFC API nativa del dispositivo mobile
       if ('NDEFReader' in window) {
+        console.log('📱 Usando lettore NFC integrato del dispositivo...');
         await handleNativeNFC();
         return;
       }
 
-      // 3. Fallback su simulazione
-      await handleSimulationFallback();
+      // Fallback se Web NFC non disponibile
+      handleNFCError('NFC non è disponibile su questo dispositivo. Assicurati che il NFC sia attivo nelle impostazioni.');
+      setIsScanning(false);
 
     } catch (error: any) {
       console.error('Errore durante la lettura NFC:', error);

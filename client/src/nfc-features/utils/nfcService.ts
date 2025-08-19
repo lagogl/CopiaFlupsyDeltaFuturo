@@ -74,51 +74,31 @@ class NfcService {
 
   // Rileva il tipo di supporto NFC disponibile
   getNFCSupportType(): { type: string; description: string; recommended: string } {
+    // Rileva se siamo su PC
+    const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    
+    if (isDesktop) {
+      return {
+        type: 'none',
+        description: 'PC/Desktop rilevato - NFC non disponibile',
+        recommended: '⚠️ Le funzioni NFC non sono operative su PC. Utilizza un dispositivo mobile con NFC integrato per programmare e leggere i tag.'
+      };
+    }
+
+    // Su mobile, controlla Web NFC API nativa
     if ('NDEFReader' in window) {
       return {
         type: 'web-nfc',
-        description: 'Web NFC API nativa del browser',
-        recommended: 'Usa direttamente il lettore integrato del dispositivo'
+        description: 'NFC integrato del dispositivo disponibile',
+        recommended: 'Lettore NFC nativo del dispositivo attivo. Pronto per leggere e scrivere tag NFC.'
       };
     }
 
-    // Controllo per lettori Bluetooth NFC
-    if ('bluetooth' in navigator) {
-      return {
-        type: 'bluetooth-nfc',
-        description: 'Sistema Bluetooth disponibile - NFC Tool Pro rilevabile',
-        recommended: 'Lettore NFC professionale Bluetooth disponibile. Verifica connessione e attiva il software bridge per l\'integrazione web.'
-      };
-    }
-
-    if ('usb' in navigator) {
-      return {
-        type: 'usb-nfc',
-        description: 'Lettore NFC USB rilevato via WebUSB',
-        recommended: 'Collega il lettore NFC USB e concedi i permessi quando richiesto'
-      };
-    }
-
-    if ('hid' in navigator) {
-      return {
-        type: 'hid-nfc',
-        description: 'Dispositivo HID NFC potenzialmente disponibile',
-        recommended: 'Verifica che il dispositivo NFC sia collegato correttamente'
-      };
-    }
-
-    if ('serviceWorker' in navigator) {
-      return {
-        type: 'sw-nfc',
-        description: 'Supporto NFC tramite Service Worker',
-        recommended: 'Il supporto NFC è gestito in background'
-      };
-    }
-
+    // Mobile senza supporto NFC
     return {
       type: 'none',
-      description: 'Nessun supporto NFC rilevato dal browser',
-      recommended: 'Per lettori Bluetooth: associa manualmente nel sistema operativo. Per test immediati: usa la modalità simulazione.'
+      description: 'NFC non supportato su questo dispositivo mobile',
+      recommended: 'Verifica che il NFC sia attivo nelle impostazioni del dispositivo o usa un dispositivo con supporto NFC integrato.'
     };
   }
 
