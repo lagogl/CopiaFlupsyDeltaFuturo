@@ -357,6 +357,30 @@ export class WeChatNFCBridge {
             console.log('⚠️ Lettore fisico non risponde, passaggio a simulazione');
           }
         }
+
+        // FORZA tentativo connessione hardware anche se bridgeUrl non è impostato
+        console.log('🔄 Tentativo forzato di rilevamento lettore NFC Tool Pro...');
+        const bridgeUrls = [
+          'ws://localhost:8089',  
+          'ws://localhost:8080',  
+          'http://localhost:8089', 
+          'http://localhost:8080',
+        ];
+        
+        for (const url of bridgeUrls) {
+          console.log(`🔍 Test lettore fisico: ${url}`);
+          try {
+            const hardwareResult = await this.readFromHardwareBridge(url);
+            if (hardwareResult.success) {
+              console.log(`✅ Lettore fisico trovato e funzionante: ${url}`);
+              this.bridgeUrl = url; // Salva per uso futuro
+              return hardwareResult;
+            }
+          } catch (error) {
+            console.log(`❌ ${url} non disponibile`);
+          }
+        }
+        console.log('🔧 Nessun lettore fisico trovato, usando simulazione');
         
         // Fallback: simulazione solo se hardware non disponibile
         console.log('🖥️ Simulazione NFC Tool Pro (hardware non trovato)');

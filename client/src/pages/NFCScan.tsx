@@ -105,12 +105,15 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
       setNfcMode('wechat');
       wechatNFCBridge.initialize();
       console.log('✅ WeChat/Bluetooth Bridge attivato per FlupsyScan');
+      console.log('🔧 Forzo utilizzo lettore fisico NFC Tool Pro rilevato');
     } else if (supportInfo.type === 'native' && isMobile) {
       setNfcMode('native');
       console.log('✅ Lettore nativo attivato per mobile');
     } else {
-      setNfcMode('unavailable');
-      console.log('⚠️ Nessun lettore NFC disponibile');
+      // Forza WeChat bridge anche se non rilevato correttamente (per compatibilità con NFC Tool Pro)
+      setNfcMode('wechat');
+      wechatNFCBridge.initialize();
+      console.log('⚙️ Forzatura WeChat Bridge per compatibilità NFC Tool Pro');
     }
   }, [isMobile]);
   
