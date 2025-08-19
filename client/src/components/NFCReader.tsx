@@ -37,47 +37,12 @@ export default function NFCReader({ onRead, onError }: NFCReaderProps) {
 
   const readViaWeChatBridge = async () => {
     try {
-      // FORZA tentativo connessione lettore fisico prima di simulazione
-      console.log('🔧 FORZO ricerca lettore fisico NFC Tool Pro...');
+      console.log('🔄 Lettura diretta WeChat NFC Bridge...');
       
-      const bridgeUrls = [
-        'ws://localhost:8089',  
-        'ws://localhost:8080',  
-        'http://localhost:8089', 
-        'http://localhost:8080'
-      ];
-      
-      for (const url of bridgeUrls) {
-        console.log(`🔍 Test diretto lettore: ${url}`);
-        try {
-          const hardwareResult = await testDirectHardwareConnection(url);
-          if (hardwareResult.success && hardwareResult.data) {
-            console.log(`✅ LETTORE FISICO TROVATO: ${url}`);
-            
-            // Converti risultato hardware nel formato NFCReader
-            const records = [{
-              recordType: 'text',
-              data: JSON.stringify({
-                id: hardwareResult.data.basketId,
-                number: hardwareResult.data.physicalNumber,
-                redirectTo: hardwareResult.data.url
-              })
-            }];
-            
-            console.log('✅ Tag letto da lettore fisico:', records);
-            onRead(records);
-            return;
-          }
-        } catch (error) {
-          console.log(`❌ ${url} non raggiungibile`);
-        }
-      }
-      
-      // Solo se tutti i tentativi hardware falliscono, usa WeChat bridge normale
-      console.log('🔄 Fallback WeChat Bridge standard...');
       const result = await wechatNFCBridge.readNFCTag();
       
       if (result.success && result.data) {
+        // Converti il risultato WeChat nel formato atteso da NFCReader
         const records = [{
           recordType: 'text',
           data: JSON.stringify({
@@ -87,7 +52,7 @@ export default function NFCReader({ onRead, onError }: NFCReaderProps) {
           })
         }];
         
-        console.log('Tag NFC letto:', records);
+        console.log('✅ Tag NFC letto da WeChat Bridge:', records);
         onRead(records);
       } else {
         onError(result.error || 'Errore lettura NFC');
@@ -96,76 +61,6 @@ export default function NFCReader({ onRead, onError }: NFCReaderProps) {
       console.error('Errore WeChat NFC bridge:', error);
       onError(error.message || 'Errore comunicazione lettore NFC');
     }
-  };
-
-  // Funzione per test diretto connessione hardware 
-  const testDirectHardwareConnection = async (url: string): Promise<{success: boolean, data?: any}> => {
-    return new Promise((resolve) => {
-      if (url.startsWith('ws://')) {
-        const ws = new WebSocket(url);
-        const timeout = setTimeout(() => {
-          ws.close();
-          resolve({success: false});
-        }, 5000);
-
-        ws.onopen = () => {
-          console.log(`🔌 WebSocket connesso: ${url}`);
-          ws.send(JSON.stringify({ command: 'read', timeout: 3000 }));
-        };
-
-        ws.onmessage = (event) => {
-          clearTimeout(timeout);
-          try {
-            const data = JSON.parse(event.data);
-            if (data.success && data.tagData) {
-              resolve({
-                success: true,
-                data: {
-                  basketId: data.tagData.basketId,
-                  physicalNumber: data.tagData.physicalNumber,
-                  url: data.tagData.url
-                }
-              });
-            } else {
-              resolve({success: false});
-            }
-          } catch (e) {
-            resolve({success: false});
-          }
-          ws.close();
-        };
-
-        ws.onerror = () => {
-          clearTimeout(timeout);
-          resolve({success: false});
-        };
-      } else if (url.startsWith('http://')) {
-        fetch(url + '/nfc/read', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ timeout: 3000 }),
-          signal: AbortSignal.timeout(5000)
-        })
-        .then(response => response.json())
-        .then(data => {
-          if (data.success && data.tagData) {
-            resolve({
-              success: true,
-              data: {
-                basketId: data.tagData.basketId,
-                physicalNumber: data.tagData.physicalNumber,
-                url: data.tagData.url
-              }
-            });
-          } else {
-            resolve({success: false});
-          }
-        })
-        .catch(() => resolve({success: false}));
-      } else {
-        resolve({success: false});
-      }
-    });
   };
 
   const startNativeNFCReader = async () => {

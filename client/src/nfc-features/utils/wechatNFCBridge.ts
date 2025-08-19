@@ -341,49 +341,7 @@ export class WeChatNFCBridge {
       const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
       if (isDesktop) {
-        console.log('🖥️ Modalità desktop - tentativo connessione NFC Tool Pro hardware');
-        
-        // Prova prima la connessione al lettore fisico se configurato
-        if (this.bridgeUrl) {
-          console.log(`🔌 Tentativo lettura da lettore fisico: ${this.bridgeUrl}`);
-          
-          try {
-            const hardwareResult = await this.readFromHardwareBridge(this.bridgeUrl);
-            if (hardwareResult.success) {
-              console.log('✅ Tag letto da lettore fisico NFC Tool Pro');
-              return hardwareResult;
-            }
-          } catch (error) {
-            console.log('⚠️ Lettore fisico non risponde, passaggio a simulazione');
-          }
-        }
-
-        // FORZA tentativo connessione hardware anche se bridgeUrl non è impostato
-        console.log('🔄 Tentativo forzato di rilevamento lettore NFC Tool Pro...');
-        const bridgeUrls = [
-          'ws://localhost:8089',  
-          'ws://localhost:8080',  
-          'http://localhost:8089', 
-          'http://localhost:8080',
-        ];
-        
-        for (const url of bridgeUrls) {
-          console.log(`🔍 Test lettore fisico: ${url}`);
-          try {
-            const hardwareResult = await this.readFromHardwareBridge(url);
-            if (hardwareResult.success) {
-              console.log(`✅ Lettore fisico trovato e funzionante: ${url}`);
-              this.bridgeUrl = url; // Salva per uso futuro
-              return hardwareResult;
-            }
-          } catch (error) {
-            console.log(`❌ ${url} non disponibile`);
-          }
-        }
-        console.log('🔧 Nessun lettore fisico trovato, usando simulazione');
-        
-        // Fallback: simulazione solo se hardware non disponibile
-        console.log('🖥️ Simulazione NFC Tool Pro (hardware non trovato)');
+        console.log('🖥️ Modalità desktop - utilizzo simulazione WeChat per lettura NFC Tool Pro');
         
         return new Promise((resolve) => {
           setTimeout(() => {
