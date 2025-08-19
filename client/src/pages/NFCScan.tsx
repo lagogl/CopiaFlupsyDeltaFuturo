@@ -4,6 +4,7 @@ import { useToast } from '@/hooks/use-toast';
 import NFCReader from '@/components/NFCReader';
 import { formatNumberWithCommas, getOperationTypeLabel, getOperationTypeColor, getSizeColor } from '@/lib/utils';
 import { wechatNFCBridge } from '@/nfc-features/utils/wechatNFCBridge';
+import { nfcService } from '@/nfc-features/utils/nfcService';
 import { bluetoothNFCDetector } from '@/nfc-features/utils/bluetoothNFCDetector';
 
 // UI Components
@@ -96,26 +97,20 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
   const [nfcMode, setNfcMode] = useState<'wechat' | 'native' | 'unavailable'>('unavailable');
   
   useEffect(() => {
-    // Su PC: priorità a WeChat Bridge se disponibile
-    if (!isMobile) {
-      if (wechatNFCBridge.isWeChatAvailable()) {
-        setNfcMode('wechat');
-        wechatNFCBridge.initialize();
-      } else if ('NDEFReader' in window) {
-        setNfcMode('native');
-      } else {
-        setNfcMode('unavailable');
-      }
+    // Usa la stessa logica di rilevamento NFC del modulo NFCTagManager che funziona
+    const supportInfo = nfcService.getNFCSupportType();
+    console.log('🔍 FlupsyScan - Rilevamento NFC:', supportInfo);
+    
+    if (supportInfo.type === 'wechat-bridge' || supportInfo.type === 'bluetooth-bridge') {
+      setNfcMode('wechat');
+      wechatNFCBridge.initialize();
+      console.log('✅ WeChat/Bluetooth Bridge attivato per FlupsyScan');
+    } else if (supportInfo.type === 'native' && isMobile) {
+      setNfcMode('native');
+      console.log('✅ Lettore nativo attivato per mobile');
     } else {
-      // Su mobile: priorità al lettore nativo
-      if ('NDEFReader' in window) {
-        setNfcMode('native');
-      } else if (wechatNFCBridge.isWeChatAvailable()) {
-        setNfcMode('wechat');
-        wechatNFCBridge.initialize();
-      } else {
-        setNfcMode('unavailable');
-      }
+      setNfcMode('unavailable');
+      console.log('⚠️ Nessun lettore NFC disponibile');
     }
   }, [isMobile]);
   
