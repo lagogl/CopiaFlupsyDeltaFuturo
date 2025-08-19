@@ -186,8 +186,9 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
         console.error('Errore WeChat NFC:', error);
         handleNFCError(error.message || 'Errore WeChat NFC Bridge');
       }
+      return; // Non eseguire NFCReader nativo dopo WeChat
     }
-    // Altrimenti usa il sistema nativo (gestito da NFCReader component)
+    // Per mobile o altri casi, il sistema nativo viene gestito dal componente NFCReader
   };
   
   // Interrompe la scansione NFC
@@ -364,8 +365,8 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                   <XIcon className="mr-2 h-4 w-4" /> Annulla scansione
                 </Button>
                 
-                {/* Componente NFC Reader attivo solo durante la scansione */}
-                {isScanning && (
+                {/* Componente NFC Reader attivo solo durante la scansione - SOLO se NON in modalità WeChat */}
+                {isScanning && nfcMode !== 'wechat' && (
                   <NFCReader
                     onRead={handleNFCRead}
                     onError={handleNFCError}
