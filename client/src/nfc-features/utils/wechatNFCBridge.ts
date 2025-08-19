@@ -327,7 +327,121 @@ export class WeChatNFCBridge {
   }
 
   /**
-   * Legge tag NFC tramite WeChat bridge
+   * Legge tag NFC fisico dal lettore NFC Tool Pro
+   */
+  private async readFromPhysicalNFC(): Promise<WeChatNFCResult> {
+    console.log('🔌 Tentativo lettura fisica da NFC Tool Pro...');
+    
+    // BRIDGE URL PER LETTURA - MODIFICA QUESTE PORTE SE NECESSARIO
+    const readUrls = [
+      'http://localhost:8089/nfc/read',   // HTTP API del tuo NFC Tool Pro
+      'http://localhost:8080/nfc/read',   // Porta alternativa
+      'ws://localhost:8089',              // WebSocket del lettore
+      'ws://localhost:8080'               // WebSocket alternativo
+    ];
+
+    for (const url of readUrls) {
+      try {
+        console.log(`🔍 Test lettura fisica: ${url}`);
+        
+        if (url.startsWith('http://')) {
+          // Tentativo HTTP API
+          const response = await fetch(url, {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ 
+              command: 'read',
+              timeout: 5000 
+            }),
+            signal: AbortSignal.timeout(8000)
+          });
+
+          if (response.ok) {
+            const data = await response.json();
+            if (data.success && data.tagData) {
+              console.log('✅ Tag letto via HTTP API:', data.tagData);
+              return {
+                success: true,
+                data: {
+                  basketId: data.tagData.basketId || data.tagData.id || 1,
+                  physicalNumber: data.tagData.physicalNumber || data.tagData.basketId,
+                  flupsyId: data.tagData.flupsyId || 570,
+                  url: data.tagData.url || `${window.location.origin}/nfc-scan/basket/${data.tagData.basketId}`,
+                  timestamp: new Date().toISOString(),
+                  method: 'physical-http'
+                }
+              };
+            }
+          }
+        } else if (url.startsWith('ws://')) {
+          // Tentativo WebSocket
+          const wsResult = await this.tryWebSocketRead(url);
+          if (wsResult.success) {
+            return wsResult;
+          }
+        }
+      } catch (error) {
+        console.log(`❌ ${url} non disponibile`);
+      }
+    }
+
+    throw new Error('Lettore fisico NFC Tool Pro non disponibile');
+  }
+
+  /**
+   * Tentativo lettura via WebSocket
+   */
+  private async tryWebSocketRead(url: string): Promise<WeChatNFCResult> {
+    return new Promise((resolve, reject) => {
+      const ws = new WebSocket(url);
+      const timeout = setTimeout(() => {
+        ws.close();
+        reject(new Error('Timeout WebSocket'));
+      }, 8000);
+
+      ws.onopen = () => {
+        console.log(`🔌 WebSocket connesso per lettura: ${url}`);
+        ws.send(JSON.stringify({ 
+          command: 'read',
+          timeout: 5000 
+        }));
+      };
+
+      ws.onmessage = (event) => {
+        clearTimeout(timeout);
+        try {
+          const data = JSON.parse(event.data);
+          if (data.success && data.tagData) {
+            console.log('✅ Tag letto via WebSocket:', data.tagData);
+            resolve({
+              success: true,
+              data: {
+                basketId: data.tagData.basketId || data.tagData.id || 1,
+                physicalNumber: data.tagData.physicalNumber || data.tagData.basketId,
+                flupsyId: data.tagData.flupsyId || 570,
+                url: data.tagData.url || `${window.location.origin}/nfc-scan/basket/${data.tagData.basketId}`,
+                timestamp: new Date().toISOString(),
+                method: 'physical-websocket'
+              }
+            });
+          } else {
+            reject(new Error('Dati tag non validi'));
+          }
+        } catch (e) {
+          reject(new Error('Errore parsing risposta WebSocket'));
+        }
+        ws.close();
+      };
+
+      ws.onerror = () => {
+        clearTimeout(timeout);
+        reject(new Error('Errore connessione WebSocket'));
+      };
+    });
+  }
+
+  /**
+   * Legge tag NFC tramite WeChat bridge - USA IL LETTORE FISICO
    */
   async readNFCTag(): Promise<WeChatNFCResult> {
     if (!this.initialized) {
@@ -335,18 +449,30 @@ export class WeChatNFCBridge {
     }
 
     try {
-      console.log('🔍 Tentativo lettura NFC via WeChat bridge...');
+      console.log('🔍 Lettura tag NFC fisico tramite NFC Tool Pro...');
       
-      // Su desktop, tenta prima connessione hardware reale
+      // Su desktop, usa il lettore fisico NFC Tool Pro
       const isDesktop = !/Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
       
       if (isDesktop) {
-        console.log('🖥️ Modalità desktop - utilizzo simulazione WeChat per lettura NFC Tool Pro');
+        console.log('🖥️ Modalità desktop - lettura fisica da NFC Tool Pro');
         
+        // TENTA LETTURA FISICA REALE DAL LETTORE
+        try {
+          const physicalResult = await this.readFromPhysicalNFC();
+          if (physicalResult.success) {
+            console.log('✅ Tag letto dal lettore fisico NFC Tool Pro');
+            return physicalResult;
+          }
+        } catch (error) {
+          console.log('⚠️ Errore lettore fisico, passaggio a simulazione:', error);
+        }
+        
+        // Solo se il lettore fisico fallisce, usa simulazione
+        console.log('🔄 Fallback simulazione (lettore fisico non disponibile)');
         return new Promise((resolve) => {
           setTimeout(() => {
-            // Chiedi all'utente di inserire l'ID del cestello da simulare
-            const basketIdInput = prompt('Simulazione NFC Tool Pro:\nInserisci ID cestello da leggere (1-30):', '1');
+            const basketIdInput = prompt('Simulazione lettura NFC:\nInserisci ID cestello letto dal tag (1-30):', '1');
             
             if (basketIdInput === null) {
               resolve({ success: false, error: 'Lettura annullata dall\'utente' });
@@ -359,7 +485,6 @@ export class WeChatNFCBridge {
               return;
             }
 
-            // Simula un tag NFC con dati realistici
             const mockNFCData = {
               basketId: basketId,
               physicalNumber: basketId,
