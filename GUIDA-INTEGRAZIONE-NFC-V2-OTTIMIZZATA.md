@@ -1,33 +1,42 @@
-# Guida Integrazione NFC v2.0 OTTIMIZZATA - Identificazione Univoca con Dati Minimi
+# Guida Integrazione NFC v2.0 FINALE - Identificazione Univoca per Cestelli Attivi
 
 ## 📋 Panoramica
 
-Il sistema NFC v2.0 è stato ottimizzato per scrivere **solo i dati essenziali** per l'identificazione univoca nel tag NFC. Tutti i dati operativi (pesi, conteggi, taglie, etc.) vengono recuperati via API al momento della lettura del tag.
+Il sistema NFC v2.0 FINALE è stato ottimizzato per garantire l'identificazione univoca dei cestelli attraverso tag NFC minimi ma completi. **Solo i cestelli con ciclo attivo vengono programmati**, garantendo che ogni tag contenga sempre un ciclo valido per l'identificazione univoca.
 
-### 🎯 Vantaggi dell'Approccio Ottimizzato
+### 🎯 Principi Fondamentali
 
-- ✅ **Tag più piccoli**: Scrittura e lettura più veloci
-- ✅ **Dati sempre aggiornati**: L'app recupera dati real-time via API
-- ✅ **Nessuna riprogrammazione**: I tag restano validi anche quando cambiano i dati operativi
-- ✅ **Ridotta complessità**: Focus solo sull'identificazione univoca
+- ✅ **Solo cestelli attivi**: Solo cestelli con `state = "active"` e `currentCycleId` valido possono essere programmati
+- ✅ **Identificazione univoca garantita**: Combinazione `physicalNumber + currentCycleId + flupsyId + position`
+- ✅ **Tag compatti**: Solo dati essenziali per identificazione, tutto il resto via API
+- ✅ **Dati sempre aggiornati**: L'app recupera dati operativi real-time dal database
+- ✅ **Nessuna ambiguità**: Impossibile avere cestelli con stesso numero senza distinguerli
 
-## 🔄 Nuova Struttura Dati NFC v2.0 OTTIMIZZATA
+## 🔄 Struttura Dati NFC v2.0 FINALE
 
-### Struttura Tag Ottimizzata
+### Struttura Tag Finale (Solo Cestelli Attivi)
 ```json
 {
   "basketId": 17,
   "physicalNumber": 7,
   "currentCycleId": 3,
+  "flupsyId": 113,
+  "position": 7,
   "id": 17,
   "number": 7,
   "serialNumber": "04:42:f2:6b:5f:61:80",
-  "redirectTo": "https://app.domain.com/nfc-scan/basket/17",
-  "timestamp": "2025-08-20T09:45:00.000Z",
+  "redirectTo": "https://app.domain.com/cycles/3",
+  "timestamp": "2025-08-20T10:15:00.000Z",
   "type": "basket-tag",
   "version": "2.0"
 }
 ```
+
+### ⚠️ IMPORTANTE: Solo Cestelli Attivi
+Il sistema programma **esclusivamente** cestelli con:
+- `state = "active"` nel database
+- `currentCycleId` valido (non null)
+- Almeno una operazione di "prima-attivazione"
 
 ### Campi del Tag NFC
 
@@ -35,14 +44,23 @@ Il sistema NFC v2.0 è stato ottimizzato per scrivere **solo i dati essenziali**
 |-------|------|--------------|-------------|
 | `basketId` | `number` | ✅ | ID univoco del cestello nel database |
 | `physicalNumber` | `number` | ✅ | Numero fisico del cestello |
-| `currentCycleId` | `number\|null` | ✅ | ID del ciclo corrente (null se disponibile) |
+| `currentCycleId` | `number` | ✅ | ID del ciclo corrente (SEMPRE presente) |
+| `flupsyId` | `number` | ✅ | ID del FLUPSY contenitore |
+| `position` | `number` | ✅ | Posizione del cestello nel FLUPSY |
 | `id` | `number` | ✅ | Compatibilità legacy v1.0 |
 | `number` | `number` | ✅ | Compatibilità legacy v1.0 |
 | `serialNumber` | `string` | ✅ | Serial number hardware del tag NFC |
-| `redirectTo` | `string` | ✅ | URL di fallback per browser web |
+| `redirectTo` | `string` | ✅ | URL diretto al ciclo attivo |
 | `timestamp` | `string` | ✅ | Timestamp di programmazione del tag |
 | `type` | `string` | ✅ | Sempre "basket-tag" |
 | `version` | `string` | ✅ | Versione formato dati ("2.0") |
+
+### 🔑 Chiave di Identificazione Univoca
+L'identificazione univoca è garantita dalla combinazione:
+```
+physicalNumber + currentCycleId + flupsyId + position
+```
+Questo permette di distinguere cestelli con stesso numero fisico ma in FLUPSY diversi o cicli diversi.
 
 ## 🔗 Endpoint API per Recupero Dati
 
@@ -50,14 +68,19 @@ Il sistema NFC v2.0 è stato ottimizzato per scrivere **solo i dati essenziali**
 
 **Metodo**: `GET`
 
-#### Ricerca con Metodo v2.0 (Preferito)
+#### Ricerca con Metodo v2.0 (Preferito - Identificazione Univoca)
 ```
-GET /api/baskets/find-by-nfc?physicalNumber=7&currentCycleId=3
+GET /api/baskets/find-by-nfc?physicalNumber=7&currentCycleId=3&flupsyId=113
 ```
 
 #### Ricerca con Metodo v1.0 (Compatibilità)
 ```
 GET /api/baskets/find-by-nfc?basketId=17
+```
+
+#### Parametri Aggiuntivi (Opzionali per Validazione)
+```
+GET /api/baskets/find-by-nfc?physicalNumber=7&currentCycleId=3&flupsyId=113&position=7
 ```
 
 #### Risposta Completa
@@ -122,10 +145,18 @@ async function processNFCTag(nfcData) {
   let apiUrl;
   let identificationMethod;
   
-  if (physicalNumber !== undefined && currentCycleId !== undefined) {
-    // Metodo v2.0 preferito
+  if (physicalNumber !== undefined && currentCycleId !== undefined && flupsyId !== undefined) {
+    // Metodo v2.0 preferito - Identificazione univoca completa
+    apiUrl = `/api/baskets/find-by-nfc?physicalNumber=${physicalNumber}&currentCycleId=${currentCycleId}&flupsyId=${flupsyId}`;
+    if (position !== undefined) {
+      apiUrl += `&position=${position}`;
+    }
+    identificationMethod = 'v2.0-complete';
+  } else if (physicalNumber !== undefined && currentCycleId !== undefined) {
+    // Metodo v2.0 base
     apiUrl = `/api/baskets/find-by-nfc?physicalNumber=${physicalNumber}&currentCycleId=${currentCycleId}`;
-    identificationMethod = 'v2.0-unique';
+    identificationMethod = 'v2.0-basic';
+    console.warn(`⚠️ Identificazione v2.0 senza flupsyId - potenziali ambiguità`);
   } else if (basketId !== undefined) {
     // Fallback v1.0
     apiUrl = `/api/baskets/find-by-nfc?basketId=${basketId}`;
@@ -273,27 +304,27 @@ function handleBasketError(error, nfcData) {
 
 ## 🧪 Scenari di Test
 
-### 1. Tag v2.0 Cestello Attivo
+### 1. Tag v2.0 Cestello Attivo (Standard)
 ```json
 {
   "basketId": 17,
   "physicalNumber": 7,
   "currentCycleId": 3,
+  "flupsyId": 113,
+  "position": 7,
   "version": "2.0"
 }
 ```
-**Risultato**: Cestello trovato, dati completi recuperati via API
+**Risultato**: Cestello attivo identificato univocamente, dati completi recuperati via API
 
-### 2. Tag v2.0 Cestello Disponibile
+### 2. Tag v2.0 Cestelli con Stesso Numero Fisico
 ```json
-{
-  "basketId": 7,
-  "physicalNumber": 7,
-  "currentCycleId": null,
-  "version": "2.0"
-}
+// Cestello A - FLUPSY 113, Ciclo 3
+{"physicalNumber": 7, "currentCycleId": 3, "flupsyId": 113, "position": 7}
+// Cestello B - FLUPSY 570, Ciclo 5  
+{"physicalNumber": 7, "currentCycleId": 5, "flupsyId": 570, "position": 2}
 ```
-**Risultato**: Cestello disponibile identificato correttamente
+**Risultato**: Identificazione univoca corretta per entrambi grazie a `currentCycleId + flupsyId + position`
 
 ### 3. Tag v1.0 Legacy
 ```json
@@ -305,14 +336,17 @@ function handleBasketError(error, nfcData) {
 ```
 **Risultato**: Compatibilità v1.0, avviso per aggiornamento tag
 
-### 4. Cestelli con Stesso Numero Fisico
+### 4. Cestelli Disponibili (NON PROGRAMMABILI)
 ```json
-// Tag A
-{"physicalNumber": 7, "currentCycleId": 3}
-// Tag B  
-{"physicalNumber": 7, "currentCycleId": null}
+// Cestello disponibile - NON verrà mai programmato
+{
+  "basketId": 7,
+  "physicalNumber": 7,
+  "state": "available",
+  "currentCycleId": null
+}
 ```
-**Risultato**: Identificazione univoca corretta per entrambi
+**Risultato**: ❌ **Errore di programmazione** - "Il cestello #7 non è attivo. Solo i cestelli attivi possono essere programmati con un ciclo."
 
 ## ⚙️ Configurazione API
 
@@ -352,11 +386,36 @@ Se stai migrando da tag NFC che contenevano tutti i dati:
 
 ### Problemi Comuni
 - **Tag non leggibile**: Verifica formato JSON e campi obbligatori
-- **Cestello non trovato**: Controlla sincronizzazione database
+- **Cestello non trovato**: Controlla che il cestello sia attivo nel database
+- **currentCycleId null**: Il cestello non è attivo - verifica stato in tabella baskets
 - **Errori 409**: Segnala duplicati per correzione integrità dati
+- **Ambiguità identificazione**: Usa sempre `flupsyId` e `position` per cestelli con stesso `physicalNumber`
+
+### ⚠️ Importante per lo Sviluppatore
+**TUTTI i tag NFC contengono sempre un `currentCycleId` valido** perché:
+1. Solo cestelli attivi vengono programmati
+2. Cestelli attivi hanno sempre un ciclo corrente
+3. Non esistono tag con `currentCycleId = null` nel sistema v2.0
+
+Se incontri un tag con `currentCycleId = null`, è un tag legacy v1.0 da aggiornare.
+
+## 📊 Riepilogo Modifiche v2.0 FINALE
+
+### Cosa è Cambiato
+1. **Cessazione programmazione cestelli disponibili**: Solo cestelli `state = "active"` vengono programmati
+2. **currentCycleId sempre presente**: Nessun tag v2.0 avrà mai `currentCycleId = null`
+3. **Identificazione univoca potenziata**: Aggiunta `flupsyId` e `position` ai dati del tag
+4. **Validazione rigorosa**: Sistema rifiuta cestelli senza ciclo attivo
+
+### Impatti per l'App Mobile
+1. **Gestione errori migliorata**: Distinzione tra cestelli non trovati e cestelli non attivi
+2. **Identificazione più robusta**: Meno probabilità di conflitti tra cestelli
+3. **Validazione automatica**: Il server garantisce che ogni tag sia sempre valido
+4. **Backward compatibility**: I tag v1.0 continuano a funzionare
 
 ---
 
-**Versione Documento**: 2.0 Ottimizzata  
+**Versione Documento**: 2.0 FINALE  
 **Data**: Agosto 2025  
-**Compatibilità**: Sistema FLUPSY v2.0+ con endpoint `/api/baskets/find-by-nfc`
+**Compatibilità**: Sistema FLUPSY v2.0+ con validazione cestelli attivi  
+**Endpoint**: `/api/baskets/find-by-nfc` con supporto identificazione univoca
