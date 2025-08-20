@@ -55,6 +55,26 @@ const NfcManagerPage: React.FC = () => {
       return;
     }
 
+    // Verifica che il cestello sia attivo per avere un ciclo valido
+    if (basket.state !== 'active') {
+      toast({
+        title: "Cestello non attivo",
+        description: `Il cestello #${basket.physicalNumber} non è attivo (stato: ${basket.state}). Solo i cestelli attivi possono essere programmati con un ciclo.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
+    // Verifica che abbia un ciclo corrente
+    if (!basket.currentCycleId) {
+      toast({
+        title: "Nessun ciclo attivo",
+        description: `Il cestello #${basket.physicalNumber} non ha un ciclo attivo. Impossibile programmare il tag NFC.`,
+        variant: "destructive"
+      });
+      return;
+    }
+
     // Struttura NFC v2.0 OTTIMIZZATA - Identificazione univoca garantita
     const dataToWrite = {
       // Identificazione primaria v2.0 (SEMPRE UNIVOCA)

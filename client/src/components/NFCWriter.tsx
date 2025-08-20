@@ -153,6 +153,16 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
             method: 'GET'
           }) as any;
           console.log("Dettagli cestello ricevuti:", basketDetails);
+
+          // Verifica che il cestello sia attivo per avere un ciclo valido
+          if (basketDetails.state !== 'active') {
+            throw new Error(`Il cestello #${basketDetails.physicalNumber} non è attivo (stato: ${basketDetails.state}). Solo i cestelli attivi possono essere programmati con un ciclo.`);
+          }
+
+          // Verifica che abbia un ciclo corrente
+          if (!basketDetails.currentCycleId) {
+            throw new Error(`Il cestello #${basketDetails.physicalNumber} non ha un ciclo attivo. Impossibile programmare il tag NFC.`);
+          }
           
           // Prepara i dati da scrivere con tutte le informazioni necessarie
           // Se il cestello ha un ciclo attivo, reindirizza direttamente alla pagina del ciclo
