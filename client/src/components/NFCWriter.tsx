@@ -89,10 +89,12 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
 
       // Scrivi tramite WeChat bridge con struttura v2.0 OTTIMIZZATA
       const result = await wechatNFCBridge.writeNFCTag({
-        // Identificazione primaria v2.0
+        // Identificazione primaria v2.0 (SEMPRE UNIVOCA)
         basketId: basketId,
         physicalNumber: basketDetails?.physicalNumber || basketNumber,
         currentCycleId: basketDetails?.currentCycleId || null,
+        flupsyId: basketDetails?.flupsyId || 570,
+        position: basketDetails?.position || null,
         
         // Metadati tecnici
         url: redirectPath,
@@ -157,12 +159,14 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
             console.log("Cestello senza ciclo attivo, redirectPath completo impostato a:", redirectPath);
           }
             
-          // Struttura NFC v2.0 OTTIMIZZATA - Solo dati essenziali per identificazione univoca
+          // Struttura NFC v2.0 OTTIMIZZATA - Identificazione univoca garantita
           const basketData = {
-            // Identificazione primaria v2.0
+            // Identificazione primaria v2.0 (SEMPRE UNIVOCA)
             basketId: basketId,
             physicalNumber: basketDetails?.physicalNumber || basketNumber,
             currentCycleId: basketDetails?.currentCycleId || null,
+            flupsyId: basketDetails?.flupsyId || 570,
+            position: basketDetails?.position || null,
             
             // Compatibilità legacy v1.0
             id: basketId,

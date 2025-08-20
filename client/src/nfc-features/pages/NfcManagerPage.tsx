@@ -55,12 +55,14 @@ const NfcManagerPage: React.FC = () => {
       return;
     }
 
-    // Struttura NFC v2.0 OTTIMIZZATA - Solo dati essenziali per identificazione univoca
+    // Struttura NFC v2.0 OTTIMIZZATA - Identificazione univoca garantita
     const dataToWrite = {
-      // Identificazione primaria v2.0
+      // Identificazione primaria v2.0 (SEMPRE UNIVOCA)
       basketId,
       physicalNumber: basket.physicalNumber,
       currentCycleId: basket.currentCycleId,
+      flupsyId: basket.flupsyId,
+      position: basket.position,
       
       // Compatibilità legacy v1.0
       id: basketId,

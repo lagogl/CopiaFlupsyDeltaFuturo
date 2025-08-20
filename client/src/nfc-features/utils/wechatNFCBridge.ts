@@ -17,10 +17,12 @@ interface WeChatNFCResult {
 }
 
 interface NFCWriteData {
-  // Identificazione primaria v2.0
+  // Identificazione primaria v2.0 (SEMPRE UNIVOCA)
   basketId: number;
   physicalNumber: number;
   currentCycleId?: number | null;
+  flupsyId: number;
+  position?: number | null;
   
   // Metadati tecnici
   url: string;
