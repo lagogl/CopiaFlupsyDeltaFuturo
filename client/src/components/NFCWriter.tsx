@@ -87,12 +87,29 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         redirectPath = `${baseUrl}/nfc-scan/basket/${basketId}`;
       }
 
-      // Scrivi tramite WeChat bridge
+      // Scrivi tramite WeChat bridge con struttura v2.0
       const result = await wechatNFCBridge.writeNFCTag({
+        // Identificazione primaria
         basketId: basketId,
-        physicalNumber: basketNumber,
+        physicalNumber: basketDetails?.physicalNumber || basketNumber,
+        currentCycleId: basketDetails?.currentCycleId || null,
+        
+        // Dati aggiuntivi
         flupsyId: basketDetails?.flupsyId || 570,
-        url: redirectPath
+        flupsy: basketDetails?.flupsyName || 'N/D',
+        position: basketDetails?.position || null,
+        row: basketDetails?.row || 'N/D',
+        cycleCode: basketDetails?.cycleCode || null,
+        
+        // Dati operativi
+        sizeClass: basketDetails?.sizeClass || 'N/D',
+        lastWeight: basketDetails?.lastWeight || 0,
+        count: basketDetails?.animalCount || 0,
+        
+        // URL e metadati
+        url: redirectPath,
+        type: 'basket-tag',
+        version: '2.0'
       });
 
       if (result.success) {
@@ -152,12 +169,35 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
             console.log("Cestello senza ciclo attivo, redirectPath completo impostato a:", redirectPath);
           }
             
+          // Struttura NFC v2.0 con identificazione univoca
           const basketData = {
+            // Identificazione primaria
+            basketId: basketId,
+            physicalNumber: basketDetails?.physicalNumber || basketNumber,
+            currentCycleId: basketDetails?.currentCycleId || null,
+            
+            // Dati aggiuntivi per il riconoscimento
+            flupsy: basketDetails?.flupsyName || 'N/D',
+            flupsyId: basketDetails?.flupsyId || null,
+            position: basketDetails?.position || null,
+            row: basketDetails?.row || 'N/D',
+            cycleCode: basketDetails?.cycleCode || null,
+            
+            // Dati operativi
+            sizeClass: basketDetails?.sizeClass || 'N/D',
+            lastWeight: basketDetails?.lastWeight || 0,
+            count: basketDetails?.animalCount || 0,
+            
+            // Compatibilità legacy
             id: basketId,
             number: basketNumber,
             serialNumber: serialNumber,
             redirectTo: redirectPath,
-            timestamp: new Date().toISOString()
+            
+            // Metadati
+            timestamp: new Date().toISOString(),
+            type: 'basket-tag',
+            version: '2.0'
           };
           
           // Codifica JSON
