@@ -96,15 +96,15 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
         
         // Dati aggiuntivi
         flupsyId: basketDetails?.flupsyId || 570,
-        flupsy: basketDetails?.flupsyName || 'N/D',
+        flupsy: basketDetails?.flupsy?.name || 'N/D',
         position: basketDetails?.position || null,
         row: basketDetails?.row || 'N/D',
         cycleCode: basketDetails?.cycleCode || null,
         
         // Dati operativi
-        sizeClass: basketDetails?.sizeClass || 'N/D',
-        lastWeight: basketDetails?.lastWeight || 0,
-        count: basketDetails?.animalCount || 0,
+        sizeClass: basketDetails?.size?.name || basketDetails?.sizeClass || 'N/D',
+        lastWeight: basketDetails?.lastOperation?.totalWeight || basketDetails?.lastWeight || 0,
+        count: basketDetails?.lastOperation?.animalCount || basketDetails?.animalCount || 0,
         
         // URL e metadati
         url: redirectPath,
@@ -177,16 +177,16 @@ export default function NFCWriter({ basketId, basketNumber, onSuccess, onCancel 
             currentCycleId: basketDetails?.currentCycleId || null,
             
             // Dati aggiuntivi per il riconoscimento
-            flupsy: basketDetails?.flupsyName || 'N/D',
+            flupsy: basketDetails?.flupsy?.name || 'N/D',
             flupsyId: basketDetails?.flupsyId || null,
             position: basketDetails?.position || null,
             row: basketDetails?.row || 'N/D',
             cycleCode: basketDetails?.cycleCode || null,
             
             // Dati operativi
-            sizeClass: basketDetails?.sizeClass || 'N/D',
-            lastWeight: basketDetails?.lastWeight || 0,
-            count: basketDetails?.animalCount || 0,
+            sizeClass: basketDetails?.size?.name || basketDetails?.sizeClass || 'N/D',
+            lastWeight: basketDetails?.lastOperation?.totalWeight || basketDetails?.lastWeight || 0,
+            count: basketDetails?.lastOperation?.animalCount || basketDetails?.animalCount || 0,
             
             // Compatibilità legacy
             id: basketId,
