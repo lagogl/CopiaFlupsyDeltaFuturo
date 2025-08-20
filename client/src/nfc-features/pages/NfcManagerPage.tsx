@@ -55,29 +55,21 @@ const NfcManagerPage: React.FC = () => {
       return;
     }
 
-    // Dati da scrivere sul tag - NUOVA STRUTTURA per identificazione univoca
+    // Struttura NFC v2.0 OTTIMIZZATA - Solo dati essenziali per identificazione univoca
     const dataToWrite = {
-      // Identificazione primaria
+      // Identificazione primaria v2.0
       basketId,
       physicalNumber: basket.physicalNumber,
       currentCycleId: basket.currentCycleId,
       
-      // Dati aggiuntivi per il riconoscimento
-      flupsy: basket.flupsyName || 'N/D',
-      flupsyId: basket.flupsyId,
-      position: basket.position || 'N/D',
-      row: basket.row || 'N/D',
-      cycleCode: basket.cycleCode || 'N/D',
+      // Compatibilità legacy v1.0
+      id: basketId,
+      number: basket.physicalNumber,
       
-      // Dati operativi
-      sizeClass: basket.sizeClass || 'N/D',
-      lastWeight: basket.lastWeight || 0,
-      count: basket.animalCount || 0,
-      
-      // Metadati
+      // Metadati tecnici
       timestamp: Date.now(),
       type: 'basket-tag',
-      version: '2.0' // Versione per compatibilità
+      version: '2.0'
     };
 
     // Memorizza i dati per riferimento futuro
