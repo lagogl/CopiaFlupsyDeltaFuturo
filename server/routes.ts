@@ -319,7 +319,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startTime = Date.now();
       
       // Importa il controller ottimizzato dei cestelli
-      const { getBasketsOptimized } = await import('./controllers/baskets-controller.js');
+      const { getBasketsOptimized } = await import('./controllers/baskets-controller');
       
       // Estrai i parametri di paginazione e filtro
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
@@ -1495,7 +1495,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startTime = Date.now();
       
       // Importa il controller ottimizzato delle operazioni
-      const { getOperationsOptimized } = await import('./controllers/operations-controller.js');
+      const { getOperationsOptimized } = await import('./controllers/operations-controller');
       
       // Estrai i parametri della query
       const page = req.query.page ? parseInt(req.query.page as string) : 1;
@@ -2669,13 +2669,13 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Endpoint principale per calcolo giacenze personalizzate tra due date
   app.get("/api/giacenze/range", async (req, res) => {
-    const { getGiacenzeRange } = await import('./controllers/giacenze-controller.js');
+    const { getGiacenzeRange } = await import('./controllers/giacenze-controller');
     await getGiacenzeRange(req, res);
   });
 
   // Endpoint per riepilogo rapido giacenze
   app.get("/api/giacenze/summary", async (req, res) => {
-    const { getGiacenzeSummary } = await import('./controllers/giacenze-controller.js');
+    const { getGiacenzeSummary } = await import('./controllers/giacenze-controller');
     await getGiacenzeSummary(req, res);
   });
 
