@@ -314,6 +314,87 @@ export async function registerRoutes(app: Express): Promise<Server> {
   app.get("/api/sequences/info", SequenceController.getSequencesInfo);
   
   // === Basket routes ===
+  
+  // Nuovo endpoint per identificazione univoca cestelli (physicalNumber + currentCycleId)
+  app.get("/api/baskets/find-by-nfc", async (req, res) => {
+    try {
+      const physicalNumber = req.query.physicalNumber ? parseInt(req.query.physicalNumber as string) : undefined;
+      const currentCycleId = req.query.currentCycleId ? parseInt(req.query.currentCycleId as string) : undefined;
+      const basketId = req.query.basketId ? parseInt(req.query.basketId as string) : undefined;
+      
+      // Se abbiamo basketId, cerca direttamente per ID (compatibilità v1.0)
+      if (basketId) {
+        const basket = await storage.getBasket(basketId);
+        if (basket) {
+          return res.json({
+            success: true,
+            basket,
+            identificationMethod: 'basketId',
+            version: '1.0-compatible'
+          });
+        } else {
+          return res.status(404).json({
+            success: false,
+            error: 'Cestello non trovato per basketId fornito',
+            basketId
+          });
+        }
+      }
+      
+      // Nuova logica v2.0: cerca per physicalNumber + currentCycleId
+      if (physicalNumber !== undefined && currentCycleId !== undefined) {
+        const baskets = await db
+          .select()
+          .from(schema.baskets)
+          .where(
+            and(
+              eq(schema.baskets.physicalNumber, physicalNumber),
+              eq(schema.baskets.currentCycleId, currentCycleId)
+            )
+          );
+        
+        if (baskets.length === 1) {
+          return res.json({
+            success: true,
+            basket: baskets[0],
+            identificationMethod: 'physicalNumber+currentCycleId',
+            version: '2.0'
+          });
+        } else if (baskets.length === 0) {
+          return res.status(404).json({
+            success: false,
+            error: 'Nessun cestello trovato per la combinazione physicalNumber+currentCycleId',
+            physicalNumber,
+            currentCycleId
+          });
+        } else {
+          return res.status(409).json({
+            success: false,
+            error: 'Trovati cestelli multipli per la combinazione physicalNumber+currentCycleId (errore di integrità dati)',
+            physicalNumber,
+            currentCycleId,
+            foundCount: baskets.length
+          });
+        }
+      }
+      
+      // Se non abbiamo né basketId né la combinazione physicalNumber+currentCycleId
+      return res.status(400).json({
+        success: false,
+        error: 'Parametri insufficienti. Fornire basketId oppure physicalNumber+currentCycleId',
+        receivedParams: { basketId, physicalNumber, currentCycleId }
+      });
+      
+    } catch (error) {
+      console.error('Errore nella ricerca cestello via NFC:', error);
+      res.status(500).json({
+        success: false,
+        error: 'Errore interno del server durante la ricerca cestello',
+        details: error instanceof Error ? error.message : 'Errore sconosciuto'
+      });
+    }
+  });
+
   app.get("/api/baskets", async (req, res) => {
     try {
       const startTime = Date.now();

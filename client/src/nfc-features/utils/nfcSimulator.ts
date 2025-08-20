@@ -6,11 +6,13 @@ const generateId = () => {
          Math.random().toString(36).substring(2, 15);
 };
 
-// Interfaccia per i tag NFC
+// Interfaccia per i tag NFC - AGGIORNATA per identificazione univoca
 export interface NfcTag {
   id: string;
   timestamp: number;
   basketId?: number;
+  physicalNumber?: number;    // Numero fisico del cestello
+  currentCycleId?: number;    // ID del ciclo corrente
   data: any;
   lastOperation?: {
     type: string;
@@ -18,19 +20,28 @@ export interface NfcTag {
   };
 }
 
-// Collezione di tag NFC di esempio per la simulazione
+// Collezione di tag NFC di esempio per la simulazione - AGGIORNATA con nuova struttura
 const sampleTags: NfcTag[] = [
   {
     id: generateId(),
     timestamp: Date.now(),
     basketId: 1001,
+    physicalNumber: 1,
+    currentCycleId: 5,
     data: {
       basketId: 1001,
+      physicalNumber: 1,
+      currentCycleId: 5,
       flupsy: "Flupsy A",
-      position: "A1",
+      flupsyId: 570,
+      position: 1,
+      row: "DX",
+      cycleCode: "C-5",
       sizeClass: "TP-500",
       lastWeight: 15.3,
-      count: 5000
+      count: 5000,
+      type: 'basket-tag',
+      version: '2.0'
     },
     lastOperation: {
       type: "peso",
@@ -41,13 +52,22 @@ const sampleTags: NfcTag[] = [
     id: generateId(),
     timestamp: Date.now() - 86400000, // 1 giorno fa
     basketId: 1002,
+    physicalNumber: 2,
+    currentCycleId: 4,
     data: {
       basketId: 1002,
+      physicalNumber: 2,
+      currentCycleId: 4,
       flupsy: "Flupsy A",
-      position: "A2",
+      flupsyId: 570,
+      position: 2,
+      row: "SX",
+      cycleCode: "C-4",
       sizeClass: "TP-1000",
       lastWeight: 25.7,
-      count: 3500
+      count: 3500,
+      type: 'basket-tag',
+      version: '2.0'
     },
     lastOperation: {
       type: "misura",
@@ -58,13 +78,22 @@ const sampleTags: NfcTag[] = [
     id: generateId(),
     timestamp: Date.now() - 172800000, // 2 giorni fa
     basketId: 1003,
+    physicalNumber: 1,  // Stesso numero fisico ma ciclo diverso
+    currentCycleId: 3,  // Ciclo diverso dal primo
     data: {
       basketId: 1003,
+      physicalNumber: 1,
+      currentCycleId: 3,
       flupsy: "Flupsy B",
-      position: "B1",
+      flupsyId: 582,
+      position: 1,
+      row: "DX",
+      cycleCode: "C-3",
       sizeClass: "TP-180",
       lastWeight: 5.2,
-      count: 10000
+      count: 10000,
+      type: 'basket-tag',
+      version: '2.0'
     },
     lastOperation: {
       type: "prima-attivazione",

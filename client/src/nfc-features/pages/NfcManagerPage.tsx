@@ -55,16 +55,29 @@ const NfcManagerPage: React.FC = () => {
       return;
     }
 
-    // Dati da scrivere sul tag
+    // Dati da scrivere sul tag - NUOVA STRUTTURA per identificazione univoca
     const dataToWrite = {
+      // Identificazione primaria
       basketId,
+      physicalNumber: basket.physicalNumber,
+      currentCycleId: basket.currentCycleId,
+      
+      // Dati aggiuntivi per il riconoscimento
       flupsy: basket.flupsyName || 'N/D',
+      flupsyId: basket.flupsyId,
       position: basket.position || 'N/D',
+      row: basket.row || 'N/D',
+      cycleCode: basket.cycleCode || 'N/D',
+      
+      // Dati operativi
       sizeClass: basket.sizeClass || 'N/D',
       lastWeight: basket.lastWeight || 0,
       count: basket.animalCount || 0,
+      
+      // Metadati
       timestamp: Date.now(),
-      type: 'basket-tag'
+      type: 'basket-tag',
+      version: '2.0' // Versione per compatibilità
     };
 
     // Memorizza i dati per riferimento futuro
@@ -83,11 +96,29 @@ const NfcManagerPage: React.FC = () => {
 
   // Gestione del tag scansionato
   const handleTagScanned = (tag: NfcTag) => {
+    // Gestione della nuova struttura di identificazione
+    const tagInfo = tag.data || {};
+    let description = "Nessuna cesta associata a questo tag";
+    
+    if (tagInfo.basketId || (tagInfo.physicalNumber && tagInfo.currentCycleId)) {
+      const basketInfo = tagInfo.basketId 
+        ? `ID: ${tagInfo.basketId}` 
+        : `Numero fisico: ${tagInfo.physicalNumber}`;
+      
+      const cycleInfo = tagInfo.currentCycleId 
+        ? `, Ciclo: ${tagInfo.currentCycleId}` 
+        : '';
+      
+      const versionInfo = tagInfo.version 
+        ? ` (v${tagInfo.version})` 
+        : ' (v1.0)';
+        
+      description = `Cesta ${basketInfo}${cycleInfo}${versionInfo}`;
+    }
+    
     toast({
       title: "Tag NFC rilevato",
-      description: tag.basketId 
-        ? `Cesta associata: #${tag.basketId}` 
-        : "Nessuna cesta associata a questo tag",
+      description,
     });
   };
 
