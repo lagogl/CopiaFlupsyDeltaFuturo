@@ -1,12 +1,36 @@
 import { useState, useEffect } from 'react';
+import { translations, MenuTranslations } from '../i18n/translations';
+
+type Language = 'it' | 'en';
 
 /**
- * Hook semplificato per le traduzioni.
- * In una fase successiva potrebbe essere ampliato per supportare più lingue.
+ * Hook per la gestione delle traduzioni multilingue.
+ * Supporta italiano e inglese con persistenza locale.
  */
 export function useTranslation() {
-  // Funzione di traduzione semplificata che restituisce il testo originale
-  // In futuro potrebbe gestire un vero sistema di traduzione multilingua
+  // Stato per la lingua corrente con valore di default 'it'
+  const [currentLanguage, setCurrentLanguage] = useState<Language>('it');
+
+  // Carica la lingua salvata dal localStorage all'avvio
+  useEffect(() => {
+    const savedLanguage = localStorage.getItem('app-language') as Language;
+    if (savedLanguage && (savedLanguage === 'it' || savedLanguage === 'en')) {
+      setCurrentLanguage(savedLanguage);
+    }
+  }, []);
+
+  // Funzione per cambiare lingua
+  const changeLanguage = (language: Language) => {
+    setCurrentLanguage(language);
+    localStorage.setItem('app-language', language);
+  };
+
+  // Funzione per ottenere le traduzioni della lingua corrente
+  const getTranslations = (): MenuTranslations => {
+    return translations[currentLanguage];
+  };
+
+  // Funzione di traduzione semplificata per compatibilità
   const t = (key: string, replacements: Record<string, string> = {}): string => {
     let translation = key;
     
@@ -21,5 +45,10 @@ export function useTranslation() {
     return translation;
   };
 
-  return { t };
+  return { 
+    t, 
+    currentLanguage, 
+    changeLanguage, 
+    translations: getTranslations() 
+  };
 }

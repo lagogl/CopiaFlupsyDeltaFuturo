@@ -7,13 +7,14 @@ import {
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
   ChevronRight, LayoutDashboard, PieChart, BarChart, Filter,
   FileJson, Download, Database, Leaf, LogOut, LayoutGrid,
-  CloudIcon, Table, Brain, CalendarDays
+  CloudIcon, Table, Brain, CalendarDays, Globe
 } from "lucide-react";
 import useIsMobile from "@/hooks/use-mobile";
 import { MarineWeather } from "@/components/MarineWeather";
 import NotificationBell from "@/components/NotificationBell";
 import PWAInstallPrompt from "@/components/PWAInstallPrompt";
 import { useAuth } from "@/hooks/use-auth";
+import { useTranslation } from "@/hooks/use-translation";
 import { 
   DropdownMenu,
   DropdownMenuContent,
@@ -50,6 +51,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
   const [sidebarOpen, setSidebarOpen] = useState(!isMobile);
   const [location, setLocation] = useLocation();
   const { user, logout } = useAuth(); // Aggiungiamo l'hook useAuth
+  const { translations, currentLanguage, changeLanguage } = useTranslation(); // Hook per traduzioni
   const [expandedCategories, setExpandedCategories] = useState<Record<string, boolean>>({
     'operational': false,
     'monitoring': false,
@@ -92,87 +94,87 @@ export default function MainLayout({ children }: MainLayoutProps) {
     }));
   };
   
-  // Definizione delle categorie e delle relative voci di menu
+  // Definizione delle categorie e delle relative voci di menu con traduzioni
   const navCategories: NavCategory[] = [
     {
       id: 'operational',
-      label: 'GESTIONE OPERATIVA',
+      label: translations.categories.operational,
       icon: <LayoutDashboard className="h-5 w-5" />,
       color: 'text-blue-600',
       items: [
-        { icon: <Home className="h-6 w-6 mr-2 text-black font-bold" />, label: "Dashboard", path: "/" },
-        { icon: <Package2 className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Lotti", path: "/lots" },
-        { icon: <Package className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Ceste", path: "/baskets" },
-        { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: "Gestione Posizioni", path: "/flupsy-positions" },
-        { icon: <FileText className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni", path: "/operations" },
-        { icon: <Zap className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Rapide", path: "/quick-operations" },
-        { icon: <Table className="h-5 w-5 mr-2 text-green-600" />, label: "Spreadsheet Operazioni", path: "/spreadsheet-operations" },
-        { icon: <GripHorizontal className="h-5 w-5 mr-2 text-blue-600" />, label: "Operazioni Drag&Drop", path: "/operations-drag-drop" },
-        { icon: <LayoutGrid className="h-5 w-5 mr-2 text-blue-600" />, label: "Vagliatura con Mappa", path: "/vagliatura-con-mappa" },
-        { icon: <Smartphone className="h-5 w-5 mr-2 text-blue-600" />, label: "Prima Attivazione NFC", path: "/nfc-prima-attivazione" },
-        { icon: <Scan className="h-5 w-5 mr-2 text-blue-600" />, label: "FlupsyScan Mobile", path: "/nfc-scan" }
+        { icon: <Home className="h-6 w-6 mr-2 text-black font-bold" />, label: translations.menuItems.dashboard, path: "/" },
+        { icon: <Package2 className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.lotManagement, path: "/lots" },
+        { icon: <Package className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.basketManagement, path: "/baskets" },
+        { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.positionManagement, path: "/flupsy-positions" },
+        { icon: <FileText className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.operations, path: "/operations" },
+        { icon: <Zap className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.quickOperations, path: "/quick-operations" },
+        { icon: <Table className="h-5 w-5 mr-2 text-green-600" />, label: translations.menuItems.spreadsheetOperations, path: "/spreadsheet-operations" },
+        { icon: <GripHorizontal className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.operationsDragDrop, path: "/operations-drag-drop" },
+        { icon: <LayoutGrid className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.screeningWithMap, path: "/vagliatura-con-mappa" },
+        { icon: <Smartphone className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.nfcFirstActivation, path: "/nfc-prima-attivazione" },
+        { icon: <Scan className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.flupsyScanMobile, path: "/nfc-scan" }
       ]
     },
     {
       id: 'monitoring',
-      label: 'MONITORAGGIO',
+      label: translations.categories.monitoring,
       icon: <Waves className="h-5 w-5" />,
       color: 'text-green-600',
       items: [
-        { icon: <Waves className="h-5 w-5 mr-2 text-green-600" />, label: "Unità FLUPSY", path: "/flupsys" },
-        { icon: <GitCompare className="h-5 w-5 mr-2 text-green-600" />, label: "Confronto FLUPSY", path: "/flupsy-comparison" },
-        { icon: <LineChart className="h-5 w-5 mr-2 text-green-600" />, label: "Percorso di Crescita", path: "/grow-journey" },
-        { icon: <BarChart2 className="h-5 w-5 mr-2 text-green-600" />, label: "Selezione Avanzata", path: "/basket-selection" }
+        { icon: <Waves className="h-5 w-5 mr-2 text-green-600" />, label: translations.menuItems.flupsyUnits, path: "/flupsys" },
+        { icon: <GitCompare className="h-5 w-5 mr-2 text-green-600" />, label: translations.menuItems.flupsyComparison, path: "/flupsy-comparison" },
+        { icon: <LineChart className="h-5 w-5 mr-2 text-green-600" />, label: translations.menuItems.growthPath, path: "/grow-journey" },
+        { icon: <BarChart2 className="h-5 w-5 mr-2 text-green-600" />, label: translations.menuItems.advancedSelection, path: "/basket-selection" }
       ]
     },
     {
       id: 'inventory',
-      label: 'INVENTARIO',
+      label: translations.categories.inventory,
       icon: <Boxes className="h-5 w-5" />,
       color: 'text-orange-600',
       items: [
-        { icon: <RefreshCw className="h-5 w-5 mr-2 text-orange-600" />, label: "Cicli Produttivi", path: "/cycles" },
-        { icon: <Scale className="h-5 w-5 mr-2 text-orange-600" />, label: "Tabella Taglie", path: "/sizes" },
-        { icon: <Boxes className="h-5 w-5 mr-2 text-orange-600" />, label: "Inventario Giacenze", path: "/inventory" },
-        { icon: <CalendarDays className="h-5 w-5 mr-2 text-orange-600" />, label: "Calcolo Giacenze Range", path: "/giacenze-range" },
-        { icon: <FileJson className="h-5 w-5 mr-2 text-orange-600" />, label: "Esportazione", path: "/export" }
+        { icon: <RefreshCw className="h-5 w-5 mr-2 text-orange-600" />, label: translations.menuItems.productionCycles, path: "/cycles" },
+        { icon: <Scale className="h-5 w-5 mr-2 text-orange-600" />, label: translations.menuItems.sizeTable, path: "/sizes" },
+        { icon: <Boxes className="h-5 w-5 mr-2 text-orange-600" />, label: translations.menuItems.stockInventory, path: "/inventory" },
+        { icon: <CalendarDays className="h-5 w-5 mr-2 text-orange-600" />, label: translations.menuItems.stockRangeCalculation, path: "/giacenze-range" },
+        { icon: <FileJson className="h-5 w-5 mr-2 text-orange-600" />, label: translations.menuItems.export, path: "/export" }
       ]
     },
     {
       id: 'analysis',
-      label: 'ANALISI',
+      label: translations.categories.analysis,
       icon: <PieChart className="h-5 w-5" />,
       color: 'text-purple-600',
       items: [
-        { icon: <Brain className="h-5 w-5 mr-2 text-purple-600" />, label: "AI Dashboard", path: "/ai-dashboard" },
-        { icon: <BarChart className="h-5 w-5 mr-2 text-purple-600" />, label: "Statistiche", path: "/statistics" },
-        { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: "Indici SGR", path: "/sgr" },
-        { icon: <PieChart className="h-5 w-5 mr-2 text-purple-600" />, label: "Report di Vendita", path: "/sales-reports" },
-        { icon: <FileText className="h-5 w-5 mr-2 text-purple-600" />, label: "Diario di Impianto", path: "/diario-di-impianto" },
-        { icon: <Leaf className="h-5 w-5 mr-2 text-purple-600" />, label: "Impatto Ambientale", path: "/eco-impact" }
+        { icon: <Brain className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.aiDashboard, path: "/ai-dashboard" },
+        { icon: <BarChart className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.statistics, path: "/statistics" },
+        { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.sgrIndices, path: "/sgr" },
+        { icon: <PieChart className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.salesReports, path: "/sales-reports" },
+        { icon: <FileText className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.plantDiary, path: "/diario-di-impianto" },
+        { icon: <Leaf className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.environmentalImpact, path: "/eco-impact" }
       ]
     },
     {
       id: 'sales',
-      label: 'VENDITE',
+      label: translations.categories.sales,
       icon: <Package className="h-5 w-5" />,
       color: 'text-emerald-600',
       items: [
-        { icon: <Package className="h-5 w-5 mr-2 text-emerald-600" />, label: "Gestione Vendite", path: "/advanced-sales" }
+        { icon: <Package className="h-5 w-5 mr-2 text-emerald-600" />, label: translations.menuItems.salesManagement, path: "/advanced-sales" }
       ]
     },
     {
       id: 'system',
-      label: 'SISTEMA',
+      label: translations.categories.system,
       icon: <SettingsIcon className="h-5 w-5" />,
       color: 'text-gray-600',
       items: [
-        { icon: <Tag className="h-5 w-5 mr-2 text-gray-600" />, label: "Gestione Tag NFC", path: "/nfc-tags" },
-        { icon: <SettingsIcon className="h-5 w-5 mr-2 text-gray-600" />, label: "Impostazioni", path: "/settings" },
-        { icon: <Bell className="h-5 w-5 mr-2 text-gray-600" />, label: "Gestione Notifiche", path: "/notification-settings" },
-        { icon: <CloudIcon className="h-5 w-5 mr-2 text-blue-600" />, label: "Fatture in Cloud", path: "/fatture-in-cloud" },
-        { icon: <Database className="h-5 w-5 mr-2 text-gray-600" />, label: "Backup Database", path: "/backup" },
-        { icon: <Zap className="h-5 w-5 mr-2 text-gray-600" />, label: "Utilità Amministrazione", path: "/amministrazione-utilita" }
+        { icon: <Tag className="h-5 w-5 mr-2 text-gray-600" />, label: translations.menuItems.nfcTagManagement, path: "/nfc-tags" },
+        { icon: <SettingsIcon className="h-5 w-5 mr-2 text-gray-600" />, label: translations.menuItems.settings, path: "/settings" },
+        { icon: <Bell className="h-5 w-5 mr-2 text-gray-600" />, label: translations.menuItems.notificationManagement, path: "/notification-settings" },
+        { icon: <CloudIcon className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.invoicesInCloud, path: "/fatture-in-cloud" },
+        { icon: <Database className="h-5 w-5 mr-2 text-gray-600" />, label: translations.menuItems.databaseBackup, path: "/backup" },
+        { icon: <Zap className="h-5 w-5 mr-2 text-gray-600" />, label: translations.menuItems.adminUtilities, path: "/amministrazione-utilita" }
       ]
     }
   ];
@@ -188,7 +190,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
               className="p-1 rounded-md hover:bg-primary-dark focus:outline-none focus:ring-2 focus:ring-white">
               <Menu className="h-6 w-6" />
             </button>
-            <h1 className="text-xl font-condensed font-bold">FLUPSY Ecotapes/Delta Futuro</h1>
+            <h1 className="text-xl font-condensed font-bold">{translations.title}</h1>
           </div>
           <div className="flex-1 flex justify-center">
             <MarineWeather />
@@ -209,14 +211,14 @@ export default function MainLayout({ children }: MainLayoutProps) {
                 </div>
               </DropdownMenuTrigger>
               <DropdownMenuContent className="w-56" align="end">
-                <DropdownMenuLabel>Il mio account</DropdownMenuLabel>
+                <DropdownMenuLabel>{translations.userDropdown.myAccount}</DropdownMenuLabel>
                 <DropdownMenuSeparator />
                 <DropdownMenuItem
                   className="text-gray-700 cursor-pointer"
                   onClick={() => setLocation("/settings")}
                 >
                   <SettingsIcon className="mr-2 h-4 w-4" />
-                  <span>Impostazioni</span>
+                  <span>{translations.userDropdown.settings}</span>
                 </DropdownMenuItem>
                 <DropdownMenuItem
                   className="text-red-600 cursor-pointer"
@@ -231,7 +233,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
                   }}
                 >
                   <LogOut className="mr-2 h-4 w-4" />
-                  <span>Logout</span>
+                  <span>{translations.userDropdown.logout}</span>
                 </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
@@ -254,7 +256,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
             sidebarOpen ? "translate-x-0" : "-translate-x-full"
           } fixed md:static h-[calc(100vh-60px)] z-40 ${!sidebarOpen ? "md:hidden" : ""}`}>
           <div className="flex justify-between items-center p-4 border-b">
-            <h2 className="font-semibold text-lg">Menu</h2>
+            <h2 className="font-semibold text-lg">{translations.menu}</h2>
             {isMobile && (
               <button 
                 onClick={() => setSidebarOpen(false)}
@@ -319,6 +321,39 @@ export default function MainLayout({ children }: MainLayoutProps) {
               </div>
             ))}
           </nav>
+          
+          {/* Selettore di lingua in fondo alla sidebar */}
+          <div className="p-4 border-t bg-gray-50">
+            <div className="text-xs text-gray-500 mb-2 text-center">{translations.languageSelector.language}</div>
+            <div className="flex justify-center space-x-1">
+              <button
+                onClick={() => changeLanguage('it')}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  currentLanguage === 'it'
+                    ? 'bg-primary text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-1">
+                  <Globe className="h-3 w-3" />
+                  <span>IT</span>
+                </div>
+              </button>
+              <button
+                onClick={() => changeLanguage('en')}
+                className={`px-3 py-1 text-sm font-medium rounded-md transition-colors ${
+                  currentLanguage === 'en'
+                    ? 'bg-primary text-white'
+                    : 'bg-white text-gray-700 hover:bg-gray-100 border border-gray-300'
+                }`}
+              >
+                <div className="flex items-center space-x-1">
+                  <Globe className="h-3 w-3" />
+                  <span>EN</span>
+                </div>
+              </button>
+            </div>
+          </div>
         </aside>
 
         {/* Main Content */}
