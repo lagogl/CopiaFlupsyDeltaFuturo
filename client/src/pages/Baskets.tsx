@@ -669,6 +669,31 @@ export default function Baskets() {
         </div>
       </div>
 
+      {/* Totali */}
+      {filteredBaskets.length > 0 && (
+        <div className="bg-gray-50 border border-gray-200 rounded-lg shadow-sm mb-4 p-4">
+          <div className="flex justify-between items-center">
+            <div className="text-lg font-semibold text-gray-800">
+              Totale:
+            </div>
+            <div className="flex space-x-6">
+              <div className="text-center">
+                <div className="text-sm text-gray-500">Ceste</div>
+                <div className="text-xl font-bold text-blue-600">{filteredBaskets.length}</div>
+              </div>
+              <div className="text-center">
+                <div className="text-sm text-gray-500">Animali</div>
+                <div className="text-xl font-bold text-green-600">
+                  {filteredBaskets.reduce((total, basket) => {
+                    return total + (basket.animalCount || 0);
+                  }, 0).toLocaleString('it-IT')}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
       {/* Baskets Table */}
       <div className="bg-white rounded-lg shadow-sm border border-gray-200 overflow-hidden">
         <div className="overflow-x-auto">
@@ -939,23 +964,6 @@ export default function Baskets() {
                     );
                   })}
 
-                  {/* Riga totale */}
-                  {filteredBaskets.length > 0 && (
-                    <tr className="bg-muted/30 font-medium border-t-2 border-gray-300">
-                      <td colSpan={7} className="px-6 py-4 text-right whitespace-nowrap text-sm font-bold text-gray-900">
-                        Totale:
-                      </td>
-                      <td colSpan={1} className="px-6 py-4 whitespace-nowrap text-sm">
-                        <span className="text-xs text-muted-foreground">{filteredBaskets.length} ceste</span>
-                      </td>
-                      <td colSpan={1} className="px-6 py-4 whitespace-nowrap text-sm font-bold text-gray-900">
-                        {filteredBaskets.reduce((total, basket) => {
-                          return total + (basket.animalCount || 0);
-                        }, 0).toLocaleString('it-IT')}
-                      </td>
-                      <td colSpan={2}></td>
-                    </tr>
-                  )}
                 </>
               )}
             </tbody>
