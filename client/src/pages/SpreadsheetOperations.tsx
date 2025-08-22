@@ -1460,7 +1460,7 @@ export default function SpreadsheetOperations() {
     const currentRow = operationRows.find(r => r.basketId === basketId);
     if (!currentRow) return;
     
-    // Se è una riga nuova (isNewRow: true), cancellala completamente e fai refresh
+    // Se è una riga nuova (isNewRow: true), cancellala completamente
     if ((currentRow as any).isNewRow) {
       // Rimuovi la riga nuova dalla lista
       setOperationRows(prev => prev.filter(row => 
@@ -1476,18 +1476,8 @@ export default function SpreadsheetOperations() {
       
       toast({
         title: "Riga cancellata",
-        description: `Riga appena creata per cestello #${currentRow.physicalNumber} eliminata - refresh in corso...`,
+        description: `Riga appena creata per cestello #${currentRow.physicalNumber} eliminata`,
       });
-      
-      // Refresh automatico: invalida le cache E forza il reload completo della pagina
-      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
-      
-      // Forza reload completo ricaricando la pagina dopo un breve delay
-      setTimeout(() => {
-        window.location.reload();
-      }, 500);
       
       return;
     }
