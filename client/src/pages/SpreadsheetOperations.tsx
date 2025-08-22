@@ -1453,8 +1453,40 @@ export default function SpreadsheetOperations() {
 
   // **NUOVE FUNZIONI SISTEMA UNDO E SALVATAGGIO SINGOLO**
   
-  // Undo singolo: riporta una riga specifica allo stato originale  
+  // Undo singolo: riporta una riga specifica allo stato originale o cancella riga nuova
   const undoRow = (basketId: number) => {
+    // Trova la riga corrente per verificare se è nuova o originale
+    const currentRow = operationRows.find(r => r.basketId === basketId);
+    if (!currentRow) return;
+    
+    // Se è una riga nuova (isNewRow: true), cancellala completamente e fai refresh
+    if ((currentRow as any).isNewRow) {
+      // Rimuovi la riga nuova dalla lista
+      setOperationRows(prev => prev.filter(row => 
+        !(row.basketId === basketId && (row as any).isNewRow)
+      ));
+      
+      // Rimuovi dalla lista salvate
+      setSavedRows(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(basketId);
+        return newSet;
+      });
+      
+      // Refresh automatico: invalida le cache per riportare i dati aggiornati
+      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+      
+      toast({
+        title: "Riga cancellata",
+        description: `Riga appena creata per cestello #${currentRow.physicalNumber} eliminata`,
+      });
+      
+      return;
+    }
+    
+    // Se è una riga originale, ripristina ai valori originali
     const originalRow = originalRows.find(r => r.basketId === basketId);
     if (!originalRow) return;
     
