@@ -1456,13 +1456,21 @@ export default function SpreadsheetOperations() {
   
   // Undo singolo: riporta una riga specifica allo stato originale o cancella riga nuova
   const undoRow = (basketId: number) => {
-    // Trova la riga corrente per verificare se è nuova o originale
-    const currentRow = operationRows.find(r => r.basketId === basketId);
-    if (!currentRow) return;
+    console.log('🔄 UNDO: Inizio undo per basketId:', basketId);
     
-    // Se è una riga nuova (isNewRow: true), cancellala completamente
-    if ((currentRow as any).isNewRow) {
-      // Rimuovi la riga nuova dalla lista
+    // DEBUG: Mostra tutte le righe per questo basketId
+    const allRowsForBasket = operationRows.filter(r => r.basketId === basketId);
+    console.log(`🔍 UNDO: Trovate ${allRowsForBasket.length} righe per basketId ${basketId}:`);
+    allRowsForBasket.forEach((r, index) => {
+      console.log(`  [${index}] isNewRow: ${(r as any).isNewRow}, physicalNumber: ${r.physicalNumber}`);
+    });
+    
+    // Prima cerca se esiste una riga nuova (isNewRow: true) per questo basketId
+    const newRow = operationRows.find(r => r.basketId === basketId && (r as any).isNewRow);
+    
+    if (newRow) {
+      console.log('🗑️ UNDO: Trovata riga nuova, la rimuovo');
+      // Rimuovi SOLO la riga nuova dalla lista
       setOperationRows(prev => prev.filter(row => 
         !(row.basketId === basketId && (row as any).isNewRow)
       ));
@@ -1476,7 +1484,7 @@ export default function SpreadsheetOperations() {
       
       toast({
         title: "Riga cancellata",
-        description: `Riga appena creata per cestello #${currentRow.physicalNumber} eliminata`,
+        description: `Riga appena creata per cestello #${newRow.physicalNumber} eliminata`,
       });
       
       return;
