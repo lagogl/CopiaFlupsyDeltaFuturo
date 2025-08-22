@@ -72,7 +72,7 @@ export default function SpreadsheetOperations() {
   const isMobile = useIsMobile();
   
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(null);
-  const [selectedOperationType, setSelectedOperationType] = useState<string>('misura');
+  const [selectedOperationType, setSelectedOperationType] = useState<string>('peso');
   const [operationDate, setOperationDate] = useState(new Date().toISOString().split('T')[0]);
   const [operationRows, setOperationRows] = useState<OperationRowData[]>([]);
   const [autoSaveEnabled, setAutoSaveEnabled] = useState(true);
