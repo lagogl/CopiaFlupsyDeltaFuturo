@@ -1294,9 +1294,10 @@ export default function SpreadsheetOperations() {
       if (!row.totalWeight || row.totalWeight <= 0) {
         errors.push('Peso totale richiesto per operazione peso');
       }
-      if (!row.sampleWeight || row.sampleWeight <= 0) {
-        errors.push('Peso campione richiesto per operazione peso');
+      if (!row.animalCount || row.animalCount <= 0) {
+        errors.push('Numero animali richiesto per operazione peso');
       }
+      // NOTA: sampleWeight NON è richiesto per operazioni peso, solo per misura
     }
     
     if (row.type === 'misura') {
