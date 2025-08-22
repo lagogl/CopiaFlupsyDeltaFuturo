@@ -4,7 +4,7 @@
  */
 
 import { sql, eq, and, asc, desc, inArray, isNull } from 'drizzle-orm';
-import { db } from "../db";
+import { db } from "../db.js";
 import { 
   cycles, 
   baskets, 
@@ -14,21 +14,36 @@ import {
   lots, 
   mortalityRates,
   sgr 
-} from "../../shared/schema";
+} from "../../shared/schema.js";
+
+interface CacheData {
+  data: any;
+  expiresAt: number;
+}
+
+interface CyclesOptions {
+  page?: number;
+  pageSize?: number;
+  state?: string | null;
+  flupsyId?: number | null;
+  startDateFrom?: string | null;
+  startDateTo?: string | null;
+  sortBy?: string;
+  sortOrder?: string;
+  includeAll?: boolean;
+}
 
 /**
  * Servizio di cache per i cicli
  */
 class CyclesCacheService {
-  constructor() {
-    this.cache = new Map();
-    this.ttl = 600; // 10 minuti (in secondi) - esteso per ridurre query DB
-  }
+  private cache = new Map<string, CacheData>();
+  private ttl = 600; // 10 minuti (in secondi) - esteso per ridurre query DB
 
   /**
    * Genera una chiave di cache basata sui parametri di filtro
    */
-  generateCacheKey(options = {}) {
+  generateCacheKey(options: Record<string, any> = {}): string {
     const keys = Object.keys(options).sort();
     const keyParts = keys.map(key => `${key}_${options[key]}`);
     return `cycles_${keyParts.join('_')}`;
@@ -37,7 +52,7 @@ class CyclesCacheService {
   /**
    * Salva i risultati nella cache
    */
-  set(key, data) {
+  set(key: string, data: any): void {
     const expiresAt = Date.now() + (this.ttl * 1000);
     this.cache.set(key, { data, expiresAt });
     console.log(`Cache cicli: dati salvati con chiave "${key}", scadenza in ${this.ttl} secondi`);
@@ -46,7 +61,7 @@ class CyclesCacheService {
   /**
    * Recupera i dati dalla cache se presenti e non scaduti
    */
-  get(key) {
+  get(key: string): any | null {
     const cached = this.cache.get(key);
     if (!cached) {
       console.log(`Cache cicli: nessun dato trovato per chiave "${key}"`);
@@ -66,7 +81,7 @@ class CyclesCacheService {
   /**
    * Elimina tutte le chiavi di cache
    */
-  clear() {
+  clear(): void {
     this.cache.clear();
     console.log("Cache cicli: cache completamente svuotata");
   }
@@ -74,7 +89,7 @@ class CyclesCacheService {
   /**
    * Forza la pulizia della cache e restituisce lo stato
    */
-  forceClear() {
+  forceClear(): { cleared: number } {
     const sizeBefore = this.cache.size;
     this.cache.clear();
     console.log(`Cache cicli: forzata pulizia - rimosse ${sizeBefore} chiavi`);
@@ -84,7 +99,7 @@ class CyclesCacheService {
   /**
    * Invalida la cache quando i dati cambiano
    */
-  invalidate() {
+  invalidate(): void {
     console.log("Invalidazione cache cicli");
     this.clear();
   }
@@ -95,18 +110,8 @@ export const CyclesCache = new CyclesCacheService();
 
 /**
  * Ottiene tutti i cicli con paginazione, filtri e cache
- * @param {Object} options - Opzioni di filtro e paginazione
- * @param {number} options.page - Numero di pagina (default: 1)
- * @param {number} options.pageSize - Dimensione pagina (default: 10)
- * @param {string} options.state - Stato del ciclo (es: 'active', 'completed', 'cancelled')
- * @param {number} options.flupsyId - ID del FLUPSY per filtrare
- * @param {string} options.startDateFrom - Data di inizio minima (formato YYYY-MM-DD)
- * @param {string} options.startDateTo - Data di inizio massima (formato YYYY-MM-DD)
- * @param {string} options.sortBy - Campo per ordinamento (default: 'startDate')
- * @param {string} options.sortOrder - Direzione ordinamento (default: 'desc')
- * @returns {Promise<Object>} - I cicli filtrati con metadati di paginazione
  */
-export async function getCycles(options = {}) {
+export async function getCycles(options: CyclesOptions = {}) {
   const {
     page = 1,
     pageSize = 10,
@@ -115,26 +120,46 @@ export async function getCycles(options = {}) {
     startDateFrom = null,
     startDateTo = null,
     sortBy = 'startDate',
-    sortOrder = 'desc'
+    sortOrder = 'desc',
+    includeAll = false
   } = options;
+
+  // Se includeAll è true, ignora la paginazione
+  const effectivePageSize = includeAll ? 1000 : pageSize;
+  const effectivePage = includeAll ? 1 : page;
 
   // Genera una chiave di cache basata sui parametri di filtro
   const cacheKey = CyclesCache.generateCacheKey({ 
-    page, pageSize, state, flupsyId, startDateFrom, startDateTo, sortBy, sortOrder 
+    page: effectivePage, 
+    pageSize: effectivePageSize, 
+    state, 
+    flupsyId, 
+    startDateFrom, 
+    startDateTo, 
+    sortBy, 
+    sortOrder,
+    includeAll 
   });
-  
-  // TEMP: Cache disabilitata per debug problema FLUPSY
-  // const cached = CyclesCache.get(cacheKey);
-  // if (cached) {
-  //   return cached;
-  // }
 
-  console.log(`Richiesta cicli con opzioni: ${JSON.stringify(options)}`);
+  // Verifica cache
+  if (!includeAll) {
+    const cached = CyclesCache.get(cacheKey);
+    if (cached) {
+      return cached;
+    }
+  }
+
+  if (includeAll) {
+    console.log("Recupero tutti i cicli senza paginazione (richiesto da dashboard)");
+  } else {
+    console.log(`Richiesta cicli con opzioni: ${JSON.stringify(options)}`);
+  }
+  
   const startTime = Date.now();
 
   try {
     // Prepara i filtri
-    const filters = [];
+    const filters: any[] = [];
     
     if (state) {
       filters.push(eq(cycles.state, state));
@@ -149,7 +174,7 @@ export async function getCycles(options = {}) {
     }
     
     // Ottieni gli ID dei cestelli associati al FLUPSY se necessario
-    let flupysBasketIds = null;
+    let flupysBasketIds: number[] | null = null;
     if (flupsyId) {
       const basketsInFlupsy = await db.select({ id: baskets.id })
         .from(baskets)
@@ -162,12 +187,12 @@ export async function getCycles(options = {}) {
         return {
           cycles: [],
           pagination: {
-            page,
-            pageSize,
+            page: effectivePage,
+            pageSize: effectivePageSize,
             totalCount: 0,
             totalPages: 0,
             hasNextPage: false,
-            hasPreviousPage: page > 1
+            hasPreviousPage: effectivePage > 1
           }
         };
       }
@@ -176,14 +201,14 @@ export async function getCycles(options = {}) {
     }
     
     // Calcola l'offset per la paginazione
-    const offset = (page - 1) * pageSize;
+    const offset = (effectivePage - 1) * effectivePageSize;
     
     // Preparazione della clausola di ordinamento
-    let orderClause;
+    let orderClause: any;
     if (sortOrder.toLowerCase() === 'asc') {
-      orderClause = asc(cycles[sortBy]);
+      orderClause = asc(cycles[sortBy as keyof typeof cycles]);
     } else {
-      orderClause = desc(cycles[sortBy]);
+      orderClause = desc(cycles[sortBy as keyof typeof cycles]);
     }
     
     // 1. Ottieni il conteggio totale dei cicli con i filtri applicati
@@ -203,7 +228,7 @@ export async function getCycles(options = {}) {
     const query = db.select()
       .from(cycles)
       .orderBy(orderClause)
-      .limit(pageSize)
+      .limit(effectivePageSize)
       .offset(offset);
     
     if (whereClause) {
@@ -213,6 +238,27 @@ export async function getCycles(options = {}) {
     const cyclesResult = await query;
     
     // 3. Ottieni i dettagli dei cestelli associati
+    if (cyclesResult.length === 0) {
+      const result = {
+        cycles: [],
+        pagination: {
+          page: effectivePage,
+          pageSize: effectivePageSize,
+          totalCount: 0,
+          totalPages: 0,
+          hasNextPage: false,
+          hasPreviousPage: effectivePage > 1
+        }
+      };
+      
+      if (includeAll) {
+        console.log("Restituiti 0 cicli (includeAll=true)");
+        return cyclesResult;
+      }
+      
+      return result;
+    }
+    
     const cycleBasketIds = cyclesResult.map(cycle => cycle.basketId);
     
     const basketsResult = await db.execute(sql`
@@ -220,7 +266,7 @@ export async function getCycles(options = {}) {
     `);
     
     // Mappa dei cestelli per ID
-    const basketsMap = basketsResult.reduce((map, basket) => {
+    const basketsMap = basketsResult.reduce((map: any, basket: any) => {
       // Converti i nomi delle colonne da snake_case a camelCase
       map[basket.id] = {
         id: basket.id,
@@ -237,21 +283,21 @@ export async function getCycles(options = {}) {
     }, {});
     
     // 4. Ottieni i dettagli dei FLUPSY
-    const flupsyIds = new Set();
+    const flupsyIds = new Set<number>();
     for (const basket of basketsResult) {
       if (basket.flupsy_id) {
         flupsyIds.add(basket.flupsy_id);
       }
     }
     
-    let flupsysMap = {};
+    let flupsysMap: any = {};
     if (flupsyIds.size > 0) {
       const flupsysResult = await db.execute(sql`
         SELECT * FROM flupsys WHERE id = ANY(${Array.from(flupsyIds)})
       `);
       
       // Mappa dei FLUPSY per ID
-      flupsysMap = flupsysResult.reduce((map, flupsy) => {
+      flupsysMap = flupsysResult.reduce((map: any, flupsy: any) => {
         // Converti i nomi delle colonne da snake_case a camelCase
         map[flupsy.id] = {
           id: flupsy.id,
@@ -282,19 +328,28 @@ export async function getCycles(options = {}) {
       };
     });
     
+    // Se includeAll, restituisci solo i cicli
+    if (includeAll) {
+      CyclesCache.set(cacheKey, cyclesWithBasketDetails);
+      const duration = Date.now() - startTime;
+      console.log(`Restituiti tutti i ${cyclesWithBasketDetails.length} cicli (includeAll=true)`);
+      console.log(`Cicli recuperati in ${duration}ms (ottimizzato)`);
+      return cyclesWithBasketDetails;
+    }
+    
     // Calcola i metadati di paginazione
-    const totalPages = Math.ceil(totalCount / pageSize);
+    const totalPages = Math.ceil(totalCount / effectivePageSize);
     
     // Prepara il risultato completo con metadati di paginazione
     const result = {
       cycles: cyclesWithBasketDetails,
       pagination: {
-        page,
-        pageSize,
+        page: effectivePage,
+        pageSize: effectivePageSize,
         totalCount,
         totalPages,
-        hasNextPage: page < totalPages,
-        hasPreviousPage: page > 1
+        hasNextPage: effectivePage < totalPages,
+        hasPreviousPage: effectivePage > 1
       }
     };
     
@@ -344,7 +399,7 @@ export async function getActiveCyclesWithDetails() {
     `);
 
     // Mappa dei cestelli per ID
-    const basketsMap = basketsResult.reduce((map, basket) => {
+    const basketsMap = basketsResult.reduce((map: any, basket: any) => {
       // Converti i nomi delle colonne da snake_case a camelCase
       map[basket.id] = {
         id: basket.id,
@@ -371,7 +426,7 @@ export async function getActiveCyclesWithDetails() {
     `);
 
     // Raggruppa le operazioni per ID ciclo
-    const operationsByCycle = {};
+    const operationsByCycle: any = {};
     for (const op of operationsResult) {
       // Converti i nomi delle colonne da snake_case a camelCase
       const operation = {
@@ -400,7 +455,7 @@ export async function getActiveCyclesWithDetails() {
     }
 
     // 6. Raccogli tutti gli ID delle taglie dalle operazioni
-    const sizeIds = new Set();
+    const sizeIds = new Set<number>();
     for (const op of operationsResult) {
       if (op.size_id) {
         sizeIds.add(op.size_id);
@@ -408,28 +463,31 @@ export async function getActiveCyclesWithDetails() {
     }
 
     // 7. Ottieni tutte le taglie in una singola query
-    const sizesResult = await db.execute(sql`
-      SELECT * FROM sizes WHERE id IN ${Array.from(sizeIds)}
-    `);
+    let sizesMap: any = {};
+    if (sizeIds.size > 0) {
+      const sizesResult = await db.execute(sql`
+        SELECT * FROM sizes WHERE id IN ${Array.from(sizeIds)}
+      `);
 
-    // Mappa delle taglie per ID
-    const sizesMap = sizesResult.reduce((map, size) => {
-      // Converti i nomi delle colonne da snake_case a camelCase
-      map[size.id] = {
-        id: size.id,
-        name: size.name,
-        code: size.code,
-        notes: size.notes,
-        sizeMm: size.size_mm,
-        minAnimalsPerKg: size.min_animals_per_kg,
-        maxAnimalsPerKg: size.max_animals_per_kg,
-        color: size.color
-      };
-      return map;
-    }, {});
+      // Mappa delle taglie per ID
+      sizesMap = sizesResult.reduce((map: any, size: any) => {
+        // Converti i nomi delle colonne da snake_case a camelCase
+        map[size.id] = {
+          id: size.id,
+          name: size.name,
+          code: size.code,
+          notes: size.notes,
+          sizeMm: size.size_mm,
+          minAnimalsPerKg: size.min_animals_per_kg,
+          maxAnimalsPerKg: size.max_animals_per_kg,
+          color: size.color
+        };
+        return map;
+      }, {});
+    }
 
     // 8. Raccogli tutti gli ID dei FLUPSY dai cestelli
-    const flupsyIds = new Set();
+    const flupsyIds = new Set<number>();
     for (const basket of basketsResult) {
       if (basket.flupsy_id) {
         flupsyIds.add(basket.flupsy_id);
@@ -437,27 +495,30 @@ export async function getActiveCyclesWithDetails() {
     }
 
     // 9. Ottieni tutti i FLUPSY in una singola query
-    const flupsysResult = await db.execute(sql`
-      SELECT * FROM flupsys WHERE id IN ${Array.from(flupsyIds)}
-    `);
+    let flupsysMap: any = {};
+    if (flupsyIds.size > 0) {
+      const flupsysResult = await db.execute(sql`
+        SELECT * FROM flupsys WHERE id IN ${Array.from(flupsyIds)}
+      `);
 
-    // Mappa dei FLUPSY per ID
-    const flupsysMap = flupsysResult.reduce((map, flupsy) => {
-      // Converti i nomi delle colonne da snake_case a camelCase
-      map[flupsy.id] = {
-        id: flupsy.id,
-        name: flupsy.name,
-        location: flupsy.location,
-        description: flupsy.description,
-        active: flupsy.active,
-        maxPositions: flupsy.max_positions,
-        productionCenter: flupsy.production_center
-      };
-      return map;
-    }, {});
+      // Mappa dei FLUPSY per ID
+      flupsysMap = flupsysResult.reduce((map: any, flupsy: any) => {
+        // Converti i nomi delle colonne da snake_case a camelCase
+        map[flupsy.id] = {
+          id: flupsy.id,
+          name: flupsy.name,
+          location: flupsy.location,
+          description: flupsy.description,
+          active: flupsy.active,
+          maxPositions: flupsy.max_positions,
+          productionCenter: flupsy.production_center
+        };
+        return map;
+      }, {});
+    }
 
     // 10. Raccogli tutti gli ID dei lotti dalle operazioni
-    const lotIds = new Set();
+    const lotIds = new Set<number>();
     for (const op of operationsResult) {
       if (op.lot_id) {
         lotIds.add(op.lot_id);
@@ -465,14 +526,14 @@ export async function getActiveCyclesWithDetails() {
     }
 
     // 11. Ottieni tutti i lotti in una singola query se necessario
-    let lotsMap = {};
+    let lotsMap: any = {};
     if (lotIds.size > 0) {
       const lotsResult = await db.execute(sql`
         SELECT * FROM lots WHERE id IN ${Array.from(lotIds)}
       `);
 
       // Mappa dei lotti per ID
-      lotsMap = lotsResult.reduce((map, lot) => {
+      lotsMap = lotsResult.reduce((map: any, lot: any) => {
         // Converti i nomi delle colonne da snake_case a camelCase
         map[lot.id] = {
           id: lot.id,
@@ -491,7 +552,7 @@ export async function getActiveCyclesWithDetails() {
     }
 
     // 12. Raccogli tutti gli ID degli SGR dalle operazioni
-    const sgrIds = new Set();
+    const sgrIds = new Set<number>();
     for (const op of operationsResult) {
       if (op.sgr_id) {
         sgrIds.add(op.sgr_id);
@@ -499,14 +560,14 @@ export async function getActiveCyclesWithDetails() {
     }
 
     // 13. Ottieni tutti gli SGR in una singola query se necessario
-    let sgrMap = {};
+    let sgrMap: any = {};
     if (sgrIds.size > 0) {
       const sgrResult = await db.execute(sql`
         SELECT * FROM sgr WHERE id IN ${Array.from(sgrIds)}
       `);
 
       // Mappa degli SGR per ID
-      sgrMap = sgrResult.reduce((map, sgrItem) => {
+      sgrMap = sgrResult.reduce((map: any, sgrItem: any) => {
         // Converti i nomi delle colonne da snake_case a camelCase
         map[sgrItem.id] = {
           id: sgrItem.id,
@@ -581,7 +642,7 @@ export async function getActiveCyclesWithDetails() {
 /**
  * Configura l'invalidazione della cache per i cicli
  */
-export function setupCyclesCacheInvalidation(app) {
+export function setupCyclesCacheInvalidation(app: any) {
   // Invalida la cache quando un ciclo viene creato, aggiornato o eliminato
   const invalidateCache = () => CyclesCache.invalidate();
   

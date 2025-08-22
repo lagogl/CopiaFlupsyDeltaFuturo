@@ -10,7 +10,7 @@
 import { sql } from 'drizzle-orm';
 import { db } from './db';
 import { CacheService } from './cache-service';
-import { setupCyclesCacheInvalidation } from './controllers/cycles-controller.js';
+import { setupCyclesCacheInvalidation } from './controllers/cycles-controller.ts';
 
 /**
  * Applica gli indici strategici al database
@@ -120,7 +120,7 @@ export async function setupPerformanceOptimizations(app: any) {
   
   // Importa e configura gli indici per le operazioni
   try {
-    const { setupOperationsIndexes, setupOperationsCacheInvalidation } = await import('./controllers/operations-controller.js');
+    const { setupOperationsIndexes, setupOperationsCacheInvalidation } = await import('./controllers/operations-controller.ts');
     await setupOperationsIndexes();
     
     // Configurazione invalidazione cache per operazioni
@@ -134,7 +134,7 @@ export async function setupPerformanceOptimizations(app: any) {
   
   // Importa e configura gli indici per i cestelli
   try {
-    const { setupBasketsIndexes, setupBasketsCacheInvalidation } = await import('./controllers/baskets-controller.js');
+    const { setupBasketsIndexes, setupBasketsCacheInvalidation } = await import('./controllers/baskets-controller.ts');
     await setupBasketsIndexes();
     
     // Configurazione invalidazione cache per cestelli
@@ -148,7 +148,7 @@ export async function setupPerformanceOptimizations(app: any) {
   
   // Importa e configura la cache per i cicli
   try {
-    const { setupCyclesCacheInvalidation } = await import('./controllers/cycles-controller.js');
+    const { setupCyclesCacheInvalidation } = await import('./controllers/cycles-controller.ts');
     
     // Configurazione invalidazione cache per cicli
     if (app) {

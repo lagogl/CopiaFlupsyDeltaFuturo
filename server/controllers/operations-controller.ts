@@ -30,10 +30,21 @@ const OPERATION_COLUMNS = {
   metadata: operations.metadata
 };
 
+interface OperationsOptions {
+  page?: number;
+  pageSize?: number;
+  cycleId?: number;
+  basketId?: number;
+  flupsyId?: number;
+  dateFrom?: Date | string | null;
+  dateTo?: Date | string | null;
+  type?: string;
+}
+
 /**
  * Crea indici sulle tabelle necessarie per ottimizzare le query delle operazioni
  */
-export async function setupOperationsIndexes() {
+export async function setupOperationsIndexes(): Promise<boolean> {
   try {
     console.log('Configurazione indici per ottimizzare le query delle operazioni...');
     
@@ -62,10 +73,8 @@ export async function setupOperationsIndexes() {
 
 /**
  * Ottiene le operazioni con paginazione, filtri e supporto per cache
- * @param {Object} options - Opzioni di filtro e paginazione
- * @returns {Promise<{operations: Array, totalCount: number}>} - Risultati paginati e conteggio totale
  */
-export async function getOperationsOptimized(options = {}) {
+export async function getOperationsOptimized(options: OperationsOptions = {}) {
   const startTime = Date.now();
   console.log('Richiesta operazioni ottimizzata con opzioni:', options);
   
@@ -102,7 +111,7 @@ export async function getOperationsOptimized(options = {}) {
   
   try {
     // Costruisci le condizioni di filtro
-    const whereConditions = [];
+    const whereConditions: any[] = [];
     
     // Filtro per ID ciclo
     if (options.cycleId) {
@@ -169,7 +178,7 @@ export async function getOperationsOptimized(options = {}) {
     }
     
     const countResult = await countQuery;
-    const totalCount = parseInt(countResult[0].count);
+    const totalCount = parseInt(countResult[0].count as string);
     
     // 2. Esegui query principale con paginazione
     let query = db
@@ -214,9 +223,8 @@ export async function getOperationsOptimized(options = {}) {
 
 /**
  * Registra eventi che invalidano la cache delle operazioni
- * @param {Object} app - Istanza Express
  */
-export function setupOperationsCacheInvalidation(app) {
+export function setupOperationsCacheInvalidation(app: any): void {
   // Verifica se l'oggetto app è valido
   if (!app || typeof app.on !== 'function') {
     console.warn('Impossibile configurare l\'invalidazione della cache operazioni: app non valida');

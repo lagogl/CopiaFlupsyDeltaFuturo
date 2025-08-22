@@ -8,10 +8,22 @@ import { db } from '../db.js';
 import { baskets, flupsys, cycles, basketPositionHistory } from '../../shared/schema.js';
 import { eq, and, desc, asc, isNull, sql, or, not } from 'drizzle-orm';
 
+interface BasketsOptions {
+  page?: number;
+  pageSize?: number;
+  state?: string;
+  flupsyId?: number | string | number[];
+  cycleId?: number;
+  includeEmpty?: boolean;
+  sortBy?: string;
+  sortOrder?: string;
+  includeAll?: boolean;
+}
+
 /**
  * Configura gli indici necessari per ottimizzare le query sui cestelli
  */
-export async function setupBasketsIndexes() {
+export async function setupBasketsIndexes(): Promise<void> {
   try {
     console.log('Configurazione indici per ottimizzare le query dei cestelli...');
     
@@ -39,18 +51,17 @@ export async function setupBasketsIndexes() {
 
 /**
  * Configura l'invalidazione della cache per i cestelli
- * @param {Object} app - L'istanza Express
  */
-export function setupBasketsCacheInvalidation(app) {
+export function setupBasketsCacheInvalidation(app: any): void {
   if (!app) return;
 
   // Interceptor per l'invalidazione della cache quando i cestelli vengono modificati
-  app.use((req, res, next) => {
+  app.use((req: any, res: any, next: any) => {
     // Cattura il metodo originale end di res
     const originalEnd = res.end;
     
     // Sovrascrive res.end per intercettare le risposte prima che vengano inviate
-    res.end = function(...args) {
+    res.end = function(...args: any[]) {
       // Controlla se si tratta di una richiesta che modifica i cestelli
       const isBasketMutation = (
         (req.method === 'POST' && req.path.includes('/api/baskets')) ||
@@ -80,10 +91,8 @@ export function setupBasketsCacheInvalidation(app) {
 
 /**
  * Ottiene i cestelli con paginazione e cache
- * @param {Object} options - Opzioni di filtraggio e paginazione
- * @returns {Promise<Object>} - I cestelli filtrati e paginati
  */
-export async function getBasketsOptimized(options = {}) {
+export async function getBasketsOptimized(options: BasketsOptions = {}) {
   const startTime = Date.now();
   
   const {
@@ -140,7 +149,7 @@ export async function getBasketsOptimized(options = {}) {
     .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id));
     
     // Applica i filtri
-    const whereConditions = [];
+    const whereConditions: any[] = [];
     
     if (state) {
       whereConditions.push(eq(baskets.state, state));
@@ -258,14 +267,14 @@ export async function getBasketsOptimized(options = {}) {
       .map(basket => basket.currentCycleId)
       .filter(id => id !== null);
     
-    let cyclesMap = {};
+    let cyclesMap: any = {};
     if (cycleIds.length > 0) {
       // Usa una query SQL nativa con IN per migliorare le prestazioni
       const cyclesResult = await db.execute(sql`
         SELECT * FROM cycles WHERE id IN ${cycleIds}
       `);
       
-      cyclesMap = cyclesResult.reduce((map, cycle) => {
+      cyclesMap = cyclesResult.reduce((map: any, cycle: any) => {
         // Converti i nomi delle colonne in camelCase per compatibilità
         const formattedCycle = {
           id: cycle.id,
@@ -283,7 +292,7 @@ export async function getBasketsOptimized(options = {}) {
     const basketIds = basketsResult.map(basket => basket.id);
     
     // Verifica che ci siano cestelli da cercare
-    let positionsMap = {};
+    let positionsMap: any = {};
     if (basketIds.length > 0) {
       // Usa la query SQL nativa per accedere alla tabella con il suo nome corretto
       const positionsResult = await db.execute(sql`
@@ -293,7 +302,7 @@ export async function getBasketsOptimized(options = {}) {
       
       // Quando usiamo db.execute, il risultato è un array di oggetti con proprietà in snake_case
       // dobbiamo convertire i nomi delle colonne da snake_case a camelCase
-      positionsMap = positionsResult.reduce((map, pos) => {
+      positionsMap = positionsResult.reduce((map: any, pos: any) => {
         // Converti i nomi delle colonne in camelCase per compatibilità
         const position = {
           id: pos.id,
@@ -352,7 +361,7 @@ export async function getBasketsOptimized(options = {}) {
  * Invalida esplicitamente tutta la cache dei cestelli
  * Utile per forzare l'aggiornamento dopo operazioni di popolamento FLUPSY
  */
-export function invalidateCache() {
+export function invalidateCache(): boolean {
   try {
     BasketsCache.clear();
     console.log('🔄 Cache cestelli invalidata manualmente');
