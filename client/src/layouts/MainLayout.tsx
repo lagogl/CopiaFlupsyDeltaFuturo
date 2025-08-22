@@ -107,7 +107,6 @@ export default function MainLayout({ children }: MainLayoutProps) {
         { icon: <Package className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.basketManagement, path: "/baskets" },
         { icon: <Move className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.positionManagement, path: "/flupsy-positions" },
         { icon: <FileText className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.operations, path: "/operations" },
-        { icon: <Zap className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.quickOperations, path: "/quick-operations" },
         { icon: <Table className="h-5 w-5 mr-2 text-green-600" />, label: translations.menuItems.spreadsheetOperations, path: "/spreadsheet-operations" },
         { icon: <GripHorizontal className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.operationsDragDrop, path: "/operations-drag-drop" },
         { icon: <LayoutGrid className="h-5 w-5 mr-2 text-blue-600" />, label: translations.menuItems.screeningWithMap, path: "/vagliatura-con-mappa" },

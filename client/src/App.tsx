@@ -10,7 +10,6 @@ import BasketDetail from "@/pages/BasketDetail";
 import Operations from "@/pages/Operations";
 import OperationDetail from "@/pages/OperationDetail";
 import EditOperation from "@/pages/EditOperation";
-import QuickOperations from "@/pages/QuickOperations";
 import SpreadsheetOperations from "@/pages/SpreadsheetOperations";
 import OperationsDragDrop from "@/pages/OperationsDragDrop";
 import Cycles from "@/pages/Cycles";
@@ -89,8 +88,6 @@ function Router() {
       <ProtectedRoute path="/operations/new" component={Operations}/>
       <ProtectedRoute path="/operations/edit/:id" component={EditOperation}/>
       <ProtectedRoute path="/operations/:id" component={OperationDetail}/>
-      <ProtectedRoute path="/quick-operations" component={QuickOperations}/>
-      <ProtectedRoute path="/quickoperations" component={QuickOperations}/>
       <ProtectedRoute path="/spreadsheet-operations" component={SpreadsheetOperations}/>
       <ProtectedRoute path="/operations-drag-drop" component={OperationsDragDrop}/>
       <ProtectedRoute path="/cycles" component={CyclesPaginated}/>
