@@ -1474,22 +1474,20 @@ export default function SpreadsheetOperations() {
         return newSet;
       });
       
-      // Refresh automatico: invalida le cache E forza il refetch immediato per riportare i dati aggiornati
-      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
-      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
-      
-      // Forza il refetch immediato per assicurare il refresh visibile
-      setTimeout(() => {
-        queryClient.refetchQueries({ queryKey: ['/api/operations'] });
-        queryClient.refetchQueries({ queryKey: ['/api/baskets'] });
-        queryClient.refetchQueries({ queryKey: ['/api/cycles'] });
-      }, 100);
-      
       toast({
         title: "Riga cancellata",
         description: `Riga appena creata per cestello #${currentRow.physicalNumber} eliminata - refresh in corso...`,
       });
+      
+      // Refresh automatico: invalida le cache E forza il reload completo della pagina
+      queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+      queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+      
+      // Forza reload completo ricaricando la pagina dopo un breve delay
+      setTimeout(() => {
+        window.location.reload();
+      }, 500);
       
       return;
     }
