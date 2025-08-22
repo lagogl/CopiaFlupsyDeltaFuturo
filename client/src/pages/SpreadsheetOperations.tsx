@@ -277,7 +277,7 @@ export default function SpreadsheetOperations() {
     queryKey: ['/api/operations', 'spreadsheet', 'unlimited'],
     queryFn: () => {
       // Usa l'endpoint operations diretto con parametri per bypassare cache e limitazioni
-      return apiRequest('/api/operations?pageSize=50000&sortBy=id&sortOrder=desc&force_refresh=true&original=true');
+      return apiRequest('/api/operations?pageSize=1000&sortBy=id&sortOrder=desc&force_refresh=true&original=true');
     },
     staleTime: 30000, // Cache for 30 seconds
     refetchOnWindowFocus: false

@@ -10,7 +10,7 @@
 import { sql } from 'drizzle-orm';
 import { db } from './db';
 import { CacheService } from './cache-service';
-import { setupCyclesCacheInvalidation } from './controllers/cycles-controller';
+import { setupCyclesCacheInvalidation } from './controllers/cycles-controller.js';
 
 /**
  * Applica gli indici strategici al database
@@ -46,7 +46,7 @@ export async function setupDatabaseIndexes() {
  * Configura i listener per l'invalidazione della cache quando le entità correlate cambiano
  * @param {Object} app - L'istanza Express
  */
-export function setupCacheInvalidation(app) {
+export function setupCacheInvalidation(app: any) {
   // Verifica se l'oggetto app ha il metodo on
   if (!app || typeof app.on !== 'function') {
     console.warn('Impossibile configurare l\'invalidazione della cache: app non valida');
@@ -87,9 +87,9 @@ export function setupCacheInvalidation(app) {
  * Inizializza il monitoraggio delle prestazioni delle API
  * @param {Object} app - L'istanza Express
  */
-export function setupPerformanceMonitoring(app) {
+export function setupPerformanceMonitoring(app: any) {
   // Middleware per monitorare le prestazioni delle API
-  app.use((req, res, next) => {
+  app.use((req: any, res: any, next: any) => {
     const start = Date.now();
     
     // Quando la risposta è completata
@@ -114,13 +114,13 @@ export function setupPerformanceMonitoring(app) {
 }
 
 // Esporta una funzione di setup generale
-export async function setupPerformanceOptimizations(app) {
+export async function setupPerformanceOptimizations(app: any) {
   // Configurazione indici
   await setupDatabaseIndexes();
   
   // Importa e configura gli indici per le operazioni
   try {
-    const { setupOperationsIndexes, setupOperationsCacheInvalidation } = await import('./controllers/operations-controller');
+    const { setupOperationsIndexes, setupOperationsCacheInvalidation } = await import('./controllers/operations-controller.js');
     await setupOperationsIndexes();
     
     // Configurazione invalidazione cache per operazioni
@@ -134,7 +134,7 @@ export async function setupPerformanceOptimizations(app) {
   
   // Importa e configura gli indici per i cestelli
   try {
-    const { setupBasketsIndexes, setupBasketsCacheInvalidation } = await import('./controllers/baskets-controller');
+    const { setupBasketsIndexes, setupBasketsCacheInvalidation } = await import('./controllers/baskets-controller.js');
     await setupBasketsIndexes();
     
     // Configurazione invalidazione cache per cestelli
