@@ -466,14 +466,6 @@ export default function SpreadsheetOperations() {
     if (selectedFlupsyId && selectedOperationType && eligibleBaskets.length > 0 && operations && Array.isArray(operations)) {
       const newRows: OperationRowData[] = eligibleBaskets.map(basket => {
         const lastOp = basket.lastOperation;
-        // 🔍 DEBUG: Verifica dati ultima operazione
-        console.log(`🔍 DEBUG lastOp for basket ${basket.physicalNumber}:`, {
-          lastOp: lastOp,
-          totalWeight: lastOp?.totalWeight,
-          animalCount: lastOp?.animalCount,
-          type: lastOp?.type,
-          date: lastOp?.date
-        });
         const sizesArray = Array.isArray(sizes) ? sizes : [];
         
         // Calcola taglia corrente basandosi sulla logica del modulo Inventory

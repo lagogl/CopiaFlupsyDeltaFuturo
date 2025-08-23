@@ -319,15 +319,55 @@ export async function getBasketsOptimized(options: BasketsOptions = {}) {
       }, {});
     }
     
+    // Recupera l'ultima operazione per ogni cestello in una singola query
+    let operationsMap: any = {};
+    if (basketIds.length > 0) {
+      // Recupera l'ultima operazione per ogni cestello usando DISTINCT ON (compatibile con Postgres)
+      const operationsResult = await db.execute(sql`
+        SELECT DISTINCT ON (o.basket_id) o.*
+        FROM operations o 
+        WHERE o.basket_id IN ${basketIds}
+        ORDER BY o.basket_id, o.id DESC
+      `);
+      
+      const latestOperations = operationsResult;
+      
+      operationsMap = latestOperations.reduce((map: any, op: any) => {
+        // Converti i nomi delle colonne da snake_case a camelCase
+        const operation = {
+          id: op.id,
+          date: op.date,
+          type: op.type,
+          basketId: op.basket_id,
+          cycleId: op.cycle_id,
+          sizeId: op.size_id,
+          sgrId: op.sgr_id,
+          lotId: op.lot_id,
+          animalCount: op.animal_count,
+          totalWeight: op.total_weight,
+          animalsPerKg: op.animals_per_kg,
+          averageWeight: op.average_weight,
+          deadCount: op.dead_count,
+          mortalityRate: op.mortality_rate,
+          notes: op.notes,
+          metadata: op.metadata
+        };
+        map[operation.basketId] = operation;
+        return map;
+      }, {});
+    }
+
     // Combina tutti i dati
     const enrichedBaskets = basketsResult.map(basket => {
       const cycle = basket.currentCycleId ? cyclesMap[basket.currentCycleId] : null;
       const position = positionsMap[basket.id];
+      const lastOperation = operationsMap[basket.id] || null;
       
       return {
         ...basket,
         cycle,
-        currentPosition: position || null
+        currentPosition: position || null,
+        lastOperation
       };
     });
     
