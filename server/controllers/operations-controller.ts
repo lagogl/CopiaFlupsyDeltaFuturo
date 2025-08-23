@@ -10,7 +10,7 @@ import { operations, baskets, flupsys, lots, sizes } from '../../shared/schema.j
 import { sql, eq, and, or, between, desc, inArray } from 'drizzle-orm';
 import { OperationsCache } from '../operations-cache-service.js';
 
-// Nomi delle colonne principali per la query ottimizzata
+// Nomi delle colonne principali per la query ottimizzata - INCLUDE LOT DATA
 const OPERATION_COLUMNS = {
   id: operations.id,
   date: operations.date,
@@ -27,7 +27,18 @@ const OPERATION_COLUMNS = {
   deadCount: operations.deadCount,
   mortalityRate: operations.mortalityRate,
   notes: operations.notes,
-  metadata: operations.metadata
+  metadata: operations.metadata,
+  // 🔧 FIX: Aggiungi dati del lotto per visualizzazione
+  lot: {
+    id: lots.id,
+    arrivalDate: lots.arrivalDate,
+    supplier: lots.supplier,
+    supplierLotNumber: lots.supplierLotNumber,
+    quality: lots.quality,
+    animalCount: lots.animalCount,
+    weight: lots.weight,
+    notes: lots.notes
+  }
 };
 
 interface OperationsOptions {
@@ -139,7 +150,7 @@ export async function getOperationsOptimized(options: OperationsOptions = {}) {
     
     // Filtro per tipo di operazione
     if (options.type) {
-      whereConditions.push(eq(operations.type, options.type));
+      whereConditions.push(sql`${operations.type} = ${options.type}`);
     }
     
     // Se c'è un filtro per flupsyId, ottimizziamo la query con una subquery
@@ -180,10 +191,11 @@ export async function getOperationsOptimized(options: OperationsOptions = {}) {
     const countResult = await countQuery;
     const totalCount = parseInt(countResult[0].count as string);
     
-    // 2. Esegui query principale con paginazione
+    // 2. Esegui query principale con paginazione - INCLUDE LOT JOIN
     let query = db
       .select(OPERATION_COLUMNS)
       .from(operations)
+      .leftJoin(lots, eq(operations.lotId, lots.id))
       .orderBy(desc(operations.date))
       .limit(pageSize)
       .offset(offset);
