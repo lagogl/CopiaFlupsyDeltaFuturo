@@ -1988,7 +1988,7 @@ export default function SpreadsheetOperations() {
                   <div style={{width: '40px'}} className="px-1 py-1.5 border-r text-center">Stato</div>
 
                   <div style={{width: '80px'}} className="px-1 py-1.5 border-r">Taglia</div>
-                  <div style={{width: '60px'}} className="px-1 py-1.5 border-r">P.Med(g)</div>
+                  <div style={{width: '60px'}} className="px-1 py-1.5 border-r">P.Med(mg)</div>
                   <div style={{width: '50px'}} className="px-1 py-1.5 border-r">Ult.Op</div>
                   {/* COLONNA LOTTO - OBBLIGATORIO */}
                   <div style={{width: '50px'}} className="px-1 py-1.5 border-r bg-yellow-50">Lotto*</div>
@@ -2884,7 +2884,7 @@ export default function SpreadsheetOperations() {
                     </div>
                     
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Peso Medio (g)</label>
+                      <label className="text-xs text-gray-500 mb-1 block">Peso Medio (mg)</label>
                       <div className="h-8 px-2 text-sm bg-gray-50 border rounded flex items-center text-gray-700">
                         {(editingForm.sampleWeight && editingForm.liveAnimals && editingForm.liveAnimals > 0)
                           ? (editingForm.sampleWeight / editingForm.liveAnimals).toFixed(2)
@@ -3009,7 +3009,7 @@ export default function SpreadsheetOperations() {
                     </div>
                     
                     <div>
-                      <label className="text-xs text-gray-500 mb-1 block">Peso Medio (g)</label>
+                      <label className="text-xs text-gray-500 mb-1 block">Peso Medio (mg)</label>
                       <div className="h-8 px-2 text-sm bg-blue-50 border-2 border-blue-200 rounded flex items-center font-medium text-blue-800">
                         {(editingForm.animalCount && editingForm.totalWeight && editingForm.animalCount > 0)
                           ? (editingForm.totalWeight / editingForm.animalCount).toFixed(2)
