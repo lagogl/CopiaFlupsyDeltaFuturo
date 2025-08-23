@@ -1059,9 +1059,11 @@ export default function SpreadsheetOperations() {
       sampleWeight: undefined,
       liveAnimals: undefined,
       deadCount: undefined,
-      totalWeight: row.lastOperation?.totalWeight || undefined, // ✅ Usa il peso dall'ultima operazione
+      totalWeight: undefined, // ✅ Lascia vuoto, il valore sarà nel placeholder
       animalCount: undefined,
-      notes: ''
+      notes: '',
+      // ✅ Memorizza il valore suggerito per il placeholder
+      suggestedTotalWeight: row.lastOperation?.totalWeight || undefined
     };
     
     // Per operazioni PESO: inizializza animalCount con valore dell'operazione precedente (non modificabile)
@@ -2909,7 +2911,7 @@ export default function SpreadsheetOperations() {
                         }}
                         className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="1"
-                        placeholder="15000"
+                        placeholder={editingForm.suggestedTotalWeight ? editingForm.suggestedTotalWeight.toLocaleString() : "Inserisci peso totale"}
                         required
                       />
                     </div>
@@ -3000,7 +3002,7 @@ export default function SpreadsheetOperations() {
                         }}
                         className="w-full h-8 px-2 text-sm border rounded focus:outline-none focus:ring-1 focus:ring-blue-400 bg-yellow-50"
                         min="1"
-                        placeholder="15000"
+                        placeholder={editingForm.suggestedTotalWeight ? editingForm.suggestedTotalWeight.toLocaleString() : "Inserisci peso totale"}
                         autoFocus
                         required
                       />
