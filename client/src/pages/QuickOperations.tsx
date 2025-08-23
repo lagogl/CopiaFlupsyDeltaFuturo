@@ -468,7 +468,7 @@ export default function QuickOperations() {
       const sortedOps = [...basketOperations].sort((a, b) => 
         new Date(b.date).getTime() - new Date(a.date).getTime()
       );
-      const lastOperation = sortedOps.find(op => op.animalsPerKg || op.averageWeight);
+      const lastOperation = sortedOps.length > 0 ? sortedOps[0] : null;
 
       if (lastOperation) {
         // Conteggio operazioni per tipo
