@@ -315,10 +315,10 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
     }
   };
   
-  // Naviga a operazioni rapide
-  const goToQuickOperations = () => {
+  // Naviga a operazioni 
+  const goToOperations = () => {
     if (scannedBasketId) {
-      setLocation(`/quick-operations?basketId=${scannedBasketId}`);
+      setLocation(`/operations?basketId=${scannedBasketId}`);
     }
   };
   
@@ -671,7 +671,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                       <Button 
                         variant="outline" 
                         className="h-24 flex flex-col items-center justify-center space-y-2 p-2"
-                        onClick={goToQuickOperations}
+                        onClick={goToOperations}
                       >
                         <ClipboardIcon className="h-8 w-8" />
                         <span className="text-xs text-center">Registra operazione</span>
@@ -713,7 +713,7 @@ export default function NFCScan({ params }: { params?: { id?: string } }) {
                       <Button 
                         variant="outline" 
                         className="justify-between"
-                        onClick={goToQuickOperations}
+                        onClick={goToOperations}
                       >
                         <div className="flex items-center">
                           <ClipboardIcon className="h-4 w-4 mr-2" />

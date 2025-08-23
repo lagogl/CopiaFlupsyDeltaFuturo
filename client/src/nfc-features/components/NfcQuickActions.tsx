@@ -67,10 +67,10 @@ const NfcQuickActions: React.FC<NfcQuickActionsProps> = ({ tag }) => {
         navigate(`/operations?basketId=${basketId}`);
         break;
       case 'peso':
-        navigate(`/quick-operations?operation=peso&basketId=${basketId}`);
+        navigate(`/operations?basketId=${basketId}&operation=peso`);
         break;
       case 'misurazione':
-        navigate(`/quick-operations?operation=misura&basketId=${basketId}`);
+        navigate(`/operations?basketId=${basketId}&operation=misura`);
         break;
       case 'cycle':
         if (basket && basket.activeBasketId && basket.cycleId) {
