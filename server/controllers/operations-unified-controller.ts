@@ -3,11 +3,18 @@
  * Combina tutte le query necessarie in una singola chiamata API ottimizzata
  */
 
+import { Request, Response } from 'express';
 import { db } from '../db.js';
 import { operations, baskets, cycles, lots, sizes, flupsys, sgr } from '../../shared/schema.js';
 import { sql, eq, and, or, between, desc, inArray } from 'drizzle-orm';
 
-let unifiedCache = {
+interface UnifiedCache {
+  data: any;
+  timestamp: number | null;
+  ttl: number;
+}
+
+let unifiedCache: UnifiedCache = {
   data: null,
   timestamp: null,
   ttl: 300000, // 5 minuti - cache più lunga per ridurre carico
@@ -18,7 +25,7 @@ console.log('✅ Cache unificata ripristinata con TTL 30s dopo aver risolto il p
 unifiedCache.data = null;
 unifiedCache.timestamp = null;
 
-export async function getOperationsUnified(req, res) {
+export async function getOperationsUnified(req: Request, res: Response) {
   try {
     console.log('🚀 OPERAZIONI UNIFICATE: Richiesta ricevuta');
     
@@ -105,7 +112,7 @@ export async function getOperationsUnified(req, res) {
       queryTime
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('❌ Errore nella query unificata:', error);
     res.status(500).json({
       success: false,
