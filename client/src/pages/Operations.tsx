@@ -1905,6 +1905,11 @@ export default function Operations() {
                                   <span className="text-xs block text-gray-500">
                                     Fornitore: {op.lot.supplier || 'N/D'}
                                   </span>
+                                  {op.lot.supplierLotNumber && (
+                                    <span className="text-xs block text-blue-600 font-medium">
+                                      Lotto: {op.lot.supplierLotNumber}
+                                    </span>
+                                  )}
                                 </div>
                               );
                             }
@@ -1922,6 +1927,11 @@ export default function Operations() {
                                     <span className="text-xs block text-gray-500">
                                       Fornitore: {lotById.supplier || 'N/D'}
                                     </span>
+                                    {lotById.supplierLotNumber && (
+                                      <span className="text-xs block text-blue-600 font-medium">
+                                        Lotto: {lotById.supplierLotNumber}
+                                      </span>
+                                    )}
                                   </div>
                                 );
                               }
@@ -1943,6 +1953,11 @@ export default function Operations() {
                                     <span className="text-xs block text-gray-500">
                                       Fornitore: {firstActivationInCycle.lot.supplier || 'N/D'}
                                     </span>
+                                    {firstActivationInCycle.lot.supplierLotNumber && (
+                                      <span className="text-xs block text-blue-600 font-medium">
+                                        Lotto: {firstActivationInCycle.lot.supplierLotNumber}
+                                      </span>
+                                    )}
                                   </div>
                                 );
                               }
