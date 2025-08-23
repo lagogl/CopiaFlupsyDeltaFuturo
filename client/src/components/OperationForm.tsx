@@ -1503,46 +1503,78 @@ export default function OperationForm({
             <FormField
               control={form.control}
               name="totalWeight"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel className="text-xs">Peso Totale (g)</FormLabel>
-                  <FormControl>
-                    <Input 
-                      type="text" 
-                      placeholder="Inserisci peso"
-                      className="h-8 text-sm"
-                      value={field.value !== null && field.value !== undefined ? field.value.toString() : ''}
-                      onChange={(e) => {
-                        const value = e.target.value;
-                        // Accetta solo numeri e un punto decimale
-                        if (!/^(\d*\.?\d*)$/.test(value) && value !== '') {
-                          return;
-                        }
-                        
-                        if (value === '' || value === '.') {
-                          field.onChange(null);
-                        } else {
-                          let numValue = parseFloat(value);
-                          // Limita il valore massimo a 1.000.000
-                          if (numValue > 1000000) {
-                            numValue = 1000000;
+              render={({ field }) => {
+                // Trova l'ultima operazione di peso per questo cestello/ciclo
+                const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
+                const currentCycleId = selectedBasket?.currentCycleId || watchCycleId;
+                
+                let previousWeight = null;
+                let previousDate = null;
+                
+                if (basketOperations && currentCycleId) {
+                  // Filtra operazioni di tipo peso per il ciclo corrente
+                  const weightOperations = basketOperations
+                    .filter(op => op.type === 'peso' && op.cycleId === currentCycleId && op.totalWeight !== null)
+                    .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+                  
+                  if (weightOperations.length > 0) {
+                    const lastWeightOperation = weightOperations[0];
+                    previousWeight = lastWeightOperation.totalWeight;
+                    previousDate = lastWeightOperation.date;
+                  }
+                }
+                
+                return (
+                  <FormItem>
+                    <FormLabel className="text-xs">Peso Totale (g)</FormLabel>
+                    <FormControl>
+                      <Input 
+                        type="text" 
+                        placeholder="Inserisci peso"
+                        className="h-8 text-sm"
+                        value={field.value !== null && field.value !== undefined ? field.value.toString() : ''}
+                        onChange={(e) => {
+                          const value = e.target.value;
+                          // Accetta solo numeri e un punto decimale
+                          if (!/^(\d*\.?\d*)$/.test(value) && value !== '') {
+                            return;
                           }
-                          // Arrotonda a una cifra decimale
-                          numValue = Math.round(numValue * 10) / 10;
-                          field.onChange(isNaN(numValue) ? null : numValue);
-                        }
-                      }}
-                      onBlur={field.onBlur}
-                      name={field.name}
-                      ref={field.ref}
-                    />
-                  </FormControl>
-                  <FormDescription className="text-[10px]">
-                    Inserisci peso totale in grammi (max 1.000.000)
-                  </FormDescription>
-                  <FormMessage />
-                </FormItem>
-              )}
+                          
+                          if (value === '' || value === '.') {
+                            field.onChange(null);
+                          } else {
+                            let numValue = parseFloat(value);
+                            // Limita il valore massimo a 1.000.000
+                            if (numValue > 1000000) {
+                              numValue = 1000000;
+                            }
+                            // Arrotonda a una cifra decimale
+                            numValue = Math.round(numValue * 10) / 10;
+                            field.onChange(isNaN(numValue) ? null : numValue);
+                          }
+                        }}
+                        onBlur={field.onBlur}
+                        name={field.name}
+                        ref={field.ref}
+                      />
+                    </FormControl>
+                    <FormDescription className="text-[10px] space-y-1">
+                      <div>Inserisci peso totale in grammi (max 1.000.000)</div>
+                      {previousWeight && (
+                        <div className="text-muted-foreground opacity-60">
+                          Peso precedente: {previousWeight.toLocaleString('it-IT')} g 
+                          {previousDate && (
+                            <span className="ml-1">
+                              ({new Date(previousDate).toLocaleDateString('it-IT')})
+                            </span>
+                          )}
+                        </div>
+                      )}
+                    </FormDescription>
+                    <FormMessage />
+                  </FormItem>
+                );
+              }}
             />
 
             <FormField
