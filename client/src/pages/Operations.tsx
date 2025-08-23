@@ -1905,9 +1905,9 @@ export default function Operations() {
                                   <span className="text-xs block text-gray-500">
                                     Fornitore: {op.lot.supplier || 'N/D'}
                                   </span>
-                                  {op.lot.supplierLotNumber && (
+                                  {op.lot.id && (
                                     <span className="text-xs block text-blue-600 font-medium">
-                                      Lotto: {op.lot.supplierLotNumber}
+                                      Lotto #{op.lot.id}
                                     </span>
                                   )}
                                 </div>
@@ -1927,9 +1927,9 @@ export default function Operations() {
                                     <span className="text-xs block text-gray-500">
                                       Fornitore: {lotById.supplier || 'N/D'}
                                     </span>
-                                    {lotById.supplierLotNumber && (
+                                    {lotById.id && (
                                       <span className="text-xs block text-blue-600 font-medium">
-                                        Lotto: {lotById.supplierLotNumber}
+                                        Lotto #{lotById.id}
                                       </span>
                                     )}
                                   </div>
@@ -1953,9 +1953,9 @@ export default function Operations() {
                                     <span className="text-xs block text-gray-500">
                                       Fornitore: {firstActivationInCycle.lot.supplier || 'N/D'}
                                     </span>
-                                    {firstActivationInCycle.lot.supplierLotNumber && (
+                                    {firstActivationInCycle.lot.id && (
                                       <span className="text-xs block text-blue-600 font-medium">
-                                        Lotto: {firstActivationInCycle.lot.supplierLotNumber}
+                                        Lotto #{firstActivationInCycle.lot.id}
                                       </span>
                                     )}
                                   </div>
