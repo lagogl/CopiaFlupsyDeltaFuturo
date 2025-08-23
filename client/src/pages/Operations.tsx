@@ -1566,9 +1566,90 @@ export default function Operations() {
                     // Informazioni sulla posizione
                     const posInfo = basket ? `[${basket.row || ''} ${basket.position || ''}]` : '';
                     
+                    // Calcola statistiche del ciclo
+                    const operationsCount = cycleOperations.length;
+                    const cycleDuration = cycle.startDate 
+                      ? differenceInDays(new Date(), new Date(cycle.startDate))
+                      : 0;
+                    
+                    // Analizza crescita peso
+                    const firstOperation = cycleOperations.length > 0 
+                      ? cycleOperations.sort((a: any, b: any) => 
+                          new Date(a.date).getTime() - new Date(b.date).getTime()
+                        )[0] 
+                      : null;
+                    
+                    const currentWeight = lastOperation?.totalWeight || 0;
+                    const initialWeight = firstOperation?.totalWeight || 0;
+                    const weightGrowth = initialWeight > 0 ? 
+                      ((currentWeight - initialWeight) / initialWeight * 100) : 0;
+                    
+                    // Calcola mortalità media
+                    const operationsWithMortality = cycleOperations.filter((op: any) => op.mortalityRate != null);
+                    const avgMortality = operationsWithMortality.length > 0 ?
+                      operationsWithMortality.reduce((sum: number, op: any) => sum + (op.mortalityRate || 0), 0) / operationsWithMortality.length : 0;
+                    
+                    // Info lotto
+                    const lotInfo = lastOperation?.lot?.supplier || '';
+                    
+                    // Ultima operazione info
+                    const lastOpDate = lastOperation ? format(new Date(lastOperation.date), 'dd/MM') : '';
+                    const lastOpType = lastOperation?.type || '';
+                    
+                    // Indicatore di stato performance
+                    const getPerformanceColor = () => {
+                      if (cycleDuration < 7) return 'bg-blue-100 text-blue-700'; // Nuovo
+                      if (avgMortality > 10) return 'bg-red-100 text-red-700'; // Alta mortalità
+                      if (weightGrowth > 50) return 'bg-green-100 text-green-700'; // Buona crescita
+                      return 'bg-yellow-100 text-yellow-700'; // Media
+                    };
+
                     return (
                       <SelectItem key={cycle.id} value={cycle.id.toString()}>
-                        Ciclo #{cycle.id} - Cesta #{basket?.physicalNumber || '?'} {posInfo} - {startDate} - {sizeName}
+                        <div className="flex flex-col space-y-1 py-1">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">
+                              Ciclo #{cycle.id} - Cesta #{basket?.physicalNumber || '?'} {posInfo}
+                            </span>
+                            <span className={`text-xs px-1.5 py-0.5 rounded ${getPerformanceColor()}`}>
+                              {cycleDuration}g
+                            </span>
+                          </div>
+                          
+                          <div className="flex justify-between text-xs text-gray-600">
+                            <div className="flex space-x-3">
+                              <span>📊 {operationsCount} op.</span>
+                              {currentWeight > 0 && (
+                                <span>🏋️ {(currentWeight/1000).toFixed(1)}kg</span>
+                              )}
+                              {lastOperation?.animalCount && (
+                                <span>🦪 {(lastOperation.animalCount/1000000).toFixed(1)}M</span>
+                              )}
+                              {weightGrowth > 0 && (
+                                <span>📈 +{weightGrowth.toFixed(0)}%</span>
+                              )}
+                            </div>
+                            <div className="flex space-x-2 text-gray-400">
+                              {avgMortality > 0 && (
+                                <span>💀 {avgMortality.toFixed(1)}%</span>
+                              )}
+                              {lastOpDate && (
+                                <span>{lastOpDate}</span>
+                              )}
+                            </div>
+                          </div>
+                          
+                          <div className="flex justify-between text-xs">
+                            <span className="text-gray-500">
+                              {sizeName} • {lotInfo}
+                            </span>
+                            {lastOpType && (
+                              <span className="text-gray-400">
+                                ↳ {lastOpType}
+                              </span>
+                            )}
+                          </div>
+                        </div>
                       </SelectItem>
                     );
                   })}
