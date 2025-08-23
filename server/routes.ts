@@ -3308,8 +3308,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Applica headers anti-cache per forzare aggiornamenti
       forceNoCacheHeaders(res);
       
-      // Utilizzo del controller originale (temporaneo per fix)
-      const cyclesController = await import('./controllers/cycles-controller');
+      // Utilizzo del controller ottimizzato per risolvere errori
+      const cyclesController = await import('./controllers/cycles-controller-optimized');
       
       const result = await cyclesController.getCycles({
         page,
