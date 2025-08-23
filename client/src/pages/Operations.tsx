@@ -1443,28 +1443,85 @@ export default function Operations() {
                   {flupsys?.map((flupsy: any) => {
                     // Conta i cestelli attivi per questo FLUPSY
                     const flupsyBaskets = baskets?.filter((b: any) => b.flupsyId === flupsy.id) || [];
-                    const activeBaskets = flupsyBaskets.filter((b: any) => b.state === 'active').length;
+                    const activeBaskets = flupsyBaskets.filter((b: any) => b.state === 'active');
                     const totalBaskets = flupsyBaskets.length;
+                    const activeCount = activeBaskets.length;
+                    
+                    // Calcola il peso totale e numero animali dei cestelli attivi
+                    const flupsyOperations = operations?.filter((op: any) => {
+                      const opBasket = baskets?.find((b: any) => b.id === op.basketId);
+                      return opBasket && opBasket.flupsyId === flupsy.id;
+                    }) || [];
+                    
+                    // Trova l'ultima operazione per ogni cestello attivo
+                    let totalWeight = 0;
+                    let totalAnimals = 0;
+                    let lastOperationDate = null;
+                    
+                    activeBaskets.forEach((basket: any) => {
+                      const basketOps = flupsyOperations.filter((op: any) => op.basketId === basket.id);
+                      if (basketOps.length > 0) {
+                        // Prendi l'operazione più recente per questo cestello
+                        const latestOp = basketOps.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())[0];
+                        
+                        if (latestOp.totalWeight) totalWeight += parseFloat(latestOp.totalWeight);
+                        if (latestOp.animalCount) totalAnimals += parseInt(latestOp.animalCount);
+                        
+                        // Aggiorna la data dell'ultima operazione
+                        const opDate = new Date(latestOp.date);
+                        if (!lastOperationDate || opDate > lastOperationDate) {
+                          lastOperationDate = opDate;
+                        }
+                      }
+                    });
+                    
+                    // Posizioni disponibili nel FLUPSY
+                    const maxPositions = flupsy.maxPositions || 10; // default se non specificato
+                    const occupiedPositions = flupsyBaskets.filter((b: any) => b.row && b.position).length;
+                    const freePositions = Math.max(0, maxPositions - occupiedPositions);
                     
                     return (
                       <SelectItem key={flupsy.id} value={flupsy.id.toString()}>
-                        <div className="flex justify-between items-center w-full">
-                          <span>{flupsy.name}</span>
-                          <span className="text-xs text-gray-500 ml-2">
-                            {activeBaskets > 0 ? (
-                              <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
-                                {activeBaskets} attivi
-                              </span>
-                            ) : totalBaskets > 0 ? (
-                              <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">
-                                {totalBaskets} disponibili
-                              </span>
-                            ) : (
-                              <span className="px-1.5 py-0.5 bg-red-100 text-red-500 rounded">
-                                nessun cestello
-                              </span>
-                            )}
-                          </span>
+                        <div className="flex flex-col space-y-1 py-1">
+                          <div className="flex justify-between items-center">
+                            <span className="font-medium">{flupsy.name}</span>
+                            <span className="text-xs text-gray-500">
+                              {activeCount > 0 ? (
+                                <span className="px-1.5 py-0.5 bg-green-100 text-green-700 rounded">
+                                  {activeCount}/{totalBaskets} attivi
+                                </span>
+                              ) : totalBaskets > 0 ? (
+                                <span className="px-1.5 py-0.5 bg-gray-100 text-gray-500 rounded">
+                                  {totalBaskets} disponibili
+                                </span>
+                              ) : (
+                                <span className="px-1.5 py-0.5 bg-red-100 text-red-500 rounded">
+                                  nessun cestello
+                                </span>
+                              )}
+                            </span>
+                          </div>
+                          
+                          {activeCount > 0 && (
+                            <div className="flex justify-between text-xs text-gray-600">
+                              <div className="flex space-x-3">
+                                {totalWeight > 0 && (
+                                  <span>🏋️ {(totalWeight/1000).toFixed(1)}kg</span>
+                                )}
+                                {totalAnimals > 0 && (
+                                  <span>🦪 {(totalAnimals/1000000).toFixed(1)}M</span>
+                                )}
+                                {freePositions > 0 && (
+                                  <span>📍 {freePositions} libere</span>
+                                )}
+                              </div>
+                              {lastOperationDate && (
+                                <span className="text-gray-400">
+                                  {format(lastOperationDate, 'dd/MM', { locale: it })}
+                                </span>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </SelectItem>
                     );
