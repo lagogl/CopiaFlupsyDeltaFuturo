@@ -1625,6 +1625,7 @@ export default function Operations() {
                               {lastOperation?.animalCount && (
                                 <span>🦪 {(lastOperation.animalCount/1000000).toFixed(1)}M</span>
                               )}
+                              <span>📏 {sizeName}</span>
                               {weightGrowth > 0 && (
                                 <span>📈 +{weightGrowth.toFixed(0)}%</span>
                               )}
@@ -1641,7 +1642,7 @@ export default function Operations() {
                           
                           <div className="flex justify-between text-xs">
                             <span className="text-gray-500">
-                              {sizeName} • {lotInfo}
+                              {lotInfo}
                             </span>
                             {lastOpType && (
                               <span className="text-gray-400">
