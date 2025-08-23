@@ -1057,7 +1057,7 @@ export default function SpreadsheetOperations() {
       sampleWeight: undefined,
       liveAnimals: undefined,
       deadCount: undefined,
-      totalWeight: undefined,
+      totalWeight: row.lastOperation?.totalWeight || undefined, // ✅ Usa il peso dall'ultima operazione
       animalCount: undefined,
       notes: ''
     };
