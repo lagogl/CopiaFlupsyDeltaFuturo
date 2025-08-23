@@ -2026,9 +2026,28 @@ export default function Operations() {
                         </td>
                         <td className="px-3 py-2 whitespace-nowrap text-sm font-medium">
                           <div className="flex space-x-2">
-                            <Button variant="ghost" size="icon">
-                              <Eye className="h-5 w-5 text-primary" />
-                            </Button>
+                            <TooltipProvider>
+                              <Tooltip>
+                                <TooltipTrigger asChild>
+                                  <Button variant="ghost" size="icon">
+                                    <Eye className="h-5 w-5 text-primary" />
+                                  </Button>
+                                </TooltipTrigger>
+                                <TooltipContent className="max-w-xs">
+                                  <div className="space-y-1">
+                                    {op.mortalityRate != null && (
+                                      <div><strong>Mortalità:</strong> {op.mortalityRate.toFixed(1)}%</div>
+                                    )}
+                                    {op.notes && (
+                                      <div><strong>Note:</strong> {op.notes}</div>
+                                    )}
+                                    {!op.mortalityRate && !op.notes && (
+                                      <div>Nessuna informazione aggiuntiva disponibile</div>
+                                    )}
+                                  </div>
+                                </TooltipContent>
+                              </Tooltip>
+                            </TooltipProvider>
                             <Button
                               variant="ghost"
                               size="icon"
