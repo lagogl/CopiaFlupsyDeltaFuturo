@@ -1026,11 +1026,81 @@ export default function Operations() {
       return enrichedOp;
     });
     
-    const sorted = sortData(enrichedOperations);
-    console.log('🔍 FILTER: Returning', sorted.length, 'sorted operations');
-    sorted.forEach(op => {
-      console.log(`🔍 Final operation ${op.id}: ${op.type}, basket ${op.basketId} (physicalNumber: ${op.basket?.physicalNumber || 'N/A'})`);
+    // APPLICA I FILTRI
+    const filteredOperations = enrichedOperations.filter((op: any) => {
+      // Filtro per termine di ricerca
+      if (filters.searchTerm && filters.searchTerm.trim() !== '') {
+        const searchLower = filters.searchTerm.toLowerCase();
+        const matchesSearch = 
+          op.basket?.physicalNumber?.toString().includes(searchLower) ||
+          op.type?.toLowerCase().includes(searchLower) ||
+          op.notes?.toLowerCase().includes(searchLower) ||
+          op.lot?.supplier?.toLowerCase().includes(searchLower) ||
+          op.basket?.flupsyName?.toLowerCase().includes(searchLower);
+        
+        if (!matchesSearch) return false;
+      }
+
+      // Filtro per tipo operazione
+      if (filters.typeFilter !== 'all' && op.type !== filters.typeFilter) {
+        return false;
+      }
+
+      // Filtro per data
+      if (filters.dateFilter && filters.dateFilter.trim() !== '') {
+        const filterDate = new Date(filters.dateFilter);
+        const opDate = new Date(op.date);
+        
+        // Confronta solo la data (ignora l'ora)
+        if (filterDate.toDateString() !== opDate.toDateString()) {
+          return false;
+        }
+      }
+
+      // Filtro per FLUPSY
+      if (filters.flupsyFilter !== 'all') {
+        const selectedFlupsyId = parseInt(filters.flupsyFilter);
+        if (op.basket?.flupsyId !== selectedFlupsyId) {
+          return false;
+        }
+      }
+
+      // Filtro per ciclo specifico
+      if (filters.cycleFilter !== 'all') {
+        const selectedCycleId = parseInt(filters.cycleFilter);
+        if (op.cycleId !== selectedCycleId) {
+          return false;
+        }
+      }
+
+      // Filtro per stato del ciclo
+      if (filters.cycleStateFilter !== 'all' && cycles) {
+        const operationCycle = cycles.find((c: any) => c.id === op.cycleId);
+        if (!operationCycle) return false;
+        
+        if (filters.cycleStateFilter === 'active' && operationCycle.state !== 'active') {
+          return false;
+        }
+        if (filters.cycleStateFilter === 'closed' && operationCycle.state !== 'closed') {
+          return false;
+        }
+      }
+
+      return true;
     });
+    
+    const sorted = sortData(filteredOperations);
+    console.log('🔍 FILTER: Filtered from', enrichedOperations.length, 'to', filteredOperations.length, 'operations');
+    console.log('🔍 FILTER: Returning', sorted.length, 'sorted operations');
+    if (sorted.length !== enrichedOperations.length) {
+      console.log('🔍 FILTER: Applied filters:', { 
+        searchTerm: filters.searchTerm, 
+        typeFilter: filters.typeFilter, 
+        flupsyFilter: filters.flupsyFilter, 
+        cycleFilter: filters.cycleFilter, 
+        cycleStateFilter: filters.cycleStateFilter 
+      });
+    }
     return sorted;
     
   }, [operations, cycles, baskets, lots, sizes, filters.searchTerm, filters.typeFilter, filters.dateFilter, filters.flupsyFilter, filters.cycleFilter, filters.cycleStateFilter, sortConfig]);
