@@ -22,8 +22,8 @@ class OperationsCacheService {
 
   constructor() {
     this.cache = new Map();
-    this.ttl = 60; // Cache riattivata con 60 secondi di TTL
-    console.log('✅ Cache operazioni riattivata con TTL di 60 secondi dopo il fix peso operations');
+    this.ttl = 0; // Cache disabilitata temporaneamente per fix problema 15000 gr
+    console.log('🔧 Cache operazioni disabilitata temporaneamente per fix problema peso 15000 gr');
   }
 
   /**
