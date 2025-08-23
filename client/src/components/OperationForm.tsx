@@ -1504,17 +1504,19 @@ export default function OperationForm({
               control={form.control}
               name="totalWeight"
               render={({ field }) => {
-                // Trova l'ultima operazione di peso per questo cestello/ciclo
-                const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
-                const currentCycleId = selectedBasket?.currentCycleId || watchCycleId;
-                
+                // Trova l'ultima operazione di peso per questo cestello e ciclo specifico
                 let previousWeight = null;
                 let previousDate = null;
                 
-                if (basketOperations && currentCycleId) {
-                  // Filtra operazioni di tipo peso per il ciclo corrente
+                if (basketOperations && watchBasketId && watchCycleId) {
+                  // Filtra operazioni di tipo peso per lo stesso cestello e ciclo
                   const weightOperations = basketOperations
-                    .filter(op => op.type === 'peso' && op.cycleId === currentCycleId && op.totalWeight !== null)
+                    .filter(op => 
+                      op.type === 'peso' && 
+                      op.basketId === Number(watchBasketId) && 
+                      op.cycleId === Number(watchCycleId) && 
+                      op.totalWeight !== null
+                    )
                     .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
                   
                   if (weightOperations.length > 0) {
