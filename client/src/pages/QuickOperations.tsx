@@ -281,7 +281,7 @@ export default function QuickOperations() {
     
     // Filtra per giorni dall'ultima operazione
     if (filterDays !== 'all') {
-      const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === basket.id) : [];
+      const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === basket.id && op.cycleId === basket.currentCycleId) : [];
       if (basketOperations.length === 0) return true; // Nessuna operazione conta come "vecchia"
       
       const sortedOps = [...basketOperations].sort((a, b) => 
@@ -340,7 +340,7 @@ export default function QuickOperations() {
     const basket = baskets ? (baskets as Basket[]).find((b: Basket) => b.id === basketId) : undefined;
     if (!basket) return;
     
-    const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === basketId) : [];
+    const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === basketId && op.cycleId === basket.currentCycleId) : [];
     const sortedOps = [...basketOperations].sort((a, b) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
@@ -418,7 +418,7 @@ export default function QuickOperations() {
     
     const flupsy = flupsys ? (flupsys as Flupsy[]).find((f: Flupsy) => f.id === basket.flupsyId) : undefined;
     
-    const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === basketId) : [];
+    const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === basketId && op.cycleId === basket.currentCycleId) : [];
     const sortedOps = [...basketOperations].sort((a, b) => 
       new Date(b.date).getTime() - new Date(a.date).getTime()
     );
@@ -461,7 +461,7 @@ export default function QuickOperations() {
       }
 
       // Operazioni per questa cesta
-      const basketOperations = (operations as Operation[]).filter((op: Operation) => op.basketId === basket.id);
+      const basketOperations = (operations as Operation[]).filter((op: Operation) => op.basketId === basket.id && op.cycleId === basket.currentCycleId);
       stats.totalOperations += basketOperations.length;
 
       // Ultima operazione con dati rilevanti
@@ -842,7 +842,7 @@ export default function QuickOperations() {
               {(() => {
                 // Recuperiamo i dati necessari
                 const basket = baskets ? (baskets as Basket[]).find((b: Basket) => b.id === selectedBasketId) : undefined;
-                const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === selectedBasketId) : [];
+                const basketOperations = operations ? (operations as Operation[]).filter((op: Operation) => op.basketId === selectedBasketId && op.cycleId === basket?.currentCycleId) : [];
                 const sortedOps = [...basketOperations].sort((a, b) => 
                   new Date(b.date).getTime() - new Date(a.date).getTime()
                 );
