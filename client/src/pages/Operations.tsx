@@ -1555,8 +1555,10 @@ export default function Operations() {
                         )[0] 
                       : null;
                     
-                    // Recupera informazioni sulla taglia
-                    const sizeName = lastOperation?.size?.code || '-';
+                    // Recupera informazioni sulla taglia (campo name dalla tabella sizes)
+                    const sizeName = lastOperation?.sizeId 
+                      ? sizes?.find((s: any) => s.id === lastOperation.sizeId)?.name || `Size #${lastOperation.sizeId}`
+                      : '-';
                     
                     // Formatta la data di inizio
                     const startDate = cycle.startDate 
