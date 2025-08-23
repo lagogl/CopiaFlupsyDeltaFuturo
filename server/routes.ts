@@ -3300,7 +3300,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Se è richiesto un refresh forzato, pulisci il cache
       if (forceRefresh) {
-        const { CyclesCache } = await import('./controllers/cycles-controller.js');
+        const { CyclesCache } = await import('./controllers/cycles-controller');
         CyclesCache.clear();
         console.log("Cache cicli pulito per force_refresh");
       }
@@ -3309,7 +3309,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       forceNoCacheHeaders(res);
       
       // Utilizzo del controller ottimizzato
-      const cyclesController = await import('./controllers/cycles-controller-optimized.js');
+      const cyclesController = await import('./controllers/cycles-controller-optimized');
       
       const result = await cyclesController.getCycles({
         page,
@@ -3351,7 +3351,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startTime = Date.now();
       
       // Utilizzo del controller ottimizzato con filtro per cicli attivi
-      const cyclesController = await import('./controllers/cycles-controller-optimized.js');
+      const cyclesController = await import('./controllers/cycles-controller-optimized');
       
       // Ottieni solo i cicli attivi usando il controller ottimizzato
       const options = {
@@ -3384,7 +3384,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       const startTime = Date.now();
       
       // Importa il controller in modo dinamico per evitare errori di dipendenza circolare
-      const cyclesController = await import('./controllers/cycles-controller.js');
+      const cyclesController = await import('./controllers/cycles-controller');
       
       // Ottieni i cicli attivi con dettagli in modo ottimizzato
       const activeCyclesWithDetails = await cyclesController.getActiveCyclesWithDetails();
@@ -4799,7 +4799,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Invalida cache cestelli
       try {
-        const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller.js");
+        const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller");
         if (typeof invalidateBasketsCache === 'function') {
           invalidateBasketsCache();
           console.log("✅ Cache cestelli invalidata");
@@ -4812,7 +4812,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Invalida cache cicli se esiste
       try {
-        const { invalidateCache: invalidateCyclesCache } = await import("./controllers/cycles-controller.js");
+        const { invalidateCache: invalidateCyclesCache } = await import("./controllers/cycles-controller");
         invalidateCyclesCache();
         console.log("✅ Cache cicli invalidata");
       } catch (error) {
@@ -4821,7 +4821,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Invalida cache operazioni se esiste
       try {
-        const { invalidateCache: invalidateOperationsCache } = await import("./controllers/operations-unified-controller.js");
+        const { invalidateCache: invalidateOperationsCache } = await import("./controllers/operations-unified-controller");
         invalidateOperationsCache();
         console.log("✅ Cache operazioni invalidata");
       } catch (error) {
@@ -4848,7 +4848,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Invalida tutte le cache possibili che potrebbero influenzare i lotti
       try {
-        const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller.js");
+        const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller");
         if (typeof invalidateBasketsCache === 'function') {
           invalidateBasketsCache();
           console.log("✅ Cache cestelli invalidata");
@@ -4859,7 +4859,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Invalida cache cicli
       try {
-        const { invalidateCache: invalidateCyclesCache } = await import("./controllers/cycles-controller.js");
+        const { invalidateCache: invalidateCyclesCache } = await import("./controllers/cycles-controller");
         if (typeof invalidateCyclesCache === 'function') {
           invalidateCyclesCache();
           console.log("✅ Cache cicli invalidata");
@@ -4899,7 +4899,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       // Importa la funzione di broadcast WebSocket
-      const { broadcastMessage } = await import("./websocket.js");
+      const { broadcastMessage } = await import("./websocket");
 
       // Verifica che il FLUPSY esista
       const flupsy = await storage.getFlupsy(id);
@@ -5070,7 +5070,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
       // Invalida anche la cache dei cestelli nel server per aggiornamenti immediati
       try {
-        const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller.js");
+        const { invalidateCache: invalidateBasketsCache } = await import("./controllers/baskets-controller");
         if (typeof invalidateBasketsCache === 'function') {
           invalidateBasketsCache();
           console.log("✅ Cache cestelli invalidata dopo popolamento FLUPSY");
@@ -5294,10 +5294,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Importiamo il queryClient dal modulo db
-      const { queryClient } = await import("./db.js");
+      const { queryClient } = await import("./db");
       
       // Importa la funzione di broadcast WebSocket
-      const { broadcastMessage } = await import("./websocket.js");
+      const { broadcastMessage } = await import("./websocket");
       
       // Usiamo il metodo corretto per le transazioni
       await queryClient.begin(async sql => {
@@ -5561,7 +5561,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Importiamo il queryClient dal modulo db
-      const { queryClient } = await import("./db.js");
+      const { queryClient } = await import("./db");
       
       // Usiamo il metodo corretto per le transazioni
       await queryClient.begin(async sql => {
@@ -5623,7 +5623,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Importiamo il queryClient dal modulo db
-      const { queryClient } = await import("./db.js");
+      const { queryClient } = await import("./db");
       
       // Usiamo il metodo corretto per le transazioni
       await queryClient.begin(async sql => {
@@ -7939,10 +7939,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
       
       // Importiamo il queryClient dal modulo db
-      const { queryClient } = await import("./db.js");
+      const { queryClient } = await import("./db");
       
       // Importa la funzione di broadcast WebSocket
-      const { broadcastMessage } = await import("./websocket.js");
+      const { broadcastMessage } = await import("./websocket");
       
       // Usiamo il metodo corretto per le transazioni
       await queryClient.begin(async sql => {
