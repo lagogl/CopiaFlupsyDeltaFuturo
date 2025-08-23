@@ -2339,7 +2339,7 @@ export default function SpreadsheetOperations() {
                                     </div>
                                     <div className="bg-green-50 p-2 rounded">
                                       <div className="text-gray-600">Peso medio</div>
-                                      <div className="font-semibold text-green-600">{row.averageWeight}g</div>
+                                      <div className="font-semibold text-green-600">{row.averageWeight}</div>
                                     </div>
                                     <div className="bg-purple-50 p-2 rounded">
                                       <div className="text-gray-600">Animali</div>
@@ -2449,8 +2449,8 @@ export default function SpreadsheetOperations() {
                     <div style={{width: '60px'}} className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
                       <span className="truncate">
                         {(row as any).isNewRow && row.animalCount && row.totalWeight ? 
-                          `${Math.round((row.totalWeight / row.animalCount) * 100) / 100}g`
-                          : `${row.averageWeight}g`}
+                          `${Math.round((row.totalWeight / row.animalCount) * 100) / 100}`
+                          : `${row.averageWeight}`}
                       </span>
                     </div>
 
