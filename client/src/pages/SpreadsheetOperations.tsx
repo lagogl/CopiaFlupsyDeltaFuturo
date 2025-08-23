@@ -526,7 +526,9 @@ export default function SpreadsheetOperations() {
           currentSize,
           averageWeight,
           lastOperationDate: lastOp?.date,
-          lastOperationType: lastOp?.type
+          lastOperationType: lastOp?.type,
+          // ✅ IMPORTANTE: Aggiungi il campo lastOperation per l'inizializzazione del form
+          lastOperation: lastOp
         };
       });
       
@@ -1049,6 +1051,9 @@ export default function SpreadsheetOperations() {
     
     // Inizializza form con tutti i campi necessari per creare una NUOVA operazione
     // (la riga originale non viene modificata)
+    console.log(`🔍 INIT FORM DEBUG: Cestello ${row.basketId}, row.lastOperation:`, row.lastOperation);
+    console.log(`🔍 INIT FORM DEBUG: row.lastOperation?.totalWeight:`, row.lastOperation?.totalWeight);
+    
     const initData: any = {
       basketId: row.basketId,
       type: selectedOperationType,
@@ -1061,6 +1066,8 @@ export default function SpreadsheetOperations() {
       animalCount: undefined,
       notes: ''
     };
+    
+    console.log(`🔍 INIT FORM DEBUG: initData.totalWeight finale:`, initData.totalWeight);
     
     // Per operazioni PESO: inizializza animalCount con valore dell'operazione precedente (non modificabile)
     if (selectedOperationType === 'peso') {
