@@ -2150,11 +2150,11 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const operationDateString = format(date, 'yyyy-MM-dd');
         const operationDate = new Date(date);
         
-        // Validazione 1: Non più di una operazione nella stessa data
+        // Validazione 1: Operazioni multiple nella stessa data (solo per causali diverse da "peso")
         const sameDate = existingOperations.find(op => op.date === operationDateString);
-        if (sameDate) {
-          console.log(`❌ VALIDAZIONE: Operazione già esistente per cesta ${basketId} nella data ${operationDateString}`);
-          throw new Error(`Esiste già un'operazione per la cesta ${basketId} nella data ${operationDateString}. Ogni cesta può avere massimo una operazione per data.`);
+        if (sameDate && primaAttivSchema.data.type !== 'peso') {
+          console.log(`❌ VALIDAZIONE: Operazione già esistente per cesta ${basketId} nella data ${operationDateString} (causale diversa da peso)`);
+          throw new Error(`Esiste già un'operazione per la cesta ${basketId} nella data ${operationDateString}. Per causali diverse da "peso", ogni cesta può avere massimo una operazione per data.`);
         }
         
         // Validazione 2: Data non anteriore alla ultima operazione
@@ -2312,12 +2312,12 @@ export async function registerRoutes(app: Express): Promise<Server> {
         const operationDateString = format(date, 'yyyy-MM-dd');
         const operationDate = new Date(date);
         
-        // Validazione 1: Non più di una operazione nella stessa data
+        // Validazione 1: Operazioni multiple nella stessa data (solo per causali diverse da "peso")
         const sameDate = existingOperations.find(op => op.date === operationDateString);
-        if (sameDate) {
+        if (sameDate && parsedData.data.type !== 'peso') {
           const basket = await storage.getBasket(basketId);
           const physicalNumber = basket?.physicalNumber || basketId;
-          throw new Error(`Esiste già un'operazione per la cesta ${physicalNumber} nella data ${operationDateString}. Ogni cesta può avere massimo una operazione per data.`);
+          throw new Error(`Esiste già un'operazione per la cesta ${physicalNumber} nella data ${operationDateString}. Per causali diverse da "peso", ogni cesta può avere massimo una operazione per data.`);
         }
         
         // Validazione 2: Data non anteriore alla ultima operazione
