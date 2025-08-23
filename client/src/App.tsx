@@ -55,6 +55,7 @@ import FattureInCloudConfig from "@/pages/FattureInCloudConfig";
 import AIDashboard from "@/pages/AIDashboard";
 // Importazione Giacenze Range
 import GiacenzeRange from "@/pages/GiacenzeRange";
+import QuickOperations from "@/pages/QuickOperations";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -88,6 +89,7 @@ function Router() {
       <ProtectedRoute path="/operations/new" component={Operations}/>
       <ProtectedRoute path="/operations/edit/:id" component={EditOperation}/>
       <ProtectedRoute path="/operations/:id" component={OperationDetail}/>
+      <ProtectedRoute path="/quick-operations" component={QuickOperations}/>
       <ProtectedRoute path="/spreadsheet-operations" component={SpreadsheetOperations}/>
       <ProtectedRoute path="/operations-drag-drop" component={OperationsDragDrop}/>
       <ProtectedRoute path="/cycles" component={CyclesPaginated}/>
