@@ -937,7 +937,7 @@ export default function Baskets() {
                             >
                               <Pencil className="h-5 w-5 text-gray-600" />
                             </Button>
-                            {basket.state === 'available' ? (
+                            {basket.state === 'disponibile' ? (
                               <Button 
                                 variant="ghost" 
                                 size="icon"
@@ -1200,7 +1200,7 @@ export default function Baskets() {
                   <div className="col-span-2">
                     <p className="text-sm font-medium text-muted-foreground">Stato</p>
                     <p className="font-medium flex items-center">
-                      {selectedBasket.state === 'available' ? (
+                      {selectedBasket.state === 'disponibile' ? (
                         <><span className="inline-block h-2 w-2 rounded-full bg-green-500 mr-2"></span> Disponibile</>
                       ) : selectedBasket.state === 'active' && selectedBasket.currentCycleId ? (
                         <><span className="inline-block h-2 w-2 rounded-full bg-blue-500 mr-2"></span> In uso (ciclo attivo)</>
@@ -1235,7 +1235,7 @@ export default function Baskets() {
             <Button
               variant="destructive"
               onClick={() => selectedBasket && deleteBasketMutation.mutate(selectedBasket.id)}
-              disabled={deleteBasketMutation.isPending || (selectedBasket && selectedBasket.state !== 'available')}
+              disabled={deleteBasketMutation.isPending || (selectedBasket && selectedBasket.state !== 'disponibile')}
             >
               {deleteBasketMutation.isPending ? "Eliminazione in corso..." : "Elimina"}
             </Button>

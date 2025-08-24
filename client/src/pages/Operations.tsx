@@ -517,7 +517,7 @@ export default function Operations() {
       console.log('Operation type checks:', { isPrimaAttivazione, isVendita });
       
       // Determina lo stato della cesta
-      const isBasketAvailable = basket?.state === 'available';
+      const isBasketAvailable = basket?.state === 'disponibile';
       const isBasketActive = basket?.state === 'active';
       console.log('Basket state checks:', { isBasketAvailable, isBasketActive });
       

@@ -281,7 +281,7 @@ export default function NewFlupsyVisualizer({ selectedFlupsyIds = [] }: NewFlups
                 </>
               )}
               
-              {!latestOperation && basket.state === "available" && (
+              {!latestOperation && basket.state === "disponibile" && (
                 <div className="text-xs text-center my-2 text-gray-500">
                   In deposito
                 </div>

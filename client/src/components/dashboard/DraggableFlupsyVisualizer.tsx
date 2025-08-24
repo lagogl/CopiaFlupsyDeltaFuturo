@@ -57,7 +57,7 @@ function DraggableBasket({ basket, isDropDisabled = false, children, onClick }: 
   });
   
   // Modifica: permettiamo il trascinamento sia per ceste attive che disponibili
-  const isDraggable = basket && (basket.state === 'active' || basket.state === 'available');
+  const isDraggable = basket && (basket.state === 'active' || basket.state === 'disponibile');
   
   // Aggiungi un indicatore visivo per i cestelli trascinabili
   const handleMouseDown = () => {
@@ -691,7 +691,7 @@ export default function DraggableFlupsyVisualizer() {
     
     // Determina se il cestello è trascinabile per applicare indicazioni visive
     // Modificato: permettiamo il trascinamento sia per ceste attive che disponibili
-    const isDraggable = basket && (basket.state === 'active' || basket.state === 'available');
+    const isDraggable = basket && (basket.state === 'active' || basket.state === 'disponibile');
     
     if (isOccupied) {
       // Get latest operation for this basket
