@@ -26,7 +26,7 @@ export interface MenuTranslations {
     basketManagement: string;
     positionManagement: string;
     operations: string;
-    quickOperations: string;
+    advancedOperations: string;
     spreadsheetOperations: string;
     operationsDragDrop: string;
     screeningWithMap: string;
@@ -86,7 +86,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       basketManagement: "Gestione Ceste",
       positionManagement: "Gestione Posizioni",
       operations: "Operazioni",
-      quickOperations: "Operazioni Rapide",
+      advancedOperations: "Operazioni Avanzate",
       spreadsheetOperations: "Spreadsheet Operazioni",
       operationsDragDrop: "Operazioni Drag&Drop",
       screeningWithMap: "Vagliatura con Mappa",
@@ -142,7 +142,7 @@ export const translations: Record<'it' | 'en', MenuTranslations> = {
       basketManagement: "Basket Management",
       positionManagement: "Position Management",
       operations: "Operations",
-      quickOperations: "Quick Operations",
+      advancedOperations: "Advanced Operations",
       spreadsheetOperations: "Spreadsheet Operations",
       operationsDragDrop: "Drag&Drop Operations",
       screeningWithMap: "Screening with Map",

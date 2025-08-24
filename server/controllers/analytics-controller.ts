@@ -210,6 +210,216 @@ export async function getLotsAnalytics(req: Request, res: Response) {
 }
 
 /**
+ * Analytics per singolo lotto
+ * GET /api/analytics/lots/:id
+ */
+export async function getSingleLotAnalytics(req: Request, res: Response) {
+  try {
+    const { id } = req.params;
+    const lotId = parseInt(id);
+    
+    if (!lotId || isNaN(lotId)) {
+      return res.status(400).json({
+        success: false,
+        error: "ID lotto non valido"
+      });
+    }
+    
+    console.log(`📊 ANALYTICS SINGOLO LOTTO: ID ${lotId}`);
+    
+    const startTime = Date.now();
+    
+    // Query per il lotto specifico
+    const lotResult = await db
+      .select({
+        id: lots.id,
+        supplier: lots.supplier,
+        supplierLotNumber: lots.supplierLotNumber,
+        arrivalDate: lots.arrivalDate,
+        initialCount: lots.animalCount,
+        weight: lots.weight,
+        notes: lots.notes,
+        totalMortality: lots.totalMortality,
+        mortalityNotes: lots.mortalityNotes
+      })
+      .from(lots)
+      .where(eq(lots.id, lotId))
+      .limit(1);
+    
+    if (lotResult.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Lotto non trovato"
+      });
+    }
+    
+    const lot = lotResult[0];
+    const initialCount = lot.initialCount || 0;
+    
+    // Calcola mortalità dal lotto
+    let mortalityCount = lot.totalMortality || 0;
+    
+    // Calcola vendite per questo lotto
+    const soldResults = await db
+      .select({
+        totalSold: sql<number>`COALESCE(SUM(${operations.animalCount}), 0)`
+      })
+      .from(operations)
+      .innerJoin(cycles, eq(operations.cycleId, cycles.id))
+      .innerJoin(basketLotComposition, eq(cycles.id, basketLotComposition.cycleId))
+      .where(
+        and(
+          eq(basketLotComposition.lotId, lotId),
+          eq(operations.type, 'vendita')
+        )
+      );
+    
+    const soldCount = Number(soldResults[0]?.totalSold || 0);
+    
+    // Calcola animali attualmente presenti
+    const currentCountResults = await db
+      .select({
+        totalCurrent: sql<number>`COALESCE(SUM(${basketLotComposition.animalCount}), 0)`
+      })
+      .from(basketLotComposition)
+      .innerJoin(cycles, eq(basketLotComposition.cycleId, cycles.id))
+      .where(
+        and(
+          eq(basketLotComposition.lotId, lotId),
+          eq(cycles.state, 'active')
+        )
+      );
+    
+    const currentCount = Number(currentCountResults[0]?.totalCurrent || 0);
+    
+    // Calcola percentuale mortalità
+    const mortalityPercentage = initialCount > 0 ? (mortalityCount / initialCount) * 100 : 0;
+    
+    // Determina status
+    let status: 'active' | 'warning' | 'critical' = 'active';
+    if (mortalityPercentage > 15) {
+      status = 'critical';
+    } else if (mortalityPercentage > 8 || currentCount < (initialCount * 0.1)) {
+      status = 'warning';
+    }
+    
+    // Calcola numero cestelli utilizzati
+    const basketCountResults = await db
+      .selectDistinct({ basketId: basketLotComposition.basketId })
+      .from(basketLotComposition)
+      .where(eq(basketLotComposition.lotId, lotId));
+    
+    const basketsUsed = basketCountResults.length;
+    const activeBasketsCount = await db
+      .selectDistinct({ basketId: basketLotComposition.basketId })
+      .from(basketLotComposition)
+      .innerJoin(cycles, eq(basketLotComposition.cycleId, cycles.id))
+      .where(
+        and(
+          eq(basketLotComposition.lotId, lotId),
+          eq(cycles.state, 'active')
+        )
+      );
+    
+    // Trova ultima operazione
+    const lastOpResults = await db
+      .select({
+        type: operations.type,
+        date: operations.date
+      })
+      .from(operations)
+      .innerJoin(cycles, eq(operations.cycleId, cycles.id))
+      .innerJoin(basketLotComposition, eq(cycles.id, basketLotComposition.cycleId))
+      .where(eq(basketLotComposition.lotId, lotId))
+      .orderBy(desc(operations.date))
+      .limit(1);
+    
+    const lastOp = lastOpResults[0];
+    
+    // Calcola peso medio attuale
+    const avgWeightResults = await db
+      .select({
+        averageWeight: sql<number>`COALESCE(AVG(${operations.animalsPerKg}), 0)`
+      })
+      .from(operations)
+      .innerJoin(cycles, eq(operations.cycleId, cycles.id))
+      .innerJoin(basketLotComposition, eq(cycles.id, basketLotComposition.cycleId))
+      .where(
+        and(
+          eq(basketLotComposition.lotId, lotId),
+          isNotNull(operations.animalsPerKg),
+          sql`${operations.date} >= NOW() - INTERVAL '30 days'`
+        )
+      );
+    
+    const animalsPerKg = avgWeightResults[0]?.averageWeight || 0;
+    const averageWeightInMg = animalsPerKg > 0 ? (1000000 / animalsPerKg) : 0;
+    
+    // Calcola SGR medio
+    const sgrResults = await db
+      .select({
+        averageSgr: sql<number>`COALESCE(AVG(${operations.sgrValue}), 0)`
+      })
+      .from(operations)
+      .innerJoin(cycles, eq(operations.cycleId, cycles.id))
+      .innerJoin(basketLotComposition, eq(cycles.id, basketLotComposition.cycleId))
+      .where(
+        and(
+          eq(basketLotComposition.lotId, lotId),
+          isNotNull(operations.sgrValue),
+          sql`${operations.date} >= NOW() - INTERVAL '30 days'`
+        )
+      );
+    
+    const averageSgr = Number(sgrResults[0]?.averageSgr || 0);
+    
+    // Calcola crescita peso (confronta peso iniziale vs attuale)
+    const initialWeight = lot.weight || 0;
+    const currentWeight = currentCount * (averageWeightInMg / 1000); // Convert to grams
+    const weightGrowth = initialWeight > 0 ? ((currentWeight - initialWeight) / initialWeight) * 100 : 0;
+    
+    const lotAnalytics = {
+      id: lot.id,
+      supplier: lot.supplier || '',
+      supplierLotNumber: lot.supplierLotNumber || '',
+      arrivalDate: lot.arrivalDate,
+      initialCount,
+      currentCount,
+      soldCount,
+      mortalityCount,
+      mortalityPercentage: Math.round(mortalityPercentage * 10) / 10,
+      averageSgr: Math.round(averageSgr * 10) / 10,
+      currentWeight: Math.round(currentWeight),
+      initialWeight: Math.round(initialWeight),
+      weightGrowth: Math.round(weightGrowth * 10) / 10,
+      activeBasketsCount: activeBasketsCount.length,
+      lastOperationDate: lastOp ? lastOp.date : lot.arrivalDate,
+      lastOperationType: lastOp ? lastOp.type : 'prima-attivazione',
+      quality: mortalityPercentage < 5 ? 'Ottima' : mortalityPercentage < 8 ? 'Buona' : mortalityPercentage < 15 ? 'Accettabile' : 'Problematica',
+      status,
+      daysInSystem: differenceInDays(new Date(), new Date(lot.arrivalDate)),
+      basketsUsed,
+      notes: lot.notes
+    };
+    
+    const duration = Date.now() - startTime;
+    console.log(`✅ ANALYTICS SINGOLO LOTTO COMPLETATO: ${duration}ms - Lotto ID ${lotId}`);
+    
+    return res.json({
+      success: true,
+      lotAnalytics
+    });
+    
+  } catch (error) {
+    console.error("❌ ERRORE ANALYTICS SINGOLO LOTTO:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Errore interno durante il calcolo analytics lotto"
+    });
+  }
+}
+
+/**
  * Lista fornitori per filtri
  * GET /api/analytics/suppliers
  */

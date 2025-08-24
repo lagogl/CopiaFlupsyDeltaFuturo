@@ -7749,6 +7749,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // === Analytics Routes ===
   // Analytics completi per lotti con mortalità e performance
   app.get('/api/analytics/lots', AnalyticsController.getLotsAnalytics);
+  app.get('/api/analytics/lots/:id', AnalyticsController.getSingleLotAnalytics);
   
   // Lista fornitori per filtri analytics
   app.get('/api/analytics/suppliers', AnalyticsController.getSuppliers);
