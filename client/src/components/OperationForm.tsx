@@ -311,26 +311,27 @@ export default function OperationForm({
   useEffect(() => {
     console.log('🔍 AUTO-CORRECT useEffect TRIGGERED:', {
       watchBasketId,
-      allFlupsyBaskets: allFlupsyBaskets?.length,
-      hasBaskets: !!allFlupsyBaskets,
+      baskets: baskets?.length,
+      hasBaskets: !!baskets,
       flupsyBaskets: flupsyBaskets?.length,
       watchType
     });
     
-    if (!watchBasketId || !allFlupsyBaskets) {
+    if (!watchBasketId || !baskets) {
       console.log('🔍 AUTO-CORRECT: Early return - missing data:', {
         watchBasketId: !!watchBasketId,
-        allFlupsyBaskets: !!allFlupsyBaskets,
-        allFlupsyBasketsLength: allFlupsyBaskets?.length
+        baskets: !!baskets,
+        basketsLength: baskets?.length
       });
       return;
     }
     
-    const selectedBasket = allFlupsyBaskets.find(b => b.id === watchBasketId);
+    const selectedBasket = baskets.find(b => b.id === watchBasketId);
     if (!selectedBasket) {
-      console.log('🔍 AUTO-CORRECT: Cestello non trovato in allFlupsyBaskets:', {
+      console.log('🔍 AUTO-CORRECT: Cestello non trovato in baskets:', {
         watchBasketId,
-        allFlupsyBaskets: allFlupsyBaskets.map(b => ({id: b.id, state: b.state}))
+        basketsCount: baskets.length,
+        firstFewBaskets: baskets.slice(0, 5).map(b => ({id: b.id, state: b.state}))
       });
       return;
     }
@@ -353,7 +354,7 @@ export default function OperationForm({
       console.log('🔧 AUTO-CORRECT: Cestello attivo non può fare Prima Attivazione:', selectedBasket);
       form.setValue('type', 'misura');
     }
-  }, [watchBasketId, allFlupsyBaskets, form]);
+  }, [watchBasketId, baskets, form]);
   
   // Imposta il ciclo iniziale e precarica FLUPSY e cesta quando il componente viene montato
   useEffect(() => {
