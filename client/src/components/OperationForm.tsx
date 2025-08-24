@@ -307,7 +307,55 @@ export default function OperationForm({
     }
   }, [allFlupsyBaskets, watchType]);
 
-  // RIMUOVO IL useEffect PROBLEMATICO - la logica è già nel dropdown
+  // Auto-correzione tipo operazione quando cambia il cestello (anche se pre-impostato)
+  useEffect(() => {
+    console.log('🔍 AUTO-CORRECT: Cestello cambiato, controllo correzione:', {
+      watchBasketId,
+      hasBaskets: !!baskets,
+      timestamp: new Date().toISOString()
+    });
+    
+    // Se non c'è cestello selezionato, non fare nulla
+    if (!watchBasketId) {
+      console.log('🔍 AUTO-CORRECT: Nessun cestello selezionato');
+      return;
+    }
+    
+    // Se i cestelli non sono ancora caricati, aspetta
+    if (!baskets || baskets.length === 0) {
+      console.log('🔍 AUTO-CORRECT: Cestelli non ancora caricati');
+      return;
+    }
+    
+    // Trova il cestello selezionato
+    const selectedBasket = baskets.find(b => b.id === watchBasketId);
+    if (!selectedBasket) {
+      console.log('🔍 AUTO-CORRECT: Cestello non trovato:', watchBasketId);
+      return;
+    }
+    
+    const currentType = form.getValues('type');
+    console.log('🔍 AUTO-CORRECT: Cestello trovato:', {
+      basketId: selectedBasket.id,
+      state: selectedBasket.state,
+      currentType,
+      needsCorrection: selectedBasket.state === 'disponibile' && currentType !== 'prima-attivazione'
+    });
+    
+    // REGOLA BUSINESS: Cestello disponibile = SOLO Prima Attivazione
+    if (selectedBasket.state === 'disponibile' && currentType !== 'prima-attivazione') {
+      console.log('🔧 AUTO-CORRECT: CORREZIONE! Cestello disponibile → Prima Attivazione');
+      form.setValue('type', 'prima-attivazione');
+    }
+    // REGOLA BUSINESS: Cestello attivo = NON può fare Prima Attivazione  
+    else if (selectedBasket.state === 'active' && selectedBasket.currentCycleId && currentType === 'prima-attivazione') {
+      console.log('🔧 AUTO-CORRECT: CORREZIONE! Cestello attivo → Misura');
+      form.setValue('type', 'misura');
+    }
+    else {
+      console.log('🔍 AUTO-CORRECT: Nessuna correzione necessaria');
+    }
+  }, [watchBasketId]); // Solo watchBasketId come dipendenza!
   
   // Imposta il ciclo iniziale e precarica FLUPSY e cesta quando il componente viene montato
   useEffect(() => {
