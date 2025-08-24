@@ -306,6 +306,27 @@ export default function OperationForm({
       );
     }
   }, [allFlupsyBaskets, watchType]);
+
+  // Auto-impostazione tipo operazione in base al cestello selezionato
+  useEffect(() => {
+    if (!watchBasketId || !allFlupsyBaskets) return;
+    
+    const selectedBasket = allFlupsyBaskets.find(b => b.id === watchBasketId);
+    if (!selectedBasket) return;
+
+    const currentType = form.getValues('type');
+    
+    // REGOLA BUSINESS: Cestello disponibile = SOLO Prima Attivazione
+    if (selectedBasket.state === 'disponibile' && currentType !== 'prima-attivazione') {
+      console.log('🔧 AUTO-CORRECT: Cestello disponibile richiede Prima Attivazione:', selectedBasket);
+      form.setValue('type', 'prima-attivazione');
+    }
+    // REGOLA BUSINESS: Cestello attivo = NON può fare Prima Attivazione
+    else if (selectedBasket.state === 'active' && selectedBasket.currentCycleId && currentType === 'prima-attivazione') {
+      console.log('🔧 AUTO-CORRECT: Cestello attivo non può fare Prima Attivazione:', selectedBasket);
+      form.setValue('type', 'misura');
+    }
+  }, [watchBasketId, allFlupsyBaskets, form]);
   
   // Imposta il ciclo iniziale e precarica FLUPSY e cesta quando il componente viene montato
   useEffect(() => {
