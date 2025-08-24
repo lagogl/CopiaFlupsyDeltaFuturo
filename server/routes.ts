@@ -2460,6 +2460,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         console.log("🔍 STEP 6: Data formattata:", formattedDate);
         
         // Transazione atomica: tutto o niente
+        try {
         const operation = await queryClient.begin(async sql => {
           console.log("🔍 STEP 7: [TRANSAZIONE] Creazione ciclo...");
           const [newCycle] = await sql`
