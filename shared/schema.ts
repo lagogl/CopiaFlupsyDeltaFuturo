@@ -69,7 +69,9 @@ export const operationTypes = [
   "selezione-vendita",
   "cessazione",
   "peso",
-  "selezione-origine"
+  "selezione-origine",
+  "dismissione",
+  "chiusura-ciclo-vagliatura"
 ] as const;
 
 // Screening (Operazioni di vagliatura)
@@ -298,6 +300,10 @@ export const lots = pgTable("lots", {
   externalId: text("external_id"),
   description: text("description"),
   origin: text("origin"),
+  // Tracciabilità mortalità da vagliature
+  totalMortality: integer("total_mortality").default(0), // Mortalità cumulativa totale del lotto
+  lastMortalityDate: date("last_mortality_date"), // Data ultima registrazione mortalità
+  mortalityNotes: text("mortality_notes"), // Note sulla mortalità
   createdAt: timestamp("created_at").notNull().defaultNow(),
 });
 
