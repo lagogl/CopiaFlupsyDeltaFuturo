@@ -307,58 +307,7 @@ export default function OperationForm({
     }
   }, [allFlupsyBaskets, watchType]);
 
-  // Auto-impostazione tipo operazione in base al cestello selezionato
-  useEffect(() => {
-    console.log('🔍 AUTO-CORRECT useEffect TRIGGERED:', {
-      watchBasketId,
-      baskets: baskets?.length,
-      hasBaskets: !!baskets,
-      flupsyBaskets: flupsyBaskets?.length,
-      watchType,
-      timestamp: new Date().toISOString()
-    });
-    
-    if (!watchBasketId || !baskets) {
-      console.log('🔍 AUTO-CORRECT: Early return - missing data:', {
-        watchBasketId: !!watchBasketId,
-        baskets: !!baskets,
-        basketsLength: baskets?.length
-      });
-      return;
-    }
-    
-    const selectedBasket = baskets.find(b => b.id === watchBasketId);
-    if (!selectedBasket) {
-      console.log('🔍 AUTO-CORRECT: Cestello non trovato in baskets:', {
-        watchBasketId,
-        basketsCount: baskets.length,
-        firstFewBaskets: baskets.slice(0, 5).map(b => ({id: b.id, state: b.state}))
-      });
-      return;
-    }
-
-    const currentType = form.getValues('type');
-    console.log('🔍 AUTO-CORRECT: Controllo stato cestello:', {
-      basketId: selectedBasket.id,
-      state: selectedBasket.state,
-      currentType,
-      needsCorrection: selectedBasket.state === 'disponibile' && currentType !== 'prima-attivazione'
-    });
-    
-    // REGOLA BUSINESS: Cestello disponibile = SOLO Prima Attivazione
-    if (selectedBasket.state === 'disponibile' && currentType !== 'prima-attivazione') {
-      console.log('🔧 AUTO-CORRECT: Cestello disponibile richiede Prima Attivazione:', selectedBasket);
-      form.setValue('type', 'prima-attivazione');
-    }
-    // REGOLA BUSINESS: Cestello attivo = NON può fare Prima Attivazione
-    else if (selectedBasket.state === 'active' && selectedBasket.currentCycleId && currentType === 'prima-attivazione') {
-      console.log('🔧 AUTO-CORRECT: Cestello attivo non può fare Prima Attivazione:', selectedBasket);
-      form.setValue('type', 'misura');
-    }
-    else {
-      console.log('🔍 AUTO-CORRECT: Nessuna correzione necessaria');
-    }
-  }, [watchBasketId, baskets, form]);
+  // RIMUOVO IL useEffect PROBLEMATICO - la logica è già nel dropdown
   
   // Imposta il ciclo iniziale e precarica FLUPSY e cesta quando il componente viene montato
   useEffect(() => {
