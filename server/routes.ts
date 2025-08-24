@@ -137,6 +137,106 @@ const getBackupUploadDir = () => {
   return uploadDir;
 };
 
+// 🎯 FUNZIONI HELPER PER GESTIONE LOTTI MISTI
+async function handleBasketLotCompositionOnDelete(operation: any) {
+  try {
+    console.log(`🎯 Verifica impatto eliminazione operazione ${operation.id} su lotti misti del cestello ${operation.basketId}`);
+    
+    const { queryClient } = await import("./db");
+    
+    // Verifica se il cestello ha una composizione mista
+    const composition = await queryClient`
+      SELECT COUNT(*) as count FROM basket_lot_composition 
+      WHERE basket_id = ${operation.basketId}
+    `;
+    
+    if (composition[0]?.count > 1) {
+      console.log(`🎯 Cestello ${operation.basketId} ha composizione mista (${composition[0].count} lotti)`);
+      
+      // Se l'operazione cancellata era di tipo critico per i lotti misti
+      if (operation.metadata && typeof operation.metadata === 'string') {
+        const metadata = JSON.parse(operation.metadata);
+        if (metadata.operation_type === 'mixed_lot' || metadata.operation_type === 'screening_source') {
+          console.log(`🎯 Operazione critica per lotti misti - ricalcolo composizione`);
+          
+          // Verifica se ci sono altre operazioni che mantengono il lotto misto
+          const otherMixedOps = await queryClient`
+            SELECT COUNT(*) as count FROM operations o
+            WHERE o.basket_id = ${operation.basketId} 
+            AND o.id != ${operation.id}
+            AND (o.metadata::text LIKE '%mixed_lot%' OR o.metadata::text LIKE '%screening%')
+          `;
+          
+          if (otherMixedOps[0]?.count === 0) {
+            console.log(`🎯 Nessun'altra operazione mantiene il lotto misto - eliminazione composizione`);
+            await queryClient`
+              DELETE FROM basket_lot_composition WHERE basket_id = ${operation.basketId}
+            `;
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('❌ Errore gestione composizione lotti misti su eliminazione:', error);
+  }
+}
+
+async function handleBasketLotCompositionOnUpdate(operation: any, updateData: any) {
+  try {
+    console.log(`🎯 Verifica impatto modifica operazione ${operation.id} su lotti misti del cestello ${operation.basketId}`);
+    
+    // Se cambia il lotto o il conteggio animali, potrebbe influire sulla composizione
+    if (updateData.lotId || updateData.animalCount) {
+      const { queryClient } = await import("./db");
+      
+      // Verifica se il cestello ha una composizione mista
+      const composition = await queryClient`
+        SELECT COUNT(*) as count FROM basket_lot_composition 
+        WHERE basket_id = ${operation.basketId}
+      `;
+      
+      if (composition[0]?.count > 1) {
+        console.log(`🎯 Cestello ${operation.basketId} ha composizione mista - aggiornamento necessario`);
+        
+        // Se cambia il lotto dell'operazione principale di un cestello misto
+        if (updateData.lotId && updateData.lotId !== operation.lotId) {
+          console.log(`🎯 Cambio lotto da ${operation.lotId} a ${updateData.lotId} - ricalcolo composizione`);
+          
+          // Aggiorna il lotto dominante nella composizione
+          await queryClient`
+            UPDATE basket_lot_composition 
+            SET lot_id = ${updateData.lotId}
+            WHERE basket_id = ${operation.basketId} 
+            AND lot_id = ${operation.lotId}
+            AND percentage = (SELECT MAX(percentage) FROM basket_lot_composition WHERE basket_id = ${operation.basketId})
+          `;
+        }
+        
+        // Se cambia il conteggio animali, ricalcola le percentuali
+        if (updateData.animalCount) {
+          console.log(`🎯 Cambio conteggio animali - ricalcolo percentuali composizione`);
+          
+          // Ricalcola tutte le percentuali basandosi sui nuovi totali
+          const totalAnimals = await queryClient`
+            SELECT SUM(animal_count) as total FROM basket_lot_composition 
+            WHERE basket_id = ${operation.basketId}
+          `;
+          
+          if (totalAnimals[0]?.total > 0) {
+            await queryClient`
+              UPDATE basket_lot_composition 
+              SET percentage = ROUND((animal_count::decimal / ${totalAnimals[0].total}) * 100, 1)
+              WHERE basket_id = ${operation.basketId}
+            `;
+          }
+        }
+      }
+    }
+  } catch (error) {
+    console.error('❌ Errore gestione composizione lotti misti su aggiornamento:', error);
+  }
+}
+
 export async function registerRoutes(app: Express): Promise<Server> {
   // API esterne disabilitate - Aggiungi solo una risposta di status per evitare errori 401
   app.all("/api/external/*", (req, res) => {
@@ -2745,6 +2845,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
       console.log(`Aggiornamento operazione ${id} di tipo ${operationType}:`, JSON.stringify(updateData, null, 2));
       
       // Update the operation
+      // 🎯 GESTIONE LOTTI MISTI: Verifica se la modifica impatta la composizione
+      await handleBasketLotCompositionOnUpdate(operation, updateData);
+      
       const updatedOperation = await storage.updateOperation(id, updateData);
       
       // Broadcast operation update event via WebSockets
@@ -2798,6 +2901,10 @@ export async function registerRoutes(app: Express): Promise<Server> {
       }
 
       console.log(`🔄 Avvio eliminazione operazione...`);
+      
+      // 🎯 GESTIONE LOTTI MISTI: Verifica se l'operazione è collegata a composizione mista
+      await handleBasketLotCompositionOnDelete(operation);
+      
       // Delete the operation con cascade handling
       const success = await storage.deleteOperation(id);
       console.log(`🔄 Risultato eliminazione: ${success}`);
