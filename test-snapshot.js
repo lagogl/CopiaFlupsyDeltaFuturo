@@ -5,8 +5,8 @@
  * Uso: node test-snapshot.js [PRIMA|DOPO]
  */
 
-const fs = require('fs');
-const path = require('path');
+import fs from 'fs';
+import path from 'path';
 
 // Configurazione
 const API_BASE = process.env.API_URL || 'http://localhost:5000';
@@ -97,8 +97,6 @@ async function main() {
 }
 
 // Esegui solo se chiamato direttamente
-if (require.main === module) {
+if (import.meta.url === `file://${process.argv[1]}`) {
   main().catch(console.error);
 }
-
-module.exports = { fetchSnapshot };

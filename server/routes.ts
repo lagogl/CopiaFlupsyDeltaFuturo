@@ -14,7 +14,14 @@ import {
   insertUserSchema,
   cycles,
   sizes,
-  operations
+  operations,
+  flupsys,
+  baskets,
+  lots,
+  users,
+  screening,
+  screeningPositions,
+  notifications
 } from "../shared/schema";
 import { registerAIRoutes } from "./controllers/ai-controller";
 import { 
