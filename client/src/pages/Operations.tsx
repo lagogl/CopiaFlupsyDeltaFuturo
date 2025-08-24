@@ -1220,7 +1220,7 @@ export default function Operations() {
       const numStr = size.code.substring(3);
       const num = parseInt(numStr);
       
-      // Colorazione più granulare per distinguere meglio ogni taglia
+      // Colorazione granulare per distinguere ogni taglia
       if (num <= 500) {
         bgColor = 'bg-purple-100 text-purple-800';  // TP-500 → Viola
       } else if (num <= 600) {
@@ -1230,7 +1230,7 @@ export default function Operations() {
       } else if (num <= 1000) {
         bgColor = 'bg-red-100 text-red-800';        // TP-1000 → Rosso
       } else if (num <= 3000) {
-        bgColor = 'bg-green-100 text-green-800';    // TP-2000, TP-3000 → Verde
+        bgColor = 'bg-green-100 text-green-800';    // TP-2000, TP-3000 → VERDE
       } else if (num <= 6000) {
         bgColor = 'bg-yellow-100 text-yellow-800';  // TP-4000, TP-5000, TP-6000 → Giallo
       } else if (num <= 10000) {
