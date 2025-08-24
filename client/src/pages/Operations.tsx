@@ -312,63 +312,57 @@ export default function Operations() {
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
   
-  // SEMPLIFICATO: Usa query separate come SpreadsheetOperations
+  // OTTIMIZZATO: Query con cache più lunga per migliorare le performance
   const { data: operations = [], isLoading: operationsLoading, error: operationsError } = useQuery({
     queryKey: ['/api/operations', { includeAll: true, pageSize: 1000 }],
-    staleTime: 60000,
+    staleTime: 300000, // 5 minuti di cache
+    cacheTime: 600000, // 10 minuti di cache in background
   });
-
-  // Debug Query React Query
-  React.useEffect(() => {
-    console.log('🔍 QUERY DEBUG - Operations Query Status:');
-    console.log('   - Loading:', operationsLoading);
-    console.log('   - Error:', operationsError);
-    console.log('   - Data type:', typeof operations);
-    console.log('   - Data value:', operations);
-    console.log('   - Data length:', operations?.length);
-  }, [operations, operationsLoading, operationsError]);
 
   const { data: baskets = [] } = useQuery({
     queryKey: ['/api/baskets', { includeAll: true }],
-    staleTime: 60000,
+    staleTime: 300000, // 5 minuti
+    cacheTime: 600000, // 10 minuti
   });
 
   const { data: cycles = [] } = useQuery({
     queryKey: ['/api/cycles', { includeAll: true }],
-    staleTime: 60000,
+    staleTime: 300000, // 5 minuti
+    cacheTime: 600000, // 10 minuti
   });
 
+  // Query meno frequenti con cache ancora più lunga
   const { data: lots = [] } = useQuery({
     queryKey: ['/api/lots'],
-    staleTime: 60000,
+    staleTime: 600000, // 10 minuti
+    cacheTime: 1200000, // 20 minuti
   });
 
   const { data: sizes = [] } = useQuery({
     queryKey: ['/api/sizes'],
-    staleTime: 60000,
+    staleTime: 1800000, // 30 minuti (dati quasi statici)
+    cacheTime: 3600000, // 1 ora
   });
 
   const { data: flupsys = [] } = useQuery({
     queryKey: ['/api/flupsys'],
-    staleTime: 60000,
+    staleTime: 600000, // 10 minuti
+    cacheTime: 1200000, // 20 minuti
   });
 
   const { data: sgrs = [] } = useQuery({
     queryKey: ['/api/sgr'],
-    staleTime: 60000,
+    staleTime: 1800000, // 30 minuti (dati quasi statici)
+    cacheTime: 3600000, // 1 ora
   });
 
   // Usa direttamente i dati dalle query separate
   const isLoadingAny = !operations || !baskets || !cycles;
   
-  // Debug delle operazioni ricevute
+  // Debug ridotto per migliori performance
   React.useEffect(() => {
-    console.log('🚨 VERSIONE MODIFICATA - OPERATIONS.TSX AGGIORNATO 🚨');
     if (operations) {
       console.log('📊 Operations loaded:', operations.length, 'operations');
-      operations.forEach(op => {
-        console.log(`📊 Operation ${op.id}: ${op.type}, basket ${op.basketId}, date ${op.date}`);
-      });
     }
   }, [operations]);
 
