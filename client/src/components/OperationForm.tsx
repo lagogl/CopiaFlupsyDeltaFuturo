@@ -999,13 +999,20 @@ export default function OperationForm({
                       form.setValue('cycleId', undefined);
                       
                       // Verifica lo stato del cestello selezionato
-                      const selectedBasket = baskets?.find(b => b.id === Number(value));
+                      const selectedBasket = allFlupsyBaskets?.find(b => b.id === Number(value));
                       
-                      // Imposta "prima-attivazione" sia per ceste disponibili che per ceste attive senza ciclo
-                      if (selectedBasket?.state === 'disponibile' || 
-                         (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) {
-                        console.log('Impostazione automatica operazione prima-attivazione per cesta:', selectedBasket);
+                      // COMPORTAMENTO AUTOMATICO: Imposta tipo operazione in base allo stato del cestello
+                      if (selectedBasket?.state === 'disponibile') {
+                        // Cestello disponibile = SOLO Prima Attivazione possibile
+                        console.log('🎯 AUTO-SET: Cestello disponibile → Prima Attivazione:', selectedBasket);
                         form.setValue('type', 'prima-attivazione');
+                      } else if (selectedBasket?.state === 'active' && selectedBasket?.currentCycleId) {
+                        // Cestello attivo = operazioni di manutenzione/misura
+                        console.log('🎯 AUTO-SET: Cestello attivo → Mantieni tipo operazione corrente');
+                        // Non cambiamo il tipo se è già impostato, altrimenti impostiamo misura
+                        if (!form.getValues('type') || form.getValues('type') === 'prima-attivazione') {
+                          form.setValue('type', 'misura');
+                        }
                       }
                     }}
                     value={field.value?.toString()}
