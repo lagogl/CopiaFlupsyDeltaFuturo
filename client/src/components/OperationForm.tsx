@@ -309,12 +309,30 @@ export default function OperationForm({
 
   // Auto-impostazione tipo operazione in base al cestello selezionato
   useEffect(() => {
-    if (!watchBasketId || !allFlupsyBaskets) return;
+    console.log('🔍 AUTO-CORRECT useEffect TRIGGERED:', {
+      watchBasketId,
+      allFlupsyBaskets: allFlupsyBaskets?.length,
+      hasBaskets: !!allFlupsyBaskets
+    });
+    
+    if (!watchBasketId || !allFlupsyBaskets) {
+      console.log('🔍 AUTO-CORRECT: Early return - missing data');
+      return;
+    }
     
     const selectedBasket = allFlupsyBaskets.find(b => b.id === watchBasketId);
-    if (!selectedBasket) return;
+    if (!selectedBasket) {
+      console.log('🔍 AUTO-CORRECT: Cestello non trovato in allFlupsyBaskets');
+      return;
+    }
 
     const currentType = form.getValues('type');
+    console.log('🔍 AUTO-CORRECT: Controllo stato cestello:', {
+      basketId: selectedBasket.id,
+      state: selectedBasket.state,
+      currentType,
+      needsCorrection: selectedBasket.state === 'disponibile' && currentType !== 'prima-attivazione'
+    });
     
     // REGOLA BUSINESS: Cestello disponibile = SOLO Prima Attivazione
     if (selectedBasket.state === 'disponibile' && currentType !== 'prima-attivazione') {
