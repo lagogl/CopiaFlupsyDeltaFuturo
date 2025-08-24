@@ -140,12 +140,6 @@ export default function AdvancedOperationForm({
     queryKey: ['/api/lots/active'],
   });
 
-  // Fetch operations for the selected basket (copiato dal form originale)
-  const { data: basketOperations } = useQuery({
-    queryKey: ['/api/operations', watchBasketId],
-    enabled: !!watchBasketId,
-  });
-
   // Inizializzazione del form
   const form = useForm<FormValues>({
     resolver: zodResolver(formSchemaWithFlupsy),
@@ -166,6 +160,12 @@ export default function AdvancedOperationForm({
   const watchDeadCount = form.watch('deadCount');
   const watchTotalWeight = form.watch('totalWeight');
   const watchManualCountAdjustment = form.watch('manualCountAdjustment');
+
+  // Fetch operations for the selected basket (DOPO l'inizializzazione dei watch)
+  const { data: basketOperations } = useQuery({
+    queryKey: ['/api/operations', watchBasketId],
+    enabled: !!watchBasketId,
+  });
 
   // Fetch baskets for selected FLUPSY (copiato dal form originale)
   const { data: allFlupsyBaskets, isLoading: isLoadingFlupsyBaskets } = useQuery({
@@ -305,7 +305,7 @@ export default function AdvancedOperationForm({
   useEffect(() => {
     setOperationDateError(null);
     
-    if (!watchBasketId || !watchDate || !basketOperations || basketOperations.length === 0) {
+    if (!watchBasketId || !watchDate || !basketOperations || basketOperations?.length === 0) {
       return;
     }
     
@@ -326,7 +326,7 @@ export default function AdvancedOperationForm({
     
     if (!selectedDate) return;
     
-    const operationOnSameDate = basketOperations.find(op => {
+    const operationOnSameDate = basketOperations?.find(op => {
       const opDate = new Date(op.date).toISOString().split('T')[0];
       return opDate === selectedDate && op.cycleId === currentCycleId;
     });
@@ -338,7 +338,7 @@ export default function AdvancedOperationForm({
 
   // **CALCOLO SGR AUTOMATICO (COPIATO DAL FORM ORIGINALE)**
   useEffect(() => {
-    if (!watchBasketId || !watchCycleId || !basketOperations || basketOperations.length < 1) {
+    if (!watchBasketId || !watchCycleId || !basketOperations || basketOperations?.length < 1) {
       return;
     }
     
@@ -347,7 +347,7 @@ export default function AdvancedOperationForm({
     
     if (!currentCycleId) return;
     
-    const cycleOperations = basketOperations.filter(op => op.cycleId === currentCycleId);
+    const cycleOperations = basketOperations?.filter(op => op.cycleId === currentCycleId) || [];
     if (cycleOperations.length === 0) return;
     
     const sortedOperations = [...cycleOperations].sort((a, b) => 
