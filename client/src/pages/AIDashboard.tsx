@@ -21,6 +21,14 @@ interface PredictiveAnalysis {
   targetSizeDate: string;
   growthFactors: Array<{ factor: string; impact: number; recommendation: string }>;
   confidence: number;
+  // Nuove proprietà per lotti misti
+  mixedLotsAnalysis?: {
+    mixedBasketsCount: number;
+    pureBasketsCount: number;
+    highRiskBaskets: number;
+    totalLotsInvolved: number;
+    averageAnimalsPerBasket: number;
+  };
 }
 
 interface AnomalyDetection {
@@ -30,6 +38,13 @@ interface AnomalyDetection {
   description: string;
   recommendation: string;
   confidence: number;
+  // Nuove proprietà per anomalie lotti misti
+  mixedLotsInsights?: {
+    totalBaskets: number;
+    mixedBasketsPercentage: number;
+    averageLotsPerBasket: string;
+    criticalAnomalies: number;
+  };
 }
 
 interface SustainabilityAnalysis {
@@ -44,10 +59,28 @@ interface SustainabilityAnalysis {
     sustainable: boolean;
     lowImpact: boolean;
   };
+  // Nuove proprietà per sostenibilità lotti misti
+  sustainabilityInsights?: {
+    productionEfficiency: number;
+    carbonIntensity: number;
+    operationalComplexity: number;
+    supplierDiversity: number;
+    sustainabilityScore: number;
+  };
+}
+
+interface BusinessAnalytics {
+  businessInsights?: {
+    totalRevenueEstimate: number;
+    productionEfficiency: number;
+    lotDiversification: number;
+    mixedLotAdvantage: number;
+    supplierReliance: number;
+  };
 }
 
 export default function AIDashboard() {
-  const [selectedFlupsy, setSelectedFlupsy] = useState<number | null>(2516); // Default FLUPSY per test
+  const [selectedFlupsy, setSelectedFlupsy] = useState<number | null>(570); // FLUPSY esistente
   const [timeframe, setTimeframe] = useState<string>('7');
   
   const queryClient = useQueryClient();
@@ -89,7 +122,7 @@ export default function AIDashboard() {
   });
 
   // Query per business analytics
-  const { data: businessAnalytics, refetch: refetchBusinessAnalytics } = useQuery({
+  const { data: businessAnalytics, refetch: refetchBusinessAnalytics } = useQuery<BusinessAnalytics>({
     queryKey: ['/api/ai/business-analytics', { timeframe }],
     enabled: false
   });
