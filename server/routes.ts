@@ -5667,54 +5667,54 @@ export async function registerRoutes(app: Express): Promise<Server> {
           broadcastMessage("database_reset_progress", { message: step13, step: 13 });
           await sql`DELETE FROM notifications`;
           
-          // 13. Elimina mortalità e SGR 
-          const step13 = "📊 Eliminazione dati mortalità e SGR...";
-          console.log(step13);
-          broadcastMessage("database_reset_progress", { message: step13, step: 13 });
+          // 14. Elimina mortalità e SGR 
+          const step14 = "📊 Eliminazione dati mortalità e SGR...";
+          console.log(step14);
+          broadcastMessage("database_reset_progress", { message: step14, step: 14 });
           await sql`DELETE FROM lot_mortality_records`;
           await sql`DELETE FROM mortality_rates`;
           await sql`DELETE FROM sgr_giornalieri`;
           
-          // 14. Elimina impatti e sostenibilità
-          const step14 = "🌱 Eliminazione dati impatti e sostenibilità...";
-          console.log(step14);
-          broadcastMessage("database_reset_progress", { message: step14, step: 14 });
+          // 15. Elimina impatti e sostenibilità
+          const step15 = "🌱 Eliminazione dati impatti e sostenibilità...";
+          console.log(step15);
+          broadcastMessage("database_reset_progress", { message: step15, step: 15 });
           await sql`DELETE FROM operation_impacts`;
           await sql`DELETE FROM flupsy_impacts`;
           await sql`DELETE FROM sustainability_reports`;
           
-          // 15. Elimina report e documenti
-          const step15 = "📋 Eliminazione report e documenti...";
-          console.log(step15);
-          broadcastMessage("database_reset_progress", { message: step15, step: 15 });
+          // 16. Elimina report e documenti
+          const step16 = "📋 Eliminazione report e documenti...";
+          console.log(step16);
+          broadcastMessage("database_reset_progress", { message: step16, step: 16 });
           await sql`DELETE FROM delivery_reports`;
           await sql`DELETE FROM sales_reports`;
           await sql`DELETE FROM reports`;
           await sql`DELETE FROM documents`;
           
-          // 16. Elimina ordini e pagamenti
-          const step16 = "💳 Eliminazione ordini e pagamenti...";
-          console.log(step16);
-          broadcastMessage("database_reset_progress", { message: step16, step: 16 });
+          // 17. Elimina ordini e pagamenti
+          const step17 = "💳 Eliminazione ordini e pagamenti...";
+          console.log(step17);
+          broadcastMessage("database_reset_progress", { message: step17, step: 17 });
           await sql`DELETE FROM order_items`;
           await sql`DELETE FROM orders`;
           await sql`DELETE FROM payments`;
           await sql`DELETE FROM bag_allocations`;
           await sql`DELETE FROM sale_operations_ref`;
           
-          // 17. Elimina dati Fatture in Cloud (ricaricabili con sincronizzazione)
-          const step17 = "📄 Eliminazione dati Fatture in Cloud...";
-          console.log(step17);
-          broadcastMessage("database_reset_progress", { message: step17, step: 17 });
+          // 18. Elimina dati Fatture in Cloud (ricaricabili con sincronizzazione)
+          const step18 = "📄 Eliminazione dati Fatture in Cloud...";
+          console.log(step18);
+          broadcastMessage("database_reset_progress", { message: step18, step: 18 });
           await sql`DELETE FROM clienti`;
           await sql`DELETE FROM clients`;
           await sql`DELETE FROM ddt`;
           await sql`DELETE FROM sync_log_fatture_in_cloud`;
           
-          // 18. Resettiamo le sequenze degli ID di tutte le tabelle
-          const step18 = "🔢 Reset contatori ID di tutte le tabelle...";
-          console.log(step18);
-          broadcastMessage("database_reset_progress", { message: step18, step: 18 });
+          // 19. Resettiamo le sequenze degli ID di tutte le tabelle
+          const step19 = "🔢 Reset contatori ID di tutte le tabelle...";
+          console.log(step19);
+          broadcastMessage("database_reset_progress", { message: step19, step: 19 });
           
           // Reset sequenze vendite avanzate e sincronizzazione
           await sql`ALTER SEQUENCE IF EXISTS advanced_sales_id_seq RESTART WITH 1`;
