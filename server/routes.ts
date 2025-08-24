@@ -2081,7 +2081,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       
       // Controllo stato cestello in base al tipo operazione
       if (req.body.type === 'prima-attivazione') {
-        if (basket.state !== 'available') {
+        if (basket.state !== 'disponibile') {
           return res.status(400).json({ message: "Cestello deve essere disponibile per prima attivazione" });
         }
       } else if (req.body.type === 'misura') {
@@ -2196,7 +2196,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(404).json({ message: "Cestello non trovato" });
         }
         
-        if (basket.state !== 'available') {
+        if (basket.state !== 'disponibile') {
           return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
         }
         
@@ -2436,7 +2436,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Verifica che il cestello sia disponibile
         console.log("🔍 STEP 2: Verifica stato cestello:", basket.state);
-        if (basket.state !== 'available') {
+        if (basket.state !== 'disponibile') {
           return res.status(400).json({ message: "Il cestello deve essere disponibile per l'attivazione" });
         }
         
@@ -2690,7 +2690,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
           
           // Update the basket state
           await storage.updateBasket(basketId, {
-            state: 'available',
+            state: 'disponibile',
             currentCycleId: null,
             cycleCode: null
           });
@@ -4795,7 +4795,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
       // Calcola statistiche usando il campo 'state' per determinare lo stato attivo
       const totalBaskets = basketsInFlupsy.length;
       const activeBaskets = basketsInFlupsy.filter(basket => basket.state === 'active').length;
-      const availableBaskets = basketsInFlupsy.filter(basket => basket.state === 'available').length;
+      const availableBaskets = basketsInFlupsy.filter(basket => basket.state === 'disponibile').length;
       const freePositions = flupsy.maxPositions - totalBaskets;
       
       // Calcola statistiche sugli animali
@@ -5293,7 +5293,7 @@ export async function registerRoutes(app: Express): Promise<Server> {
         // 1. Crea il cestello con stato 'available' (non 'active' perché non ha ancora un ciclo)
         const basketToCreate = {
           ...basketData,
-          state: 'available' as const
+          state: 'disponibile' as const
         };
         
         const newBasket = await storage.createBasket(basketToCreate);

@@ -169,7 +169,7 @@ export function implementDirectOperationRoute(app: Express) {
           // Resetta il cestello a stato disponibile
           await db.update(baskets)
             .set({
-              state: 'available',
+              state: 'disponibile',
               currentCycleId: null,
               cycleCode: null
             })
@@ -203,7 +203,7 @@ export function implementDirectOperationRoute(app: Express) {
           
           (global as any).broadcastUpdate('basket_updated', {
             basketId: operation.basketId,
-            state: 'available',
+            state: 'disponibile',
             message: `Cestello aggiornato dopo eliminazione operazione`
           });
           
@@ -452,7 +452,7 @@ export function implementDirectOperationRoute(app: Express) {
         console.log("Rilevata operazione di PRIMA ATTIVAZIONE - Esecuzione flusso speciale");
         
         // Verifica che il cestello sia disponibile o attivo senza ciclo
-        const isAvailable = basket.state === 'available';
+        const isAvailable = basket.state === 'disponibile';
         const isActiveWithoutCycle = basket.state === 'active' && !basket.currentCycleId;
         
         if (!isAvailable && !isActiveWithoutCycle) {
@@ -603,7 +603,7 @@ export function implementDirectOperationRoute(app: Express) {
           console.log("Aggiornamento stato cestello...");
           const updatedBasket = await tx.update(baskets)
             .set({ 
-              state: 'available',
+              state: 'disponibile',
               currentCycleId: null,
               cycleCode: null
             })

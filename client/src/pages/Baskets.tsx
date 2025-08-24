@@ -437,10 +437,10 @@ export default function Baskets() {
 
         // Priorità 1: Le ceste con stato "active" vengono prima di quelle disponibili
         if (a.state !== b.state) {
-          if (a.state === 'active' && b.state === 'available') {
+          if (a.state === 'active' && b.state === 'disponibile') {
             return -1;
           }
-          if (a.state === 'available' && b.state === 'active') {
+          if (a.state === 'disponibile' && b.state === 'active') {
             return 1;
           }
         }
@@ -559,7 +559,7 @@ export default function Baskets() {
     // Filter by state
     const matchesState = stateFilter === 'all' || 
       (stateFilter === 'active' && basket.state === 'active') ||
-      (stateFilter === 'available' && basket.state === 'available');
+      (stateFilter === 'available' && basket.state === 'disponibile');
 
     // Filter by FLUPSY
     const matchesFlupsy = flupsyFilter === 'all' || 
