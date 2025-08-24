@@ -70,6 +70,68 @@ export default function SpreadsheetOperations() {
   const { toast } = useToast();
   const queryClient = useQueryClient();
   const isMobile = useIsMobile();
+
+  // Funzione per badge taglia con colori (identica al Registro Operazioni)
+  const getSizeBadgeClasses = (sizeCode: string): string => {
+    if (!sizeCode || sizeCode === 'N/A') return 'text-gray-600';
+    
+    // Gestisce le taglie TP-XXX con colorazione individuale
+    if (sizeCode.startsWith('TP-')) {
+      // Estrai il numero dalla taglia TP-XXX
+      const numStr = sizeCode.substring(3);
+      const num = parseInt(numStr);
+      
+      // Colorazione granulare per distinguere ogni taglia
+      if (num <= 500) {
+        return 'text-purple-800 font-semibold';  // TP-500 → Viola
+      } else if (num <= 600) {
+        return 'text-blue-800 font-semibold';      // TP-600 → Blu
+      } else if (num <= 800) {
+        return 'text-indigo-800 font-semibold';  // TP-800 → Indaco
+      } else if (num <= 1000) {
+        return 'text-red-800 font-semibold';        // TP-1000 → Rosso
+      } else if (num <= 3000) {
+        return 'text-green-800 font-semibold';    // TP-2000, TP-3000 → VERDE
+      } else if (num <= 6000) {
+        return 'text-yellow-800 font-semibold';  // TP-4000, TP-5000, TP-6000 → Giallo
+      } else if (num <= 10000) {
+        return 'text-orange-800 font-semibold';  // TP-7000, TP-8000, TP-9000, TP-10000 → Arancione
+      }
+    }
+    
+    return 'text-gray-600'; // Default per taglie non TP-XXX
+  };
+
+  // Funzione per badge colorati con background (per previsioni)
+  const getSizeBadgeWithBackground = (sizeCode: string): string => {
+    if (!sizeCode || sizeCode === 'N/A') return 'bg-gray-100 text-gray-800';
+    
+    // Gestisce le taglie TP-XXX con colorazione individuale
+    if (sizeCode.startsWith('TP-')) {
+      // Estrai il numero dalla taglia TP-XXX
+      const numStr = sizeCode.substring(3);
+      const num = parseInt(numStr);
+      
+      // Colorazione granulare per distinguere ogni taglia
+      if (num <= 500) {
+        return 'bg-purple-100 text-purple-800';  // TP-500 → Viola
+      } else if (num <= 600) {
+        return 'bg-blue-100 text-blue-800';      // TP-600 → Blu
+      } else if (num <= 800) {
+        return 'bg-indigo-100 text-indigo-800';  // TP-800 → Indaco
+      } else if (num <= 1000) {
+        return 'bg-red-100 text-red-800';        // TP-1000 → Rosso
+      } else if (num <= 3000) {
+        return 'bg-green-100 text-green-800';    // TP-2000, TP-3000 → VERDE
+      } else if (num <= 6000) {
+        return 'bg-yellow-100 text-yellow-800';  // TP-4000, TP-5000, TP-6000 → Giallo
+      } else if (num <= 10000) {
+        return 'bg-orange-100 text-orange-800';  // TP-7000, TP-8000, TP-9000, TP-10000 → Arancione
+      }
+    }
+    
+    return 'bg-gray-100 text-gray-800'; // Default per taglie non TP-XXX
+  };
   
   const [selectedFlupsyId, setSelectedFlupsyId] = useState<number | null>(null);
   const [selectedOperationType, setSelectedOperationType] = useState<string>('peso');
@@ -2335,7 +2397,7 @@ export default function SpreadsheetOperations() {
                                   <div className="grid grid-cols-2 gap-2 text-xs">
                                     <div className="bg-blue-50 p-2 rounded">
                                       <div className="text-gray-600">Taglia</div>
-                                      <div className="font-semibold text-blue-600">{row.currentSize || 'N/A'}</div>
+                                      <div className={getSizeBadgeClasses(row.currentSize || 'N/A')}>{row.currentSize || 'N/A'}</div>
                                     </div>
                                     <div className="bg-green-50 p-2 rounded">
                                       <div className="text-gray-600">Peso medio</div>
@@ -2425,8 +2487,23 @@ export default function SpreadsheetOperations() {
 
 
                     {/* Info aggiuntive - Taglia calcolata automaticamente */}
-                    <div style={{width: '80px'}} className="px-1 py-1 border-r flex items-center text-xs text-gray-600">
-                      <span className="truncate">
+                    <div style={{width: '80px'}} className="px-1 py-1 border-r flex items-center text-xs">
+                      <span className={`truncate ${getSizeBadgeClasses((() => {
+                        // Per le righe nuove, calcola la taglia basandosi su animalsPerKg
+                        if ((row as any).isNewRow && row.animalCount && row.totalWeight) {
+                          const calculatedAnimalsPerKg = Math.round((row.animalCount / row.totalWeight) * 1000);
+                          const sizesArray = Array.isArray(sizes) ? sizes : [];
+                          const matchingSize = sizesArray.find((size: any) => 
+                            size.minAnimalsPerKg !== null && 
+                            size.maxAnimalsPerKg !== null &&
+                            calculatedAnimalsPerKg >= size.minAnimalsPerKg && 
+                            calculatedAnimalsPerKg <= size.maxAnimalsPerKg
+                          );
+                          return matchingSize?.code || 'N/A';
+                        }
+                        // Per righe esistenti, usa la taglia calcolata nel setup
+                        return row.currentSize;
+                      })())}`}>
                         {(() => {
                           // Per le righe nuove, calcola la taglia basandosi su animalsPerKg
                           if ((row as any).isNewRow && row.animalCount && row.totalWeight) {
@@ -3182,7 +3259,7 @@ export default function SpreadsheetOperations() {
                       <div className="font-bold text-lg text-purple-600">
                         {formatNumberWithSeparators(count)}
                       </div>
-                      <div className="text-xs text-gray-600">{size}</div>
+                      <div className={`text-xs font-semibold ${getSizeBadgeClasses(size)}`}>{size}</div>
                     </div>
                   ))}
                 </div>
@@ -3212,12 +3289,12 @@ export default function SpreadsheetOperations() {
                             {formatNumberWithSeparators(basket.animalsAtTarget)}
                           </td>
                           <td className="px-4 py-2 text-center">
-                            <span className="px-2 py-1 bg-blue-100 text-blue-800 rounded text-xs">
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${getSizeBadgeWithBackground(basket.currentSize)}`}>
                               {basket.currentSize}
                             </span>
                           </td>
                           <td className="px-4 py-2 text-center">
-                            <span className="px-2 py-1 bg-purple-100 text-purple-800 rounded text-xs">
+                            <span className={`px-2 py-1 rounded text-xs font-semibold ${getSizeBadgeWithBackground(basket.finalSize)}`}>
                               {basket.finalSize}
                             </span>
                           </td>
