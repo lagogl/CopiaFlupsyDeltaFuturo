@@ -219,16 +219,16 @@ export default function LotsAnalytics() {
             </div>
 
             {selectedPeriod === 'custom' && (
-              <>
+              <div className="col-span-2 grid grid-cols-2 gap-4">
                 <div>
-                  <label className="text-sm font-medium">Da</label>
+                  <label className="text-sm font-medium block mb-1">Da</label>
                   <DatePicker date={dateFrom} setDate={setDateFrom} />
                 </div>
                 <div>
-                  <label className="text-sm font-medium">A</label>
+                  <label className="text-sm font-medium block mb-1">A</label>
                   <DatePicker date={dateTo} setDate={setDateTo} />
                 </div>
-              </>
+              </div>
             )}
           </div>
           
