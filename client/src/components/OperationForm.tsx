@@ -355,7 +355,7 @@ export default function OperationForm({
     else {
       console.log('🔍 AUTO-CORRECT: Nessuna correzione necessaria');
     }
-  }, [watchBasketId]); // Solo watchBasketId come dipendenza!
+  }, [watchBasketId, baskets]); // watchBasketId E baskets!
   
   // Imposta il ciclo iniziale e precarica FLUPSY e cesta quando il componente viene montato
   useEffect(() => {
