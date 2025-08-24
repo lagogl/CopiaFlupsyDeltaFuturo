@@ -355,6 +355,9 @@ export default function OperationForm({
       console.log('🔧 AUTO-CORRECT: Cestello attivo non può fare Prima Attivazione:', selectedBasket);
       form.setValue('type', 'misura');
     }
+    else {
+      console.log('🔍 AUTO-CORRECT: Nessuna correzione necessaria');
+    }
   }, [watchBasketId, baskets, form]);
   
   // Imposta il ciclo iniziale e precarica FLUPSY e cesta quando il componente viene montato
