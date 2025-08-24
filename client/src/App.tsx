@@ -57,8 +57,7 @@ import AIDashboard from "@/pages/AIDashboard";
 import GiacenzeRange from "@/pages/GiacenzeRange";
 // Importazione Lots Analytics
 import LotsAnalytics from "@/pages/LotsAnalytics";
-// Importazione Operazioni Avanzate
-import AdvancedOperations from "@/pages/AdvancedOperations";
+// Operazioni Avanzate rimosse per ottimizzazione prestazioni
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -92,7 +91,6 @@ function Router() {
       <ProtectedRoute path="/operations/new" component={Operations}/>
       <ProtectedRoute path="/operations/edit/:id" component={EditOperation}/>
       <ProtectedRoute path="/operations/:id" component={OperationDetail}/>
-      <ProtectedRoute path="/advanced-operations" component={AdvancedOperations}/>
       <ProtectedRoute path="/spreadsheet-operations" component={SpreadsheetOperations}/>
       <ProtectedRoute path="/operations-drag-drop" component={OperationsDragDrop}/>
       <ProtectedRoute path="/cycles" component={CyclesPaginated}/>
