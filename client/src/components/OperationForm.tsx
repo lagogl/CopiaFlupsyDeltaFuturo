@@ -314,7 +314,8 @@ export default function OperationForm({
       baskets: baskets?.length,
       hasBaskets: !!baskets,
       flupsyBaskets: flupsyBaskets?.length,
-      watchType
+      watchType,
+      timestamp: new Date().toISOString()
     });
     
     if (!watchBasketId || !baskets) {
@@ -1047,8 +1048,10 @@ export default function OperationForm({
                       // Reset cycle when basket changes
                       form.setValue('cycleId', undefined);
                       
-                      // Verifica lo stato del cestello selezionato
-                      const selectedBasket = allFlupsyBaskets?.find(b => b.id === Number(value));
+                      // Verifica lo stato del cestello selezionato  
+                      const selectedBasket = baskets?.find(b => b.id === Number(value));
+                      console.log('🔍 BASKET CHANGE: Cercando cestello ID', Number(value), 'in', baskets?.length, 'cestelli');
+                      console.log('🔍 BASKET FOUND:', selectedBasket ? {id: selectedBasket.id, state: selectedBasket.state} : 'NOT FOUND');
                       
                       // COMPORTAMENTO AUTOMATICO: Imposta tipo operazione in base allo stato del cestello
                       if (selectedBasket?.state === 'disponibile') {
