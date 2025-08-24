@@ -52,41 +52,8 @@ const formSchemaWithFlupsy = operationSchema.extend({
   deadCount: z.coerce.number().optional().nullable(), // Numero animali morti (già esistente nello schema)
   totalSample: z.coerce.number().optional().nullable(), // Totale sample (vivi + morti)
   manualCountAdjustment: z.boolean().optional().default(false), // Flag per abilitare la modifica manuale del conteggio
-  // Il campo cycleId è condizionalmente richiesto a seconda del tipo di operazione
-  cycleId: z.number().nullable().optional().superRefine((val, ctx) => {
-    // Otteniamo il tipo di operazione dalle data dell'oggetto ctx
-    // @ts-ignore - Ignoriamo l'errore TS perché sappiamo che data esiste e contiene type
-    const operationType = ctx.data?.type;
-    
-    // Se l'operazione è di tipo 'prima-attivazione', il ciclo non è richiesto
-    if (operationType === 'prima-attivazione') {
-      return; // Nessun errore, il campo può essere nullo o undefined
-    }
-    
-    // Per tutti gli altri tipi di operazione, verifichiamo che ci sia un ciclo selezionato
-    if (val === null || val === undefined) {
-      ctx.addIssue({
-        code: z.ZodIssueCode.custom,
-        message: "Seleziona un ciclo",
-      });
-    }
-  }),
-  // Il campo lotId è condizionalmente richiesto per le operazioni di prima attivazione
-  lotId: z.number().nullable().optional().superRefine((val, ctx) => {
-    // Otteniamo il tipo di operazione dalle data dell'oggetto ctx
-    // @ts-ignore - Ignoriamo l'errore TS perché sappiamo che data esiste e contiene type
-    const operationType = ctx.data?.type;
-    
-    // Se l'operazione è di tipo 'prima-attivazione', il lotto è obbligatorio
-    if (operationType === 'prima-attivazione') {
-      if (val === null || val === undefined) {
-        ctx.addIssue({
-          code: z.ZodIssueCode.custom,
-          message: "Seleziona un lotto",
-        });
-      }
-    }
-  }),
+  // Per le operazioni avanzate il cicleId NON è richiesto (può essere null)
+  cycleId: z.number().nullable().optional(),
 });
 
 type FormValues = z.infer<typeof formSchemaWithFlupsy>;
@@ -203,17 +170,15 @@ export default function AdvancedOperationForm({
     enabled: !!watchFlupsyId,
   });
 
-  // Filter baskets based on operation type (copiato dal form originale)
+  // Filter baskets based on operation type - VERSIONE CORRETTA PER OPERAZIONI AVANZATE
   const flupsyBaskets = React.useMemo(() => {
     if (!allFlupsyBaskets) return [];
     
-    if (watchType === 'prima-attivazione') {
-      return allFlupsyBaskets.filter((basket: any) => basket.state === 'disponibile');
-    } else {
-      return allFlupsyBaskets.filter((basket: any) => 
-        basket.state === 'active' && basket.currentCycleId
-      );
-    }
+    // Per le operazioni avanzate (misura/peso) mostriamo TUTTI i cestelli del FLUPSY
+    // sia quelli disponibili che quelli attivi
+    return allFlupsyBaskets.filter((basket: any) => 
+      basket.state === 'active' || basket.state === 'disponibile'
+    );
   }, [allFlupsyBaskets, watchType]);
 
   // **NUOVA FUNZIONALITÀ: Fetch lot analytics quando viene selezionato un lotto**
@@ -502,12 +467,8 @@ export default function AdvancedOperationForm({
                             </SelectTrigger>
                           </FormControl>
                           <SelectContent>
-                            <SelectItem value="prima-attivazione">Prima Attivazione</SelectItem>
-                            <SelectItem value="pulizia">Pulizia</SelectItem>
-                            <SelectItem value="vagliatura">Vagliatura</SelectItem>
-                            <SelectItem value="trattamento">Trattamento</SelectItem>
                             <SelectItem value="misura">Misura</SelectItem>
-                            <SelectItem value="vendita">Vendita</SelectItem>
+                            <SelectItem value="peso">Peso</SelectItem>
                           </SelectContent>
                         </Select>
                         <FormMessage />
@@ -594,7 +555,10 @@ export default function AdvancedOperationForm({
                         <SelectContent>
                           {flupsyBaskets?.map((basket: any) => (
                             <SelectItem key={basket.id} value={basket.id.toString()}>
-                              Posizione: {basket.row}-{basket.position} {basket.state === 'disponibile' ? '(Disponibile)' : '(Attivo)'}
+                              Posizione: {basket.row}-{basket.position} 
+                              {basket.state === 'disponibile' ? ' (Disponibile)' : 
+                               basket.state === 'active' ? ' (Attivo)' : 
+                               ` (${basket.state})`}
                             </SelectItem>
                           ))}
                         </SelectContent>
@@ -715,44 +679,14 @@ export default function AdvancedOperationForm({
               </CardContent>
             </Card>
 
-            {/* Riferimenti */}
+            {/* Note */}
             <Card>
               <CardHeader className="pb-3">
                 <CardTitle className="text-lg flex items-center">
-                  🔗 Riferimenti
+                  📝 Note Aggiuntive
                 </CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                {watchType === 'prima-attivazione' && (
-                  <FormField
-                    control={form.control}
-                    name="lotId"
-                    render={({ field }) => (
-                      <FormItem>
-                        <FormLabel>Lotto *</FormLabel>
-                        <Select 
-                          onValueChange={(value) => field.onChange(parseInt(value))} 
-                          value={field.value?.toString()}
-                        >
-                          <FormControl>
-                            <SelectTrigger className="text-sm">
-                              <SelectValue placeholder="Seleziona lotto" />
-                            </SelectTrigger>
-                          </FormControl>
-                          <SelectContent>
-                            {lots?.map((lot: any) => (
-                              <SelectItem key={lot.id} value={lot.id.toString()}>
-                                {lot.supplierLotNumber} - {lot.supplier}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                        <FormMessage />
-                      </FormItem>
-                    )}
-                  />
-                )}
-
+              <CardContent>
                 <FormField
                   control={form.control}
                   name="notes"
@@ -761,7 +695,7 @@ export default function AdvancedOperationForm({
                       <FormLabel>Note</FormLabel>
                       <FormControl>
                         <Textarea 
-                          placeholder="Inserisci note aggiuntive" 
+                          placeholder="Inserisci note aggiuntive sull'operazione" 
                           rows={3}
                           className="text-sm"
                           {...field}
@@ -775,8 +709,50 @@ export default function AdvancedOperationForm({
             </Card>
           </div>
 
-          {/* Colonna destra: PANNELLO INFORMATIVO LOTTO */}
+          {/* Colonna destra: PANNELLO INFORMATIVO LOTTO + SELEZIONE LOTTO */}
           <div className="space-y-4">
+            {/* Selezione Lotto */}
+            <Card>
+              <CardHeader className="pb-3">
+                <CardTitle className="text-lg flex items-center">
+                  📦 Lotto di Riferimento
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <FormField
+                  control={form.control}
+                  name="lotId"
+                  render={({ field }) => (
+                    <FormItem>
+                      <FormLabel>Seleziona Lotto</FormLabel>
+                      <Select 
+                        onValueChange={(value) => field.onChange(parseInt(value))} 
+                        value={field.value?.toString()}
+                      >
+                        <FormControl>
+                          <SelectTrigger className="text-sm">
+                            <SelectValue placeholder="Seleziona lotto per analytics" />
+                          </SelectTrigger>
+                        </FormControl>
+                        <SelectContent>
+                          {lots?.map((lot: any) => (
+                            <SelectItem key={lot.id} value={lot.id.toString()}>
+                              {lot.supplierLotNumber} - {lot.supplier}
+                            </SelectItem>
+                          ))}
+                        </SelectContent>
+                      </Select>
+                      <FormDescription className="text-xs">
+                        Opzionale - Seleziona per visualizzare analytics dettagliati
+                      </FormDescription>
+                      <FormMessage />
+                    </FormItem>
+                  )}
+                />
+              </CardContent>
+            </Card>
+
+            {/* Pannello Analytics */}
             {renderLotInfoPanel()}
           </div>
 
