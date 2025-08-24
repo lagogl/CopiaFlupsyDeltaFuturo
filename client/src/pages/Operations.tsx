@@ -121,26 +121,15 @@ import { useLocation, useSearch } from 'wouter';
 import { useFilterPersistence } from '@/hooks/useFilterPersistence';
 
 export default function Operations() {
-  console.log('🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨');
   const queryClient = useQueryClient();
-  
-  // Log di debug per il componente
-  React.useEffect(() => {
-    console.log('🔥 OPERATIONS COMPONENT MOUNTED 🔥');
-    console.log('QueryClient disponibile:', !!queryClient);
-  }, []);
 
-  // Funzione per reset completo cache (DEBUG)
+  // Funzione per reset completo cache
   const handleCompleteReset = async () => {
     try {
-      console.log('🧹 INIZIO RESET COMPLETO CACHE');
-      
       // 1. Pulizia React Query cache
-      console.log('1. Pulizia cache React Query...');
       queryClient.clear();
       
       // 2. Pulizia localStorage
-      console.log('2. Pulizia localStorage...');
       const keysToRemove = [];
       for (let i = 0; i < localStorage.length; i++) {
         const key = localStorage.key(i);
@@ -149,44 +138,20 @@ export default function Operations() {
         }
       }
       keysToRemove.forEach(key => localStorage.removeItem(key));
-      console.log(`   Rimosso ${keysToRemove.length} chiavi dal localStorage`);
       
       // 3. Pulizia sessionStorage
-      console.log('3. Pulizia sessionStorage...');
       sessionStorage.clear();
       
       // 4. Invalidazione cache server
-      console.log('4. Invalidazione cache server...');
-      try {
-        const response = await fetch('/api/cache/invalidate', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json'
-          },
-          body: JSON.stringify({
-            keys: ['operations', 'baskets', 'cycles', 'flupsys', 'sizes', 'lots', 'sgr']
-          })
-        });
-        
-        console.log('   Response status:', response.status);
-        
-        if (!response.ok) {
-          const errorText = await response.text();
-          console.error('   Response error:', errorText);
-          throw new Error(`Server cache invalidation failed: ${response.status} - ${errorText}`);
-        }
-        
-        const result = await response.json();
-        console.log('   Cache invalidation result:', result);
-      } catch (fetchError) {
-        console.error('   Fetch error:', fetchError);
-        throw new Error(`Errore durante la chiamata al server: ${fetchError instanceof Error ? fetchError.message : 'Errore sconosciuto'}`);
-      }
-      
-      // 5. Semplice refresh della pagina per pulire tutto
-      console.log('5. Refresh pagina...');
-      
-      console.log('✅ RESET COMPLETO COMPLETATO');
+      await fetch('/api/cache/invalidate', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          keys: ['operations', 'baskets', 'cycles', 'flupsys', 'sizes', 'lots', 'sgr']
+        })
+      });
       
       toast({
         title: "Reset Cache Completato",
@@ -200,12 +165,9 @@ export default function Operations() {
       }, 1500);
       
     } catch (error) {
-      console.error('❌ Errore durante reset cache:', error);
-      const errorMessage = error instanceof Error ? error.message : 'Errore sconosciuto';
-      console.error('❌ Dettagli errore:', errorMessage);
       toast({
         title: "Errore Reset Cache",
-        description: `Si è verificato un errore durante la pulizia delle cache`,
+        description: "Si è verificato un errore durante la pulizia delle cache",
         variant: "destructive",
         duration: 5000
       });
@@ -380,12 +342,7 @@ export default function Operations() {
   // PERFORMANCE: Solo operazioni necessarie per il caricamento iniziale
   const isLoadingAny = operationsLoading;
   
-  // Debug ridotto per migliori performance
-  React.useEffect(() => {
-    if (operations) {
-      console.log('📊 Operations loaded:', operations.length, 'operations');
-    }
-  }, [operations]);
+  // Operations loaded silently per performance
 
   // Gestione errori - mostra interfaccia anche in caso di problemi
 
