@@ -120,7 +120,8 @@ import {
   getAvailableBaskets,
   removeSourceBasket,
   removeDestinationBasket,
-  completeSelection
+  completeSelection,
+  migrateBasketLotData
 } from "./controllers/selection-controller";
 
 // Preparazione per la gestione dei file di backup
@@ -7473,6 +7474,9 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Route per completare definitivamente una selezione
   app.post("/api/selections/:id/complete", completeSelection);
+  
+  // Route per migrazione dati basket-lotto (chiamata una tantum)
+  app.post("/api/selections/migrate-basket-lot-data", migrateBasketLotData);
   
   // Registra le route per cancellare e completare le selezioni
   implementSelectionRoutes(app, db);

@@ -14,6 +14,7 @@ import {
   selectionDestinationBaskets, 
   selectionBasketHistory, 
   selectionLotReferences,
+  basketLotComposition,
   operations,
   cycles,
   baskets,
@@ -24,6 +25,235 @@ import {
 } from "../../shared/schema";
 import { format } from "date-fns";
 
+// =============== COMPOSIZIONE LOTTI ===============
+
+/**
+ * Popola dati esistenti nella tabella basket_lot_composition per cestelli che già hanno lotti
+ */
+async function migrateExistingBasketLotData() {
+  console.log("🔄 Migrazione dati esistenti basket-lotto...");
+  
+  // Trova tutte le operazioni di attivazione con lotId
+  const activationOperations = await db.select({
+    basketId: operations.basketId,
+    cycleId: operations.cycleId,
+    lotId: operations.lotId,
+    animalCount: operations.animalCount,
+    date: operations.date
+  })
+  .from(operations)
+  .where(
+    and(
+      eq(operations.type, 'prima-attivazione'),
+      isNotNull(operations.lotId),
+      isNotNull(operations.cycleId)
+    )
+  );
+
+  console.log(`📦 Trovate ${activationOperations.length} operazioni di attivazione con lotti`);
+
+  for (const op of activationOperations) {
+    if (!op.lotId || !op.cycleId || !op.animalCount) continue;
+    
+    // Verifica se già esiste composizione per questo cestello
+    const existing = await db.select()
+      .from(basketLotComposition)
+      .where(
+        and(
+          eq(basketLotComposition.basketId, op.basketId),
+          eq(basketLotComposition.cycleId, op.cycleId)
+        )
+      );
+    
+    if (existing.length === 0) {
+      // Inserisci composizione pura (100% un lotto)
+      await db.insert(basketLotComposition).values({
+        basketId: op.basketId,
+        cycleId: op.cycleId,
+        lotId: op.lotId,
+        animalCount: op.animalCount,
+        percentage: 100.0,
+        sourceSelectionId: null,
+        notes: `Migrazione automatica - lotto puro da attivazione ${op.date}`
+      });
+      
+      console.log(`✅ Cestello ${op.basketId} - Lotto ${op.lotId}: ${op.animalCount} animali (100%)`);
+    }
+  }
+  
+  console.log("✅ Migrazione dati basket-lotto completata");
+}
+
+// =============== COMPOSIZIONE LOTTI ===============
+
+/**
+ * Ottieni la composizione di lotti per un cestello
+ */
+async function getBasketLotComposition(basketId: number, cycleId: number) {
+  return await db.select({
+    lotId: basketLotComposition.lotId,
+    animalCount: basketLotComposition.animalCount,
+    percentage: basketLotComposition.percentage,
+    sourceSelectionId: basketLotComposition.sourceSelectionId,
+    notes: basketLotComposition.notes
+  })
+  .from(basketLotComposition)
+  .where(
+    and(
+      eq(basketLotComposition.basketId, basketId),
+      eq(basketLotComposition.cycleId, cycleId)
+    )
+  );
+}
+
+/**
+ * Calcola la composizione aggregata di tutti i cestelli origine
+ */
+async function calculateAggregatedComposition(selectionId: number) {
+  // Ottieni tutti i cestelli origine con i loro dati
+  const sourceBaskets = await db.select({
+    basketId: selectionSourceBaskets.basketId,
+    cycleId: selectionSourceBaskets.cycleId,
+    animalCount: selectionSourceBaskets.animalCount,
+    lotId: selectionSourceBaskets.lotId
+  })
+  .from(selectionSourceBaskets)
+  .where(eq(selectionSourceBaskets.selectionId, selectionId));
+
+  console.log(`🧩 Cestelli origine per selezione ${selectionId}:`, sourceBaskets);
+
+  // Accumula la composizione totale
+  const totalComposition = new Map<number, number>(); // lotId -> totalAnimals
+  let grandTotal = 0;
+
+  for (const source of sourceBaskets) {
+    // Verifica se il cestello ha già una composizione registrata
+    const existingComposition = await getBasketLotComposition(source.basketId, source.cycleId);
+    
+    if (existingComposition.length > 0) {
+      // Cestello con composizione mista - somma tutti i lotti
+      for (const comp of existingComposition) {
+        const current = totalComposition.get(comp.lotId) || 0;
+        totalComposition.set(comp.lotId, current + comp.animalCount);
+        grandTotal += comp.animalCount;
+      }
+      console.log(`📦 Cestello ${source.basketId} (composizione mista):`, existingComposition);
+    } else {
+      // Cestello puro - usa il lotto dalle operazioni
+      if (source.lotId && source.animalCount) {
+        const current = totalComposition.get(source.lotId) || 0;
+        totalComposition.set(source.lotId, current + source.animalCount);
+        grandTotal += source.animalCount;
+        console.log(`📦 Cestello ${source.basketId} (puro) - Lotto ${source.lotId}: ${source.animalCount} animali`);
+      }
+    }
+  }
+
+  // Converti in array con percentuali
+  const aggregatedComposition = Array.from(totalComposition.entries()).map(([lotId, animalCount]) => ({
+    lotId,
+    animalCount,
+    percentage: grandTotal > 0 ? (animalCount / grandTotal) * 100 : 0
+  }));
+
+  console.log(`🧮 Composizione aggregata (${grandTotal} animali totali):`, aggregatedComposition);
+  return { aggregatedComposition, totalSourceAnimals: grandTotal };
+}
+
+/**
+ * Distribuisce la composizione nei cestelli destinazione
+ */
+async function distributeCompositionToDestinations(selectionId: number, aggregatedComposition: Array<{lotId: number, animalCount: number, percentage: number}>, totalSourceAnimals: number) {
+  // Ottieni cestelli destinazione
+  const destinationBaskets = await db.select({
+    basketId: selectionDestinationBaskets.basketId,
+    cycleId: selectionDestinationBaskets.cycleId,
+    animalCount: selectionDestinationBaskets.animalCount
+  })
+  .from(selectionDestinationBaskets)
+  .where(eq(selectionDestinationBaskets.selectionId, selectionId));
+
+  console.log(`🎯 Distribuzione composizione in ${destinationBaskets.length} cestelli destinazione`);
+
+  for (const destination of destinationBaskets) {
+    if (!destination.cycleId) {
+      console.log(`⚠️ Cestello ${destination.basketId} senza cycleId - skip`);
+      continue;
+    }
+
+    const destAnimalCount = destination.animalCount || 0;
+    console.log(`📦 Cestello destinazione ${destination.basketId}: ${destAnimalCount} animali`);
+
+    for (const lot of aggregatedComposition) {
+      const animalCount = Math.round(destAnimalCount * (lot.percentage / 100));
+      
+      if (animalCount > 0) {
+        await db.insert(basketLotComposition).values({
+          basketId: destination.basketId,
+          cycleId: destination.cycleId,
+          lotId: lot.lotId,
+          animalCount: animalCount,
+          percentage: lot.percentage,
+          sourceSelectionId: selectionId,
+          notes: `Vagliatura #${selectionId} - ${lot.percentage.toFixed(2)}% del totale`
+        });
+
+        console.log(`  ├── Lotto ${lot.lotId}: ${animalCount} animali (${lot.percentage.toFixed(2)}%)`);
+      }
+    }
+  }
+}
+
+/**
+ * Calcola e registra la mortalità per ogni lotto
+ */
+async function calculateAndRegisterMortality(selectionId: number, aggregatedComposition: Array<{lotId: number, animalCount: number, percentage: number}>, totalSourceAnimals: number, totalDestinationAnimals: number, selectionDate: string) {
+  const totalMortality = totalSourceAnimals - totalDestinationAnimals;
+  
+  if (totalMortality <= 0) {
+    console.log(`✅ Nessuna mortalità registrata (differenza: ${totalMortality})`);
+    return;
+  }
+
+  console.log(`💀 MORTALITÀ TOTALE: ${totalMortality} animali da distribuire`);
+
+  for (const lot of aggregatedComposition) {
+    const lotMortality = Math.round(totalMortality * (lot.percentage / 100));
+    
+    if (lotMortality > 0) {
+      await db.update(lots)
+        .set({ 
+          totalMortality: sql`COALESCE(total_mortality, 0) + ${lotMortality}`,
+          lastMortalityDate: selectionDate,
+          mortalityNotes: sql`COALESCE(mortality_notes, '') || ${`Vagliatura #${selectionId}: -${lotMortality} animali (${lot.percentage.toFixed(2)}%). `}`
+        })
+        .where(eq(lots.id, lot.lotId));
+
+      console.log(`  💀 Lotto ${lot.lotId}: -${lotMortality} animali (${lot.percentage.toFixed(2)}%)`);
+    }
+  }
+}
+
+/**
+ * Migra dati esistenti (chiamata una tantum)
+ */
+export async function migrateBasketLotData(req: Request, res: Response) {
+  try {
+    await migrateExistingBasketLotData();
+    
+    return res.status(200).json({
+      success: true,
+      message: "Migrazione basket-lotto completata con successo"
+    });
+  } catch (error) {
+    console.error("Errore durante la migrazione:", error);
+    return res.status(500).json({
+      success: false,
+      error: `Errore durante la migrazione: ${error instanceof Error ? error.message : String(error)}`
+    });
+  }
+}
+
 // =============== FUNZIONI CRUD STANDARD ===============
 
 /**
@@ -31,10 +261,10 @@ import { format } from "date-fns";
  */
 export async function getSelections(req: Request, res: Response) {
   try {
-    const selections = await db.select().from(selections);
+    const selectionsData = await db.select().from(selections);
     return res.status(200).json({
       success: true,
-      selections: selections
+      selections: selectionsData
     });
   } catch (error) {
     console.error("Errore durante il recupero delle selezioni:", error);
@@ -80,10 +310,20 @@ export async function getSelectionById(req: Request, res: Response) {
  */
 export async function createSelection(req: Request, res: Response) {
   try {
-    const { date, notes } = req.body;
+    const { date, notes, purpose = 'vagliatura' } = req.body;
+    
+    // Genera selectionNumber - dovrebbe essere incrementale
+    const lastSelection = await db.select({ selectionNumber: selections.selectionNumber })
+      .from(selections)
+      .orderBy(sql`${selections.selectionNumber} DESC`)
+      .limit(1);
+      
+    const nextSelectionNumber = lastSelection.length > 0 ? lastSelection[0].selectionNumber + 1 : 1;
     
     const [newSelection] = await db.insert(selections).values({
       date: date,
+      selectionNumber: nextSelectionNumber,
+      purpose: purpose,
       status: 'draft',
       notes: notes || '',
       createdAt: new Date(),
@@ -416,7 +656,8 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       console.log(`🆕 FASE 2: Attivazione ${destinationBaskets.length} cestelli destinazione`);
       
       // Raccogli lotti dalle origini per destinazioni
-      const sourceLots = [...new Set(sourceBaskets.map(sb => sb.lotId).filter(lotId => lotId !== null))];
+      const sourceLotIds = sourceBaskets.map(sb => sb.lotId).filter(lotId => lotId !== null);
+      const sourceLots = Array.from(new Set(sourceLotIds));
       const primaryLotId = sourceLots.length > 0 ? sourceLots[0] : null;
       
       for (const destBasket of destinationBaskets) {
@@ -486,9 +727,9 @@ export async function completeSelectionFixed(req: Request, res: Response) {
           await tx.update(baskets)
             .set({ 
               state: 'available',
-              currentCycleId: null,
-              position: null,
-              row: null,
+              currentCycleId: undefined,
+              position: 1,
+              row: 'DX',
               flupsyId: destBasket.flupsyId || 1
             })
             .where(eq(baskets.id, destBasket.basketId));
@@ -504,7 +745,7 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             
             await tx.update(baskets)
               .set({
-                flupsyId: destBasket.flupsyId,
+                flupsyId: destBasket.flupsyId || 1,
                 row: row,
                 position: position,
                 state: 'active',
@@ -517,19 +758,25 @@ export async function completeSelectionFixed(req: Request, res: Response) {
         console.log(`   ✅ Cestello ${destBasket.basketId} attivato correttamente`);
       }
 
-      // ====== FASE 3: REGISTRAZIONE MORTALITÀ SUL LOTTO ======
-      if (primaryLotId && mortality !== 0) {
-        console.log(`📈 FASE 3: Registrazione mortalità ${mortality} su lotto ${primaryLotId}`);
-        
-        // Aggiorna mortalità del lotto
-        await tx.update(lots)
-          .set({ 
-            totalMortality: sql`COALESCE(total_mortality, 0) + ${mortality}`,
-            lastMortalityDate: selection[0].date,
-            mortalityNotes: sql`COALESCE(mortality_notes, '') || ${`Vagliatura #${selection[0].selectionNumber}: ${mortality} animali. `}`
-          })
-          .where(eq(lots.id, primaryLotId));
-      }
+      // ====== FASE 3: GESTIONE MORTALITÀ MISTA AVANZATA ======
+      console.log(`🧮 FASE 3: Calcolo composizione aggregata e mortalità proporzionale`);
+      
+      // Calcola la composizione aggregata dai cestelli origine
+      const { aggregatedComposition, totalSourceAnimals } = await calculateAggregatedComposition(Number(id));
+      
+      // Distribuisce la composizione nei cestelli destinazione
+      await distributeCompositionToDestinations(Number(id), aggregatedComposition, totalSourceAnimals);
+      
+      // Calcola e registra mortalità per ogni lotto proporzionalmente
+      await calculateAndRegisterMortality(
+        Number(id), 
+        aggregatedComposition, 
+        totalSourceAnimals, 
+        totalAnimalsDestination, 
+        selection[0].date
+      );
+      
+      console.log(`✅ Mortalità distribuita proporzionalmente su ${aggregatedComposition.length} lotti`);
 
       // ====== FASE 4: STORICIZZAZIONE RELAZIONI ======
       console.log(`📝 FASE 4: Storicizzazione relazioni vagliatura`);

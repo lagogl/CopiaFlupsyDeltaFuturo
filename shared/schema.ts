@@ -222,6 +222,20 @@ export const selectionLotReferences = pgTable("selection_lot_references", {
   createdAt: timestamp("created_at").notNull().defaultNow(), // Data e ora di creazione
 });
 
+// ========== BASKET LOT COMPOSITION ==========
+// Tabella per tracciare la composizione dei lotti nei cestelli
+export const basketLotComposition = pgTable("basket_lot_composition", {
+  id: serial("id").primaryKey(),
+  basketId: integer("basket_id").notNull(), // Riferimento al cestello
+  cycleId: integer("cycle_id").notNull(), // Riferimento al ciclo
+  lotId: integer("lot_id").notNull(), // Riferimento al lotto
+  animalCount: integer("animal_count").notNull(), // Animali di questo lotto nel cestello
+  percentage: real("percentage").notNull(), // Percentuale del lotto nel cestello
+  sourceSelectionId: integer("source_selection_id"), // Da quale vagliatura proviene
+  createdAt: timestamp("created_at").notNull().defaultNow(),
+  notes: text("notes") // Note aggiuntive
+});
+
 // Operations (Operazioni)
 export const operations = pgTable("operations", {
   id: serial("id").primaryKey(),
@@ -462,6 +476,11 @@ export const insertSelectionLotReferenceSchema = createInsertSchema(selectionLot
   createdAt: true
 });
 
+export const insertBasketLotCompositionSchema = createInsertSchema(basketLotComposition).omit({
+  id: true,
+  createdAt: true
+});
+
 // Types
 export type Flupsy = typeof flupsys.$inferSelect;
 export type InsertFlupsy = z.infer<typeof insertFlupsySchema>;
@@ -528,6 +547,9 @@ export type InsertSelectionBasketHistory = z.infer<typeof insertSelectionBasketH
 
 export type SelectionLotReference = typeof selectionLotReferences.$inferSelect;
 export type InsertSelectionLotReference = z.infer<typeof insertSelectionLotReferenceSchema>;
+
+export type BasketLotComposition = typeof basketLotComposition.$inferSelect;
+export type InsertBasketLotComposition = z.infer<typeof insertBasketLotCompositionSchema>;
 
 // Extended schemas for validation
 export const operationSchema = insertOperationSchema.extend({
