@@ -113,6 +113,7 @@ export default function AdvancedOperationForm({
   const [pendingValues, setPendingValues] = useState<any | null>(null);
   const [lotInfo, setLotInfo] = useState<LotInfo | null>(null);
   const [isLoadingLotInfo, setIsLoadingLotInfo] = useState(false);
+  const [operationDateError, setOperationDateError] = useState<string | null>(null);
 
   // Fetch related data (copiato dal form originale)
   const { data: baskets } = useQuery({
@@ -137,6 +138,12 @@ export default function AdvancedOperationForm({
 
   const { data: lots } = useQuery({
     queryKey: ['/api/lots/active'],
+  });
+
+  // Fetch operations for the selected basket (copiato dal form originale)
+  const { data: basketOperations } = useQuery({
+    queryKey: ['/api/operations', watchBasketId],
+    enabled: !!watchBasketId,
   });
 
   // Inizializzazione del form
@@ -181,6 +188,27 @@ export default function AdvancedOperationForm({
     );
   }, [allFlupsyBaskets, watchType]);
 
+  // **LOGICA COPIATA DAL FORM ORIGINALE: WebSocket listeners per aggiornamenti real-time**
+  useWebSocketMessage('operation_created', () => {
+    console.log('🔄 FORM AVANZATO: Operazione creata, invalidazione cache');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+  });
+  
+  useWebSocketMessage('basket_updated', () => {
+    console.log('🔄 FORM AVANZATO: Cestello aggiornato, invalidazione cache');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+  });
+  
+  useWebSocketMessage('basket_deleted', () => {
+    console.log('🔄 FORM AVANZATO: Cestello eliminato, invalidazione cache');
+    queryClient.invalidateQueries({ queryKey: ['/api/baskets'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/cycles'] });
+    queryClient.invalidateQueries({ queryKey: ['/api/operations'] });
+  });
+
   // **NUOVA FUNZIONALITÀ: Fetch lot analytics quando viene selezionato un lotto**
   useEffect(() => {
     if (watchLotId && lots) {
@@ -205,7 +233,9 @@ export default function AdvancedOperationForm({
     }
   }, [watchLotId, lots]);
 
-  // Logic originale per calcoli (copiato dal form originale)
+  // **LOGICA COPIATA DAL FORM ORIGINALE: Calcoli automatici**
+  
+  // Calcola peso medio e imposta taglia quando cambiano gli animali per kg
   useEffect(() => {
     if (watchAnimalsPerKg && watchAnimalsPerKg > 0) {
       form.setValue('averageWeight', 1000000 / watchAnimalsPerKg);
@@ -225,7 +255,127 @@ export default function AdvancedOperationForm({
     } else {
       form.setValue('averageWeight', null);
     }
-  }, [watchAnimalsPerKg, sizes]);
+  }, [watchAnimalsPerKg, sizes, form]);
+  
+  // Calcola il numero di animali quando cambia il peso totale o animali per kg
+  useEffect(() => {
+    if (watchTotalWeight && watchAnimalsPerKg && watchAnimalsPerKg > 0) {
+      const avgWeightInGrams = 1000 / watchAnimalsPerKg;
+      const calculatedAnimalCount = Math.round(watchTotalWeight / avgWeightInGrams);
+      
+      if (!watchManualCountAdjustment) {
+        form.setValue('animalCount', calculatedAnimalCount);
+      }
+    }
+  }, [watchTotalWeight, watchAnimalsPerKg, watchManualCountAdjustment, form]);
+  
+  // Calcola il totale del campione e aggiorna mortalityRate quando i dati cambiano
+  useEffect(() => {
+    if (watchLiveAnimals || watchDeadCount) {
+      const liveCount = watchLiveAnimals || 0;
+      const deadCount = watchDeadCount || 0;
+      const totalSample = liveCount + deadCount;
+      
+      form.setValue('totalSample', totalSample > 0 ? totalSample : null);
+      
+      if (totalSample > 0) {
+        const mortalityRate = (deadCount / totalSample) * 100;
+        form.setValue('mortalityRate', mortalityRate);
+      } else {
+        form.setValue('mortalityRate', null);
+      }
+    } else {
+      form.setValue('totalSample', null);
+      form.setValue('mortalityRate', null);
+    }
+  }, [watchLiveAnimals, watchDeadCount, form]);
+  
+  // Calcola animali per kg quando cambiano i valori del campione
+  useEffect(() => {
+    if (watchSampleWeight && watchLiveAnimals && 
+        watchSampleWeight > 0 && watchLiveAnimals > 0 && 
+        !watchManualCountAdjustment) {
+      const averageWeightInGrams = watchSampleWeight / watchLiveAnimals;
+      const calculatedAnimalsPerKg = Math.round(1000 / averageWeightInGrams);
+      form.setValue('animalsPerKg', calculatedAnimalsPerKg);
+    }
+  }, [watchSampleWeight, watchLiveAnimals, watchManualCountAdjustment, form]);
+
+  // **CONTROLLO OPERAZIONI NELLA STESSA DATA (COPIATO DAL FORM ORIGINALE)**
+  useEffect(() => {
+    setOperationDateError(null);
+    
+    if (!watchBasketId || !watchDate || !basketOperations || basketOperations.length === 0) {
+      return;
+    }
+    
+    const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
+    
+    // Se il cestello è disponibile, non applicare la restrizione della data
+    if (selectedBasket?.state === 'disponibile') {
+      return;
+    }
+    
+    const currentCycleId = selectedBasket?.currentCycleId;
+    
+    const selectedDate = watchDate instanceof Date 
+      ? watchDate.toISOString().split('T')[0] 
+      : typeof watchDate === 'string' 
+        ? new Date(watchDate).toISOString().split('T')[0]
+        : '';
+    
+    if (!selectedDate) return;
+    
+    const operationOnSameDate = basketOperations.find(op => {
+      const opDate = new Date(op.date).toISOString().split('T')[0];
+      return opDate === selectedDate && op.cycleId === currentCycleId;
+    });
+    
+    if (operationOnSameDate) {
+      setOperationDateError("Non è possibile registrare più di un'operazione al giorno per lo stesso cestello con ciclo attivo.");
+    }
+  }, [watchBasketId, watchDate, basketOperations, baskets]);
+
+  // **CALCOLO SGR AUTOMATICO (COPIATO DAL FORM ORIGINALE)**
+  useEffect(() => {
+    if (!watchBasketId || !watchCycleId || !basketOperations || basketOperations.length < 1) {
+      return;
+    }
+    
+    const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
+    const currentCycleId = selectedBasket?.currentCycleId || watchCycleId;
+    
+    if (!currentCycleId) return;
+    
+    const cycleOperations = basketOperations.filter(op => op.cycleId === currentCycleId);
+    if (cycleOperations.length === 0) return;
+    
+    const sortedOperations = [...cycleOperations].sort((a, b) => 
+      new Date(b.date).getTime() - new Date(a.date).getTime()
+    );
+    
+    const previousOperation = sortedOperations.find(op => 
+      op.animalsPerKg !== null && op.totalWeight !== null && op.animalCount !== null
+    );
+    
+    if (previousOperation && previousOperation.animalsPerKg && watchAnimalsPerKg) {
+      const prevAnimalsPerKg = previousOperation.animalsPerKg;
+      const currentAnimalsPerKg = watchAnimalsPerKg;
+      
+      if (prevAnimalsPerKg > currentAnimalsPerKg) {
+        const currentMonth = new Date().getMonth();
+        const monthNames = ['gennaio', 'febbraio', 'marzo', 'aprile', 'maggio', 'giugno', 
+                          'luglio', 'agosto', 'settembre', 'ottobre', 'novembre', 'dicembre'];
+        
+        if (sgrs && sgrs.length > 0) {
+          const matchingSgr = sgrs.find(sgr => sgr.month === monthNames[currentMonth]);
+          if (matchingSgr) {
+            form.setValue('sgrId', matchingSgr.id);
+          }
+        }
+      }
+    }
+  }, [watchBasketId, watchCycleId, basketOperations, watchAnimalsPerKg, sgrs, baskets, form]);
 
   // **PANNELLO INFORMATIVO LOTTO**
   const renderLotInfoPanel = () => {
@@ -422,6 +572,14 @@ export default function AdvancedOperationForm({
     );
   };
 
+  // **LOGICA FILTRI E VARIABILI CALCOLATE (COPIATO DAL FORM ORIGINALE)**
+  const filteredCycles = cycles?.filter(cycle => 
+    cycle.basketId === Number(watchBasketId) && cycle.state === 'active'
+  ) || [];
+  
+  const selectedBasket = baskets?.find(b => b.id === Number(watchBasketId));
+  const needsNewCycle = selectedBasket?.state === 'disponibile' && watchBasketId;
+
   // Submit handler (copiato dal form originale)
   const onSubmitForm = (e: React.FormEvent) => {
     e.preventDefault();
@@ -491,6 +649,11 @@ export default function AdvancedOperationForm({
                             className="text-sm"
                           />
                         </FormControl>
+                        {operationDateError && (
+                          <div className="text-sm text-red-600 mt-1">
+                            {operationDateError}
+                          </div>
+                        )}
                         <FormMessage />
                       </FormItem>
                     )}
