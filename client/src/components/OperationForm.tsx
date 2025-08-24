@@ -1,4 +1,4 @@
-import { useEffect, useState } from "react";
+import React, { useEffect, useState } from "react";
 import { useToast } from "@/hooks/use-toast";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useForm } from "react-hook-form";
@@ -283,7 +283,7 @@ export default function OperationForm({
   });
   
   // Fetch baskets for the selected FLUPSY 
-  const { data: flupsyBaskets, isLoading: isLoadingFlupsyBaskets } = useQuery({
+  const { data: allFlupsyBaskets, isLoading: isLoadingFlupsyBaskets } = useQuery({
     queryKey: ['/api/flupsys', watchFlupsyId, 'baskets'],
     queryFn: () => {
       if (!watchFlupsyId) return [];
@@ -291,6 +291,21 @@ export default function OperationForm({
     },
     enabled: !!watchFlupsyId,
   });
+
+  // Filtra i cestelli in base al tipo di operazione selezionata
+  const flupsyBaskets = React.useMemo(() => {
+    if (!allFlupsyBaskets) return [];
+    
+    if (watchType === 'prima-attivazione') {
+      // Per prima attivazione: solo cestelli disponibili
+      return allFlupsyBaskets.filter((basket: any) => basket.state === 'disponibile');
+    } else {
+      // Per tutte le altre operazioni: solo cestelli attivi con ciclo
+      return allFlupsyBaskets.filter((basket: any) => 
+        basket.state === 'active' && basket.currentCycleId
+      );
+    }
+  }, [allFlupsyBaskets, watchType]);
   
   // Imposta il ciclo iniziale e precarica FLUPSY e cesta quando il componente viene montato
   useEffect(() => {
@@ -306,7 +321,7 @@ export default function OperationForm({
       // Attendiamo che i cestelli siano caricati prima di impostare il cestello
       if (!isLoadingFlupsyBaskets && flupsyBaskets) {
         // Verifichiamo che il cestello esista nel FLUPSY selezionato
-        const basketExists = flupsyBaskets.some((b: any) => b.id === defaultValues.basketId);
+        const basketExists = allFlupsyBaskets.some((b: any) => b.id === defaultValues.basketId);
         if (basketExists) {
           form.setValue('basketId', defaultValues.basketId);
           console.log('Cestello trovato e selezionato:', defaultValues.basketId);
@@ -987,7 +1002,7 @@ export default function OperationForm({
                       const selectedBasket = baskets?.find(b => b.id === Number(value));
                       
                       // Imposta "prima-attivazione" sia per ceste disponibili che per ceste attive senza ciclo
-                      if (selectedBasket?.state === 'available' || 
+                      if (selectedBasket?.state === 'disponibile' || 
                          (selectedBasket?.state === 'active' && !selectedBasket?.currentCycleId)) {
                         console.log('Impostazione automatica operazione prima-attivazione per cesta:', selectedBasket);
                         form.setValue('type', 'prima-attivazione');
@@ -1012,7 +1027,7 @@ export default function OperationForm({
                           ` - Fila ${basket.row} Pos. ${basket.position}` : '';
                           
                         // Stato visualizzato solo per ceste disponibili
-                        const stateInfo = basket.state === 'available' ? 
+                        const stateInfo = basket.state === 'disponibile' ? 
                           ' - Disponibile' : '';
                           
                         return (
@@ -1022,14 +1037,14 @@ export default function OperationForm({
                             className={
                               basket.state === 'active' && basket.currentCycleId 
                                 ? "text-green-700 font-medium" 
-                                : (basket.state === 'available' || (basket.state === 'active' && !basket.currentCycleId))
+                                : (basket.state === 'disponibile' || (basket.state === 'active' && !basket.currentCycleId))
                                   ? "text-amber-600" 
                                   : ""
                             }
                           >
                             {basket.state === 'active' && basket.currentCycleId
                               ? "🟢 " 
-                              : (basket.state === 'available' || (basket.state === 'active' && !basket.currentCycleId))
+                              : (basket.state === 'disponibile' || (basket.state === 'active' && !basket.currentCycleId))
                                 ? "🟠 " 
                                 : ""}
                             Cesta #{basket.physicalNumber}{positionInfo}{cycleInfo}{stateInfo}
