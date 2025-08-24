@@ -55,6 +55,8 @@ import FattureInCloudConfig from "@/pages/FattureInCloudConfig";
 import AIDashboard from "@/pages/AIDashboard";
 // Importazione Giacenze Range
 import GiacenzeRange from "@/pages/GiacenzeRange";
+// Importazione Lots Analytics
+import LotsAnalytics from "@/pages/LotsAnalytics";
 import { initializeWebSocket } from "./lib/websocket";
 import { useEffect } from "react";
 import { WebSocketIndicator } from "@/components/WebSocketIndicator";
@@ -94,6 +96,7 @@ function Router() {
       <ProtectedRoute path="/cycles/:id" component={CycleDetail}/>
       <ProtectedRoute path="/lots" component={Lots}/>
       <ProtectedRoute path="/statistics" component={Statistics}/>
+      <ProtectedRoute path="/lots-analytics" component={LotsAnalytics}/>
       <ProtectedRoute path="/inventory" component={Inventory}/>
       <ProtectedRoute path="/export" component={ExportPage}/>
       <ProtectedRoute path="/sizes" component={Sizes}/>

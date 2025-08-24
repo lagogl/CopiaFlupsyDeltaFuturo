@@ -5,7 +5,7 @@ import {
   Scale, TrendingUp, Settings as SettingsIcon, Menu, Bell, 
   User, Waves, Zap, Move, GripHorizontal, Boxes, GitCompare,
   Scan, Smartphone, Tag, X as CloseIcon, LineChart, ChevronDown,
-  ChevronRight, LayoutDashboard, PieChart, BarChart, Filter,
+  ChevronRight, LayoutDashboard, PieChart, BarChart, BarChart3, Filter,
   FileJson, Download, Database, Leaf, LogOut, LayoutGrid,
   CloudIcon, Table, Brain, CalendarDays, Globe
 } from "lucide-react";
@@ -147,6 +147,7 @@ export default function MainLayout({ children }: MainLayoutProps) {
       items: [
         { icon: <Brain className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.aiDashboard, path: "/ai-dashboard" },
         { icon: <BarChart className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.statistics, path: "/statistics" },
+        { icon: <BarChart2 className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.lotsAnalytics, path: "/lots-analytics" },
         { icon: <TrendingUp className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.sgrIndices, path: "/sgr" },
         { icon: <PieChart className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.salesReports, path: "/sales-reports" },
         { icon: <FileText className="h-5 w-5 mr-2 text-purple-600" />, label: translations.menuItems.plantDiary, path: "/diario-di-impianto" },

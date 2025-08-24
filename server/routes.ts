@@ -43,6 +43,7 @@ import * as NotificationController from "./controllers/notification-controller";
 import * as LotInventoryController from "./controllers/lot-inventory-controller";
 import { EcoImpactController } from "./controllers/eco-impact-controller";
 import * as SequenceController from "./controllers/sequence-controller";
+import * as AnalyticsController from "./controllers/analytics-controller";
 import { getOperationsUnified, invalidateUnifiedCache } from "./controllers/operations-unified-controller";
 // import { updateBasketPosition } from "./controllers/basket-position-controller";
 // import { getAvailablePositions as getFlupsyAvailablePositions } from "./controllers/flupsy-position-controller";
@@ -7614,6 +7615,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
   
   // Ottiene il riepilogo dell'inventario per tutti i lotti
   app.get('/api/lot-inventory/all-summary', LotInventoryController.getAllLotsSummary);
+  
+  // === Analytics Routes ===
+  // Analytics completi per lotti con mortalità e performance
+  app.get('/api/analytics/lots', AnalyticsController.getLotsAnalytics);
+  
+  // Lista fornitori per filtri analytics
+  app.get('/api/analytics/suppliers', AnalyticsController.getSuppliers);
+  
+  // Giacenze in tempo reale con dettagli avanzati
+  app.get('/api/analytics/inventory-live', AnalyticsController.getLiveInventory);
+  
+  // Report trend mortalità per periodo
+  app.get('/api/analytics/mortality-trends', AnalyticsController.getMortalityTrends);
+  
+  // Analytics distribuzione taglie con crescita
+  app.get('/api/analytics/sizes-distribution', AnalyticsController.getSizesDistribution);
   
   // === Eco-Impact Routes ===
   const ecoImpactController = new EcoImpactController();
