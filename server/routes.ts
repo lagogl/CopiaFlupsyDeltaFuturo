@@ -2446,88 +2446,100 @@ export async function registerRoutes(app: Express): Promise<Server> {
           return res.status(400).json({ message: "Il cestello ha già un ciclo in corso. Non è possibile registrare una nuova Prima Attivazione." });
         }
         
-        // Crea un nuovo ciclo per questa cesta usando query dirette DB (evitando timeout storage)
-        console.log("🔍 STEP 4: Creazione nuovo ciclo per prima-attivazione");
+        // Importa queryClient per transazione atomica
+        const { queryClient } = await import("./db");
         
-        // Formatta il codice del ciclo secondo le specifiche: cesta+flupsy+YYMM
+        // Formatta i dati per la transazione
         const month = String(date.getMonth() + 1).padStart(2, '0');
         const year = date.getFullYear().toString().substring(2);
         const cycleCode = `${basket.physicalNumber}-${basket.flupsyId}-${year}${month}`;
-        console.log("🔍 STEP 5: Generato cycleCode:", cycleCode);
-        
         const formattedDate = format(date, 'yyyy-MM-dd');
+        
+        console.log("🔍 STEP 4: Avvio transazione atomica per prima-attivazione");
+        console.log("🔍 STEP 5: Generato cycleCode:", cycleCode);
         console.log("🔍 STEP 6: Data formattata:", formattedDate);
         
-        // Creazione diretta del ciclo nel database
-        console.log("🔍 STEP 7: Creazione diretta ciclo nel database...");
-        const [newCycle] = await db.insert(cycles).values({
-          basketId: basketId,
-          startDate: formattedDate,
-          endDate: null,
-          state: 'active'
-        }).returning();
-        console.log("🔍 STEP 7 COMPLETATO: Nuovo ciclo creato:", newCycle);
-        
-        // Aggiornamento diretto dello stato del cestello nel database
-        console.log("🔍 STEP 8: Aggiornamento diretto stato cestello nel database...");
-        await db.update(baskets).set({
-          state: 'active',
-          currentCycleId: newCycle.id,
-          cycleCode: cycleCode
-        }).where(eq(baskets.id, basketId));
-        console.log("🔍 STEP 8 COMPLETATO: Stato cestello aggiornato");
-        
-        // Crea l'operazione con il ciclo appena creato usando query diretta DB
-        const operationData = {
-          ...primaAttivSchema.data,
-          cycleId: newCycle.id,
-          date: format(primaAttivSchema.data.date, 'yyyy-MM-dd')
-        };
-        
-        console.log("🔍 STEP 9: Creazione operazione nel database...");
-        
-        try {
-          const [operation] = await db.insert(operations).values(operationData).returning();
-          console.log("🔍 STEP 9 COMPLETATO: Operazione creata con successo, ID:", operation.id);
+        // Transazione atomica: tutto o niente
+        const operation = await queryClient.begin(async sql => {
+          console.log("🔍 STEP 7: [TRANSAZIONE] Creazione ciclo...");
+          const [newCycle] = await sql`
+            INSERT INTO cycles (basket_id, start_date, end_date, state)
+            VALUES (${basketId}, ${formattedDate}, NULL, 'active')
+            RETURNING *
+          `;
+          console.log("🔍 STEP 7 COMPLETATO: Nuovo ciclo creato:", newCycle);
           
-          // Invalida la cache delle operazioni per aggiornamenti istantanei
-          const { OperationsCache } = await import('./operations-cache-service');
-          OperationsCache.clear();
-          console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
+          console.log("🔍 STEP 8: [TRANSAZIONE] Aggiornamento cestello...");
+          await sql`
+            UPDATE baskets 
+            SET state = 'active', current_cycle_id = ${newCycle.id}, cycle_code = ${cycleCode}
+            WHERE id = ${basketId}
+          `;
+          console.log("🔍 STEP 8 COMPLETATO: Stato cestello aggiornato");
           
-          // Broadcast operation created event via WebSockets
-          console.log("🔍 VERIFICA WEBSOCKET: Controllando se global.broadcastUpdate esiste...");
-          console.log("🔍 VERIFICA WEBSOCKET: typeof global.broadcastUpdate =", typeof (global as any).broadcastUpdate);
+          console.log("🔍 STEP 9: [TRANSAZIONE] Creazione operazione...");
+          const operationData = {
+            ...primaAttivSchema.data,
+            cycleId: newCycle.id,
+            date: formattedDate
+          };
           
-          if (typeof (global as any).broadcastUpdate === 'function') {
-            console.log("✅ WEBSOCKET TROVATO: Invio notifica WebSocket per nuova operazione");
-            (global as any).broadcastUpdate('operation_created', {
-              operation: operation,
-              message: `Nuova operazione di tipo ${operation.type} registrata`
-            });
-            
-            (global as any).broadcastUpdate('cycle_created', {
-              cycle: newCycle,
-              basketId: basketId,
-              message: `Nuovo ciclo ${newCycle.id} creato per il cestello ${basketId}`
-            });
-            
-            // Broadcast basket update per aggiornare mini-mappa e dropdown
-            (global as any).broadcastUpdate('basket_updated', {
-              basketId: basketId,
-              message: `Cestello aggiornato dopo prima attivazione`
-            });
-            
-            // Invalida cache unificata per aggiornamento istantaneo
-            invalidateUnifiedCache();
-            console.log("🚨 Cache unificata invalidata dopo prima-attivazione");
-          } else {
-            console.error("❌ WEBSOCKET NON TROVATO: global.broadcastUpdate non è una funzione!");
-            console.error("❌ WEBSOCKET NON TROVATO: Questo significa che il WebSocket non è configurato correttamente");
-          }
+          const [newOperation] = await sql`
+            INSERT INTO operations (
+              date, type, basket_id, cycle_id, lot_id, animal_count, 
+              total_weight, animals_per_kg, notes
+            ) VALUES (
+              ${operationData.date}, ${operationData.type}, ${basketId}, 
+              ${newCycle.id}, ${operationData.lotId}, ${operationData.animalCount},
+              ${operationData.totalWeight}, ${operationData.animalsPerKg}, ${operationData.notes}
+            ) RETURNING *
+          `;
+          console.log("🔍 STEP 9 COMPLETATO: Operazione creata con successo, ID:", newOperation.id);
           
-          console.log("===== FINE ENDPOINT POST /api/operations (prima-attivazione) - SUCCESSO =====");
-          return res.status(201).json(operation);
+          // Restituisci sia operazione che ciclo per successiva gestione
+          return { operation: newOperation, cycle: newCycle };
+        });
+        
+        console.log("✅ TRANSAZIONE COMPLETATA: Operazione creata con successo, ID:", operation.operation.id);
+        
+        // Invalida la cache delle operazioni per aggiornamenti istantanei
+        const { OperationsCache } = await import('./operations-cache-service');
+        OperationsCache.clear();
+        console.log('🔄 Cache operazioni invalidata per aggiornamento istantaneo del registro');
+        
+        // Broadcast operation created event via WebSockets
+        console.log("🔍 VERIFICA WEBSOCKET: Controllando se global.broadcastUpdate esiste...");
+        console.log("🔍 VERIFICA WEBSOCKET: typeof global.broadcastUpdate =", typeof (global as any).broadcastUpdate);
+        
+        if (typeof (global as any).broadcastUpdate === 'function') {
+          console.log("✅ WEBSOCKET TROVATO: Invio notifica WebSocket per nuova operazione");
+          (global as any).broadcastUpdate('operation_created', {
+            operation: operation.operation,
+            message: `Nuova operazione di tipo ${operation.operation.type} registrata`
+          });
+          
+          (global as any).broadcastUpdate('cycle_created', {
+            cycle: operation.cycle,
+            basketId: basketId,
+            message: `Nuovo ciclo ${operation.cycle.id} creato per il cestello ${basketId}`
+          });
+          
+          // Broadcast basket update per aggiornare mini-mappa e dropdown
+          (global as any).broadcastUpdate('basket_updated', {
+            basketId: basketId,
+            message: `Cestello aggiornato dopo prima attivazione`
+          });
+          
+          // Invalida cache unificata per aggiornamento istantaneo
+          invalidateUnifiedCache();
+          console.log("🚨 Cache unificata invalidata dopo prima-attivazione");
+        } else {
+          console.error("❌ WEBSOCKET NON TROVATO: global.broadcastUpdate non è una funzione!");
+          console.error("❌ WEBSOCKET NON TROVATO: Questo significa che il WebSocket non è configurato correttamente");
+        }
+        
+        console.log("===== FINE ENDPOINT POST /api/operations (prima-attivazione) - SUCCESSO =====");
+        return res.status(201).json(operation.operation);
         } catch (error) {
           console.error("ERRORE DURANTE CREAZIONE OPERAZIONE PRIMA-ATTIVAZIONE:", error);
           return res.status(500).json({ 
