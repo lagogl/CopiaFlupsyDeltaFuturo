@@ -2427,8 +2427,8 @@ export async function registerRoutes(app: Express): Promise<Server> {
 
         // Check if the basket exists using direct DB query (avoiding storage timeout)
         console.log("🔍 STEP 1: Recupero cestello con ID:", basketId);
-        const baskets = await db.select().from(baskets).where(eq(baskets.id, basketId)).limit(1);
-        const basket = baskets[0];
+        const basketsResult = await db.select().from(baskets).where(eq(baskets.id, basketId)).limit(1);
+        const basket = basketsResult[0];
         console.log("🔍 STEP 1 COMPLETATO: Cestello trovato:", basket ? "Sì" : "No");
         if (!basket) {
           return res.status(404).json({ message: "Cestello non trovato" });
