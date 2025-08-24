@@ -5542,16 +5542,22 @@ export async function registerRoutes(app: Express): Promise<Server> {
           broadcastMessage("database_reset_progress", { message: step10, step: 10 });
           await sql`DELETE FROM cycles`;
           
-          // 11. Elimina i cestelli
-          const step11 = "🗑️ Eliminazione cestelli...";
+          // 11. Elimina composizione lotti cestelli (per lotti misti)
+          const step11 = "🎯 Eliminazione composizioni lotti misti...";
           console.log(step11);
           broadcastMessage("database_reset_progress", { message: step11, step: 11 });
-          await sql`DELETE FROM baskets`;
+          await sql`DELETE FROM basket_lot_composition`;
           
-          // 12. Elimina tutte le notifiche
-          const step12 = "🔔 Eliminazione notifiche...";
+          // 12. Elimina i cestelli
+          const step12 = "🗑️ Eliminazione cestelli...";
           console.log(step12);
           broadcastMessage("database_reset_progress", { message: step12, step: 12 });
+          await sql`DELETE FROM baskets`;
+          
+          // 13. Elimina tutte le notifiche
+          const step13 = "🔔 Eliminazione notifiche...";
+          console.log(step13);
+          broadcastMessage("database_reset_progress", { message: step13, step: 13 });
           await sql`DELETE FROM notifications`;
           
           // 13. Elimina mortalità e SGR 
@@ -5731,15 +5737,19 @@ export async function registerRoutes(app: Express): Promise<Server> {
           // 4. Elimina le ceste di origine
           await sql`DELETE FROM screening_source_baskets`;
           
-          // 5. Elimina le operazioni di vagliatura
+          // 5. Elimina le composizioni lotti misti creati dalle vagliature
+          await sql`DELETE FROM basket_lot_composition`;
+          
+          // 6. Elimina le operazioni di vagliatura
           await sql`DELETE FROM screening_operations`;
           
-          // 6. Resettiamo le sequenze degli ID
+          // 7. Resettiamo le sequenze degli ID
           await sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS screening_basket_history_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS screening_destination_baskets_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS screening_source_baskets_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS screening_operations_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS basket_lot_composition_id_seq RESTART WITH 1`;
           
           return true; // Successo - commit implicito
         } catch (error) {
@@ -8123,45 +8133,52 @@ export async function registerRoutes(app: Express): Promise<Server> {
           console.log(startMessage);
           broadcastMessage("database_reset_progress", { message: startMessage, step: "start" });
           
-          // 1. Elimina le transazioni dell'inventario lotti
-          const step1 = "📦 Eliminazione transazioni inventario lotti...";
+          // 1. Elimina le composizioni lotti misti (collegata ai lotti)
+          const step1 = "🎯 Eliminazione composizioni lotti misti...";
           console.log(step1);
           broadcastMessage("database_reset_progress", { message: step1, step: 1 });
-          await sql`DELETE FROM lot_inventory_transactions`;
+          await sql`DELETE FROM basket_lot_composition`;
           
-          // 2. Elimina i record di mortalità dei lotti
-          const step2 = "☠️ Eliminazione record mortalità lotti...";
+          // 2. Elimina le transazioni dell'inventario lotti
+          const step2 = "📦 Eliminazione transazioni inventario lotti...";
           console.log(step2);
           broadcastMessage("database_reset_progress", { message: step2, step: 2 });
-          await sql`DELETE FROM lot_mortality_records`;
+          await sql`DELETE FROM lot_inventory_transactions`;
           
-          // 3. Elimina i riferimenti ai lotti nelle operazioni di screening
-          const step3 = "🔍 Eliminazione riferimenti lotti in screening...";
+          // 3. Elimina i record di mortalità dei lotti
+          const step3 = "☠️ Eliminazione record mortalità lotti...";
           console.log(step3);
           broadcastMessage("database_reset_progress", { message: step3, step: 3 });
-          await sql`DELETE FROM screening_lot_references`;
+          await sql`DELETE FROM lot_mortality_records`;
           
-          // 4. Elimina i riferimenti ai lotti nelle operazioni di selezione
-          const step4 = "✅ Eliminazione riferimenti lotti in selezioni...";
+          // 4. Elimina i riferimenti ai lotti nelle operazioni di screening
+          const step4 = "🔍 Eliminazione riferimenti lotti in screening...";
           console.log(step4);
           broadcastMessage("database_reset_progress", { message: step4, step: 4 });
-          await sql`DELETE FROM selection_lot_references`;
+          await sql`DELETE FROM screening_lot_references`;
           
-          // 5. Elimina i lotti principali
-          const step5 = "📋 Eliminazione lotti principali...";
+          // 5. Elimina i riferimenti ai lotti nelle operazioni di selezione
+          const step5 = "✅ Eliminazione riferimenti lotti in selezioni...";
           console.log(step5);
           broadcastMessage("database_reset_progress", { message: step5, step: 5 });
-          await sql`DELETE FROM lots`;
+          await sql`DELETE FROM selection_lot_references`;
           
-          // 6. Reset delle sequenze ID relative ai lotti
-          const step6 = "🔢 Reset contatori ID lotti...";
+          // 6. Elimina i lotti principali
+          const step6 = "📋 Eliminazione lotti principali...";
           console.log(step6);
           broadcastMessage("database_reset_progress", { message: step6, step: 6 });
+          await sql`DELETE FROM lots`;
+          
+          // 7. Reset delle sequenze ID relative ai lotti
+          const step7 = "🔢 Reset contatori ID lotti...";
+          console.log(step7);
+          broadcastMessage("database_reset_progress", { message: step7, step: 7 });
           await sql`ALTER SEQUENCE IF EXISTS lots_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS lot_inventory_transactions_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS lot_mortality_records_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS screening_lot_references_id_seq RESTART WITH 1`;
           await sql`ALTER SEQUENCE IF EXISTS selection_lot_references_id_seq RESTART WITH 1`;
+          await sql`ALTER SEQUENCE IF EXISTS basket_lot_composition_id_seq RESTART WITH 1`;
           
           console.log("✅ Tutte le sequenze ID lotti resettate a 1");
           

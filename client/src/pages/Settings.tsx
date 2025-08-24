@@ -427,7 +427,7 @@ export default function Settings() {
                   <div>
                     <h3 className="text-lg font-medium mb-1">Azzeramento Operazioni, Cicli e Cestelli</h3>
                     <p className="text-sm text-gray-500">
-                      Elimina tutte le operazioni, i cicli, i cestelli e la cronologia delle posizioni.
+                      Elimina tutte le operazioni, i cicli, i cestelli, le composizioni lotti misti e la cronologia delle posizioni.
                       I contatori verranno ripristinati a 1.
                     </p>
                   </div>
@@ -446,7 +446,7 @@ export default function Settings() {
                           <ul className="list-disc list-inside my-2 space-y-1">
                             <li>Eliminerà tutte le operazioni registrate</li>
                             <li>Eliminerà tutti i cicli di crescita</li>
-                            <li>Eliminerà tutti i cestelli</li>
+                            <li>Eliminerà tutti i cestelli e le loro composizioni lotti misti</li>
                             <li>Eliminerà la cronologia delle posizioni dei cestelli</li>
                             <li>Resetterà i contatori delle sequenze ID a 1</li>
                           </ul>
@@ -490,7 +490,7 @@ export default function Settings() {
                     <h3 className="text-lg font-medium mb-1">Azzeramento Dati Vagliatura</h3>
                     <p className="text-sm text-gray-500">
                       Elimina tutte le operazioni di vagliatura, le ceste di origine e destinazione, 
-                      i riferimenti ai lotti e lo storico delle relazioni tra ceste.
+                      le composizioni lotti misti, i riferimenti ai lotti e lo storico delle relazioni tra ceste.
                       I contatori verranno ripristinati a 1.
                     </p>
                   </div>
@@ -509,6 +509,7 @@ export default function Settings() {
                           <ul className="list-disc list-inside my-2 space-y-1">
                             <li>Eliminerà tutte le operazioni di vagliatura</li>
                             <li>Eliminerà tutte le ceste di origine e destinazione</li>
+                            <li>Eliminerà le composizioni lotti misti create dalle vagliature</li>
                             <li>Eliminerà lo storico delle relazioni tra ceste</li>
                             <li>Eliminerà i riferimenti ai lotti delle ceste</li>
                             <li>Resetterà i contatori delle sequenze ID a 1</li>
@@ -615,7 +616,7 @@ export default function Settings() {
                   <div>
                     <h3 className="text-lg font-medium mb-1">Eliminazione Dati Lotti</h3>
                     <p className="text-sm text-gray-500">
-                      Elimina tutti i dati relativi ai lotti: transazioni inventario, record mortalità, 
+                      Elimina tutti i dati relativi ai lotti: composizioni lotti misti, transazioni inventario, record mortalità, 
                       riferimenti nelle operazioni di screening e selezione, e i lotti stessi.
                       I contatori verranno ripristinati a 1.
                     </p>
