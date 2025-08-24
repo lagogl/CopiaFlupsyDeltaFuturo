@@ -1214,20 +1214,27 @@ export default function Operations() {
     if (!size) return <span className="px-2 inline-flex text-xs leading-5 font-semibold rounded-full bg-gray-100 text-gray-800">-</span>;
     
     let bgColor = 'bg-blue-100 text-blue-800';
-    // Gestisce le taglie TP-XXX
+    // Gestisce le taglie TP-XXX con colorazione individuale
     if (size.code.startsWith('TP-')) {
       // Estrai il numero dalla taglia TP-XXX
       const numStr = size.code.substring(3);
       const num = parseInt(numStr);
       
-      if (num <= 1000) {
-        bgColor = 'bg-red-100 text-red-800';
+      // Colorazione più granulare per distinguere meglio ogni taglia
+      if (num <= 500) {
+        bgColor = 'bg-purple-100 text-purple-800';  // TP-500 → Viola
+      } else if (num <= 600) {
+        bgColor = 'bg-blue-100 text-blue-800';      // TP-600 → Blu
+      } else if (num <= 800) {
+        bgColor = 'bg-indigo-100 text-indigo-800';  // TP-800 → Indaco
+      } else if (num <= 1000) {
+        bgColor = 'bg-red-100 text-red-800';        // TP-1000 → Rosso
       } else if (num <= 3000) {
-        bgColor = 'bg-orange-100 text-orange-800';
+        bgColor = 'bg-orange-100 text-orange-800';  // TP-2000, TP-3000 → Arancione
       } else if (num <= 6000) {
-        bgColor = 'bg-yellow-100 text-yellow-800';
+        bgColor = 'bg-yellow-100 text-yellow-800';  // TP-4000, TP-5000, TP-6000 → Giallo
       } else if (num <= 10000) {
-        bgColor = 'bg-green-100 text-green-800';
+        bgColor = 'bg-green-100 text-green-800';    // TP-7000, TP-8000, TP-9000, TP-10000 → Verde
       } else {
         bgColor = 'bg-black text-white';
       }
