@@ -274,10 +274,10 @@ export default function Operations() {
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
   
-  // PERFORMANCE DRASTICA: Solo query essenziali con suspense
+  // PERFORMANCE OTTIMIZZATA: Cache 15 minuti (sweet spot)
   const { data: operations = [], isLoading: operationsLoading, error: operationsError } = useQuery({
     queryKey: ['/api/operations', { includeAll: true, pageSize: 1000 }],
-    staleTime: 600000, // 10 minuti - cache molto lunga
+    staleTime: 900000, // 15 minuti - compromesso perfetto velocità/aggiornamento
     cacheTime: 1800000, // 30 minuti background
     refetchOnWindowFocus: false, // Non rifare richieste quando torni nella pagina
     refetchOnMount: false, // Non rifare richieste al mount se hai dati
@@ -286,7 +286,7 @@ export default function Operations() {
   // Query leggere solo quando servono
   const { data: baskets = [] } = useQuery({
     queryKey: ['/api/baskets', { includeAll: true }],
-    staleTime: 600000, // 10 minuti 
+    staleTime: 900000, // 15 minuti 
     cacheTime: 1800000, // 30 minuti
     refetchOnWindowFocus: false,
     refetchOnMount: false,
@@ -295,7 +295,7 @@ export default function Operations() {
 
   const { data: cycles = [] } = useQuery({
     queryKey: ['/api/cycles', { includeAll: true }],
-    staleTime: 600000, // 10 minuti
+    staleTime: 900000, // 15 minuti
     cacheTime: 1800000, // 30 minuti
     refetchOnWindowFocus: false,
     refetchOnMount: false,
