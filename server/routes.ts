@@ -151,6 +151,150 @@ export async function registerRoutes(app: Express): Promise<Server> {
     return res.json({ message: "Test route funziona!", id, timestamp: new Date().toISOString() });
   });
 
+  // Endpoint per snapshot completo del database (per test di vagliatura)
+  app.get('/api/database-snapshot', async (req, res) => {
+    try {
+      console.log('📊 Generazione snapshot database...');
+      
+      // 1. FLUPSYS CON CESTELLI E CICLI ATTIVI
+      const flupsysData = await db
+        .select({
+          flupsy: flupsys,
+          basket: baskets,
+          cycle: cycles,
+          lastOperation: {
+            id: operations.id,
+            type: operations.type,
+            date: operations.date,
+            totalWeight: operations.totalWeight,
+            animalCount: operations.animalCount,
+            averageWeight: operations.averageWeight,
+            sizeId: operations.sizeId
+          }
+        })
+        .from(flupsys)
+        .leftJoin(baskets, eq(baskets.flupsyId, flupsys.id))
+        .leftJoin(cycles, and(
+          eq(cycles.basketId, baskets.id),
+          eq(cycles.state, 'active')
+        ))
+        .leftJoin(operations, sql`${operations.id} = (
+          SELECT o.id FROM ${operations} o 
+          WHERE o.basket_id = ${baskets.id} 
+          ORDER BY o.date DESC, o.id DESC 
+          LIMIT 1
+        )`)
+        .where(eq(flupsys.active, true))
+        .orderBy(flupsys.name, baskets.physicalNumber);
+
+      // 2. RAGGRUPPAMENTO PER FLUPSYS
+      const flupsysMap = new Map();
+      
+      for (const row of flupsysData) {
+        const flupsyId = row.flupsy.id;
+        
+        if (!flupsysMap.has(flupsyId)) {
+          flupsysMap.set(flupsyId, {
+            flupsy: row.flupsy,
+            baskets: [],
+            totalBaskets: 0,
+            activeBaskets: 0,
+            totalAnimals: 0,
+            totalWeight: 0
+          });
+        }
+        
+        const flupsyData = flupsysMap.get(flupsyId);
+        
+        if (row.basket) {
+          const basketInfo = {
+            basket: row.basket,
+            cycle: row.cycle,
+            lastOperation: row.lastOperation,
+            animals: row.lastOperation?.animalCount || 0,
+            weight: row.lastOperation?.totalWeight || 0,
+            averageWeight: row.lastOperation?.averageWeight || 0,
+            hasActiveCycle: !!row.cycle
+          };
+          
+          flupsyData.baskets.push(basketInfo);
+          flupsyData.totalBaskets++;
+          
+          if (row.cycle) {
+            flupsyData.activeBaskets++;
+            flupsyData.totalAnimals += basketInfo.animals;
+            flupsyData.totalWeight += basketInfo.weight;
+          }
+        }
+      }
+
+      // 3. LOTTI ATTIVI
+      const activeLots = await db
+        .select()
+        .from(lots)
+        .where(eq(lots.active, true))
+        .orderBy(lots.name);
+
+      // 4. OPERAZIONI RECENTI (ultime 50)
+      const recentOperations = await db
+        .select({
+          operation: operations,
+          basketPhysical: baskets.physicalNumber,
+          flupsyName: flupsys.name,
+          cycleName: cycles.name,
+          sizeName: sizes.name
+        })
+        .from(operations)
+        .leftJoin(baskets, eq(operations.basketId, baskets.id))
+        .leftJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+        .leftJoin(cycles, eq(operations.cycleId, cycles.id))
+        .leftJoin(sizes, eq(operations.sizeId, sizes.id))
+        .orderBy(sql`${operations.date} DESC, ${operations.id} DESC`)
+        .limit(50);
+
+      // 5. STATISTICHE GENERALI
+      const stats = {
+        totalFlupsys: flupsysMap.size,
+        totalBaskets: 0,
+        totalActiveBaskets: 0,
+        totalAnimals: 0,
+        totalWeight: 0,
+        totalActiveLots: activeLots.length,
+        totalRecentOperations: recentOperations.length
+      };
+      
+      for (const flupsyData of flupsysMap.values()) {
+        stats.totalBaskets += flupsyData.totalBaskets;
+        stats.totalActiveBaskets += flupsyData.activeBaskets;
+        stats.totalAnimals += flupsyData.totalAnimals;
+        stats.totalWeight += flupsyData.totalWeight;
+      }
+
+      const snapshot = {
+        timestamp: new Date().toISOString(),
+        stats,
+        flupsys: Array.from(flupsysMap.values()),
+        activeLots,
+        recentOperations: recentOperations.slice(0, 20) // Top 20 più recenti
+      };
+
+      console.log(`✅ Snapshot generato: ${stats.totalFlupsys} FLUPSY, ${stats.totalActiveBaskets}/${stats.totalBaskets} cestelli attivi`);
+      
+      res.json({
+        success: true,
+        snapshot
+      });
+
+    } catch (error) {
+      console.error('❌ Errore generazione snapshot:', error);
+      res.status(500).json({
+        success: false,
+        message: 'Errore durante la generazione dello snapshot del database',
+        error: error.message
+      });
+    }
+  });
+
   // ===== ROUTE FATTURE IN CLOUD =====
   console.log("💼 Registrazione route Fatture in Cloud...");
   app.use('/api/fatture-in-cloud', fattureInCloudRouter);
