@@ -412,6 +412,46 @@ export async function getSelectionStats(req: Request, res: Response) {
 export async function addSourceBaskets(req: Request, res: Response) {
   try {
     const { id } = req.params;
+    const { sourceBaskets } = req.body;
+    
+    console.log(`📥 Aggiunta ${sourceBaskets?.length || 0} cestelli origine alla selezione ${id}`);
+    
+    if (!sourceBaskets || !Array.isArray(sourceBaskets)) {
+      return res.status(400).json({
+        success: false,
+        error: "Parametro sourceBaskets mancante o non valido"
+      });
+    }
+    
+    // Inserisci tutti i cestelli origine
+    for (const sourceBasket of sourceBaskets) {
+      // Prima ottieni il ciclo corrente del cestello
+      const [basketData] = await db.select({
+        currentCycleId: baskets.currentCycleId
+      })
+      .from(baskets)
+      .where(eq(baskets.id, sourceBasket.basketId))
+      .limit(1);
+      
+      if (!basketData?.currentCycleId) {
+        console.log(`⚠️ Cestello ${sourceBasket.basketId} senza ciclo attivo`);
+        continue;
+      }
+      
+      await db.insert(selectionSourceBaskets).values({
+        selectionId: Number(id),
+        basketId: sourceBasket.basketId,
+        cycleId: basketData.currentCycleId,
+        animalCount: sourceBasket.animalCount,
+        totalWeight: sourceBasket.totalWeight || null,
+        animalsPerKg: sourceBasket.animalsPerKg || null,
+        sizeId: sourceBasket.sizeId || null,
+        lotId: sourceBasket.lotId || null,
+        notes: sourceBasket.notes || null
+      });
+      
+      console.log(`✅ Cestello origine ${sourceBasket.basketId} aggiunto (${sourceBasket.animalCount} animali)`);
+    }
     
     return res.status(200).json({
       success: true,
@@ -432,6 +472,40 @@ export async function addSourceBaskets(req: Request, res: Response) {
 export async function addDestinationBaskets(req: Request, res: Response) {
   try {
     const { id } = req.params;
+    const { destinationBaskets } = req.body;
+    
+    console.log(`📤 Aggiunta ${destinationBaskets?.length || 0} cestelli destinazione alla selezione ${id}`);
+    
+    if (!destinationBaskets || !Array.isArray(destinationBaskets)) {
+      return res.status(400).json({
+        success: false,
+        error: "Parametro destinationBaskets mancante o non valido"
+      });
+    }
+    
+    // Inserisci tutti i cestelli destinazione
+    for (const destBasket of destinationBaskets) {
+      await db.insert(selectionDestinationBaskets).values({
+        selectionId: Number(id),
+        basketId: destBasket.basketId,
+        cycleId: null, // Sarà creato al completamento
+        destinationType: destBasket.destinationType || 'positioned',
+        flupsyId: destBasket.flupsyId || null,
+        position: destBasket.position || null,
+        animalCount: destBasket.animalCount,
+        liveAnimals: destBasket.liveAnimals || destBasket.animalCount,
+        totalWeight: destBasket.totalWeight || null,
+        animalsPerKg: destBasket.animalsPerKg || null,
+        sizeId: destBasket.sizeId || null,
+        deadCount: destBasket.deadCount || 0,
+        mortalityRate: destBasket.mortalityRate || 0,
+        sampleWeight: destBasket.sampleWeight || null,
+        sampleCount: destBasket.sampleCount || null,
+        notes: destBasket.notes || null
+      });
+      
+      console.log(`✅ Cestello destinazione ${destBasket.basketId} aggiunto (${destBasket.animalCount} animali)`);
+    }
     
     return res.status(200).json({
       success: true,
