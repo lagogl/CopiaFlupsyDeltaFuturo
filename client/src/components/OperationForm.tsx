@@ -312,17 +312,26 @@ export default function OperationForm({
     console.log('🔍 AUTO-CORRECT useEffect TRIGGERED:', {
       watchBasketId,
       allFlupsyBaskets: allFlupsyBaskets?.length,
-      hasBaskets: !!allFlupsyBaskets
+      hasBaskets: !!allFlupsyBaskets,
+      flupsyBaskets: flupsyBaskets?.length,
+      watchType
     });
     
     if (!watchBasketId || !allFlupsyBaskets) {
-      console.log('🔍 AUTO-CORRECT: Early return - missing data');
+      console.log('🔍 AUTO-CORRECT: Early return - missing data:', {
+        watchBasketId: !!watchBasketId,
+        allFlupsyBaskets: !!allFlupsyBaskets,
+        allFlupsyBasketsLength: allFlupsyBaskets?.length
+      });
       return;
     }
     
     const selectedBasket = allFlupsyBaskets.find(b => b.id === watchBasketId);
     if (!selectedBasket) {
-      console.log('🔍 AUTO-CORRECT: Cestello non trovato in allFlupsyBaskets');
+      console.log('🔍 AUTO-CORRECT: Cestello non trovato in allFlupsyBaskets:', {
+        watchBasketId,
+        allFlupsyBaskets: allFlupsyBaskets.map(b => ({id: b.id, state: b.state}))
+      });
       return;
     }
 
