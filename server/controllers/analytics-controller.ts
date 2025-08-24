@@ -25,7 +25,17 @@ interface LotAnalytics {
   status: 'active' | 'sold' | 'completed';
   daysInSystem: number;
   basketsUsed: number;
+  activeBasketsUsed: number;
   lastOperation: string;
+  // Nuovi campi per lotti misti
+  mixedBasketsCount: number;
+  pureBasketsCount: number;
+  averageDistributionPercentage: number;
+  fragmentationLevel: number;
+  isMixedLot: boolean;
+  riskLevel: 'basso' | 'medio' | 'alto';
+  soldWeight: number;
+  distributionEfficiency: number;
 }
 
 /**
@@ -107,24 +117,28 @@ export async function getLotsAnalytics(req: Request, res: Response) {
     
     const lotsData = await lotsQuery;
     
-    // Per ogni lotto, calcola analytics dettagliati
+    // Per ogni lotto, calcola analytics dettagliati considerando i lotti misti
     const analyticsResults: LotAnalytics[] = [];
     
     for (const lot of lotsData) {
-      // Calcola conteggio attuale e vendite dal basket_lot_composition
+      // Calcola conteggio attuale dal basket_lot_composition (più accurato per lotti misti)
       const compositionResults = await db
         .select({
           basketId: basketLotComposition.basketId,
           animalCount: basketLotComposition.animalCount,
-          cycleId: basketLotComposition.cycleId
+          percentage: basketLotComposition.percentage,
+          cycleId: basketLotComposition.cycleId,
+          cycleState: cycles.state
         })
         .from(basketLotComposition)
+        .innerJoin(cycles, eq(basketLotComposition.cycleId, cycles.id))
         .where(eq(basketLotComposition.lotId, lot.id));
       
-      // Calcola operazioni di vendita per questo lotto
+      // Calcola operazioni di vendita per questo lotto (da operations dove lotId match)
       const salesResults = await db
         .select({
-          animalCount: operations.animalCount
+          animalCount: operations.animalCount,
+          totalWeight: operations.totalWeight
         })
         .from(operations)
         .where(
@@ -134,22 +148,41 @@ export async function getLotsAnalytics(req: Request, res: Response) {
           )
         );
       
-      // Conta cestelli utilizzati
+      // Conta cestelli utilizzati (totali e attivi)
       const basketsUsed = new Set(compositionResults.map(c => c.basketId)).size;
+      const activeBasketsUsed = new Set(
+        compositionResults.filter(c => c.cycleState === 'active').map(c => c.basketId)
+      ).size;
       
-      // Calcola totali
-      const currentCount = compositionResults.reduce((sum, comp) => sum + (comp.animalCount || 0), 0);
+      // Calcola totali considerando la composizione mista
+      const currentCount = compositionResults
+        .filter(comp => comp.cycleState === 'active')
+        .reduce((sum, comp) => sum + (comp.animalCount || 0), 0);
+      
       const soldCount = salesResults.reduce((sum, sale) => sum + (sale.animalCount || 0), 0);
+      const soldWeight = salesResults.reduce((sum, sale) => sum + (sale.totalWeight || 0), 0);
+      
+      // Calcola mortalità migliorata per lotti misti
       const mortalityCount = lot.totalMortality || 0;
       const initialCount = lot.initialCount || 0;
       const mortalityPercentage = initialCount > 0 ? (mortalityCount / initialCount) * 100 : 0;
       
-      // Determina stato
+      // Calcola distribuzione attuale del lotto (quanti cestelli, che percentuali)
+      const distributionInfo = {
+        totalBaskets: basketsUsed,
+        activeBasketsCount: activeBasketsUsed,
+        mixedBaskets: compositionResults.filter(c => c.percentage < 100).length,
+        pureBaskets: compositionResults.filter(c => c.percentage >= 100).length,
+        averagePercentage: compositionResults.length > 0 ? 
+          compositionResults.reduce((sum, c) => sum + (c.percentage || 0), 0) / compositionResults.length : 0
+      };
+      
+      // Determina stato con più accuratezza per lotti misti
       let status: 'active' | 'sold' | 'completed' = 'active';
       if (soldCount >= initialCount * 0.9) status = 'sold';
       else if (currentCount === 0 && soldCount === 0) status = 'completed';
       
-      // Ultima operazione
+      // Ultima operazione su questo lotto
       const [lastOp] = await db
         .select({
           date: operations.date,
@@ -160,7 +193,7 @@ export async function getLotsAnalytics(req: Request, res: Response) {
         .orderBy(desc(operations.date))
         .limit(1);
       
-      // Calcola peso medio attuale
+      // Calcola peso medio attuale considerando lotti misti
       const avgWeightResults = await db
         .select({
           averageWeight: sql<number>`AVG(${operations.averageWeight})`
@@ -176,6 +209,15 @@ export async function getLotsAnalytics(req: Request, res: Response) {
       const averageWeight = avgWeightResults[0]?.averageWeight || 0;
       const totalWeight = currentCount * averageWeight / 1000; // Convert to grams
       
+      // Calcola indicatori specifici per lotti misti
+      const mixedLotIndicators = {
+        isMixed: distributionInfo.mixedBaskets > 0,
+        distributionEfficiency: distributionInfo.averagePercentage,
+        fragmentationLevel: basketsUsed > 0 ? (distributionInfo.mixedBaskets / basketsUsed) * 100 : 0,
+        riskLevel: mortalityPercentage > 10 ? 'alto' : 
+                   mortalityPercentage > 5 ? 'medio' : 'basso'
+      };
+      
       analyticsResults.push({
         id: lot.id,
         supplier: lot.supplier || '',
@@ -190,8 +232,18 @@ export async function getLotsAnalytics(req: Request, res: Response) {
         totalWeight,
         status,
         daysInSystem: differenceInDays(new Date(), new Date(lot.arrivalDate)),
-        basketsUsed,
-        lastOperation: lastOp ? `${lastOp.type} (${lastOp.date})` : 'Nessuna'
+        basketsUsed: distributionInfo.totalBaskets,
+        activeBasketsUsed: distributionInfo.activeBasketsCount,
+        lastOperation: lastOp ? `${lastOp.type} (${lastOp.date})` : 'Nessuna',
+        // Nuovi campi per lotti misti
+        mixedBasketsCount: distributionInfo.mixedBaskets,
+        pureBasketsCount: distributionInfo.pureBaskets,
+        averageDistributionPercentage: Math.round(distributionInfo.averagePercentage * 10) / 10,
+        fragmentationLevel: Math.round(mixedLotIndicators.fragmentationLevel * 10) / 10,
+        isMixedLot: mixedLotIndicators.isMixed,
+        riskLevel: mixedLotIndicators.riskLevel,
+        soldWeight: Math.round(soldWeight),
+        distributionEfficiency: Math.round(mixedLotIndicators.distributionEfficiency * 10) / 10
       });
     }
     
@@ -358,7 +410,7 @@ export async function getSingleLotAnalytics(req: Request, res: Response) {
     // Calcola SGR medio
     const sgrResults = await db
       .select({
-        averageSgr: sql<number>`COALESCE(AVG(${operations.sgrValue}), 0)`
+        averageSgr: sql<number>`COALESCE(AVG(CAST(${operations.sgrId} AS FLOAT)), 0)`
       })
       .from(operations)
       .innerJoin(cycles, eq(operations.cycleId, cycles.id))
@@ -366,7 +418,7 @@ export async function getSingleLotAnalytics(req: Request, res: Response) {
       .where(
         and(
           eq(basketLotComposition.lotId, lotId),
-          isNotNull(operations.sgrValue),
+          isNotNull(operations.sgrId),
           sql`${operations.date} >= NOW() - INTERVAL '30 days'`
         )
       );
@@ -415,6 +467,252 @@ export async function getSingleLotAnalytics(req: Request, res: Response) {
     return res.status(500).json({
       success: false,
       error: "Errore interno durante il calcolo analytics lotto"
+    });
+  }
+}
+
+/**
+ * NUOVE FUNZIONI PER LOTTI MISTI
+ */
+
+/**
+ * Analytics composizione lotti misti
+ * GET /api/analytics/mixed-lots-composition
+ */
+export async function getMixedLotsComposition(req: Request, res: Response) {
+  try {
+    const { period = '30', flupsyId } = req.query;
+    
+    console.log(`🧩 ANALYTICS COMPOSIZIONE LOTTI MISTI: periodo=${period}`);
+    
+    const startTime = Date.now();
+    
+    // Trova cestelli con composizione mista (più lotti)
+    const mixedBasketsQuery = db
+      .select({
+        basketId: basketLotComposition.basketId,
+        cycleId: basketLotComposition.cycleId,
+        basketPhysical: baskets.physicalNumber,
+        flupsyId: baskets.flupsyId,
+        flupsyName: flupsys.name,
+        lotCount: sql<number>`COUNT(DISTINCT ${basketLotComposition.lotId})`,
+        totalAnimals: sql<number>`SUM(${basketLotComposition.animalCount})`,
+        compositions: sql<string>`STRING_AGG(
+          CONCAT(${lots.supplier}, ' L', ${basketLotComposition.lotId}, ' (', ${basketLotComposition.percentage}, '%)'),
+          '; '
+          ORDER BY ${basketLotComposition.percentage} DESC
+        )`
+      })
+      .from(basketLotComposition)
+      .innerJoin(baskets, eq(basketLotComposition.basketId, baskets.id))
+      .innerJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+      .innerJoin(cycles, eq(basketLotComposition.cycleId, cycles.id))
+      .innerJoin(lots, eq(basketLotComposition.lotId, lots.id))
+      .where(eq(cycles.state, 'active'))
+      .groupBy(basketLotComposition.basketId, basketLotComposition.cycleId, baskets.physicalNumber, baskets.flupsyId, flupsys.name)
+      .having(sql`COUNT(DISTINCT ${basketLotComposition.lotId}) > 1`);
+    
+    // Applica filtro FLUPSY se specificato
+    if (flupsyId && flupsyId !== 'all') {
+      mixedBasketsQuery.where(eq(baskets.flupsyId, parseInt(flupsyId as string)));
+    }
+    
+    const mixedBaskets = await mixedBasketsQuery;
+    
+    // Calcola distribuzione mortalità per composizione mista
+    const mortalityByComposition = await Promise.all(
+      mixedBaskets.map(async (basket) => {
+        const compositions = await db
+          .select({
+            lotId: basketLotComposition.lotId,
+            percentage: basketLotComposition.percentage,
+            animalCount: basketLotComposition.animalCount,
+            supplier: lots.supplier,
+            lotNumber: lots.supplierLotNumber,
+            totalMortality: lots.totalMortality
+          })
+          .from(basketLotComposition)
+          .innerJoin(lots, eq(basketLotComposition.lotId, lots.id))
+          .where(
+            and(
+              eq(basketLotComposition.basketId, basket.basketId),
+              eq(basketLotComposition.cycleId, basket.cycleId)
+            )
+          );
+        
+        // Calcola mortalità stimata per questo cestello misto
+        const estimatedMortality = compositions.reduce((acc, comp) => {
+          // Usa il total mortality già presente nel comp, senza query aggiuntive
+          const lotMortalityRate = comp.totalMortality ? 
+            (comp.totalMortality / (comp.animalCount || 1)) : 0;
+          return acc + (comp.animalCount * lotMortalityRate);
+        }, 0);
+        
+        return {
+          ...basket,
+          compositions: compositions,
+          estimatedMortalityRate: (estimatedMortality / basket.totalAnimals) * 100,
+          riskLevel: estimatedMortality > (basket.totalAnimals * 0.1) ? 'alto' : 
+                    estimatedMortality > (basket.totalAnimals * 0.05) ? 'medio' : 'basso'
+        };
+      })
+    );
+    
+    const duration = Date.now() - startTime;
+    console.log(`✅ ANALYTICS COMPOSIZIONE LOTTI MISTI: ${duration}ms - ${mixedBaskets.length} cestelli`);
+    
+    return res.json({
+      success: true,
+      mixedBaskets: mortalityByComposition,
+      summary: {
+        totalMixedBaskets: mixedBaskets.length,
+        averageLotsPerBasket: mixedBaskets.length > 0 ? 
+          mixedBaskets.reduce((sum, b) => sum + b.lotCount, 0) / mixedBaskets.length : 0,
+        totalAnimalsInMixedBaskets: mixedBaskets.reduce((sum, b) => sum + b.totalAnimals, 0)
+      }
+    });
+    
+  } catch (error) {
+    console.error("❌ ERRORE ANALYTICS COMPOSIZIONE LOTTI MISTI:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Errore interno durante il calcolo composizione lotti misti"
+    });
+  }
+}
+
+/**
+ * Tracciabilità lotto attraverso operazioni di vagliatura
+ * GET /api/analytics/lot-traceability/:lotId
+ */
+export async function getLotTraceability(req: Request, res: Response) {
+  try {
+    const { lotId } = req.params;
+    const lotIdNum = parseInt(lotId);
+    
+    if (!lotIdNum || isNaN(lotIdNum)) {
+      return res.status(400).json({
+        success: false,
+        error: "ID lotto non valido"
+      });
+    }
+    
+    console.log(`🔍 TRACCIABILITÀ LOTTO: ID ${lotIdNum}`);
+    
+    const startTime = Date.now();
+    
+    // Informazioni base del lotto
+    const lotInfo = await db
+      .select({
+        id: lots.id,
+        supplier: lots.supplier,
+        supplierLotNumber: lots.supplierLotNumber,
+        arrivalDate: lots.arrivalDate,
+        initialAnimalCount: lots.animalCount,
+        initialWeight: lots.weight,
+        totalMortality: lots.totalMortality
+      })
+      .from(lots)
+      .where(eq(lots.id, lotIdNum))
+      .limit(1);
+    
+    if (lotInfo.length === 0) {
+      return res.status(404).json({
+        success: false,
+        error: "Lotto non trovato"
+      });
+    }
+    
+    // Storia delle composizioni di questo lotto
+    const compositionHistory = await db
+      .select({
+        basketId: basketLotComposition.basketId,
+        basketPhysical: baskets.physicalNumber,
+        cycleId: basketLotComposition.cycleId,
+        animalCount: basketLotComposition.animalCount,
+        percentage: basketLotComposition.percentage,
+        sourceSelectionId: basketLotComposition.sourceSelectionId,
+        flupsyName: flupsys.name,
+        position: sql<string>`${baskets.row} || ${baskets.position}`,
+        createdAt: basketLotComposition.createdAt,
+        notes: basketLotComposition.notes
+      })
+      .from(basketLotComposition)
+      .innerJoin(baskets, eq(basketLotComposition.basketId, baskets.id))
+      .innerJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+      .where(eq(basketLotComposition.lotId, lotIdNum))
+      .orderBy(desc(basketLotComposition.createdAt));
+    
+    // Operazioni storiche su questo lotto
+    const operationsHistory = await db
+      .select({
+        id: operations.id,
+        date: operations.date,
+        type: operations.type,
+        basketId: operations.basketId,
+        basketPhysical: baskets.physicalNumber,
+        animalCount: operations.animalCount,
+        totalWeight: operations.totalWeight,
+        deadCount: operations.deadCount,
+        notes: operations.notes,
+        flupsyName: flupsys.name
+      })
+      .from(operations)
+      .innerJoin(baskets, eq(operations.basketId, baskets.id))
+      .innerJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+      .where(eq(operations.lotId, lotIdNum))
+      .orderBy(desc(operations.date));
+    
+    // Analisi distribuzione attuale
+    const currentDistribution = await db
+      .select({
+        basketId: basketLotComposition.basketId,
+        basketPhysical: baskets.physicalNumber,
+        flupsyName: flupsys.name,
+        animalCount: basketLotComposition.animalCount,
+        percentage: basketLotComposition.percentage,
+        cycleState: cycles.state,
+        position: sql<string>`${baskets.row} || ${baskets.position}`
+      })
+      .from(basketLotComposition)
+      .innerJoin(baskets, eq(basketLotComposition.basketId, baskets.id))
+      .innerJoin(flupsys, eq(baskets.flupsyId, flupsys.id))
+      .innerJoin(cycles, eq(basketLotComposition.cycleId, cycles.id))
+      .where(
+        and(
+          eq(basketLotComposition.lotId, lotIdNum),
+          eq(cycles.state, 'active')
+        )
+      );
+    
+    const result = {
+      lotInfo: lotInfo[0],
+      compositionHistory,
+      operationsHistory,
+      currentDistribution,
+      summary: {
+        totalOperations: operationsHistory.length,
+        basketsUsedHistorically: new Set(compositionHistory.map(c => c.basketId)).size,
+        currentActiveBasketsCount: currentDistribution.length,
+        currentTotalAnimals: currentDistribution.reduce((sum, d) => sum + d.animalCount, 0),
+        distributionEfficiency: currentDistribution.length > 0 ? 
+          (currentDistribution.reduce((sum, d) => sum + d.animalCount, 0) / lotInfo[0].initialAnimalCount) * 100 : 0
+      }
+    };
+    
+    const duration = Date.now() - startTime;
+    console.log(`✅ TRACCIABILITÀ LOTTO COMPLETATA: ${duration}ms - Lotto ID ${lotIdNum}`);
+    
+    return res.json({
+      success: true,
+      traceability: result
+    });
+    
+  } catch (error) {
+    console.error("❌ ERRORE TRACCIABILITÀ LOTTO:", error);
+    return res.status(500).json({
+      success: false,
+      error: "Errore interno durante il calcolo tracciabilità lotto"
     });
   }
 }
@@ -727,7 +1025,7 @@ export async function getSizesDistribution(req: Request, res: Response) {
     // Combina i dati
     const result = sizeDistribution.map(size => ({
       ...size,
-      growthData: growthBySize[size.sizeId] || [],
+      growthData: (size.sizeId && growthBySize[size.sizeId]) ? growthBySize[size.sizeId] : [],
       percentage: 0 // Calcolato dopo
     }));
     

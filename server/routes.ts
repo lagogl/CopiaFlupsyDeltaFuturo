@@ -7763,6 +7763,14 @@ export async function registerRoutes(app: Express): Promise<Server> {
   // Analytics distribuzione taglie con crescita
   app.get('/api/analytics/sizes-distribution', AnalyticsController.getSizesDistribution);
   
+  // === Analytics Avanzati per Lotti Misti ===
+  
+  // Analytics composizione cestelli con lotti misti
+  app.get('/api/analytics/mixed-lots-composition', AnalyticsController.getMixedLotsComposition);
+  
+  // Tracciabilità completa di un lotto attraverso operazioni di vagliatura
+  app.get('/api/analytics/lot-traceability/:lotId', AnalyticsController.getLotTraceability);
+  
   // === Eco-Impact Routes ===
   const ecoImpactController = new EcoImpactController();
   
