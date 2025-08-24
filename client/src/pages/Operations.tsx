@@ -312,52 +312,73 @@ export default function Operations() {
   const [_, navigate] = useLocation(); // using second parameter as navigate
   const searchParams = useSearch();
   
-  // OTTIMIZZATO: Query con cache più lunga per migliorare le performance
+  // PERFORMANCE DRASTICA: Solo query essenziali con suspense
   const { data: operations = [], isLoading: operationsLoading, error: operationsError } = useQuery({
     queryKey: ['/api/operations', { includeAll: true, pageSize: 1000 }],
-    staleTime: 300000, // 5 minuti di cache
-    cacheTime: 600000, // 10 minuti di cache in background
+    staleTime: 600000, // 10 minuti - cache molto lunga
+    cacheTime: 1800000, // 30 minuti background
+    refetchOnWindowFocus: false, // Non rifare richieste quando torni nella pagina
+    refetchOnMount: false, // Non rifare richieste al mount se hai dati
   });
 
+  // Query leggere solo quando servono
   const { data: baskets = [] } = useQuery({
     queryKey: ['/api/baskets', { includeAll: true }],
-    staleTime: 300000, // 5 minuti
-    cacheTime: 600000, // 10 minuti
+    staleTime: 600000, // 10 minuti 
+    cacheTime: 1800000, // 30 minuti
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    enabled: operations.length > 0, // Solo se abbiamo operazioni
   });
 
   const { data: cycles = [] } = useQuery({
     queryKey: ['/api/cycles', { includeAll: true }],
-    staleTime: 300000, // 5 minuti
-    cacheTime: 600000, // 10 minuti
+    staleTime: 600000, // 10 minuti
+    cacheTime: 1800000, // 30 minuti
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    enabled: operations.length > 0, // Solo se abbiamo operazioni
   });
 
-  // Query meno frequenti con cache ancora più lunga
+  // Query non essenziali - caricate on-demand
   const { data: lots = [] } = useQuery({
     queryKey: ['/api/lots'],
-    staleTime: 600000, // 10 minuti
-    cacheTime: 1200000, // 20 minuti
+    staleTime: 1800000, // 30 minuti
+    cacheTime: 3600000, // 1 ora
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    enabled: false, // Caricata solo quando serve
   });
 
   const { data: sizes = [] } = useQuery({
     queryKey: ['/api/sizes'],
-    staleTime: 1800000, // 30 minuti (dati quasi statici)
-    cacheTime: 3600000, // 1 ora
+    staleTime: 3600000, // 1 ora (quasi statici)
+    cacheTime: 7200000, // 2 ore
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    enabled: false, // Caricata solo quando serve
   });
 
   const { data: flupsys = [] } = useQuery({
     queryKey: ['/api/flupsys'],
-    staleTime: 600000, // 10 minuti
-    cacheTime: 1200000, // 20 minuti
+    staleTime: 1800000, // 30 minuti
+    cacheTime: 3600000, // 1 ora
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    enabled: false, // Caricata solo quando serve
   });
 
   const { data: sgrs = [] } = useQuery({
     queryKey: ['/api/sgr'],
-    staleTime: 1800000, // 30 minuti (dati quasi statici)
-    cacheTime: 3600000, // 1 ora
+    staleTime: 3600000, // 1 ora (quasi statici)
+    cacheTime: 7200000, // 2 ore
+    refetchOnWindowFocus: false,
+    refetchOnMount: false,
+    enabled: false, // Caricata solo quando serve
   });
 
-  // Usa direttamente i dati dalle query separate
-  const isLoadingAny = !operations || !baskets || !cycles;
+  // PERFORMANCE: Solo operazioni necessarie per il caricamento iniziale
+  const isLoadingAny = operationsLoading;
   
   // Debug ridotto per migliori performance
   React.useEffect(() => {
