@@ -521,13 +521,13 @@ export default function OperationFormCompact({
     console.log('🔍 Debug auto-set OperationFormCompact - DETAILS:', {
       watchBasketId,
       selectedBasket: selectedBasket ? {id: selectedBasket.id, state: selectedBasket.state} : null,
-      shouldAutoSet: watchBasketId && selectedBasket?.state === 'available',
+      shouldAutoSet: watchBasketId && selectedBasket?.state === 'disponibile',
       currentType: watchType,
       basketsLoaded: !!baskets
     });
     
     if (watchBasketId && selectedBasket) {
-      const isReallyAvailable = selectedBasket.state === 'available' && !basketHasActiveCycle;
+      const isReallyAvailable = selectedBasket.state === 'disponibile' && !basketHasActiveCycle;
       const isActiveWithCycle = selectedBasket.state === 'active' || basketHasActiveCycle;
       
       // AUTO-IMPOSTA SEMPRE IL CICLO ATTIVO SE PRESENTE

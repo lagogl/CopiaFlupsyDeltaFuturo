@@ -1,0 +1,108 @@
+🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Console.js:61 Query request to: /api/lots/active
+Console.js:61 Query request to: /api/operations
+Console.js:61 🔄 FORM: Apertura form - forzo refresh immediato cestelli
+Console.js:61 Query request to: /api/baskets?includeAll=true
+Console.js:61 🔧 RESET flupsyBaskets - nessun FLUPSY selezionato
+Console.js:61 🔍 Debug auto-set OperationFormCompact - ENTRY: {watchBasketId: null, baskets: 'undefined/null', currentType: 'misura', formValues: {…}}
+Console.js:61 🔍 Debug auto-set OperationFormCompact - DETAILS: {watchBasketId: null, selectedBasket: null, shouldAutoSet: null, currentType: 'misura', basketsLoaded: false}
+Console.js:61 Modalità automatica attivata - ricalcolo valori
+Console.js:61  Warning: Missing `Description` or `aria-describedby={undefined}` for {DialogContent}.
+Mt.forEach.n.<computed> @ Console.js:61
+(anonymous) @ Dialog.tsx:540
+commitHookEffectListMount @ react-dom.development.js:23189
+commitPassiveMountOnFiber @ react-dom.development.js:24965
+commitPassiveMountEffects_complete @ react-dom.development.js:24930
+commitPassiveMountEffects_begin @ react-dom.development.js:24917
+commitPassiveMountEffects @ react-dom.development.js:24905
+flushPassiveEffectsImpl @ react-dom.development.js:27078
+flushPassiveEffects @ react-dom.development.js:27023
+commitRootImpl @ react-dom.development.js:26974
+commitRoot @ react-dom.development.js:26721
+performSyncWorkOnRoot @ react-dom.development.js:26156
+flushSyncCallbacks @ react-dom.development.js:12042
+(anonymous) @ react-dom.development.js:25690
+2Console.js:61 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Console.js:61 🔧 RESET flupsyBaskets - nessun FLUPSY selezionato
+Console.js:61 🔍 Debug auto-set OperationFormCompact - ENTRY: {watchBasketId: null, baskets: 'Array with 31 items', currentType: 'misura', formValues: {…}}
+Console.js:61 🔍 Debug auto-set OperationFormCompact - DETAILS: {watchBasketId: null, selectedBasket: null, shouldAutoSet: null, currentType: 'misura', basketsLoaded: true}
+Console.js:61 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Console.js:61 🔍 FILTER: Processing 10 operations
+Console.js:61 Operazione di esempio: {id: 1, date: '2025-08-03', type: 'prima-attivazione', basketId: 1, cycleId: 1, …}
+Console.js:61 🔍 FILTER: Filtered from 10 to 10 operations
+Console.js:61 🔍 FILTER: Returning 10 sorted operations
+Console.js:61 🚀 FILTER CHANGE DEBUG v2: {flupsyFilter: 'all', cycleStateFilter: 'active', basketsCount: 31, cyclesCount: 10, timestamp: '2025-08-24T14:40:54.140Z'}
+Console.js:61 🚨🚨🚨 OPERATIONS COMPONENT LOADING 🚨🚨🚨
+Console.js:61 🔍 Debug auto-set OperationFormCompact - ENTRY: {watchBasketId: null, baskets: 'Array with 31 items', currentType: 'misura', formValues: {…}}
+Console.js:61 🔍 Debug auto-set OperationFormCompact - DETAILS: {watchBasketId: null, selectedBasket: null, shouldAutoSet: null, currentType: 'misura', basketsLoaded: true}
+Console.js:61 🔍 Filtro cestelli per FLUPSY ID: 570
+Console.js:61 Cestelli filtrati per FLUPSY: [{…}]
+Console.js:61 TOTALE cestelli trovati: 1
+Console.js:61 🎯 STATI CESTELLI AGGIORNATI: {attivi: 0, disponibili: 0, totali: 1}
+Console.js:61 Esempio cestello #1: {id: 11, physicalNumber: 1, flupsyId: 570, cycleCode: null, state: 'disponibile', …}
+Console.js:61 - State: disponibile
+Console.js:61 - CurrentCycleId: null
+Console.js:61 - CycleCode: null
+Console.js:61 Cestello #1 (1/1): {id: 11, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 🔧 SETTING flupsyBaskets to: 1 items
+Console.js:61 🔧 LOADING COMPLETED for flupsyBaskets
+Console.js:61 Cestello selezionato: {id: 11, physicalNumber: 1, flupsyId: 570, cycleCode: null, state: 'disponibile', …}
+Console.js:61 Cestello senza ciclo attivo
+Console.js:61 🔍 Cestello #1: {state: 'disponibile', currentCycleId: null, hasActiveCycle: false, isReallyAvailable: false, isActiveWithCycle: false}
+Console.js:61 ⚠️ Stato cestello inconsistente - mostro tutte le operazioni
+Console.js:61 🔍 Debug auto-set OperationFormCompact - ENTRY: {watchBasketId: 11, baskets: 'Array with 31 items', currentType: 'misura', formValues: {…}}
+Console.js:61 🔍 Debug auto-set OperationFormCompact - DETAILS: {watchBasketId: 11, selectedBasket: {…}, shouldAutoSet: false, currentType: 'misura', basketsLoaded: true}
+Console.js:61 🔍 Filtro cestelli per FLUPSY ID: 618
+Console.js:61 Cestelli filtrati per FLUPSY: (20) [{…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}, {…}]
+Console.js:61 TOTALE cestelli trovati: 20
+Console.js:61 🎯 STATI CESTELLI AGGIORNATI: {attivi: 0, disponibili: 0, totali: 20}
+Console.js:61 Esempio cestello #1: {id: 12, physicalNumber: 1, flupsyId: 618, cycleCode: null, state: 'disponibile', …}
+Console.js:61 - State: disponibile
+Console.js:61 - CurrentCycleId: null
+Console.js:61 - CycleCode: null
+Console.js:61 Cestello #1 (1/20): {id: 12, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #2 (2/20): {id: 13, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #3 (3/20): {id: 14, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #4 (4/20): {id: 15, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #5 (5/20): {id: 16, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #6 (6/20): {id: 17, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #7 (7/20): {id: 18, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #8 (8/20): {id: 19, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #9 (9/20): {id: 20, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #10 (10/20): {id: 21, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #11 (11/20): {id: 22, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #12 (12/20): {id: 23, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #13 (13/20): {id: 24, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #14 (14/20): {id: 25, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #15 (15/20): {id: 26, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #16 (16/20): {id: 27, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #17 (17/20): {id: 28, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #18 (18/20): {id: 29, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #19 (19/20): {id: 30, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 Cestello #20 (20/20): {id: 31, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 🔧 SETTING flupsyBaskets to: 20 items
+Console.js:61 🔍 Debug auto-set OperationFormCompact - ENTRY: {watchBasketId: null, baskets: 'Array with 31 items', currentType: 'misura', formValues: {…}}
+Console.js:61 🔍 Debug auto-set OperationFormCompact - DETAILS: {watchBasketId: null, selectedBasket: null, shouldAutoSet: null, currentType: 'misura', basketsLoaded: true}
+Console.js:61 🔧 LOADING COMPLETED for flupsyBaskets
+Console.js:61 Cestello selezionato: {id: 15, physicalNumber: 4, flupsyId: 618, cycleCode: null, state: 'disponibile', …}
+Console.js:61 Cestello senza ciclo attivo
+Console.js:61 🔍 Cestello #4: {state: 'disponibile', currentCycleId: null, hasActiveCycle: false, isReallyAvailable: false, isActiveWithCycle: false}
+Console.js:61 ⚠️ Stato cestello inconsistente - mostro tutte le operazioni
+Console.js:61 🔍 Debug auto-set OperationFormCompact - ENTRY: {watchBasketId: 15, baskets: 'Array with 31 items', currentType: 'misura', formValues: {…}}
+Console.js:61 🔍 Debug auto-set OperationFormCompact - DETAILS: {watchBasketId: 15, selectedBasket: {…}, shouldAutoSet: false, currentType: 'misura', basketsLoaded: true}
+Console.js:61 🔍 Filtro cestelli per FLUPSY ID: 570
+Console.js:61 Cestelli filtrati per FLUPSY: [{…}]
+Console.js:61 TOTALE cestelli trovati: 1
+Console.js:61 🎯 STATI CESTELLI AGGIORNATI: {attivi: 0, disponibili: 0, totali: 1}
+Console.js:61 Esempio cestello #1: {id: 11, physicalNumber: 1, flupsyId: 570, cycleCode: null, state: 'disponibile', …}
+Console.js:61 - State: disponibile
+Console.js:61 - CurrentCycleId: null
+Console.js:61 - CycleCode: null
+Console.js:61 Cestello #1 (1/1): {id: 11, state: 'disponibile', currentCycleId: null, cycleCode: null}
+Console.js:61 🔧 SETTING flupsyBaskets to: 1 items
+Console.js:61 🔍 Debug auto-set OperationFormCompact - ENTRY: {watchBasketId: null, baskets: 'Array with 31 items', currentType: 'misura', formValues: {…}}
+Console.js:61 🔍 Debug auto-set OperationFormCompact - DETAILS: {watchBasketId: null, selectedBasket: null, shouldAutoSet: null, currentType: 'misura', basketsLoaded: true}
+Console.js:61 🔧 LOADING COMPLETED for flupsyBaskets
+Console.js:61 API Request: GET /api/notifications?unreadOnly=true
+Console.js:61 API Response status: 200
+Console.js:61 API Response data: {"success":true,"notifications":[],"pagination":{"page":1,"pageSize":20,"totalCount":0,"totalPages":0,"hasNextPage":false,"hasPreviousPage":false}}
