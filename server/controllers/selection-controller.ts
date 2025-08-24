@@ -446,7 +446,7 @@ export async function addSourceBaskets(req: Request, res: Response) {
         totalWeight: sourceBasket.totalWeight || null,
         animalsPerKg: sourceBasket.animalsPerKg || null,
         sizeId: sourceBasket.sizeId || null,
-        lotId: sourceBasket.lotId || null,
+        lotId: sourceBasket.lotId, // ✅ RIMOSSO || null - deve essere presente
         notes: sourceBasket.notes || null
       });
       
@@ -734,12 +734,22 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       const sourceLots = Array.from(new Set(sourceLotIds));
       const primaryLotId = sourceLots.length > 0 ? sourceLots[0] : null;
       
+      // ❌ VALIDAZIONE CRITICA: Operazioni devono SEMPRE avere un lotto
+      if (!primaryLotId) {
+        await tx.rollback();
+        return res.status(400).json({
+          success: false,
+          error: "ERRORE CRITICO: Impossibile completare vagliatura senza lotti validi nelle origini"
+        });
+      }
+      
       for (const destBasket of destinationBaskets) {
         console.log(`   Processando cestello destinazione ${destBasket.basketId}...`);
         
         // 1. CREA NUOVO CICLO
         const [newCycle] = await tx.insert(cycles).values({
           basketId: destBasket.basketId,
+          lotId: primaryLotId, // ✅ AGGIUNTO LOTTO OBBLIGATORIO AL CICLO
           startDate: selection[0].date,
           state: 'active'
         }).returning();
@@ -758,6 +768,7 @@ export async function completeSelectionFixed(req: Request, res: Response) {
           type: 'prima-attivazione',
           basketId: destBasket.basketId,
           cycleId: newCycle.id,
+          lotId: primaryLotId, // ✅ LOTTO OBBLIGATORIO (eredita dalle origini)
           animalCount: destBasket.animalCount,
           totalWeight: destBasket.totalWeight,
           animalsPerKg: destBasket.animalsPerKg,
@@ -767,7 +778,6 @@ export async function completeSelectionFixed(req: Request, res: Response) {
           deadCount: destBasket.deadCount || 0,
           mortalityRate: destBasket.mortalityRate || 0,
           sizeId: actualSizeId,
-          lotId: primaryLotId, // Eredita lotto dalle origini
           notes: `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
         });
 
