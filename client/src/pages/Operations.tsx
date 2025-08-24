@@ -1230,11 +1230,11 @@ export default function Operations() {
       } else if (num <= 1000) {
         bgColor = 'bg-red-100 text-red-800';        // TP-1000 → Rosso
       } else if (num <= 3000) {
-        bgColor = 'bg-orange-100 text-orange-800';  // TP-2000, TP-3000 → Arancione
+        bgColor = 'bg-green-100 text-green-800';    // TP-2000, TP-3000 → Verde
       } else if (num <= 6000) {
         bgColor = 'bg-yellow-100 text-yellow-800';  // TP-4000, TP-5000, TP-6000 → Giallo
       } else if (num <= 10000) {
-        bgColor = 'bg-green-100 text-green-800';    // TP-7000, TP-8000, TP-9000, TP-10000 → Verde
+        bgColor = 'bg-orange-100 text-orange-800';  // TP-7000, TP-8000, TP-9000, TP-10000 → Arancione
       } else {
         bgColor = 'bg-black text-white';
       }
