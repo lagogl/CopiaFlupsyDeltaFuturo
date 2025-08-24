@@ -729,18 +729,36 @@ export async function completeSelectionFixed(req: Request, res: Response) {
       // ====== FASE 2: ATTIVAZIONE CESTELLI DESTINAZIONE ======
       console.log(`🆕 FASE 2: Attivazione ${destinationBaskets.length} cestelli destinazione`);
       
-      // Raccogli lotti dalle origini per destinazioni
-      const sourceLotIds = sourceBaskets.map(sb => sb.lotId).filter(lotId => lotId !== null);
-      const sourceLots = Array.from(new Set(sourceLotIds));
-      const primaryLotId = sourceLots.length > 0 ? sourceLots[0] : null;
+      // ====== CALCOLO LOTTO DOMINANTE (APPROCCIO IBRIDO) ======
+      // Raccogli lotti dalle origini con quantità per trovare il dominante
+      const lotComposition = new Map<number, number>();
       
-      // ❌ VALIDAZIONE CRITICA: Operazioni devono SEMPRE avere un lotto
-      if (!primaryLotId) {
+      for (const sourceBasket of sourceBaskets) {
+        if (sourceBasket.lotId) {
+          const current = lotComposition.get(sourceBasket.lotId) || 0;
+          lotComposition.set(sourceBasket.lotId, current + (sourceBasket.animalCount || 0));
+        }
+      }
+      
+      if (lotComposition.size === 0) {
         await tx.rollback();
         return res.status(400).json({
           success: false,
           error: "ERRORE CRITICO: Impossibile completare vagliatura senza lotti validi nelle origini"
         });
+      }
+      
+      // Trova il lotto DOMINANTE (maggior quantità di animali)
+      const dominantLot = Array.from(lotComposition.entries())
+        .sort(([, a], [, b]) => b - a)[0]; // Ordina per quantità decrescente
+      
+      const primaryLotId = dominantLot[0];
+      const isMixedLot = lotComposition.size > 1;
+      
+      console.log(`🎯 Lotto dominante: ${primaryLotId} (${dominantLot[1]} animali)`);
+      if (isMixedLot) {
+        console.log(`🔀 Vagliatura MISTA rilevata: ${lotComposition.size} lotti diversi`);
+        console.log(`📊 Composizione:`, Array.from(lotComposition.entries()));
       }
       
       for (const destBasket of destinationBaskets) {
@@ -762,13 +780,21 @@ export async function completeSelectionFixed(req: Request, res: Response) {
           }
         }
 
-        // 3. OPERAZIONE PRIMA-ATTIVAZIONE
+        // 3. OPERAZIONE PRIMA-ATTIVAZIONE (APPROCCIO IBRIDO)
+        const operationNotes = isMixedLot 
+          ? `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date} - LOTTO MISTO (dominante: ${primaryLotId}, dettagli in composizione)`
+          : `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`;
+        
+        const operationMetadata = isMixedLot 
+          ? JSON.stringify({ isMixed: true, sourceSelection: Number(id), dominantLot: primaryLotId, lotCount: lotComposition.size })
+          : null;
+        
         await tx.insert(operations).values({
           date: selection[0].date,
           type: 'prima-attivazione',
           basketId: destBasket.basketId,
           cycleId: newCycle.id,
-          lotId: primaryLotId, // ✅ LOTTO OBBLIGATORIO (eredita dalle origini)
+          lotId: primaryLotId, // ✅ LOTTO DOMINANTE per query veloci
           animalCount: destBasket.animalCount,
           totalWeight: destBasket.totalWeight,
           animalsPerKg: destBasket.animalsPerKg,
@@ -778,12 +804,17 @@ export async function completeSelectionFixed(req: Request, res: Response) {
           deadCount: destBasket.deadCount || 0,
           mortalityRate: destBasket.mortalityRate || 0,
           sizeId: actualSizeId,
-          notes: `Da vagliatura #${selection[0].selectionNumber} del ${selection[0].date}`
+          metadata: operationMetadata,
+          notes: operationNotes
         });
 
         // 4. GESTISCI POSIZIONAMENTO O VENDITA
         if (destBasket.destinationType === 'sold') {
-          // VENDITA IMMEDIATA
+          // VENDITA IMMEDIATA (APPROCCIO IBRIDO)
+          const saleNotes = isMixedLot 
+            ? `Vendita diretta da vagliatura #${selection[0].selectionNumber} - LOTTO MISTO (dominante: ${primaryLotId})`
+            : `Vendita diretta da vagliatura #${selection[0].selectionNumber}`;
+          
           await tx.insert(operations).values({
             date: selection[0].date,
             type: 'vendita',
@@ -798,8 +829,9 @@ export async function completeSelectionFixed(req: Request, res: Response) {
             deadCount: destBasket.deadCount || 0,
             mortalityRate: destBasket.mortalityRate || 0,
             sizeId: actualSizeId,
-            lotId: primaryLotId,
-            notes: `Vendita diretta da vagliatura #${selection[0].selectionNumber}`
+            lotId: primaryLotId, // ✅ LOTTO DOMINANTE
+            metadata: operationMetadata,
+            notes: saleNotes
           });
 
           // Chiudi ciclo per vendita
