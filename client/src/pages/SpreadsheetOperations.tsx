@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from "@/components/ui/tooltip";
 import { Save, RotateCcw, CheckCircle2, AlertCircle, Loader2 } from "lucide-react";
 import "../styles/spreadsheet.css";
@@ -2026,7 +2025,7 @@ export default function SpreadsheetOperations() {
 
       {/* Tabella spreadsheet compatta */}
       {selectedFlupsyId && operationRows.length > 0 && (
-        <div className="border rounded-lg overflow-hidden bg-white shadow-sm">
+        <div className="border rounded-lg bg-white shadow-sm overflow-hidden">
           {/* Header compatto */}
           <div className="bg-gray-50 border-b px-3 py-2">
             <h3 className="font-medium text-sm">
@@ -2042,7 +2041,11 @@ export default function SpreadsheetOperations() {
               </div>
             )}
             
-            <ScrollArea className="w-full">
+            {/* Container scrollabile mobile-friendly */}
+            <div className="w-full overflow-x-auto overflow-y-visible" style={{ 
+              WebkitOverflowScrolling: 'touch',
+              scrollbarWidth: 'thin' 
+            }}>
               <div className="min-w-[1200px]">
                 {/* Header tabella compatto con larghezze esatte per allineamento perfetto */}
                 <div className="flex border-b bg-gray-100 text-xs font-medium text-gray-700 sticky top-0 z-10" style={{fontSize: '10px'}}>
@@ -2782,7 +2785,7 @@ export default function SpreadsheetOperations() {
                 );
               })}
               </div>
-            </ScrollArea>
+            </div>
           </div>
         </div>
       )}
