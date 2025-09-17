@@ -16,6 +16,22 @@ import {
 import { format } from "date-fns";
 
 /**
+ * Safe conversion utilities to prevent NaN values
+ */
+function safeNumber(value: any, defaultValue: number | null = null): number | null {
+  if (value === null || value === undefined || value === '') {
+    return defaultValue;
+  }
+  const num = Number(value);
+  return isNaN(num) ? defaultValue : num;
+}
+
+function safeInteger(value: any, defaultValue: number | null = null): number | null {
+  const num = safeNumber(value, defaultValue);
+  return num !== null ? Math.round(num) : null;
+}
+
+/**
  * Prepara i dati per un'operazione di vagliatura senza fare modifiche al database
  * Calcola tutti i parametri necessari in base ai dati di input
  */
@@ -178,6 +194,14 @@ export async function executeScreeningOperation(req: Request, res: Response) {
       mortalityRate  // Potrebbe essere ri-calcolato o usato direttamente
     } = req.body;
     
+    // Safely convert numeric values to prevent NaN
+    const safeSampleWeight = safeNumber(sampleWeight);
+    const safeSampleCount = safeInteger(sampleCount);
+    const safeDeadCount = safeInteger(deadCount, 0);
+    const safeAnimalsPerKg = safeInteger(animalsPerKg);
+    const safeMortalityRate = safeNumber(mortalityRate);
+    const safeSizeId = safeInteger(sizeId);
+    
     // Controlli di validazione
     if (!sourceBasketIds || !Array.isArray(sourceBasketIds) || sourceBasketIds.length === 0) {
       return res.status(400).json({
@@ -193,14 +217,14 @@ export async function executeScreeningOperation(req: Request, res: Response) {
       });
     }
     
-    if (!sampleWeight || isNaN(Number(sampleWeight)) || Number(sampleWeight) <= 0) {
+    if (!safeSampleWeight || safeSampleWeight <= 0) {
       return res.status(400).json({
         success: false,
         error: "Peso del campione non valido"
       });
     }
     
-    if (!sampleCount || isNaN(Number(sampleCount)) || Number(sampleCount) <= 0) {
+    if (!safeSampleCount || safeSampleCount <= 0) {
       return res.status(400).json({
         success: false,
         error: "Numero di animali nel campione non valido"
@@ -300,10 +324,10 @@ export async function executeScreeningOperation(req: Request, res: Response) {
           type: operationType,
           basketId: sourceBasket.id,
           cycleId: sourceCycleId,
-          deadCount: Number(deadCount),
-          animalsPerKg: Number(animalsPerKg),
-          sizeId: sizeId || null,
-          mortalityRate: Number(mortalityRate),
+          deadCount: safeDeadCount,
+          animalsPerKg: safeAnimalsPerKg,
+          sizeId: safeSizeId,
+          mortalityRate: safeMortalityRate,
           notes: notes || null
         }).returning();
         
@@ -312,18 +336,25 @@ export async function executeScreeningOperation(req: Request, res: Response) {
       
       // 6. Crea un'operazione per ogni cestello di destinazione
       const destOperations = await Promise.all(destinationBasketData.map(async (destBasket) => {
+        // Safe conversion of basket-specific values
+        const safeAnimalCount = safeInteger(destBasket.animalCount);
+        const safeTotalWeight = safeNumber(destBasket.totalWeight);
+        
         const [operation] = await tx.insert(operations).values({
           date: date || new Date().toISOString().split('T')[0], // date field expects YYYY-MM-DD format
           type: operationType,
           basketId: destBasket.basketId,
           cycleId: sourceCycleId, // Usa lo stesso ciclo dei cestelli origine
-          animalCount: destBasket.animalCount || null,
-          totalWeight: destBasket.totalWeight || null,
-          animalsPerKg: Number(animalsPerKg),
-          sizeId: sizeId || null,
-          deadCount: Number(deadCount),
-          mortalityRate: Number(mortalityRate),
-          notes: destBasket.notes || notes || null
+          animalCount: safeAnimalCount,
+          totalWeight: safeTotalWeight,
+          animalsPerKg: safeAnimalsPerKg,
+          sizeId: safeSizeId,
+          deadCount: safeDeadCount,
+          mortalityRate: safeMortalityRate,
+          notes: destBasket.notes || notes || null,
+          // Add sale fields support
+          saleClient: destBasket.saleClient || null,
+          saleDate: destBasket.saleDate || null
         }).returning();
         
         return operation;
@@ -334,27 +365,41 @@ export async function executeScreeningOperation(req: Request, res: Response) {
         // Chiudi la posizione attuale del cestello, se presente
         await closeBasketPositionHistory(destBasket.basketId, date || new Date().toISOString().split('T')[0], tx);
         
-        // Aggiorna il cestello
-        await tx.update(baskets)
-          .set({
-            currentCycleId: sourceCycleId,
-            flupsyId: destBasket.flupsyId,
-            row: destBasket.row,
-            position: destBasket.position
-          })
-          .where(eq(baskets.id, destBasket.basketId));
+        // Handle different destination types
+        if (destBasket.destinationType === 'sold') {
+          // Per cestelli venduti, aggiorna solo il ciclo (nessuna posizione FLUPSY)
+          await tx.update(baskets)
+            .set({
+              currentCycleId: sourceCycleId
+              // Non aggiorniamo flupsyId, row, position per cestelli venduti
+            })
+            .where(eq(baskets.id, destBasket.basketId));
+        } else {
+          // Per cestelli posizionati, aggiorna ciclo e posizione
+          const safePosition = safeInteger(destBasket.position);
+          const safeFlupsyId = safeInteger(destBasket.flupsyId);
           
-        // Crea un nuovo record nella cronologia delle posizioni
-        if (destBasket.flupsyId && destBasket.row && destBasket.position) {
-          await tx.insert(basketPositionHistory).values({
-            basketId: destBasket.basketId,
-            flupsyId: destBasket.flupsyId,
-            row: destBasket.row,
-            position: destBasket.position,
-            startDate: date || new Date().toISOString().split('T')[0],
-            endDate: null,
-            operationId: destOperations.find(op => op.basketId === destBasket.basketId)?.id || null
-          });
+          await tx.update(baskets)
+            .set({
+              currentCycleId: sourceCycleId,
+              flupsyId: safeFlupsyId,
+              row: destBasket.row,
+              position: safePosition
+            })
+            .where(eq(baskets.id, destBasket.basketId));
+            
+          // Crea un nuovo record nella cronologia delle posizioni solo per cestelli posizionati
+          if (safeFlupsyId && destBasket.row && safePosition) {
+            await tx.insert(basketPositionHistory).values({
+              basketId: destBasket.basketId,
+              flupsyId: safeFlupsyId,
+              row: destBasket.row,
+              position: safePosition,
+              startDate: date || new Date().toISOString().split('T')[0],
+              endDate: null,
+              operationId: destOperations.find(op => op.basketId === destBasket.basketId)?.id || null
+            });
+          }
         }
       }));
       
