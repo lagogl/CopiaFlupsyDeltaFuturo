@@ -270,6 +270,11 @@ export async function executeScreeningOperation(req: Request, res: Response) {
       
       // 3. Ottieni il ciclo del primo cestello di origine (tutti dovrebbero avere lo stesso ciclo)
       const sourceCycleId = sourceBasketData[0].currentCycleId;
+      
+      if (!sourceCycleId) {
+        throw new Error(`Il cestello di origine non ha un ciclo attivo`);
+      }
+      
       const cycleData = await tx.select()
         .from(cycles)
         .where(eq(cycles.id, sourceCycleId))
@@ -280,36 +285,26 @@ export async function executeScreeningOperation(req: Request, res: Response) {
       }
       
       // 4. Crea una nuova operazione di tipo "vagliatura"
-      // Trova il tipo di operazione "vagliatura"
-      const operationResult = await tx.select({
-        id: operationTypes.id,
-        code: operationTypes.code
-      })
-      .from(operationTypes)
-      .where(eq(operationTypes.code, 'vagliatura'))
-      .limit(1);
+      // operationTypes è un enum, quindi usiamo direttamente la stringa
+      const operationType: 'vagliatura' = 'vagliatura';
       
-      if (!operationResult || operationResult.length === 0) {
-        throw new Error("Tipo di operazione 'vagliatura' non trovato");
+      // Verifica che il tipo sia valido
+      if (!operationTypes.includes(operationType)) {
+        throw new Error("Tipo di operazione 'vagliatura' non valido");
       }
-      
-      const operationTypeId = operationResult[0].id;
       
       // 5. Crea un'operazione per ogni cestello di origine
       const sourceOperations = await Promise.all(sourceBasketData.map(async (sourceBasket) => {
         const [operation] = await tx.insert(operations).values({
-          date: date || new Date().toISOString(),
+          date: date || new Date().toISOString().split('T')[0], // date field expects YYYY-MM-DD format
+          type: operationType,
           basketId: sourceBasket.id,
-          operationTypeId,
           cycleId: sourceCycleId,
-          sampleWeight: Number(sampleWeight),
-          sampleCount: Number(sampleCount),
           deadCount: Number(deadCount),
           animalsPerKg: Number(animalsPerKg),
-          sizeId: sizeId,
+          sizeId: sizeId || null,
           mortalityRate: Number(mortalityRate),
-          notes: notes || null,
-          isSource: true
+          notes: notes || null
         }).returning();
         
         return operation;
@@ -318,20 +313,17 @@ export async function executeScreeningOperation(req: Request, res: Response) {
       // 6. Crea un'operazione per ogni cestello di destinazione
       const destOperations = await Promise.all(destinationBasketData.map(async (destBasket) => {
         const [operation] = await tx.insert(operations).values({
-          date: date || new Date().toISOString(),
+          date: date || new Date().toISOString().split('T')[0], // date field expects YYYY-MM-DD format
+          type: operationType,
           basketId: destBasket.basketId,
-          operationTypeId,
           cycleId: sourceCycleId, // Usa lo stesso ciclo dei cestelli origine
-          sampleWeight: Number(sampleWeight),
-          sampleCount: Number(sampleCount),
           animalCount: destBasket.animalCount || null,
           totalWeight: destBasket.totalWeight || null,
           animalsPerKg: Number(animalsPerKg),
-          sizeId: sizeId,
+          sizeId: sizeId || null,
           deadCount: Number(deadCount),
           mortalityRate: Number(mortalityRate),
-          notes: destBasket.notes || notes || null,
-          isSource: false
+          notes: destBasket.notes || notes || null
         }).returning();
         
         return operation;
@@ -340,7 +332,7 @@ export async function executeScreeningOperation(req: Request, res: Response) {
       // 7. Aggiorna i cestelli di destinazione (assegna ciclo e posizione)
       await Promise.all(destinationBasketData.map(async (destBasket) => {
         // Chiudi la posizione attuale del cestello, se presente
-        await closeBasketPositionHistory(destBasket.basketId, date || new Date().toISOString(), tx);
+        await closeBasketPositionHistory(destBasket.basketId, date || new Date().toISOString().split('T')[0], tx);
         
         // Aggiorna il cestello
         await tx.update(baskets)
@@ -359,7 +351,7 @@ export async function executeScreeningOperation(req: Request, res: Response) {
             flupsyId: destBasket.flupsyId,
             row: destBasket.row,
             position: destBasket.position,
-            startDate: date || new Date().toISOString(),
+            startDate: date || new Date().toISOString().split('T')[0],
             endDate: null,
             operationId: destOperations.find(op => op.basketId === destBasket.basketId)?.id || null
           });
@@ -369,14 +361,14 @@ export async function executeScreeningOperation(req: Request, res: Response) {
       // 8. Aggiorna i cestelli di origine (liberali dal ciclo attivo)
       await Promise.all(sourceBasketData.map(async (sourceBasket) => {
         // Chiudi la posizione attuale del cestello
-        await closeBasketPositionHistory(sourceBasket.id, date || new Date().toISOString(), tx);
+        await closeBasketPositionHistory(sourceBasket.id, date || new Date().toISOString().split('T')[0], tx);
         
         // Aggiorna il cestello come disponibile (libero)
+        // Non modificiamo row e position perché sono campi non-nullable nella tabella baskets
+        // La posizione viene gestita tramite basketPositionHistory
         await tx.update(baskets)
           .set({
-            currentCycleId: null,
-            row: null,
-            position: null
+            currentCycleId: null
           })
           .where(eq(baskets.id, sourceBasket.id));
       }));
@@ -493,7 +485,12 @@ async function findAvailablePositions() {
       const rows = ['DX', 'SX'];
       const positions = Array.from({ length: 10 }, (_, i) => i + 1);
       
-      const availablePositions = [];
+      const availablePositions: Array<{
+        flupsyId: number;
+        flupsyName: string;
+        row: string;
+        position: number;
+      }> = [];
       
       rows.forEach(row => {
         positions.forEach(pos => {
