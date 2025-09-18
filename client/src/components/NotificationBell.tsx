@@ -29,13 +29,50 @@ export default function NotificationBell() {
   const [isOpen, setIsOpen] = useState(false);
   const { toast } = useToast();
   const queryClient = useQueryClient();
+  
+  // Intervalli di polling per exponential backoff (in millisecondi)
+  const BACKOFF_INTERVALS = [30000, 60000, 120000, 300000]; // 30s, 60s, 120s, 300s (max 5 minuti)
+  
+  // Stato per tracciare l'intervallo corrente
+  const [currentIntervalIndex, setCurrentIntervalIndex] = useState(0);
+  const [refetchInterval, setRefetchInterval] = useState(BACKOFF_INTERVALS[0]);
 
   // Ottieni solo le notifiche non lette
   const { data: unreadNotifications, isLoading } = useQuery<{ success: boolean; notifications: Notification[] }>({
     queryKey: ['/api/notifications', 'unread'],
     queryFn: () => apiRequest({ url: '/api/notifications?unreadOnly=true' }),
-    refetchInterval: 30000, // Aggiorna ogni 30 secondi
+    refetchInterval: refetchInterval, // Usa l'intervallo dinamico
   });
+  
+  // Gestisci l'exponential backoff basato sulla presenza di notifiche
+  useEffect(() => {
+    if (unreadNotifications) {
+      const hasNotifications = unreadNotifications.notifications && unreadNotifications.notifications.length > 0;
+      
+      if (hasNotifications) {
+        // Se ci sono notifiche, resetta all'intervallo minimo
+        if (currentIntervalIndex !== 0) {
+          console.log('🔔 Notifiche presenti, resetto intervallo a 30s');
+          setCurrentIntervalIndex(0);
+          setRefetchInterval(BACKOFF_INTERVALS[0]);
+        }
+      } else {
+        // Se non ci sono notifiche, aumenta progressivamente l'intervallo
+        if (currentIntervalIndex < BACKOFF_INTERVALS.length - 1) {
+          // Usa setTimeout per ritardare l'incremento dell'intervallo
+          const timeoutId = setTimeout(() => {
+            const nextIndex = currentIntervalIndex + 1;
+            const nextInterval = BACKOFF_INTERVALS[nextIndex];
+            console.log(`🔕 Nessuna notifica, aumento intervallo a ${nextInterval / 1000}s`);
+            setCurrentIntervalIndex(nextIndex);
+            setRefetchInterval(nextInterval);
+          }, refetchInterval); // Aspetta il tempo dell'intervallo corrente prima di aumentare
+          
+          return () => clearTimeout(timeoutId);
+        }
+      }
+    }
+  }, [unreadNotifications?.notifications?.length, currentIntervalIndex, refetchInterval]);
 
   // Attiva il websocket per ricevere notifiche in tempo reale
   useEffect(() => {
